@@ -1,0 +1,381 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  //url    = "mysql://root:xilnex123@127.0.0.1:3306/localdatabase"
+}
+
+model User { 
+  id Int @id @default(autoincrement()) @map("ID")
+  username String @unique @map("USERNAME")
+  password String @map("PASSWORD")
+  lastName String? @map("LAST_NAME")
+  firstName String? @map("FIRST_NAME")
+  mobile String? @unique @map("MOBILE")
+  email String? @unique @map("EMAIL")
+  role String @map("ROLE")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("USER")
+}
+
+model RefreshToken {
+  id Int @id @default(autoincrement()) @map("ID")
+  userId Int @map("USER_ID")
+  token String @map("TOKEN")
+  expired DateTime? @map("EXPIRED_DATETIME")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  createdByIP String? @map("CREATED_BY")
+  revoked DateTime? @map("REVOKED_DATETIME")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("REFRESH_TOKEN")
+}
+
+model Referral {
+  id Int @id @default(autoincrement()) @map("ID")
+  userId Int @map("USER_ID")
+  referralId Int @map("REFERRAL_ID")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("REFERRAL")
+}
+
+model Supplier {
+  id Int @id @default(autoincrement()) @map("ID")
+  companyName String @map("COMPANY_NAME")
+  companyStreet String @map("COMPANY_STREET")
+  companyCity String @map("COMPANY_CITY")
+  companyState String @map("COMPANY_STATE")
+  companyPostalCode String @map("COMPANY_POSTAL_CODE")
+  companyCountry String @map("COMPANY_COUNTRY")
+  companyRegisterNumber String @map("COMPANY_REGISTRATION_NUMBER")
+  personInChargeLastName String? @map("PERSON_IN_CHARGE_LAST_NAME")
+  personInChargeFirstName String? @map("PERSON_IN_CHARGE_FIRST_NAME")
+  mobile String? @map("MOBILE")
+  email String? @map("EMAIL")
+  remark String? @map("REMARK")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("SUPPLIER")
+}
+
+model Customer {
+  id Int @id @default(autoincrement()) @map("ID")
+  salutation String? @map("SALUTATION")
+  lastName String? @map("LAST_NAME")
+  firstName String? @map("FIRST_NAME")
+  mobile String? @map("MOBILE")
+  email String? @map("EMAIL")
+  gender String? @map("GENDER")
+  billStreet String? @map("BILL_STREET")
+  billCity String? @map("BILL_CITY")
+  billState String? @map("BILL_STATE")
+  billPostalCode String? @map("BILL_POSTAL_CODE")
+  billCountry String? @map("BILL_COUNTRY")
+  billRemark String? @map("BILL_REMARK")
+  shipStreet String? @map("SHIP_STREET")
+  shipCity String? @map("SHIP_CITY")
+  shipState String? @map("SHIP_STATE")
+  shipPostalCode String? @map("SHIP_POSTAL_CODE")
+  shipCountry String? @map("SHIP_COUNTRY")
+  shipRemark String? @map("SHIP_REMARK")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("CUSTOMER")
+}
+
+model Company {
+  id Int @id @default(autoincrement()) @map("ID")
+  companyName String @map("COMPANY_NAME")
+  street String @map("STREET")
+  city String @map("CITY")
+  state String @map("STATE")
+  postalCode String @map("POSTAL_CODE")
+  country String @map("COUNTRY")
+  registrationNumber String @unique @map("REGISTRATION_NUMBER")
+  website String? @map("WEBSITE")
+  referralId String? @map("REFERRAL_ID")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("COMPANY")
+}
+
+model Outlet {
+  id Int @id @default(autoincrement()) @map("ID")
+  outletName String @map("OUTLET_NAME")
+  street String? @map("STREET")
+  city String? @map("CITY")
+  state String? @map("STATE")
+  postalCode String? @map("POSTAL_CODE")
+  country String? @map("COUNTRY")
+  outletTel String? @map("OUTLET_TEL")
+  outletEmail String? @map("OUTLET_EMAIL")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("OUTLET")
+}
+
+model Item {
+  id Int @id @default(autoincrement()) @map("ID")
+  itemCode String @unique @map("ITEM_CODE")
+  itemName String @map("ITEM_NAME")
+  itemType String? @map("ITEM_TYPE")
+  itemModel String? @map("ITEM_MODEL")
+  itemBrand String? @map("ITEM_BRAND")
+  itemDescription String? @map("ITEM_DESCRIPTION")
+  category String? @map("CATEGORY")
+  cost Decimal @map("COST")
+  price Decimal @map("PRICE")
+  isOpenPrice Boolean @default(false) @map("IS_OPEN_PRICE")
+  unitOfMeasure String? @map("UNIT_OF_MEASURE")
+  height Decimal @map("HEIGHT")
+  width Decimal @map("WIDTH")
+  length Decimal @map("LENGTH")
+  weight Decimal @map("WEIGHT")
+  alternateLookUp String? @map("ALTERNATE_LOOKUP")
+  image String? @map("IMAGE")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("ITEM")
+}
+
+model Sales {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  outletId Int @map("OUTLET_ID")
+  businessDate DateTime @map("BUSINESS_DATE")
+  salesType String? @map("SALES_TYPE")
+  customerId Int? @map("CUSTOMER_ID")
+  billStreet String? @map("BILL_STREET")
+  billCity String? @map("BILL_CITY")
+  billState String? @map("BILL_STATE")
+  billPostalCode String? @map("BILL_POSTAL_CODE")
+  billCountry String? @map("BILL_COUNTRY")
+  shipStreet String? @map("SHIP_STREET")
+  shipCity String? @map("SHIP_CITY")
+  shipState String? @map("SHIP_STATE")
+  shipPostalCode String? @map("SHIP_POSTAL_CODE")
+  shipCountry String? @map("SHIP_COUNTRY")
+  discountPercentage Decimal @map("DISCOUNT_PERCENTAGE")
+  discountAmount Decimal @map("DISCOUNT_AMOUNT")
+  serviceChargeAmount Decimal @map("SERVICE_CHARGE_AMOUNT")
+  taxAmount Decimal @map("TAX_AMOUNT")
+  roundingAmount Decimal @map("ROUNDING_AMOUNT")
+  subtotalAmount Decimal @map("SUBTOTAL_AMOUNT")
+  totalAmount Decimal @map("TOTAL_AMOUNT")
+  paidAmount Decimal @map("PAID_AMOUNT")
+  status String @map("STATUS")
+  remark String? @map("REMARK")
+  declarationSessionId Int @map("DECLARATION_SESSION_ID")
+  eodId Int @map("EOD_ID")
+  salesQuotationId Int? @map("SALES_QUOTATION_ID")
+  performedBy Int @map("PERFORMED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("SALES")
+}
+
+model SalesItem {
+  id Int @id @default(autoincrement()) @map("ID")
+  salesId Int @map("SALES_ID")
+  itemId Int @map("ITEM_ID")
+  quantity Decimal @map("QUANTITY")
+  remark String? @map("REMARK")
+  deleted Boolean @default(false) @map("IS_DELETED")
+  
+  @@map("SALES_ITEM")
+}
+
+model SalesQuotation {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  outletId Int @map("OUTLET_ID")
+  customerId Int? @map("CUSTOMER_ID")
+  customerStreet String? @map("CUSTOMER_STREET")
+  customerCity String? @map("CUSTOMER_CITY")
+  customerState String? @map("CUSTOMER_STATE")
+  customerPostalCode String? @map("CUSTOMER_POSTAL_CODE")
+  customerCountry String? @map("CUSTOMER_COUNTRY")
+  discountPercentage Decimal @map("DISCOUNT_PERCENTAGE")
+  discountAmount Decimal @map("DISCOUNT_AMOUNT")
+  serviceChargeAmount Decimal @map("SERVICE_CHARGE_AMOUNT")
+  taxAmount Decimal @map("TAX_AMOUNT")
+  roundingAmount Decimal @map("ROUNDING_AMOUNT")
+  subtotalAmount Decimal @map("SUBTOTAL_AMOUNT")
+  totalAmount Decimal @map("TOTAL_AMOUNT")
+  status String @map("STATUS")
+  remark String? @map("REMARK")
+  performedBy Int @map("PERFORMED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("SALES_QUOTATION")
+}
+
+model SalesQuotationItem {
+  id Int @id @default(autoincrement()) @map("ID")
+  salesQuotationId Int @map("SALES_QUOTATION_ID")
+  itemId Int @map("ITEM_ID")
+  quantity Decimal @map("QUANTITY")
+  remark String? @map("REMARK")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("SALES_QUoTATION_ITEM")
+}
+
+model DeliveryOrder {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  outletId Int @map("OUTLET_ID")
+  customerId Int? @map("CUSTOMER_ID")
+  deliveryStreet String? @map("DELIVERY_STREET")
+  deliveryCity String? @map("DELIVERY_CITY")
+  deliveryState String? @map("DELIVERY_STATE")
+  deliveryPostalCode String? @map("DELIVERY_POSTAL_CODE")
+  deliveryCountry String? @map("DELIVERY_COUNTRY")
+  status String @map("STATUS")
+  remark String? @map("REMARK")
+  performedBy Int @map("PERFORMED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+  
+  @@map("DELIVERY_ORDER")
+}
+
+model DeliveryOrderItem {
+  id Int @id @default(autoincrement()) @map("ID")
+  deliveryOrderId Int @map("DELIVERY_ORDER_ID")
+  itemId Int @map("ITEM_ID")
+  quantity Decimal @map("QUANTITY")
+  remark String? @map("REMARK")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("DELIVERY_ORDER_ITEM")
+}
+
+model PurchaseOrder {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  outletId Int @map("OUTLET_ID")
+  supplierId Int? @map("SUPPLIER_ID")
+  supplierStreet String? @map("SUPPLIER_STREET")
+  supplierCity String? @map("SUPPLIER_CITY")
+  supplierState String? @map("SUPPLIER_STATE")
+  supplierPostalCode String? @map("SUPPLIER_POSTAL_CODE")
+  supplierCountry String? @map("SUPPLIER_COUNTRY")
+  discountPercentage Decimal @map("DISCOUNT_PERCENTAGE")
+  discountAmount Decimal @map("DISCOUNT_AMOUNT")
+  serviceChargeAmount Decimal @map("SERVICE_CHARGE_AMOUNT")
+  taxAmount Decimal @map("TAX_AMOUNT")
+  roundingAmount Decimal @map("ROUNDING_AMOUNT")
+  subtotalAmount Decimal @map("SUBTOTAL_AMOUNT")
+  totalAmount Decimal @map("TOTAL_AMOUNT")
+  status String @map("STATUS")
+  remark String? @map("REMARK")
+  performedBy Int @map("PERFORMED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("PURCHASE_ORDER")
+}
+
+model PurchaseOrderItem {
+  id Int @id @default(autoincrement()) @map("ID")
+  purchaseOrderId Int @map("PURCHASE_ORDER_ID")
+  itemId Int @map("ITEM_ID")
+  quantity Decimal @map("QUANTITY")
+  remark String? @map("REMARK")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("PURCHASE_ORDER_ITEM") 
+}
+
+model Payment {
+  id Int @id @default(autoincrement()) @map("ID")
+  method String @map("PAYMENT")
+  tenderedAmount Decimal @map("TENDERED_AMOUNT")
+  paidAmount Decimal @map("PAID_AMOUNT")
+  currencySymbol String @map("CURRENCY_SYMBOL")
+  salesId Int @map("SALES_ID")
+  reference String? @map("REFERENCE")
+  remark String? @map("REMARK")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  businessDate DateTime @map("BUSINESS_DATE")
+  status String @map("STATUS")
+  outletId Int @map("OUTLET_ID")
+  declarationSessionId Int @map("DECLARATION_SESSION_ID")
+  eodId Int @map("EOD_ID")
+  performedBy Int @map("PERFORMED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("PAYMENT")
+}
+
+model RegisterLog {
+  id Int @id @default(autoincrement()) @map("ID")
+  type String @map("TYPE")
+  modifiedAmount Decimal @map("MODIFIED_AMOUNT")
+  currencySymbol String @map("CURRENCY_SYMBOL")
+  salesId Int @map("SALES_ID")
+  remark String? @map("REMARK")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  status String @map("STATUS")
+  outletId Int @map("OUTLET_ID")
+  declarationSessionId Int @map("DECLARATION_SESSION_ID")
+  eodId Int @map("EOD_ID")
+  performedBy Int @map("PERFORMED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("REGISTER_LOG")
+}
+
+model CardInfo {
+  id Int @id @default(autoincrement()) @map("ID")
+  paymentId Int @map("PAYMENT_ID")
+  cardNumber String? @map("CARD_NUMBER")
+  cardExpiry String? @map("CARD_EXPIRY")
+  traceNumber String? @map("TRACE_NUMBER")
+  type2 String? @map("TYPE_2")
+  type3 String? @map("TYPE_3")
+  cardRate Decimal? @map("CARD_RATE")
+  appCode String? @map("APP_CODE")
+  cardType String? @map("CARD_TYPE")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("CARD_INFO")
+}
+
+model Declaration {
+  id Int @id @default(autoincrement()) @map("ID")
+  deviceId Int @map("DEVICE_ID")
+  outletId Int @map("OUTLET_ID")
+  eodId Int @map("EOD_ID")
+  openingDateTime DateTime? @map("OPENING_DATE_TIME")
+  closingDateTime DateTime? @map("CLOSING_DATE_TIME")
+  businessDate DateTime  @map("BUSINESS_DATE")
+  verifiedBy Int? @map("VERIFIED_BY")
+  openedBy Int?  @map("OPENED_BY")
+  closedBy Int?  @map("CLOSED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("DECLARATION")
+}
+
+model EOD {
+  id Int @id @default(autoincrement()) @map("ID")
+  deviceId Int @map("DEVICE_ID")
+  outletId Int @map("OUTLET_ID")
+  openingDateTime DateTime? @map("OPENING_DATE_TIME")
+  closingDateTime DateTime? @map("CLOSING_DATE_TIME")
+  businessDate DateTime @map("BUSINESS_DATE")
+  verifiedBy Int? @map("VERIFIED_BY")
+  openedBy Int? @map("OPENED_BY")
+  closedBy Int? @map("CLOSED_BY")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("EOD")
+}

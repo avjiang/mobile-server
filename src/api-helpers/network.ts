@@ -20,10 +20,16 @@ let convertDecimalsToNumbers = (value: any): any => {
     }
 }
 
+let isString = (value: any) => {
+    return typeof value === 'string' || value instanceof String
+}
+
 export let sendResponse = (res: Response, data: any) => {
-    //need to map decimal datatype to number datatype else decimal datatype value will return as string value
-    for (const key in data) {
-        data[key] = convertDecimalsToNumbers(data[key]);
+    if (!isString(data)) {
+        //need to map decimal datatype to number datatype else decimal datatype value will return as string value
+        for (const key in data) {
+            data[key] = convertDecimalsToNumbers(data[key]);
+        }
     }
     const response = new NetworkResponse(true, data)
     return res.json(response)

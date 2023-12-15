@@ -29,6 +29,10 @@ let getById = (req: Request, res: Response, next: NextFunction) => {
 }
 
 let create = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+    
     const user = req.body
 
     if (!user) {
@@ -61,6 +65,10 @@ let create = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
 }
 
 let update = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+
     const user = req.body
 
     if (!user) {
@@ -92,6 +100,10 @@ let remove = (req: Request, res: Response, next: NextFunction) => {
 
 
 let changePassword = (req: NetworkRequest<ChangePasswordRequestBody>, res: Response, next: NextFunction) => {
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+
     const changePasswordRequest = req.body
 
     if (!changePasswordRequest) {

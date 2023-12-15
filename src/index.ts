@@ -14,9 +14,16 @@ app.use(bodyParser.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
+// app.options('*', cors())
 // allow cors requests from any origin and with credentials
-app.use(cors({ origin: (origin, callback) => callback(null, true), credentials: true }))
+// app.use(cors({ origin: (origin, callback) => callback(null, true), credentials: true }))
 
+// Use the cors middleware and configure it
+app.use(cors({
+    origin: '*', // Be careful with this in production, it's better to whitelist specific domains
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: ['Content-Type', 'Authorization', 'token'],
+  }));
 
 // auth route need to execute before authentication middleware
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
@@ -31,6 +38,7 @@ app.use('/user', require('./users/user.controller'))
 app.use('/item', require('./items/item.controller'))
 app.use('/supplier', require('./suppliers/supplier.controller'))
 app.use('/customer', require('./customers/customer.controller'))
+app.use('/sales', require('./sales/sales.controller'))
 
 //error middleware
 app.use(errorMiddleware)

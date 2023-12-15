@@ -5,6 +5,7 @@ import { Supplier } from "@prisma/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
+import { CreateSuppliersRequestBody } from "./supplier.request"
 
 const router = express.Router()
 
@@ -24,10 +25,14 @@ let getById = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
-let createMany = (req: NetworkRequest<Supplier[]>, res: Response, next: NextFunction) => {
-    const suppliers = req.body
+let createMany = (req: NetworkRequest<CreateSuppliersRequestBody>, res: Response, next: NextFunction) => {
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
 
-    service.createMany(suppliers)
+    const requestBody = req.body
+
+    service.createMany(requestBody.suppliers)
     .then((insertedRecordCount: number) => {
         var message = `Successfully created ${insertedRecordCount} suppliers`
         if (insertedRecordCount === 1) {
@@ -39,6 +44,10 @@ let createMany = (req: NetworkRequest<Supplier[]>, res: Response, next: NextFunc
 }
 
 let update = (req: NetworkRequest<Supplier>, res: Response, next: NextFunction) => {
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+    
     const supplier = req.body
 
     if (!supplier) {

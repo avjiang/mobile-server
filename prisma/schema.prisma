@@ -163,14 +163,17 @@ model Sales {
   shipState String? @map("SHIP_STATE")
   shipPostalCode String? @map("SHIP_POSTAL_CODE")
   shipCountry String? @map("SHIP_COUNTRY")
+  totalItemDiscountAmount Decimal @map("TOTAL_ITEM_DISCOUNT_AMOUNT")
   discountPercentage Decimal @map("DISCOUNT_PERCENTAGE")
   discountAmount Decimal @map("DISCOUNT_AMOUNT")
+  profitAmount Decimal @map("PROFIT_AMOUNT")
   serviceChargeAmount Decimal @map("SERVICE_CHARGE_AMOUNT")
   taxAmount Decimal @map("TAX_AMOUNT")
   roundingAmount Decimal @map("ROUNDING_AMOUNT")
   subtotalAmount Decimal @map("SUBTOTAL_AMOUNT")
   totalAmount Decimal @map("TOTAL_AMOUNT")
   paidAmount Decimal @map("PAID_AMOUNT")
+  changeAmount Decimal @map("CHANGE_AMOUNT")
   status String @map("STATUS")
   remark String? @map("REMARK")
   declarationSessionId Int @map("DECLARATION_SESSION_ID")
@@ -184,9 +187,19 @@ model Sales {
 
 model SalesItem {
   id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
   salesId Int @map("SALES_ID")
   itemId Int @map("ITEM_ID")
+  itemName String @map("ITEM_NAME")
   quantity Decimal @map("QUANTITY")
+  cost Decimal @map("COST")
+  price Decimal @map("PRICE")
+  profit Decimal @map("PROFIT")
+  discountPercentage Decimal @map("DISCOUNT_PERCENTAGE")
+  discountAmount Decimal @map("DISCOUNT_AMOUNT")
+  serviceChargeAmount Decimal @map("SERVICE_CHARGE_AMOUNT")
+  taxAmount Decimal @map("TAX_AMOUNT")
+  subtotalAmount Decimal @map("SUBTOTAL_AMOUNT")
   remark String? @map("REMARK")
   deleted Boolean @default(false) @map("IS_DELETED")
   
@@ -226,7 +239,7 @@ model SalesQuotationItem {
   remark String? @map("REMARK")
   deleted Boolean @default(false) @map("IS_DELETED")
 
-  @@map("SALES_QUoTATION_ITEM")
+  @@map("SALES_QUOTATION_ITEM")
 }
 
 model DeliveryOrder {

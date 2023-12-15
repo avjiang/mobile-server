@@ -38,3 +38,9 @@ export class RequestValidateError extends BaseError {
         super(400, message)
     }
 }
+
+export class BusinessLogicError extends BaseError {
+    constructor(message: string) {
+        super(400, message)
+    }
+}

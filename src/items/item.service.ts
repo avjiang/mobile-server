@@ -1,5 +1,6 @@
-import { PrismaClient, Item } from "@prisma/client"
+import { PrismaClient, Item, Stock, StockCheck, Prisma } from "@prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
+import { CreateItemBody, StockItem } from "./item.request"
 
 const prisma = new PrismaClient()
 
@@ -30,13 +31,60 @@ let getById = async (id: number) => {
     }
 }
 
-let createMany = async (items: Item[]) => {
+let createMany = async (itemBodyArray: StockItem[]) => {
     try {
-        const newItems = await prisma.item.createMany({
-            data: items
+        var addedItemCount = 0
+        await prisma.$transaction(async (tx) => {
+            let items: Item[] = []
+            let stocks: Stock[] = []
+            let stockChecks: StockCheck[] = []
+
+            for (const itemBody of itemBodyArray) {
+                const { stockQuantity, ...item } = itemBody
+                items.push(item as Item)
+
+                let stock: Stock = {
+                    id: 0,
+                    itemCode: item.itemCode,
+                    availableQuantity: new Prisma.Decimal(stockQuantity),
+                    onHandQuantity: new Prisma.Decimal(stockQuantity),
+                    outletId: 0,
+                    deleted: false
+                }
+                stocks.push(stock)
+
+                let stockCheck: StockCheck = {
+                    id: 0,
+                    created: new Date,
+                    itemCode: item.itemCode,
+                    availableQuantity: new Prisma.Decimal(stockQuantity),
+                    onHandQuantity: new Prisma.Decimal(stockQuantity),
+                    documentId: 0,
+                    documentType: "Create Item",
+                    reason: "",
+                    remark: "",
+                    outletId: 0,
+                    deleted: false
+                }
+                stockChecks.push(stockCheck)
+            }
+
+            const createdItems = await tx.item.createMany({
+                data: items
+            })
+
+            const createdStocks = await tx.stock.createMany({
+                data: stocks
+            })
+
+            const createdStockChecks = await tx.stockCheck.createMany({
+                data: stockChecks
+            })
+
+            addedItemCount = createdItems.count
         })
 
-        return newItems.count
+        return addedItemCount
     }
     catch (error) {
         throw error
@@ -110,15 +158,33 @@ let update = async (item: Item) => {
 
 let remove = async (id: number) => {
     try {
-        const updatedItem = await prisma.item.update({
-            where: {
-                id: id
-            },
-            data: {
-                deleted: true
+        await prisma.$transaction(async (tx) => {
+            const updatedItem = await tx.item.update({
+                where: {
+                    id: id
+                },
+                data: {
+                    deleted: true
+                }
+            })
+
+            const itemStocks = await tx.stock.findMany({
+                where: {
+                    itemCode: updatedItem.itemCode
+                }
+            })
+
+            for (const stock of itemStocks) {
+                await tx.stock.update({
+                    where: {
+                        id: stock.id
+                    },
+                    data: {
+                        deleted: true
+                    }
+                })
             }
-        })
-        return updatedItem
+        })        
     }
     catch (error) {
         throw error

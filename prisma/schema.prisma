@@ -392,3 +392,30 @@ model EOD {
 
   @@map("EOD")
 }
+
+model Stock {
+  id Int @id @default(autoincrement()) @map("ID")
+  itemCode String @map("ITEM_CODE")
+  availableQuantity Decimal @map("AVAILABLE_QUANTITY")
+  onHandQuantity Decimal @map("ON_HAND_QUANTITY")
+  outletId Int @map("OUTLET_ID")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("STOCK")
+}
+
+model StockCheck {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  itemCode String @map("ITEM_CODE")
+  availableQuantity Decimal @map("AVAILABLE_QUANTITY")
+  onHandQuantity Decimal @map("ON_HAND_QUANTITY")
+  documentId Int @map("DOCUMENT_ID")
+  documentType String @map("DOCUMENT_TYPE")
+  reason String @map("REASON")
+  remark String @map("REMARK")
+  outletId Int @map("OUTLET_ID")
+  deleted Boolean @default(false) @map("IS_DELETED")
+
+  @@map("STOCK_CHECK")
+}

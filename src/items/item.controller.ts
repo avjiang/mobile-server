@@ -5,7 +5,7 @@ import { Item } from "@prisma/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
-import { CreateItemsRequestBody } from "./item.request"
+import { CreateItemBody, CreateItemsRequestBody, StockItem } from "./item.request"
 
 const router = express.Router()
 
@@ -70,7 +70,7 @@ let remove = (req: Request, res: Response, next: NextFunction) => {
 
     const itemId: number = parseInt(req.params.id)
     service.remove(itemId)
-        .then((item: Item) => sendResponse(res, "Successfully deleted"))
+        .then(() => sendResponse(res, "Successfully deleted"))
         .catch(next)
 }
 

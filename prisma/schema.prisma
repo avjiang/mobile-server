@@ -420,11 +420,11 @@ model StockCheck {
   @@map("STOCK_CHECK")
 }
 
-model Unknown {
-  id Int @id @default(autoincrement()) @map("ID")
-  created DateTime @default(now()) @map("CREATED_DATETIME")
-  stringExtend1 String @map("STRING_EXTEND_1")
-  deleted Boolean @default(false) @map("IS_DELETED")
+// model Unknown {
+//   id Int @id @default(autoincrement()) @map("ID")
+//   created DateTime @default(now()) @map("CREATED_DATETIME")
+//   stringExtend1 String @map("STRING_EXTEND_1")
+//   deleted Boolean @default(false) @map("IS_DELETED")
 
-  @@map("UNKNOWN")
-}
+//   @@map("UNKNOWN")
+// }

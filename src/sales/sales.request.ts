@@ -1,4 +1,4 @@
-import { Sales, SalesItem } from "@prisma/client"
+import { Payment, Sales, SalesItem } from "@prisma/client"
 import { CalculateSalesObject, CreateSalesRequestBody, DiscountBy, DiscountType } from "./sales.model"
 
 export interface SalesRequestBody {
@@ -11,4 +11,14 @@ export interface SalesCreationRequestBody {
 
 export interface CalculateSalesRequestBody {
     sales: CalculateSalesObject
+}
+
+export interface CompleteSalesRquestBody {
+    salesId: number,
+    payments: Payment[]
+}
+
+export interface CompleteNewSalesRquestBody {
+    sales: SalesCreationRequestBody,
+    payments: Payment[]
 }

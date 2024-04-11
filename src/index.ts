@@ -34,13 +34,13 @@ app.use(authorizeMiddleware)
 
 // all api routes that need authorize should place here
 // api routes
-app.use('/user', require('./users/user.controller'))
-app.use('/item', require('./items/item.controller'))
-app.use('/supplier', require('./suppliers/supplier.controller'))
-app.use('/customer', require('./customers/customer.controller'))
+app.use('/user', require('./user/user.controller'))
+app.use('/item', require('./item/item.controller'))
+app.use('/supplier', require('./supplier/supplier.controller'))
+app.use('/customer', require('./customer/customer.controller'))
 app.use('/sales', require('./sales/sales.controller'))
-app.use('/stock', require('./stocks/stock.controller'))
-app.use('/stockCheck', require('./stocks/stockcheck.controller'))
+app.use('/stock', require('./stock/stock.controller'))
+app.use('/stockCheck', require('./stock/stockcheck.controller'))
 
 //error middleware
 app.use(errorMiddleware)

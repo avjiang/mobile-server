@@ -191,6 +191,7 @@ model SalesItem {
   salesId Int @map("SALES_ID")
   itemId Int @map("ITEM_ID")
   itemName String @map("ITEM_NAME")
+  itemCode String @map("ITEM_CODE")
   quantity Decimal @map("QUANTITY")
   cost Decimal @map("COST")
   price Decimal @map("PRICE")

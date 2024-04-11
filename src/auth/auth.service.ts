@@ -3,7 +3,7 @@ import jwt, { MyJwtPayload } from "jsonwebtoken"
 import { PrismaClient, RefreshToken, User } from "@prisma/client"
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import userService from "../users/user.service"
+import userService from "../user/user.service"
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request"
 import { TokenResponseBody } from "./auth.response"
 import { BaseError, RequestValidateError } from "../api-helpers/error"

@@ -77,6 +77,7 @@ export interface CreateSalesItemRequestBody {
     created: Date
     salesId: number
     itemId: number
+    itemCode: string
     itemName: string
     quantity: number
     cost: number

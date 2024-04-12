@@ -19,6 +19,6 @@ export interface CompleteSalesRquestBody {
 }
 
 export interface CompleteNewSalesRquestBody {
-    sales: SalesCreationRequestBody,
+    sales: CreateSalesRequestBody,
     payments: Payment[]
 }

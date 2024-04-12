@@ -55,21 +55,14 @@ let completeNewSales = (req: NetworkRequest<CompleteNewSalesRquestBody>, res: Re
         throw new RequestValidateError('Create failed: data missing')
     }
 
-    const salesBody = requestBody.sales
-    if (!salesBody) {
+    const sales = requestBody.sales
+    if (!sales) {
         throw new RequestValidateError('Create failed: sales data missing')
     }
 
     const payments = requestBody.payments
-    if (payments.length > 0) {
-        for (const payment of payments) {
-            if (payment.salesId != salesBody.sales.id) {
-                throw new RequestValidateError('payment has different sales ID')
-            }
-        }
-    }
 
-    service.completeNewSales(salesBody, payments)
+    service.completeNewSales(sales, payments)
     .then((sales: SalesResponseBody) => sendResponse(res, sales))
     .catch(next)
 }

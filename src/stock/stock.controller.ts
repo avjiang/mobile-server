@@ -107,7 +107,7 @@ let removeStock = (req: Request, res: Response, next: NextFunction) => {
 
 //routes
 router.get("/", getAllStock)
-router.get('', getStockByItemCodeAndOutlet)
+router.get('/find', getStockByItemCodeAndOutlet)
 // router.post('/create', createManyStocks)
 router.put('/adjustment', stockAdjustment)
 router.put('/update', updateManyStocks)

@@ -2,7 +2,7 @@ import { Payment, Prisma, PrismaClient, Sales, SalesItem, Stock, StockCheck } fr
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { CalculateSalesResponseBody, SalesResponseBody } from "./sales.response"
 import { SalesRequestBody, CalculateSalesRequestBody, SalesCreationRequestBody, CompleteSalesRquestBody } from "./sales.request"
-import {  DiscountBy, DiscountType, CalculateSalesObject, CalculateSalesItemObject } from "./sales.model"
+import {  DiscountBy, DiscountType, CalculateSalesObject, CalculateSalesItemObject, CreateSalesRequestBody } from "./sales.model"
 import { Decimal } from "@prisma/client/runtime/library"
 import salesMapper from "./sales.mapper"
 
@@ -70,17 +70,11 @@ let create = async (salesBody: SalesCreationRequestBody) => {
         await prisma.$transaction(async (tx) => {
             
             //calculate profit amount
-            let salesRequest = performProfitCalculation(salesBody)
-
-            //calculate change amount
-            let salesAmount = salesRequest.sales.totalAmount
-            let paymentAmount = salesRequest.sales.paidAmount
-            var changeAmount = performPaymentCalculation(salesAmount, paymentAmount)
-            salesRequest.sales.changeAmount = changeAmount
+            let updatedSales = performProfitCalculation(salesBody.sales)
 
             //separate sales & salesitem to perform update to different tables
-            let sales: Sales = salesMapper.mapSalesDOToSalesPO(salesRequest.sales)
-            let items: SalesItem[] = salesMapper.mapSalesItemsDOToSalesItemsPO(salesRequest.sales.items)
+            let sales: Sales = salesMapper.mapSalesDOToSalesPO(updatedSales)
+            let items: SalesItem[] = salesMapper.mapSalesItemsDOToSalesItemsPO(updatedSales.items)
             const createdSales = await tx.sales.create({
                 data: omitSales(sales)
             })
@@ -104,17 +98,17 @@ let create = async (salesBody: SalesCreationRequestBody) => {
     }
 }
 
-let completeNewSales = async (salesBody: SalesCreationRequestBody, payments: Payment[]) => {
+let completeNewSales = async (salesBody: CreateSalesRequestBody, payments: Payment[]) => {
     try {
         var createdSalesId = 0
         await prisma.$transaction(async (tx) => {
             
             //calculate profit amount
-            let salesRequest = performProfitCalculation(salesBody)
+            let updatedSales = performProfitCalculation(salesBody)
 
             //separate sales & salesitem to perform update to different tables
-            let sales: Sales = salesMapper.mapSalesDOToSalesPO(salesRequest.sales)
-            let items: SalesItem[] = salesMapper.mapSalesItemsDOToSalesItemsPO(salesRequest.sales.items)
+            let sales: Sales = salesMapper.mapSalesDOToSalesPO(updatedSales)
+            let items: SalesItem[] = salesMapper.mapSalesItemsDOToSalesItemsPO(updatedSales.items)
             const createdSales = await tx.sales.create({
                 data: omitSales(sales)
             })
@@ -150,7 +144,10 @@ let completeNewSales = async (salesBody: SalesCreationRequestBody, payments: Pay
                 data: createdSales
             })
 
-            //insert payments
+            //update payment sales ID and insert payments
+            for (var payment of payments) {
+                payment.salesId = createdSales.id
+            }
             await tx.payment.createMany({
                 data: payments
             })
@@ -164,23 +161,28 @@ let completeNewSales = async (salesBody: SalesCreationRequestBody, payments: Pay
 
             let stocks: Stock[] = []
             let stockChecks: StockCheck[] = []
-
             for (const salesItem of salesItems) {
-                let stock = await tx.stock.findFirst({
-                    where: {
-                        itemCode: salesItem.itemCode,
-                        outletId: createdSales.outletId
+                var stockIndex = stocks.findIndex(stock => stock.itemCode === salesItem.itemCode)
+                if (stockIndex < 0) {
+                    //find stock record from db
+                    let stock = await tx.stock.findFirst({
+                        where: {
+                            itemCode: salesItem.itemCode,
+                            outletId: createdSales.outletId
+                        }
+                    })
+                    if (!stock) {
+                        throw new NotFoundError(`Stock for ${salesItem.itemCode}`)
                     }
-                })
-                if (!stock) {
-                    throw new NotFoundError(`Stock for ${salesItem.itemCode}`)
+                    stockIndex = stocks.push(stock) - 1
                 }
+                
 
                 let minusQuantity = parseFloat(salesItem.quantity.toString()) * -1
-                let updatedAvailableQuantity = parseFloat(stock.availableQuantity.toString()) + minusQuantity
-                let updatedOnHandQuantity = parseFloat(stock.onHandQuantity.toString()) + minusQuantity
-                stock.availableQuantity = new Prisma.Decimal(updatedAvailableQuantity)
-                stock.onHandQuantity = new Prisma.Decimal(updatedOnHandQuantity)
+                let updatedAvailableQuantity = parseFloat(stocks[stockIndex].availableQuantity.toString()) + minusQuantity
+                let updatedOnHandQuantity = parseFloat(stocks[stockIndex].onHandQuantity.toString()) + minusQuantity
+                stocks[stockIndex].availableQuantity = new Prisma.Decimal(updatedAvailableQuantity)
+                stocks[stockIndex].onHandQuantity = new Prisma.Decimal(updatedOnHandQuantity)
 
                 let stockCheck: StockCheck = {
                     id: 0,
@@ -195,8 +197,7 @@ let completeNewSales = async (salesBody: SalesCreationRequestBody, payments: Pay
                     outletId: createdSales.outletId,
                     deleted: false
                 }
-
-                stocks.push(stock)
+                
                 stockChecks.push(stockCheck)
             }
 
@@ -236,6 +237,10 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
                 throw new NotFoundError("Sales")
             }
 
+            if (sales.status == 'completed') {
+                throw new BusinessLogicError("Sales already completed")
+            }
+
             //throw error if payment amount is less than sales total amount
             let totalSalesAmount = parseFloat(sales.totalAmount.toString())
             let totalPaymentAmount = payments.reduce((sum, currentPayment) => sum + parseFloat(currentPayment.tenderedAmount.toString()), 0)
@@ -272,21 +277,26 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
             let stockChecks: StockCheck[] = []
 
             for (const salesItem of salesItems) {
-                let stock = await tx.stock.findFirst({
-                    where: {
-                        itemCode: salesItem.itemCode,
-                        outletId: sales.outletId
+                var stockIndex = stocks.findIndex(stock => stock.itemCode === salesItem.itemCode)
+                if (stockIndex < 0) {
+                    //find stock record from db
+                    let stock = await tx.stock.findFirst({
+                        where: {
+                            itemCode: salesItem.itemCode,
+                            outletId: sales.outletId
+                        }
+                    })
+                    if (!stock) {
+                        throw new NotFoundError(`Stock for ${salesItem.itemCode}`)
                     }
-                })
-                if (!stock) {
-                    throw new NotFoundError(`Stock for ${salesItem.itemCode}`)
+                    stockIndex = stocks.push(stock) - 1
                 }
 
                 let minusQuantity = parseFloat(salesItem.quantity.toString()) * -1
-                let updatedAvailableQuantity = parseFloat(stock.availableQuantity.toString()) + minusQuantity
-                let updatedOnHandQuantity = parseFloat(stock.onHandQuantity.toString()) + minusQuantity
-                stock.availableQuantity = new Prisma.Decimal(updatedAvailableQuantity)
-                stock.onHandQuantity = new Prisma.Decimal(updatedOnHandQuantity)
+                let updatedAvailableQuantity = parseFloat(stocks[stockIndex].availableQuantity.toString()) + minusQuantity
+                let updatedOnHandQuantity = parseFloat(stocks[stockIndex].onHandQuantity.toString()) + minusQuantity
+                stocks[stockIndex].availableQuantity = new Prisma.Decimal(updatedAvailableQuantity)
+                stocks[stockIndex].onHandQuantity = new Prisma.Decimal(updatedOnHandQuantity)
 
                 let stockCheck: StockCheck = {
                     id: 0,
@@ -302,7 +312,6 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
                     deleted: false
                 }
 
-                stocks.push(stock)
                 stockChecks.push(stockCheck)
             }
 
@@ -341,9 +350,9 @@ let calculateSales = async (salesRequestBody: CalculateSalesRequestBody) => {
     }
 }
 
-let performProfitCalculation = (salesRequest: SalesCreationRequestBody) => {
+let performProfitCalculation = (sales: CreateSalesRequestBody) => {
     try {
-        let items = salesRequest.sales.items
+        let items = sales.items
         var totalProfitAmount = 0.00
 
         items.forEach(function (item) {
@@ -356,8 +365,8 @@ let performProfitCalculation = (salesRequest: SalesCreationRequestBody) => {
             totalProfitAmount = totalProfitAmount + subTotalProfit
         })
 
-        salesRequest.sales.profitAmount = totalProfitAmount
-        return salesRequest
+        sales.profitAmount = totalProfitAmount
+        return sales
     }
     catch (error) {
         throw error

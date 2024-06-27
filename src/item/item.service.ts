@@ -7,7 +7,25 @@ const prisma = new PrismaClient()
 let getAll = async () => {
     try {
         const items = await prisma.item.findMany()
-        return items
+        var stockItemList: StockItem[] = []
+        for(let item of items) {
+            const stock = await prisma.stock.findFirst({
+                where: {
+                    itemCode: item.itemCode,
+                    outletId: 0
+                }
+            })
+
+            var stockQuantity = stock == null ? 0 : parseFloat(stock.availableQuantity.toString())
+
+            let stockItem: StockItem = {
+                ...item,
+                stockQuantity: stockQuantity
+            }
+            stockItemList.push(stockItem)
+        }
+
+        return stockItemList
     }
     catch (error) {
         throw error
@@ -24,7 +42,23 @@ let getById = async (id: number) => {
         if (!item) {
             throw new NotFoundError("Item") 
         }
-        return item
+
+        const stock = await prisma.stock.findFirst({
+            where: {
+                itemCode: item.itemCode,
+                outletId: 0
+            }
+        })
+        if (!stock) {
+            throw new NotFoundError("Stock") 
+        }
+        
+        let stockItem: StockItem = {
+            ...item,
+            stockQuantity: parseFloat(stock.availableQuantity.toString())
+        }
+
+        return stockItem
     }
     catch (error) {
         throw error

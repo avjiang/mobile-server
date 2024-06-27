@@ -11,7 +11,7 @@ const router = express.Router()
 
 let getAll = (req: Request, res: Response, next: NextFunction) => {
     service.getAll()
-        .then((items: Item[]) => sendResponse(res, items))
+        .then((items: StockItem[]) => sendResponse(res, items))
         .catch(next)
 }
 
@@ -21,7 +21,7 @@ let getById = (req: Request, res: Response, next: NextFunction) => {
     }
     const itemId: number = parseInt(req.params.id)
     service.getById(itemId)
-        .then((item: Item) => sendResponse(res, item))
+        .then((item: StockItem) => sendResponse(res, item))
         .catch(next)
 }
 

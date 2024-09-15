@@ -519,6 +519,70 @@ let remove = async (id: number) => {
     }
 }
 
+let getTotalSales = async (startDate: string, endDate: string) => {
+    try {
+        const salesArray = await prisma.sales.findMany({
+            where: {
+                AND: [
+                    {
+                        created: {
+                            gte: new Date(startDate)
+                        },
+                    },
+                    {
+                        created: {
+                            lte: new Date(endDate)
+                        }
+                    },
+                    {
+                        status: "completed",
+                        deleted: false
+                    }
+                ]
+            }
+        })
+
+        return salesArray
+    }
+    catch (error) {
+        throw error
+    }
+}
+
+let getTotalProfit = async (startDate: string, endDate: string) => {
+    try {
+        const salesArray = await getTotalSales(startDate, endDate)
+        const totalProfit = salesArray.reduce((accumulator, currentSales) => {
+            return accumulator + parseFloat(currentSales.profitAmount.toString())
+        }, 0)
+
+        return {
+            salesCount: salesArray.length,
+            totalAmount: totalProfit
+        }
+    }
+    catch (error) {
+        throw error
+    }
+}
+
+let getTotalRevenue = async (startDate: string, endDate: string) => {
+    try {
+        const salesArray = await getTotalSales(startDate, endDate)
+        const totalRevenue = salesArray.reduce((accumulator, currentSales) => {
+            return accumulator + parseFloat(currentSales.totalAmount.toString())
+        }, 0)
+
+        return {
+            salesCount: salesArray.length,
+            totalAmount: totalRevenue
+        }
+    }
+    catch (error) {
+        throw error
+    }
+}
+
 let omitSales = (sales: Sales) : Sales => {
     let { id, created, deleted, ...omittedSales } = sales
     return omittedSales as Sales
@@ -532,4 +596,4 @@ let omitSalesItems = (salesItems: SalesItem[]) : SalesItem[] => {
     return omittedSalesItemArray as SalesItem[]
 }
 
-export = { getAll, getById, calculateSales, create, completeSales, completeNewSales, update, remove }
+export = { getAll, getById, calculateSales, create, completeSales, completeNewSales, update, remove, getTotalProfit, getTotalRevenue }

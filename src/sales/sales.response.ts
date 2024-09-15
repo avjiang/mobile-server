@@ -8,3 +8,8 @@ export interface SalesResponseBody {
 export interface CalculateSalesResponseBody {
     sales: CalculateSalesObject
 }
+
+export interface SalesAnalyticResponseBody {
+    salesCount: number,
+    totalAmount: number
+}

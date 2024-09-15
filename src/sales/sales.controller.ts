@@ -4,8 +4,9 @@ import service from "./sales.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
-import { CalculateSalesResponseBody, SalesResponseBody } from "./sales.response"
+import { CalculateSalesResponseBody, SalesAnalyticResponseBody, SalesResponseBody } from "./sales.response"
 import { CalculateSalesRequestBody, CompleteNewSalesRquestBody, CompleteSalesRquestBody, SalesCreationRequestBody, SalesRequestBody } from "./sales.request"
+import { format } from "path"
 
 const router = express.Router()
 
@@ -142,8 +143,46 @@ let remove = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+let getTotalProfit = (req: Request, res: Response, next: NextFunction) => {
+    const { startDate, endDate } = req.query
+    if (!startDate || !endDate) {
+        return new RequestValidateError('startDate and endDate are required' )
+      }
+
+    if (!validator.isISO8601(startDate as string)) {
+        throw new RequestValidateError('startDate is not a valid date')
+    }
+
+    if (!validator.isISO8601(endDate as string)) {
+        throw new RequestValidateError('endDate is not a valid date')
+    }
+    service.getTotalProfit(startDate as string, endDate as string)
+        .then((salesData: SalesAnalyticResponseBody) => sendResponse(res, salesData))
+        .catch(next)
+}
+
+let getTotalRevenue = (req: Request, res: Response, next: NextFunction) => {
+    const { startDate, endDate } = req.query
+    if (!startDate || !endDate) {
+        return new RequestValidateError('startDate and endDate are required' )
+      }
+
+    if (!validator.isISO8601(startDate as string)) {
+        throw new RequestValidateError('startDate is not a valid date')
+    }
+
+    if (!validator.isISO8601(endDate as string)) {
+        throw new RequestValidateError('endDate is not a valid date')
+    }
+    service.getTotalRevenue(startDate as string, endDate as string)
+        .then((salesData: SalesAnalyticResponseBody) => sendResponse(res, salesData))
+        .catch(next)
+}
+
 //routes
 router.get("/", getAll)
+router.get('/getTotalProfit', getTotalProfit)
+router.get('/getTotalRevenue', getTotalRevenue)
 router.get('/:id', getById)
 router.post('/create', create)
 router.post('/calculate', calculateSales)

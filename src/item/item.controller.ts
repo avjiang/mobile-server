@@ -5,7 +5,11 @@ import { Item } from "@prisma/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
-import { CreateItemBody, CreateItemsRequestBody, StockItem } from "./item.request"
+import { CreateItemBody, CreateItemsRequestBody } from "./item.request"
+import { StockItem } from "./item.model"
+import { ItemSoldRankingResponseBody } from "./item.response"
+import { parseBoolean } from "../helpers/booleanHelper"
+import { validateDates } from "../helpers/dateHelper"
 
 const router = express.Router()
 
@@ -74,8 +78,66 @@ let remove = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+let getSoldItemRanking = (req: Request, res: Response, next: NextFunction) => {
+    const { startDate, endDate } = req.query
+    if (!startDate || !endDate) {
+        return new RequestValidateError('startDate and endDate are required' )
+    }
+
+    validateDates(startDate as string, endDate as string)
+    
+    service.getSoldItemRanking(startDate as string, endDate as string)
+        .then((itemSoldObjects: ItemSoldRankingResponseBody) => sendResponse(res, itemSoldObjects))
+        .catch(next)
+}
+
+let getLowStockItemCount = (req: Request, res: Response, next: NextFunction) => {
+    const { lowStockQuantity, isIncludedZeroStock } = req.query
+
+    if (!lowStockQuantity || !isIncludedZeroStock) {
+        return new RequestValidateError('startDate and endDate are required' )
+    }
+    if (!validator.isNumeric(lowStockQuantity as string)) {
+        throw new RequestValidateError('lowStockQuantity is not a number')
+    }
+
+    if (!validator.isBoolean(isIncludedZeroStock as string)) {
+        throw new RequestValidateError('isIncludedZeroStock is not a valid boolean')
+    }
+
+    const lowStockQuantityParam = Number(lowStockQuantity)
+    const isIncludedZeroStockParam = parseBoolean(isIncludedZeroStock as string)
+    service.getLowStockItemCount(lowStockQuantityParam, isIncludedZeroStockParam)
+        .then((lowStockItemCount: number) => sendResponse(res, lowStockItemCount))
+        .catch(next)
+}
+
+let getLowStockItems = (req: Request, res: Response, next: NextFunction) => {
+    const { lowStockQuantity, isIncludedZeroStock } = req.query
+
+    if (!lowStockQuantity || !isIncludedZeroStock) {
+        return new RequestValidateError('startDate and endDate are required' )
+    }
+    if (!validator.isNumeric(lowStockQuantity as string)) {
+        throw new RequestValidateError('lowStockQuantity is not a number')
+    }
+
+    if (!validator.isBoolean(isIncludedZeroStock as string)) {
+        throw new RequestValidateError('isIncludedZeroStock is not a valid boolean')
+    }
+
+    const lowStockQuantityParam = Number(lowStockQuantity)
+    const isIncludedZeroStockParam = parseBoolean(isIncludedZeroStock as string)
+    service.getLowStockItems(lowStockQuantityParam, isIncludedZeroStockParam)
+        .then((lowStockItems: StockItem[]) => sendResponse(res, lowStockItems))
+        .catch(next)
+}
+
 //routes
 router.get("/", getAll)
+router.get("/getLowStockItemCount", getLowStockItemCount)
+router.get("/getLowStockItems", getLowStockItems)
+router.get("/getItemSoldRanking", getSoldItemRanking)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)

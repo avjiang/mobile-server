@@ -549,16 +549,19 @@ let getTotalSales = async (startDate: string, endDate: string) => {
     }
 }
 
-let getTotalProfit = async (startDate: string, endDate: string) => {
+let getTotalSalesData = async (startDate: string, endDate: string) => {
     try {
         const salesArray = await getTotalSales(startDate, endDate)
-        const totalProfit = salesArray.reduce((accumulator, currentSales) => {
-            return accumulator + parseFloat(currentSales.profitAmount.toString())
-        }, 0)
+        const { totalProfit, totalRevenue } = salesArray.reduce((accumulator, currentSales) => {
+            accumulator.totalProfit += parseFloat(currentSales.profitAmount.toString());
+            accumulator.totalRevenue += parseFloat(currentSales.totalAmount.toString());
+            return accumulator
+        }, { totalProfit: 0, totalRevenue: 0 })
 
         return {
             salesCount: salesArray.length,
-            totalAmount: totalProfit
+            totalProfit: totalProfit,
+            totalRevenue: totalRevenue
         }
     }
     catch (error) {
@@ -566,22 +569,39 @@ let getTotalProfit = async (startDate: string, endDate: string) => {
     }
 }
 
-let getTotalRevenue = async (startDate: string, endDate: string) => {
-    try {
-        const salesArray = await getTotalSales(startDate, endDate)
-        const totalRevenue = salesArray.reduce((accumulator, currentSales) => {
-            return accumulator + parseFloat(currentSales.totalAmount.toString())
-        }, 0)
+// let getTotalProfit = async (startDate: string, endDate: string) => {
+//     try {
+//         const salesArray = await getTotalSales(startDate, endDate)
+//         const totalProfit = salesArray.reduce((accumulator, currentSales) => {
+//             return accumulator + parseFloat(currentSales.profitAmount.toString())
+//         }, 0)
 
-        return {
-            salesCount: salesArray.length,
-            totalAmount: totalRevenue
-        }
-    }
-    catch (error) {
-        throw error
-    }
-}
+//         return {
+//             salesCount: salesArray.length,
+//             totalAmount: totalProfit
+//         }
+//     }
+//     catch (error) {
+//         throw error
+//     }
+// }
+
+// let getTotalRevenue = async (startDate: string, endDate: string) => {
+//     try {
+//         const salesArray = await getTotalSales(startDate, endDate)
+//         const totalRevenue = salesArray.reduce((accumulator, currentSales) => {
+//             return accumulator + parseFloat(currentSales.totalAmount.toString())
+//         }, 0)
+
+//         return {
+//             salesCount: salesArray.length,
+//             totalAmount: totalRevenue
+//         }
+//     }
+//     catch (error) {
+//         throw error
+//     }
+// }
 
 let omitSales = (sales: Sales) : Sales => {
     let { id, created, deleted, ...omittedSales } = sales
@@ -596,4 +616,15 @@ let omitSalesItems = (salesItems: SalesItem[]) : SalesItem[] => {
     return omittedSalesItemArray as SalesItem[]
 }
 
-export = { getAll, getById, calculateSales, create, completeSales, completeNewSales, update, remove, getTotalProfit, getTotalRevenue }
+export = { 
+    getAll, 
+    getById, 
+    calculateSales, 
+    create, 
+    completeSales, 
+    completeNewSales, 
+    update, 
+    remove,
+    getTotalSales,  
+    getTotalSalesData
+ }

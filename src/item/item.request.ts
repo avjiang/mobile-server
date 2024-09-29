@@ -1,4 +1,5 @@
 import { Item } from "@prisma/client"
+import { StockItem } from "./item.model"
 
 export interface CreateItemsRequestBody {
     items: StockItem[]
@@ -6,8 +7,4 @@ export interface CreateItemsRequestBody {
 
 export interface CreateItemBody {
     item: Item & { stockQuantity: number }
-}
-
-export interface StockItem extends Item {
-    stockQuantity: number
 }

@@ -1,6 +1,8 @@
 import { PrismaClient, Item, Stock, StockCheck, Prisma } from "@prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
-import { CreateItemBody, StockItem } from "./item.request"
+import salesService from "../sales/sales.service"
+import { ItemSoldObject, StockItem } from "./item.model"
+import { ItemSoldRankingResponseBody } from "./item.response"
 
 const prisma = new PrismaClient()
 
@@ -125,37 +127,6 @@ let createMany = async (itemBodyArray: StockItem[]) => {
     }
 }
 
-// let createItem = async (item: Item) => {
-//     try {
-//         const newItem = await prisma.item.create({
-//             data: item
-//             // data: {
-//             //     itemCode: item.itemCode,
-//             //     itemName: item.itemName,
-//             //     itemType: item.itemType,
-//             //     itemModel: item.itemModel,
-//             //     itemBrand: item.itemBrand,
-//             //     itemDescription: item.itemDescription,
-//             //     category: item.category,
-//             //     cost: item.cost,
-//             //     price: item.price,
-//             //     isOpenPrice: item.isOpenPrice,
-//             //     unitOfMeasure: item.unitOfMeasure,
-//             //     height: item.height,
-//             //     width: item.width,
-//             //     length: item.length,
-//             //     weight: item.weight,
-//             //     alternateLookUp: item.alternateLookUp,
-//             //     image: item.image
-//             // }
-//         })
-//         return newItem
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
-
 let update = async (item: Item) => {
     try {
         const updatedItem = await prisma.item.update({
@@ -163,25 +134,6 @@ let update = async (item: Item) => {
                 id: item.id
             },
             data: item
-            // data: {
-            //     itemCode: item.itemCode,
-            //     itemName: item.itemName,
-            //     itemType: item.itemType,
-            //     itemModel: item.itemModel,
-            //     itemBrand: item.itemBrand,
-            //     itemDescription: item.itemDescription,
-            //     category: item.category,
-            //     cost: item.cost,
-            //     price: item.price,
-            //     isOpenPrice: item.isOpenPrice,
-            //     unitOfMeasure: item.unitOfMeasure,
-            //     height: item.height,
-            //     width: item.width,
-            //     length: item.length,
-            //     weight: item.weight,
-            //     alternateLookUp: item.alternateLookUp,
-            //     image: item.image,
-            // }
         })
         return updatedItem
     }
@@ -225,4 +177,151 @@ let remove = async (id: number) => {
     }
 }
 
-export = { getAll, getById, createMany, update, remove }
+let getLowStockItemCount = async (lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+    try {
+        const lowStocks = await prisma.stock.findMany({
+            where: {
+                availableQuantity: {
+                    lte: lowStockQuantity,
+                    gte: isIncludedZeroStock ? 0 : 1
+                }
+            }
+        })
+
+        const lowStockItemCodes = lowStocks.map(stock => stock.itemCode)
+        const uniqueStockItemCodes = [...new Set(lowStockItemCodes)]
+        const lowStockItemsCount = await prisma.item.count({
+            where: {
+                itemCode: {
+                    in: uniqueStockItemCodes
+                }
+            }
+        })
+
+        return lowStockItemsCount
+    }
+    catch (error) {
+        throw error
+    }
+}
+
+let getLowStockItems = async (lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+    try {
+        const lowStocks = await prisma.stock.findMany({
+            where: {
+                availableQuantity: {
+                    lte: lowStockQuantity,
+                    gte: isIncludedZeroStock ? 0 : 1
+                }
+            }
+        })
+
+        var stockItemList: StockItem[] = []
+        for(const stock of lowStocks) {
+            const item = await prisma.item.findFirst({
+                where: {
+                    itemCode: stock.itemCode
+                }
+            })
+            if (item) {
+                var stockQuantity = parseFloat(stock.availableQuantity.toString())
+
+                let stockItem: StockItem = {
+                    ...item,
+                    stockQuantity: stockQuantity
+                }
+                stockItemList.push(stockItem)
+            }
+        }
+
+        return stockItemList
+    }
+    catch (error) {
+        throw error
+    }
+}
+
+let getSoldItemRanking = async (startDate: string, endDate: string) => {
+    try {
+        const salesIDArray = (await salesService.getTotalSales(startDate, endDate)).map(sales => sales.id)
+
+        const top5SoldSalesItems = await prisma.salesItem.groupBy({
+            by: ['itemId'],
+            _count: {
+              itemId: true,
+            },
+            where: {
+              salesId: {
+                in: salesIDArray,
+              },
+            },
+            orderBy: {
+              _count: {
+                itemId: 'desc',
+              },
+            },
+            take: 5,
+          })
+
+        const leastSoldSalesItems = await prisma.salesItem.groupBy({
+            by: ['itemId'],
+            _count: {
+              itemId: true,
+            },
+            where: {
+              salesId: {
+                in: salesIDArray,
+              },
+            },
+            orderBy: {
+              _count: {
+                itemId: 'asc',
+              },
+            },
+            take: 1,
+          })
+
+        const topSoldItems = await Promise.all(
+            top5SoldSalesItems.map(async (item) => {
+                const stockItem = await getById(item.itemId)
+                const soldItem: ItemSoldObject = {
+                    item: stockItem,
+                    quantitySold: item._count.itemId
+                }
+
+                return soldItem
+            })
+        )
+
+        if (top5SoldSalesItems.length <= 0 || leastSoldSalesItems.length <= 0) {
+            throw new NotFoundError('Item')
+        }
+
+        const leastSoldSalesItem = leastSoldSalesItems[0]
+        const stockItem = await getById(leastSoldSalesItem.itemId)
+        const leastSoldItem: ItemSoldObject = {
+            item: stockItem,
+            quantitySold: leastSoldSalesItem._count.itemId
+        }   
+
+        const itemSoldRankingItems: ItemSoldRankingResponseBody = {
+            topSoldItems: topSoldItems,
+            leastSoldItem: leastSoldItem
+        }
+        return itemSoldRankingItems
+    }
+    catch (error) {
+        throw error
+    }
+}
+
+export = { 
+    getAll,
+    getById, 
+    createMany, 
+    update, 
+    remove, 
+    getSoldItemRanking, 
+    getLowStockItemCount, 
+    getLowStockItems
+}

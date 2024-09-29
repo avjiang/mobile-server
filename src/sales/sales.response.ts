@@ -11,5 +11,6 @@ export interface CalculateSalesResponseBody {
 
 export interface SalesAnalyticResponseBody {
     salesCount: number,
-    totalAmount: number
+    totalProfit: number,
+    totalRevenue: number
 }

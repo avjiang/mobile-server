@@ -142,6 +142,8 @@ model Item {
   alternateLookUp String? @map("ALTERNATE_LOOKUP")
   image String? @map("IMAGE")
   deleted Boolean @default(false) @map("IS_DELETED")
+  stocks Stock[]
+  stockChecks StockCheck[]
 
   @@map("ITEM")
 }
@@ -181,6 +183,9 @@ model Sales {
   salesQuotationId Int? @map("SALES_QUOTATION_ID")
   performedBy Int @map("PERFORMED_BY")
   deleted Boolean @default(false) @map("IS_DELETED")
+  salesItems SalesItem[]
+  payments Payment[]
+  registerLogs RegisterLog[]
 
   @@map("SALES")
 }
@@ -203,7 +208,8 @@ model SalesItem {
   subtotalAmount Decimal @map("SUBTOTAL_AMOUNT")
   remark String? @map("REMARK")
   deleted Boolean @default(false) @map("IS_DELETED")
-  
+  sales Sales @relation(fields: [salesId], references: [id])
+
   @@map("SALES_ITEM")
 }
 
@@ -228,6 +234,7 @@ model SalesQuotation {
   remark String? @map("REMARK")
   performedBy Int @map("PERFORMED_BY")
   deleted Boolean @default(false) @map("IS_DELETED")
+  salesQuotationItems SalesQuotationItem[]
 
   @@map("SALES_QUOTATION")
 }
@@ -239,6 +246,7 @@ model SalesQuotationItem {
   quantity Decimal @map("QUANTITY")
   remark String? @map("REMARK")
   deleted Boolean @default(false) @map("IS_DELETED")
+  salesQuotation SalesQuotation @relation(fields: [salesQuotationId], references: [id])
 
   @@map("SALES_QUOTATION_ITEM")
 }
@@ -257,6 +265,7 @@ model DeliveryOrder {
   remark String? @map("REMARK")
   performedBy Int @map("PERFORMED_BY")
   deleted Boolean @default(false) @map("IS_DELETED")
+  deliveryOrderItems DeliveryOrderItem[]
   
   @@map("DELIVERY_ORDER")
 }
@@ -268,6 +277,7 @@ model DeliveryOrderItem {
   quantity Decimal @map("QUANTITY")
   remark String? @map("REMARK")
   deleted Boolean @default(false) @map("IS_DELETED")
+  deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
 
   @@map("DELIVERY_ORDER_ITEM")
 }
@@ -293,6 +303,7 @@ model PurchaseOrder {
   remark String? @map("REMARK")
   performedBy Int @map("PERFORMED_BY")
   deleted Boolean @default(false) @map("IS_DELETED")
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@map("PURCHASE_ORDER")
 }
@@ -304,6 +315,7 @@ model PurchaseOrderItem {
   quantity Decimal @map("QUANTITY")
   remark String? @map("REMARK")
   deleted Boolean @default(false) @map("IS_DELETED")
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
 
   @@map("PURCHASE_ORDER_ITEM") 
 }
@@ -325,6 +337,8 @@ model Payment {
   eodId Int @map("EOD_ID")
   performedBy Int @map("PERFORMED_BY")
   deleted Boolean @default(false) @map("IS_DELETED")
+  cardInfos CardInfo[]
+  sales Sales @relation(fields: [salesId], references: [id])
 
   @@map("PAYMENT")
 }
@@ -343,6 +357,7 @@ model RegisterLog {
   eodId Int @map("EOD_ID")
   performedBy Int @map("PERFORMED_BY")
   deleted Boolean @default(false) @map("IS_DELETED")
+  sales Sales @relation(fields: [salesId], references: [id])
 
   @@map("REGISTER_LOG")
 }
@@ -359,40 +374,54 @@ model CardInfo {
   appCode String? @map("APP_CODE")
   cardType String? @map("CARD_TYPE")
   deleted Boolean @default(false) @map("IS_DELETED")
+  payment Payment @relation(fields: [paymentId], references: [id])
 
   @@map("CARD_INFO")
 }
 
-model Declaration {
+model Session {
   id Int @id @default(autoincrement()) @map("ID")
-  deviceId Int @map("DEVICE_ID")
   outletId Int @map("OUTLET_ID")
-  eodId Int @map("EOD_ID")
+  businessDate DateTime  @map("BUSINESS_DATE")
   openingDateTime DateTime? @map("OPENING_DATE_TIME")
   closingDateTime DateTime? @map("CLOSING_DATE_TIME")
-  businessDate DateTime  @map("BUSINESS_DATE")
-  verifiedBy Int? @map("VERIFIED_BY")
-  openedBy Int?  @map("OPENED_BY")
-  closedBy Int?  @map("CLOSED_BY")
-  deleted Boolean @default(false) @map("IS_DELETED")
+  openingAmount Decimal @map("OPENING_AMOUNT")
+  totalSalesCount Int @map("TOTAL_SALES_COUNT")
+  openByUserID Int @map("OPEN_BY_USER_ID")
+  closeByUserID Int @map("CLOSE_BY_USER_ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  declarations Declaration[]
+
+  @@map("SESSION")
+}
+
+model Declaration {
+  id Int @id @default(autoincrement()) @map("ID")
+  paymentType String @map("PAYMENT_TYPE")
+  totalPaymentAmount Decimal @map("TOTAL_PAYMENT_AMOUNT")
+  declarationAmount Decimal @map("DECLARATION_AMOUNT")
+  differenceAmount Decimal @map("DIFFERENCE_AMOUNT")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  sessionID Int @map("SESSION_ID")
+  session Session @relation(fields: [sessionID], references: [id])
 
   @@map("DECLARATION")
 }
 
-model EOD {
-  id Int @id @default(autoincrement()) @map("ID")
-  deviceId Int @map("DEVICE_ID")
-  outletId Int @map("OUTLET_ID")
-  openingDateTime DateTime? @map("OPENING_DATE_TIME")
-  closingDateTime DateTime? @map("CLOSING_DATE_TIME")
-  businessDate DateTime @map("BUSINESS_DATE")
-  verifiedBy Int? @map("VERIFIED_BY")
-  openedBy Int? @map("OPENED_BY")
-  closedBy Int? @map("CLOSED_BY")
-  deleted Boolean @default(false) @map("IS_DELETED")
+// model EOD {
+//   id Int @id @default(autoincrement()) @map("ID")
+//   deviceId Int @map("DEVICE_ID")
+//   outletId Int @map("OUTLET_ID")
+//   openingDateTime DateTime? @map("OPENING_DATE_TIME")
+//   closingDateTime DateTime? @map("CLOSING_DATE_TIME")
+//   businessDate DateTime @map("BUSINESS_DATE")
+//   verifiedBy Int? @map("VERIFIED_BY")
+//   openedBy Int? @map("OPENED_BY")
+//   closedBy Int? @map("CLOSED_BY")
+//   deleted Boolean @default(false) @map("IS_DELETED")
 
-  @@map("EOD")
-}
+//   @@map("EOD")
+// }
 
 model Stock {
   id Int @id @default(autoincrement()) @map("ID")
@@ -401,6 +430,7 @@ model Stock {
   onHandQuantity Decimal @map("ON_HAND_QUANTITY")
   outletId Int @map("OUTLET_ID")
   deleted Boolean @default(false) @map("IS_DELETED")
+  item Item @relation(fields: [itemCode], references: [itemCode])
 
   @@map("STOCK")
 }
@@ -417,6 +447,7 @@ model StockCheck {
   remark String @map("REMARK")
   outletId Int @map("OUTLET_ID")
   deleted Boolean @default(false) @map("IS_DELETED")
+  item Item @relation(fields: [itemCode], references: [itemCode])
 
   @@map("STOCK_CHECK")
 }
@@ -429,3 +460,90 @@ model StockCheck {
 
 //   @@map("UNKNOWN")
 // }
+
+model MenuProfileOutlet {
+  id Int @id @default(autoincrement()) @map("ID")
+  name String @map("NAME")
+  outletId Int @map("OUTLET_ID")
+  menuProfileID Int @map("MENU_PROFILE_ID")
+
+  @@map("MENU_PROFILE_OUTLET")
+}
+
+model MenuProfile {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  dateStart String @map("DATE_START")
+  dateEnd String @map("DATE_END")
+  timeStart String @map("TIME_START")
+  timeEnd String @map("TIME_END")
+  isMonday Boolean @map("IS_MONDAY")
+  isTuesday Boolean @map("IS_TUESDAY")
+  isWednesday Boolean @map("IS_WEDNESDAY")
+  isThursday Boolean @map("IS_THURSDAY")
+  isFriday Boolean @map("IS_FRIDAY")
+  isSaturday Boolean @map("IS_SATURDAY")
+  isSunday Boolean @map("IS_SUNDAY")
+  sequence Int @map("SEQUENCE")
+  deleted Boolean @default(false) @map("IS_DELETED")
+  menuCategories MenuCategory[]
+
+  @@map("MENU_PROFILE")
+}
+
+model MenuCategory {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  name String @map("NAME")
+  menuProfileID Int @map("MENU_PROFILE_ID")
+  imageURL String? @db.Text @map("IMAGE_URL")
+  deleted Boolean @default(false) @map("IS_DELETED")
+  menuProfile MenuProfile @relation(fields: [menuProfileID], references: [id])
+  menuItems MenuItem[]
+
+  @@map("MENU_CATEGORY")
+}
+
+model MenuItem {
+  id Int @id @default(autoincrement()) @map("ID")
+  created DateTime @default(now()) @map("CREATED_DATETIME")
+  name String @map("NAME")
+  itemID Int @map("ITEM_ID")
+  itemCode String @map("ITEM_CODE")
+  imageURL String? @db.Text @map("IMAGE_URL")
+  price Decimal @map("PRICE")
+  sequence Int @map("SEQUENCE")
+  menuCategoryID Int @map("MENU_CATEGORY_ID")
+  menuCategory MenuCategory @relation(fields: [menuCategoryID], references: [id])
+  menuItemModifierGroups MenuItemModifierGroup[]
+
+  @@map("MENU_ITEM")
+}
+
+model MenuItemModifierGroup {
+  id Int @id @default(autoincrement()) @map("ID")
+  name String @map("NAME")
+  minSelection Int @map("MIN_SELECTION")
+  maxSelection Int @map("MAX_SELECTION")
+  sequence Int @map("SEQUENCE")
+  menuItemID Int @map("MENU_ITEM_ID")
+  menuItem MenuItem @relation(fields: [menuItemID], references: [id])
+  menuItemModifiers MenuItemModifier[]
+
+  @@map("MENU_ITEM_MODIFIER_GROUP")
+}
+
+model MenuItemModifier {
+  id Int @id @default(autoincrement()) @map("ID")
+  name String @map("NAME")
+  itemID Int @map("ITEM_ID")
+  itemCode String @map("ITEM_CODE")
+  imageURL String? @db.Text @map("IMAGE_URL")
+  price Decimal @map("PRICE")
+  defaultSelectionQty Int @map("DEFAULT_SELECTION_QTY")
+  sequence Int @map("SEQUENCE")
+  menuItemModifierGroupID Int @map("MENU_ITEM_MODIFIER_GROUP_ID")
+  menuItemModifierGroup MenuItemModifierGroup @relation(fields: [menuItemModifierGroupID], references: [id])
+
+  @@map("MENU_ITEM_MODIFIER")
+}

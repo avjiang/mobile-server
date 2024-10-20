@@ -41,6 +41,7 @@ app.use('/customer', require('./customer/customer.controller'))
 app.use('/sales', require('./sales/sales.controller'))
 app.use('/stock', require('./stock/stock.controller'))
 app.use('/stockCheck', require('./stock/stockcheck.controller'))
+app.use('/session', require('./session/session.controller'))
 
 //error middleware
 app.use(errorMiddleware)

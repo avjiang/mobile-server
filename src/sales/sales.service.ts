@@ -2,7 +2,7 @@ import { Payment, Prisma, PrismaClient, Sales, SalesItem, Stock, StockCheck } fr
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { CalculateSalesResponseBody, SalesResponseBody } from "./sales.response"
 import { SalesRequestBody, CalculateSalesRequestBody, SalesCreationRequestBody, CompleteSalesRquestBody } from "./sales.request"
-import {  DiscountBy, DiscountType, CalculateSalesObject, CalculateSalesItemObject, CreateSalesRequestBody } from "./sales.model"
+import { DiscountBy, DiscountType, CalculateSalesObject, CalculateSalesItemObject, CreateSalesRequestBody } from "./sales.model"
 import { Decimal } from "@prisma/client/runtime/library"
 import salesMapper from "./sales.mapper"
 
@@ -10,23 +10,31 @@ const prisma = new PrismaClient()
 
 let getAll = async () => {
     try {
-        const salesArray = await prisma.sales.findMany()
-        let salesResponseArray= Promise.all(salesArray.map(async sales => {
-            let salesItemArray: SalesItem[] = await prisma.salesItem.findMany({
-                where: {
-                    salesId: sales.id
-                }
-            })
-            let salesResponse: SalesResponseBody = {
-                sales: {
-                    ...sales,
-                    items: salesItemArray
-                }
+        const salesArray = await prisma.sales.findMany({
+            include: {
+                salesItems: true,
+                payments: true,
+                registerLogs: true
             }
-            return salesResponse
-        }))
+        })
+        return salesArray
+        // const salesArray = await prisma.sales.findMany()
+        // let salesResponseArray = Promise.all(salesArray.map(async sales => {
+        //     let salesItemArray: SalesItem[] = await prisma.salesItem.findMany({
+        //         where: {
+        //             salesId: sales.id
+        //         }
+        //     })
+        //     let salesResponse: SalesResponseBody = {
+        //         sales: {
+        //             ...sales,
+        //             items: salesItemArray
+        //         }
+        //     }
+        //     return salesResponse
+        // }))
 
-        return salesResponseArray
+        // return salesResponseArray
     }
     catch (error) {
         throw error
@@ -38,26 +46,42 @@ let getById = async (id: number) => {
         const sales = await prisma.sales.findUnique({
             where: {
                 id: id
+            },
+            include: {
+                salesItems: true,
+                payments: true,
+                registerLogs: true
             }
         })
         if (!sales) {
             throw new NotFoundError("Sales")
         }
 
-        const salesItemArray = await prisma.salesItem.findMany({
-            where: {
-                salesId: sales.id
-            }
-        })
+        return sales
 
-        let salesResponse: SalesResponseBody = {
-            sales: {
-                ...sales,
-                items: salesItemArray
-            }
-        }
+        // const sales = await prisma.sales.findUnique({
+        //     where: {
+        //         id: id
+        //     }
+        // })
+        // if (!sales) {
+        //     throw new NotFoundError("Sales")
+        // }
 
-        return salesResponse
+        // const salesItemArray = await prisma.salesItem.findMany({
+        //     where: {
+        //         salesId: sales.id
+        //     }
+        // })
+
+        // let salesResponse: SalesResponseBody = {
+        //     sales: {
+        //         ...sales,
+        //         items: salesItemArray
+        //     }
+        // }
+
+        // return salesResponse
     }
     catch (error) {
         throw error
@@ -68,7 +92,7 @@ let create = async (salesBody: SalesCreationRequestBody) => {
     try {
         var createdSalesId = 0
         await prisma.$transaction(async (tx) => {
-            
+
             //calculate profit amount
             let updatedSales = performProfitCalculation(salesBody.sales)
 
@@ -102,7 +126,7 @@ let completeNewSales = async (salesBody: CreateSalesRequestBody, payments: Payme
     try {
         var createdSalesId = 0
         await prisma.$transaction(async (tx) => {
-            
+
             //calculate profit amount
             let updatedSales = performProfitCalculation(salesBody)
 
@@ -176,7 +200,7 @@ let completeNewSales = async (salesBody: CreateSalesRequestBody, payments: Payme
                     }
                     stockIndex = stocks.push(stock) - 1
                 }
-                
+
 
                 let minusQuantity = parseFloat(salesItem.quantity.toString()) * -1
                 let updatedAvailableQuantity = parseFloat(stocks[stockIndex].availableQuantity.toString()) + minusQuantity
@@ -197,7 +221,7 @@ let completeNewSales = async (salesBody: CreateSalesRequestBody, payments: Payme
                     outletId: createdSales.outletId,
                     deleted: false
                 }
-                
+
                 stockChecks.push(stockCheck)
             }
 
@@ -232,7 +256,7 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
                     id: salesId
                 }
             })
-            
+
             if (!sales) {
                 throw new NotFoundError("Sales")
             }
@@ -343,7 +367,7 @@ let calculateSales = async (salesRequestBody: CalculateSalesRequestBody) => {
             sales: sales
         }
         return salesResponse
-        
+
     }
     catch (error) {
         throw error
@@ -569,46 +593,12 @@ let getTotalSalesData = async (startDate: string, endDate: string) => {
     }
 }
 
-// let getTotalProfit = async (startDate: string, endDate: string) => {
-//     try {
-//         const salesArray = await getTotalSales(startDate, endDate)
-//         const totalProfit = salesArray.reduce((accumulator, currentSales) => {
-//             return accumulator + parseFloat(currentSales.profitAmount.toString())
-//         }, 0)
-
-//         return {
-//             salesCount: salesArray.length,
-//             totalAmount: totalProfit
-//         }
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
-
-// let getTotalRevenue = async (startDate: string, endDate: string) => {
-//     try {
-//         const salesArray = await getTotalSales(startDate, endDate)
-//         const totalRevenue = salesArray.reduce((accumulator, currentSales) => {
-//             return accumulator + parseFloat(currentSales.totalAmount.toString())
-//         }, 0)
-
-//         return {
-//             salesCount: salesArray.length,
-//             totalAmount: totalRevenue
-//         }
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
-
-let omitSales = (sales: Sales) : Sales => {
+let omitSales = (sales: Sales): Sales => {
     let { id, created, deleted, ...omittedSales } = sales
     return omittedSales as Sales
 }
 
-let omitSalesItems = (salesItems: SalesItem[]) : SalesItem[] => {
+let omitSalesItems = (salesItems: SalesItem[]): SalesItem[] => {
     let omittedSalesItemArray = salesItems.map(salesItem => {
         let { id, created, deleted, ...omittedSalesItem } = salesItem
         return omittedSalesItem
@@ -616,15 +606,15 @@ let omitSalesItems = (salesItems: SalesItem[]) : SalesItem[] => {
     return omittedSalesItemArray as SalesItem[]
 }
 
-export = { 
-    getAll, 
-    getById, 
-    calculateSales, 
-    create, 
-    completeSales, 
-    completeNewSales, 
-    update, 
+export = {
+    getAll,
+    getById,
+    calculateSales,
+    create,
+    completeSales,
+    completeNewSales,
+    update,
     remove,
-    getTotalSales,  
+    getTotalSales,
     getTotalSalesData
- }
+}

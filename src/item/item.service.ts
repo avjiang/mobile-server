@@ -8,26 +8,25 @@ const prisma = new PrismaClient()
 
 let getAll = async () => {
     try {
-        const items = await prisma.item.findMany()
-        var stockItemList: StockItem[] = []
-        for(let item of items) {
-            const stock = await prisma.stock.findFirst({
-                where: {
-                    itemCode: item.itemCode,
-                    outletId: 0
+        var items = await prisma.item.findMany({
+            include: {
+                stocks: {
+                    select: {
+                        availableQuantity: true
+                    }
                 }
-            })
-
-            var stockQuantity = stock == null ? 0 : parseFloat(stock.availableQuantity.toString())
-
-            let stockItem: StockItem = {
-                ...item,
-                stockQuantity: stockQuantity
             }
-            stockItemList.push(stockItem)
-        }
+        })
 
-        return stockItemList
+        const result: StockItem[] = items.map(item => {
+            const totalStockQuantity = item.stocks.reduce((sum, stock) => sum + parseFloat(stock.availableQuantity.toString()), 0)
+            const { stocks, ...itemWithoutStocks } = item;
+            return {
+                ...itemWithoutStocks,
+                stockQuantity: totalStockQuantity
+            }
+        })
+        return result
     }
     catch (error) {
         throw error
@@ -39,28 +38,25 @@ let getById = async (id: number) => {
         const item = await prisma.item.findUnique({
             where: {
                 id: id
+            },
+            include: {
+                stocks: {
+                    select: {
+                        availableQuantity: true
+                    }
+                }
             }
         })
         if (!item) {
             throw new NotFoundError("Item") 
         }
 
-        const stock = await prisma.stock.findFirst({
-            where: {
-                itemCode: item.itemCode,
-                outletId: 0
-            }
-        })
-        if (!stock) {
-            throw new NotFoundError("Stock") 
+        const totalStockQuantity = item.stocks.reduce((sum, stock) => sum + parseFloat(stock.availableQuantity.toString()), 0)
+        const { stocks, ...itemWithoutStocks } = item;
+        return {
+            ...itemWithoutStocks,
+            stockQuantity: totalStockQuantity
         }
-        
-        let stockItem: StockItem = {
-            ...item,
-            stockQuantity: parseFloat(stock.availableQuantity.toString())
-        }
-
-        return stockItem
     }
     catch (error) {
         throw error

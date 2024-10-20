@@ -8,12 +8,13 @@ import { CalculateSalesResponseBody, SalesAnalyticResponseBody, SalesResponseBod
 import { CalculateSalesRequestBody, CompleteNewSalesRquestBody, CompleteSalesRquestBody, SalesCreationRequestBody, SalesRequestBody } from "./sales.request"
 import { format } from "path"
 import { validateDates } from "../helpers/dateHelper"
+import { Sales } from "@prisma/client"
 
 const router = express.Router()
 
 let getAll = (req: Request, res: Response, next: NextFunction) => {
     service.getAll()
-        .then((salesArray: SalesResponseBody[]) => sendResponse(res, salesArray))
+        .then((salesArray: Sales[]) => sendResponse(res, salesArray))
         .catch(next)
 }
 
@@ -23,7 +24,7 @@ let getById = (req: Request, res: Response, next: NextFunction) => {
     }
     const itemId: number = parseInt(req.params.id)
     service.getById(itemId)
-        .then((sales: SalesResponseBody) => sendResponse(res, sales))
+        .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }
 
@@ -43,7 +44,7 @@ let create = (req: NetworkRequest<SalesCreationRequestBody>, res: Response, next
     }
 
     service.create(salesBody)
-        .then((sales: SalesResponseBody) => sendResponse(res, sales))
+        .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }
 
@@ -65,7 +66,7 @@ let completeNewSales = (req: NetworkRequest<CompleteNewSalesRquestBody>, res: Re
     const payments = requestBody.payments
 
     service.completeNewSales(sales, payments)
-    .then((sales: SalesResponseBody) => sendResponse(res, sales))
+    .then((sales: Sales) => sendResponse(res, sales))
     .catch(next)
 }
 
@@ -94,7 +95,7 @@ let completeSales = (req: NetworkRequest<CompleteSalesRquestBody>, res: Response
     }
 
     service.completeSales(salesId, payments)
-    .then((sales: SalesResponseBody) => sendResponse(res, sales))
+    .then((sales: Sales) => sendResponse(res, sales))
     .catch(next)
 }
 

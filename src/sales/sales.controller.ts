@@ -32,7 +32,7 @@ let create = (req: NetworkRequest<SalesCreationRequestBody>, res: Response, next
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    
+
     const salesBody = req.body
     if (!salesBody) {
         throw new RequestValidateError('Create failed: data missing')
@@ -52,7 +52,7 @@ let completeNewSales = (req: NetworkRequest<CompleteNewSalesRquestBody>, res: Re
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    
+
     const requestBody = req.body
     if (!requestBody) {
         throw new RequestValidateError('Create failed: data missing')
@@ -66,8 +66,8 @@ let completeNewSales = (req: NetworkRequest<CompleteNewSalesRquestBody>, res: Re
     const payments = requestBody.payments
 
     service.completeNewSales(sales, payments)
-    .then((sales: Sales) => sendResponse(res, sales))
-    .catch(next)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next)
 }
 
 let completeSales = (req: NetworkRequest<CompleteSalesRquestBody>, res: Response, next: NextFunction) => {
@@ -95,8 +95,8 @@ let completeSales = (req: NetworkRequest<CompleteSalesRquestBody>, res: Response
     }
 
     service.completeSales(salesId, payments)
-    .then((sales: Sales) => sendResponse(res, sales))
-    .catch(next)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next)
 }
 
 let calculateSales = (req: NetworkRequest<CalculateSalesRequestBody>, res: Response, next: NextFunction) => {
@@ -110,15 +110,15 @@ let calculateSales = (req: NetworkRequest<CalculateSalesRequestBody>, res: Respo
     }
 
     service.calculateSales(requestBody)
-    .then((sales: CalculateSalesResponseBody) => sendResponse(res, sales))
-    .catch(next)
+        .then((sales: CalculateSalesResponseBody) => sendResponse(res, sales))
+        .catch(next)
 }
 
 let update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    
+
     const salesBody = req.body
 
     if (!salesBody) {
@@ -128,7 +128,7 @@ let update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: NextFu
     if (!salesBody.sales.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    
+
     service.update(salesBody)
         .then(() => sendResponse(res, "Successfully updated"))
         .catch(next)
@@ -148,8 +148,8 @@ let remove = (req: Request, res: Response, next: NextFunction) => {
 let getTotalSalesData = (req: Request, res: Response, next: NextFunction) => {
     const { startDate, endDate } = req.query
     if (!startDate || !endDate) {
-        return new RequestValidateError('startDate and endDate are required' )
-      }
+        return new RequestValidateError('startDate and endDate are required')
+    }
 
     validateDates(startDate as string, endDate as string)
 

@@ -463,7 +463,6 @@ model StockCheck {
 
 model MenuProfileOutlet {
   id Int @id @default(autoincrement()) @map("ID")
-  name String @map("NAME")
   outletId Int @map("OUTLET_ID")
   menuProfileID Int @map("MENU_PROFILE_ID")
 
@@ -473,6 +472,7 @@ model MenuProfileOutlet {
 model MenuProfile {
   id Int @id @default(autoincrement()) @map("ID")
   created DateTime @default(now()) @map("CREATED_DATETIME")
+  name String @map("NAME")
   dateStart String @map("DATE_START")
   dateEnd String @map("DATE_END")
   timeStart String @map("TIME_START")

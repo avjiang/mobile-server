@@ -5,6 +5,7 @@ import cors from 'cors'
 import createTestUser from './_test-helpers/create-test-user'
 import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
+import 'reflect-metadata';
 const app = express()
 const port = 8080
 
@@ -20,14 +21,14 @@ app.use(express.json())
 
 // Use the cors middleware and configure it
 app.use(cors({
-    origin: '*', // Be careful with this in production, it's better to whitelist specific domains
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: ['Content-Type', 'Authorization', 'token'],
-  }));
+  origin: '*', // Be careful with this in production, it's better to whitelist specific domains
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization', 'token'],
+}));
 
 // auth route need to execute before authentication middleware
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
-app.use('/auth', require('./auth/auth.controller')) 
+app.use('/auth', require('./auth/auth.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)

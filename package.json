@@ -13,6 +13,7 @@
     "body-parser": "^1.20.2",
     "bytes": "^3.1.2",
     "call-bind": "^1.0.2",
+    "class-transformer": "^0.5.1",
     "content-disposition": "^0.5.4",
     "content-type": "^1.0.5",
     "cookie": "^0.5.0",
@@ -63,6 +64,7 @@
     "range-parser": "^1.2.1",
     "raw-body": "^2.5.2",
     "readable-stream": "^2.3.7",
+    "reflect-metadata": "^0.2.2",
     "safe-buffer": "^5.2.1",
     "safer-buffer": "^2.1.2",
     "send": "^0.18.0",
@@ -99,6 +101,6 @@
     "eslint": "^8.50.0",
     "prisma": "^5.2.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.7.3"
   }
 }

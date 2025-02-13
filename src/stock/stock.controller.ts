@@ -15,44 +15,21 @@ let getAllStock = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
-let getStockByItemCodeAndOutlet = (req: Request, res: Response, next: NextFunction) => {
-    const outletId = parseInt(req.query.outletId as string)
-    const itemCode = req.query.itemCode as string
-    if (isNaN(outletId)) {
-        throw new RequestValidateError('Outlet ID format incorrect')
+let getStockByItemId = (req: Request, res: Response, next: NextFunction) => {
+    const itemId = req.query.itemId as string
+    if (!validator.isNumeric(itemId)) {
+        throw new RequestValidateError('Item ID format incorrect')
     }
-
-    if (typeof itemCode !== 'string') {
-        throw new RequestValidateError('Item Code invalid')
-    }
-    service.getStockByItemCodeAndOutlet(itemCode, outletId)
+    service.getStockByItemId(parseInt(itemId))
         .then((stock: Stock) => sendResponse(res, stock))
         .catch(next)
-}
-
-let createManyStocks = (req: NetworkRequest<CreateStocksRequestBody>, res: Response, next: NextFunction) => {
-    if (Object.keys(req.body).length === 0) {
-        throw new RequestValidateError('Request body is empty')
-    }
-
-    const requestBody = req.body
-
-    service.createManyStocks(requestBody.stocks)
-    .then((insertedRecordCount: number) => {
-        var message = `Successfully created ${insertedRecordCount} stocks`
-        if (insertedRecordCount === 1) {
-            message = message.substring(0, message.length-1)
-        }
-        sendResponse(res, message)
-    })
-    .catch(next)
 }
 
 let stockAdjustment = (req: NetworkRequest<StockAdjustmentRequestBody>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    
+
     const requestBody = req.body
 
     service.stockAdjustment(requestBody.stockAdjustments)
@@ -70,7 +47,7 @@ let updateManyStocks = (req: NetworkRequest<UpdateStocksRequestBody>, res: Respo
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    
+
     const requestBody = req.body
 
     requestBody.stocks.forEach(stock => {
@@ -107,7 +84,7 @@ let removeStock = (req: Request, res: Response, next: NextFunction) => {
 
 //routes
 router.get("/", getAllStock)
-router.get('/find', getStockByItemCodeAndOutlet)
+router.get('/find', getStockByItemId)
 // router.post('/create', createManyStocks)
 router.put('/adjustment', stockAdjustment)
 router.put('/update', updateManyStocks)

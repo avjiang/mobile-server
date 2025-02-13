@@ -1,10 +1,8 @@
-import { Item } from "@prisma/client"
-import { StockItem } from "./item.model"
+import { ItemDto } from "./item.response"
+import { Expose, Transform, Type } from "class-transformer";
 
-export interface CreateItemsRequestBody {
-    items: StockItem[]
-}
-
-export interface CreateItemBody {
-    item: Item & { stockQuantity: number }
+export class CreateItemsRequestBody {
+    @Type(() => ItemDto)
+    @Expose()
+    items: ItemDto[] = []
 }

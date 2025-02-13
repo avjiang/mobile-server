@@ -29,16 +29,11 @@ export default (req: Request, res: Response, next: NextFunction) => {
         }
         catch (error) {
             const authenticationError = new AuthenticationError(401, "Invalid token")
-            // throw authenticationError
             next(authenticationError)
-            return res.status(401).json({ message: 'Invalid token' })
         }
     }
     else {
         const authenticationError = new AuthenticationError(401, "Token not found")
-        // throw authenticationError
         next(authenticationError)
-        return res.status(401).json({ message: 'Invalid token' })
     }
-
 }

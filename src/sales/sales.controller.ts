@@ -4,21 +4,20 @@ import service from "./sales.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
-import { CalculateSalesResponseBody, SalesAnalyticResponseBody, SalesResponseBody } from "./sales.response"
-import { CalculateSalesRequestBody, CompleteNewSalesRquestBody, CompleteSalesRquestBody, SalesCreationRequestBody, SalesRequestBody } from "./sales.request"
-import { format } from "path"
+import { SalesAnalyticResponseBody } from "./sales.response"
+import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
 import { Sales } from "@prisma/client"
 
 const router = express.Router()
 
-let getAll = (req: Request, res: Response, next: NextFunction) => {
+const getAll = (req: Request, res: Response, next: NextFunction) => {
     service.getAll()
         .then((salesArray: Sales[]) => sendResponse(res, salesArray))
         .catch(next)
 }
 
-let getById = (req: Request, res: Response, next: NextFunction) => {
+const getById = (req: Request, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
@@ -28,7 +27,7 @@ let getById = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
-let create = (req: NetworkRequest<SalesCreationRequestBody>, res: Response, next: NextFunction) => {
+const create = (req: NetworkRequest<SalesCreationRequest>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -48,7 +47,7 @@ let create = (req: NetworkRequest<SalesCreationRequestBody>, res: Response, next
         .catch(next)
 }
 
-let completeNewSales = (req: NetworkRequest<CompleteNewSalesRquestBody>, res: Response, next: NextFunction) => {
+const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -70,7 +69,7 @@ let completeNewSales = (req: NetworkRequest<CompleteNewSalesRquestBody>, res: Re
         .catch(next)
 }
 
-let completeSales = (req: NetworkRequest<CompleteSalesRquestBody>, res: Response, next: NextFunction) => {
+const completeSales = (req: NetworkRequest<CompleteSalesRequest>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -99,7 +98,7 @@ let completeSales = (req: NetworkRequest<CompleteSalesRquestBody>, res: Response
         .catch(next)
 }
 
-let calculateSales = (req: NetworkRequest<CalculateSalesRequestBody>, res: Response, next: NextFunction) => {
+const calculateSales = (req: NetworkRequest<CalculateSalesDto>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -110,11 +109,11 @@ let calculateSales = (req: NetworkRequest<CalculateSalesRequestBody>, res: Respo
     }
 
     service.calculateSales(requestBody)
-        .then((sales: CalculateSalesResponseBody) => sendResponse(res, sales))
+        .then((sales: CalculateSalesDto) => sendResponse(res, sales))
         .catch(next)
 }
 
-let update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: NextFunction) => {
+const update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -134,7 +133,7 @@ let update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: NextFu
         .catch(next)
 }
 
-let remove = (req: Request, res: Response, next: NextFunction) => {
+const remove = (req: Request, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
@@ -145,7 +144,7 @@ let remove = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
-let getTotalSalesData = (req: Request, res: Response, next: NextFunction) => {
+const getTotalSalesData = (req: Request, res: Response, next: NextFunction) => {
     const { startDate, endDate } = req.query
     if (!startDate || !endDate) {
         return new RequestValidateError('startDate and endDate are required')

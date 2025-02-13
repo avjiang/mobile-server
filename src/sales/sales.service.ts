@@ -1,10 +1,6 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, Stock, StockCheck } from "@prisma/client"
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
-import { CalculateSalesResponseBody, SalesResponseBody } from "./sales.response"
-import { SalesRequestBody, CalculateSalesRequestBody, SalesCreationRequestBody, CompleteSalesRquestBody } from "./sales.request"
-import { DiscountBy, DiscountType, CalculateSalesObject, CalculateSalesItemObject, CreateSalesRequestBody } from "./sales.model"
-import { Decimal } from "@prisma/client/runtime/library"
-import salesMapper from "./sales.mapper"
+import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 
 const prisma = new PrismaClient()
 
@@ -18,23 +14,6 @@ let getAll = async () => {
             }
         })
         return salesArray
-        // const salesArray = await prisma.sales.findMany()
-        // let salesResponseArray = Promise.all(salesArray.map(async sales => {
-        //     let salesItemArray: SalesItem[] = await prisma.salesItem.findMany({
-        //         where: {
-        //             salesId: sales.id
-        //         }
-        //     })
-        //     let salesResponse: SalesResponseBody = {
-        //         sales: {
-        //             ...sales,
-        //             items: salesItemArray
-        //         }
-        //     }
-        //     return salesResponse
-        // }))
-
-        // return salesResponseArray
     }
     catch (error) {
         throw error
@@ -58,119 +37,180 @@ let getById = async (id: number) => {
         }
 
         return sales
-
-        // const sales = await prisma.sales.findUnique({
-        //     where: {
-        //         id: id
-        //     }
-        // })
-        // if (!sales) {
-        //     throw new NotFoundError("Sales")
-        // }
-
-        // const salesItemArray = await prisma.salesItem.findMany({
-        //     where: {
-        //         salesId: sales.id
-        //     }
-        // })
-
-        // let salesResponse: SalesResponseBody = {
-        //     sales: {
-        //         ...sales,
-        //         items: salesItemArray
-        //     }
-        // }
-
-        // return salesResponse
     }
     catch (error) {
         throw error
     }
 }
 
-let create = async (salesBody: SalesCreationRequestBody) => {
+let create = async (salesBody: SalesCreationRequest) => {
     try {
-        var createdSalesId = 0
-        await prisma.$transaction(async (tx) => {
+        const createdSales = await prisma.$transaction(async (tx) => {
 
             //calculate profit amount
             let updatedSales = performProfitCalculation(salesBody.sales)
 
             //separate sales & salesitem to perform update to different tables
-            let sales: Sales = salesMapper.mapSalesDOToSalesPO(updatedSales)
-            let items: SalesItem[] = salesMapper.mapSalesItemsDOToSalesItemsPO(updatedSales.items)
-            const createdSales = await tx.sales.create({
-                data: omitSales(sales)
+            const sales = await tx.sales.create({
+                data: {
+                    outletId: updatedSales.outletId,
+                    businessDate: updatedSales.businessDate,
+                    salesType: updatedSales.salesType,
+                    customerId: updatedSales.customerId,
+                    billStreet: updatedSales.billStreet,
+                    billCity: updatedSales.billCity,
+                    billState: updatedSales.billState,
+                    billPostalCode: updatedSales.billPostalCode,
+                    billCountry: updatedSales.billCountry,
+                    shipStreet: updatedSales.shipStreet,
+                    shipCity: updatedSales.shipCity,
+                    shipState: updatedSales.shipState,
+                    shipPostalCode: updatedSales.shipPostalCode,
+                    shipCountry: updatedSales.shipCountry,
+                    totalItemDiscountAmount: updatedSales.totalItemDiscountAmount,
+                    discountPercentage: updatedSales.discountPercentage,
+                    discountAmount: updatedSales.discountAmount,
+                    profitAmount: updatedSales.profitAmount,
+                    serviceChargeAmount: updatedSales.serviceChargeAmount,
+                    taxAmount: updatedSales.taxAmount,
+                    roundingAmount: updatedSales.roundingAmount,
+                    subtotalAmount: updatedSales.subtotalAmount,
+                    totalAmount: updatedSales.totalAmount,
+                    paidAmount: updatedSales.paidAmount,
+                    changeAmount: updatedSales.changeAmount,
+                    status: updatedSales.status,
+                    remark: updatedSales.remark,
+                    declarationSessionId: updatedSales.declarationSessionId,
+                    eodId: updatedSales.eodId,
+                    salesQuotationId: updatedSales.salesQuotationId,
+                    performedBy: updatedSales.performedBy,
+                    deleted: updatedSales.deleted,
+                }
             })
 
-            //assigned sales ID to each sales item
-            items.forEach(function (item) {
-                item.salesId = createdSales.id
-            })
+            await Promise.all(updatedSales.items.map(async (salesItem) => {
+                return tx.salesItem.create({
+                    data: {
+                        salesId: sales.id,
+                        itemId: salesItem.itemId,
+                        itemName: salesItem.itemName,
+                        itemCode: salesItem.itemCode,
+                        quantity: salesItem.quantity,
+                        cost: salesItem.cost,
+                        price: salesItem.price,
+                        profit: salesItem.profit,
+                        discountPercentage: salesItem.discountPercentage,
+                        discountAmount: salesItem.discountAmount,
+                        serviceChargeAmount: salesItem.serviceChargeAmount,
+                        taxAmount: salesItem.taxAmount,
+                        subtotalAmount: salesItem.subtotalAmount,
+                        remark: salesItem.remark,
+                        deleted: salesItem.deleted
+                    }
+                })
+            }))
 
-            await tx.salesItem.createMany({
-                data: omitSalesItems(items)
-            })
-
-            createdSalesId = createdSales.id
+            return sales
         })
 
-        return getById(createdSalesId)
+        return getById(createdSales.id)
     }
     catch (error) {
         throw error
     }
 }
 
-let completeNewSales = async (salesBody: CreateSalesRequestBody, payments: Payment[]) => {
+let completeNewSales = async (salesBody: CreateSalesRequest, payments: Payment[]) => {
     try {
-        var createdSalesId = 0
-        await prisma.$transaction(async (tx) => {
+
+        const createdSales = await prisma.$transaction(async (tx) => {
 
             //calculate profit amount
             let updatedSales = performProfitCalculation(salesBody)
 
             //separate sales & salesitem to perform update to different tables
-            let sales: Sales = salesMapper.mapSalesDOToSalesPO(updatedSales)
-            let items: SalesItem[] = salesMapper.mapSalesItemsDOToSalesItemsPO(updatedSales.items)
-            const createdSales = await tx.sales.create({
-                data: omitSales(sales)
+            const sales = await tx.sales.create({
+                data: {
+                    outletId: updatedSales.outletId,
+                    businessDate: updatedSales.businessDate,
+                    salesType: updatedSales.salesType,
+                    customerId: updatedSales.customerId,
+                    billStreet: updatedSales.billStreet,
+                    billCity: updatedSales.billCity,
+                    billState: updatedSales.billState,
+                    billPostalCode: updatedSales.billPostalCode,
+                    billCountry: updatedSales.billCountry,
+                    shipStreet: updatedSales.shipStreet,
+                    shipCity: updatedSales.shipCity,
+                    shipState: updatedSales.shipState,
+                    shipPostalCode: updatedSales.shipPostalCode,
+                    shipCountry: updatedSales.shipCountry,
+                    totalItemDiscountAmount: updatedSales.totalItemDiscountAmount,
+                    discountPercentage: updatedSales.discountPercentage,
+                    discountAmount: updatedSales.discountAmount,
+                    profitAmount: updatedSales.profitAmount,
+                    serviceChargeAmount: updatedSales.serviceChargeAmount,
+                    taxAmount: updatedSales.taxAmount,
+                    roundingAmount: updatedSales.roundingAmount,
+                    subtotalAmount: updatedSales.subtotalAmount,
+                    totalAmount: updatedSales.totalAmount,
+                    paidAmount: updatedSales.paidAmount,
+                    changeAmount: updatedSales.changeAmount,
+                    status: updatedSales.status,
+                    remark: updatedSales.remark,
+                    declarationSessionId: updatedSales.declarationSessionId,
+                    eodId: updatedSales.eodId,
+                    salesQuotationId: updatedSales.salesQuotationId,
+                    performedBy: updatedSales.performedBy,
+                    deleted: updatedSales.deleted,
+                }
             })
 
-            //assigned sales ID to each sales item
-            items.forEach(function (item) {
-                item.salesId = createdSales.id
-            })
-
-            await tx.salesItem.createMany({
-                data: omitSalesItems(items)
-            })
-
-            createdSalesId = createdSales.id
+            await Promise.all(updatedSales.items.map(async (salesItem) => {
+                return tx.salesItem.create({
+                    data: {
+                        salesId: sales.id,
+                        itemId: salesItem.itemId,
+                        itemName: salesItem.itemName,
+                        itemCode: salesItem.itemCode,
+                        quantity: salesItem.quantity,
+                        cost: salesItem.cost,
+                        price: salesItem.price,
+                        profit: salesItem.profit,
+                        discountPercentage: salesItem.discountPercentage,
+                        discountAmount: salesItem.discountAmount,
+                        serviceChargeAmount: salesItem.serviceChargeAmount,
+                        taxAmount: salesItem.taxAmount,
+                        subtotalAmount: salesItem.subtotalAmount,
+                        remark: salesItem.remark,
+                        deleted: salesItem.deleted
+                    }
+                })
+            }))
 
             //throw error if payment amount is less than sales total amount
-            let totalSalesAmount = parseFloat(createdSales.totalAmount.toString())
-            let totalPaymentAmount = payments.reduce((sum, currentPayment) => sum + parseFloat(currentPayment.tenderedAmount.toString()), 0)
+            let totalSalesAmount = sales.totalAmount
+            let totalPaymentAmount = payments.reduce((sum, currentPayment) => sum + currentPayment.tenderedAmount, 0)
             if (totalPaymentAmount < totalSalesAmount) {
                 throw new BusinessLogicError("Total payment amount is less than the sales grand total amount")
             }
 
             //update sales properties
             var changeAmount = performPaymentCalculation(totalSalesAmount, totalPaymentAmount)
-            createdSales.paidAmount = new Prisma.Decimal(totalPaymentAmount)
-            createdSales.changeAmount = new Prisma.Decimal(changeAmount)
-            createdSales.status = "completed"
+            sales.paidAmount = totalPaymentAmount
+            sales.changeAmount = changeAmount
+            sales.status = "completed"
 
             await tx.sales.update({
                 where: {
-                    id: createdSales.id
+                    id: sales.id
                 },
-                data: createdSales
+                data: sales
             })
 
             //update payment sales ID and insert payments
             for (var payment of payments) {
-                payment.salesId = createdSales.id
+                payment.salesId = sales.id
             }
             await tx.payment.createMany({
                 data: payments
@@ -179,50 +219,44 @@ let completeNewSales = async (salesBody: CreateSalesRequestBody, payments: Payme
             //update stock related data
             let salesItems = await tx.salesItem.findMany({
                 where: {
-                    salesId: createdSales.id
+                    salesId: sales.id
                 }
             })
+
+            // Lazy-load to avoid circular dependency
+            const { getByIdRaw } = require("../item/item.service")
 
             let stocks: Stock[] = []
             let stockChecks: StockCheck[] = []
             for (const salesItem of salesItems) {
-                var stockIndex = stocks.findIndex(stock => stock.itemCode === salesItem.itemCode)
-                if (stockIndex < 0) {
-                    //find stock record from db
-                    let stock = await tx.stock.findFirst({
-                        where: {
-                            itemCode: salesItem.itemCode,
-                            outletId: createdSales.outletId
-                        }
-                    })
-                    if (!stock) {
-                        throw new NotFoundError(`Stock for ${salesItem.itemCode}`)
+                var item = await getByIdRaw(salesItem.itemId)
+                if (item != null) {
+                    var stockIndex = stocks.findIndex(stock => stock.id === item!.stockId)
+                    if (stockIndex < 0) {
+                        stockIndex = stocks.push(item.stock) - 1
                     }
-                    stockIndex = stocks.push(stock) - 1
+
+                    let minusQuantity = salesItem.quantity * -1
+                    let updatedAvailableQuantity = stocks[stockIndex].availableQuantity + minusQuantity
+                    let updatedOnHandQuantity = stocks[stockIndex].onHandQuantity + minusQuantity
+                    stocks[stockIndex].availableQuantity = updatedAvailableQuantity
+                    stocks[stockIndex].onHandQuantity = updatedOnHandQuantity
+
+                    let stockCheck: StockCheck = {
+                        id: 0,
+                        created: new Date,
+                        itemId: salesItem.itemId,
+                        availableQuantity: minusQuantity,
+                        onHandQuantity: minusQuantity,
+                        documentId: sales.id,
+                        documentType: 'Sales',
+                        reason: '',
+                        remark: '',
+                        outletId: sales.outletId,
+                        deleted: false
+                    }
+                    stockChecks.push(stockCheck)
                 }
-
-
-                let minusQuantity = parseFloat(salesItem.quantity.toString()) * -1
-                let updatedAvailableQuantity = parseFloat(stocks[stockIndex].availableQuantity.toString()) + minusQuantity
-                let updatedOnHandQuantity = parseFloat(stocks[stockIndex].onHandQuantity.toString()) + minusQuantity
-                stocks[stockIndex].availableQuantity = new Prisma.Decimal(updatedAvailableQuantity)
-                stocks[stockIndex].onHandQuantity = new Prisma.Decimal(updatedOnHandQuantity)
-
-                let stockCheck: StockCheck = {
-                    id: 0,
-                    created: new Date,
-                    itemCode: salesItem.itemCode,
-                    availableQuantity: new Prisma.Decimal(minusQuantity),
-                    onHandQuantity: new Prisma.Decimal(minusQuantity),
-                    documentId: createdSales.id,
-                    documentType: 'Sales',
-                    reason: '',
-                    remark: '',
-                    outletId: createdSales.outletId,
-                    deleted: false
-                }
-
-                stockChecks.push(stockCheck)
             }
 
             await tx.stockCheck.createMany({
@@ -237,9 +271,11 @@ let completeNewSales = async (salesBody: CreateSalesRequestBody, payments: Payme
                     data: stock
                 })
             }
+
+            return sales
         })
 
-        return getById(createdSalesId)
+        return getById(createdSales.id)
     }
     catch (error) {
         throw error
@@ -266,16 +302,16 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
             }
 
             //throw error if payment amount is less than sales total amount
-            let totalSalesAmount = parseFloat(sales.totalAmount.toString())
-            let totalPaymentAmount = payments.reduce((sum, currentPayment) => sum + parseFloat(currentPayment.tenderedAmount.toString()), 0)
+            let totalSalesAmount = sales.totalAmount
+            let totalPaymentAmount = payments.reduce((sum, currentPayment) => sum + currentPayment.tenderedAmount, 0)
             if (totalPaymentAmount < totalSalesAmount) {
                 throw new BusinessLogicError("Total payment amount is less than the sales grand total amount")
             }
 
             //update sales properties
             var changeAmount = performPaymentCalculation(totalSalesAmount, totalPaymentAmount)
-            sales.paidAmount = new Prisma.Decimal(totalPaymentAmount)
-            sales.changeAmount = new Prisma.Decimal(changeAmount)
+            sales.paidAmount = totalPaymentAmount
+            sales.changeAmount = changeAmount
             sales.status = "completed"
 
             await tx.sales.update({
@@ -297,46 +333,41 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
                 }
             })
 
+            // Lazy-load to avoid circular dependency
+            const { getByIdRaw } = require("../item/item.service")
+
             let stocks: Stock[] = []
             let stockChecks: StockCheck[] = []
 
             for (const salesItem of salesItems) {
-                var stockIndex = stocks.findIndex(stock => stock.itemCode === salesItem.itemCode)
-                if (stockIndex < 0) {
-                    //find stock record from db
-                    let stock = await tx.stock.findFirst({
-                        where: {
-                            itemCode: salesItem.itemCode,
-                            outletId: sales.outletId
-                        }
-                    })
-                    if (!stock) {
-                        throw new NotFoundError(`Stock for ${salesItem.itemCode}`)
+                var item = await getByIdRaw(salesItem.itemId)
+                if (item != null) {
+                    var stockIndex = stocks.findIndex(stock => stock.id === item!.stockId)
+                    if (stockIndex < 0) {
+                        stockIndex = stocks.push(item.stock) - 1
                     }
-                    stockIndex = stocks.push(stock) - 1
+
+                    let minusQuantity = salesItem.quantity * -1
+                    let updatedAvailableQuantity = stocks[stockIndex].availableQuantity + minusQuantity
+                    let updatedOnHandQuantity = stocks[stockIndex].onHandQuantity + minusQuantity
+                    stocks[stockIndex].availableQuantity = updatedAvailableQuantity
+                    stocks[stockIndex].onHandQuantity = updatedOnHandQuantity
+
+                    let stockCheck: StockCheck = {
+                        id: 0,
+                        created: new Date,
+                        itemId: salesItem.itemId,
+                        availableQuantity: minusQuantity,
+                        onHandQuantity: minusQuantity,
+                        documentId: salesId,
+                        documentType: 'Sales',
+                        reason: '',
+                        remark: '',
+                        outletId: sales.outletId,
+                        deleted: false
+                    }
+                    stockChecks.push(stockCheck)
                 }
-
-                let minusQuantity = parseFloat(salesItem.quantity.toString()) * -1
-                let updatedAvailableQuantity = parseFloat(stocks[stockIndex].availableQuantity.toString()) + minusQuantity
-                let updatedOnHandQuantity = parseFloat(stocks[stockIndex].onHandQuantity.toString()) + minusQuantity
-                stocks[stockIndex].availableQuantity = new Prisma.Decimal(updatedAvailableQuantity)
-                stocks[stockIndex].onHandQuantity = new Prisma.Decimal(updatedOnHandQuantity)
-
-                let stockCheck: StockCheck = {
-                    id: 0,
-                    created: new Date,
-                    itemCode: salesItem.itemCode,
-                    availableQuantity: new Prisma.Decimal(minusQuantity),
-                    onHandQuantity: new Prisma.Decimal(minusQuantity),
-                    documentId: salesId,
-                    documentType: 'Sales',
-                    reason: '',
-                    remark: '',
-                    outletId: sales.outletId,
-                    deleted: false
-                }
-
-                stockChecks.push(stockCheck)
             }
 
             await tx.stockCheck.createMany({
@@ -360,10 +391,10 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
     }
 }
 
-let calculateSales = async (salesRequestBody: CalculateSalesRequestBody) => {
+let calculateSales = async (salesRequestBody: CalculateSalesDto) => {
     try {
         let sales = await performSalesCalculation(salesRequestBody.sales)
-        let salesResponse: CalculateSalesResponseBody = {
+        let salesResponse: CalculateSalesDto = {
             sales: sales
         }
         return salesResponse
@@ -374,15 +405,15 @@ let calculateSales = async (salesRequestBody: CalculateSalesRequestBody) => {
     }
 }
 
-let performProfitCalculation = (sales: CreateSalesRequestBody) => {
+let performProfitCalculation = (sales: CreateSalesRequest) => {
     try {
         let items = sales.items
         var totalProfitAmount = 0.00
 
         items.forEach(function (item) {
-            let itemPrice = parseFloat(item.price.toString())
-            let itemCost = parseFloat(item.cost.toString())
-            let itemQuantity = parseFloat(item.quantity.toString())
+            let itemPrice = item.price
+            let itemCost = item.cost
+            let itemQuantity = item.quantity
             var profit = itemPrice - itemCost
             var subTotalProfit = itemQuantity * profit
             item.profit = profit
@@ -577,8 +608,8 @@ let getTotalSalesData = async (startDate: string, endDate: string) => {
     try {
         const salesArray = await getTotalSales(startDate, endDate)
         const { totalProfit, totalRevenue } = salesArray.reduce((accumulator, currentSales) => {
-            accumulator.totalProfit += parseFloat(currentSales.profitAmount.toString());
-            accumulator.totalRevenue += parseFloat(currentSales.totalAmount.toString());
+            accumulator.totalProfit += currentSales.profitAmount;
+            accumulator.totalRevenue += currentSales.totalAmount;
             return accumulator
         }, { totalProfit: 0, totalRevenue: 0 })
 

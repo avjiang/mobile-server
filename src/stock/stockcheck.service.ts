@@ -14,17 +14,14 @@ let getAllStockCheck = async () => {
     }
 }
 
-let getStockChecksByItemCodeAndOutlet = async (itemCode: string, outletId: number) => {
+let getStockChecksByItemIdAndOutlet = async (itemId: number, outletId: number) => {
     try {
         const stockChecks = await prisma.stockCheck.findMany({
             where: {
-                itemCode: itemCode,
+                itemId: itemId,
                 outletId: outletId
             }
         })
-        if (!stockChecks) {
-            throw new NotFoundError("StockChecks") 
-        }
         return stockChecks
     }
     catch (error) {
@@ -49,7 +46,7 @@ let updateManyStockChecks = async (stockChecks: StockCheck[]) => {
     try {
         var updatedCount = 0
         await prisma.$transaction(async (tx) => {
-            
+
             for (const stockCheck of stockChecks) {
                 await tx.stockCheck.update({
                     where: {
@@ -67,4 +64,4 @@ let updateManyStockChecks = async (stockChecks: StockCheck[]) => {
     }
 }
 
-export = { getAllStockCheck, getStockChecksByItemCodeAndOutlet,createManyStockChecks, updateManyStockChecks }
+export = { getAllStockCheck, getStockChecksByItemIdAndOutlet, createManyStockChecks, updateManyStockChecks }

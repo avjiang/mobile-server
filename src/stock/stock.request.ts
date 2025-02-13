@@ -13,7 +13,7 @@ export interface StockAdjustmentRequestBody {
 }
 
 export interface StockAdjustment {
-    itemCode: string,
+    itemId: number,
     adjustQuantity: number,
     outletId: number,
     reason: string,

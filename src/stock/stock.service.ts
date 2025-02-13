@@ -16,31 +16,20 @@ let getAllStock = async () => {
     }
 }
 
-let getStockByItemCodeAndOutlet = async (itemCode: string, outletId: number) => {
+let getStockByItemId = async (itemId: number) => {
     try {
-        const stock = await prisma.stock.findFirst({
+        const stock = await prisma.stock.findUnique({
             where: {
-                itemCode: itemCode,
-                outletId: outletId
+                id: (await prisma.item.findUnique({
+                    where: { id: itemId },
+                    select: { stockId: true },
+                }))?.stockId,
             }
         })
         if (!stock) {
-            throw new NotFoundError("Stock") 
+            throw new NotFoundError("Stock")
         }
         return stock
-    }
-    catch (error) {
-        throw error
-    }
-}
-
-let createManyStocks = async (stocks: Stock[]) => {
-    try {
-        const createdStocks = await prisma.stock.createMany({
-            data: stocks
-        })
-
-        return createdStocks.count
     }
     catch (error) {
         throw error
@@ -56,27 +45,22 @@ let stockAdjustment = async (stockAdjustments: StockAdjustment[]) => {
             let stockChecks: StockCheck[] = []
 
             for (const stockAdjustment of stockAdjustments) {
-                let stock = await tx.stock.findFirst({
-                    where: {
-                        itemCode: stockAdjustment.itemCode,
-                        outletId: stockAdjustment.outletId
-                    }
-                })
+                let stock = await getStockByItemId(stockAdjustment.itemId)
                 if (!stock) {
-                    throw new NotFoundError(`Stock for ${stockAdjustment.itemCode}`)
+                    throw new NotFoundError(`Stock for ${stockAdjustment.itemId}`)
                 }
 
-                let updatedAvailableQuantity = parseFloat(stock.availableQuantity.toString()) + stockAdjustment.adjustQuantity
-                let updatedOnHandQuantity = parseFloat(stock.onHandQuantity.toString()) + stockAdjustment.adjustQuantity
-                stock.availableQuantity = new Prisma.Decimal(updatedAvailableQuantity)
-                stock.onHandQuantity = new Prisma.Decimal(updatedOnHandQuantity)
+                let updatedAvailableQuantity = stock.availableQuantity + stockAdjustment.adjustQuantity
+                let updatedOnHandQuantity = stock.onHandQuantity + stockAdjustment.adjustQuantity
+                stock.availableQuantity = updatedAvailableQuantity
+                stock.onHandQuantity = updatedOnHandQuantity
 
                 let stockCheck: StockCheck = {
                     id: 0,
                     created: new Date,
-                    itemCode: stockAdjustment.itemCode,
-                    availableQuantity: new Prisma.Decimal(stockAdjustment.adjustQuantity),
-                    onHandQuantity: new Prisma.Decimal(stockAdjustment.adjustQuantity),
+                    itemId: stockAdjustment.itemId,
+                    availableQuantity: stockAdjustment.adjustQuantity,
+                    onHandQuantity: stockAdjustment.adjustQuantity,
                     documentId: 0,
                     documentType: "Stock Adjustment",
                     reason: stockAdjustment.reason,
@@ -112,17 +96,9 @@ let stockAdjustment = async (stockAdjustments: StockAdjustment[]) => {
 
 let updateManyStocks = async (stocks: Stock[]) => {
     try {
-        // const updatedStocks = await prisma.stock.updateMany({
-        //     where: {
-        //         OR: stocks.map(stock => ({ id: stock.id }))
-        //     },
-        //     data: stocks
-        // })
-        // return updatedStocks
-
         var updatedCount = 0
         await prisma.$transaction(async (tx) => {
-            
+
             for (const stock of stocks) {
                 await tx.stock.update({
                     where: {
@@ -148,7 +124,7 @@ let removeStock = async (id: number) => {
             }
         })
         if (!stock) {
-            throw new NotFoundError("Stock") 
+            throw new NotFoundError("Stock")
         }
         const updatedStock = await prisma.stock.update({
             where: {
@@ -165,4 +141,4 @@ let removeStock = async (id: number) => {
     }
 }
 
-export = { getAllStock, getStockByItemCodeAndOutlet, createManyStocks, stockAdjustment, updateManyStocks, removeStock }
+export = { getAllStock, getStockByItemId, stockAdjustment, updateManyStocks, removeStock }

@@ -58,6 +58,28 @@ let getAll = async () => {
     }
 }
 
+let getAllBySupplierId = async (supplierId: number) => {
+    try {
+        const items = await prisma.item.findMany({
+            where: {
+                supplierId: supplierId
+            },
+            include: {
+                stock: {
+                    select: {
+                        availableQuantity: true
+                    }
+                }
+            }
+        })
+        const itemWithStock = plainToInstance(ItemDto, items, { excludeExtraneousValues: true })
+        return itemWithStock
+    }
+    catch (error) {
+        throw error
+    }
+}
+
 let getById = async (id: number) => {
     try {
         const item = await prisma.item.findUnique({
@@ -317,6 +339,7 @@ export = {
     getAllRaw,
     getByIdRaw,
     getAll,
+    getAllBySupplierId,
     getById,
     createMany,
     update,

@@ -1,12 +1,21 @@
 import { PrismaClient, Supplier } from "@prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
+import { plainToInstance } from "class-transformer"
+import { SupplierDto } from "./supplier.response"
 
 const prisma = new PrismaClient()
 
 let getAll = async () => {
     try {
         const suppliers = await prisma.supplier.findMany()
-        return suppliers
+        const suppliersDto = await Promise.all(suppliers.map(async supplier => {
+            let itemCount = await prisma.item.count({
+                where: { supplierId: supplier.id }
+            })
+            itemCount = itemCount === undefined ? 0 : itemCount
+            return plainToInstance(SupplierDto, { ...supplier, itemCount }, { excludeExtraneousValues: true })
+        }))
+        return suppliersDto
     }
     catch (error) {
         throw error
@@ -21,9 +30,18 @@ let getById = async (id: number) => {
             }
         })
         if (!supplier) {
-            throw new NotFoundError("Supplier") 
+            throw new NotFoundError("Supplier")
         }
-        return supplier
+
+        let itemCount = await prisma.item.count({
+            where: {
+                supplierId: id
+            }
+        })
+        itemCount = itemCount === undefined ? 0 : itemCount
+
+        let supplierDto = plainToInstance(SupplierDto, { ...supplier, itemCount }, { excludeExtraneousValues: true })
+        return supplierDto
     }
     catch (error) {
         throw error

@@ -19,6 +19,21 @@ let getAll = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+let getAllBySupplierId = (req: Request, res: Response, next: NextFunction) => {
+    const { supplierId } = req.query
+
+    if (!supplierId) {
+        return new RequestValidateError('supplierd is required')
+    }
+    if (!validator.isNumeric(supplierId as string)) {
+        throw new RequestValidateError('Supplier ID format incorrect')
+    }
+    const supplierIdParam = Number(supplierId)
+    service.getAllBySupplierId(supplierIdParam)
+        .then((items: ItemDto[]) => sendResponse(res, items))
+        .catch(next)
+}
+
 let getById = (req: Request, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
@@ -140,6 +155,7 @@ let getLowStockItems = (req: Request, res: Response, next: NextFunction) => {
 
 //routes
 router.get("/", getAll)
+router.get("/getBySupplierId", getAllBySupplierId)
 router.get("/getLowStockItemCount", getLowStockItemCount)
 router.get("/getLowStockItems", getLowStockItems)
 router.get("/getItemSoldRanking", getSoldItemRanking)

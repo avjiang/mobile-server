@@ -8,7 +8,6 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
-  //url    = "mysql://root:xilnex123@127.0.0.1:3306/localdatabase"
 }
 
 model User {

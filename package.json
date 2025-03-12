@@ -24,6 +24,7 @@
     "debug": "^2.6.9",
     "depd": "^2.0.0",
     "destroy": "^1.2.0",
+    "dotenv": "^16.4.7",
     "ee-first": "^1.1.1",
     "encodeurl": "^1.0.2",
     "escape-html": "^1.0.3",
@@ -99,7 +100,7 @@
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "eslint": "^8.50.0",
-    "prisma": "^5.2.0",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.7.3"
   }

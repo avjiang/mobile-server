@@ -44,6 +44,7 @@ app.use('/stock', require('./stock/stock.controller'))
 app.use('/stockCheck', require('./stock/stockcheck.controller'))
 app.use('/session', require('./session/session.controller'))
 app.use('/menu', require('./menu/menu.controller'))
+app.use('/tenant', require('./tenant/tenant.controller'))
 
 //error middleware
 app.use(errorMiddleware)

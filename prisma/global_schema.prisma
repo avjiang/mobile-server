@@ -1,0 +1,45 @@
+datasource db {
+    provider = "mysql"
+    url      = env("GLOBAL_DB_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+    output   = "../node_modules/.prisma/global-client"
+}
+
+model SubscriptionPlan {
+    id              Int      @id @default(autoincrement()) @map("ID")
+    planName        String   @map("PLAN_NAME")
+    price           Float    @map("PRICE")
+    maxUsers        Int?     @map("MAX_USERS")
+    maxTransactions Int?     @map("MAX_TRANSACTIONS")
+    description     String?  @map("DESCRIPTION")
+    customers       Tenant[]
+
+    @@map("SUBSCRIPTION_PLAN")
+}
+
+model Tenant {
+    id                    Int              @id @default(autoincrement()) @map("ID")
+    tenantName            String           @map("TENANT_NAME")
+    databaseName          String           @unique @map("DATABASE_NAME")
+    planId                Int              @map("PLAN_ID")
+    subscriptionStartDate DateTime?        @map("SUBSCRIPTION_START_DATE")
+    subscriptionEndDate   DateTime?        @map("SUBSCRIPTION_END_DATE")
+    createdAt             DateTime         @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
+    plan                  SubscriptionPlan @relation(fields: [planId], references: [id])
+    tenantUsers           TenantUser[]
+
+    @@map("TENANT")
+}
+
+model TenantUser {
+    id        Int     @id @default(autoincrement()) @map("ID")
+    username  String  @unique @map("USERNAME")
+    tenantId  Int     @map("TENANT_ID")
+    tenant    Tenant  @relation(fields: [tenantId], references: [id])
+    isDeleted Boolean @default(false) @map("IS_DELETED")
+
+    @@map("TENANT_USER")
+}

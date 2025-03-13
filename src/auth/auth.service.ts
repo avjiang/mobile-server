@@ -136,7 +136,8 @@ let generateJwtToken = (user: User) => {
     // create a jwt token containing the user info that expires in 15 minutes
     const userInfo: UserInfo = {
         userId: user.id,
-        username: user.username
+        username: user.username,
+        databaseName: ""
     }
     return jwt.sign({user: userInfo}, jwt_token_secret, { expiresIn: '1h' });
 }

@@ -1,4 +1,5 @@
-export interface TenantRequestBody {
-    customerName: string,
-    planId: number
+import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../node_modules/.prisma/global-client";
+
+export interface CreateTenantRequestBody {
+    tenant: Tenant
 }

@@ -11,7 +11,8 @@ declare module 'jsonwebtoken' {
 
 export interface UserInfo {
     userId: number,
-    username: string
+    username: string,
+    databaseName: string
 }
 
 export default (req: Request, res: Response, next: NextFunction) => {

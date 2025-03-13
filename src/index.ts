@@ -6,8 +6,36 @@ import createTestUser from './_test-helpers/create-test-user'
 import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import 'reflect-metadata';
+import { disconnectAllPrismaClients } from './db';
 const app = express()
 const port = 8080
+
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+process.on('uncaughtException', gracefulShutdown);
+
+async function gracefulShutdown(error?: Error) {
+  console.log('Graceful shutdown initiated...');
+  
+  if (error) {
+    console.error('Shutdown triggered by error:', error);
+  }
+  try {
+    // Disconnect all Prisma clients
+    await disconnectAllPrismaClients();
+    
+    // Close other connections (e.g., Redis, HTTP server)
+    // server.close()
+    // redisClient.quit()
+    // etc.
+    
+    console.log('All connections closed successfully');
+    process.exit(error ? 1 : 0);
+  } catch (shutdownError) {
+    console.error('Error during shutdown:', shutdownError);
+    process.exit(1);
+  }
+}
 
 // createTestUser()
 app.get('/', (req, res) => res.send('Hello World!'))

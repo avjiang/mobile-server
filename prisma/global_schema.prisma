@@ -23,7 +23,7 @@ model SubscriptionPlan {
 model Tenant {
     id                    Int              @id @default(autoincrement()) @map("ID")
     tenantName            String           @map("TENANT_NAME")
-    databaseName          String           @unique @map("DATABASE_NAME")
+    databaseName          String?          @unique @map("DATABASE_NAME")
     planId                Int              @map("PLAN_ID")
     subscriptionStartDate DateTime?        @map("SUBSCRIPTION_START_DATE")
     subscriptionEndDate   DateTime?        @map("SUBSCRIPTION_END_DATE")
@@ -37,6 +37,7 @@ model Tenant {
 model TenantUser {
     id        Int     @id @default(autoincrement()) @map("ID")
     username  String  @unique @map("USERNAME")
+    password  String  @map("PASSWORD")
     tenantId  Int     @map("TENANT_ID")
     tenant    Tenant  @relation(fields: [tenantId], references: [id])
     isDeleted Boolean @default(false) @map("IS_DELETED")

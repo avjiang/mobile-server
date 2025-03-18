@@ -1,34 +1,35 @@
 import { jwt_token_secret } from "../../config.json"
 import jwt, { MyJwtPayload } from "jsonwebtoken"
-import { PrismaClient, RefreshToken, User } from "@prisma/client"
+import { PrismaClient, TenantUser, RefreshToken, Tenant } from "../../node_modules/.prisma/global-client";
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import userService from "../user/user.service"
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request"
 import { TokenResponseBody } from "./auth.response"
-import { BaseError, RequestValidateError } from "../api-helpers/error"
+import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
+const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
-const prisma = new PrismaClient()
+const prisma: PrismaClient = getGlobalPrisma()
 
 let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
     try {
-        //find user based on username
-        const user = await prisma.user.findFirst({
+        // Find user based on username
+        const user = await prisma.tenantUser.findFirst({
             where: {
                 username: req.username,
+            },
+            include: {
+                tenant: true,
             }
         })
-
-        //check if user not found or password mismatched, throw error
-        if (!user || !bcrypt.compareSync(req.password, user.password)) {
+        console.log("tenant_db_name: ", user?.tenant?.databaseName)
+        // Check if user not found or password mismatched, throw error
+        if (!user || !user.password || !bcrypt.compareSync(req.password, user.password)) {
             throw new RequestValidateError('Username or password is incorrect')
         }
-
-        //authentication successful so generate jwt & refresk tokens
-        const jwtToken = generateJwtToken(user)
+        // Authentication successful so generate jwt & refresk tokens
+        const jwtToken = generateJwtToken(user, user?.tenant?.databaseName || '')
         const refreshToken = await generateRefreshToken(user, ipAddress)
-
         const response: TokenResponseBody = {
             token: jwtToken,
             refreshToken: refreshToken.token
@@ -54,14 +55,14 @@ let validateToken = async (req: TokenRequestBody) => {
 let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
     try {
         const refreshToken = await getRefreshToken(req.refreshToken)
-        const user = await userService.getById(refreshToken.userId)
+        const user = await getById(refreshToken.userId)
 
-        //replace current refresh token with a new one
+        // Replace current refresh token with a new one
         const newRefreshToken = await generateRefreshToken(user, ipAddress)
         await revokeToken(req)
 
-        //generate new jwt
-        const jwtToken = generateJwtToken(user)
+        // Generate new jwt
+        const jwtToken = generateJwtToken(user, user.tenant?.databaseName ?? '')
 
         const response: TokenResponseBody = {
             token: jwtToken,
@@ -97,7 +98,7 @@ let revokeToken = async (req: RefreshTokenRequestBody) => {
 
 let getRefreshTokens = async (userId: number) => {
     try {
-        //return refresh tokens for user
+        // Return refresh tokens for user
         const refreshTokens = await prisma.refreshToken.findMany({
             where: {
                 userId: userId
@@ -110,7 +111,7 @@ let getRefreshTokens = async (userId: number) => {
     }
 }
 
-//helper function
+// Helper function
 let getRefreshToken = async (token: string) => {
     const refreshToken = await prisma.refreshToken.findFirst({
         where: {
@@ -123,25 +124,21 @@ let getRefreshToken = async (token: string) => {
     return refreshToken;
 }
 
-function isTokenActive(refreshToken: RefreshToken) {
-    if (!refreshToken.expired) {
-        return false
-    }
-    const isExpired = new Date() >= refreshToken.expired
-    return !refreshToken.revoked && !isExpired
+let randomTokenString = () => {
+    return crypto.randomBytes(40).toString('hex');
 }
 
-let generateJwtToken = (user: User) => {
-    // create a jwt token containing the user info that expires in 15 minutes
+let generateJwtToken = (user: TenantUser, db: string) => {
+    // Create a jwt token containing the user info that expires in 15 minutes
     const userInfo: UserInfo = {
         userId: user.id,
         username: user.username,
-        databaseName: ""
+        databaseName: db
     }
     return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1h' });
 }
 
-let generateRefreshToken = async (user: User, ipAddress: string) => {
+let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {
     //create a refresh token that expires in 1 day
     try {
         var tokenExpiredDate = new Date()
@@ -162,8 +159,32 @@ let generateRefreshToken = async (user: User, ipAddress: string) => {
     }
 }
 
-let randomTokenString = () => {
-    return crypto.randomBytes(40).toString('hex');
+function isTokenActive(refreshToken: RefreshToken) {
+    if (!refreshToken.expired) {
+        return false
+    }
+    const isExpired = new Date() >= refreshToken.expired
+    return !refreshToken.revoked && !isExpired
 }
 
-export = { authenticate, validateToken, refreshToken, revokeToken, getRefreshTokens }
+let getById = async (id: number) => {
+    try {
+        const user = await prisma.tenantUser.findUnique({
+            where: {
+                id: id
+            },
+            include: {
+                tenant: true,
+            }
+        })
+        if (!user) {
+            throw new NotFoundError("User")
+        }
+        return user
+    }
+    catch (error) {
+        throw error
+    }
+}
+
+export = { authenticate, validateToken, revokeToken, refreshToken, getRefreshTokens }

@@ -1,14 +1,14 @@
-import { PrismaClient, Item } from "@prisma/client"
+import { PrismaClient, Item, Prisma } from "@prisma/client"
 import { NotFoundError } from "../api-helpers/error"
 import salesService from "../sales/sales.service"
 import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.response"
 import { plainToInstance } from "class-transformer"
+const { getTenantPrisma } = require('../db');
 
-const prisma = new PrismaClient()
-
-let getByIdRaw = async (id: number) => {
+let getByIdRaw = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const item = await prisma.item.findUnique({
+        const item = await tenantPrisma.item.findUnique({
             where: {
                 id: id
             },
@@ -24,9 +24,10 @@ let getByIdRaw = async (id: number) => {
     }
 }
 
-let getAllRaw = async () => {
+let getAllRaw = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const items = await prisma.item.findMany({
+        const items = await tenantPrisma.item.findMany({
             include: {
                 stock: true,
                 stockCheck: true
@@ -39,9 +40,10 @@ let getAllRaw = async () => {
     }
 }
 
-let getAll = async () => {
+let getAll = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const items = await prisma.item.findMany({
+        const items = await tenantPrisma.item.findMany({
             include: {
                 stock: {
                     select: {
@@ -58,9 +60,10 @@ let getAll = async () => {
     }
 }
 
-let getAllBySupplierId = async (supplierId: number) => {
+let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const items = await prisma.item.findMany({
+        const items = await tenantPrisma.item.findMany({
             where: {
                 supplierId: supplierId
             },
@@ -80,9 +83,10 @@ let getAllBySupplierId = async (supplierId: number) => {
     }
 }
 
-let getById = async (id: number) => {
+let getById = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const item = await prisma.item.findUnique({
+        const item = await tenantPrisma.item.findUnique({
             where: {
                 id: id
             },
@@ -105,12 +109,13 @@ let getById = async (id: number) => {
     }
 }
 
-let createMany = async (itemBodyArray: ItemDto[]) => {
+let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const createdItems = await prisma.$transaction(
+        const createdItems = await tenantPrisma.$transaction(
             itemBodyArray.map((itemBody) => {
                 const { stockQuantity, ...item } = itemBody
-                return prisma.item.create({
+                return tenantPrisma.item.create({
                     data: {
                         itemCode: item.itemCode,
                         itemName: item.itemName,
@@ -164,9 +169,10 @@ let createMany = async (itemBodyArray: ItemDto[]) => {
     }
 }
 
-let update = async (item: Item) => {
+let update = async (databaseName: string, item: Item) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedItem = await prisma.item.update({
+        const updatedItem = await tenantPrisma.item.update({
             where: {
                 id: item.id
             },
@@ -179,14 +185,15 @@ let update = async (item: Item) => {
     }
 }
 
-let remove = async (id: number) => {
+let remove = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const item = await getByIdRaw(id)
+        const item = await getByIdRaw(databaseName, id)
         if (!item) {
             throw new NotFoundError("Item")
         }
 
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
             await tx.stockCheck.updateMany({ where: { itemId: id }, data: { deleted: true } }),
                 await tx.stock.update({
                     where: {
@@ -207,9 +214,10 @@ let remove = async (id: number) => {
     }
 }
 
-let getLowStockItemCount = async (lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const itemStockItems = await prisma.item.findMany({
+        const itemStockItems = await tenantPrisma.item.findMany({
             where: {
                 stock: {
                     availableQuantity: {
@@ -234,9 +242,10 @@ let getLowStockItemCount = async (lowStockQuantity: number, isIncludedZeroStock:
     }
 }
 
-let getLowStockItems = async (lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+let getLowStockItems = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const itemStockItems = await prisma.item.findMany({
+        const itemStockItems = await tenantPrisma.item.findMany({
             where: {
                 stock: {
                     availableQuantity: {
@@ -262,11 +271,12 @@ let getLowStockItems = async (lowStockQuantity: number, isIncludedZeroStock: boo
     }
 }
 
-let getSoldItemRanking = async (startDate: string, endDate: string) => {
+let getSoldItemRanking = async (databaseName: string, startDate: string, endDate: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const salesIDArray = (await salesService.getTotalSales(startDate, endDate)).map(sales => sales.id)
 
-        const top5SoldSalesItems = await prisma.salesItem.groupBy({
+        const top5SoldSalesItems = await tenantPrisma.salesItem.groupBy({
             by: ['itemId'],
             _count: {
                 itemId: true,
@@ -284,7 +294,7 @@ let getSoldItemRanking = async (startDate: string, endDate: string) => {
             take: 5,
         })
 
-        const leastSoldSalesItems = await prisma.salesItem.groupBy({
+        const leastSoldSalesItems = await tenantPrisma.salesItem.groupBy({
             by: ['itemId'],
             _count: {
                 itemId: true,
@@ -304,7 +314,7 @@ let getSoldItemRanking = async (startDate: string, endDate: string) => {
 
         const topSoldItems = await Promise.all(
             top5SoldSalesItems.map(async (item) => {
-                const stockItem = await getById(item.itemId)
+                const stockItem = await getById(databaseName, item.itemId)
                 const soldItem: ItemSoldObject = {
                     item: stockItem,
                     quantitySold: item._count.itemId
@@ -317,7 +327,7 @@ let getSoldItemRanking = async (startDate: string, endDate: string) => {
         let leastSoldItem: ItemSoldObject | null = null
         if (leastSoldSalesItems.length > 0) {
             const leastSoldSalesItem = leastSoldSalesItems[0]
-            const stockItem = await getById(leastSoldSalesItem.itemId)
+            const stockItem = await getById(databaseName, leastSoldSalesItem.itemId)
             leastSoldItem = {
                 item: stockItem,
                 quantitySold: leastSoldSalesItem._count.itemId

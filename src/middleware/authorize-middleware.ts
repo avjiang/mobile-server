@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express"
 import { jwt_token_secret } from "../../config.json"
 import jwt, { MyJwtPayload } from "jsonwebtoken"
 import { AuthenticationError } from "../api-helpers/error"
+import { AuthRequest } from "../middleware/auth-request"
 
 declare module 'jsonwebtoken' {
     export interface MyJwtPayload extends jwt.JwtPayload {
@@ -15,7 +16,7 @@ export interface UserInfo {
     databaseName: string
 }
 
-export default (req: Request, res: Response, next: NextFunction) => {
+export default (req: AuthRequest, res: Response, next: NextFunction) => {
     const token = req.header('token')
     if (token) {
         try {
@@ -24,7 +25,7 @@ export default (req: Request, res: Response, next: NextFunction) => {
             }
             else {
                 const payload: MyJwtPayload = jwt.verify(token, jwt_token_secret) as MyJwtPayload
-                // req.user = payload.user
+                req.user = payload.user
                 next()
             }
         }

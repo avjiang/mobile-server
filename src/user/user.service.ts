@@ -22,7 +22,7 @@ let getById = async (id: number) => {
             }
         })
         if (!user) {
-            throw new NotFoundError("User") 
+            throw new NotFoundError("User")
         }
         return user
     }
@@ -95,7 +95,7 @@ let changePassword = async (userId: number, currentPassword: string, newPassword
 
         //check if current password mismatched, throw error
         if (!bcrypt.compareSync(currentPassword, user.password)) {
-            throw new RequestValidateError('Password is incorrect') 
+            throw new RequestValidateError('Password is incorrect')
         }
 
         const updatedUser = await prisma.user.update({

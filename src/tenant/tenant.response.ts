@@ -1,5 +1,7 @@
 import { Expose, Transform } from "class-transformer";
-import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../node_modules/.prisma/global-client";
+import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, TenantSubscription } from "../../node_modules/.prisma/global-client";
+
+type TenantUserWithoutPassword = Omit<TenantUser, 'password'>;
 
 export class TenantDto {
     @Expose()
@@ -12,19 +14,24 @@ export class TenantDto {
     databaseName = String();
 
     @Expose()
-    @Transform(({ obj }) => obj.plan?.planName || '')
-    planName: string = '';
-
-    @Expose()
     createdAt: Date = new Date();
+}
+
+export class GetAllTenantDto {
+
 }
 
 export class TenantCreationDto {
     tenant: TenantDto;
-    tenantUser: TenantUser;
+    tenantUser: TenantUserWithoutPassword;
 
-    constructor(tenant: TenantDto, tenantUser: TenantUser) {
+    @Expose()
+    @Transform(({ obj }) => ({ planName: obj.subscriptionPlan.planName }))
+    subscription: { planName: string };
+
+    constructor(tenant: TenantDto, tenantUser: TenantUserWithoutPassword, subscription: TenantSubscription & { subscriptionPlan: SubscriptionPlan }) {
         this.tenant = tenant;
         this.tenantUser = tenantUser;
+        this.subscription = { planName: subscription.subscriptionPlan.planName };
     }
 }

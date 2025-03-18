@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import authService from "./auth.service";
+import authService from "./auth.v2.service";
 import authorizeMiddleware, { UserInfo } from "../middleware/authorize-middleware";
 import NetworkRequest from "../api-helpers/network-request";
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request";
@@ -8,6 +8,7 @@ import { RefreshToken } from "@prisma/client";
 import { sendResponse } from "../api-helpers/network";
 import { RequestValidateError } from "../api-helpers/error";
 import validator from "validator";
+import { AuthRequest } from "../middleware/auth-request";
 
 const router = express.Router()
 
@@ -29,7 +30,6 @@ let authenticate = (req: NetworkRequest<AuthenticateRequestBody>, res: Response,
         .catch(next)
 }
 
-//validate got issue
 let validateToken = (req: NetworkRequest<TokenRequestBody>, res: Response, next: NextFunction) => {
     const tokenBody = req.body
 
@@ -95,6 +95,7 @@ let getRefreshTokens = (req: Request, res: Response, next: NextFunction) => {
         .then((refreshTokens: RefreshToken[]) => sendResponse(res, refreshTokens))
         .catch(next)
 }
+
 
 //routes
 router.post('/login', authenticate)

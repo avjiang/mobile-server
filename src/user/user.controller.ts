@@ -32,7 +32,7 @@ let create = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    
+
     const user = req.body
 
     if (!user) {
@@ -78,7 +78,7 @@ let update = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
     if (!user.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    
+
     if (user.email && !validator.isEmail(user.email)) {
         throw new RequestValidateError('Update failed: [email] format incorrect')
     }
@@ -117,14 +117,14 @@ let changePassword = (req: NetworkRequest<ChangePasswordRequestBody>, res: Respo
     if (!changePasswordRequest.currentPassword) {
         throw new RequestValidateError('Change password failed: current password not found')
     }
-    
+
     if (!changePasswordRequest.newPassword) {
         throw new RequestValidateError('Change password failed: new password not found')
     }
 
     service.changePassword(changePasswordRequest.userId, changePasswordRequest.currentPassword, changePasswordRequest.newPassword)
-    .then((user: User) => sendResponse(res, { result: true }))
-    .catch(next)
+        .then((user: User) => sendResponse(res, { result: true }))
+        .catch(next)
 }
 
 

@@ -16,19 +16,19 @@ process.on('uncaughtException', gracefulShutdown);
 
 async function gracefulShutdown(error?: Error) {
   console.log('Graceful shutdown initiated...');
-  
+
   if (error) {
     console.error('Shutdown triggered by error:', error);
   }
   try {
     // Disconnect all Prisma clients
     await disconnectAllPrismaClients();
-    
+
     // Close other connections (e.g., Redis, HTTP server)
     // server.close()
     // redisClient.quit()
     // etc.
-    
+
     console.log('All connections closed successfully');
     process.exit(error ? 1 : 0);
   } catch (shutdownError) {
@@ -56,7 +56,8 @@ app.use(cors({
 
 // auth route need to execute before authentication middleware
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
-app.use('/auth', require('./auth/auth.controller'))
+// app.use('/auth', require('./auth/auth.controller'))
+app.use('/auth', require('./auth/auth.v2.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)

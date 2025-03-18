@@ -1,5 +1,8 @@
 import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../node_modules/.prisma/global-client";
 
-export interface CreateTenantRequestBody {
-    tenant: Tenant
+export interface CreateTenantRequest {
+    tenant: {
+        tenantName: string;
+        plan: string;
+    };
 }

@@ -50,7 +50,7 @@ model TenantSubscription {
     createdAt              DateTime                  @default(now()) @map("CREATED_AT")
     updatedAt              DateTime                  @updatedAt @map("UPDATED_AT")
     tenant                 Tenant                    @relation(fields: [tenantId], references: [id])
-    subscriptionPlan       SubscriptionPlan          @relation(fields: [subscriptionPlanId], references: [id])
+    subscriptionPlan       SubscriptionPlan          @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
     subscriptionAddOn      TenantSubscriptionAddOn[]
 
     @@map("TENANT_SUBSCRIPTION")

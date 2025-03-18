@@ -12,6 +12,9 @@ let globalPrismaInstance: GlobalPrismaClient | null = null;
 const tenantPrismaInstances = new Map<string, TenantPrismaClient>();
 
 export function getGlobalPrisma(): GlobalPrismaClient {
+  if (!process.env.GLOBAL_DB_URL) {
+    throw new Error('GLOBAL_DB_URL environment variable is not set');
+  }
   if (!globalPrismaInstance) {
     globalPrismaInstance = new GlobalPrismaClient({
       datasources: { db: { url: process.env.GLOBAL_DB_URL } },

@@ -80,14 +80,14 @@ model TenantUser {
 }
 
 model RefreshToken {
-    id          Int       @id @default(autoincrement()) @map("ID")
-    userId      Int       @map("USER_ID")
-    token       String    @map("TOKEN")
-    expired     DateTime? @map("EXPIRED_DATETIME")
-    created     DateTime  @default(now()) @map("CREATED_DATETIME")
-    createdByIP String?   @map("CREATED_BY")
-    revoked     DateTime? @map("REVOKED_DATETIME")
-    deleted     Boolean   @default(false) @map("IS_DELETED")
+    id           Int       @id @default(autoincrement()) @map("ID")
+    tenantUserId Int       @map("TENANT_USER_ID")
+    token        String    @map("TOKEN")
+    expired      DateTime? @map("EXPIRED_DATETIME")
+    created      DateTime  @default(now()) @map("CREATED_DATETIME")
+    createdByIP  String?   @map("CREATED_BY")
+    revoked      DateTime? @map("REVOKED_DATETIME")
+    deleted      Boolean   @default(false) @map("IS_DELETED")
 
     @@map("REFRESH_TOKEN")
 }

@@ -11,9 +11,11 @@ declare module 'jsonwebtoken' {
 }
 
 export interface UserInfo {
+    tenantUserId: number,
     userId: number,
     username: string,
-    databaseName: string
+    databaseName: string,
+    tenantId: number
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -26,6 +28,7 @@ export default (req: AuthRequest, res: Response, next: NextFunction) => {
             else {
                 const payload: MyJwtPayload = jwt.verify(token, jwt_token_secret) as MyJwtPayload
                 req.user = payload.user
+                console.log("User info: ", req.user)
                 next()
             }
         }

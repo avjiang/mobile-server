@@ -5,6 +5,7 @@ export interface TokenResponseBody {
 
 export interface ValidateTokenResponseBody {
     verified: boolean,
+    tenantUserId: number,
     userId: number,
     username: string
 }

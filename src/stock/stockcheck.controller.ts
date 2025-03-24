@@ -6,35 +6,48 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { CreateStockChecksRequestBody, UpdateStockChecksRequestBody } from "./stockcheck.request"
+import { AuthRequest } from "src/middleware/auth-request"
 
 const router = express.Router()
 
-let getAllStockCheck = (req: Request, res: Response, next: NextFunction) => {
-    service.getAllStockCheck()
+let getAllStockCheck = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+
+    service.getAllStockCheck(req.user.databaseName)
         .then((stockChecks: StockCheck[]) => sendResponse(res, stockChecks))
         .catch(next)
 }
 
-let getStockChecksByItemIdAndOutlet = (req: Request, res: Response, next: NextFunction) => {
+let getStockChecksByItemIdAndOutlet = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+
     const outletId = parseInt(req.query.outletId as string)
     const itemId = req.query.itemId as string
     if (!validator.isNumeric(itemId)) {
         throw new RequestValidateError('Item ID format incorrect')
     }
 
-    service.getStockChecksByItemIdAndOutlet(parseInt(itemId), outletId)
+    service.getStockChecksByItemIdAndOutlet(req.user.databaseName, parseInt(itemId), outletId)
         .then((stockCheck: StockCheck[]) => sendResponse(res, stockCheck))
         .catch(next)
 }
 
 let createManyStockChecks = (req: NetworkRequest<CreateStockChecksRequestBody>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
 
     const requestBody = req.body
 
-    service.createManyStockChecks(requestBody.stockChecks)
+    service.createManyStockChecks(req.user.databaseName, requestBody.stockChecks)
         .then((insertedRecordCount: number) => {
             var message = `Successfully created ${insertedRecordCount} stockChecks`
             if (insertedRecordCount === 1) {
@@ -46,6 +59,10 @@ let createManyStockChecks = (req: NetworkRequest<CreateStockChecksRequestBody>, 
 }
 
 let updateManyStockChecks = (req: NetworkRequest<UpdateStockChecksRequestBody>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -62,7 +79,7 @@ let updateManyStockChecks = (req: NetworkRequest<UpdateStockChecksRequestBody>, 
         }
     });
 
-    service.updateManyStockChecks(requestBody.stockChecks)
+    service.updateManyStockChecks(req.user.databaseName, requestBody.stockChecks)
         .then(() => sendResponse(res, "Successfully updated"))
         .catch(next)
 }

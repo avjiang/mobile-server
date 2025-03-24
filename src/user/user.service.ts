@@ -1,12 +1,12 @@
 import { User, PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
+import { getTenantPrisma } from '../db';
 
-const prisma = new PrismaClient()
-
-let getAll = async () => {
+let getAll = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const users = await prisma.user.findMany()
+        const users = await tenantPrisma.user.findMany()
         return users
     }
     catch (error) {
@@ -14,9 +14,10 @@ let getAll = async () => {
     }
 }
 
-let getById = async (id: number) => {
+let getById = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const user = await prisma.user.findUnique({
+        const user = await tenantPrisma.user.findUnique({
             where: {
                 id: id
             }
@@ -31,9 +32,10 @@ let getById = async (id: number) => {
     }
 }
 
-let create = async (user: User) => {
+let create = async (databaseName: string, user: User) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const newUser = await prisma.user.create({
+        const newUser = await tenantPrisma.user.create({
             data: {
                 username: user.username,
                 password: bcrypt.hashSync(user.password, 10),
@@ -51,9 +53,10 @@ let create = async (user: User) => {
     }
 }
 
-let update = async (user: User) => {
+let update = async (databaseName: string, user: User) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await tenantPrisma.user.update({
             where: {
                 id: user.id
             },
@@ -72,9 +75,10 @@ let update = async (user: User) => {
     }
 }
 
-let remove = async (id: number) => {
+let remove = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await tenantPrisma.user.update({
             where: {
                 id: id
             },
@@ -89,16 +93,17 @@ let remove = async (id: number) => {
     }
 }
 
-let changePassword = async (userId: number, currentPassword: string, newPassword: string) => {
+let changePassword = async (databaseName: string, userId: number, currentPassword: string, newPassword: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const user = await getById(userId)
+        const user = await getById(databaseName, userId)
 
         //check if current password mismatched, throw error
         if (!bcrypt.compareSync(currentPassword, user.password)) {
             throw new RequestValidateError('Password is incorrect')
         }
 
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await tenantPrisma.user.update({
             where: {
                 id: user.id
             },

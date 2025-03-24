@@ -1,11 +1,12 @@
 import { Declaration, PrismaClient } from "@prisma/client"
 import { NotFoundError } from "../api-helpers/error"
 import { CloseSessionRequest, OpenSessionRequest } from "./session.request"
+import { getTenantPrisma } from '../db';
 
-const prisma = new PrismaClient()
-let getDeclarationsBySessionID = async (sessionID: number) => {
+let getDeclarationsBySessionID = async (sessionID: number, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const session = await prisma.session.findUnique({
+        const session = await tenantPrisma.session.findUnique({
             where: {
                 id: sessionID
             },
@@ -18,7 +19,6 @@ let getDeclarationsBySessionID = async (sessionID: number) => {
         }
 
         const { declarations, ...sessionWithoutDeclarations } = session
-
         return declarations
     }
     catch (error) {
@@ -26,9 +26,10 @@ let getDeclarationsBySessionID = async (sessionID: number) => {
     }
 }
 
-let getSessionByID = async (sessionID: number) => {
+let getSessionByID = async (sessionID: number, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const session = await prisma.session.findUnique({
+        const session = await tenantPrisma.session.findUnique({
             where: {
                 id: sessionID
             },
@@ -46,9 +47,10 @@ let getSessionByID = async (sessionID: number) => {
     }
 }
 
-let createSession = async (openSessionRequest: OpenSessionRequest) => {
+let createSession = async (openSessionRequest: OpenSessionRequest, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const createdSession = await prisma.session.create({
+        const createdSession = await tenantPrisma.session.create({
             data: {
                 outletId: openSessionRequest.outletId,
                 businessDate: openSessionRequest.businessDate,
@@ -66,9 +68,10 @@ let createSession = async (openSessionRequest: OpenSessionRequest) => {
     }
 }
 
-let createDeclarations = async (declarations: Declaration[]) => {
+let createDeclarations = async (declarations: Declaration[], databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const createdDeclarations = await prisma.declaration.createMany({
+        const createdDeclarations = await tenantPrisma.declaration.createMany({
             data: declarations
         })
 
@@ -79,10 +82,11 @@ let createDeclarations = async (declarations: Declaration[]) => {
     }
 }
 
-let closeSession = async (closeSessionRequest: CloseSessionRequest) => {
+let closeSession = async (closeSessionRequest: CloseSessionRequest, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         var isSuccess = false
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
             var session = await tx.session.findUnique({
                 where: {
                     id: closeSessionRequest.id

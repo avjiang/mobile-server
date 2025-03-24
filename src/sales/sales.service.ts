@@ -1,12 +1,12 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, Stock, StockCheck } from "@prisma/client"
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
+import { getTenantPrisma } from '../db';
 
-const prisma = new PrismaClient()
-
-let getAll = async () => {
+let getAll = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const salesArray = await prisma.sales.findMany({
+        const salesArray = await tenantPrisma.sales.findMany({
             include: {
                 salesItems: true,
                 payments: true,
@@ -20,9 +20,10 @@ let getAll = async () => {
     }
 }
 
-let getById = async (id: number) => {
+let getById = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const sales = await prisma.sales.findUnique({
+        const sales = await tenantPrisma.sales.findUnique({
             where: {
                 id: id
             },
@@ -43,9 +44,10 @@ let getById = async (id: number) => {
     }
 }
 
-let create = async (salesBody: SalesCreationRequest) => {
+let create = async (databaseName: string, salesBody: SalesCreationRequest) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const createdSales = await prisma.$transaction(async (tx) => {
+        const createdSales = await tenantPrisma.$transaction(async (tx) => {
 
             //calculate profit amount
             let updatedSales = performProfitCalculation(salesBody.sales)
@@ -113,17 +115,18 @@ let create = async (salesBody: SalesCreationRequest) => {
             return sales
         })
 
-        return getById(createdSales.id)
+        return getById(databaseName, createdSales.id)
     }
     catch (error) {
         throw error
     }
 }
 
-let completeNewSales = async (salesBody: CreateSalesRequest, payments: Payment[]) => {
+let completeNewSales = async (databaseName: string, salesBody: CreateSalesRequest, payments: Payment[]) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
 
-        const createdSales = await prisma.$transaction(async (tx) => {
+        const createdSales = await tenantPrisma.$transaction(async (tx) => {
 
             //calculate profit amount
             let updatedSales = performProfitCalculation(salesBody)
@@ -275,16 +278,17 @@ let completeNewSales = async (salesBody: CreateSalesRequest, payments: Payment[]
             return sales
         })
 
-        return getById(createdSales.id)
+        return getById(databaseName, createdSales.id)
     }
     catch (error) {
         throw error
     }
 }
 
-let completeSales = async (salesId: number, payments: Payment[]) => {
+let completeSales = async (databaseName: string, salesId: number, payments: Payment[]) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
 
             //get sales grand total
             var sales = await tx.sales.findUnique({
@@ -384,14 +388,15 @@ let completeSales = async (salesId: number, payments: Payment[]) => {
             }
         })
 
-        return getById(salesId)
+        return getById(databaseName, salesId)
     }
     catch (error) {
         throw error
     }
 }
 
-let calculateSales = async (salesRequestBody: CalculateSalesDto) => {
+let calculateSales = async (databaseName: string, salesRequestBody: CalculateSalesDto) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         let sales = await performSalesCalculation(salesRequestBody.sales)
         let salesResponse: CalculateSalesDto = {
@@ -522,9 +527,10 @@ let calculateItemDiscount = (item: CalculateSalesItemObject) => {
     return item
 }
 
-let update = async (salesRequest: SalesRequestBody) => {
+let update = async (databaseName: string, salesRequest: SalesRequestBody) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
             //separate sales & salesitem to perform update to different tables
             let { items, ...sales } = salesRequest.sales
             items.forEach(async function (salesItem) {
@@ -548,9 +554,10 @@ let update = async (salesRequest: SalesRequestBody) => {
     }
 }
 
-let remove = async (id: number) => {
+let remove = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
             await tx.sales.update({
                 where: {
                     id: id
@@ -574,9 +581,10 @@ let remove = async (id: number) => {
     }
 }
 
-let getTotalSales = async (startDate: string, endDate: string) => {
+let getTotalSales = async (databaseName: string, startDate: string, endDate: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const salesArray = await prisma.sales.findMany({
+        const salesArray = await tenantPrisma.sales.findMany({
             where: {
                 AND: [
                     {
@@ -604,9 +612,10 @@ let getTotalSales = async (startDate: string, endDate: string) => {
     }
 }
 
-let getTotalSalesData = async (startDate: string, endDate: string) => {
+let getTotalSalesData = async (databaseName: string, startDate: string, endDate: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const salesArray = await getTotalSales(startDate, endDate)
+        const salesArray = await getTotalSales(databaseName, startDate, endDate)
         const { totalProfit, totalRevenue } = salesArray.reduce((accumulator, currentSales) => {
             accumulator.totalProfit += currentSales.profitAmount;
             accumulator.totalRevenue += currentSales.totalAmount;

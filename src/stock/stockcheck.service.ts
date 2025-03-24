@@ -1,12 +1,12 @@
 import { PrismaClient, StockCheck } from "@prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
-
-const prisma = new PrismaClient()
+import { getTenantPrisma } from '../db';
 
 //stock check function
-let getAllStockCheck = async () => {
+let getAllStockCheck = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
     try {
-        const stockChecks = await prisma.stockCheck.findMany()
+        const stockChecks = await tenantPrisma.stockCheck.findMany()
         return stockChecks
     }
     catch (error) {
@@ -14,9 +14,10 @@ let getAllStockCheck = async () => {
     }
 }
 
-let getStockChecksByItemIdAndOutlet = async (itemId: number, outletId: number) => {
+let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: number, outletId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
     try {
-        const stockChecks = await prisma.stockCheck.findMany({
+        const stockChecks = await tenantPrisma.stockCheck.findMany({
             where: {
                 itemId: itemId,
                 outletId: outletId
@@ -29,9 +30,10 @@ let getStockChecksByItemIdAndOutlet = async (itemId: number, outletId: number) =
     }
 }
 
-let createManyStockChecks = async (stockChecks: StockCheck[]) => {
+let createManyStockChecks = async (databaseName: string, stockChecks: StockCheck[]) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
     try {
-        const createdStockChecks = await prisma.stockCheck.createMany({
+        const createdStockChecks = await tenantPrisma.stockCheck.createMany({
             data: stockChecks
         })
 
@@ -42,10 +44,11 @@ let createManyStockChecks = async (stockChecks: StockCheck[]) => {
     }
 }
 
-let updateManyStockChecks = async (stockChecks: StockCheck[]) => {
+let updateManyStockChecks = async (databaseName: string, stockChecks: StockCheck[]) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
     try {
         var updatedCount = 0
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
 
             for (const stockCheck of stockChecks) {
                 await tx.stockCheck.update({

@@ -2,13 +2,13 @@ import { Prisma, PrismaClient, Stock, StockCheck } from "@prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { StockAdjustment, StockAdjustmentRequestBody } from "./stock.request"
 import stockcheckService from "./stockcheck.service"
-
-const prisma = new PrismaClient()
+import { getTenantPrisma } from '../db';
 
 // stock function 
-let getAllStock = async () => {
+let getAllStock = async (databaseName: string) => {
     try {
-        const stocks = await prisma.stock.findMany()
+        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+        const stocks = await tenantPrisma.stock.findMany()
         return stocks
     }
     catch (error) {
@@ -16,11 +16,12 @@ let getAllStock = async () => {
     }
 }
 
-let getStockByItemId = async (itemId: number) => {
+let getStockByItemId = async (databaseName: string, itemId: number) => {
     try {
-        const stock = await prisma.stock.findUnique({
+        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+        const stock = await tenantPrisma.stock.findUnique({
             where: {
-                id: (await prisma.item.findUnique({
+                id: (await tenantPrisma.item.findUnique({
                     where: { id: itemId },
                     select: { stockId: true },
                 }))?.stockId,
@@ -36,16 +37,17 @@ let getStockByItemId = async (itemId: number) => {
     }
 }
 
-let stockAdjustment = async (stockAdjustments: StockAdjustment[]) => {
+let stockAdjustment = async (databaseName: string, stockAdjustments: StockAdjustment[]) => {
     try {
+        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
         var adjustedCount = 0
 
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
             let stocks: Stock[] = []
             let stockChecks: StockCheck[] = []
 
             for (const stockAdjustment of stockAdjustments) {
-                let stock = await getStockByItemId(stockAdjustment.itemId)
+                let stock = await getStockByItemId(databaseName, stockAdjustment.itemId)
                 if (!stock) {
                     throw new NotFoundError(`Stock for ${stockAdjustment.itemId}`)
                 }
@@ -94,10 +96,11 @@ let stockAdjustment = async (stockAdjustments: StockAdjustment[]) => {
     }
 }
 
-let updateManyStocks = async (stocks: Stock[]) => {
+let updateManyStocks = async (databaseName: string, stocks: Stock[]) => {
     try {
+        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
         var updatedCount = 0
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
 
             for (const stock of stocks) {
                 await tx.stock.update({
@@ -116,9 +119,10 @@ let updateManyStocks = async (stocks: Stock[]) => {
     }
 }
 
-let removeStock = async (id: number) => {
+let removeStock = async (databaseName: string, id: number) => {
     try {
-        const stock = await prisma.stock.findUnique({
+        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+        const stock = await tenantPrisma.stock.findUnique({
             where: {
                 id: id
             }
@@ -126,7 +130,7 @@ let removeStock = async (id: number) => {
         if (!stock) {
             throw new NotFoundError("Stock")
         }
-        const updatedStock = await prisma.stock.update({
+        const updatedStock = await tenantPrisma.stock.update({
             where: {
                 id: id
             },

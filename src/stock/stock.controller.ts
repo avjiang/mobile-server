@@ -6,33 +6,43 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { CreateStocksRequestBody, StockAdjustmentRequestBody, UpdateStocksRequestBody } from "./stock.request"
+import { AuthRequest } from "src/middleware/auth-request"
 
 const router = express.Router()
 
-let getAllStock = (req: Request, res: Response, next: NextFunction) => {
-    service.getAllStock()
+let getAllStock = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    service.getAllStock(req.user.databaseName)
         .then((stocks: Stock[]) => sendResponse(res, stocks))
         .catch(next)
 }
 
-let getStockByItemId = (req: Request, res: Response, next: NextFunction) => {
+let getStockByItemId = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     const itemId = req.query.itemId as string
     if (!validator.isNumeric(itemId)) {
         throw new RequestValidateError('Item ID format incorrect')
     }
-    service.getStockByItemId(parseInt(itemId))
+    service.getStockByItemId(req.user.databaseName, parseInt(itemId))
         .then((stock: Stock) => sendResponse(res, stock))
         .catch(next)
 }
 
 let stockAdjustment = (req: NetworkRequest<StockAdjustmentRequestBody>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
 
     const requestBody = req.body
 
-    service.stockAdjustment(requestBody.stockAdjustments)
+    service.stockAdjustment(req.user.databaseName, requestBody.stockAdjustments)
         .then((adjustedRecordCount: number) => {
             var message = `Successfully adjusted ${adjustedRecordCount} stocks`
             if (adjustedRecordCount === 1) {
@@ -44,6 +54,9 @@ let stockAdjustment = (req: NetworkRequest<StockAdjustmentRequestBody>, res: Res
 }
 
 let updateManyStocks = (req: NetworkRequest<UpdateStocksRequestBody>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -60,7 +73,7 @@ let updateManyStocks = (req: NetworkRequest<UpdateStocksRequestBody>, res: Respo
         }
     });
 
-    service.updateManyStocks(requestBody.stocks)
+    service.updateManyStocks(req.user.databaseName, requestBody.stocks)
         .then((updatedRecordCount: number) => {
             var message = `Successfully updated ${updatedRecordCount} stocks`
             if (updatedRecordCount === 1) {
@@ -71,13 +84,16 @@ let updateManyStocks = (req: NetworkRequest<UpdateStocksRequestBody>, res: Respo
         .catch(next)
 }
 
-let removeStock = (req: Request, res: Response, next: NextFunction) => {
+let removeStock = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
 
     const stockId: number = parseInt(req.params.id)
-    service.removeStock(stockId)
+    service.removeStock(req.user.databaseName, stockId)
         .then((stock: Stock) => sendResponse(res, "Successfully deleted"))
         .catch(next)
 }

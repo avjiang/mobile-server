@@ -8,26 +8,36 @@ import { SalesAnalyticResponseBody } from "./sales.response"
 import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
 import { Sales } from "@prisma/client"
+import { AuthRequest } from "src/middleware/auth-request"
 
 const router = express.Router()
 
-const getAll = (req: Request, res: Response, next: NextFunction) => {
-    service.getAll()
+const getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    service.getAll(req.user.databaseName)
         .then((salesArray: Sales[]) => sendResponse(res, salesArray))
         .catch(next)
 }
 
-const getById = (req: Request, res: Response, next: NextFunction) => {
+const getById = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
     const itemId: number = parseInt(req.params.id)
-    service.getById(itemId)
+    service.getById(req.user.databaseName, itemId)
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }
 
 const create = (req: NetworkRequest<SalesCreationRequest>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -42,12 +52,15 @@ const create = (req: NetworkRequest<SalesCreationRequest>, res: Response, next: 
         throw new RequestValidateError('Create failed: sales data missing')
     }
 
-    service.create(salesBody)
+    service.create(req.user.databaseName, salesBody)
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }
 
 const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -64,12 +77,15 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
 
     const payments = requestBody.payments
 
-    service.completeNewSales(sales, payments)
+    service.completeNewSales(req.user.databaseName, sales, payments)
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }
 
 const completeSales = (req: NetworkRequest<CompleteSalesRequest>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -93,12 +109,15 @@ const completeSales = (req: NetworkRequest<CompleteSalesRequest>, res: Response,
         }
     }
 
-    service.completeSales(salesId, payments)
+    service.completeSales(req.user.databaseName, salesId, payments)
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }
 
 const calculateSales = (req: NetworkRequest<CalculateSalesDto>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -108,12 +127,15 @@ const calculateSales = (req: NetworkRequest<CalculateSalesDto>, res: Response, n
         throw new RequestValidateError('Data missing')
     }
 
-    service.calculateSales(requestBody)
+    service.calculateSales(req.user.databaseName, requestBody)
         .then((sales: CalculateSalesDto) => sendResponse(res, sales))
         .catch(next)
 }
 
 const update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -128,23 +150,29 @@ const update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: Next
         throw new RequestValidateError('Update failed: [id] not found')
     }
 
-    service.update(salesBody)
+    service.update(req.user.databaseName, salesBody)
         .then(() => sendResponse(res, "Successfully updated"))
         .catch(next)
 }
 
-const remove = (req: Request, res: Response, next: NextFunction) => {
+const remove = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
 
     const salesId: number = parseInt(req.params.id)
-    service.remove(salesId)
+    service.remove(req.user.databaseName, salesId)
         .then(() => sendResponse(res, "Successfully deleted"))
         .catch(next)
 }
 
-const getTotalSalesData = (req: Request, res: Response, next: NextFunction) => {
+const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     const { startDate, endDate } = req.query
     if (!startDate || !endDate) {
         return new RequestValidateError('startDate and endDate are required')
@@ -152,7 +180,7 @@ const getTotalSalesData = (req: Request, res: Response, next: NextFunction) => {
 
     validateDates(startDate as string, endDate as string)
 
-    service.getTotalSalesData(startDate as string, endDate as string)
+    service.getTotalSalesData(req.user.databaseName, startDate as string, endDate as string)
         .then((salesData: SalesAnalyticResponseBody) => sendResponse(res, salesData))
         .catch(next)
 }

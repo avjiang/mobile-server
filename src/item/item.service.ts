@@ -3,7 +3,7 @@ import { NotFoundError } from "../api-helpers/error"
 import salesService from "../sales/sales.service"
 import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.response"
 import { plainToInstance } from "class-transformer"
-const { getTenantPrisma } = require('../db');
+import { getTenantPrisma } from '../db';
 
 let getByIdRaw = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -274,7 +274,7 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
 let getSoldItemRanking = async (databaseName: string, startDate: string, endDate: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const salesIDArray = (await salesService.getTotalSales(startDate, endDate)).map(sales => sales.id)
+        const salesIDArray = (await salesService.getTotalSales(databaseName, startDate, endDate)).map(sales => sales.id)
 
         const top5SoldSalesItems = await tenantPrisma.salesItem.groupBy({
             by: ['itemId'],

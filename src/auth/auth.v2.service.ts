@@ -8,7 +8,7 @@ import { TokenResponseBody } from "./auth.response"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
 import { User } from "@prisma/client"
-const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
+const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
 
@@ -41,7 +41,9 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
             const refreshToken = await generateRefreshToken(tenantUser, ipAddress)
             const response: TokenResponseBody = {
                 token: jwtToken,
-                refreshToken: refreshToken.token
+                refreshToken: refreshToken.token,
+                tenantId: tenantUser?.id || 0,
+                userId: customerUser?.id || 0
             }
             return response
         } catch (error) {
@@ -85,7 +87,10 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
         const jwtToken = generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
         const response: TokenResponseBody = {
             token: jwtToken,
-            refreshToken: newRefreshToken.token
+            refreshToken: newRefreshToken.token,
+            tenantId: tenantUser?.id || 0,
+            userId: customerUser?.id || 0
+
         }
         return response
     }

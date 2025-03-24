@@ -1,11 +1,11 @@
 import { PrismaClient, Customer } from "@prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
+import { getTenantPrisma } from '../db';
 
-const prisma = new PrismaClient()
-
-let getAll = async () => {
+let getAll = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const customers = await prisma.customer.findMany()
+        const customers = await tenantPrisma.customer.findMany()
         return customers
     }
     catch (error) {
@@ -13,15 +13,16 @@ let getAll = async () => {
     }
 }
 
-let getById = async (id: number) => {
+let getById = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const customer = await prisma.customer.findUnique({
+        const customer = await tenantPrisma.customer.findUnique({
             where: {
                 id: id
             }
         })
         if (!customer) {
-            throw new NotFoundError("Customer") 
+            throw new NotFoundError("Customer")
         }
         return customer
     }
@@ -30,9 +31,10 @@ let getById = async (id: number) => {
     }
 }
 
-let createMany = async (customers: Customer[]) => {
+let createMany = async (databaseName: string, customers: Customer[]) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const newCustomers = await prisma.customer.createMany({
+        const newCustomers = await tenantPrisma.customer.createMany({
             data: customers
         })
 
@@ -43,9 +45,10 @@ let createMany = async (customers: Customer[]) => {
     }
 }
 
-let update = async (customer: Customer) => {
+let update = async (databaseName: string, customer: Customer) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedCustomer = await prisma.customer.update({
+        const updatedCustomer = await tenantPrisma.customer.update({
             where: {
                 id: customer.id
             },
@@ -58,9 +61,10 @@ let update = async (customer: Customer) => {
     }
 }
 
-let remove = async (id: number) => {
+let remove = async (databaseName: string, id: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedCustomer = await prisma.customer.update({
+        const updatedCustomer = await tenantPrisma.customer.update({
             where: {
                 id: id
             },

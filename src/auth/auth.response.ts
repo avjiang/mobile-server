@@ -1,6 +1,8 @@
 export interface TokenResponseBody {
     token: string,
-    refreshToken: string
+    refreshToken: string,
+    tenantId: number,
+    userId: number,
 }
 
 export interface ValidateTokenResponseBody {

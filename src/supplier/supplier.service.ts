@@ -2,14 +2,14 @@ import { PrismaClient, Supplier } from "@prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { plainToInstance } from "class-transformer"
 import { SupplierDto } from "./supplier.response"
+import { getTenantPrisma } from '../db';
 
-const prisma = new PrismaClient()
-
-let getAll = async () => {
+let getAll = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const suppliers = await prisma.supplier.findMany()
+        const suppliers = await tenantPrisma.supplier.findMany()
         const suppliersDto = await Promise.all(suppliers.map(async supplier => {
-            let itemCount = await prisma.item.count({
+            let itemCount = await tenantPrisma.item.count({
                 where: { supplierId: supplier.id }
             })
             itemCount = itemCount === undefined ? 0 : itemCount
@@ -22,9 +22,10 @@ let getAll = async () => {
     }
 }
 
-let getById = async (id: number) => {
+let getById = async (id: number, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const supplier = await prisma.supplier.findUnique({
+        const supplier = await tenantPrisma.supplier.findUnique({
             where: {
                 id: id
             }
@@ -33,7 +34,7 @@ let getById = async (id: number) => {
             throw new NotFoundError("Supplier")
         }
 
-        let itemCount = await prisma.item.count({
+        let itemCount = await tenantPrisma.item.count({
             where: {
                 supplierId: id
             }
@@ -48,9 +49,10 @@ let getById = async (id: number) => {
     }
 }
 
-let createMany = async (suppliers: Supplier[]) => {
+let createMany = async (suppliers: Supplier[], databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const newSuppliers = await prisma.supplier.createMany({
+        const newSuppliers = await tenantPrisma.supplier.createMany({
             data: suppliers
         })
 
@@ -92,32 +94,14 @@ let createMany = async (suppliers: Supplier[]) => {
 //     }
 // }
 
-let update = async (supplier: Supplier) => {
+let update = async (supplier: Supplier, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedSupplier = await prisma.supplier.update({
+        const updatedSupplier = await tenantPrisma.supplier.update({
             where: {
                 id: supplier.id
             },
             data: supplier
-            // data: {
-            //     itemCode: item.itemCode,
-            //     itemName: item.itemName,
-            //     itemType: item.itemType,
-            //     itemModel: item.itemModel,
-            //     itemBrand: item.itemBrand,
-            //     itemDescription: item.itemDescription,
-            //     category: item.category,
-            //     cost: item.cost,
-            //     price: item.price,
-            //     isOpenPrice: item.isOpenPrice,
-            //     unitOfMeasure: item.unitOfMeasure,
-            //     height: item.height,
-            //     width: item.width,
-            //     length: item.length,
-            //     weight: item.weight,
-            //     alternateLookUp: item.alternateLookUp,
-            //     image: item.image,
-            // }
         })
         return updatedSupplier
     }
@@ -126,9 +110,10 @@ let update = async (supplier: Supplier) => {
     }
 }
 
-let remove = async (id: number) => {
+let remove = async (id: number, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedSupplier = await prisma.supplier.update({
+        const updatedSupplier = await tenantPrisma.supplier.update({
             where: {
                 id: id
             },

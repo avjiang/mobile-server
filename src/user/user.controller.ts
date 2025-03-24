@@ -6,11 +6,15 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { ChangePasswordRequestBody } from "../auth/auth.request"
 import { sendResponse } from "../api-helpers/network"
+import { AuthRequest } from "src/middleware/auth-request"
 
 const router = express.Router()
 
-let getAll = (req: Request, res: Response, next: NextFunction) => {
-    service.getAll()
+let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    service.getAll(req.user.databaseName)
         .then((users: User[]) => {
             const userList = users.map(user => basicDetails(user))
             sendResponse(res, userList)
@@ -18,17 +22,23 @@ let getAll = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
-let getById = (req: Request, res: Response, next: NextFunction) => {
+let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
     const userId: number = parseInt(req.params.id)
-    service.getById(userId)
+    service.getById(req.user.databaseName, userId)
         .then((user: User) => sendResponse(res, basicDetails(user)))
         .catch(next)
 }
 
 let create = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -59,12 +69,15 @@ let create = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
         throw new RequestValidateError('Create failed: [email] format incorrect')
     }
 
-    service.create(user)
+    service.create(req.user.databaseName, user)
         .then((user: User) => sendResponse(res, basicDetails(user)))
         .catch(next)
 }
 
 let update = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -82,24 +95,30 @@ let update = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
     if (user.email && !validator.isEmail(user.email)) {
         throw new RequestValidateError('Update failed: [email] format incorrect')
     }
-    service.update(user)
+    service.update(req.user.databaseName, user)
         .then((user: User) => sendResponse(res, "Successfully updated"))
         .catch(next)
 }
 
-let remove = (req: Request, res: Response, next: NextFunction) => {
+let remove = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
 
     const userId: number = parseInt(req.params.id)
-    service.remove(userId)
+    service.remove(req.user.databaseName, userId)
         .then((user: User) => sendResponse(res, "Successfully deleted"))
         .catch(next)
 }
 
 
 let changePassword = (req: NetworkRequest<ChangePasswordRequestBody>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
@@ -122,7 +141,7 @@ let changePassword = (req: NetworkRequest<ChangePasswordRequestBody>, res: Respo
         throw new RequestValidateError('Change password failed: new password not found')
     }
 
-    service.changePassword(changePasswordRequest.userId, changePasswordRequest.currentPassword, changePasswordRequest.newPassword)
+    service.changePassword(req.user.databaseName, changePasswordRequest.userId, changePasswordRequest.currentPassword, changePasswordRequest.newPassword)
         .then((user: User) => sendResponse(res, { result: true }))
         .catch(next)
 }

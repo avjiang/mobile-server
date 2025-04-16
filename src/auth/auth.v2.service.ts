@@ -38,12 +38,15 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
 
             // Authentication successful so generate jwt & refresh tokens
             const jwtToken = generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
+            const decodedToken = jwt.decode(jwtToken) as { exp?: number };
+            const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
             const refreshToken = await generateRefreshToken(tenantUser, ipAddress)
             const response: TokenResponseBody = {
                 token: jwtToken,
+                tokenExpiryDate: tokenExpiryDate ?? "",
                 refreshToken: refreshToken.token,
                 tenantId: tenantUser?.id || 0,
-                userId: customerUser?.id || 0
+                userId: customerUser?.id || 0,
             }
             return response
         } catch (error) {
@@ -85,8 +88,11 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
 
         // Generate new jwt
         const jwtToken = generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
+        const decodedToken = jwt.decode(jwtToken) as { exp?: number };
+        const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
         const response: TokenResponseBody = {
             token: jwtToken,
+            tokenExpiryDate: tokenExpiryDate ?? "",
             refreshToken: newRefreshToken.token,
             tenantId: tenantUser?.id || 0,
             userId: customerUser?.id || 0
@@ -161,7 +167,7 @@ let generateJwtToken = (tenantUser: TenantUser, user: User, db: string) => {
         databaseName: db,
         tenantId: tenantUser.tenantId
     }
-    return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1h' });
+    return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
 }
 
 let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {

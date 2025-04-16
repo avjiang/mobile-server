@@ -86,7 +86,8 @@
   "scripts": {
     "start": "tsc && node dist/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed_global": "ts-node src/global_schema_seed.ts"
+    "seed_global": "ts-node src/script/global_schema_seed.ts",
+    "upgrade_tenant_db": "ts-node src/script/tenant_db_upgrade.ts"
   },
   "keywords": [],
   "author": "",

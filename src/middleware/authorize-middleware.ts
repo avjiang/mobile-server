@@ -28,7 +28,6 @@ export default (req: AuthRequest, res: Response, next: NextFunction) => {
             else {
                 const payload: MyJwtPayload = jwt.verify(token, jwt_token_secret) as MyJwtPayload
                 req.user = payload.user
-                console.log("User info: ", req.user)
                 next()
             }
         }

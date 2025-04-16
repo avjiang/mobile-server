@@ -123,7 +123,6 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         itemModel: item.itemModel,
                         itemBrand: item.itemBrand,
                         itemDescription: item.itemDescription,
-                        category: item.category,
                         cost: item.cost,
                         price: item.price,
                         isOpenPrice: item.isOpenPrice,
@@ -156,6 +155,9 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                     deleted: false
                                 }
                             ]
+                        },
+                        category: {
+                            connect: { id: item.categoryId },
                         }
                     }
                 })

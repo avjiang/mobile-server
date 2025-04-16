@@ -127,7 +127,8 @@ model Item {
   itemModel       String       @default("") @map("ITEM_MODEL")
   itemBrand       String       @default("") @map("ITEM_BRAND")
   itemDescription String       @default("") @map("ITEM_DESCRIPTION")
-  category        String       @default("") @map("CATEGORY")
+  categoryId      Int          @map("CATEGORY_ID")
+  category        Category     @relation(fields: [categoryId], references: [id])
   cost            Float        @map("COST")
   price           Float        @map("PRICE")
   isOpenPrice     Boolean      @default(false) @map("IS_OPEN_PRICE")
@@ -145,6 +146,19 @@ model Item {
   stockCheck      StockCheck[]
 
   @@map("ITEM")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement()) @map("ID")
+  name        String   @map("NAME")
+  description String?  @default("") @map("DESCRIPTION")
+  parentId    Int?     @map("PARENT_ID") // For hierarchical categories if needed
+  image       String?  @default("") @map("IMAGE")
+  created     DateTime @default(now()) @map("CREATED_DATETIME")
+  items       Item[] // Relation to items
+  deleted     Boolean  @default(false) @map("IS_DELETED")
+
+  @@map("ITEM_CATEGORY")
 }
 
 model Sales {

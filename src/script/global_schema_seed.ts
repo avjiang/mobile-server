@@ -1,7 +1,7 @@
 // prisma/seed.ts
 import { PrismaClient } from ".prisma/global-client";
 import bcrypt from "bcryptjs"
-import { getTenantPrisma, initializeTenantDatabase } from './db';
+import { getTenantPrisma, initializeTenantDatabase } from '../db';
 
 const prisma = new PrismaClient();
 
@@ -86,6 +86,62 @@ async function main(): Promise<void> {
             role: "Super Admin",
         }
     })
+
+    // Seed Tenant Item Categories
+    const category1 = await tenantPrisma1.category.create({
+        data: {
+            name: "Electronics",
+            description: "All electronic items",
+        }
+    })
+
+    // Seed Tenant Items
+    const item1 = await tenantPrisma1.item.create({
+        data: {
+            itemCode: "ITEM001",
+            itemName: "Sample Item",
+            itemType: "Type A",
+            itemModel: "Model X",
+            itemBrand: "Brand Y",
+            itemDescription: "This is a sample item description.",
+            cost: 100.0,
+            price: 150.0,
+            isOpenPrice: false,
+            unitOfMeasure: "pcs",
+            height: 10.0,
+            width: 5.0,
+            length: 20.0,
+            weight: 1.5,
+            alternateLookUp: "ALT001",
+            image: "sample-image-url",
+            supplierId: 1,
+            deleted: false,
+            stock: {
+                create: {
+                    availableQuantity: 1,
+                    onHandQuantity: 1,
+                    deleted: false
+                },
+            },
+            stockCheck: {
+                create: [
+                    {
+                        availableQuantity: 1,
+                        onHandQuantity: 1,
+                        documentId: 0,
+                        documentType: "Create Item",
+                        reason: "",
+                        remark: "",
+                        outletId: 0,
+                        deleted: false
+                    }
+                ]
+            },
+            category: {
+                connect: { id: category1.id },
+            }
+        }
+    });
     await tenantPrisma1.$disconnect();
 
     const tenantPrisma2 = getTenantPrisma('tech_startup_db');
@@ -96,6 +152,62 @@ async function main(): Promise<void> {
             role: "Cashier",
         }
     })
+
+    // Seed Tenant Item Categories
+    const category2 = await tenantPrisma2.category.create({
+        data: {
+            name: "Electronics",
+            description: "All electronic items",
+        }
+    })
+
+    // Seed Tenant Items
+    const item2 = await tenantPrisma2.item.create({
+        data: {
+            itemCode: "ITEM001",
+            itemName: "Sample Item",
+            itemType: "Type A",
+            itemModel: "Model X",
+            itemBrand: "Brand Y",
+            itemDescription: "This is a sample item description.",
+            cost: 100.0,
+            price: 150.0,
+            isOpenPrice: false,
+            unitOfMeasure: "pcs",
+            height: 10.0,
+            width: 5.0,
+            length: 20.0,
+            weight: 1.5,
+            alternateLookUp: "ALT001",
+            image: "sample-image-url",
+            supplierId: 1,
+            deleted: false,
+            stock: {
+                create: {
+                    availableQuantity: 1,
+                    onHandQuantity: 1,
+                    deleted: false
+                },
+            },
+            stockCheck: {
+                create: [
+                    {
+                        availableQuantity: 1,
+                        onHandQuantity: 1,
+                        documentId: 0,
+                        documentType: "Create Item",
+                        reason: "",
+                        remark: "",
+                        outletId: 0,
+                        deleted: false
+                    }
+                ]
+            },
+            category: {
+                connect: { id: category2.id },
+            }
+        }
+    });
     await tenantPrisma2.$disconnect();
 
     // Seed Tenant Users

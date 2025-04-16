@@ -34,7 +34,7 @@ export class ItemDto {
     itemDescription: string | undefined = undefined;
 
     @Expose()
-    category: string | undefined = undefined;
+    categoryId: number = 0;
 
     @Expose()
     cost: number = 0;

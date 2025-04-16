@@ -1,5 +1,6 @@
 export interface TokenResponseBody {
     token: string,
+    tokenExpiryDate: string,
     refreshToken: string,
     tenantId: number,
     userId: number,

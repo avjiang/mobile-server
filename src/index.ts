@@ -66,6 +66,7 @@ app.use(authorizeMiddleware)
 // api routes
 app.use('/user', require('./user/user.controller'))
 app.use('/item', require('./item/item.controller'))
+app.use('/category', require('./category/category.controller'))
 app.use('/supplier', require('./supplier/supplier.controller'))
 app.use('/customer', require('./customer/customer.controller'))
 app.use('/sales', require('./sales/sales.controller'))

@@ -55,19 +55,24 @@ export async function disconnectAllPrismaClients(): Promise<void> {
 }
 
 export async function updateAllTenantDatabases(): Promise<void> {
-  //   const globalPrisma = getGlobalPrisma();
-  //   const customers = await globalPrisma.customer.findMany();
+  const globalPrisma = getGlobalPrisma();
+  const customers = await globalPrisma.tenant.findMany();
 
-  //   for (const customer of customers) {
-  //     const tenantUrl = process.env.TENANT_DB_URL_TEMPLATE!.replace('{tenant_db_name}', customer.databaseName);
-  //     console.log(`Applying migrations to ${customer.databaseName}...`);
-  //     try {
-  //       const command = `TENANT_DB_URL=${tenantUrl} npx prisma migrate deploy --schema prisma/tenant_schema.prisma`;
-  //       await execAsync(command);
-  //       console.log(`Successfully updated ${customer.databaseName}`);
-  //     } catch (error) {
-  //       console.error(`Failed to update ${customer.databaseName}: ${(error as Error).message}`);
-  //     }
-  //   }
-  //   console.log('All tenant databases updated.');
+  for (const customer of customers) {
+    if (!customer.databaseName) {
+      console.warn(`Skipping tenant with ID ${customer.id}: database name is missing or null`);
+      continue;
+    }
+    const tenantUrl = process.env.TENANT_DATABASE_URL!.replace('{tenant_db_name}', customer.databaseName);
+    console.log(`Applying migrations to ${customer.databaseName}...`);
+    try {
+      // const command = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy --schema prisma/schema.prisma`;
+      const command = `TENANT_DATABASE_URL="${tenantUrl}" npx prisma db push --schema prisma/schema.prisma --accept-data-loss`;
+      await execAsync(command);
+      console.log(`Successfully updated ${customer.databaseName}`);
+    } catch (error) {
+      console.error(`Failed to update ${customer.databaseName}: ${(error as Error).message}`);
+    }
+  }
+  console.log('All tenant databases updated.');
 }

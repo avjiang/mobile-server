@@ -83,6 +83,29 @@ let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
     }
 }
 
+let getAllByCategoryId = async (databaseName: string, categoryId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const items = await tenantPrisma.item.findMany({
+            where: {
+                categoryId: categoryId
+            },
+            include: {
+                stock: {
+                    select: {
+                        availableQuantity: true
+                    }
+                }
+            }
+        })
+        const itemWithStock = plainToInstance(ItemDto, items, { excludeExtraneousValues: true })
+        return itemWithStock
+    }
+    catch (error) {
+        throw error
+    }
+}
+
 let getById = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -358,5 +381,6 @@ export = {
     remove,
     getSoldItemRanking,
     getLowStockItemCount,
-    getLowStockItems
+    getLowStockItems,
+    getAllByCategoryId
 }

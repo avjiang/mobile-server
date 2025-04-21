@@ -41,12 +41,12 @@ let createMany = (req: NetworkRequest<CreateCategoryRequestBody>, res: Response,
     }
     const requestBody = req.body
     service.createMany(req.user.databaseName, requestBody.categories)
-        .then((insertedRecordCount: number) => {
-            var message = `Successfully created ${insertedRecordCount} categories`
-            if (insertedRecordCount === 1) {
-                message = message.substring(0, message.length - 1)
-            }
-            sendResponse(res, message)
+        .then((createdCategories: Category[]) => {
+            // var message = `Successfully created ${insertedRecordCount} category`
+            // if (insertedRecordCount === 1) {
+            //     message = message.substring(0, message.length - 1)
+            // }
+            sendResponse(res, createdCategories)
         })
         .catch(next)
 }

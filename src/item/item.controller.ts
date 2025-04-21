@@ -41,6 +41,24 @@ let getAllBySupplierId = (req: AuthRequest, res: Response, next: NextFunction) =
         .catch(next)
 }
 
+let getAllByCategoryId = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const { categoryId } = req.query
+
+    if (!categoryId) {
+        return new RequestValidateError('Category ID is required')
+    }
+    if (!validator.isNumeric(categoryId as string)) {
+        throw new RequestValidateError('Category ID format incorrect')
+    }
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const categoryIdParam = Number(categoryId)
+    service.getAllByCategoryId(req.user.databaseName, categoryIdParam)
+        .then((items: ItemDto[]) => sendResponse(res, items))
+        .catch(next)
+}
+
 let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
@@ -174,6 +192,7 @@ let getLowStockItems = (req: AuthRequest, res: Response, next: NextFunction) => 
 //routes
 router.get("/", getAll)
 router.get("/getBySupplierId", getAllBySupplierId)
+router.get("/getByCategoryId", getAllByCategoryId)
 router.get("/getLowStockItemCount", getLowStockItemCount)
 router.get("/getLowStockItems", getLowStockItems)
 router.get("/getItemSoldRanking", getSoldItemRanking)

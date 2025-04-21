@@ -150,7 +150,7 @@ model Item {
 
 model Category {
   id          Int      @id @default(autoincrement()) @map("ID")
-  name        String   @map("NAME")
+  name        String   @unique @map("NAME")
   description String?  @default("") @map("DESCRIPTION")
   parentId    Int?     @map("PARENT_ID") // For hierarchical categories if needed
   image       String?  @default("") @map("IMAGE")

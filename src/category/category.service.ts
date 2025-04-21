@@ -5,8 +5,18 @@ import { getTenantPrisma } from '../db';
 let getAll = async (databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const categories = await tenantPrisma.category.findMany()
-        return categories
+        const categories = await tenantPrisma.category.findMany({
+            include: {
+                _count: {
+                    select: { items: true }
+                }
+            }
+        })
+        return categories.map(category => ({
+            ...category,
+            itemCount: category._count.items,
+            _count: undefined
+        }))
     }
     catch (error) {
         throw error
@@ -34,10 +44,16 @@ let getById = async (databaseName: string, id: number) => {
 let createMany = async (databaseName: string, categories: Category[]) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const newCategories = await tenantPrisma.category.createMany({
-            data: categories
-        })
-        return newCategories.count
+        await tenantPrisma.category.createMany({
+            data: categories,
+        });
+        const createdCategories = await tenantPrisma.category.findMany({
+            where: {
+                // Assuming categories have a unique field like 'name' or you can use other criteria
+                name: { in: categories.map(cat => cat.name) },
+            },
+        });
+        return createdCategories;
     }
     catch (error) {
         throw error

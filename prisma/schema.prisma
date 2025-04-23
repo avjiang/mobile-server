@@ -45,7 +45,7 @@ model Referral {
 
 model Supplier {
   id                      Int     @id @default(autoincrement()) @map("ID")
-  companyName             String  @map("COMPANY_NAME")
+  companyName             String  @unique @map("COMPANY_NAME")
   companyStreet           String  @default("") @map("COMPANY_STREET")
   companyCity             String  @default("") @map("COMPANY_CITY")
   companyState            String  @default("") @map("COMPANY_STATE")

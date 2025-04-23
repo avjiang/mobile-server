@@ -51,12 +51,17 @@ let getById = async (id: number, databaseName: string) => {
 
 let createMany = async (suppliers: Supplier[], databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    try {
-        const newSuppliers = await tenantPrisma.supplier.createMany({
-            data: suppliers
-        })
 
-        return newSuppliers.count
+    try {
+        await tenantPrisma.supplier.createMany({
+            data: suppliers,
+        });
+        const createdSuppliers = await tenantPrisma.supplier.findMany({
+            where: {
+                companyName: { in: suppliers.map(cat => cat.companyName) },
+            },
+        });
+        return createdSuppliers;
     }
     catch (error) {
         throw error

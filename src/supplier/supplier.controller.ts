@@ -40,13 +40,9 @@ let createMany = (req: NetworkRequest<CreateSuppliersRequestBody>, res: Response
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createMany(requestBody.suppliers, req.user.databaseName)
-        .then((insertedRecordCount: number) => {
-            var message = `Successfully created ${insertedRecordCount} suppliers`
-            if (insertedRecordCount === 1) {
-                message = message.substring(0, message.length - 1)
-            }
-            sendResponse(res, message)
+    service.createMany(requestBody.suppliers, req.user.databaseName,)
+        .then((createdSuppliers: Supplier[]) => {
+            sendResponse(res, createdSuppliers)
         })
         .catch(next)
 }

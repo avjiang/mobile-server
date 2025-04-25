@@ -87,6 +87,23 @@ async function main(): Promise<void> {
         }
     })
 
+    // Seed Tenant Outlet
+    const outlet = await tenantPrisma1.outlet.create({
+        data: {
+            outletName: "Main Outlet",
+            street: "123 Main Street",
+            outletTel: "123-456-7890",
+        }
+    })
+
+    // Seed Tenant Supplier
+    const supplier = await tenantPrisma1.supplier.create({
+        data: {
+            companyName: "Web Bytes Supplier",
+            hasTax: false
+        }
+    })
+
     // Seed Tenant Item Categories
     const category1 = await tenantPrisma1.category.create({
         data: {
@@ -116,23 +133,25 @@ async function main(): Promise<void> {
             image: "sample-image-url",
             supplierId: 1,
             deleted: false,
-            stock: {
+            stockBalance: {
                 create: {
+                    outletId: outlet.id,
                     availableQuantity: 1,
                     onHandQuantity: 1,
-                    deleted: false
+                    lastUpdated: new Date(),
+                    deleted: false,
                 },
             },
-            stockCheck: {
+            stockMovement: {
                 create: [
                     {
-                        availableQuantity: 1,
-                        onHandQuantity: 1,
+                        availableQuantityDelta: 1,
+                        onHandQuantityDelta: 1,
                         documentId: 0,
-                        documentType: "Create Item",
+                        movementType: "Create Item",
                         reason: "",
                         remark: "",
-                        outletId: 0,
+                        outletId: outlet.id,
                         deleted: false
                     }
                 ]
@@ -150,6 +169,23 @@ async function main(): Promise<void> {
             username: "tech_startup",
             password: bcrypt.hashSync("tech_startup", 10),
             role: "Cashier",
+        }
+    })
+
+    // Seed Tenant Outlet
+    const outlet2 = await tenantPrisma2.outlet.create({
+        data: {
+            outletName: "Main Outlet",
+            street: "123 Main Street",
+            outletTel: "123-456-7890",
+        }
+    })
+
+    // Seed Tenant Supplier
+    const supplier2 = await tenantPrisma2.supplier.create({
+        data: {
+            companyName: "Web Bytes Supplier",
+            hasTax: false
         }
     })
 
@@ -182,23 +218,25 @@ async function main(): Promise<void> {
             image: "sample-image-url",
             supplierId: 1,
             deleted: false,
-            stock: {
+            stockBalance: {
                 create: {
+                    outletId: outlet2.id,
                     availableQuantity: 1,
                     onHandQuantity: 1,
-                    deleted: false
+                    lastUpdated: new Date(),
+                    deleted: false,
                 },
             },
-            stockCheck: {
+            stockMovement: {
                 create: [
                     {
-                        availableQuantity: 1,
-                        onHandQuantity: 1,
+                        outletId: outlet2.id,
+                        availableQuantityDelta: 1,
+                        onHandQuantityDelta: 1,
                         documentId: 0,
-                        documentType: "Create Item",
+                        movementType: "Create Item",
                         reason: "",
                         remark: "",
-                        outletId: 0,
                         deleted: false
                     }
                 ]

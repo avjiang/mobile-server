@@ -8,34 +8,7 @@ import authorizeMiddleware from './middleware/authorize-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
 const app = express()
-const port = 8080
-
-process.on('SIGINT', gracefulShutdown);
-process.on('SIGTERM', gracefulShutdown);
-process.on('uncaughtException', gracefulShutdown);
-
-async function gracefulShutdown(error?: Error) {
-  console.log('Graceful shutdown initiated...');
-
-  if (error) {
-    console.error('Shutdown triggered by error:', error);
-  }
-  try {
-    // Disconnect all Prisma clients
-    await disconnectAllPrismaClients();
-
-    // Close other connections (e.g., Redis, HTTP server)
-    // server.close()
-    // redisClient.quit()
-    // etc.
-
-    console.log('All connections closed successfully');
-    process.exit(error ? 1 : 0);
-  } catch (shutdownError) {
-    console.error('Error during shutdown:', shutdownError);
-    process.exit(1);
-  }
-}
+const port = 8080;
 
 // createTestUser()
 app.get('/', (req, res) => res.send('Hello World!'))
@@ -57,7 +30,7 @@ app.use(cors({
 // auth route need to execute before authentication middleware
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
 // app.use('/auth', require('./auth/auth.controller'))
-app.use('/auth', require('./auth/auth.v2.controller'))
+app.use('/auth', require('./auth/auth.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)
@@ -70,8 +43,8 @@ app.use('/category', require('./category/category.controller'))
 app.use('/supplier', require('./supplier/supplier.controller'))
 app.use('/customer', require('./customer/customer.controller'))
 app.use('/sales', require('./sales/sales.controller'))
-app.use('/stock', require('./stock/stock.controller'))
-app.use('/stockCheck', require('./stock/stockcheck.controller'))
+app.use('/stock', require('./stock/stock-balance.controller'))
+app.use('/stockMovement', require('./stock/stock-movement.controller'))
 app.use('/session', require('./session/session.controller'))
 app.use('/menu', require('./menu/menu.controller'))
 app.use('/tenant', require('./tenant/tenant.controller'))
@@ -79,4 +52,54 @@ app.use('/tenant', require('./tenant/tenant.controller'))
 //error middleware
 app.use(errorMiddleware)
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+const server = app.listen(port, () => {
+  console.log(`Server running on port ${process.env.PORT || 8080}`);
+});
+
+// app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+
+server.on('error', (err) => {
+  console.error('Server error:', err);
+  if (err.name === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use.`);
+    process.exit(1); // Exit gracefully
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
+  }
+});
+
+async function gracefulShutdown(error?: Error) {
+  console.log('Graceful shutdown initiated...');
+
+  if (error) {
+    console.error('Shutdown triggered by error:', error?.stack || error);
+  }
+
+  try {
+    await disconnectAllPrismaClients();
+    console.log('Prisma clients disconnected');
+
+    // Close HTTP server
+    server.close(() => {
+      console.log('HTTP server closed');
+      process.exit(error ? 1 : 0);
+    });
+  } catch (shutdownError) {
+    console.error('Error during shutdown:', shutdownError);
+    // Ensure server is closed even if Prisma fails
+    server.close(() => {
+      console.log('HTTP server closed');
+      process.exit(1);
+    });
+  }
+}
+
+
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+process.on('uncaughtException', gracefulShutdown);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown(new Error(`Unhandled Rejection: ${reason}`));
+});

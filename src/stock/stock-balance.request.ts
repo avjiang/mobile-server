@@ -1,11 +1,11 @@
-import { Stock } from "@prisma/client"
+import { StockBalance } from "@prisma/client"
 
 export interface CreateStocksRequestBody {
-    stocks: Stock[]
+    stocks: StockBalance[]
 }
 
 export interface UpdateStocksRequestBody {
-    stocks: Stock[]
+    stocks: StockBalance[]
 }
 
 export interface StockAdjustmentRequestBody {

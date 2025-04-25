@@ -1,13 +1,14 @@
 import express, { NextFunction, Request, Response } from "express";
-import authService from "./auth.service";
+import authService from "./auth.v2.service";
 import authorizeMiddleware, { UserInfo } from "../middleware/authorize-middleware";
 import NetworkRequest from "../api-helpers/network-request";
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request";
 import { TokenResponseBody, ValidateTokenResponseBody } from "./auth.response";
-import { RefreshToken } from "@prisma/client";
+import { PrismaClient, TenantUser, RefreshToken, Tenant } from "../../node_modules/.prisma/global-client";
 import { sendResponse } from "../api-helpers/network";
 import { RequestValidateError } from "../api-helpers/error";
 import validator from "validator";
+import { AuthRequest } from "../middleware/auth-request";
 
 const router = express.Router()
 
@@ -29,7 +30,6 @@ let authenticate = (req: NetworkRequest<AuthenticateRequestBody>, res: Response,
         .catch(next)
 }
 
-//validate got issue
 let validateToken = (req: NetworkRequest<TokenRequestBody>, res: Response, next: NextFunction) => {
     const tokenBody = req.body
 
@@ -45,6 +45,7 @@ let validateToken = (req: NetworkRequest<TokenRequestBody>, res: Response, next:
         .then((userInfo: UserInfo) => {
             const response: ValidateTokenResponseBody = {
                 verified: true,
+                tenantUserId: userInfo.tenantUserId,
                 userId: userInfo.userId,
                 username: userInfo.username
             }
@@ -96,10 +97,13 @@ let getRefreshTokens = (req: Request, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+
 //routes
 router.post('/login', authenticate)
 router.post('/validate-token', validateToken)
 router.post('/refresh-token', refreshToken)
+router.post('/refresh-token', refreshToken)
 router.post('/revoke-token', authorizeMiddleware, revokeToken)
 router.get('/:id/refresh-tokens', authorizeMiddleware, getRefreshTokens)
+
 export = router

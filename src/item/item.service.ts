@@ -13,8 +13,8 @@ let getByIdRaw = async (databaseName: string, id: number) => {
                 id: id
             },
             include: {
-                stock: true,
-                stockCheck: true
+                stockBalance: true,
+                stockMovement: true
             }
         })
         return item
@@ -24,36 +24,24 @@ let getByIdRaw = async (databaseName: string, id: number) => {
     }
 }
 
-let getAllRaw = async (databaseName: string) => {
-    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    try {
-        const items = await tenantPrisma.item.findMany({
-            include: {
-                stock: true,
-                stockCheck: true
-            }
-        })
-        return items
-    }
-    catch (error) {
-        throw error
-    }
-}
 
 let getAll = async (databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const items = await tenantPrisma.item.findMany({
             include: {
-                stock: {
+                stockBalance: {
                     select: {
                         availableQuantity: true
                     }
                 }
             }
         })
-        const itemWithStock = plainToInstance(ItemDto, items, { excludeExtraneousValues: true })
-        return itemWithStock
+        const response = items.map(({ stockBalance, ...item }) => ({
+            ...item,
+            stockQuantity: stockBalance[0]?.availableQuantity || 0,
+        }));
+        return response;
     }
     catch (error) {
         throw error
@@ -68,15 +56,18 @@ let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
                 supplierId: supplierId
             },
             include: {
-                stock: {
+                stockBalance: {
                     select: {
                         availableQuantity: true
                     }
                 }
             }
         })
-        const itemWithStock = plainToInstance(ItemDto, items, { excludeExtraneousValues: true })
-        return itemWithStock
+        const response = items.map(({ stockBalance, ...item }) => ({
+            ...item,
+            stockQuantity: stockBalance[0]?.availableQuantity || 0,
+        }));
+        return response;
     }
     catch (error) {
         throw error
@@ -91,15 +82,18 @@ let getAllByCategoryId = async (databaseName: string, categoryId: number) => {
                 categoryId: categoryId
             },
             include: {
-                stock: {
+                stockBalance: {
                     select: {
                         availableQuantity: true
                     }
                 }
             }
         })
-        const itemWithStock = plainToInstance(ItemDto, items, { excludeExtraneousValues: true })
-        return itemWithStock
+        const response = items.map(({ stockBalance, ...item }) => ({
+            ...item,
+            stockQuantity: stockBalance[0]?.availableQuantity || 0,
+        }));
+        return response;
     }
     catch (error) {
         throw error
@@ -114,7 +108,7 @@ let getById = async (databaseName: string, id: number) => {
                 id: id
             },
             include: {
-                stock: {
+                stockBalance: {
                     select: {
                         availableQuantity: true
                     }
@@ -158,23 +152,25 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         image: item.image,
                         supplierId: item.supplierId,
                         deleted: item.deleted,
-                        stock: {
+                        stockBalance: {
                             create: {
+                                outletId: 1,
                                 availableQuantity: stockQuantity,
                                 onHandQuantity: stockQuantity,
-                                deleted: false
+                                lastUpdated: new Date(),
+                                deleted: false,
                             },
                         },
-                        stockCheck: {
+                        stockMovement: {
                             create: [
                                 {
-                                    availableQuantity: stockQuantity,
-                                    onHandQuantity: stockQuantity,
+                                    availableQuantityDelta: stockQuantity,
+                                    onHandQuantityDelta: stockQuantity,
                                     documentId: 0,
-                                    documentType: "Create Item",
+                                    movementType: "Create Item",
                                     reason: "",
                                     remark: "",
-                                    outletId: 0,
+                                    outletId: 1,
                                     deleted: false
                                 }
                             ]
@@ -186,8 +182,11 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                 })
             })
         );
-
-        return createdItems.length;
+        const response = createdItems.map((item, index) => ({
+            ...item,
+            stockQuantity: itemBodyArray[index].stockQuantity || 0, // Use stockQuantity from input
+        }));
+        return response;
     }
     catch (error) {
         throw error
@@ -213,26 +212,45 @@ let update = async (databaseName: string, item: Item) => {
 let remove = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const item = await getByIdRaw(databaseName, id)
-        if (!item) {
-            throw new NotFoundError("Item")
-        }
+        // const item = await getByIdRaw(databaseName, id)
+        // if (!item) {
+        //     throw new NotFoundError("Item")
+        // }
+        // await tenantPrisma.$transaction(async (tx) => {
+        //     await tx.stockMovement.updateMany({ where: { itemId: id }, data: { deleted: true } }),
+        //         await tx.stockBalance.update({
+        //             where: {
+        //                 id: (await tx.item.findUnique({
+        //                     where: { id: id },
+        //                     select: { stockId: true },
+        //                 }))?.stockId,
+        //             },
+        //             data: {
+        //                 deleted: true,
+        //             },
+        //         }),
+        //         await tx.item.update({ where: { id: id }, data: { deleted: true } })
+        // })
+        const updatedItem = await tenantPrisma.$transaction([
+            // Soft-delete the Item
+            tenantPrisma.item.update({
+                where: { id: id },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                },
+            }),
+            // Soft-delete all related StockBalance records
+            tenantPrisma.stockBalance.updateMany({
+                where: { id },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                },
+            }),
+        ]);
 
-        await tenantPrisma.$transaction(async (tx) => {
-            await tx.stockCheck.updateMany({ where: { itemId: id }, data: { deleted: true } }),
-                await tx.stock.update({
-                    where: {
-                        id: (await tx.item.findUnique({
-                            where: { id: id },
-                            select: { stockId: true },
-                        }))?.stockId,
-                    },
-                    data: {
-                        deleted: true,
-                    },
-                }),
-                await tx.item.update({ where: { id: id }, data: { deleted: true } })
-        })
+        return updatedItem[0];
     }
     catch (error) {
         throw error
@@ -242,25 +260,44 @@ let remove = async (databaseName: string, id: number) => {
 let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const itemStockItems = await tenantPrisma.item.findMany({
+        // const itemStockItems = await tenantPrisma.item.findMany({
+        //     where: {
+        //         stockBalance: {
+        //             availableQuantity: {
+        //                 gte: isIncludedZeroStock ? 0 : 1,
+        //                 lte: lowStockQuantity,
+        //             },
+        //         },
+        //     },
+        //     include: {
+        //         stockBalance: {
+        //             select: {
+        //                 availableQuantity: true,
+        //             },
+        //         },
+        //     },
+        // });
+        // return itemStockItems.length;
+
+        const lowStockItems = await tenantPrisma.stockBalance.groupBy({
+            by: ['itemId'],
             where: {
-                stock: {
-                    availableQuantity: {
-                        gte: isIncludedZeroStock ? 0 : 1,
-                        lte: lowStockQuantity,
-                    },
-                },
+                deleted: false,
+                outletId: 1, // Ensure the StockBalance is for the main outlet
+                item: { deleted: false }, // Ensure the Item is not soft-deleted
             },
-            include: {
-                stock: {
-                    select: {
-                        availableQuantity: true,
+            _sum: {
+                availableQuantity: true,
+            },
+            having: {
+                availableQuantity: {
+                    _sum: {
+                        lt: lowStockQuantity, // Total availableQuantity < threshold
                     },
                 },
             },
         });
-
-        return itemStockItems.length;
+        return lowStockItems.length;
     }
     catch (error) {
         throw error
@@ -270,26 +307,69 @@ let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number
 let getLowStockItems = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const itemStockItems = await tenantPrisma.item.findMany({
+        // const itemStockItems = await tenantPrisma.item.findMany({
+        //     where: {
+        //         stock: {
+        //             availableQuantity: {
+        //                 gte: isIncludedZeroStock ? 0 : 1,
+        //                 lte: lowStockQuantity,
+        //             },
+        //         },
+        //     },
+        //     include: {
+        //         stock: {
+        //             select: {
+        //                 availableQuantity: true,
+        //             },
+        //         },
+        //     },
+        // });
+        // const itemWithStock = plainToInstance(ItemDto, itemStockItems, { excludeExtraneousValues: true })
+        // return itemWithStock
+
+        const lowStockItems = await tenantPrisma.stockBalance.groupBy({
+            by: ['itemId'],
             where: {
-                stock: {
-                    availableQuantity: {
-                        gte: isIncludedZeroStock ? 0 : 1,
-                        lte: lowStockQuantity,
-                    },
-                },
+                deleted: false,
+                outletId: 1, // Ensure the StockBalance is for the main outlet
+                item: { deleted: false },
             },
-            include: {
-                stock: {
-                    select: {
-                        availableQuantity: true,
+            _sum: {
+                availableQuantity: true,
+            },
+            having: {
+                availableQuantity: {
+                    _sum: {
+                        lt: lowStockQuantity,
                     },
                 },
             },
         });
+        const itemIds = lowStockItems.map((item) => item.itemId);
+        const items = await tenantPrisma.item.findMany({
+            where: {
+                id: { in: itemIds },
+                deleted: false,
+            },
+            include: {
+                stockBalance: {
+                    where: { deleted: false },
 
-        const itemWithStock = plainToInstance(ItemDto, itemStockItems, { excludeExtraneousValues: true })
-        return itemWithStock
+                },
+                category: true, // Include category if needed
+            },
+        });
+
+        // Step 4: Enrich items with total availableQuantity
+        const enrichedItems = items.map((item) => ({
+            ...item,
+            totalAvailableQuantity:
+                lowStockItems.find((ls) => ls.itemId === item.id)?._sum
+                    .availableQuantity || 0,
+        }));
+
+        return enrichedItems;
+
     }
     catch (error) {
         throw error
@@ -371,7 +451,6 @@ let getSoldItemRanking = async (databaseName: string, startDate: string, endDate
 }
 
 export = {
-    getAllRaw,
     getByIdRaw,
     getAll,
     getAllBySupplierId,

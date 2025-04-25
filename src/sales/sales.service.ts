@@ -1,4 +1,4 @@
-import { Payment, Prisma, PrismaClient, Sales, SalesItem, Stock, StockCheck } from "@prisma/client"
+import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "@prisma/client"
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
@@ -229,8 +229,8 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
             // Lazy-load to avoid circular dependency
             const { getByIdRaw } = require("../item/item.service")
 
-            let stocks: Stock[] = []
-            let stockChecks: StockCheck[] = []
+            let stocks: StockBalance[] = []
+            let stockChecks: StockMovement[] = []
             for (const salesItem of salesItems) {
                 var item = await getByIdRaw(salesItem.itemId)
                 if (item != null) {
@@ -245,14 +245,14 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                     stocks[stockIndex].availableQuantity = updatedAvailableQuantity
                     stocks[stockIndex].onHandQuantity = updatedOnHandQuantity
 
-                    let stockCheck: StockCheck = {
+                    let stockCheck: StockMovement = {
                         id: 0,
                         created: new Date,
                         itemId: salesItem.itemId,
-                        availableQuantity: minusQuantity,
-                        onHandQuantity: minusQuantity,
+                        availableQuantityDelta: minusQuantity,
+                        onHandQuantityDelta: minusQuantity,
                         documentId: sales.id,
-                        documentType: 'Sales',
+                        movementType: 'Sales',
                         reason: '',
                         remark: '',
                         outletId: sales.outletId,
@@ -262,12 +262,12 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                 }
             }
 
-            await tx.stockCheck.createMany({
+            await tx.stockMovement.createMany({
                 data: stockChecks
             })
 
             for (const stock of stocks) {
-                await tx.stock.update({
+                await tx.stockBalance.update({
                     where: {
                         id: stock.id
                     },
@@ -340,8 +340,8 @@ let completeSales = async (databaseName: string, salesId: number, payments: Paym
             // Lazy-load to avoid circular dependency
             const { getByIdRaw } = require("../item/item.service")
 
-            let stocks: Stock[] = []
-            let stockChecks: StockCheck[] = []
+            let stocks: StockBalance[] = []
+            let stockChecks: StockMovement[] = []
 
             for (const salesItem of salesItems) {
                 var item = await getByIdRaw(salesItem.itemId)
@@ -357,14 +357,14 @@ let completeSales = async (databaseName: string, salesId: number, payments: Paym
                     stocks[stockIndex].availableQuantity = updatedAvailableQuantity
                     stocks[stockIndex].onHandQuantity = updatedOnHandQuantity
 
-                    let stockCheck: StockCheck = {
+                    let stockCheck: StockMovement = {
                         id: 0,
                         created: new Date,
                         itemId: salesItem.itemId,
-                        availableQuantity: minusQuantity,
-                        onHandQuantity: minusQuantity,
+                        availableQuantityDelta: minusQuantity,
+                        onHandQuantityDelta: minusQuantity,
                         documentId: salesId,
-                        documentType: 'Sales',
+                        movementType: 'Sales',
                         reason: '',
                         remark: '',
                         outletId: sales.outletId,
@@ -374,12 +374,12 @@ let completeSales = async (databaseName: string, salesId: number, payments: Paym
                 }
             }
 
-            await tx.stockCheck.createMany({
+            await tx.stockMovement.createMany({
                 data: stockChecks
             })
 
             for (const stock of stocks) {
-                await tx.stock.update({
+                await tx.stockBalance.update({
                     where: {
                         id: stock.id
                     },

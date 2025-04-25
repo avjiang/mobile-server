@@ -4,6 +4,7 @@
   "description": "## Getting started Before you run the project, make sure to install all packages first by running `npm install`",
   "main": "dist/src/index.js",
   "dependencies": {
+    "@azure/storage-blob": "^12.27.0",
     "@prisma/client": "^5.2.0",
     "@types/validator": "^13.11.1",
     "accepts": "^1.3.8",
@@ -34,6 +35,7 @@
     "finalhandler": "^1.2.0",
     "forwarded": "^0.2.0",
     "fresh": "^0.5.2",
+    "fs": "^0.0.1-security",
     "function-bind": "^1.1.1",
     "get-intrinsic": "^1.2.1",
     "has": "^1.0.3",
@@ -54,11 +56,14 @@
     "ms": "^2.0.0",
     "mysql": "^2.18.1",
     "negotiator": "^0.6.3",
+    "node-cron": "^3.0.3",
     "nodemon": "^3.0.1",
     "object-inspect": "^1.12.3",
     "on-finished": "^2.4.1",
+    "parquetjs": "^0.11.2",
     "parseurl": "^1.3.3",
     "path-to-regexp": "^0.1.7",
+    "pm2": "^6.0.5",
     "process-nextick-args": "^2.0.1",
     "proxy-addr": "^2.0.7",
     "qs": "^6.11.0",
@@ -84,10 +89,12 @@
     "vary": "^1.1.2"
   },
   "scripts": {
-    "start": "tsc && node dist/src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "seed_global": "ts-node src/script/global_schema_seed.ts",
-    "upgrade_tenant_db": "ts-node src/script/tenant_db_upgrade.ts"
+    "build": "tsc",
+    "start": "pm2 start ecosystem.config.js",
+    "list": "pm2 list",
+    "log": "pm2 logs",
+    "seed_global": "node dist/script/global_schema_seed.js",
+    "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js"
   },
   "keywords": [],
   "author": "",
@@ -103,7 +110,7 @@
     "@typescript-eslint/parser": "^6.7.2",
     "eslint": "^8.50.0",
     "prisma": "^5.22.0",
-    "ts-node": "^10.9.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   }
 }

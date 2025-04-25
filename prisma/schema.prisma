@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id        Int     @id @default(autoincrement()) @map("ID")
-  username  String  @unique @map("USERNAME")
-  password  String  @map("PASSWORD")
-  lastName  String? @map("LAST_NAME")
-  firstName String? @map("FIRST_NAME")
-  mobile    String? @unique @map("MOBILE")
-  email     String? @unique @map("EMAIL")
-  role      String  @map("ROLE")
-  deleted   Boolean @default(false) @map("IS_DELETED")
+  id        Int       @id @default(autoincrement()) @map("ID")
+  username  String    @unique @map("USERNAME")
+  password  String    @map("PASSWORD")
+  lastName  String?   @map("LAST_NAME")
+  firstName String?   @map("FIRST_NAME")
+  mobile    String?   @unique @map("MOBILE")
+  email     String?   @unique @map("EMAIL")
+  role      String    @map("ROLE")
+  deleted   Boolean   @default(false) @map("IS_DELETED")
+  deletedAt DateTime? @map("DELETED_AT")
 
   @@map("USER")
 }
@@ -44,119 +45,128 @@ model Referral {
 }
 
 model Supplier {
-  id                      Int     @id @default(autoincrement()) @map("ID")
-  companyName             String  @unique @map("COMPANY_NAME")
-  companyStreet           String  @default("") @map("COMPANY_STREET")
-  companyCity             String  @default("") @map("COMPANY_CITY")
-  companyState            String  @default("") @map("COMPANY_STATE")
-  companyPostalCode       String  @default("") @map("COMPANY_POSTAL_CODE")
-  companyCountry          String  @default("") @map("COMPANY_COUNTRY")
-  companyRegisterNumber   String  @default("") @map("COMPANY_REGISTRATION_NUMBER")
-  personInChargeLastName  String  @default("") @map("PERSON_IN_CHARGE_LAST_NAME")
-  personInChargeFirstName String  @default("") @map("PERSON_IN_CHARGE_FIRST_NAME")
-  mobile                  String  @default("") @map("MOBILE")
-  email                   String  @default("") @map("EMAIL")
-  remark                  String  @default("") @map("REMARK")
-  hasTax                  Boolean @map("HAS_TAX")
-  deleted                 Boolean @default(false) @map("IS_DELETED")
+  id                      Int       @id @default(autoincrement()) @map("ID")
+  companyName             String    @unique @map("COMPANY_NAME")
+  companyStreet           String    @default("") @map("COMPANY_STREET")
+  companyCity             String    @default("") @map("COMPANY_CITY")
+  companyState            String    @default("") @map("COMPANY_STATE")
+  companyPostalCode       String    @default("") @map("COMPANY_POSTAL_CODE")
+  companyCountry          String    @default("") @map("COMPANY_COUNTRY")
+  companyRegisterNumber   String    @default("") @map("COMPANY_REGISTRATION_NUMBER")
+  personInChargeLastName  String    @default("") @map("PERSON_IN_CHARGE_LAST_NAME")
+  personInChargeFirstName String    @default("") @map("PERSON_IN_CHARGE_FIRST_NAME")
+  mobile                  String    @default("") @map("MOBILE")
+  email                   String    @default("") @map("EMAIL")
+  remark                  String    @default("") @map("REMARK")
+  hasTax                  Boolean   @map("HAS_TAX")
+  deleted                 Boolean   @default(false) @map("IS_DELETED")
+  deletedAt               DateTime? @map("DELETED_AT")
 
   @@map("SUPPLIER")
 }
 
 model Customer {
-  id             Int     @id @default(autoincrement()) @map("ID")
-  salutation     String  @default("") @map("SALUTATION")
-  lastName       String  @map("LAST_NAME")
-  firstName      String  @map("FIRST_NAME")
-  mobile         String  @default("") @map("MOBILE")
-  email          String  @default("") @map("EMAIL")
-  gender         String  @default("") @map("GENDER")
-  billStreet     String  @default("") @map("BILL_STREET")
-  billCity       String  @default("") @map("BILL_CITY")
-  billState      String  @default("") @map("BILL_STATE")
-  billPostalCode String  @default("") @map("BILL_POSTAL_CODE")
-  billCountry    String  @default("") @map("BILL_COUNTRY")
-  billRemark     String  @default("") @map("BILL_REMARK")
-  shipStreet     String  @default("") @map("SHIP_STREET")
-  shipCity       String  @default("") @map("SHIP_CITY")
-  shipState      String  @default("") @map("SHIP_STATE")
-  shipPostalCode String  @default("") @map("SHIP_POSTAL_CODE")
-  shipCountry    String  @default("") @map("SHIP_COUNTRY")
-  shipRemark     String  @default("") @map("SHIP_REMARK")
-  deleted        Boolean @default(false) @map("IS_DELETED")
+  id             Int       @id @default(autoincrement()) @map("ID")
+  salutation     String    @default("") @map("SALUTATION")
+  lastName       String    @map("LAST_NAME")
+  firstName      String    @map("FIRST_NAME")
+  mobile         String    @default("") @map("MOBILE")
+  email          String    @default("") @map("EMAIL")
+  gender         String    @default("") @map("GENDER")
+  billStreet     String    @default("") @map("BILL_STREET")
+  billCity       String    @default("") @map("BILL_CITY")
+  billState      String    @default("") @map("BILL_STATE")
+  billPostalCode String    @default("") @map("BILL_POSTAL_CODE")
+  billCountry    String    @default("") @map("BILL_COUNTRY")
+  billRemark     String    @default("") @map("BILL_REMARK")
+  shipStreet     String    @default("") @map("SHIP_STREET")
+  shipCity       String    @default("") @map("SHIP_CITY")
+  shipState      String    @default("") @map("SHIP_STATE")
+  shipPostalCode String    @default("") @map("SHIP_POSTAL_CODE")
+  shipCountry    String    @default("") @map("SHIP_COUNTRY")
+  shipRemark     String    @default("") @map("SHIP_REMARK")
+  deleted        Boolean   @default(false) @map("IS_DELETED")
+  deletedAt      DateTime? @map("DELETED_AT")
 
   @@map("CUSTOMER")
 }
 
 model Company {
-  id                 Int     @id @default(autoincrement()) @map("ID")
-  companyName        String  @default("") @map("COMPANY_NAME")
-  street             String  @default("") @map("STREET")
-  city               String  @default("") @map("CITY")
-  state              String  @default("") @map("STATE")
-  postalCode         String  @default("") @map("POSTAL_CODE")
-  country            String  @default("") @map("COUNTRY")
-  registrationNumber String  @unique @map("REGISTRATION_NUMBER")
-  website            String  @default("") @map("WEBSITE")
-  referralId         String  @default("") @map("REFERRAL_ID")
-  deleted            Boolean @default(false) @map("IS_DELETED")
+  id                 Int       @id @default(autoincrement()) @map("ID")
+  companyName        String    @default("") @map("COMPANY_NAME")
+  street             String    @default("") @map("STREET")
+  city               String    @default("") @map("CITY")
+  state              String    @default("") @map("STATE")
+  postalCode         String    @default("") @map("POSTAL_CODE")
+  country            String    @default("") @map("COUNTRY")
+  registrationNumber String    @unique @map("REGISTRATION_NUMBER")
+  website            String    @default("") @map("WEBSITE")
+  referralId         String    @default("") @map("REFERRAL_ID")
+  deleted            Boolean   @default(false) @map("IS_DELETED")
+  deletedAt          DateTime? @map("DELETED_AT")
 
   @@map("COMPANY")
 }
 
 model Outlet {
-  id          Int     @id @default(autoincrement()) @map("ID")
-  outletName  String  @map("OUTLET_NAME")
-  street      String  @default("") @map("STREET")
-  city        String  @default("") @map("CITY")
-  state       String  @default("") @map("STATE")
-  postalCode  String  @default("") @map("POSTAL_CODE")
-  country     String  @default("") @map("COUNTRY")
-  outletTel   String  @default("") @map("OUTLET_TEL")
-  outletEmail String  @default("") @map("OUTLET_EMAIL")
-  deleted     Boolean @default(false) @map("IS_DELETED")
+  id            Int             @id @default(autoincrement()) @map("ID")
+  outletName    String          @map("OUTLET_NAME")
+  street        String          @default("") @map("STREET")
+  city          String          @default("") @map("CITY")
+  state         String          @default("") @map("STATE")
+  postalCode    String          @default("") @map("POSTAL_CODE")
+  country       String          @default("") @map("COUNTRY")
+  outletTel     String          @default("") @map("OUTLET_TEL")
+  outletEmail   String          @default("") @map("OUTLET_EMAIL")
+  deleted       Boolean         @default(false) @map("IS_DELETED")
+  deletedAt     DateTime?       @map("DELETED_AT")
+  StockBalance  StockBalance[]
+  StockMovement StockMovement[]
+  StockSnapshot StockSnapshot[]
 
   @@map("OUTLET")
 }
 
 model Item {
-  id              Int          @id @default(autoincrement()) @map("ID")
-  itemCode        String       @map("ITEM_CODE") // itemCode need to be same if there are multiple same item for different supplier
-  itemName        String       @map("ITEM_NAME")
-  itemType        String       @default("") @map("ITEM_TYPE")
-  itemModel       String       @default("") @map("ITEM_MODEL")
-  itemBrand       String       @default("") @map("ITEM_BRAND")
-  itemDescription String       @default("") @map("ITEM_DESCRIPTION")
-  categoryId      Int          @map("CATEGORY_ID")
-  category        Category     @relation(fields: [categoryId], references: [id])
-  cost            Float        @map("COST")
-  price           Float        @map("PRICE")
-  isOpenPrice     Boolean      @default(false) @map("IS_OPEN_PRICE")
-  unitOfMeasure   String       @default("") @map("UNIT_OF_MEASURE")
-  height          Float        @default(0) @map("HEIGHT")
-  width           Float        @default(0) @map("WIDTH")
-  length          Float        @default(0) @map("LENGTH")
-  weight          Float        @default(0) @map("WEIGHT")
-  alternateLookUp String       @default("") @map("ALTERNATE_LOOKUP")
-  image           String       @default("") @map("IMAGE")
-  supplierId      Int          @map("SUPPLIER_ID")
-  deleted         Boolean      @default(false) @map("IS_DELETED")
-  stock           Stock        @relation(fields: [stockId], references: [id]) // enforce mandatory one-to-one relationship
-  stockId         Int          @unique @map("STOCK_ID")
-  stockCheck      StockCheck[]
+  id              Int             @id @default(autoincrement()) @map("ID")
+  itemName        String          @map("ITEM_NAME")
+  itemCode        String          @map("ITEM_CODE") // itemCode need to be same if there are multiple same item for different supplier
+  itemType        String          @default("") @map("ITEM_TYPE")
+  itemModel       String          @default("") @map("ITEM_MODEL")
+  itemBrand       String          @default("") @map("ITEM_BRAND")
+  itemDescription String          @default("") @map("ITEM_DESCRIPTION")
+  categoryId      Int             @map("CATEGORY_ID")
+  category        Category        @relation(fields: [categoryId], references: [id])
+  cost            Float           @map("COST")
+  price           Float           @map("PRICE")
+  isOpenPrice     Boolean         @default(false) @map("IS_OPEN_PRICE")
+  unitOfMeasure   String          @default("") @map("UNIT_OF_MEASURE")
+  height          Float           @default(0) @map("HEIGHT")
+  width           Float           @default(0) @map("WIDTH")
+  length          Float           @default(0) @map("LENGTH")
+  weight          Float           @default(0) @map("WEIGHT")
+  alternateLookUp String          @default("") @map("ALTERNATE_LOOKUP")
+  image           String          @default("") @map("IMAGE")
+  supplierId      Int             @map("SUPPLIER_ID")
+  deleted         Boolean         @default(false) @map("IS_DELETED")
+  deletedAt       DateTime?       @map("DELETED_AT")
+  stockBalance    StockBalance[]
+  stockMovement   StockMovement[]
+  stockSnapshot   StockSnapshot[]
 
   @@map("ITEM")
 }
 
 model Category {
-  id          Int      @id @default(autoincrement()) @map("ID")
-  name        String   @unique @map("NAME")
-  description String?  @default("") @map("DESCRIPTION")
-  parentId    Int?     @map("PARENT_ID") // For hierarchical categories if needed
-  image       String?  @default("") @map("IMAGE")
-  created     DateTime @default(now()) @map("CREATED_DATETIME")
+  id          Int       @id @default(autoincrement()) @map("ID")
+  name        String    @unique @map("NAME")
+  description String?   @default("") @map("DESCRIPTION")
+  parentId    Int?      @map("PARENT_ID") // For hierarchical categories if needed
+  image       String?   @default("") @map("IMAGE")
+  created     DateTime  @default(now()) @map("CREATED_DATETIME")
   items       Item[] // Relation to items
-  deleted     Boolean  @default(false) @map("IS_DELETED")
+  deleted     Boolean   @default(false) @map("IS_DELETED")
+  deletedAt   DateTime? @map("DELETED_AT")
 
   @@map("ITEM_CATEGORY")
 }
@@ -196,6 +206,7 @@ model Sales {
   salesQuotationId        Int           @default(0) @map("SALES_QUOTATION_ID")
   performedBy             Int           @map("PERFORMED_BY")
   deleted                 Boolean       @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?     @map("DELETED_AT")
   salesItems              SalesItem[]
   payments                Payment[]
   registerLogs            RegisterLog[]
@@ -247,6 +258,7 @@ model SalesQuotation {
   remark              String?              @map("REMARK")
   performedBy         Int                  @map("PERFORMED_BY")
   deleted             Boolean              @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?            @map("DELETED_AT")
   salesQuotationItems SalesQuotationItem[]
 
   @@map("SALES_QUOTATION")
@@ -278,6 +290,7 @@ model DeliveryOrder {
   remark             String?             @map("REMARK")
   performedBy        Int                 @map("PERFORMED_BY")
   deleted            Boolean             @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?           @map("DELETED_AT")
   deliveryOrderItems DeliveryOrderItem[]
 
   @@map("DELIVERY_ORDER")
@@ -316,6 +329,7 @@ model PurchaseOrder {
   remark              String?             @map("REMARK")
   performedBy         Int                 @map("PERFORMED_BY")
   deleted             Boolean             @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?           @map("DELETED_AT")
   purchaseOrderItems  PurchaseOrderItem[]
 
   @@map("PURCHASE_ORDER")
@@ -350,6 +364,7 @@ model Payment {
   eodId                Int        @map("EOD_ID")
   performedBy          Int        @map("PERFORMED_BY")
   deleted              Boolean    @default(false) @map("IS_DELETED")
+  deletedAt            DateTime?  @map("DELETED_AT")
   cardInfos            CardInfo[]
   sales                Sales      @relation(fields: [salesId], references: [id])
 
@@ -421,46 +436,81 @@ model Declaration {
   @@map("DECLARATION")
 }
 
-// model EOD {
-//   id Int @id @default(autoincrement()) @map("ID")
-//   deviceId Int @map("DEVICE_ID")
-//   outletId Int @map("OUTLET_ID")
-//   openingDateTime DateTime? @map("OPENING_DATE_TIME")
-//   closingDateTime DateTime? @map("CLOSING_DATE_TIME")
-//   businessDate DateTime @map("BUSINESS_DATE")
-//   verifiedBy Int? @map("VERIFIED_BY")
-//   openedBy Int? @map("OPENED_BY")
-//   closedBy Int? @map("CLOSED_BY")
-//   deleted Boolean @default(false) @map("IS_DELETED")
+model StockBalance {
+  id                Int       @id @default(autoincrement()) @map("ID")
+  itemId            Int       @map("ITEM_ID")
+  outletId          Int       @map("OUTLET_ID")
+  availableQuantity Float     @map("AVAILABLE_QUANTITY")
+  onHandQuantity    Float     @map("ON_HAND_QUANTITY")
+  lastUpdated       DateTime  @default(now()) @map("LAST_UPDATED")
+  deleted           Boolean   @default(false) @map("IS_DELETED")
+  deletedAt         DateTime? @map("DELETED_AT")
+  item              Item      @relation(fields: [itemId], references: [id])
+  outlet            Outlet    @relation(fields: [outletId], references: [id])
 
-//   @@map("EOD")
-// }
-
-model Stock {
-  id                Int     @id @default(autoincrement()) @map("ID")
-  availableQuantity Float   @map("AVAILABLE_QUANTITY")
-  onHandQuantity    Float   @map("ON_HAND_QUANTITY")
-  deleted           Boolean @default(false) @map("IS_DELETED")
-  item              Item?
-
-  @@map("STOCK")
+  @@unique([itemId, outletId])
+  @@map("STOCK_BALANCE")
 }
 
-model StockCheck {
-  id                Int      @id @default(autoincrement()) @map("ID")
-  created           DateTime @default(now()) @map("CREATED_DATETIME")
-  itemId            Int      @map("ITEM_ID")
-  availableQuantity Float    @map("AVAILABLE_QUANTITY")
-  onHandQuantity    Float    @map("ON_HAND_QUANTITY")
-  documentId        Int      @map("DOCUMENT_ID")
-  documentType      String   @map("DOCUMENT_TYPE")
-  reason            String   @map("REASON")
-  remark            String   @default("") @map("REMARK")
-  outletId          Int      @map("OUTLET_ID")
-  deleted           Boolean  @default(false) @map("IS_DELETED")
-  Item              Item     @relation(fields: [itemId], references: [id])
+model StockMovement {
+  id                     Int      @id @default(autoincrement()) @map("ID")
+  itemId                 Int      @map("ITEM_ID")
+  outletId               Int      @map("OUTLET_ID")
+  availableQuantityDelta Float    @map("AVAILABLE_QUANTITY_DELTA")
+  onHandQuantityDelta    Float    @map("ON_HAND_QUANTITY_DELTA")
+  movementType           String   @map("MOVEMENT_TYPE")
+  documentId             Int      @map("DOCUMENT_ID")
+  reason                 String   @map("REASON")
+  remark                 String   @default("") @map("REMARK")
+  deleted                Boolean  @default(false) @map("IS_DELETED")
+  created                DateTime @default(now()) @map("CREATED_DATETIME")
+  item                   Item     @relation(fields: [itemId], references: [id])
+  outlet                 Outlet   @relation(fields: [outletId], references: [id])
 
-  @@map("STOCK_CHECK")
+  @@index([itemId, created])
+  @@index([outletId])
+  @@index([movementType])
+  @@map("STOCK_MOVEMENT")
+}
+
+model StockMovementArchive {
+  id                     Int      @id @default(autoincrement()) @map("ID")
+  created                DateTime @default(now()) @map("CREATED_DATETIME")
+  itemId                 Int      @map("ITEM_ID")
+  itemCode               String   @map("ITEM_CODE")
+  itemName               String   @map("ITEM_NAME")
+  outletId               Int      @map("OUTLET_ID")
+  outletName             String   @map("OUTLET_NAME")
+  availableQuantityDelta Float    @map("AVAILABLE_QUANTITY_DELTA")
+  onHandQuantityDelta    Float    @map("ON_HAND_QUANTITY_DELTA")
+  movementType           String   @map("MOVEMENT_TYPE")
+  documentId             Int      @map("DOCUMENT_ID")
+  documentType           String   @map("DOCUMENT_TYPE")
+  reason                 String   @map("REASON")
+  remark                 String   @default("") @map("REMARK")
+  deleted                Boolean  @default(false) @map("IS_DELETED")
+
+  @@index([itemId, created])
+  @@index([outletId])
+  @@index([movementType])
+  @@map("STOCK_MOVEMENT_ARCHIVE")
+}
+
+model StockSnapshot {
+  id                Int       @id @default(autoincrement()) @map("ID")
+  created           DateTime  @default(now()) @map("CREATED_DATETIME")
+  itemId            Int       @map("ITEM_ID")
+  outletId          Int       @map("OUTLET_ID")
+  availableQuantity Float     @map("AVAILABLE_QUANTITY")
+  onHandQuantity    Float     @map("ON_HAND_QUANTITY")
+  deleted           Boolean   @default(false) @map("IS_DELETED")
+  deletedAt         DateTime? @map("DELETED_AT")
+  item              Item      @relation(fields: [itemId], references: [id])
+  outlet            Outlet    @relation(fields: [outletId], references: [id])
+
+  @@index([itemId, created])
+  @@index([outletId])
+  @@map("STOCK_SNAPSHOT")
 }
 
 // model Unknown {
@@ -497,6 +547,7 @@ model MenuProfile {
   isSunday       Boolean        @map("IS_SUNDAY")
   sequence       Int            @map("SEQUENCE")
   deleted        Boolean        @default(false) @map("IS_DELETED")
+  deletedAt      DateTime?      @map("DELETED_AT")
   menuCategories MenuCategory[]
 
   @@map("MENU_PROFILE")
@@ -509,6 +560,7 @@ model MenuCategory {
   menuProfileID Int         @map("MENU_PROFILE_ID")
   imageURL      String?     @map("IMAGE_URL") @db.Text
   deleted       Boolean     @default(false) @map("IS_DELETED")
+  deletedAt     DateTime?   @map("DELETED_AT")
   menuProfile   MenuProfile @relation(fields: [menuProfileID], references: [id])
   menuItems     MenuItem[]
 
@@ -558,3 +610,46 @@ model MenuItemModifier {
 
   @@map("MENU_ITEM_MODIFIER")
 }
+
+// model EOD {
+//   id Int @id @default(autoincrement()) @map("ID")
+//   deviceId Int @map("DEVICE_ID")
+//   outletId Int @map("OUTLET_ID")
+//   openingDateTime DateTime? @map("OPENING_DATE_TIME")
+//   closingDateTime DateTime? @map("CLOSING_DATE_TIME")
+//   businessDate DateTime @map("BUSINESS_DATE")
+//   verifiedBy Int? @map("VERIFIED_BY")
+//   openedBy Int? @map("OPENED_BY")
+//   closedBy Int? @map("CLOSED_BY")
+//   deleted Boolean @default(false) @map("IS_DELETED")
+
+//   @@map("EOD")
+// }
+
+// model Stock {
+//   id                Int     @id @default(autoincrement()) @map("ID")
+//   availableQuantity Float   @map("AVAILABLE_QUANTITY")
+//   onHandQuantity    Float   @map("ON_HAND_QUANTITY")
+//   deleted           Boolean @default(false) @map("IS_DELETED")
+//   item              Item?   @relation(fields: [itemId], references: [id])
+//   itemId            Int?
+
+//   @@map("STOCK")
+// }
+
+// model StockCheck {
+//   id                Int      @id @default(autoincrement()) @map("ID")
+//   created           DateTime @default(now()) @map("CREATED_DATETIME")
+//   itemId            Int      @map("ITEM_ID")
+//   availableQuantity Float    @map("AVAILABLE_QUANTITY")
+//   onHandQuantity    Float    @map("ON_HAND_QUANTITY")
+//   documentId        Int      @map("DOCUMENT_ID")
+//   documentType      String   @map("DOCUMENT_TYPE")
+//   reason            String   @map("REASON")
+//   remark            String   @default("") @map("REMARK")
+//   outletId          Int      @map("OUTLET_ID")
+//   deleted           Boolean  @default(false) @map("IS_DELETED")
+//   Item              Item     @relation(fields: [itemId], references: [id])
+
+//   @@map("STOCK_CHECK")
+// }

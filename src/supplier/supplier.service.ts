@@ -7,18 +7,22 @@ import { getTenantPrisma } from '../db';
 let getAll = async (databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const suppliers = await tenantPrisma.supplier.findMany()
-        const suppliersDto = await Promise.all(suppliers.map(async supplier => {
-            let itemCount = await tenantPrisma.item.count({
+        const suppliers = await tenantPrisma.supplier.findMany();
+        const supplierWithCounts = await Promise.all(suppliers.map(async supplier => {
+            const itemCount = await tenantPrisma.item.count({
                 where: { supplierId: supplier.id }
-            })
-            itemCount = itemCount === undefined ? 0 : itemCount
-            return plainToInstance(SupplierDto, { ...supplier, itemCount }, { excludeExtraneousValues: true })
-        }))
-        return suppliersDto
+            }) || 0;
+
+            // Return the supplier object with itemCount added directly
+            return {
+                ...supplier,
+                itemCount
+            };
+        }));
+        return supplierWithCounts;
     }
     catch (error) {
-        throw error
+        throw error;
     }
 }
 
@@ -29,23 +33,24 @@ let getById = async (id: number, databaseName: string) => {
             where: {
                 id: id
             }
-        })
+        });
         if (!supplier) {
-            throw new NotFoundError("Supplier")
+            throw new NotFoundError("Supplier");
         }
-
-        let itemCount = await tenantPrisma.item.count({
+        const itemCount = await tenantPrisma.item.count({
             where: {
                 supplierId: id
             }
-        })
-        itemCount = itemCount === undefined ? 0 : itemCount
+        }) || 0;
 
-        let supplierDto = plainToInstance(SupplierDto, { ...supplier, itemCount }, { excludeExtraneousValues: true })
-        return supplierDto
+        // Return supplier with itemCount added
+        return {
+            ...supplier,
+            itemCount
+        };
     }
     catch (error) {
-        throw error
+        throw error;
     }
 }
 

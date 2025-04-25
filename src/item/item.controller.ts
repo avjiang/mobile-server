@@ -79,19 +79,18 @@ let createMany = (req: NetworkRequest<CreateItemsRequestBody>, res: Response, ne
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    // Transform with enableImplicitConversion to allow transformation for nested objects
     const requestBody = plainToInstance(
         CreateItemsRequestBody,
         req.body,
         { excludeExtraneousValues: true }
     );
     service.createMany(req.user.databaseName, requestBody.items)
-        .then((insertedRecordCount: number) => {
-            var message = `Successfully created ${insertedRecordCount} items`
-            if (insertedRecordCount === 1) {
-                message = message.substring(0, message.length - 1)
-            }
-            sendResponse(res, message)
+        .then((insertedItems: Item[]) => {
+            // var message = `Successfully created ${insertedItems} items`
+            // if (insertedRecordCount === 1) {
+            //     message = message.substring(0, message.length - 1)
+            // }
+            sendResponse(res, insertedItems)
         })
         .catch(next)
 }
@@ -184,8 +183,11 @@ let getLowStockItems = (req: AuthRequest, res: Response, next: NextFunction) => 
     }
     const lowStockQuantityParam = Number(lowStockQuantity)
     const isIncludedZeroStockParam = parseBoolean(isIncludedZeroStock as string)
+    // service.getLowStockItems(req.user.databaseName, lowStockQuantityParam, isIncludedZeroStockParam)
+    //     .then((lowStockItems: ItemDto[]) => sendResponse(res, lowStockItems))
+    //     .catch(next)
     service.getLowStockItems(req.user.databaseName, lowStockQuantityParam, isIncludedZeroStockParam)
-        .then((lowStockItems: ItemDto[]) => sendResponse(res, lowStockItems))
+        .then((lowStockItems: Item[]) => sendResponse(res, lowStockItems))
         .catch(next)
 }
 

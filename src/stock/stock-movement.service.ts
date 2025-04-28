@@ -31,7 +31,7 @@ let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: numbe
         return stockMovements.map(movement => ({
             ...movement,
             outletName: movement.outlet.outletName,
-            outlet: undefined // Remove the nested outlet object
+            outlet: undefined
         }))
     }
     catch (error) {

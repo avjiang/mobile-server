@@ -167,7 +167,8 @@ let generateJwtToken = (tenantUser: TenantUser, user: User, db: string) => {
         databaseName: db,
         tenantId: tenantUser.tenantId
     }
-    return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
+    // return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' }); // add expiration date
+    return jwt.sign({ user: userInfo }, jwt_token_secret);
 }
 
 let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {

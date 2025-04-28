@@ -118,7 +118,11 @@ let getById = async (databaseName: string, id: number) => {
         if (!item) {
             throw new NotFoundError("Item")
         }
-        const itemWithStock = plainToInstance(ItemDto, item, { excludeExtraneousValues: true })
+        const rawItemWithStock = {
+            ...item,
+            stockQuantity: item.stockBalance[0]?.availableQuantity || 0
+        };
+        const itemWithStock = plainToInstance(ItemDto, rawItemWithStock, { excludeExtraneousValues: true })
         return itemWithStock
     }
     catch (error) {
@@ -380,7 +384,6 @@ let getSoldItemRanking = async (databaseName: string, startDate: string, endDate
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const salesIDArray = (await salesService.getTotalSales(databaseName, startDate, endDate)).map(sales => sales.id)
-
         const top5SoldSalesItems = await tenantPrisma.salesItem.groupBy({
             by: ['itemId'],
             _count: {
@@ -399,23 +402,23 @@ let getSoldItemRanking = async (databaseName: string, startDate: string, endDate
             take: 5,
         })
 
-        const leastSoldSalesItems = await tenantPrisma.salesItem.groupBy({
-            by: ['itemId'],
-            _count: {
-                itemId: true,
-            },
-            where: {
-                salesId: {
-                    in: salesIDArray,
-                },
-            },
-            orderBy: {
-                _count: {
-                    itemId: 'asc',
-                },
-            },
-            take: 1,
-        })
+        // const leastSoldSalesItems = await tenantPrisma.salesItem.groupBy({
+        //     by: ['itemId'],
+        //     _count: {
+        //         itemId: true,
+        //     },
+        //     where: {
+        //         salesId: {
+        //             in: salesIDArray,
+        //         },
+        //     },
+        //     orderBy: {
+        //         _count: {
+        //             itemId: 'asc',
+        //         },
+        //     },
+        //     take: 1,
+        // })
 
         const topSoldItems = await Promise.all(
             top5SoldSalesItems.map(async (item) => {
@@ -424,20 +427,19 @@ let getSoldItemRanking = async (databaseName: string, startDate: string, endDate
                     item: stockItem,
                     quantitySold: item._count.itemId
                 }
-
                 return soldItem
             })
         )
 
         let leastSoldItem: ItemSoldObject | null = null
-        if (leastSoldSalesItems.length > 0) {
-            const leastSoldSalesItem = leastSoldSalesItems[0]
-            const stockItem = await getById(databaseName, leastSoldSalesItem.itemId)
-            leastSoldItem = {
-                item: stockItem,
-                quantitySold: leastSoldSalesItem._count.itemId
-            }
-        }
+        // if (leastSoldSalesItems.length > 0) {
+        //     const leastSoldSalesItem = leastSoldSalesItems[0]
+        //     const stockItem = await getById(databaseName, leastSoldSalesItem.itemId)
+        //     leastSoldItem = {
+        //         item: stockItem,
+        //         quantitySold: leastSoldSalesItem._count.itemId
+        //     }
+        // }
 
         const itemSoldRankingItems: ItemSoldRankingResponseBody = {
             topSoldItems: topSoldItems,

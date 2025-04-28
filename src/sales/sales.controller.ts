@@ -7,17 +7,34 @@ import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
 import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
-import { Sales } from "@prisma/client"
+import { Prisma, Sales } from "@prisma/client"
 import { AuthRequest } from "src/middleware/auth-request"
 
 const router = express.Router()
+
+interface SelectedSales {
+    id: number;
+    businessDate: Date;
+    salesType: string;
+    customerId: number | null;
+    totalAmount: number;
+    paidAmount: number;
+    status: string;
+    remark: string;
+    customerName: string;
+    totalItems: number;
+}
 
 const getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    service.getAll(req.user.databaseName)
-        .then((salesArray: Sales[]) => sendResponse(res, salesArray))
+    if (!validator.isNumeric(req.params.outletid)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    const outletID: number = parseInt(req.params.outletid)
+    service.getAll(req.user.databaseName, outletID)
+        .then((salesArray: SelectedSales[]) => sendResponse(res, salesArray))
         .catch(next)
 }
 
@@ -64,19 +81,15 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-
     const requestBody = req.body
     if (!requestBody) {
         throw new RequestValidateError('Create failed: data missing')
     }
-
     const sales = requestBody.sales
     if (!sales) {
         throw new RequestValidateError('Create failed: sales data missing')
     }
-
     const payments = requestBody.payments
-
     service.completeNewSales(req.user.databaseName, sales, payments)
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
@@ -177,7 +190,6 @@ const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) 
     if (!startDate || !endDate) {
         return new RequestValidateError('startDate and endDate are required')
     }
-
     validateDates(startDate as string, endDate as string)
 
     service.getTotalSalesData(req.user.databaseName, startDate as string, endDate as string)
@@ -222,15 +234,15 @@ const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) 
 // }
 
 //routes
-router.get("/", getAll)
 router.get('/getTotalSalesData', getTotalSalesData)
-// router.get('/getTotalProfit', getTotalProfit)
-// router.get('/getTotalRevenue', getTotalRevenue)
 router.get('/:id', getById)
+router.get('/outlet/:outletid', getAll)
 router.post('/create', create)
 router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
 router.post('/completeSales', completeSales)
 router.put('/update', update)
 router.delete('/:id', remove)
+// router.get('/getTotalProfit', getTotalProfit)
+// router.get('/getTotalRevenue', getTotalRevenue)
 export = router

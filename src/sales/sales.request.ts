@@ -23,7 +23,7 @@ export class CreateSalesRequest {
     @Expose() outletId: number = 0;
     @Expose() businessDate: Date = new Date();
     @Expose() salesType: string = "";
-    @Expose() customerId: number | undefined;
+    @Expose() customerId?: number;
     @Expose() billStreet: string | undefined;
     @Expose() billCity: string | undefined;
     @Expose() billState: string | undefined;

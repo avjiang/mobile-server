@@ -96,6 +96,21 @@ async function main(): Promise<void> {
         }
     })
 
+    // Seed Tenant Customer
+    const customer = await tenantPrisma1.customer.create({
+        data: {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@example.com",
+            mobile: "987-654-3210",
+            billStreet: "456 Elm Street",
+            billCity: "Metropolis",
+            billState: "NY",
+            billPostalCode: "10001",
+            deleted: false,
+        }
+    });
+
     // Seed Tenant Supplier
     const supplier = await tenantPrisma1.supplier.create({
         data: {
@@ -180,6 +195,21 @@ async function main(): Promise<void> {
             outletTel: "123-456-7890",
         }
     })
+
+    // Seed Tenant Customer
+    const customer2 = await tenantPrisma2.customer.create({
+        data: {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@example.com",
+            mobile: "987-654-3210",
+            billStreet: "456 Elm Street",
+            billCity: "Metropolis",
+            billState: "NY",
+            billPostalCode: "10001",
+            deleted: false,
+        }
+    });
 
     // Seed Tenant Supplier
     const supplier2 = await tenantPrisma2.supplier.create({

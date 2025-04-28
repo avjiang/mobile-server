@@ -87,6 +87,7 @@ model Customer {
   shipRemark     String    @default("") @map("SHIP_REMARK")
   deleted        Boolean   @default(false) @map("IS_DELETED")
   deletedAt      DateTime? @map("DELETED_AT")
+  sales          Sales[]
 
   @@map("CUSTOMER")
 }
@@ -177,7 +178,7 @@ model Sales {
   outletId                Int           @map("OUTLET_ID")
   businessDate            DateTime      @map("BUSINESS_DATE")
   salesType               String        @map("SALES_TYPE")
-  customerId              Int           @default(0) @map("CUSTOMER_ID")
+  customerId              Int?          @map("CUSTOMER_ID")
   billStreet              String        @default("") @map("BILL_STREET")
   billCity                String        @default("") @map("BILL_CITY")
   billState               String        @default("") @map("BILL_STATE")
@@ -210,6 +211,7 @@ model Sales {
   salesItems              SalesItem[]
   payments                Payment[]
   registerLogs            RegisterLog[]
+  customer                Customer?     @relation(fields: [customerId], references: [id])
 
   @@map("SALES")
 }

@@ -3,17 +3,47 @@ import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
 
-let getAll = async (databaseName: string) => {
+let getAll = async (databaseName: string, outletID: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const salesArray = await tenantPrisma.sales.findMany({
-            include: {
-                salesItems: true,
-                payments: true,
-                registerLogs: true
+            where: {
+                outletId: outletID,
+            },
+            select: {
+                id: true,
+                businessDate: true,
+                salesType: true,
+                customerId: true,
+                totalAmount: true,
+                paidAmount: true,
+                status: true,
+                remark: true,
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                salesItems: true
             }
         })
-        return salesArray
+        // Transform results to include customerName
+        const transformedSales = salesArray.map(sale => ({
+            id: sale.id,
+            businessDate: sale.businessDate,
+            salesType: sale.salesType,
+            customerId: sale.customerId,
+            totalAmount: sale.totalAmount,
+            paidAmount: sale.paidAmount,
+            status: sale.status,
+            remark: sale.remark,
+            totalItems: sale.salesItems.length,
+            customerName: sale.customer
+                ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
+                : 'Guest',
+        }));
+        return transformedSales;
     }
     catch (error) {
         throw error
@@ -48,7 +78,6 @@ let create = async (databaseName: string, salesBody: SalesCreationRequest) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const createdSales = await tenantPrisma.$transaction(async (tx) => {
-
             //calculate profit amount
             let updatedSales = performProfitCalculation(salesBody.sales)
 
@@ -125,19 +154,35 @@ let create = async (databaseName: string, salesBody: SalesCreationRequest) => {
 let completeNewSales = async (databaseName: string, salesBody: CreateSalesRequest, payments: Payment[]) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Calculate total payment amount and validate it
+            let totalSalesAmount = salesBody.totalAmount;
+            let totalPaymentAmount = payments.reduce((sum, payment) => sum + payment.tenderedAmount, 0);
+            if (totalPaymentAmount < totalSalesAmount) {
+                throw new BusinessLogicError("Total payment amount is less than the sales grand total amount");
+            }
+            // Calculate profit amount for sales items
+            let updatedSales = performProfitCalculation(salesBody);
 
-        const createdSales = await tenantPrisma.$transaction(async (tx) => {
+            // Calculate change amount
+            const changeAmount = performPaymentCalculation(totalSalesAmount, totalPaymentAmount);
 
-            //calculate profit amount
-            let updatedSales = performProfitCalculation(salesBody)
+            if (salesBody.customerId) {
+                const customer = await tenantPrisma.customer.findUnique({
+                    where: { id: salesBody.customerId },
+                });
+                if (!customer || customer.deleted) {
+                    throw new Error(`Invalid customerId: ${salesBody.customerId}`);
+                }
+            }
 
-            //separate sales & salesitem to perform update to different tables
-            const sales = await tx.sales.create({
+            // Create sales record
+            const createdSales = await tx.sales.create({
                 data: {
                     outletId: updatedSales.outletId,
                     businessDate: updatedSales.businessDate,
-                    salesType: updatedSales.salesType,
-                    customerId: updatedSales.customerId,
+                    salesType: updatedSales.salesType.replace(/\b\w/g, char => char.toUpperCase()),
+                    customerId: updatedSales.customerId || null,
                     billStreet: updatedSales.billStreet,
                     billCity: updatedSales.billCity,
                     billState: updatedSales.billState,
@@ -151,137 +196,108 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                     totalItemDiscountAmount: updatedSales.totalItemDiscountAmount,
                     discountPercentage: updatedSales.discountPercentage,
                     discountAmount: updatedSales.discountAmount,
-                    profitAmount: updatedSales.profitAmount,
                     serviceChargeAmount: updatedSales.serviceChargeAmount,
                     taxAmount: updatedSales.taxAmount,
                     roundingAmount: updatedSales.roundingAmount,
                     subtotalAmount: updatedSales.subtotalAmount,
                     totalAmount: updatedSales.totalAmount,
-                    paidAmount: updatedSales.paidAmount,
-                    changeAmount: updatedSales.changeAmount,
-                    status: updatedSales.status,
+                    paidAmount: totalPaymentAmount,
+                    changeAmount: changeAmount,
+                    status: "Completed",
                     remark: updatedSales.remark,
                     declarationSessionId: updatedSales.declarationSessionId,
                     eodId: updatedSales.eodId,
                     salesQuotationId: updatedSales.salesQuotationId,
                     performedBy: updatedSales.performedBy,
-                    deleted: updatedSales.deleted,
+                    deleted: false,
+                    profitAmount: salesBody.items.reduce((sum, item) =>
+                        sum + ((item.price - item.cost) * item.quantity - (item.discountAmount || 0)), 0),
                 }
-            })
+            });
 
-            await Promise.all(updatedSales.items.map(async (salesItem) => {
+            // Create sales items
+            const salesItems = await Promise.all(salesBody.items.map(async (item) => {
                 return tx.salesItem.create({
                     data: {
-                        salesId: sales.id,
-                        itemId: salesItem.itemId,
-                        itemName: salesItem.itemName,
-                        itemCode: salesItem.itemCode,
-                        quantity: salesItem.quantity,
-                        cost: salesItem.cost,
-                        price: salesItem.price,
-                        profit: salesItem.profit,
-                        discountPercentage: salesItem.discountPercentage,
-                        discountAmount: salesItem.discountAmount,
-                        serviceChargeAmount: salesItem.serviceChargeAmount,
-                        taxAmount: salesItem.taxAmount,
-                        subtotalAmount: salesItem.subtotalAmount,
-                        remark: salesItem.remark,
-                        deleted: salesItem.deleted
-                    }
-                })
-            }))
-
-            //throw error if payment amount is less than sales total amount
-            let totalSalesAmount = sales.totalAmount
-            let totalPaymentAmount = payments.reduce((sum, currentPayment) => sum + currentPayment.tenderedAmount, 0)
-            if (totalPaymentAmount < totalSalesAmount) {
-                throw new BusinessLogicError("Total payment amount is less than the sales grand total amount")
-            }
-
-            //update sales properties
-            var changeAmount = performPaymentCalculation(totalSalesAmount, totalPaymentAmount)
-            sales.paidAmount = totalPaymentAmount
-            sales.changeAmount = changeAmount
-            sales.status = "completed"
-
-            await tx.sales.update({
-                where: {
-                    id: sales.id
-                },
-                data: sales
-            })
-
-            //update payment sales ID and insert payments
-            for (var payment of payments) {
-                payment.salesId = sales.id
-            }
-            await tx.payment.createMany({
-                data: payments
-            })
-
-            //update stock related data
-            let salesItems = await tx.salesItem.findMany({
-                where: {
-                    salesId: sales.id
-                }
-            })
-
-            // Lazy-load to avoid circular dependency
-            const { getByIdRaw } = require("../item/item.service")
-
-            let stocks: StockBalance[] = []
-            let stockChecks: StockMovement[] = []
-            for (const salesItem of salesItems) {
-                var item = await getByIdRaw(salesItem.itemId)
-                if (item != null) {
-                    var stockIndex = stocks.findIndex(stock => stock.id === item!.stockId)
-                    if (stockIndex < 0) {
-                        stockIndex = stocks.push(item.stock) - 1
-                    }
-
-                    let minusQuantity = salesItem.quantity * -1
-                    let updatedAvailableQuantity = stocks[stockIndex].availableQuantity + minusQuantity
-                    let updatedOnHandQuantity = stocks[stockIndex].onHandQuantity + minusQuantity
-                    stocks[stockIndex].availableQuantity = updatedAvailableQuantity
-                    stocks[stockIndex].onHandQuantity = updatedOnHandQuantity
-
-                    let stockCheck: StockMovement = {
-                        id: 0,
-                        created: new Date,
-                        itemId: salesItem.itemId,
-                        availableQuantityDelta: minusQuantity,
-                        onHandQuantityDelta: minusQuantity,
-                        documentId: sales.id,
-                        movementType: 'Sales',
-                        reason: '',
-                        remark: '',
-                        outletId: sales.outletId,
+                        salesId: createdSales.id,
+                        itemId: item.itemId,
+                        itemName: item.itemName,
+                        itemCode: item.itemCode,
+                        quantity: item.quantity,
+                        cost: item.cost,
+                        price: item.price,
+                        profit: (item.price - item.cost) * item.quantity - (item.discountAmount || 0),
+                        discountPercentage: item.discountPercentage,
+                        discountAmount: item.discountAmount,
+                        serviceChargeAmount: item.serviceChargeAmount,
+                        taxAmount: item.taxAmount,
+                        subtotalAmount: item.subtotalAmount,
+                        remark: item.remark || "",
                         deleted: false
                     }
-                    stockChecks.push(stockCheck)
-                }
-            }
-
-            await tx.stockMovement.createMany({
-                data: stockChecks
-            })
-
-            for (const stock of stocks) {
-                await tx.stockBalance.update({
-                    where: {
-                        id: stock.id
-                    },
-                    data: stock
+                });
+            }));
+            // Update payments with the new salesId
+            const updatedPayments = payments.map(payment => ({
+                ...payment,
+                salesId: createdSales.id
+            }));
+            // Create payments
+            await tx.payment.createMany({
+                data: updatedPayments
+            });
+            // 4. Update Stock Balance and Create Stock Movement
+            const stockUpdates = await Promise.all(
+                salesBody.items.map(async (item) => {
+                    // Update Stock Balance
+                    const stockBalance = await tx.stockBalance.findFirst({
+                        where: {
+                            itemId: item.itemId,
+                            outletId: salesBody.outletId,
+                            deleted: false,
+                        },
+                    });
+                    if (!stockBalance) {
+                        throw new Error(`Stock balance not found for item ${item.itemId} in outlet ${salesBody.outletId}`);
+                    }
+                    const updatedStockBalance = await tx.stockBalance.update({
+                        where: {
+                            id: stockBalance.id,
+                        },
+                        data: {
+                            availableQuantity: {
+                                decrement: item.quantity,
+                            },
+                            onHandQuantity: {
+                                decrement: item.quantity,
+                            },
+                            lastUpdated: new Date(),
+                        },
+                    });
+                    // Create Stock Movement
+                    const stockMovement = await tx.stockMovement.create({
+                        data: {
+                            itemId: item.itemId,
+                            outletId: salesBody.outletId,
+                            availableQuantityDelta: -item.quantity,
+                            onHandQuantityDelta: -item.quantity,
+                            movementType: 'SALE',
+                            documentId: createdSales.id,
+                            reason: 'Sales transaction',
+                            remark: `Sales ID: #${createdSales.id}`,
+                            created: new Date(),
+                        },
+                    });
+                    return { stockBalance: updatedStockBalance, stockMovement };
                 })
-            }
-
-            return sales
-        })
-
-        return getById(databaseName, createdSales.id)
+            );
+            return createdSales;
+        });
+        // Return the complete sales record with all related data
+        return getById(databaseName, result.id);
     }
     catch (error) {
-        throw error
+        throw error;
     }
 }
 
@@ -439,7 +455,6 @@ let performPaymentCalculation = (salesTotalAmount: number, paidAmount: number) =
         if (changeAmount < 0) {
             throw new BusinessLogicError("Payment amount is less than sales amount")
         }
-
         return changeAmount
     }
     catch (error) {

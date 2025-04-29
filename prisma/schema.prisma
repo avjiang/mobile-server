@@ -223,6 +223,7 @@ model SalesItem {
   itemId              Int      @map("ITEM_ID")
   itemName            String   @map("ITEM_NAME")
   itemCode            String   @map("ITEM_CODE")
+  itemBrand           String   @map("ITEM_BRAND")
   quantity            Float    @map("QUANTITY")
   cost                Float    @map("COST")
   price               Float    @map("PRICE")

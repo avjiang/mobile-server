@@ -6,9 +6,22 @@ import { getTenantPrisma } from '../db';
 let getAll = async (databaseName: string, outletID: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Get today's date with time set to start of day (00:00:00)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get tomorrow's date for the upper bound of our query
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         const salesArray = await tenantPrisma.sales.findMany({
             where: {
                 outletId: outletID,
+                businessDate: {
+                    gte: today,
+                    lt: tomorrow
+                },
+                deleted: false
             },
             select: {
                 id: true,
@@ -25,6 +38,11 @@ let getAll = async (databaseName: string, outletID: number) => {
                         lastName: true,
                     },
                 },
+                payments: {
+                    select: {
+                        method: true
+                    }
+                },
                 salesItems: true
             }
         })
@@ -39,6 +57,7 @@ let getAll = async (databaseName: string, outletID: number) => {
             status: sale.status,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
+            paymentMethod: sale.payments[0].method,
             customerName: sale.customer
                 ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
                 : 'Guest',
@@ -126,6 +145,7 @@ let create = async (databaseName: string, salesBody: SalesCreationRequest) => {
                         itemId: salesItem.itemId,
                         itemName: salesItem.itemName,
                         itemCode: salesItem.itemCode,
+                        itemBrand: salesItem.itemBrand,
                         quantity: salesItem.quantity,
                         cost: salesItem.cost,
                         price: salesItem.price,
@@ -223,6 +243,7 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                         itemId: item.itemId,
                         itemName: item.itemName,
                         itemCode: item.itemCode,
+                        itemBrand: item.itemBrand,
                         quantity: item.quantity,
                         cost: item.cost,
                         price: item.price,

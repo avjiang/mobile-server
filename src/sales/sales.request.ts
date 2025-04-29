@@ -70,6 +70,7 @@ export class CreateSalesItemRequest {
     @Expose() itemId: number = 0;
     @Expose() itemCode: string = "";
     @Expose() itemName: string = "";
+    @Expose() itemBrand: string = "";
     @Expose() quantity: number = 0;
     @Expose() cost: number = 0;
     @Expose() price: number = 0;

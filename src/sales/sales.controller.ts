@@ -19,6 +19,7 @@ interface SelectedSales {
     customerId: number | null;
     totalAmount: number;
     paidAmount: number;
+    paymentMethod: string;
     status: string;
     remark: string;
     customerName: string;

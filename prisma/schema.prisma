@@ -61,6 +61,7 @@ model Supplier {
   hasTax                  Boolean   @map("HAS_TAX")
   deleted                 Boolean   @default(false) @map("IS_DELETED")
   deletedAt               DateTime? @map("DELETED_AT")
+  Item                    Item[]
 
   @@map("SUPPLIER")
 }
@@ -151,6 +152,7 @@ model Item {
   supplierId      Int             @map("SUPPLIER_ID")
   deleted         Boolean         @default(false) @map("IS_DELETED")
   deletedAt       DateTime?       @map("DELETED_AT")
+  supplier        Supplier        @relation(fields: [supplierId], references: [id])
   stockBalance    StockBalance[]
   stockMovement   StockMovement[]
   stockSnapshot   StockSnapshot[]

@@ -146,7 +146,7 @@ async function main(): Promise<void> {
             weight: 1.5,
             alternateLookUp: "ALT001",
             image: "sample-image-url",
-            supplierId: 1,
+            // supplierId: 1,
             deleted: false,
             stockBalance: {
                 create: {
@@ -170,6 +170,9 @@ async function main(): Promise<void> {
                         deleted: false
                     }
                 ]
+            },
+            supplier: {
+                connect: { id: supplier.id }
             },
             category: {
                 connect: { id: category1.id },
@@ -246,7 +249,7 @@ async function main(): Promise<void> {
             weight: 1.5,
             alternateLookUp: "ALT001",
             image: "sample-image-url",
-            supplierId: 1,
+            // supplierId: 1,
             deleted: false,
             stockBalance: {
                 create: {
@@ -270,6 +273,9 @@ async function main(): Promise<void> {
                         deleted: false
                     }
                 ]
+            },
+            supplier: {
+                connect: { id: supplier2.id }
             },
             category: {
                 connect: { id: category2.id },

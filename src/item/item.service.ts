@@ -154,7 +154,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         weight: item.weight,
                         alternateLookUp: item.alternateLookUp,
                         image: item.image,
-                        supplierId: item.supplierId,
+                        // supplierId: item.supplierId,
                         deleted: item.deleted,
                         stockBalance: {
                             create: {
@@ -178,6 +178,9 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                     deleted: false
                                 }
                             ]
+                        },
+                        supplier: {
+                            connect: { id: item.supplierId },
                         },
                         category: {
                             connect: { id: item.categoryId },
@@ -357,23 +360,33 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
             },
             include: {
                 stockBalance: {
-                    where: { deleted: false },
-
+                    where: {
+                        deleted: false,
+                        outletId: 1,
+                    },
                 },
-                category: true, // Include category if needed
+                category: true,
+                supplier: true
             },
         });
-
         // Step 4: Enrich items with total availableQuantity
-        const enrichedItems = items.map((item) => ({
-            ...item,
-            totalAvailableQuantity:
-                lowStockItems.find((ls) => ls.itemId === item.id)?._sum
-                    .availableQuantity || 0,
+        const enrichedItems = await Promise.all(items.map(async (item) => {
+            const supplier = await tenantPrisma.supplier.findUnique({
+                where: { id: item.supplierId }
+            });
+            return {
+                ...item,
+                stockBalance: undefined,
+                category: undefined,
+                supplier: undefined,
+                lastRestockDate: item.stockBalance[0]?.lastUpdated || null,
+                supplierName: supplier?.companyName || "",
+                stockQuantity:
+                    lowStockItems.find((ls) => ls.itemId === item.id)?._sum
+                        .availableQuantity || 0,
+            };
         }));
-
         return enrichedItems;
-
     }
     catch (error) {
         throw error

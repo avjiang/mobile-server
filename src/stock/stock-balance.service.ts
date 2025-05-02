@@ -6,6 +6,13 @@ import stockMovementService from "./stock-movement.service"
 import { getTenantPrisma } from '../db';
 import { } from '../db';
 
+class RequestValidateError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'RequestValidateError';
+    }
+}
+
 // stock function 
 let getAllStock = async (databaseName: string) => {
     try {
@@ -38,61 +45,100 @@ let getStockByItemId = async (databaseName: string, itemId: number) => {
 }
 
 let stockAdjustment = async (databaseName: string, stockAdjustments: StockAdjustment[]) => {
+    const tenantPrisma = getTenantPrisma(databaseName);
+    let adjustedCount = 0;
+
     try {
-        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-        var adjustedCount = 0
-
         await tenantPrisma.$transaction(async (tx) => {
-            let stocks: StockBalance[] = []
-            let stockChecks: StockMovement[] = []
+            // Prepare stock movements
+            const stockMovements = [];
+            const stockUpdates: { id: number; availableQuantity: number; onHandQuantity: number }[] = [];
 
-            for (const stockAdjustment of stockAdjustments) {
-                let stock = await getStockByItemId(databaseName, stockAdjustment.itemId)
+            for (const adjustment of stockAdjustments) {
+                // Validate adjustment quantities
+                if (adjustment.adjustQuantity !== undefined && adjustment.overrideQuantity !== undefined) {
+                    throw new RequestValidateError('Provide either adjustQuantity or overrideQuantity, not both');
+                }
+                if (adjustment.adjustQuantity === undefined && adjustment.overrideQuantity === undefined) {
+                    throw new RequestValidateError('Either adjustQuantity or overrideQuantity must be provided');
+                }
+
+                const stock = await tx.stockBalance.findFirst({
+                    where: { itemId: adjustment.itemId, outletId: adjustment.outletId, deleted: false },
+                });
+
                 if (!stock) {
-                    throw new NotFoundError(`Stock for ${stockAdjustment.itemId}`)
+                    throw new NotFoundError(`Stock for itemId ${adjustment.itemId} not found`);
                 }
 
-                let updatedAvailableQuantity = stock.availableQuantity + stockAdjustment.adjustQuantity
-                let updatedOnHandQuantity = stock.onHandQuantity + stockAdjustment.adjustQuantity
-                stock.availableQuantity = updatedAvailableQuantity
-                stock.onHandQuantity = updatedOnHandQuantity
+                let newAvailableQuantity: number;
+                let newOnHandQuantity: number;
+                let deltaQuantity: number;
 
-                let stockCheck: StockMovement = {
-                    id: 0,
-                    created: new Date,
-                    itemId: stockAdjustment.itemId,
-                    availableQuantityDelta: stockAdjustment.adjustQuantity,
-                    onHandQuantityDelta: stockAdjustment.adjustQuantity,
+                if (adjustment.overrideQuantity !== undefined) {
+                    // Override: Set quantities to the provided value
+                    newAvailableQuantity = adjustment.overrideQuantity;
+                    newOnHandQuantity = adjustment.overrideQuantity;
+                    deltaQuantity = adjustment.overrideQuantity - stock.availableQuantity;
+                } else {
+                    // Delta: Adjust quantities by the provided delta
+                    newAvailableQuantity = stock.availableQuantity + (adjustment.adjustQuantity || 0);
+                    newOnHandQuantity = stock.onHandQuantity + (adjustment.adjustQuantity || 0);
+                    deltaQuantity = adjustment.adjustQuantity || 0;
+                }
+
+                // Ensure quantities are non-negative (optional, based on business rules)
+                if (newAvailableQuantity < 0 || newOnHandQuantity < 0) {
+                    throw new RequestValidateError(`Adjustment for itemId ${adjustment.itemId} would result in negative stock`);
+                }
+
+                // Prepare stock movement
+                stockMovements.push({
+                    itemId: adjustment.itemId,
+                    outletId: adjustment.outletId,
+                    availableQuantityDelta: deltaQuantity,
+                    onHandQuantityDelta: deltaQuantity,
+                    movementType: 'Stock Adjustment',
                     documentId: 0,
-                    movementType: "Stock Adjustment",
-                    reason: stockAdjustment.reason,
-                    remark: stockAdjustment.remark,
-                    outletId: stockAdjustment.outletId,
-                    deleted: false
-                }
+                    reason: adjustment.reason,
+                    remark: adjustment.remark,
+                    created: new Date(),
+                    deleted: false,
+                });
 
-                stocks.push(stock)
-                stockChecks.push(stockCheck)
+                // Prepare stock balance update
+                stockUpdates.push({
+                    id: stock.id,
+                    availableQuantity: newAvailableQuantity,
+                    onHandQuantity: newOnHandQuantity,
+                });
             }
 
+            // Bulk insert stock movements
             await tx.stockMovement.createMany({
-                data: stockChecks
-            })
+                data: stockMovements,
+            });
 
-            for (const stock of stocks) {
-                await tx.stockBalance.update({
-                    where: {
-                        id: stock.id
-                    },
-                    data: stock
-                })
-                adjustedCount = adjustedCount + 1
-            }
-        })
-        return adjustedCount
-    }
-    catch (error) {
-        throw error
+            // Bulk update stock balances
+            await Promise.all(
+                stockUpdates.map((update) =>
+                    tx.stockBalance.update({
+                        where: { id: update.id },
+                        data: {
+                            availableQuantity: update.availableQuantity,
+                            onHandQuantity: update.onHandQuantity,
+                            lastUpdated: new Date(),
+                        },
+                    })
+                )
+            );
+
+            adjustedCount = stockUpdates.length;
+        });
+
+        return adjustedCount;
+    } catch (error) {
+        throw error;
     }
 }
 

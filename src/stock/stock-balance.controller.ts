@@ -39,9 +39,7 @@ let stockAdjustment = (req: NetworkRequest<StockAdjustmentRequestBody>, res: Res
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-
     const requestBody = req.body
-
     service.stockAdjustment(req.user.databaseName, requestBody.stockAdjustments)
         .then((adjustedRecordCount: number) => {
             var message = `Successfully adjusted ${adjustedRecordCount} stocks`

@@ -54,7 +54,7 @@ export class CreateSalesRequest {
     @Expose() deleted: boolean | undefined;
     @Expose()
     @Type(() => CreateSalesItemRequest)
-    items: CreateSalesItemRequest[] = [];
+    salesItems: CreateSalesItemRequest[] = [];
 }
 
 export class SalesCreationRequest {

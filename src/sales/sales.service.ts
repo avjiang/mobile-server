@@ -138,7 +138,7 @@ let create = async (databaseName: string, salesBody: SalesCreationRequest) => {
                 }
             })
 
-            await Promise.all(updatedSales.items.map(async (salesItem) => {
+            await Promise.all(updatedSales.salesItems.map(async (salesItem) => {
                 return tx.salesItem.create({
                     data: {
                         salesId: sales.id,
@@ -230,13 +230,13 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                     salesQuotationId: updatedSales.salesQuotationId,
                     performedBy: updatedSales.performedBy,
                     deleted: false,
-                    profitAmount: salesBody.items.reduce((sum, item) =>
+                    profitAmount: salesBody.salesItems.reduce((sum, item) =>
                         sum + ((item.price - item.cost) * item.quantity - (item.discountAmount || 0)), 0),
                 }
             });
 
             // Create sales items
-            const salesItems = await Promise.all(salesBody.items.map(async (item) => {
+            const salesItems = await Promise.all(salesBody.salesItems.map(async (item) => {
                 return tx.salesItem.create({
                     data: {
                         salesId: createdSales.id,
@@ -269,7 +269,7 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
             });
             // 4. Update Stock Balance and Create Stock Movement
             const stockUpdates = await Promise.all(
-                salesBody.items.map(async (item) => {
+                salesBody.salesItems.map(async (item) => {
                     // Update Stock Balance
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
@@ -449,7 +449,7 @@ let calculateSales = async (databaseName: string, salesRequestBody: CalculateSal
 
 let performProfitCalculation = (sales: CreateSalesRequest) => {
     try {
-        let items = sales.items
+        let items = sales.salesItems
         var totalProfitAmount = 0.00
 
         items.forEach(function (item) {

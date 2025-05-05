@@ -87,10 +87,10 @@ let stockAdjustment = async (databaseName: string, stockAdjustments: StockAdjust
                     deltaQuantity = adjustment.adjustQuantity || 0;
                 }
 
-                // Ensure quantities are non-negative (optional, based on business rules)
-                if (newAvailableQuantity < 0 || newOnHandQuantity < 0) {
-                    throw new RequestValidateError(`Adjustment for itemId ${adjustment.itemId} would result in negative stock`);
-                }
+                // // Ensure quantities are non-negative (optional, based on business rules)
+                // if (newAvailableQuantity < 0 || newOnHandQuantity < 0) {
+                //     throw new RequestValidateError(`Adjustment for itemId ${adjustment.itemId} would result in negative stock`);
+                // }
 
                 // Prepare stock movement
                 stockMovements.push({

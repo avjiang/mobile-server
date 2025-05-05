@@ -39,16 +39,10 @@ let createMany = (req: NetworkRequest<CreateCustomersRequestBody>, res: Response
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-
     const requestBody = req.body
-
     service.createMany(req.user.databaseName, requestBody.customers)
-        .then((insertedRecordCount: number) => {
-            var message = `Successfully created ${insertedRecordCount} customers`
-            if (insertedRecordCount === 1) {
-                message = message.substring(0, message.length - 1)
-            }
-            sendResponse(res, message)
+        .then((customers: Customer[]) => {
+            sendResponse(res, customers)
         })
         .catch(next)
 }

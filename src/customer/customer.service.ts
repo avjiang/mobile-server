@@ -34,11 +34,15 @@ let getById = async (databaseName: string, id: number) => {
 let createMany = async (databaseName: string, customers: Customer[]) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const newCustomers = await tenantPrisma.customer.createMany({
-            data: customers
-        })
-
-        return newCustomers.count
+        // Option 1: Use transaction with individual creates for better feedback
+        const createdCustomers = await tenantPrisma.$transaction(
+            customers.map(customer =>
+                tenantPrisma.customer.create({
+                    data: customer
+                })
+            )
+        );
+        return createdCustomers;
     }
     catch (error) {
         throw error

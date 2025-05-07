@@ -4,6 +4,84 @@ import salesService from "../sales/sales.service"
 import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.response"
 import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
+import { SyncRequest } from "./item.request"
+
+let getAll = async (
+    databaseName: string,
+    syncRequest: SyncRequest
+): Promise<{ items: ItemDto[]; total: number; serverTimestamp: string }> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
+
+    try {
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Build query conditions
+        const where = lastVersion
+            ? { version: { gt: lastVersion } }
+            : {
+                OR: [
+                    { createdAt: { gte: lastSync } },
+                    { updatedAt: { gte: lastSync } },
+                    { deletedAt: { gte: lastSync } },
+                ],
+            };
+        // Count total changes
+        const total = await tenantPrisma.item.count({ where });
+
+        // Fetch paginated items
+        const items = await tenantPrisma.item.findMany({
+            where,
+            include: {
+                stockBalance: {
+                    select: { availableQuantity: true, id: true },
+                },
+            },
+            skip,
+            take,
+        });
+        // Map to DTO
+        const response = items.map((item) => ({
+            ...item,
+            stockBalanceId: item.stockBalance[0]?.id || null,
+            stockBalance: undefined,
+            stockQuantity: item.stockBalance[0]?.availableQuantity || 0,
+        }));
+        // Return with server timestamp
+        return {
+            items: response,
+            total,
+            serverTimestamp: new Date().toISOString(),
+        };
+    } catch (error) {
+        throw error;
+    }
+};
+
+// let getAll = async (databaseName: string) => {
+//     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+//     try {
+//         const items = await tenantPrisma.item.findMany({
+//             include: {
+//                 stockBalance: {
+//                     select: {
+//                         availableQuantity: true
+//                     }
+//                 }
+//             }
+//         })
+//         const response = items.map(({ stockBalance, ...item }) => ({
+//             ...item,
+//             stockQuantity: stockBalance[0]?.availableQuantity || 0,
+//         }));
+//         return response;
+//     }
+//     catch (error) {
+//         throw error
+//     }
+// }
 
 let getByIdRaw = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -24,29 +102,6 @@ let getByIdRaw = async (databaseName: string, id: number) => {
     }
 }
 
-
-let getAll = async (databaseName: string) => {
-    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    try {
-        const items = await tenantPrisma.item.findMany({
-            include: {
-                stockBalance: {
-                    select: {
-                        availableQuantity: true
-                    }
-                }
-            }
-        })
-        const response = items.map(({ stockBalance, ...item }) => ({
-            ...item,
-            stockQuantity: stockBalance[0]?.availableQuantity || 0,
-        }));
-        return response;
-    }
-    catch (error) {
-        throw error
-    }
-}
 
 let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -143,31 +198,23 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         itemType: item.itemType,
                         itemModel: item.itemModel,
                         itemBrand: item.itemBrand,
-                        itemDescription: item.itemDescription,
                         cost: item.cost,
                         price: item.price,
-                        isOpenPrice: item.isOpenPrice,
                         unitOfMeasure: item.unitOfMeasure,
-                        height: item.height,
-                        width: item.width,
-                        length: item.length,
-                        weight: item.weight,
-                        alternateLookUp: item.alternateLookUp,
-                        image: item.image,
-                        // supplierId: item.supplierId,
                         deleted: item.deleted,
                         stockBalance: {
                             create: {
                                 outletId: 1,
                                 availableQuantity: stockQuantity,
                                 onHandQuantity: stockQuantity,
-                                lastUpdated: new Date(),
                                 deleted: false,
                             },
                         },
                         stockMovement: {
                             create: [
                                 {
+                                    previousAvailableQuantity: 0,
+                                    previousOnHandQuantity: 0,
                                     availableQuantityDelta: stockQuantity,
                                     onHandQuantityDelta: stockQuantity,
                                     documentId: 0,
@@ -185,12 +232,17 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         category: {
                             connect: { id: item.categoryId },
                         }
+                    },
+                    include: {
+                        stockBalance: true,
                     }
                 })
             })
         );
         const response = createdItems.map((item, index) => ({
             ...item,
+            stockBalanceId: item.stockBalance[0]?.id || null,
+            stockBalance: undefined,
             stockQuantity: itemBodyArray[index].stockQuantity || 0, // Use stockQuantity from input
         }));
         return response;
@@ -379,7 +431,7 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
                 stockBalance: undefined,
                 category: undefined,
                 supplier: undefined,
-                lastRestockDate: item.stockBalance[0]?.lastUpdated || null,
+                lastRestockDate: item.stockBalance[0]?.updatedAt || null,
                 supplierName: supplier?.companyName || "",
                 stockQuantity:
                     lowStockItems.find((ls) => ls.itemId === item.id)?._sum
@@ -476,5 +528,5 @@ export = {
     getSoldItemRanking,
     getLowStockItemCount,
     getLowStockItems,
-    getAllByCategoryId
+    getAllByCategoryId,
 }

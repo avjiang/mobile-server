@@ -29,7 +29,26 @@ export function getTenantPrisma(tenantDbName: string): TenantPrismaClient {
     const tenantPrisma = new TenantPrismaClient({
       datasources: { db: { url: tenantUrl } },
     });
-    tenantPrismaInstances.set(tenantDbName, tenantPrisma);
+    // Create extension to increment version on updates
+    const versionExtension = tenantPrisma.$extends({
+      query: {
+        $allModels: {
+          async update({ args, query }) {
+            args.data.version = { increment: 1 };
+            return query(args);
+          },
+          async updateMany({ args, query }) {
+            args.data.version = { increment: 1 };
+            return query(args);
+          },
+        },
+      },
+    });
+    versionExtension.$connect().catch((error) => {
+      console.error(`Failed to connect to tenant database ${tenantDbName}:`, error);
+      throw error;
+    });
+    tenantPrismaInstances.set(tenantDbName, versionExtension as TenantPrismaClient);
   }
   return tenantPrismaInstances.get(tenantDbName)!;
 }

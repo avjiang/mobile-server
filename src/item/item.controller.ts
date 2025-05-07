@@ -5,7 +5,7 @@ import { Item } from "@prisma/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
-import { CreateItemsRequestBody } from "./item.request"
+import { CreateItemsRequestBody, SyncRequest } from "./item.request"
 import { ItemDto, ItemSoldRankingResponseBody } from "./item.response"
 import { parseBoolean } from "../helpers/booleanHelper"
 import { validateDates } from "../helpers/dateHelper"
@@ -14,13 +14,31 @@ import { AuthRequest } from "../middleware/auth-request"
 
 const router = express.Router()
 
+// let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
+//     if (!req.user) {
+//         throw new RequestValidateError('User not authenticated');
+//     }
+//     service.getAll(req.user.databaseName)
+//         .then((items: ItemDto[]) => sendResponse(res, items))
+//         .catch(next)
+// }
+
 let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    service.getAll(req.user.databaseName)
-        .then((items: ItemDto[]) => sendResponse(res, items))
-        .catch(next)
+    const syncRequest: SyncRequest = {
+        lastSyncTimestamp: req.query.lastSyncTimestamp as string,
+        lastVersion: req.query.lastVersion ? parseInt(req.query.lastVersion as string) : undefined,
+        skip: req.query.skip ? parseInt(req.query.skip as string) : undefined,
+        take: req.query.take ? parseInt(req.query.take as string) : undefined,
+    };
+    service
+        .getAll(req.user.databaseName, syncRequest)
+        .then(({ items, total, serverTimestamp }) => {
+            sendResponse(res, { data: items, total, serverTimestamp });
+        })
+        .catch(next);
 }
 
 let getAllBySupplierId = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -192,7 +210,7 @@ let getLowStockItems = (req: AuthRequest, res: Response, next: NextFunction) => 
 }
 
 //routes
-router.get("/", getAll)
+router.get("/sync", getAll)
 router.get("/getBySupplierId", getAllBySupplierId)
 router.get("/getByCategoryId", getAllByCategoryId)
 router.get("/getLowStockItemCount", getLowStockItemCount)

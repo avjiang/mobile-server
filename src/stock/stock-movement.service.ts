@@ -26,6 +26,9 @@ let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: numbe
                         outletName: true
                     }
                 }
+            },
+            orderBy: {
+                createdAt: 'desc' // This will sort from newest to oldest
             }
         })
         return stockMovements.map(movement => ({

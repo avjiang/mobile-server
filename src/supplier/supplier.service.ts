@@ -107,16 +107,23 @@ let createMany = async (suppliers: Supplier[], databaseName: string) => {
 let update = async (supplier: Supplier, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Extract itemCount before updating
+        const { itemCount, ...supplierData } = supplier as Supplier & { itemCount?: number };
+
         const updatedSupplier = await tenantPrisma.supplier.update({
             where: {
                 id: supplier.id
             },
-            data: supplier
-        })
-        return updatedSupplier
+            data: supplierData
+        });
+        // Add itemCount back to the updatedSupplier object
+        (updatedSupplier as any).itemCount = itemCount || 0;
+
+        // Return the modified updatedSupplier
+        return updatedSupplier;
     }
     catch (error) {
-        throw error
+        throw error;
     }
 }
 

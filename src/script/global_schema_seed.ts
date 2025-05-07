@@ -1,4 +1,3 @@
-// prisma/seed.ts
 import { PrismaClient } from ".prisma/global-client";
 import bcrypt from "bcryptjs"
 import { getTenantPrisma, initializeTenantDatabase } from '../db';
@@ -153,13 +152,14 @@ async function main(): Promise<void> {
                     outletId: outlet.id,
                     availableQuantity: 1,
                     onHandQuantity: 1,
-                    lastUpdated: new Date(),
                     deleted: false,
                 },
             },
             stockMovement: {
                 create: [
                     {
+                        previousAvailableQuantity: 0,
+                        previousOnHandQuantity: 0,
                         availableQuantityDelta: 1,
                         onHandQuantityDelta: 1,
                         documentId: 0,
@@ -256,13 +256,14 @@ async function main(): Promise<void> {
                     outletId: outlet2.id,
                     availableQuantity: 1,
                     onHandQuantity: 1,
-                    lastUpdated: new Date(),
                     deleted: false,
                 },
             },
             stockMovement: {
                 create: [
                     {
+                        previousAvailableQuantity: 0,
+                        previousOnHandQuantity: 0,
                         outletId: outlet2.id,
                         availableQuantityDelta: 1,
                         onHandQuantityDelta: 1,

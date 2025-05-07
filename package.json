@@ -93,8 +93,9 @@
     "start": "pm2 start ecosystem.config.js",
     "list": "pm2 list",
     "log": "pm2 logs",
-    "seed_global": "node dist/script/global_schema_seed.js",
-    "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js"
+    "seed_global": "ts-node src/script/global_schema_seed.ts",
+    "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js",
+    "seed_tenant_items": "ts-node src/script/tenant_db_seed.ts"
   },
   "keywords": [],
   "author": "",

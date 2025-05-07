@@ -54,19 +54,15 @@ let update = (req: NetworkRequest<Supplier>, res: Response, next: NextFunction) 
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-
     const supplier = req.body
-
     if (!supplier) {
         throw new RequestValidateError('Update failed: data missing')
     }
-
     if (!supplier.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-
     service.update(supplier, req.user.databaseName)
-        .then((supplier: Supplier) => sendResponse(res, "Successfully updated"))
+        .then((supplier: Supplier) => sendResponse(res, supplier))
         .catch(next)
 }
 

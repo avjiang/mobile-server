@@ -30,8 +30,8 @@ export class ItemDto {
     @Expose()
     itemBrand: string | undefined = undefined;
 
-    @Expose()
-    itemDescription: string | undefined = undefined;
+    // @Expose()
+    // itemDescription: string | undefined = undefined;
 
     @Expose()
     categoryId: number = 0;
@@ -42,29 +42,29 @@ export class ItemDto {
     @Expose()
     price: number = 0;
 
-    @Expose()
-    isOpenPrice: boolean = false;
+    // @Expose()
+    // isOpenPrice: boolean = false;
 
     @Expose()
     unitOfMeasure: string | undefined = undefined;
 
-    @Expose()
-    height: number | undefined = undefined;
+    // @Expose()
+    // height: number | undefined = undefined;
 
-    @Expose()
-    width: number | undefined = undefined;
+    // @Expose()
+    // width: number | undefined = undefined;
 
-    @Expose()
-    length: number | undefined = undefined;
+    // @Expose()
+    // length: number | undefined = undefined;
 
-    @Expose()
-    weight: number | undefined = undefined;
+    // @Expose()
+    // weight: number | undefined = undefined;
 
-    @Expose()
-    alternateLookUp: string | undefined = undefined;
+    // @Expose()
+    // alternateLookUp: string | undefined = undefined;
 
-    @Expose()
-    image: string | undefined = undefined;
+    // @Expose()
+    // image: string | undefined = undefined;
 
     @Expose()
     supplierId: number = 0;

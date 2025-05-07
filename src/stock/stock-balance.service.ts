@@ -2,9 +2,9 @@ import { Prisma, PrismaClient, StockBalance, StockMovement } from "@prisma/clien
 import { NotFoundError } from "../api-helpers/error"
 import { StockAdjustment, StockAdjustmentRequestBody } from "./stock-balance.request"
 import stockMovementService from "./stock-movement.service"
-
 import { getTenantPrisma } from '../db';
 import { } from '../db';
+import { SyncRequest } from "src/item/item.request";
 
 class RequestValidateError extends Error {
     constructor(message: string) {
@@ -14,16 +14,58 @@ class RequestValidateError extends Error {
 }
 
 // stock function 
-let getAllStock = async (databaseName: string) => {
+let getAllStock = async (
+    databaseName: string,
+    syncRequest: SyncRequest
+): Promise<{ stockBalances: StockBalance[]; total: number; serverTimestamp: string }> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
+
     try {
-        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-        const stocks = await tenantPrisma.stockBalance.findMany()
-        return stocks
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Build query conditions
+        const where = lastVersion
+            ? { version: { gt: lastVersion } }
+            : {
+                OR: [
+                    { createdAt: { gte: lastSync } },
+                    { updatedAt: { gte: lastSync } },
+                    { deletedAt: { gte: lastSync } },
+                ],
+                deleted: false
+            };
+
+        // Count total matching records
+        const total = await tenantPrisma.stockBalance.count({ where });
+
+        // Fetch paginated stocks with related item info
+        const stocks = await tenantPrisma.stockBalance.findMany({
+            where,
+            skip,
+            take,
+        });
+
+        // // Transform to expected response format
+        // const response = stocks.map(stock => ({
+        //     ...stock,
+        //     item: undefined, // Remove the nested item object
+        //     itemName: stock.item?.itemName || "",
+        //     itemCode: stock.item?.itemCode || "",
+        //     // Add other item fields you need here
+        // }));
+
+        return {
+            stockBalances: stocks,
+            total,
+            serverTimestamp: new Date().toISOString(),
+        };
+    } catch (error) {
+        throw error;
     }
-    catch (error) {
-        throw error
-    }
-}
+};
 
 let getStockByItemId = async (databaseName: string, itemId: number) => {
     try {
@@ -66,10 +108,13 @@ let stockAdjustment = async (databaseName: string, stockAdjustments: StockAdjust
                 const stock = await tx.stockBalance.findFirst({
                     where: { itemId: adjustment.itemId, outletId: adjustment.outletId, deleted: false },
                 });
-
                 if (!stock) {
                     throw new NotFoundError(`Stock for itemId ${adjustment.itemId} not found`);
                 }
+
+                // Store previous values from the current stock record
+                const previousAvailableQuantity = stock.availableQuantity;
+                const previousOnHandQuantity = stock.onHandQuantity;
 
                 let newAvailableQuantity: number;
                 let newOnHandQuantity: number;
@@ -96,13 +141,14 @@ let stockAdjustment = async (databaseName: string, stockAdjustments: StockAdjust
                 stockMovements.push({
                     itemId: adjustment.itemId,
                     outletId: adjustment.outletId,
+                    previousAvailableQuantity: previousAvailableQuantity,
+                    previousOnHandQuantity: previousOnHandQuantity,
                     availableQuantityDelta: deltaQuantity,
                     onHandQuantityDelta: deltaQuantity,
                     movementType: 'Stock Adjustment',
                     documentId: 0,
                     reason: adjustment.reason,
                     remark: adjustment.remark,
-                    created: new Date(),
                     deleted: false,
                 });
 
@@ -127,7 +173,6 @@ let stockAdjustment = async (databaseName: string, stockAdjustments: StockAdjust
                         data: {
                             availableQuantity: update.availableQuantity,
                             onHandQuantity: update.onHandQuantity,
-                            lastUpdated: new Date(),
                         },
                     })
                 )

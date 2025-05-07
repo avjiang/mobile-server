@@ -7,6 +7,7 @@ import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { CreateStocksRequestBody, StockAdjustmentRequestBody, UpdateStocksRequestBody } from "./stock-balance.request"
 import { AuthRequest } from "src/middleware/auth-request"
+import { SyncRequest } from "src/item/item.request"
 
 const router = express.Router()
 
@@ -14,9 +15,16 @@ let getAllStock = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    service.getAllStock(req.user.databaseName)
-        .then((stocks: StockBalance[]) => sendResponse(res, stocks))
-        .catch(next)
+    const syncRequest: SyncRequest = {
+        lastSyncTimestamp: req.query.lastSyncTimestamp as string,
+        lastVersion: req.query.lastVersion ? parseInt(req.query.lastVersion as string) : undefined,
+        skip: req.query.skip ? parseInt(req.query.skip as string) : undefined,
+        take: req.query.take ? parseInt(req.query.take as string) : undefined,
+    };
+    service
+        .getAllStock(req.user.databaseName, syncRequest)
+        .then(({ stockBalances, total, serverTimestamp }) => sendResponse(res, { data: stockBalances, total, serverTimestamp }))
+        .catch(next);
 }
 
 let getStockByItemId = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -97,7 +105,7 @@ let removeStock = (req: AuthRequest, res: Response, next: NextFunction) => {
 }
 
 //routes
-router.get("/", getAllStock)
+router.get("/sync", getAllStock)
 router.get('/find', getStockByItemId)
 router.put('/adjustment', stockAdjustment)
 router.put('/update', updateManyStocks)

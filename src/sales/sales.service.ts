@@ -292,7 +292,6 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                             onHandQuantity: {
                                 decrement: item.quantity,
                             },
-                            lastUpdated: new Date(),
                         },
                     });
                     // Create Stock Movement
@@ -300,13 +299,14 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                         data: {
                             itemId: item.itemId,
                             outletId: salesBody.outletId,
+                            previousAvailableQuantity: stockBalance.availableQuantity,
+                            previousOnHandQuantity: stockBalance.onHandQuantity,
                             availableQuantityDelta: -item.quantity,
                             onHandQuantityDelta: -item.quantity,
                             movementType: 'SALE',
                             documentId: createdSales.id,
                             reason: 'Sales transaction',
-                            remark: `Sales ID: #${createdSales.id}`,
-                            created: new Date(),
+                            remark: `Sales #${createdSales.id}`,
                         },
                     });
                     return { stockBalance: updatedStockBalance, stockMovement };
@@ -396,16 +396,20 @@ let completeSales = async (databaseName: string, salesId: number, payments: Paym
 
                     let stockCheck: StockMovement = {
                         id: 0,
-                        created: new Date,
                         itemId: salesItem.itemId,
+                        outletId: sales.outletId,
+                        previousAvailableQuantity: item.stock.availableQuantity,
+                        previousOnHandQuantity: item.stock.onHandQuantity,
                         availableQuantityDelta: minusQuantity,
                         onHandQuantityDelta: minusQuantity,
                         documentId: salesId,
                         movementType: 'Sales',
                         reason: '',
                         remark: '',
-                        outletId: sales.outletId,
-                        deleted: false
+                        deleted: false,
+                        version: 1,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
                     }
                     stockChecks.push(stockCheck)
                 }
@@ -624,12 +628,12 @@ let getTotalSales = async (databaseName: string, startDate: string, endDate: str
             where: {
                 AND: [
                     {
-                        created: {
+                        createdAt: {
                             gte: new Date(startDate)
                         },
                     },
                     {
-                        created: {
+                        createdAt: {
                             lte: new Date(endDate)
                         }
                     },
@@ -670,13 +674,13 @@ let getTotalSalesData = async (databaseName: string, startDate: string, endDate:
 }
 
 let omitSales = (sales: Sales): Sales => {
-    let { id, created, deleted, ...omittedSales } = sales
+    let { id, createdAt, deleted, ...omittedSales } = sales
     return omittedSales as Sales
 }
 
 let omitSalesItems = (salesItems: SalesItem[]): SalesItem[] => {
     let omittedSalesItemArray = salesItems.map(salesItem => {
-        let { id, created, deleted, ...omittedSalesItem } = salesItem
+        let { id, createdAt, deleted, ...omittedSalesItem } = salesItem
         return omittedSalesItem
     })
     return omittedSalesItemArray as SalesItem[]

@@ -6,3 +6,10 @@ export class CreateItemsRequestBody {
     @Expose()
     items: ItemDto[] = []
 }
+
+export interface SyncRequest {
+    lastSyncTimestamp?: string; // ISO timestamp (e.g., "2025-05-06T12:00:00Z")
+    lastVersion?: number; // Optional: Use version instead of timestamp
+    skip?: number; // For pagination
+    take?: number; // For pagination
+}

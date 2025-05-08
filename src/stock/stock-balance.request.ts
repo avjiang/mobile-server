@@ -18,5 +18,6 @@ export interface StockAdjustment {
     overrideQuantity?: number;
     outletId: number,
     reason: string,
-    remark: string
+    remark: string,
+    version: number
 }

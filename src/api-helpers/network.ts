@@ -1,6 +1,7 @@
 import { Response } from "express";
 import NetworkResponse from "./network-response";
 import { Decimal } from "@prisma/client/runtime/library";
+import { ResponseError } from "./error";
 
 let convertDecimalsToNumbers = (value: any): any => {
     if (value instanceof Decimal) {
@@ -34,3 +35,8 @@ export let sendResponse = (res: Response, data: any) => {
     const response = new NetworkResponse(true, data)
     return res.json(response)
 }
+
+export let sendErrorResponse = (res: Response, responseError: ResponseError, statusCode: number) => {
+    const response = new NetworkResponse(false, responseError);
+    return res.status(statusCode).json(response);
+};

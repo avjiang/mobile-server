@@ -5,7 +5,7 @@
   "main": "dist/src/index.js",
   "dependencies": {
     "@azure/storage-blob": "^12.27.0",
-    "@prisma/client": "^5.2.0",
+    "@prisma/client": "^6.7.0",
     "@types/validator": "^13.11.1",
     "accepts": "^1.3.8",
     "array-flatten": "^1.1.1",
@@ -91,11 +91,12 @@
   "scripts": {
     "build": "tsc",
     "start": "pm2 start ecosystem.config.js",
-    "list": "pm2 list",
-    "log": "pm2 logs",
-    "seed_global": "ts-node src/script/global_schema_seed.ts",
     "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js",
-    "seed_tenant_items": "ts-node src/script/tenant_db_seed.ts"
+    "seed_tenant_items": "ts-node src/script/tenant_db_seed.ts",
+    "seed_global": "ts-node src/script/global_schema_seed.ts",
+    "init": "npx prisma db push --schema prisma/global_schema.prisma && npm run seed_global && npm run seed_tenant_items",
+    "generate_prisma": "npx prisma generate && npx prisma generate --schema prisma/global_schema.prisma",
+    "tunnel": "ngrok http --url=above-frog-capital.ngrok-free.app 8080"
   },
   "keywords": [],
   "author": "",
@@ -110,7 +111,7 @@
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "eslint": "^8.50.0",
-    "prisma": "^5.22.0",
+    "prisma": "^6.7.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   }

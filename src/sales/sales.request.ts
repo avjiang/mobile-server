@@ -95,7 +95,7 @@ export class CalculateSalesObject {
     @Expose() subtotalAmount: number = 0
     @Expose() totalAmount: number = 0
     @Type(() => CalculateSalesItemObject)
-    @Expose() items: CalculateSalesItemObject[] = []
+    @Expose() salesItems: CalculateSalesItemObject[] = []
 }
 
 export class CalculateSalesItemObject {

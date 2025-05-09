@@ -96,7 +96,7 @@
     "seed_global": "ts-node src/script/global_schema_seed.ts",
     "init": "npx prisma db push --schema prisma/global_schema.prisma && npm run seed_global && npm run seed_tenant_items",
     "generate_prisma": "npx prisma generate && npx prisma generate --schema prisma/global_schema.prisma",
-    "tunnel": "ngrok http --url=above-frog-capital.ngrok-free.app 8080"
+    "tunnel": "ngrok http --scheme=http --url=above-frog-capital.ngrok-free.app 8080"
   },
   "keywords": [],
   "author": "",

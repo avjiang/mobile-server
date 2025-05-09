@@ -489,7 +489,7 @@ let performPaymentCalculation = (salesTotalAmount: number, paidAmount: number) =
 
 let performSalesCalculation = async (sales: CalculateSalesObject) => {
     try {
-        let items = sales.items
+        let items = sales.salesItems
         var subtotal = 0.00
         var totalItemDiscountAmount = 0.00
 

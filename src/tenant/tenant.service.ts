@@ -113,6 +113,11 @@ let create = async (body: CreateTenantRequest) => {
                     role: "Super Admin",
                 }
             })
+            const newOutlet = await tenantPrisma.outlet.create({
+                data: {
+                    outletName: "Main Outlet",
+                }
+            })
             await tenantPrisma.$disconnect();
 
             // Return the API response

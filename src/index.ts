@@ -29,6 +29,7 @@ app.use(cors({
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
 // app.use('/auth', require('./auth/auth.controller'))
 app.use('/auth', require('./auth/auth.controller'))
+app.use('/tenant', require('./tenant/tenant.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)
@@ -45,7 +46,6 @@ app.use('/stock', require('./stock/stock-balance.controller'))
 app.use('/stockMovement', require('./stock/stock-movement.controller'))
 app.use('/session', require('./session/session.controller'))
 app.use('/menu', require('./menu/menu.controller'))
-app.use('/tenant', require('./tenant/tenant.controller'))
 
 //error middleware
 app.use(errorMiddleware)

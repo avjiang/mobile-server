@@ -45,9 +45,7 @@ let createSession = (req: NetworkRequest<OpenSessionRequest>, res: Response, nex
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-
     const requestBody = req.body
-
     service.createSession(requestBody, req.user.databaseName)
         .then((session: Session) => sendResponse(res, session))
         .catch(next)

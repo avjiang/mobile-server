@@ -181,6 +181,7 @@ model Item {
   stockMovement   StockMovement[]
   stockSnapshot   StockSnapshot[]
 
+  @@index([categoryId])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([deletedAt])
@@ -232,7 +233,7 @@ model Sales {
   changeAmount            Float         @default(0) @map("CHANGE_AMOUNT")
   status                  String        @map("STATUS")
   remark                  String        @default("") @map("REMARK")
-  declarationSessionId    Int           @map("DECLARATION_SESSION_ID")
+  sessionId               Int           @map("SESSION_ID")
   eodId                   Int           @map("EOD_ID")
   salesQuotationId        Int           @default(0) @map("SALES_QUOTATION_ID")
   performedBy             Int           @map("PERFORMED_BY")
@@ -246,6 +247,8 @@ model Sales {
   registerLogs            RegisterLog[]
   customer                Customer?     @relation(fields: [customerId], references: [id])
 
+  @@index([businessDate])
+  @@index([outletId])
   @@map("SALES")
 }
 
@@ -272,6 +275,9 @@ model SalesItem {
   version             Int?      @default(1) @map("VERSION")
   sales               Sales     @relation(fields: [salesId], references: [id])
 
+  @@index([itemId])
+  @@index([quantity])
+  @@index([profit])
   @@map("SALES_ITEM")
 }
 
@@ -401,48 +407,50 @@ model PurchaseOrderItem {
 }
 
 model Payment {
-  id                   Int        @id @default(autoincrement()) @map("ID")
-  method               String     @map("PAYMENT")
-  tenderedAmount       Float      @map("TENDERED_AMOUNT")
-  paidAmount           Float      @map("PAID_AMOUNT")
-  currencySymbol       String     @default("") @map("CURRENCY_SYMBOL")
-  salesId              Int        @map("SALES_ID")
-  reference            String     @default("") @map("REFERENCE")
-  remark               String     @default("") @map("REMARK")
-  businessDate         DateTime   @map("BUSINESS_DATE")
-  status               String     @map("STATUS")
-  outletId             Int        @map("OUTLET_ID")
-  declarationSessionId Int        @map("DECLARATION_SESSION_ID")
-  eodId                Int        @map("EOD_ID")
-  performedBy          Int        @map("PERFORMED_BY")
-  deleted              Boolean    @default(false) @map("IS_DELETED")
-  deletedAt            DateTime?  @map("DELETED_AT")
-  createdAt            DateTime?  @default(now()) @map("CREATED_AT")
-  updatedAt            DateTime?  @updatedAt @map("UPDATED_AT")
-  version              Int?       @default(1) @map("VERSION")
-  cardInfos            CardInfo[]
-  sales                Sales      @relation(fields: [salesId], references: [id])
+  id             Int        @id @default(autoincrement()) @map("ID")
+  method         String     @map("PAYMENT")
+  tenderedAmount Float      @map("TENDERED_AMOUNT")
+  paidAmount     Float      @map("PAID_AMOUNT")
+  currencySymbol String     @default("") @map("CURRENCY_SYMBOL")
+  salesId        Int        @map("SALES_ID")
+  reference      String     @default("") @map("REFERENCE")
+  remark         String     @default("") @map("REMARK")
+  businessDate   DateTime   @map("BUSINESS_DATE")
+  status         String     @map("STATUS")
+  outletId       Int        @map("OUTLET_ID")
+  sessionId      Int        @map("SESSION_ID")
+  eodId          Int        @map("EOD_ID")
+  performedBy    Int        @map("PERFORMED_BY")
+  deleted        Boolean    @default(false) @map("IS_DELETED")
+  deletedAt      DateTime?  @map("DELETED_AT")
+  createdAt      DateTime?  @default(now()) @map("CREATED_AT")
+  updatedAt      DateTime?  @updatedAt @map("UPDATED_AT")
+  version        Int?       @default(1) @map("VERSION")
+  cardInfos      CardInfo[]
+  sales          Sales      @relation(fields: [salesId], references: [id])
 
+  @@index([method])
+  @@index([businessDate])
   @@map("PAYMENT")
 }
 
 model RegisterLog {
-  id                   Int       @id @default(autoincrement()) @map("ID")
-  type                 String    @map("TYPE")
-  modifiedAmount       Float     @map("MODIFIED_AMOUNT")
-  currencySymbol       String    @default("") @map("CURRENCY_SYMBOL")
-  salesId              Int       @map("SALES_ID")
-  remark               String    @default("") @map("REMARK")
-  status               String    @map("STATUS")
-  outletId             Int       @map("OUTLET_ID")
-  declarationSessionId Int       @map("DECLARATION_SESSION_ID")
-  eodId                Int       @map("EOD_ID")
-  performedBy          Int       @map("PERFORMED_BY")
-  deleted              Boolean   @default(false) @map("IS_DELETED")
-  createdAt            DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt            DateTime? @updatedAt @map("UPDATED_AT")
-  version              Int?      @default(1) @map("VERSION")
-  sales                Sales     @relation(fields: [salesId], references: [id])
+  id             Int       @id @default(autoincrement()) @map("ID")
+  type           String    @map("TYPE")
+  modifiedAmount Float     @map("MODIFIED_AMOUNT")
+  currencySymbol String    @default("") @map("CURRENCY_SYMBOL")
+  salesId        Int       @map("SALES_ID")
+  remark         String    @default("") @map("REMARK")
+  status         String    @map("STATUS")
+  outletId       Int       @map("OUTLET_ID")
+  sessionId      Int       @map("SESSION_ID")
+  eodId          Int       @map("EOD_ID")
+  performedBy    Int       @map("PERFORMED_BY")
+  deleted        Boolean   @default(false) @map("IS_DELETED")
+  createdAt      DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt      DateTime? @updatedAt @map("UPDATED_AT")
+  version        Int?      @default(1) @map("VERSION")
+  sales          Sales     @relation(fields: [salesId], references: [id])
 
   @@map("REGISTER_LOG")
 }
@@ -510,6 +518,7 @@ model StockBalance {
   outletId          Int       @map("OUTLET_ID")
   availableQuantity Float     @map("AVAILABLE_QUANTITY")
   onHandQuantity    Float     @map("ON_HAND_QUANTITY")
+  reorderThreshold  Float?    @map("REORDER_THRESHOLD")
   deleted           Boolean   @default(false) @map("IS_DELETED")
   deletedAt         DateTime? @map("DELETED_AT")
   createdAt         DateTime? @default(now()) @map("CREATED_AT")
@@ -518,7 +527,7 @@ model StockBalance {
   item              Item      @relation(fields: [itemId], references: [id])
   outlet            Outlet    @relation(fields: [outletId], references: [id])
 
-  @@unique([itemId, outletId])
+  @@unique([itemId, outletId, reorderThreshold, deleted, availableQuantity])
   @@map("STOCK_BALANCE")
 }
 

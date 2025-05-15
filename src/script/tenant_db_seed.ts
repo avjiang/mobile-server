@@ -7,6 +7,30 @@ function getRandomInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Add these functions for generating round numbers
+function getRandomRoundNumber(): number {
+    // Generate numbers between 25,000 and 500,000
+    const min = 25000;
+    const max = 500000;
+    const step = 5000;
+
+    // Calculate a random multiple of 5000
+    const steps = Math.floor((max - min) / step) + 1;
+    return min + (Math.floor(Math.random() * steps) * step);
+}
+
+function getRandomPriceBasedOnCost(cost: number): number {
+    // Generate a price that's 1.1x to 2.0x the cost, rounded to nearest 5000
+    const minMultiplier = 1.1;
+    const maxMultiplier = 2.0;
+
+    const multiplier = minMultiplier + Math.random() * (maxMultiplier - minMultiplier);
+    const exactPrice = cost * multiplier;
+
+    // Round to nearest 5000
+    return Math.ceil(exactPrice / 5000) * 5000;
+}
+
 function getRandomFloat(min: number, max: number, decimals: number = 2): number {
     const value = Math.random() * (max - min) + min;
     return parseFloat(value.toFixed(decimals));
@@ -29,8 +53,8 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
         // Generate padded item code
         const itemCode = `ITEM${i.toString().padStart(4, '0')}`;
 
-        const cost = getRandomFloat(10, 1000);
-        const price = cost * getRandomFloat(1.1, 2.0); // Price is 1.1x to 2.0x of cost
+        const cost = getRandomRoundNumber();
+        const price = getRandomPriceBasedOnCost(cost);
 
         items.push({
             itemCode,

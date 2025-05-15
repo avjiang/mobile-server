@@ -319,25 +319,6 @@ let remove = async (databaseName: string, id: number) => {
 let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // const itemStockItems = await tenantPrisma.item.findMany({
-        //     where: {
-        //         stockBalance: {
-        //             availableQuantity: {
-        //                 gte: isIncludedZeroStock ? 0 : 1,
-        //                 lte: lowStockQuantity,
-        //             },
-        //         },
-        //     },
-        //     include: {
-        //         stockBalance: {
-        //             select: {
-        //                 availableQuantity: true,
-        //             },
-        //         },
-        //     },
-        // });
-        // return itemStockItems.length;
-
         const lowStockItems = await tenantPrisma.stockBalance.groupBy({
             by: ['itemId'],
             where: {

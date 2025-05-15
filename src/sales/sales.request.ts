@@ -47,7 +47,7 @@ export class CreateSalesRequest {
     @Expose() changeAmount: number | undefined;
     @Expose() status: string = "";
     @Expose() remark: string | undefined;
-    @Expose() declarationSessionId: number = 0;
+    @Expose() sessionId: number = 0;
     @Expose() eodId: number = 0;
     @Expose() salesQuotationId: number | undefined;
     @Expose() performedBy: number = 0;

@@ -426,75 +426,74 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
     }
 }
 
-let getSoldItemRanking = async (databaseName: string, startDate: string, endDate: string) => {
+let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const salesIDArray = (await salesService.getTotalSales(databaseName, startDate, endDate)).map(sales => sales.id)
-        const top5SoldSalesItems = await tenantPrisma.salesItem.groupBy({
+        // Get all sales IDs for the specified session
+        const salesWithSession = await tenantPrisma.sales.findMany({
+            where: {
+                sessionId: sessionId,
+                deleted: false
+            },
+            select: {
+                id: true
+            }
+        });
+
+        const salesIDArray = salesWithSession.map(sales => sales.id);
+        if (salesIDArray.length === 0) {
+            return plainToInstance(ItemSoldRankingResponseBody, {
+                topSoldItems: [],
+                leastSoldItem: null
+            }, { excludeExtraneousValues: true });
+        }
+
+        // Get the top 5 sales items for these sales and group them by itemId
+        const topSoldItemsData = await tenantPrisma.salesItem.groupBy({
             by: ['itemId'],
             _count: {
                 itemId: true,
+            },
+            _sum: {
+                quantity: true,
             },
             where: {
                 salesId: {
                     in: salesIDArray,
                 },
+                deleted: false
             },
             orderBy: {
-                _count: {
-                    itemId: 'desc',
+                _sum: {
+                    quantity: 'desc',
                 },
             },
             take: 5,
-        })
-
-        // const leastSoldSalesItems = await tenantPrisma.salesItem.groupBy({
-        //     by: ['itemId'],
-        //     _count: {
-        //         itemId: true,
-        //     },
-        //     where: {
-        //         salesId: {
-        //             in: salesIDArray,
-        //         },
-        //     },
-        //     orderBy: {
-        //         _count: {
-        //             itemId: 'asc',
-        //         },
-        //     },
-        //     take: 1,
-        // })
-
-        const topSoldItems = await Promise.all(
-            top5SoldSalesItems.map(async (item) => {
-                const stockItem = await getById(databaseName, item.itemId)
-                const soldItem: ItemSoldObject = {
-                    item: stockItem,
-                    quantitySold: item._count.itemId
-                }
-                return soldItem
-            })
-        )
-
-        let leastSoldItem: ItemSoldObject | null = null
-        // if (leastSoldSalesItems.length > 0) {
-        //     const leastSoldSalesItem = leastSoldSalesItems[0]
-        //     const stockItem = await getById(databaseName, leastSoldSalesItem.itemId)
-        //     leastSoldItem = {
-        //         item: stockItem,
-        //         quantitySold: leastSoldSalesItem._count.itemId
-        //     }
-        // }
-
-        const itemSoldRankingItems: ItemSoldRankingResponseBody = {
-            topSoldItems: topSoldItems,
-            leastSoldItem: leastSoldItem
+        });
+        if (topSoldItemsData.length === 0) {
+            return plainToInstance(ItemSoldRankingResponseBody, {
+                topSoldItems: [],
+                leastSoldItem: null
+            }, { excludeExtraneousValues: true });
         }
-        return itemSoldRankingItems
+
+        const topSoldItems = [];
+        for (const soldItem of topSoldItemsData) {
+            const itemDetails = await getById(databaseName, soldItem.itemId);
+            if (!itemDetails) continue;
+            topSoldItems.push({
+                item: itemDetails,
+                quantitySold: soldItem._sum.quantity || 0,
+                totalRevenue: (soldItem._sum.quantity || 0) * (itemDetails.price || 0)
+            });
+        }
+        return {
+            topSoldItems,
+        };
     }
     catch (error) {
-        throw error
+        console.error("Error in getSoldItemsBySessionId:", error);
+        throw error;
     }
 }
 
@@ -506,7 +505,7 @@ export = {
     createMany,
     update,
     remove,
-    getSoldItemRanking,
+    getSoldItemsBySessionId,
     getLowStockItemCount,
     getLowStockItems,
     getAllByCategoryId,

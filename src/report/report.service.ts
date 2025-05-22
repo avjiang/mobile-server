@@ -221,6 +221,14 @@ let generateReport = async (databaseName: string, sessionId: number) => {
 
         // Prepare response object
         return {
+            totalRevenue: salesSummary._sum?.totalAmount || 0,
+            totalProfit: salesSummary._sum?.profitAmount || 0,
+            averageTransactionValue,
+            totalPaidAmount: salesSummary._sum?.paidAmount || 0,
+            changeGiven: salesSummary._sum?.changeAmount || 0,
+            voidedSalesCount: voidedSales._count?.id || 0,
+            voidedSalesAmount: voidedSales._sum?.totalAmount || 0,
+
             sessionInfo: {
                 id: session.id,
                 outletId: session.outletId,
@@ -232,9 +240,6 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 openByUserID: session.openByUserID,
                 closeByUserID: session.closeByUserID
             },
-
-            voidedSalesCount: voidedSales._count?.id || 0,
-            voidedSalesAmount: voidedSales._sum?.totalAmount || 0,
 
             topSellingItems: topSellingItems.map(item => ({
                 itemId: item.itemId,
@@ -253,17 +258,10 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 profit: item._sum.profit || 0
             })),
 
-            totalPaidAmount: salesSummary._sum?.paidAmount || 0,
-            changeGiven: salesSummary._sum?.changeAmount || 0,
-
             paymentBreakdown: paymentBreakdown.map(payment => ({
                 method: payment.method,
                 amount: payment._sum.paidAmount || 0
             })),
-
-            totalRevenue: salesSummary._sum?.totalAmount || 0,
-            totalProfit: salesSummary._sum?.profitAmount || 0,
-            averageTransactionValue,
 
             // Only show stock balance for items sold in this session
             stockBalance: stockBalanceItems.map(stock => ({

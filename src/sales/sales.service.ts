@@ -2,10 +2,20 @@ import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMov
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
+import { SyncRequest } from "src/item/item.request";
 
-let getAll = async (databaseName: string, outletID: number) => {
+let getAll = async (databaseName: string, request: SyncRequest) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { outletId, skip = 0, take = 100, lastSyncTimestamp } = request;
+
     try {
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Ensure outletId is a number
+        const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
+
         // Get today's date with time set to start of day (00:00:00)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -14,15 +24,25 @@ let getAll = async (databaseName: string, outletID: number) => {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const salesArray = await tenantPrisma.sales.findMany({
-            where: {
-                outletId: outletID,
-                businessDate: {
-                    gte: today,
-                    lt: tomorrow
-                },
-                deleted: false
+        // Build query conditions
+        const where = {
+            outletId: parsedOutletId,
+            businessDate: {
+                gte: today,
+                lt: tomorrow
             },
+            deleted: false,
+            OR: [
+                { createdAt: { gte: lastSync } },
+                { updatedAt: { gte: lastSync } }
+            ],
+        };
+
+        // Count total records
+        const total = await tenantPrisma.sales.count({ where });
+
+        const salesArray = await tenantPrisma.sales.findMany({
+            where,
             select: {
                 id: true,
                 businessDate: true,
@@ -44,8 +64,11 @@ let getAll = async (databaseName: string, outletID: number) => {
                     }
                 },
                 salesItems: true
-            }
+            },
+            skip,
+            take,
         })
+
         // Transform results to include customerName
         const transformedSales = salesArray.map(sale => ({
             id: sale.id,
@@ -57,15 +80,198 @@ let getAll = async (databaseName: string, outletID: number) => {
             status: sale.status,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
-            paymentMethod: sale.payments[0].method,
+            payments: sale.payments || [],
             customerName: sale.customer
                 ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
                 : 'Guest',
         }));
-        return transformedSales;
+
+        // Return with pagination metadata and server timestamp
+        return {
+            data: transformedSales,
+            total,
+            serverTimestamp: new Date().toISOString()
+        };
     }
     catch (error) {
         throw error
+    }
+}
+
+let getByDateRange = async (databaseName: string, request: SyncRequest & { startDate: string, endDate: string }) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { outletId, skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+
+    try {
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Ensure outletId is a number
+        const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
+
+        // Parse and validate date range
+        const parsedStartDate = new Date(startDate);
+        parsedStartDate.setHours(0, 0, 0, 0); // Start of day
+
+        const parsedEndDate = new Date(endDate);
+        parsedEndDate.setHours(23, 59, 59, 999); // End of day
+
+        // Ensure dates are valid
+        if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+            throw new Error('Invalid date format');
+        }
+
+        // Build query conditions with date range
+        const where = {
+            outletId: parsedOutletId,
+            businessDate: {
+                gte: parsedStartDate,
+                lte: parsedEndDate
+            },
+            deleted: false,
+        };
+
+        // Count total records
+        const total = await tenantPrisma.sales.count({ where });
+
+        const salesArray = await tenantPrisma.sales.findMany({
+            where,
+            select: {
+                id: true,
+                businessDate: true,
+                salesType: true,
+                customerId: true,
+                totalAmount: true,
+                paidAmount: true,
+                status: true,
+                remark: true,
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                payments: {
+                    select: {
+                        method: true
+                    }
+                },
+                salesItems: true
+            },
+            skip,
+            take,
+        });
+
+        // Transform results to include customerName
+        const transformedSales = salesArray.map(sale => ({
+            id: sale.id,
+            businessDate: sale.businessDate,
+            salesType: sale.salesType,
+            customerId: sale.customerId,
+            totalAmount: sale.totalAmount,
+            paidAmount: sale.paidAmount,
+            status: sale.status,
+            remark: sale.remark,
+            totalItems: sale.salesItems.length,
+            payments: sale.payments || [],
+            customerName: sale.customer
+                ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
+                : 'Guest',
+        }));
+
+        // Return with pagination metadata and server timestamp
+        return {
+            data: transformedSales,
+            total,
+            serverTimestamp: new Date().toISOString()
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { outletId, skip = 0, take = 100, lastSyncTimestamp } = request;
+
+    try {
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Ensure outletId is a number
+        const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
+
+        // Build query conditions for partially paid sales
+        const where = {
+            outletId: parsedOutletId,
+            status: "Partially Paid",
+            deleted: false,
+            OR: [
+                { createdAt: { gte: lastSync } },
+                { updatedAt: { gte: lastSync } }
+            ],
+        };
+
+        // Count total records
+        const total = await tenantPrisma.sales.count({ where });
+
+        // Fetch paginated items with explicit ordering - newest first
+        const partiallyPaidSales = await tenantPrisma.sales.findMany({
+            where,
+            select: {
+                id: true,
+                businessDate: true,
+                salesType: true,
+                customerId: true,
+                totalAmount: true,
+                paidAmount: true,
+                status: true,
+                remark: true,
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                payments: {
+                    select: {
+                        method: true
+                    }
+                },
+                salesItems: true
+            },
+            skip,
+            take,
+        });
+
+        // Transform the results to include more readable data
+        const transformedSales = partiallyPaidSales.map(sale => ({
+            id: sale.id,
+            businessDate: sale.businessDate,
+            salesType: sale.salesType,
+            customerId: sale.customerId,
+            totalAmount: sale.totalAmount,
+            paidAmount: sale.paidAmount,
+            status: sale.status,
+            remark: sale.remark,
+            totalItems: sale.salesItems.length,
+            payments: sale.payments || [],
+            customerName: sale.customer
+                ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
+                : 'Guest',
+        }));
+
+        // Return with pagination metadata and server timestamp
+        return {
+            data: transformedSales,
+            total,
+            serverTimestamp: new Date().toISOString()
+        };
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -175,17 +381,19 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Calculate total payment amount and validate it
+            // Calculate total payment amount
             let totalSalesAmount = salesBody.totalAmount;
             let totalPaymentAmount = payments.reduce((sum, payment) => sum + payment.tenderedAmount, 0);
-            if (totalPaymentAmount < totalSalesAmount) {
-                throw new BusinessLogicError("Total payment amount is less than the sales grand total amount");
-            }
+
+            // Determine sales status based on payment amount
+            const salesStatus = totalPaymentAmount >= totalSalesAmount ? "Completed" : "Partially Paid";
+
             // Calculate profit amount for sales items
             let updatedSales = performProfitCalculation(salesBody);
 
-            // Calculate change amount
-            const changeAmount = performPaymentCalculation(totalSalesAmount, totalPaymentAmount);
+            // Calculate change amount (will be 0 for partial payments)
+            const changeAmount = totalPaymentAmount >= totalSalesAmount ?
+                totalPaymentAmount - totalSalesAmount : 0;
 
             if (salesBody.customerId) {
                 const customer = await tenantPrisma.customer.findUnique({
@@ -223,7 +431,7 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                     totalAmount: updatedSales.totalAmount,
                     paidAmount: totalPaymentAmount,
                     changeAmount: changeAmount,
-                    status: "Completed",
+                    status: salesStatus,
                     remark: updatedSales.remark,
                     sessionId: updatedSales.sessionId,
                     eodId: updatedSales.eodId,
@@ -476,11 +684,9 @@ let performProfitCalculation = (sales: CreateSalesRequest) => {
 
 let performPaymentCalculation = (salesTotalAmount: number, paidAmount: number) => {
     try {
-        var changeAmount = paidAmount - salesTotalAmount
-        if (changeAmount < 0) {
-            throw new BusinessLogicError("Payment amount is less than sales amount")
-        }
-        return changeAmount
+        // Only return a positive change amount if paid amount exceeds total amount
+        var changeAmount = paidAmount >= salesTotalAmount ? paidAmount - salesTotalAmount : 0;
+        return changeAmount;
     }
     catch (error) {
         throw error
@@ -621,47 +827,23 @@ let remove = async (databaseName: string, id: number) => {
     }
 }
 
-let getTotalSales = async (databaseName: string, startDate: string, endDate: string) => {
+let getTotalSalesData = async (databaseName: string, sessionID: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Get all sales for the given session ID
         const salesArray = await tenantPrisma.sales.findMany({
             where: {
-                AND: [
-                    {
-                        createdAt: {
-                            gte: new Date(startDate)
-                        },
-                    },
-                    {
-                        createdAt: {
-                            lte: new Date(endDate)
-                        }
-                    },
-                    {
-                        status: "completed",
-                        deleted: false
-                    }
-                ]
+                sessionId: sessionID,
+                deleted: false,
+                status: "Completed" // Only count completed sales
             }
-        })
-
-        return salesArray
-    }
-    catch (error) {
-        throw error
-    }
-}
-
-let getTotalSalesData = async (databaseName: string, startDate: string, endDate: string) => {
-    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    try {
-        const salesArray = await getTotalSales(databaseName, startDate, endDate)
+        });
+        // Calculate totals using reduce
         const { totalProfit, totalRevenue } = salesArray.reduce((accumulator, currentSales) => {
             accumulator.totalProfit += currentSales.profitAmount;
             accumulator.totalRevenue += currentSales.totalAmount;
-            return accumulator
-        }, { totalProfit: 0, totalRevenue: 0 })
-
+            return accumulator;
+        }, { totalProfit: 0, totalRevenue: 0 });
         return {
             salesCount: salesArray.length,
             totalProfit: totalProfit,
@@ -673,21 +855,76 @@ let getTotalSalesData = async (databaseName: string, startDate: string, endDate:
     }
 }
 
-let omitSales = (sales: Sales): Sales => {
-    let { id, createdAt, deleted, ...omittedSales } = sales
-    return omittedSales as Sales
-}
+let addPaymentToPartiallyPaidSales = async (databaseName: string, salesId: number, payments: Payment[]) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Get the sales record
+            const sales = await tx.sales.findUnique({
+                where: {
+                    id: salesId
+                }
+            });
+            if (!sales) {
+                throw new NotFoundError("Sales");
+            }
+            if (sales.status !== "Partially Paid") {
+                throw new BusinessLogicError("Only partially paid sales can receive additional payments");
+            }
+            // Calculate the remaining amount to be paid
+            const remainingAmount = sales.totalAmount - sales.paidAmount;
+            if (remainingAmount <= 0) {
+                throw new BusinessLogicError("This sales record is already fully paid");
+            }
+            // Calculate total of new payments
+            const totalNewPaymentAmount = payments.reduce((sum, payment) => sum + payment.tenderedAmount, 0);
+            if (totalNewPaymentAmount <= 0) {
+                throw new BusinessLogicError("Total payment amount must be greater than zero");
+            }
+            // Update payments with salesId
+            const paymentsWithSalesId = payments.map(payment => ({
+                ...payment,
+                salesId: salesId
+            }));
+            // Create the payment records
+            await tx.payment.createMany({
+                data: paymentsWithSalesId
+            });
+            // Update the sales record
+            const updatedPaidAmount = sales.paidAmount + totalNewPaymentAmount;
+            const isFullyPaid = updatedPaidAmount >= sales.totalAmount;
 
-let omitSalesItems = (salesItems: SalesItem[]): SalesItem[] => {
-    let omittedSalesItemArray = salesItems.map(salesItem => {
-        let { id, createdAt, deleted, ...omittedSalesItem } = salesItem
-        return omittedSalesItem
-    })
-    return omittedSalesItemArray as SalesItem[]
+            // Calculate change amount if payment exceeds the remaining amount
+            const changeAmount = isFullyPaid ?
+                updatedPaidAmount - sales.totalAmount :
+                0; // No change if still partially paid
+
+            // Update sales status and payment details
+            const updatedSales = await tx.sales.update({
+                where: {
+                    id: salesId
+                },
+                data: {
+                    paidAmount: updatedPaidAmount,
+                    changeAmount: changeAmount,
+                    status: isFullyPaid ? "Completed" : "Partially Paid"
+                }
+            });
+
+            return updatedSales;
+        });
+
+        // Return the complete updated sales record with all relationships
+        return getById(databaseName, salesId);
+    }
+    catch (error) {
+        throw error;
+    }
 }
 
 export = {
     getAll,
+    getByDateRange,
     getById,
     calculateSales,
     create,
@@ -695,6 +932,7 @@ export = {
     completeNewSales,
     update,
     remove,
-    getTotalSales,
-    getTotalSalesData
+    getTotalSalesData,
+    getPartiallyPaidSales,
+    addPaymentToPartiallyPaidSales
 }

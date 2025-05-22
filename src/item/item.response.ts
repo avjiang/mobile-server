@@ -3,12 +3,13 @@ import { Expose, Transform } from "class-transformer";
 
 export class ItemSoldRankingResponseBody {
     topSoldItems: ItemSoldObject[] = [];
-    leastSoldItem: ItemSoldObject | null = null;
+    // leastSoldItem: ItemSoldObject | null = null;
 }
 
 export class ItemSoldObject {
     item: ItemDto = new ItemDto();
     quantitySold: number = 0;
+    totalRevenue: number = 0;
 }
 
 export class ItemDto {

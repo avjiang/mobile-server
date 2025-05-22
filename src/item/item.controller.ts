@@ -14,15 +14,6 @@ import { AuthRequest } from "../middleware/auth-request"
 
 const router = express.Router()
 
-// let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
-//     if (!req.user) {
-//         throw new RequestValidateError('User not authenticated');
-//     }
-//     service.getAll(req.user.databaseName)
-//         .then((items: ItemDto[]) => sendResponse(res, items))
-//         .catch(next)
-// }
-
 let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -149,16 +140,21 @@ let remove = (req: AuthRequest, res: Response, next: NextFunction) => {
 
 let getSoldItemRanking = (req: AuthRequest, res: Response, next: NextFunction) => {
     const { startDate, endDate } = req.query
-    if (!startDate || !endDate) {
-        return new RequestValidateError('startDate and endDate are required')
-    }
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    validateDates(startDate as string, endDate as string)
-
-    service.getSoldItemRanking(req.user.databaseName, startDate as string, endDate as string)
-        .then((itemSoldObjects: ItemSoldRankingResponseBody) => sendResponse(res, itemSoldObjects))
+    const { sessionID } = req.query
+    const sessionIdNum = typeof sessionID === 'string' && validator.isNumeric(sessionID) ? parseInt(sessionID) : undefined
+    if (sessionIdNum === undefined) {
+        throw new RequestValidateError('sessionID is required and must be a number')
+    }
+    service.getSoldItemsBySessionId(req.user.databaseName, sessionIdNum)
+        .then((itemSoldObjects) => {
+            const response = {
+                ...itemSoldObjects,
+            };
+            sendResponse(res, response);
+        })
         .catch(next)
 }
 

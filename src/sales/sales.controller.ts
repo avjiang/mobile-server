@@ -7,8 +7,9 @@ import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
 import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
-import { Prisma, Sales } from "@prisma/client"
+import { Payment, Prisma, Sales } from "@prisma/client"
 import { AuthRequest } from "src/middleware/auth-request"
+import { SyncRequest } from "src/item/item.request"
 
 const router = express.Router()
 
@@ -30,13 +31,73 @@ const getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    if (!validator.isNumeric(req.params.outletid)) {
-        throw new RequestValidateError('ID format incorrect')
+    const { outletId, skip, take, lastSyncTimestamp } = req.query;
+
+    // Validate outletId
+    if (!outletId || !validator.isNumeric(outletId as string)) {
+        throw new RequestValidateError('Valid outletId is required');
     }
-    const outletID: number = parseInt(req.params.outletid)
-    service.getAll(req.user.databaseName, outletID)
-        .then((salesArray: SelectedSales[]) => sendResponse(res, salesArray))
-        .catch(next)
+
+    const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
+    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+
+    const syncRequest = {
+        outletId: outletId as string,
+        skip: skipNum,
+        take: takeNum,
+        lastSyncTimestamp: lastSyncTimestamp as string
+    };
+
+    service.getAll(req.user.databaseName, syncRequest)
+        .then(({ data, total, serverTimestamp }) => {
+            sendResponse(res, { data, total, serverTimestamp });
+        })
+        .catch(next);
+}
+
+const getAllByDateRange = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { outletId, skip, take, lastSyncTimestamp, startDate, endDate } = req.query;
+
+    // Validate outletId
+    if (!outletId || !validator.isNumeric(outletId as string)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+    // Validate date parameters
+    if (!startDate || !endDate) {
+        throw new RequestValidateError('Both startDate and endDate are required');
+    }
+    try {
+        // Basic date format validation
+        const parsedStartDate = new Date(startDate as string);
+        const parsedEndDate = new Date(endDate as string);
+
+        if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+            throw new Error('Invalid date format');
+        }
+        if (parsedEndDate < parsedStartDate) {
+            throw new Error('endDate cannot be before startDate');
+        }
+    } catch (error) {
+        throw new RequestValidateError(`Date validation error`);
+    }
+    const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
+    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+    const dateRangeRequest = {
+        outletId: outletId as string,
+        skip: skipNum,
+        take: takeNum,
+        lastSyncTimestamp: lastSyncTimestamp as string,
+        startDate: startDate as string,
+        endDate: endDate as string
+    };
+    service.getByDateRange(req.user.databaseName, dateRangeRequest)
+        .then(({ data, total, serverTimestamp }) => {
+            sendResponse(res, { data, total, serverTimestamp });
+        })
+        .catch(next);
 }
 
 const getById = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -187,63 +248,87 @@ const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) 
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    const { startDate, endDate } = req.query
-    if (!startDate || !endDate) {
-        return new RequestValidateError('startDate and endDate are required')
+    const { sessionID } = req.query
+    const sessionIdNum = typeof sessionID === 'string' && validator.isNumeric(sessionID) ? parseInt(sessionID) : undefined
+    if (sessionIdNum === undefined) {
+        throw new RequestValidateError('sessionID is required and must be a number')
     }
-    validateDates(startDate as string, endDate as string)
-
-    service.getTotalSalesData(req.user.databaseName, startDate as string, endDate as string)
+    service.getTotalSalesData(req.user.databaseName, sessionIdNum)
         .then((salesData: SalesAnalyticResponseBody) => sendResponse(res, salesData))
         .catch(next)
 }
 
-// let getTotalProfit = (req: Request, res: Response, next: NextFunction) => {
-//     const { startDate, endDate } = req.query
-//     if (!startDate || !endDate) {
-//         return new RequestValidateError('startDate and endDate are required' )
-//       }
+const getPartiallyPaidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
 
-//     if (!validator.isISO8601(startDate as string)) {
-//         throw new RequestValidateError('startDate is not a valid date')
-//     }
+    const { outletId, skip, take, lastSyncTimestamp } = req.query;
 
-//     if (!validator.isISO8601(endDate as string)) {
-//         throw new RequestValidateError('endDate is not a valid date')
-//     }
-//     service.getTotalProfit(startDate as string, endDate as string)
-//         .then((salesData: SalesAnalyticResponseBody) => sendResponse(res, salesData))
-//         .catch(next)
-// }
+    // Validate outletId
+    if (!outletId || !validator.isNumeric(outletId as string)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
 
-// let getTotalRevenue = (req: Request, res: Response, next: NextFunction) => {
-//     const { startDate, endDate } = req.query
-//     if (!startDate || !endDate) {
-//         return new RequestValidateError('startDate and endDate are required' )
-//       }
+    const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
+    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
 
-//     if (!validator.isISO8601(startDate as string)) {
-//         throw new RequestValidateError('startDate is not a valid date')
-//     }
+    const paginationRequest = {
+        outletId: outletId as string,
+        skip: skipNum,
+        take: takeNum,
+        lastSyncTimestamp: lastSyncTimestamp as string
+    };
+    service
+        .getPartiallyPaidSales(req.user.databaseName, paginationRequest)
+        .then(({ data, total, serverTimestamp }) => {
+            sendResponse(res, { data: data, total, serverTimestamp });
+        })
+        .catch(next);
+}
 
-//     if (!validator.isISO8601(endDate as string)) {
-//         throw new RequestValidateError('endDate is not a valid date')
-//     }
-//     service.getTotalRevenue(startDate as string, endDate as string)
-//         .then((salesData: SalesAnalyticResponseBody) => sendResponse(res, salesData))
-//         .catch(next)
-// }
+interface AddPaymentRequest {
+    salesId: number;
+    payments: Payment[];
+}
+
+// Add this controller function along with other controller functions
+const addPaymentToPartiallyPaidSales = (req: NetworkRequest<AddPaymentRequest>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty');
+    }
+    const requestBody = req.body;
+    if (!requestBody) {
+        throw new RequestValidateError('Data missing');
+    }
+    const salesId = requestBody.salesId;
+    if (!salesId || salesId === 0) {
+        throw new RequestValidateError('Sales ID is required and cannot be 0');
+    }
+    const payments = requestBody.payments;
+    if (!payments || !Array.isArray(payments) || payments.length === 0) {
+        throw new RequestValidateError('At least one payment is required');
+    }
+    service.addPaymentToPartiallyPaidSales(req.user.databaseName, salesId, payments)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next);
+}
 
 //routes
 router.get('/getTotalSalesData', getTotalSalesData)
+router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
+router.get('/outlet', getAll)
+router.get('/dateRange', getAllByDateRange)
 router.get('/:id', getById)
-router.get('/outlet/:outletid', getAll)
 router.post('/create', create)
 router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
 router.post('/completeSales', completeSales)
+router.post('/addPayment', addPaymentToPartiallyPaidSales);
 router.put('/update', update)
 router.delete('/:id', remove)
-// router.get('/getTotalProfit', getTotalProfit)
-// router.get('/getTotalRevenue', getTotalRevenue)
+
 export = router

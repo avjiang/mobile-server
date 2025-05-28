@@ -40,6 +40,14 @@ function getRandomElement<T>(array: T[]): T {
     return array[Math.floor(Math.random() * array.length)];
 }
 
+function generateCode(str: string, length: number = 4): string {
+    return str
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, length)
+        .toUpperCase()
+        .padEnd(length, 'X');
+}
+
 async function seedItems(tenantPrisma: any, outletId: number, supplierId: number, categoryId: number, count: number = 200): Promise<void> {
     console.log(`Starting to seed ${count} items...`);
 
@@ -47,48 +55,87 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
     const brands = ["TechGiant", "HomeComfort", "FashionX", "GourmetDelight", "AccessoryPlus", "KnowledgePress"];
     const unitOptions = ["pcs", "kg", "dozen", "box", "set", "pair"];
 
-    const items = [];
+    try {
+        // Fetch category name for SKU generation
+        const category = await tenantPrisma.category.findUnique({
+            where: { id: categoryId },
+            select: { name: true }
+        });
 
-    for (let i = 1; i <= count; i++) {
-        // Generate padded item code
-        const itemCode = `ITEM${i.toString().padStart(4, '0')}`;
+        if (!category) {
+            throw new Error(`Category with ID ${categoryId} not found`);
+        }
 
-        const cost = getRandomRoundNumber();
-        const price = getRandomPriceBasedOnCost(cost);
+        const categoryCode = generateCode(category.name);
 
-        items.push({
-            itemCode,
-            itemName: `Product ${i}`,
-            itemType: getRandomElement(itemTypes),
-            itemModel: `Model ${String.fromCharCode(65 + (i % 26))}${getRandomInt(1, 99)}`,
-            itemBrand: getRandomElement(brands),
-            itemDescription: `This is a detailed description for product ${i}. It includes features and specifications.`,
-            cost,
-            price,
-            isOpenPrice: i % 10 === 0, // Every 10th item has open price
-            unitOfMeasure: getRandomElement(unitOptions),
-            height: getRandomFloat(1, 50),
-            width: getRandomFloat(1, 30),
-            length: getRandomFloat(1, 40),
-            weight: getRandomFloat(0.1, 10, 1),
-            alternateLookUp: `ALT${i.toString().padStart(4, '0')}`,
-            image: `https://example.com/images/product_${i}.jpg`,
-            deleted: false,
-            stockBalance: {
-                create: {
-                    outletId,
-                    availableQuantity: getRandomInt(0, 100),
-                    onHandQuantity: getRandomInt(0, 100),
+        // Pre-count existing items by brand to generate proper SKUs
+        const brandCounts = new Map<string, number>();
+
+        for (const brand of brands) {
+            const count = await tenantPrisma.item.count({
+                where: {
+                    categoryId,
+                    itemBrand: brand,
                     deleted: false,
                 },
-            },
-            stockMovement: {
-                create: [
-                    {
-                        previousAvailableQuantity: getRandomInt(0, 100),
-                        previousOnHandQuantity: getRandomInt(0, 100),
-                        availableQuantityDelta: getRandomInt(1, 10),
-                        onHandQuantityDelta: getRandomInt(1, 10),
+            });
+            brandCounts.set(brand, count);
+        }
+
+        const items = [];
+
+        for (let i = 1; i <= count; i++) {
+            const itemCode = `ITEM${i.toString().padStart(4, '0')}`;
+            const cost = getRandomRoundNumber();
+            const price = getRandomPriceBasedOnCost(cost);
+            const selectedBrand = getRandomElement(brands);
+
+            // Generate SKU
+            const brandCode = generateCode(selectedBrand);
+            const currentCount = brandCounts.get(selectedBrand) || 0;
+            brandCounts.set(selectedBrand, currentCount + 1);
+            const sequentialNumber = currentCount.toString().padStart(4, '0');
+            const sku = `${categoryCode}-${brandCode}-${sequentialNumber}`;
+
+            const availableQuantity = getRandomInt(0, 100);
+            const onHandQuantity = getRandomInt(0, 100);
+
+            items.push({
+                itemCode,
+                itemName: `Product ${i}`,
+                itemType: getRandomElement(itemTypes),
+                itemModel: `Model ${String.fromCharCode(65 + (i % 26))}${getRandomInt(1, 99)}`,
+                itemBrand: selectedBrand,
+                itemDescription: `This is a detailed description for product ${i}. It includes features and specifications.`,
+                cost,
+                price,
+                sku, // Add the generated SKU
+                isOpenPrice: i % 10 === 0,
+                unitOfMeasure: getRandomElement(unitOptions),
+                height: getRandomFloat(1, 50),
+                width: getRandomFloat(1, 30),
+                length: getRandomFloat(1, 40),
+                weight: getRandomFloat(0.1, 10, 1),
+                alternateLookUp: `ALT${i.toString().padStart(4, '0')}`,
+                image: `https://example.com/images/product_${i}.jpg`,
+                deleted: false,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                version: 1,
+                stockBalance: {
+                    create: {
+                        outletId,
+                        availableQuantity,
+                        onHandQuantity,
+                        deleted: false,
+                    },
+                },
+                stockMovement: {
+                    create: {
+                        previousAvailableQuantity: 0,
+                        previousOnHandQuantity: 0,
+                        availableQuantityDelta: availableQuantity,
+                        onHandQuantityDelta: onHandQuantity,
                         documentId: i,
                         movementType: "Create Item",
                         reason: "",
@@ -96,27 +143,24 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
                         outletId,
                         deleted: false
                     }
-                ]
-            },
-            supplier: {
-                connect: { id: supplierId }
-            },
-            category: {
-                connect: { id: categoryId },
-            }
-        });
-    }
+                },
+                supplier: {
+                    connect: { id: supplierId }
+                },
+                category: {
+                    connect: { id: categoryId },
+                }
+            });
+        }
 
-    // Using createMany for bulk insertion if schema supports it
-    // If relationships require individual creation, we'll use a loop instead
-    try {
+        // Create items individually (required for nested relations)
         for (let i = 0; i < items.length; i++) {
             await tenantPrisma.item.create({ data: items[i] });
             if (i % 10 === 0) {
                 console.log(`Created ${i} items...`);
             }
         }
-        console.log(`Successfully created ${count} items`);
+        console.log(`Successfully created ${count} items with SKUs`);
     } catch (error) {
         console.error("Error creating items:", error);
         throw error;

@@ -29,13 +29,14 @@ app.use(cors({
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
 // app.use('/auth', require('./auth/auth.controller'))
 app.use('/auth', require('./auth/auth.controller'))
-app.use('/tenant', require('./tenant/tenant.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)
 
 // all api routes that need authorize should place here
 // api routes
+app.use('/admin', require('./admin/admin.controller'))
+app.use('/account', require('./account/account.controller'))
 app.use('/user', require('./user/user.controller'))
 app.use('/item', require('./item/item.controller'))
 app.use('/category', require('./category/category.controller'))
@@ -47,6 +48,7 @@ app.use('/stockMovement', require('./stock/stock-movement.controller'))
 app.use('/session', require('./session/session.controller'))
 app.use('/menu', require('./menu/menu.controller'))
 app.use('/report', require('./report/report.controller'))
+app.use('/device', require('./device/device.controller'))
 
 //error middleware
 app.use(errorMiddleware)
@@ -93,7 +95,6 @@ async function gracefulShutdown(error?: Error) {
     });
   }
 }
-
 
 process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);

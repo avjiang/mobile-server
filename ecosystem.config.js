@@ -3,8 +3,9 @@ module.exports = {
         {
             name: 'web-app',
             script: './src/index.ts',
-            interpreter: 'ts-node',
-          instances: 1,
+            // interpreter: 'ts-node',
+            interpreter: 'tsx',
+            instances: 1,
             exec_mode: 'fork',
             autorestart: true,
             watch: ['./src'],
@@ -12,7 +13,7 @@ module.exports = {
             //   NODE_ENV: 'development',
             //   PORT: 3000,
             // },
-          },
+        },
     // {
     //   name: 'web-app',
     //   script: './dist/index.js',

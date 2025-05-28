@@ -9,12 +9,16 @@ generator client {
 }
 
 model SubscriptionPlan {
-    id           Int                  @id @default(autoincrement()) @map("ID")
-    planName     String               @map("PLAN_NAME")
-    price        Float                @map("PRICE")
-    description  String?              @map("DESCRIPTION")
-    subscription TenantSubscription[]
+    id              Int                  @id @default(autoincrement()) @map("ID")
+    planName        String               @unique @map("PLAN_NAME")
+    price           Float                @map("PRICE")
+    maxTransactions Int?                 @map("MAX_TRANSACTIONS") // New: e.g., 75 for Free
+    maxProducts     Int?                 @map("MAX_PRODUCTS") // New: e.g., 20 for Free
+    maxUsers        Int?                 @map("MAX_USERS") // New: e.g., 2 for Basic
+    description     String?              @map("DESCRIPTION")
+    subscription    TenantSubscription[]
 
+    @@index([price]) // If querying for plans within price ranges
     @@map("SUBSCRIPTION_PLAN")
 }
 
@@ -24,35 +28,53 @@ model SubscriptionAddOn {
     addOnType     String                    @map("ADD_ON_TYPE") // e.g., "user", "transaction", "feature"
     pricePerUnit  Float                     @map("PRICE_PER_UNIT")
     maxQuantity   Int?                      @map("MAX_QUANTITY")
+    scope         String                    @default("outlet") @map("SCOPE")
     description   String?                   @map("DESCRIPTION")
     subscriptions TenantSubscriptionAddOn[]
 
+    @@index([name]) // If frequently searching by add-on name
+    @@index([addOnType]) // If filtering by add-on type
+    @@index([scope]) // If filtering by scope
     @@map("SUBSCRIPTION_ADD_ON")
 }
 
 model Tenant {
-    id           Int                  @id @default(autoincrement()) @map("ID")
-    tenantName   String               @map("TENANT_NAME")
-    databaseName String?              @unique @map("DATABASE_NAME")
-    createdAt    DateTime             @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
-    tenantUsers  TenantUser[]
-    subscription TenantSubscription[]
+    id                Int                  @id @default(autoincrement()) @map("ID")
+    tenantName        String               @map("TENANT_NAME")
+    databaseName      String?              @unique @map("DATABASE_NAME")
+    createdAt         DateTime             @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
+    tenantUsers       TenantUser[]
+    subscription      TenantSubscription[]
+    tenantOutlets     TenantOutlet[]
+    registeredDevices RegisteredDevice[]
 
+    @@index([tenantName]) // If you often search for tenants by name
+    @@index([createdAt]) // For sorting or filtering tenants by creation date
     @@map("TENANT")
 }
 
 model TenantSubscription {
     id                     Int                       @id @default(autoincrement()) @map("ID")
     tenantId               Int                       @map("TENANT_ID")
+    outletId               Int                       @map("OUTLET_ID")
     subscriptionPlanId     Int                       @map("SUBSCRIPTION_PLAN_ID")
+    status                 String                    @default("active") @map("STATUS") // New: active, trial, expired
     nextPaymentDate        DateTime                  @map("NEXT_PAYMENT_DATE")
     subscriptionValidUntil DateTime                  @map("SUBSCRIPTION_VALID_UNTIL")
     createdAt              DateTime                  @default(now()) @map("CREATED_AT")
     updatedAt              DateTime                  @updatedAt @map("UPDATED_AT")
+    discountId             Int?                      @map("DISCOUNT_ID")
+    outlet                 TenantOutlet              @relation(fields: [outletId], references: [id])
+    discount               Discount?                 @relation(fields: [discountId], references: [id])
     tenant                 Tenant                    @relation(fields: [tenantId], references: [id])
     subscriptionPlan       SubscriptionPlan          @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
     subscriptionAddOn      TenantSubscriptionAddOn[]
 
+    @@index([status])
+    @@index([nextPaymentDate])
+    @@index([subscriptionValidUntil])
+    @@index([tenantId, status]) // Composite for finding subscriptions of a tenant by status
+    @@index([outletId, status]) // Composite for finding subscriptions of an outlet by status
     @@map("TENANT_SUBSCRIPTION")
 }
 
@@ -68,14 +90,54 @@ model TenantSubscriptionAddOn {
     @@map("TENANT_SUBSCRIPTION_ADD_ON")
 }
 
+model TenantOutlet {
+    id            Int                  @id @default(autoincrement()) @map("ID")
+    tenantId      Int                  @map("TENANT_ID")
+    outletName    String               @map("OUTLET_NAME")
+    address       String?              @map("ADDRESS")
+    createdAt     DateTime             @default(now()) @map("CREATED_AT")
+    isActive      Boolean              @default(true) @map("IS_ACTIVE")
+    tenant        Tenant               @relation(fields: [tenantId], references: [id])
+    subscriptions TenantSubscription[]
+
+    @@index([outletName])
+    @@index([isActive])
+    @@index([tenantId, isActive])
+    @@map("TENANT_OUTLET")
+}
+
+model Discount {
+    id            Int                  @id @default(autoincrement()) @map("ID")
+    name          String               @map("NAME")
+    discountType  String               @map("DISCOUNT_TYPE") // e.g., "percentage", "fixed"
+    value         Float                @map("VALUE") // e.g., 20 for 20%
+    startDate     DateTime             @default(now()) @map("START_DATE")
+    endDate       DateTime?            @map("END_DATE")
+    maxUses       Int?                 @map("MAX_USES")
+    appliesTo     String               @map("APPLIES_TO") // e.g., "plan", "add-on", "multi-outlet"
+    createdAt     DateTime             @default(now()) @map("CREATED_AT")
+    subscriptions TenantSubscription[]
+
+    @@index([name])
+    @@index([discountType])
+    @@index([startDate, endDate]) // For finding active discounts in a date range
+    @@index([appliesTo])
+    @@map("DISCOUNT")
+}
+
 model TenantUser {
     id        Int     @id @default(autoincrement()) @map("ID")
     username  String  @unique @map("USERNAME")
     password  String? @map("PASSWORD")
     tenantId  Int     @map("TENANT_ID")
     tenant    Tenant? @relation(fields: [tenantId], references: [id])
+    role      String  @default("user") @map("ROLE")
     isDeleted Boolean @default(false) @map("IS_DELETED")
 
+    @@index([role])
+    @@index([isDeleted])
+    @@index([tenantId, role]) // For finding users of a certain role in a tenant
+    @@index([tenantId, isDeleted])
     @@map("TENANT_USER")
 }
 
@@ -89,5 +151,36 @@ model RefreshToken {
     revoked      DateTime? @map("REVOKED_DATETIME")
     deleted      Boolean   @default(false) @map("IS_DELETED")
 
+    @@index([token]) // If you look up by token value directly. If unique, @unique is better.
+    @@index([expired])
+    @@index([revoked])
+    @@index([deleted])
     @@map("REFRESH_TOKEN")
+}
+
+model RegisteredDevice {
+    id             Int       @id @default(autoincrement()) @map("ID")
+    clientDeviceId String    @unique @map("CLIENT_DEVICE_ID") // Globally unique ID from Flutter app (e.g., UUID)
+    siteId         Int       @map("SITE_ID") // Running number site identifier (no @unique here)
+    tenantId       Int       @map("TENANT_ID") // Denormalized from outlet for easier tenant-wide device queries
+    deviceName     String    @map("DEVICE_NAME") // User-friendly name given during registration
+    deviceType     String?   @map("DEVICE_TYPE") // Optional: "pos", "kds", "tablet", "mobile"
+    status         String    @default("active") @map("STATUS") // "active", "inactive", "pending_approval", "revoked"
+    appVersion     String?   @map("APP_VERSION") // Version of the Flutter app
+    lastSeenAt     DateTime? @map("LAST_SEEN_AT") // Updated on API activity
+    registeredAt   DateTime  @default(now()) @map("REGISTERED_AT")
+    updatedAt      DateTime  @updatedAt @map("UPDATED_AT")
+    tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade) // Direct relation to Tenant
+
+    @@unique([tenantId, siteId]) // Unique combination within tenant
+    @@index([clientDeviceId])
+    @@index([tenantId])
+    @@map("REGISTERED_DEVICE")
+}
+
+model TenantSiteIdCounter {
+    tenantId      Int @id @map("TENANT_ID")
+    currentSiteId Int @default(1) @map("CURRENT_SITE_ID")
+
+    @@map("TENANT_SITE_ID_COUNTER")
 }

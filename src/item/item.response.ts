@@ -29,7 +29,7 @@ export class ItemDto {
     itemModel: string | undefined = undefined;
 
     @Expose()
-    itemBrand: string | undefined = undefined;
+    itemBrand: string = "";
 
     // @Expose()
     // itemDescription: string | undefined = undefined;
@@ -42,6 +42,9 @@ export class ItemDto {
 
     @Expose()
     price: number = 0;
+
+    @Expose()
+    reorderThreshold: number = 0;
 
     // @Expose()
     // isOpenPrice: boolean = false;

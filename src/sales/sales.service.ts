@@ -511,7 +511,7 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                             previousOnHandQuantity: stockBalance.onHandQuantity,
                             availableQuantityDelta: -item.quantity,
                             onHandQuantityDelta: -item.quantity,
-                            movementType: 'SALE',
+                            movementType: 'Sales',
                             documentId: createdSales.id,
                             reason: 'Sales transaction',
                             remark: `Sales #${createdSales.id}`,

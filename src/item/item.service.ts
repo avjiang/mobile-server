@@ -36,7 +36,7 @@ let getAll = async (
             where,
             include: {
                 stockBalance: {
-                    select: { availableQuantity: true, id: true },
+                    select: { availableQuantity: true, id: true, reorderThreshold: true },
                 },
             },
             skip,
@@ -48,6 +48,7 @@ let getAll = async (
             stockBalanceId: item.stockBalance[0]?.id || null,
             stockBalance: undefined,
             stockQuantity: item.stockBalance[0]?.availableQuantity || 0,
+            reorderThreshold: item.stockBalance[0]?.reorderThreshold || 0,
         }));
         // Return with server timestamp
         return {
@@ -59,29 +60,6 @@ let getAll = async (
         throw error;
     }
 };
-
-// let getAll = async (databaseName: string) => {
-//     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-//     try {
-//         const items = await tenantPrisma.item.findMany({
-//             include: {
-//                 stockBalance: {
-//                     select: {
-//                         availableQuantity: true
-//                     }
-//                 }
-//             }
-//         })
-//         const response = items.map(({ stockBalance, ...item }) => ({
-//             ...item,
-//             stockQuantity: stockBalance[0]?.availableQuantity || 0,
-//         }));
-//         return response;
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
 
 let getByIdRaw = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -101,7 +79,6 @@ let getByIdRaw = async (databaseName: string, id: number) => {
         throw error
     }
 }
-
 
 let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -188,31 +165,73 @@ let getById = async (databaseName: string, id: number) => {
 let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const createdItems = await tenantPrisma.$transaction(
-            itemBodyArray.map((itemBody) => {
-                const { stockQuantity, ...item } = itemBody
-                return tenantPrisma.item.create({
-                    data: {
-                        itemCode: item.itemCode,
-                        itemName: item.itemName,
-                        itemType: item.itemType,
-                        itemModel: item.itemModel,
-                        itemBrand: item.itemBrand,
-                        cost: item.cost,
-                        price: item.price,
-                        unitOfMeasure: item.unitOfMeasure,
-                        deleted: item.deleted,
-                        stockBalance: {
-                            create: {
-                                outletId: 1,
-                                availableQuantity: stockQuantity,
-                                onHandQuantity: stockQuantity,
-                                deleted: false,
-                            },
+        const createdItems = await tenantPrisma.$transaction(async (tx) => {
+            // Batch fetch categories once
+            const categoryIds = [...new Set(itemBodyArray.map(item => item.categoryId))];
+            const categories = await tx.category.findMany({
+                where: { id: { in: categoryIds } },
+                select: { id: true, name: true }
+            });
+            const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+
+            // Pre-count existing items by category-brand combination to avoid sequential counts
+            const brandCategoryCombos = [...new Set(
+                itemBodyArray.map(item => `${item.categoryId}-${item.itemBrand}`)
+            )];
+
+            const itemCounts = await Promise.all(
+                brandCategoryCombos.map(async (combo) => {
+                    const [categoryId, itemBrand] = combo.split('-');
+                    const count = await tx.item.count({
+                        where: {
+                            categoryId: parseInt(categoryId),
+                            itemBrand,
+                            deleted: false,
                         },
-                        stockMovement: {
-                            create: [
-                                {
+                    });
+                    return { combo, count };
+                })
+            );
+            const countMap = new Map(itemCounts.map(item => [item.combo, item.count]));
+
+            // Generate SKUs efficiently
+            const itemsWithSKUs = itemBodyArray.map((itemBody) => {
+                const category = categoryMap.get(itemBody.categoryId);
+                if (!category) {
+                    throw new Error(`Category with ID ${itemBody.categoryId} not found`);
+                }
+                const categoryCode = generateCode(category.name);
+                const brandCode = generateCode(itemBody.itemBrand);
+                const comboKey = `${itemBody.categoryId}-${itemBody.itemBrand}`;
+                const currentCount = countMap.get(comboKey) || 0;
+
+                // Increment count for this combination to avoid duplicates within the batch
+                countMap.set(comboKey, currentCount + 1);
+
+                const sequentialNumber = currentCount.toString().padStart(4, '0');
+                const sku = `${categoryCode}-${brandCode}-${sequentialNumber}`;
+
+                return { ...itemBody, sku };
+            });
+
+            // Create items with nested relations in parallel
+            return Promise.all(
+                itemsWithSKUs.map((itemBody) => {
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, ...itemWithoutId } = itemBody;
+                    return tx.item.create({
+                        data: {
+                            ...itemWithoutId,
+                            stockBalance: {
+                                create: {
+                                    outletId: 1,
+                                    availableQuantity: stockQuantity,
+                                    onHandQuantity: stockQuantity,
+                                    deleted: false,
+                                    reorderThreshold: reorderThreshold || 0,
+                                },
+                            },
+                            stockMovement: {
+                                create: {
                                     previousAvailableQuantity: 0,
                                     previousOnHandQuantity: 0,
                                     availableQuantityDelta: stockQuantity,
@@ -222,35 +241,41 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                     reason: "",
                                     remark: "",
                                     outletId: 1,
-                                    deleted: false
-                                }
-                            ]
+                                    deleted: false,
+                                },
+                            },
+                            supplier: {
+                                connect: { id: supplierId },
+                            },
+                            category: {
+                                connect: { id: categoryId },
+                            },
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                            version: 1,
                         },
-                        supplier: {
-                            connect: { id: item.supplierId },
+                        include: {
+                            stockBalance: true,
                         },
-                        category: {
-                            connect: { id: item.categoryId },
-                        }
-                    },
-                    include: {
-                        stockBalance: true,
-                    }
+                    });
                 })
-            })
-        );
+            );
+        });
+
         const response = createdItems.map((item, index) => ({
             ...item,
             stockBalanceId: item.stockBalance[0]?.id || null,
             stockBalance: undefined,
-            stockQuantity: itemBodyArray[index].stockQuantity || 0, // Use stockQuantity from input
+            stockQuantity: itemBodyArray[index].stockQuantity || 0,
         }));
+
         return response;
+    } catch (error) {
+        throw error;
+    } finally {
+        await tenantPrisma.$disconnect();
     }
-    catch (error) {
-        throw error
-    }
-}
+};
 
 let update = async (databaseName: string, item: Item) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -347,26 +372,6 @@ let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number
 let getLowStockItems = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // const itemStockItems = await tenantPrisma.item.findMany({
-        //     where: {
-        //         stock: {
-        //             availableQuantity: {
-        //                 gte: isIncludedZeroStock ? 0 : 1,
-        //                 lte: lowStockQuantity,
-        //             },
-        //         },
-        //     },
-        //     include: {
-        //         stock: {
-        //             select: {
-        //                 availableQuantity: true,
-        //             },
-        //         },
-        //     },
-        // });
-        // const itemWithStock = plainToInstance(ItemDto, itemStockItems, { excludeExtraneousValues: true })
-        // return itemWithStock
-
         const lowStockItems = await tenantPrisma.stockBalance.groupBy({
             by: ['itemId'],
             where: {
@@ -495,6 +500,14 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
         console.error("Error in getSoldItemsBySessionId:", error);
         throw error;
     }
+}
+
+function generateCode(str: string, length: number = 4): string {
+    return str
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, length)
+        .toUpperCase()
+        .padEnd(length, 'X');
 }
 
 export = {

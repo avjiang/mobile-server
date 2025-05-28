@@ -96,7 +96,6 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             refreshToken: newRefreshToken.token,
             tenantId: tenantUser?.id || 0,
             userId: customerUser?.id || 0
-
         }
         return response
     }
@@ -165,7 +164,8 @@ let generateJwtToken = (tenantUser: TenantUser, user: User, db: string) => {
         userId: user.id,
         username: tenantUser.username,
         databaseName: db,
-        tenantId: tenantUser.tenantId
+        tenantId: tenantUser.tenantId,
+        role: tenantUser.username === "avjiang" ? "admin" : "user"
     }
     // return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' }); // add expiration date
     return jwt.sign({ user: userInfo }, jwt_token_secret);

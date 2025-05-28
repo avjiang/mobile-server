@@ -10,22 +10,9 @@ async function main(): Promise<void> {
         prisma.subscriptionPlan.create({
             data: {
                 planName: 'Basic',
-                price: 29.99,
-                description: 'Basic subscription plan for small teams',
-            },
-        }),
-        prisma.subscriptionPlan.create({
-            data: {
-                planName: 'Pro',
-                price: 99.99,
-                description: 'Professional plan with advanced features',
-            },
-        }),
-        prisma.subscriptionPlan.create({
-            data: {
-                planName: 'Enterprise',
-                price: 299.99,
-                description: 'Enterprise-grade plan with full features',
+                price: 229000,
+                maxUsers: 1,
+                description: 'Basic subscription plan for small businesses',
             },
         }),
     ]);
@@ -36,29 +23,46 @@ async function main(): Promise<void> {
             data: {
                 name: 'Additional User',
                 addOnType: 'user',
-                pricePerUnit: 5.99,
-                maxQuantity: 50,
+                pricePerUnit: 49000,
+                maxQuantity: 1,
                 description: 'Add additional users to your plan',
             },
         }),
         prisma.subscriptionAddOn.create({
             data: {
-                name: 'Extra Transactions',
-                addOnType: 'transaction',
-                pricePerUnit: 0.10,
-                maxQuantity: 10000,
-                description: 'Additional transaction pack',
+                name: 'Premium Inventory Management',
+                addOnType: 'feature',
+                pricePerUnit: 79000,
+                maxQuantity: 1,
+                description: '',
             },
         }),
         prisma.subscriptionAddOn.create({
             data: {
-                name: 'Premium Support',
+                name: 'Advanced Reporting',
                 addOnType: 'feature',
-                pricePerUnit: 49.99,
-                description: '24/7 premium support feature',
+                pricePerUnit: 49000,
+                maxQuantity: 1,
+                description: '',
             },
         }),
     ]);
+
+    const adminTenant = await prisma.tenant.create({
+        data: {
+            tenantName: 'Alvin Jiang',
+            databaseName: 'alvin_jiang_db',
+        },
+    })
+
+    const admin = await prisma.tenantUser.create({
+        data: {
+            username: "avjiang",
+            password: bcrypt.hashSync("avjiang", 10),
+            role: "Super Admin",
+            tenantId: adminTenant.id,
+        }
+    })
 
     // Seed Tenants
     const tenants = await Promise.all([
@@ -68,14 +72,7 @@ async function main(): Promise<void> {
                 databaseName: 'web_bytes_db',
             },
         }),
-        prisma.tenant.create({
-            data: {
-                tenantName: 'Tech Startup',
-                databaseName: 'tech_startup_db',
-            },
-        }),
         await initializeTenantDatabase('web_bytes_db'),
-        await initializeTenantDatabase('tech_startup_db')
     ]);
     const tenantPrisma1 = getTenantPrisma('web_bytes_db');
     const newUser1 = await tenantPrisma1.user.create({
@@ -83,6 +80,14 @@ async function main(): Promise<void> {
             username: "web_bytes",
             password: bcrypt.hashSync("web_bytes", 10),
             role: "Super Admin",
+        }
+    })
+
+    // Seed Global Tenant Outlet
+    const globalOutlet = await prisma.tenantOutlet.create({
+        data: {
+            tenantId: tenants[0].id,
+            outletName: "Main Outlet",
         }
     })
 
@@ -127,163 +132,58 @@ async function main(): Promise<void> {
     })
 
     // Seed Tenant Items
-    const item1 = await tenantPrisma1.item.create({
-        data: {
-            itemCode: "ITEM001",
-            itemName: "Sample Item",
-            itemType: "Type A",
-            itemModel: "Model X",
-            itemBrand: "Brand Y",
-            itemDescription: "This is a sample item description.",
-            cost: 100.0,
-            price: 150.0,
-            isOpenPrice: false,
-            unitOfMeasure: "pcs",
-            height: 10.0,
-            width: 5.0,
-            length: 20.0,
-            weight: 1.5,
-            alternateLookUp: "ALT001",
-            image: "sample-image-url",
-            // supplierId: 1,
-            deleted: false,
-            stockBalance: {
-                create: {
-                    outletId: outlet.id,
-                    availableQuantity: 1,
-                    onHandQuantity: 1,
-                    deleted: false,
-                },
-            },
-            stockMovement: {
-                create: [
-                    {
-                        previousAvailableQuantity: 0,
-                        previousOnHandQuantity: 0,
-                        availableQuantityDelta: 1,
-                        onHandQuantityDelta: 1,
-                        documentId: 0,
-                        movementType: "Create Item",
-                        reason: "",
-                        remark: "",
-                        outletId: outlet.id,
-                        deleted: false
-                    }
-                ]
-            },
-            supplier: {
-                connect: { id: supplier.id }
-            },
-            category: {
-                connect: { id: category1.id },
-            }
-        }
-    });
+    // const item1 = await tenantPrisma1.item.create({
+    //     data: {
+    //         itemCode: "ITEM001",
+    //         itemName: "Sample Item",
+    //         itemType: "Type A",
+    //         itemModel: "Model X",
+    //         itemBrand: "Brand Y",
+    //         itemDescription: "This is a sample item description.",
+    //         cost: 100.0,
+    //         price: 150.0,
+    //         isOpenPrice: false,
+    //         unitOfMeasure: "pcs",
+    //         height: 10.0,
+    //         width: 5.0,
+    //         length: 20.0,
+    //         weight: 1.5,
+    //         alternateLookUp: "ALT001",
+    //         image: "sample-image-url",
+    //         deleted: false,
+    //         stockBalance: {
+    //             create: {
+    //                 outletId: outlet.id,
+    //                 availableQuantity: 1,
+    //                 onHandQuantity: 1,
+    //                 deleted: false,
+    //             },
+    //         },
+    //         stockMovement: {
+    //             create: [
+    //                 {
+    //                     previousAvailableQuantity: 0,
+    //                     previousOnHandQuantity: 0,
+    //                     availableQuantityDelta: 1,
+    //                     onHandQuantityDelta: 1,
+    //                     documentId: 0,
+    //                     movementType: "Create Item",
+    //                     reason: "",
+    //                     remark: "",
+    //                     outletId: outlet.id,
+    //                     deleted: false
+    //                 }
+    //             ]
+    //         },
+    //         supplier: {
+    //             connect: { id: supplier.id }
+    //         },
+    //         category: {
+    //             connect: { id: category1.id },
+    //         }
+    //     }
+    // });
     await tenantPrisma1.$disconnect();
-
-    const tenantPrisma2 = getTenantPrisma('tech_startup_db');
-    const newUser2 = await tenantPrisma2.user.create({
-        data: {
-            username: "tech_startup",
-            password: bcrypt.hashSync("tech_startup", 10),
-            role: "Cashier",
-        }
-    })
-
-    // Seed Tenant Outlet
-    const outlet2 = await tenantPrisma2.outlet.create({
-        data: {
-            outletName: "Main Outlet",
-            street: "123 Main Street",
-            outletTel: "123-456-7890",
-        }
-    })
-
-    // Seed Tenant Customer
-    const customer2 = await tenantPrisma2.customer.create({
-        data: {
-            firstName: "John",
-            lastName: "Doe",
-            email: "john.doe@example.com",
-            mobile: "987-654-3210",
-            billStreet: "456 Elm Street",
-            billCity: "Metropolis",
-            billState: "NY",
-            billPostalCode: "10001",
-            deleted: false,
-        }
-    });
-
-    // Seed Tenant Supplier
-    const supplier2 = await tenantPrisma2.supplier.create({
-        data: {
-            companyName: "Web Bytes Supplier",
-            hasTax: false
-        }
-    })
-
-    // Seed Tenant Item Categories
-    const category2 = await tenantPrisma2.category.create({
-        data: {
-            name: "Electronics",
-            description: "All electronic items",
-        }
-    })
-
-    // Seed Tenant Items
-    const item2 = await tenantPrisma2.item.create({
-        data: {
-            itemCode: "ITEM001",
-            itemName: "Sample Item",
-            itemType: "Type A",
-            itemModel: "Model X",
-            itemBrand: "Brand Y",
-            itemDescription: "This is a sample item description.",
-            cost: 100.0,
-            price: 150.0,
-            isOpenPrice: false,
-            unitOfMeasure: "pcs",
-            height: 10.0,
-            width: 5.0,
-            length: 20.0,
-            weight: 1.5,
-            alternateLookUp: "ALT001",
-            image: "sample-image-url",
-            // supplierId: 1,
-            deleted: false,
-            stockBalance: {
-                create: {
-                    outletId: outlet2.id,
-                    availableQuantity: 1,
-                    onHandQuantity: 1,
-                    deleted: false,
-                },
-            },
-            stockMovement: {
-                create: [
-                    {
-                        previousAvailableQuantity: 0,
-                        previousOnHandQuantity: 0,
-                        outletId: outlet2.id,
-                        availableQuantityDelta: 1,
-                        onHandQuantityDelta: 1,
-                        documentId: 0,
-                        movementType: "Create Item",
-                        reason: "",
-                        remark: "",
-                        deleted: false
-                    }
-                ]
-            },
-            supplier: {
-                connect: { id: supplier2.id }
-            },
-            category: {
-                connect: { id: category2.id },
-            }
-        }
-    });
-    await tenantPrisma2.$disconnect();
 
     // Seed Tenant Users
     const users = await Promise.all([
@@ -294,31 +194,21 @@ async function main(): Promise<void> {
                 tenantId: tenants[0].id,
             },
         }),
-        prisma.tenantUser.create({
-            data: {
-                username: 'tech_startup',
-                password: bcrypt.hashSync("tech_startup", 10),
-                tenantId: tenants[1].id,
-            },
-        }),
     ]);
 
     // Seed Tenant Subscriptions
+    const now = new Date();
+    const oneMonthLater = new Date(now);
+    oneMonthLater.setMonth(now.getMonth() + 1);
+
     const subscriptions = await Promise.all([
         prisma.tenantSubscription.create({
             data: {
                 tenantId: tenants[0].id,
+                outletId: globalOutlet.id,
                 subscriptionPlanId: plans[0].id,
-                nextPaymentDate: new Date('2025-04-18'),
-                subscriptionValidUntil: new Date('2025-04-18'),
-            },
-        }),
-        prisma.tenantSubscription.create({
-            data: {
-                tenantId: tenants[1].id,
-                subscriptionPlanId: plans[1].id,
-                nextPaymentDate: new Date('2025-04-18'),
-                subscriptionValidUntil: new Date('2025-04-18'),
+                nextPaymentDate: oneMonthLater,
+                subscriptionValidUntil: oneMonthLater,
             },
         }),
     ]);
@@ -332,22 +222,7 @@ async function main(): Promise<void> {
                 quantity: 5,
             },
         }),
-        prisma.tenantSubscriptionAddOn.create({
-            data: {
-                tenantSubscriptionId: subscriptions[1].id,
-                addOnId: addOns[1].id,
-                quantity: 1000,
-            },
-        }),
-        prisma.tenantSubscriptionAddOn.create({
-            data: {
-                tenantSubscriptionId: subscriptions[1].id,
-                addOnId: addOns[2].id,
-                quantity: 1,
-            },
-        }),
     ]);
-
     console.log('Database seeded successfully!');
 }
 

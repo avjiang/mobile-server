@@ -8,6 +8,13 @@ datasource db {
   url      = env("TENANT_DATABASE_URL")
 }
 
+enum SettingType {
+  INT
+  STRING
+  BOOLEAN
+  JSON
+}
+
 model User {
   id        Int       @id @default(autoincrement()) @map("ID")
   username  String    @unique @map("USERNAME")
@@ -22,23 +29,30 @@ model User {
   createdAt DateTime? @default(now()) @map("CREATED_AT")
   updatedAt DateTime? @updatedAt @map("UPDATED_AT")
   version   Int?      @default(1) @map("VERSION")
+  settings  Setting[] // Added relation to Setting
 
   @@map("USER")
 }
 
-model RefreshToken {
-  id          Int       @id @default(autoincrement()) @map("ID")
-  userId      Int       @map("USER_ID")
-  token       String    @map("TOKEN")
-  expired     DateTime? @map("EXPIRED_DATETIME")
-  createdByIP String?   @map("CREATED_BY")
-  revoked     DateTime? @map("REVOKED_DATETIME")
-  deleted     Boolean   @default(false) @map("IS_DELETED")
-  createdAt   DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt   DateTime? @updatedAt @map("UPDATED_AT")
-  version     Int?      @default(1) @map("VERSION")
+model Setting {
+  id        Int         @id @default(autoincrement()) @map("ID")
+  tenantId  Int?        @map("TENANT_ID") // Nullable, references Tenant in global DB
+  userId    Int?        @map("USER_ID") // Nullable for user-specific settings
+  outletId  Int?        @map("OUTLET_ID") // Nullable for outlet-specific settings
+  user      User?       @relation(fields: [userId], references: [id])
+  outlet    Outlet?     @relation(fields: [outletId], references: [id])
+  key       String      @map("KEY") // e.g., "preferred_language"
+  value     String      @map("VALUE") // Stores value as string
+  type      SettingType @map("TYPE") // e.g., INT, STRING, BOOLEAN, JSON
+  deleted   Boolean     @default(false) @map("IS_DELETED")
+  deletedAt DateTime?   @map("DELETED_AT")
+  createdAt DateTime?   @default(now()) @map("CREATED_AT")
+  updatedAt DateTime?   @updatedAt @map("UPDATED_AT")
+  version   Int?        @default(1) @map("VERSION")
 
-  @@map("REFRESH_TOKEN")
+  @@unique([tenantId, userId, outletId, key]) // Ensure uniqueness within scope
+  @@index([key]) // Index for faster lookups
+  @@map("SETTING")
 }
 
 model Referral {
@@ -146,6 +160,7 @@ model Outlet {
   StockBalance  StockBalance[]
   StockMovement StockMovement[]
   StockSnapshot StockSnapshot[]
+  settings      Setting[] // Outlet-specific settings
 
   @@map("OUTLET")
 }
@@ -158,6 +173,7 @@ model Item {
   itemModel       String          @default("") @map("ITEM_MODEL")
   itemBrand       String          @default("") @map("ITEM_BRAND")
   itemDescription String?         @default("") @map("ITEM_DESCRIPTION")
+  sku             String          @unique @map("SKU")
   categoryId      Int             @map("CATEGORY_ID")
   category        Category        @relation(fields: [categoryId], references: [id])
   cost            Float           @map("COST")
@@ -181,10 +197,11 @@ model Item {
   stockMovement   StockMovement[]
   stockSnapshot   StockSnapshot[]
 
-  @@index([categoryId])
   @@index([createdAt])
-  @@index([updatedAt])
   @@index([deletedAt])
+  @@index([categoryId])
+  @@index([updatedAt])
+  @@index([sku])
   @@map("ITEM")
 }
 

@@ -15,21 +15,20 @@ export interface UserInfo {
     userId: number,
     username: string,
     databaseName: string,
-    tenantId: number
+    tenantId: number,
+    role: string
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {
     const token = req.header('token')
     if (token) {
         try {
-            if (token === "goyangkakisdnbhd1234567890") {
-                next()
+            const payload: MyJwtPayload = jwt.verify(token, jwt_token_secret) as MyJwtPayload
+            req.user = payload.user
+            if (req.user.role !== "admin" && req.path.startsWith("/admin")) {
+                throw new AuthenticationError(403, "Admin access required");
             }
-            else {
-                const payload: MyJwtPayload = jwt.verify(token, jwt_token_secret) as MyJwtPayload
-                req.user = payload.user
-                next()
-            }
+            next()
         }
         catch (error) {
             const authenticationError = new AuthenticationError(401, "Invalid token")

@@ -27,6 +27,7 @@ let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: numbe
                     }
                 }
             },
+            take: 25,
             orderBy: {
                 createdAt: 'desc' // This will sort from newest to oldest
             }

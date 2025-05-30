@@ -90,7 +90,8 @@ let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
             include: {
                 stockBalance: {
                     select: {
-                        availableQuantity: true
+                        availableQuantity: true,
+                        reorderThreshold: true
                     }
                 }
             }
@@ -98,6 +99,7 @@ let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
         const response = items.map(({ stockBalance, ...item }) => ({
             ...item,
             stockQuantity: stockBalance[0]?.availableQuantity || 0,
+            reorderThreshold: stockBalance[0]?.reorderThreshold || 0,
         }));
         return response;
     }
@@ -116,7 +118,8 @@ let getAllByCategoryId = async (databaseName: string, categoryId: number) => {
             include: {
                 stockBalance: {
                     select: {
-                        availableQuantity: true
+                        availableQuantity: true,
+                        reorderThreshold: true
                     }
                 }
             }
@@ -124,6 +127,7 @@ let getAllByCategoryId = async (databaseName: string, categoryId: number) => {
         const response = items.map(({ stockBalance, ...item }) => ({
             ...item,
             stockQuantity: stockBalance[0]?.availableQuantity || 0,
+            reorderThreshold: stockBalance[0]?.reorderThreshold || 0,
         }));
         return response;
     }
@@ -434,10 +438,11 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
 let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // Get all sales IDs for the specified session
+        // Get all sales IDs for the specified session - only completed sales
         const salesWithSession = await tenantPrisma.sales.findMany({
             where: {
                 sessionId: sessionId,
+                status: "Completed", // Only include completed sales
                 deleted: false
             },
             select: {
@@ -475,6 +480,7 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
             },
             take: 5,
         });
+
         if (topSoldItemsData.length === 0) {
             return plainToInstance(ItemSoldRankingResponseBody, {
                 topSoldItems: [],

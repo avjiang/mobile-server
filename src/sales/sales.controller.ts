@@ -317,6 +317,45 @@ const addPaymentToPartiallyPaidSales = (req: NetworkRequest<AddPaymentRequest>, 
         .catch(next);
 }
 
+const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    const salesId: number = parseInt(req.params.id);
+    service.voidSales(req.user.databaseName, salesId)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next);
+}
+
+const returnSales = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    const salesId: number = parseInt(req.params.id);
+    service.returnSales(req.user.databaseName, salesId)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next);
+}
+
+const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    const salesId: number = parseInt(req.params.id);
+    service.refundSales(req.user.databaseName, salesId)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next);
+}
+
 //routes
 router.get('/getTotalSalesData', getTotalSalesData)
 router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
@@ -329,6 +368,9 @@ router.post('/completeNewSales', completeNewSales)
 router.post('/completeSales', completeSales)
 router.post('/addPayment', addPaymentToPartiallyPaidSales);
 router.put('/update', update)
+router.put('/void/:id', voidSales)
+router.put('/return/:id', returnSales)
+router.put('/refund/:id', refundSales)
 router.delete('/:id', remove)
 
 export = router

@@ -9,28 +9,28 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
     const { outletId, skip = 0, take = 100, lastSyncTimestamp } = request;
 
     try {
-        // Parse last sync timestamp or use a default (e.g., epoch start)
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
+        // Parse last sync timestamp with optimization for null/first sync
+        let lastSync: Date;
+
+        if (lastSyncTimestamp && lastSyncTimestamp !== 'null') {
+            lastSync = new Date(lastSyncTimestamp);
+        } else {
+            // Option 1: Limit to recent data (e.g., last 30 days) for first sync
+            // const daysBack = 30;
+            // lastSync = new Date();
+            // lastSync.setDate(lastSync.getDate() - daysBack);
+
+            // Option 2: Or use current business date only
+            lastSync = new Date();
+            lastSync.setHours(0, 0, 0, 0); // Start of today
+        }
 
         // Ensure outletId is a number
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
-        // Get today's date with time set to start of day (00:00:00)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Get tomorrow's date for the upper bound of our query
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
         // Build query conditions
         const where = {
             outletId: parsedOutletId,
-            businessDate: {
-                gte: today,
-                lt: tomorrow
-            },
             deleted: false,
             OR: [
                 { createdAt: { gte: lastSync } },
@@ -67,6 +67,10 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             },
             skip,
             take,
+            orderBy: [
+                { updatedAt: 'desc' },
+                { createdAt: 'desc' }
+            ]
         })
 
         // Transform results to include customerName
@@ -90,7 +94,8 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
         return {
             data: transformedSales,
             total,
-            serverTimestamp: new Date().toISOString()
+            serverTimestamp: new Date().toISOString(),
+            isFirstSync: !lastSyncTimestamp || lastSyncTimestamp === 'null'
         };
     }
     catch (error) {
@@ -922,6 +927,292 @@ let addPaymentToPartiallyPaidSales = async (databaseName: string, salesId: numbe
     }
 }
 
+let voidSales = async (databaseName: string, salesId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Get the sales record
+            const sales = await tx.sales.findUnique({
+                where: {
+                    id: salesId,
+                    deleted: false
+                },
+                include: {
+                    salesItems: true,
+                    payments: true
+                }
+            });
+            if (!sales) {
+                throw new NotFoundError("Sales");
+            }
+            if (sales.status !== "Completed") {
+                throw new BusinessLogicError("Only completed sales can be voided");
+            }
+
+            // Update sales status to voided
+            const updatedSales = await tx.sales.update({
+                where: {
+                    id: salesId
+                },
+                data: {
+                    status: "Voided"
+                }
+            });
+
+            // Update payment status to voided
+            await tx.payment.updateMany({
+                where: {
+                    salesId: salesId
+                },
+                data: {
+                    status: "Voided"
+                }
+            });
+
+            // Restore stock for each sales item
+            await Promise.all(
+                sales.salesItems.map(async (salesItem) => {
+                    // Update Stock Balance - add back the quantities
+                    const stockBalance = await tx.stockBalance.findFirst({
+                        where: {
+                            itemId: salesItem.itemId,
+                            outletId: sales.outletId,
+                            deleted: false,
+                        },
+                    });
+
+                    if (stockBalance) {
+                        await tx.stockBalance.update({
+                            where: {
+                                id: stockBalance.id,
+                            },
+                            data: {
+                                availableQuantity: {
+                                    increment: salesItem.quantity,
+                                },
+                                onHandQuantity: {
+                                    increment: salesItem.quantity,
+                                },
+                            },
+                        });
+                        // Create Stock Movement record for the void
+                        await tx.stockMovement.create({
+                            data: {
+                                itemId: salesItem.itemId,
+                                outletId: sales.outletId,
+                                previousAvailableQuantity: stockBalance.availableQuantity,
+                                previousOnHandQuantity: stockBalance.onHandQuantity,
+                                availableQuantityDelta: salesItem.quantity,
+                                onHandQuantityDelta: salesItem.quantity,
+                                movementType: 'Sales Void',
+                                documentId: salesId,
+                                reason: '',
+                                remark: `Sales #${salesId} voided`,
+                            },
+                        });
+                    }
+                })
+            );
+            return updatedSales;
+        });
+        return getById(databaseName, salesId);
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+let returnSales = async (databaseName: string, salesId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Get the sales record
+            const sales = await tx.sales.findUnique({
+                where: {
+                    id: salesId,
+                    deleted: false
+                },
+                include: {
+                    salesItems: true,
+                    payments: true
+                }
+            });
+            if (!sales) {
+                throw new NotFoundError("Sales");
+            }
+            if (sales.status !== "Completed") {
+                throw new BusinessLogicError("Only completed sales can be returned");
+            }
+
+            // Update sales status to returned
+            const updatedSales = await tx.sales.update({
+                where: {
+                    id: salesId
+                },
+                data: {
+                    status: "Returned"
+                }
+            });
+
+            // Update payment status to returned
+            await tx.payment.updateMany({
+                where: {
+                    salesId: salesId
+                },
+                data: {
+                    status: "Returned"
+                }
+            });
+
+            // Restore stock for each sales item
+            await Promise.all(
+                sales.salesItems.map(async (salesItem) => {
+                    // Update Stock Balance - add back the quantities
+                    const stockBalance = await tx.stockBalance.findFirst({
+                        where: {
+                            itemId: salesItem.itemId,
+                            outletId: sales.outletId,
+                            deleted: false,
+                        },
+                    });
+
+                    if (stockBalance) {
+                        await tx.stockBalance.update({
+                            where: {
+                                id: stockBalance.id,
+                            },
+                            data: {
+                                availableQuantity: {
+                                    increment: salesItem.quantity,
+                                },
+                                onHandQuantity: {
+                                    increment: salesItem.quantity,
+                                },
+                            },
+                        });
+
+                        // Create Stock Movement record for the return
+                        await tx.stockMovement.create({
+                            data: {
+                                itemId: salesItem.itemId,
+                                outletId: sales.outletId,
+                                previousAvailableQuantity: stockBalance.availableQuantity,
+                                previousOnHandQuantity: stockBalance.onHandQuantity,
+                                availableQuantityDelta: salesItem.quantity,
+                                onHandQuantityDelta: salesItem.quantity,
+                                movementType: 'Sales Return',
+                                documentId: salesId,
+                                reason: '',
+                                remark: `Sales #${salesId} returned`,
+                            },
+                        });
+                    }
+                })
+            );
+            return updatedSales;
+        });
+        return getById(databaseName, salesId);
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+let refundSales = async (databaseName: string, salesId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Get the sales record
+            const sales = await tx.sales.findUnique({
+                where: {
+                    id: salesId,
+                    deleted: false
+                },
+                include: {
+                    salesItems: true,
+                    payments: true
+                }
+            });
+            if (!sales) {
+                throw new NotFoundError("Sales");
+            }
+            if (sales.status !== "Completed") {
+                throw new BusinessLogicError("Only completed sales can be refunded");
+            }
+
+            // Update sales status to refunded
+            const updatedSales = await tx.sales.update({
+                where: {
+                    id: salesId
+                },
+                data: {
+                    status: "Refunded"
+                }
+            });
+
+            // Update payment status to refunded
+            await tx.payment.updateMany({
+                where: {
+                    salesId: salesId
+                },
+                data: {
+                    status: "Refunded"
+                }
+            });
+
+            // Restore stock for each sales item
+            await Promise.all(
+                sales.salesItems.map(async (salesItem) => {
+                    // Update Stock Balance - add back the quantities
+                    const stockBalance = await tx.stockBalance.findFirst({
+                        where: {
+                            itemId: salesItem.itemId,
+                            outletId: sales.outletId,
+                            deleted: false,
+                        },
+                    });
+                    if (stockBalance) {
+                        await tx.stockBalance.update({
+                            where: {
+                                id: stockBalance.id,
+                            },
+                            data: {
+                                availableQuantity: {
+                                    increment: salesItem.quantity,
+                                },
+                                onHandQuantity: {
+                                    increment: salesItem.quantity,
+                                },
+                            },
+                        });
+
+                        // Create Stock Movement record for the refund
+                        await tx.stockMovement.create({
+                            data: {
+                                itemId: salesItem.itemId,
+                                outletId: sales.outletId,
+                                previousAvailableQuantity: stockBalance.availableQuantity,
+                                previousOnHandQuantity: stockBalance.onHandQuantity,
+                                availableQuantityDelta: salesItem.quantity,
+                                onHandQuantityDelta: salesItem.quantity,
+                                movementType: 'Sales Refund',
+                                documentId: salesId,
+                                reason: '',
+                                remark: `Sales #${salesId} refunded`,
+                            },
+                        });
+                    }
+                })
+            );
+            return updatedSales;
+        });
+        return getById(databaseName, salesId);
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
 export = {
     getAll,
     getByDateRange,
@@ -934,5 +1225,8 @@ export = {
     remove,
     getTotalSalesData,
     getPartiallyPaidSales,
-    addPaymentToPartiallyPaidSales
+    addPaymentToPartiallyPaidSales,
+    voidSales,
+    returnSales,
+    refundSales
 }

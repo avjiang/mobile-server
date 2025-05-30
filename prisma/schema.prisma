@@ -537,6 +537,7 @@ model StockBalance {
   onHandQuantity    Float     @map("ON_HAND_QUANTITY")
   reorderThreshold  Float?    @map("REORDER_THRESHOLD")
   deleted           Boolean   @default(false) @map("IS_DELETED")
+  lastRestockDate   DateTime? @map("LAST_RESTOCK_DATE")
   deletedAt         DateTime? @map("DELETED_AT")
   createdAt         DateTime? @default(now()) @map("CREATED_AT")
   updatedAt         DateTime? @updatedAt @map("UPDATED_AT")

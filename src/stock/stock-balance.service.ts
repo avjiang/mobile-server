@@ -197,6 +197,7 @@ let stockAdjustment = async (databaseName: string, stockAdjustments: StockAdjust
                             onHandQuantity: update.onHandQuantity,
                             version: { increment: 1 }, // Increment version
                             updatedAt: new Date(),
+                            lastRestockDate: new Date(), // Update last restock date
                         },
                     })
                 )

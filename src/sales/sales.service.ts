@@ -835,25 +835,134 @@ let remove = async (databaseName: string, id: number) => {
 let getTotalSalesData = async (databaseName: string, sessionID: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // Get all sales for the given session ID
-        const salesArray = await tenantPrisma.sales.findMany({
-            where: {
-                sessionId: sessionID,
-                deleted: false,
-                status: "Completed" // Only count completed sales
-            }
-        });
-        // Calculate totals using reduce
-        const { totalProfit, totalRevenue } = salesArray.reduce((accumulator, currentSales) => {
-            accumulator.totalProfit += currentSales.profitAmount;
-            accumulator.totalRevenue += currentSales.totalAmount;
-            return accumulator;
-        }, { totalProfit: 0, totalRevenue: 0 });
+        // Run all queries concurrently for better performance
+        const [
+            activeSales,
+            voidedSales,
+            returnedSales,
+            refundedSales,
+            completedSales,
+            partiallyPaidSales
+        ] = await Promise.all([
+            // Active sales (Completed + Partially Paid)
+            tenantPrisma.sales.aggregate({
+                where: {
+                    sessionId: sessionID,
+                    deleted: false,
+                    status: {
+                        in: ["Completed", "Partially Paid"]
+                    }
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true,
+                    changeAmount: true
+                }
+            }),
+
+            // Voided sales
+            tenantPrisma.sales.count({
+                where: {
+                    sessionId: sessionID,
+                    status: "Voided",
+                    deleted: false
+                }
+            }),
+
+            // Returned sales
+            tenantPrisma.sales.count({
+                where: {
+                    sessionId: sessionID,
+                    status: "Returned",
+                    deleted: false
+                }
+            }),
+
+            // Refunded sales
+            tenantPrisma.sales.count({
+                where: {
+                    sessionId: sessionID,
+                    status: "Refunded",
+                    deleted: false
+                }
+            }),
+
+            // Completed sales
+            tenantPrisma.sales.count({
+                where: {
+                    sessionId: sessionID,
+                    status: "Completed",
+                    deleted: false
+                }
+            }),
+
+            // Partially paid sales
+            tenantPrisma.sales.aggregate({
+                where: {
+                    sessionId: sessionID,
+                    status: "Partially Paid",
+                    deleted: false
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true
+                }
+            })
+        ]);
+
+        // Calculate derived metrics
+        const netRevenue = (activeSales._sum?.totalAmount || 0);
+        const netProfit = (activeSales._sum?.profitAmount || 0);
+
+        const totalTransactions = (activeSales._count?.id || 0) + voidedSales +
+            returnedSales + refundedSales;
+
+        const averageTransactionValue = activeSales._count.id > 0 ?
+            netRevenue / activeSales._count.id : 0;
+
+        const outstandingAmount = (partiallyPaidSales._sum?.totalAmount || 0) -
+            (partiallyPaidSales._sum?.paidAmount || 0);
+
         return {
-            salesCount: salesArray.length,
-            totalProfit: totalProfit,
-            totalRevenue: totalRevenue
-        }
+            // Summary metrics
+            salesCount: activeSales._count?.id || 0,
+            totalRevenue: netRevenue,
+            totalProfit: netProfit,
+
+            // Enhanced metrics
+            averageTransactionValue: Math.round(averageTransactionValue * 100) / 100,
+            totalPaidAmount: activeSales._sum?.paidAmount || 0,
+            totalChangeGiven: activeSales._sum?.changeAmount || 0,
+            outstandingAmount: outstandingAmount,
+
+            // Transaction counts by status
+            transactionCounts: {
+                total: totalTransactions,
+                completed: completedSales,
+                partiallyPaid: partiallyPaidSales._count?.id || 0,
+                voided: voidedSales,
+                returned: returnedSales,
+                refunded: refundedSales,
+                // active: activeSales._count?.id || 0
+            },
+
+            // // Performance indicators
+            // performanceMetrics: {
+            //     profitMargin: netRevenue > 0 ?
+            //         Math.round((netProfit / netRevenue * 100) * 100) / 100 : 0,
+            //     voidRate: totalTransactions > 0 ?
+            //         Math.round((voidedSales / totalTransactions * 100) * 100) / 100 : 0,
+            //     returnRate: totalTransactions > 0 ?
+            //         Math.round((returnedSales / totalTransactions * 100) * 100) / 100 : 0,
+            //     refundRate: totalTransactions > 0 ?
+            //         Math.round((refundedSales / totalTransactions * 100) * 100) / 100 : 0,
+            //     partialPaymentRate: totalTransactions > 0 ?
+            //         Math.round(((partiallyPaidSales._count?.id || 0) / totalTransactions * 100) * 100) / 100 : 0
+            // }
+        };
     }
     catch (error) {
         throw error

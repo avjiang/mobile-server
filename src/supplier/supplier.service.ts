@@ -58,6 +58,20 @@ let createMany = async (suppliers: Supplier[], databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
     try {
+        // Check for existing company names
+        const companyNames = suppliers.map(supplier => supplier.companyName);
+        const existingSuppliers = await tenantPrisma.supplier.findMany({
+            where: {
+                companyName: { in: companyNames },
+                deleted: false
+            }
+        });
+
+        if (existingSuppliers.length > 0) {
+            const existingNames = existingSuppliers.map(s => s.companyName).join(', ');
+            throw new RequestValidateError(`Company name(s) already exist: ${existingNames}`);
+        }
+
         await tenantPrisma.supplier.createMany({
             data: suppliers,
         });
@@ -73,42 +87,26 @@ let createMany = async (suppliers: Supplier[], databaseName: string) => {
     }
 }
 
-// let createItem = async (item: Item) => {
-//     try {
-//         const newItem = await prisma.item.create({
-//             data: item
-//             // data: {
-//             //     itemCode: item.itemCode,
-//             //     itemName: item.itemName,
-//             //     itemType: item.itemType,
-//             //     itemModel: item.itemModel,
-//             //     itemBrand: item.itemBrand,
-//             //     itemDescription: item.itemDescription,
-//             //     category: item.category,
-//             //     cost: item.cost,
-//             //     price: item.price,
-//             //     isOpenPrice: item.isOpenPrice,
-//             //     unitOfMeasure: item.unitOfMeasure,
-//             //     height: item.height,
-//             //     width: item.width,
-//             //     length: item.length,
-//             //     weight: item.weight,
-//             //     alternateLookUp: item.alternateLookUp,
-//             //     image: item.image
-//             // }
-//         })
-//         return newItem
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
-
 let update = async (supplier: Supplier, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Extract itemCount before updating
         const { itemCount, ...supplierData } = supplier as Supplier & { itemCount?: number };
+
+        // Check if company name already exists (excluding current supplier)
+        if (supplierData.companyName) {
+            const existingSupplier = await tenantPrisma.supplier.findFirst({
+                where: {
+                    companyName: supplierData.companyName,
+                    id: { not: supplier.id },
+                    deleted: false
+                }
+            });
+
+            if (existingSupplier) {
+                throw new RequestValidateError("Company name already exists");
+            }
+        }
 
         const updatedSupplier = await tenantPrisma.supplier.update({
             where: {

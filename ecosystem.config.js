@@ -9,6 +9,8 @@ module.exports = {
             exec_mode: 'fork',
             autorestart: true,
             watch: ['./src'],
+            error_file: './logs/error.log',
+            out_file: './logs/out.log',
             // env: {
             //   NODE_ENV: 'development',
             //   PORT: 3000,

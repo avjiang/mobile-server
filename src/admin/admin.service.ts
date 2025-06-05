@@ -84,11 +84,24 @@ let createTenant = async (body: CreateTenantRequest) => {
 
             // Create user in tenant DB
             const tenantPrisma = getTenantPrisma(databaseName);
+
+            // Find or create the "Super Admin" role
+            let superAdminRole = await tenantPrisma.role.findFirst({
+                where: { name: "Super Admin" }
+            });
+            if (!superAdminRole) {
+                superAdminRole = await tenantPrisma.role.create({
+                    data: { name: "Super Admin" }
+                });
+            }
+
             const newUser = await tenantPrisma.user.create({
                 data: {
                     username: username,
                     password: bcrypt.hashSync(username, 10),
-                    role: "Super Admin",
+                    roles: {
+                        connect: [{ id: superAdminRole.id }]
+                    }
                 }
             })
             const newOutlet = await tenantPrisma.outlet.create({

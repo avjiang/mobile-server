@@ -44,6 +44,21 @@ let getById = async (databaseName: string, id: number) => {
 let createMany = async (databaseName: string, categories: Category[]) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Check for existing category names
+        const categoryNames = categories.map(cat => cat.name);
+        const existingCategories = await tenantPrisma.category.findMany({
+            where: {
+                name: { in: categoryNames },
+                deleted: false
+            },
+            select: { name: true }
+        });
+
+        if (existingCategories.length > 0) {
+            const existingNames = existingCategories.map(cat => cat.name);
+            throw new RequestValidateError(`Category names already exist: ${existingNames.join(', ')}`);
+        }
+
         await tenantPrisma.category.createMany({
             data: categories,
         });
@@ -63,6 +78,19 @@ let createMany = async (databaseName: string, categories: Category[]) => {
 let update = async (databaseName: string, category: Category) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Check if category name already exists (excluding current category)
+        const existingCategory = await tenantPrisma.category.findFirst({
+            where: {
+                name: category.name,
+                id: { not: category.id },
+                deleted: false
+            }
+        });
+
+        if (existingCategory) {
+            throw new RequestValidateError(`Category name '${category.name}' already exists`);
+        }
+
         const updatedCategory = await tenantPrisma.category.update({
             where: {
                 id: category.id

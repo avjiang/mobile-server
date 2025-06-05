@@ -49,6 +49,8 @@ app.use('/session', require('./session/session.controller'))
 app.use('/menu', require('./menu/menu.controller'))
 app.use('/report', require('./report/report.controller'))
 app.use('/device', require('./device/device.controller'))
+app.use('/role', require('./role/role.controller'))
+app.use('/permission', require('./permission/permission.controller'))
 
 //error middleware
 app.use(errorMiddleware)

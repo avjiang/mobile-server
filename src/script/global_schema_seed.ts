@@ -4,6 +4,87 @@ import { getTenantPrisma, initializeTenantDatabase } from '../db';
 
 const prisma = new PrismaClient();
 
+async function seedPermissions(tenantPrisma: any) {
+    const permissions = [
+        {
+            name: "View Dashboard",
+            description: "View dashboard and analytics",
+            category: "Dashboard"
+        },
+        {
+            name: "Manage Users",
+            description: "Create, edit, and delete users",
+            category: "User Management"
+        },
+        {
+            name: "Manage Roles",
+            description: "Create, edit, and delete roles",
+            category: "User Management"
+        },
+        {
+            name: "View Inventory",
+            description: "View inventory items and stock levels",
+            category: "Inventory"
+        },
+        {
+            name: "Manage Inventory",
+            description: "Add, edit, and delete inventory items",
+            category: "Inventory"
+        },
+        {
+            name: "Process Sales",
+            description: "Create and process sales transactions",
+            category: "Sales"
+        },
+        {
+            name: "View Sales Reports",
+            description: "View sales reports and analytics",
+            category: "Reports"
+        },
+        {
+            name: "Manage Customers",
+            description: "Add, edit, and delete customers",
+            category: "Customer Management"
+        },
+        {
+            name: "Manage Suppliers",
+            description: "Add, edit, and delete suppliers",
+            category: "Supplier Management"
+        },
+        {
+            name: "Manage Outlets",
+            description: "Create and manage outlet information",
+            category: "Outlet Management"
+        },
+        {
+            name: "View Session Reports",
+            description: "View session reports and statements",
+            category: "Financial"
+        },
+        {
+            name: "Manage System Settings",
+            description: "Configure system settings and preferences",
+            category: "System"
+        }
+    ];
+
+    const createdPermissions = [];
+    for (const permission of permissions) {
+        const existingPermission = await tenantPrisma.permission.findFirst({
+            where: { name: permission.name }
+        });
+
+        if (!existingPermission) {
+            const created = await tenantPrisma.permission.create({
+                data: permission
+            });
+            createdPermissions.push(created);
+        }
+    }
+
+    return createdPermissions;
+}
+
 async function main(): Promise<void> {
     // Seed Subscription Plans
     const plans = await Promise.all([
@@ -64,6 +145,9 @@ async function main(): Promise<void> {
         }
     })
 
+    // Seed permissions for the global tenant
+    const permissions = await seedPermissions(prisma);
+
     // Seed Tenants
     const tenants = await Promise.all([
         prisma.tenant.create({
@@ -75,11 +159,31 @@ async function main(): Promise<void> {
         await initializeTenantDatabase('web_bytes_db'),
     ]);
     const tenantPrisma1 = getTenantPrisma('web_bytes_db');
+    await tenantPrisma1.role.create({
+        data: {
+            name: "Super Admin",
+            description: "Has full access to all system features and settings",
+        }
+    });
+
+
+    // Find or create the "Super Admin" role
+    let superAdminRole = await tenantPrisma1.role.findFirst({
+        where: { name: "Super Admin" }
+    });
+    if (!superAdminRole) {
+        superAdminRole = await tenantPrisma1.role.create({
+            data: { name: "Super Admin" }
+        });
+    }
+
     const newUser1 = await tenantPrisma1.user.create({
         data: {
             username: "web_bytes",
             password: bcrypt.hashSync("web_bytes", 10),
-            role: "Super Admin",
+            roles: {
+                connect: [{ id: superAdminRole.id }]
+            }
         }
     })
 

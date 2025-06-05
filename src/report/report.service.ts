@@ -21,28 +21,94 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         // Run all queries concurrently for better performance
         const [
             voidedSales,
+            returnedSales,
+            refundedSales,
+            partiallyPaidSales,
+            completedSales,
             topSellingItems,
             mostProfitableItems,
             salesSummary,
             paymentBreakdown,
             salesItems
         ] = await Promise.all([
-            // Previous queries remain unchanged...
+            // Voided sales
             tenantPrisma.sales.aggregate({
                 where: {
                     ...sessionFilter,
                     status: "Voided"
                 },
                 _count: { id: true },
-                _sum: { totalAmount: true }
+                _sum: { totalAmount: true, paidAmount: true }
             }),
 
+            // Returned sales details
+            tenantPrisma.sales.aggregate({
+                where: {
+                    ...sessionFilter,
+                    status: "Returned",
+                    deleted: false
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true
+                }
+            }),
+
+            // Refunded sales details
+            tenantPrisma.sales.aggregate({
+                where: {
+                    ...sessionFilter,
+                    status: "Refunded",
+                    deleted: false
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true
+                }
+            }),
+
+            // Partially paid sales details
+            tenantPrisma.sales.aggregate({
+                where: {
+                    ...sessionFilter,
+                    status: "Partially Paid",
+                    deleted: false
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true
+                }
+            }),
+
+            // Completed sales details
+            tenantPrisma.sales.aggregate({
+                where: {
+                    ...sessionFilter,
+                    status: "Completed",
+                    deleted: false
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true,
+                    changeAmount: true
+                }
+            }),
+
+            // Only include active sales (completed and partially paid) for top selling items
             tenantPrisma.salesItem.groupBy({
                 by: ['itemId', 'itemName', 'itemCode'],
                 where: {
                     sales: {
                         ...sessionFilter,
-                        status: { not: "Voided" }
+                        status: { in: ["Completed", "Partially Paid"] }
                     }
                 },
                 _sum: {
@@ -57,12 +123,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 take: 10
             }),
 
+            // Only include active sales for most profitable items
             tenantPrisma.salesItem.groupBy({
                 by: ['itemId', 'itemName', 'itemCode'],
                 where: {
                     sales: {
                         ...sessionFilter,
-                        status: { not: "Voided" }
+                        status: { in: ["Completed", "Partially Paid"] }
                     }
                 },
                 _sum: {
@@ -76,11 +143,12 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 take: 10
             }),
 
+            // Include all non-voided sales for overall summary
             tenantPrisma.sales.aggregate({
                 where: {
                     ...sessionFilter,
                     deleted: false,
-                    status: { not: "Voided" }
+                    status: { in: ["Completed", "Partially Paid"] }
                 },
                 _sum: {
                     paidAmount: true,
@@ -93,12 +161,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
+            // Include payments from all non-voided sales
             tenantPrisma.payment.groupBy({
                 by: ['method'],
                 where: {
                     ...sessionFilter,
                     sales: {
-                        status: { not: "Voided" }
+                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
                     }
                 },
                 _sum: {
@@ -106,12 +175,12 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
-            // Get all distinct items sold in this session
+            // Get all distinct items sold in this session (only active sales)
             tenantPrisma.salesItem.findMany({
                 where: {
                     sales: {
                         ...sessionFilter,
-                        status: { not: "Voided" }
+                        status: { in: ["Completed", "Partially Paid"] }
                     }
                 },
                 select: {
@@ -121,6 +190,97 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             })
         ]);
+
+        // Get detailed returned sales information
+        const returnedSalesDetails = await tenantPrisma.sales.findMany({
+            where: {
+                ...sessionFilter,
+                status: "Returned",
+                deleted: false
+            },
+            select: {
+                id: true,
+                totalAmount: true,
+                paidAmount: true,
+                customerId: true,
+                businessDate: true,
+                remark: true,
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true
+                    }
+                }
+            }
+        });
+
+        // Get detailed refunded sales information
+        const refundedSalesDetails = await tenantPrisma.sales.findMany({
+            where: {
+                ...sessionFilter,
+                status: "Refunded",
+                deleted: false
+            },
+            select: {
+                id: true,
+                totalAmount: true,
+                paidAmount: true,
+                customerId: true,
+                businessDate: true,
+                remark: true,
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true
+                    }
+                }
+            }
+        });
+
+        // Get detailed partially paid sales information
+        const partiallyPaidSalesDetails = await tenantPrisma.sales.findMany({
+            where: {
+                ...sessionFilter,
+                status: "Partially Paid",
+                deleted: false
+            },
+            select: {
+                id: true,
+                totalAmount: true,
+                paidAmount: true,
+                customerId: true,
+                businessDate: true,
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true
+                    }
+                }
+            }
+        });
+
+        // Get detailed voided sales information
+        const voidedSalesDetails = await tenantPrisma.sales.findMany({
+            where: {
+                ...sessionFilter,
+                status: "Voided",
+                deleted: false
+            },
+            select: {
+                id: true,
+                totalAmount: true,
+                paidAmount: true,
+                customerId: true,
+                businessDate: true,
+                remark: true,
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true
+                    }
+                }
+            }
+        });
 
         // Get the unique item IDs sold in this session
         const soldItemIds = [...new Set(salesItems.map(item => item.itemId))];
@@ -173,11 +333,11 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             .sort((a, b) => b.quantitySold - a.quantitySold)
             .slice(0, 5); // Take top 5
 
-        // Calculate session sales count
+        // Calculate session sales count (all non-voided)
         const sessionSalesCount = await tenantPrisma.sales.count({
             where: {
                 ...sessionFilter,
-                status: { not: "Voided" }
+                status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
             }
         });
 
@@ -214,20 +374,120 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             }
         });
 
+        // Calculate metrics for partially paid sales
+        const totalOutstandingAmount = (partiallyPaidSales._sum?.totalAmount || 0) - (partiallyPaidSales._sum?.paidAmount || 0);
+        const averageOutstandingPerTransaction = partiallyPaidSales._count.id > 0
+            ? totalOutstandingAmount / partiallyPaidSales._count.id
+            : 0;
+        const paymentCoverageRatio = (partiallyPaidSales._sum?.totalAmount || 0) > 0
+            ? ((partiallyPaidSales._sum?.paidAmount || 0) / (partiallyPaidSales._sum?.totalAmount || 0)) * 100
+            : 0;
+
         // Calculate average transaction value
         const averageTransactionValue = salesSummary._count.id > 0
             ? (salesSummary._sum.totalAmount ?? 0) / salesSummary._count.id
             : 0;
 
+        // Calculate net revenue (excluding returned/refunded amounts)
+        const netRevenue = (completedSales._sum?.totalAmount || 0) + (partiallyPaidSales._sum?.totalAmount || 0);
+        const grossRevenue = salesSummary._sum?.totalAmount || 0;
+        const returnRefundImpact = (returnedSales._sum?.totalAmount || 0) + (refundedSales._sum?.totalAmount || 0);
+
         // Prepare response object
         return {
-            totalRevenue: salesSummary._sum?.totalAmount || 0,
-            totalProfit: salesSummary._sum?.profitAmount || 0,
+            // Overall metrics (net values)
+            totalRevenue: netRevenue,
+            grossRevenue: grossRevenue,
+            returnRefundImpact: returnRefundImpact,
+            totalProfit: (completedSales._sum?.profitAmount || 0) + (partiallyPaidSales._sum?.profitAmount || 0),
             averageTransactionValue,
             totalPaidAmount: salesSummary._sum?.paidAmount || 0,
             changeGiven: salesSummary._sum?.changeAmount || 0,
             voidedSalesCount: voidedSales._count?.id || 0,
             voidedSalesAmount: voidedSales._sum?.totalAmount || 0,
+
+            // Completed sales info
+            completedSales: {
+                count: completedSales._count?.id || 0,
+                totalAmount: completedSales._sum?.totalAmount || 0,
+                paidAmount: completedSales._sum?.paidAmount || 0,
+                profit: completedSales._sum?.profitAmount || 0,
+                changeGiven: completedSales._sum?.changeAmount || 0
+            },
+
+            // Partially paid sales info
+            partiallyPaidSales: {
+                count: partiallyPaidSales._count?.id || 0,
+                totalAmount: partiallyPaidSales._sum?.totalAmount || 0,
+                paidAmount: partiallyPaidSales._sum?.paidAmount || 0,
+                outstandingAmount: totalOutstandingAmount,
+                profit: partiallyPaidSales._sum?.profitAmount || 0,
+                averageOutstandingPerTransaction,
+                paymentCoverageRatio: Math.round(paymentCoverageRatio * 100) / 100,
+                details: partiallyPaidSalesDetails.map(sale => ({
+                    salesId: sale.id,
+                    totalAmount: sale.totalAmount,
+                    paidAmount: sale.paidAmount,
+                    outstandingAmount: sale.totalAmount - sale.paidAmount,
+                    customerName: sale.customer
+                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
+                        : 'Guest',
+                    businessDate: sale.businessDate
+                }))
+            },
+
+            // Returned sales info
+            returnedSales: {
+                count: returnedSales._count?.id || 0,
+                totalAmount: returnedSales._sum?.totalAmount || 0,
+                paidAmount: returnedSales._sum?.paidAmount || 0,
+                lostProfit: returnedSales._sum?.profitAmount || 0,
+                details: returnedSalesDetails.map(sale => ({
+                    salesId: sale.id,
+                    totalAmount: sale.totalAmount,
+                    paidAmount: sale.paidAmount,
+                    customerName: sale.customer
+                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
+                        : 'Guest',
+                    businessDate: sale.businessDate,
+                    remark: sale.remark || ''
+                }))
+            },
+
+            // Refunded sales info
+            refundedSales: {
+                count: refundedSales._count?.id || 0,
+                totalAmount: refundedSales._sum?.totalAmount || 0,
+                paidAmount: refundedSales._sum?.paidAmount || 0,
+                lostProfit: refundedSales._sum?.profitAmount || 0,
+                details: refundedSalesDetails.map(sale => ({
+                    salesId: sale.id,
+                    totalAmount: sale.totalAmount,
+                    paidAmount: sale.paidAmount,
+                    customerName: sale.customer
+                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
+                        : 'Guest',
+                    businessDate: sale.businessDate,
+                    remark: sale.remark || ''
+                }))
+            },
+
+            // Voided sales info
+            voidedSales: {
+                count: voidedSales._count?.id || 0,
+                totalAmount: voidedSales._sum?.totalAmount || 0,
+                paidAmount: voidedSales._sum?.paidAmount || 0,
+                details: voidedSalesDetails.map(sale => ({
+                    salesId: sale.id,
+                    totalAmount: sale.totalAmount,
+                    paidAmount: sale.paidAmount,
+                    customerName: sale.customer
+                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
+                        : 'Guest',
+                    businessDate: sale.businessDate,
+                    remark: sale.remark || ''
+                }))
+            },
 
             sessionInfo: {
                 id: session.id,

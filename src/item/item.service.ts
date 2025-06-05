@@ -218,6 +218,21 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                 return { ...itemBody, sku };
             });
 
+            // Check if any of the generated SKUs already exist
+            const generatedSKUs = itemsWithSKUs.map(item => item.sku);
+            const existingSKUs = await tx.item.findMany({
+                where: {
+                    sku: { in: generatedSKUs },
+                    deleted: false,
+                },
+                select: { sku: true },
+            });
+
+            if (existingSKUs.length > 0) {
+                const duplicateSKUs = existingSKUs.map(item => item.sku);
+                throw new Error(`The following SKUs already exist: ${duplicateSKUs.join(', ')}`);
+            }
+
             // Create items with nested relations in parallel
             return Promise.all(
                 itemsWithSKUs.map((itemBody) => {
@@ -284,6 +299,22 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
 let update = async (databaseName: string, item: Item) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Check if SKU is being updated and if it already exists
+        if (item.sku) {
+            const existingItemWithSKU = await tenantPrisma.item.findFirst({
+                where: {
+                    sku: item.sku,
+                    deleted: false,
+                    id: { not: item.id }, // Exclude the current item being updated
+                },
+                select: { sku: true },
+            });
+
+            if (existingItemWithSKU) {
+                throw new Error(`SKU '${item.sku}' already exists`);
+            }
+        }
+
         const updatedItem = await tenantPrisma.item.update({
             where: {
                 id: item.id

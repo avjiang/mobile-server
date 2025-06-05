@@ -34,11 +34,17 @@ export function getTenantPrisma(tenantDbName: string): TenantPrismaClient {
       query: {
         $allModels: {
           async update({ args, query }) {
-            args.data.version = { increment: 1 };
+            // Only increment version if the model has a version field
+            if (args.data && typeof args.data === 'object' && 'version' in args.data) {
+              args.data.version = { increment: 1 };
+            }
             return query(args);
           },
           async updateMany({ args, query }) {
-            args.data.version = { increment: 1 };
+            // Only increment version if the model has a version field
+            if (args.data && typeof args.data === 'object' && 'version' in args.data) {
+              args.data.version = { increment: 1 };
+            }
             return query(args);
           },
         },

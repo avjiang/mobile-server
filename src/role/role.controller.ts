@@ -156,9 +156,25 @@ let removeRole = (req: NetworkRequest<AssignRoleRequestBody>, res: Response, nex
         .catch(next);
 }
 
+let getAllUsersByRoleID = (req: NetworkRequest<any>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const roleId = parseInt(req.params.roleId);
+    if (!roleId || isNaN(roleId)) {
+        throw new RequestValidateError('Valid role ID is required');
+    }
+    service.getUsersByRoleId(req.user.databaseName, roleId)
+        .then(({ data }) => {
+            sendResponse(res, { data });
+        })
+        .catch(next);
+}
+
 //routes
 router.get('/sync', getAllRole)
 router.get('/user/:userId', getRoleByUserId)
+router.get('/users/:roleId', getAllUsersByRoleID)
 router.post('/create', createRole)
 router.put('/update', updateRole)
 router.post('/assign/:userId', assignRole)

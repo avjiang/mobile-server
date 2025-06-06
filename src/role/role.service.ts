@@ -105,7 +105,7 @@ let createMany = async (databaseName: string, roleData: CreateRoleRequestBody) =
         }
 
         // Return role with permissions
-        const roleWithPermissions = await tenantPrisma.role.findUnique({
+        const roleWithPermissions = await tenantPrisma.role.findMany({
             where: { id: newRole.id },
             include: {
                 permission: {
@@ -154,14 +154,10 @@ let updateRole = async (databaseName: string, roleData: CreateRoleRequestBody) =
 
         // Handle permission updates
         if (roleData.permissionIds !== undefined) {
-            // Delete existing role permissions
-            await tenantPrisma.rolePermission.updateMany({
+            // Delete existing role permissions completely
+            await tenantPrisma.rolePermission.deleteMany({
                 where: {
                     roleId: roleData.id
-                },
-                data: {
-                    deleted: true,
-                    deletedAt: new Date()
                 }
             });
 
@@ -216,7 +212,7 @@ let getRoleByUserId = async (databaseName: string, userId: number, syncRequest: 
 
         if (lastSyncTimestamp) {
             const syncDate = new Date(lastSyncTimestamp);
-            
+
             // Check if there are any role-related changes for this user
             const changeCheckQueries = [
                 // User's role assignments changed
@@ -319,7 +315,7 @@ let getRoleByUserId = async (databaseName: string, userId: number, syncRequest: 
         }
 
         // Get total count based on whether we're returning data or not
-        const total = hasChanges || !lastSyncTimestamp ? 
+        const total = hasChanges || !lastSyncTimestamp ?
             await tenantPrisma.role.count({
                 where: {
                     deleted: false,
@@ -526,4 +522,52 @@ let removeRoleFromUser = async (databaseName: string, userId: number, roleIds: n
     }
 }
 
-export = { getAll, createMany, updateRole, getRoleByUserId, assignRoleToUser, removeRoleFromUser }
+let getUsersByRoleId = async (databaseName: string, roleId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        // Validate role exists and is not deleted
+        const existingRole = await tenantPrisma.role.findUnique({
+            where: {
+                id: roleId,
+                deleted: false
+            }
+        });
+        if (!existingRole) {
+            throw new NotFoundError("Role not found");
+        }
+        // Always return all users assigned to this role
+        const users = await tenantPrisma.user.findMany({
+            where: {
+                deleted: false,
+                roles: {
+                    some: {
+                        id: roleId,
+                        deleted: false
+                    }
+                }
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                mobile: true,
+                createdAt: true,
+                updatedAt: true,
+                deleted: true,
+                deletedAt: true,
+            },
+            orderBy: {
+                updatedAt: 'desc'
+            },
+        });
+        return {
+            data: users,
+        };
+    } catch (error) {
+        throw error;
+    }
+};
+
+export = { getAll, createMany, updateRole, getRoleByUserId, assignRoleToUser, removeRoleFromUser, getUsersByRoleId }

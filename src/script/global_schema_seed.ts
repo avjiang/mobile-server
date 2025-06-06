@@ -12,6 +12,21 @@ async function seedPermissions(tenantPrisma: any) {
             category: "Dashboard"
         },
         {
+            name: "View Inventory",
+            description: "View inventory items and stock levels",
+            category: "Inventory"
+        },
+        {
+            name: "View Session Reports",
+            description: "View session reports and analytics",
+            category: "Reports"
+        },
+        {
+            name: "View Financial Reports",
+            description: "View financial reports and statements",
+            category: "Reports"
+        },
+        {
             name: "Manage Users",
             description: "Create, edit, and delete users",
             category: "User Management"
@@ -22,24 +37,9 @@ async function seedPermissions(tenantPrisma: any) {
             category: "User Management"
         },
         {
-            name: "View Inventory",
-            description: "View inventory items and stock levels",
-            category: "Inventory"
-        },
-        {
             name: "Manage Inventory",
             description: "Add, edit, and delete inventory items",
             category: "Inventory"
-        },
-        {
-            name: "Process Sales",
-            description: "Create and process sales transactions",
-            category: "Sales"
-        },
-        {
-            name: "View Sales Reports",
-            description: "View sales reports and analytics",
-            category: "Reports"
         },
         {
             name: "Manage Customers",
@@ -56,16 +56,16 @@ async function seedPermissions(tenantPrisma: any) {
             description: "Create and manage outlet information",
             category: "Outlet Management"
         },
+        // {
+        //     name: "Manage System Settings",
+        //     description: "Configure system settings and preferences",
+        //     category: "System"
+        // },
         {
-            name: "View Session Reports",
-            description: "View session reports and statements",
-            category: "Financial"
+            name: "Process Sales",
+            description: "Create and process sales transactions",
+            category: "Sales"
         },
-        {
-            name: "Manage System Settings",
-            description: "Configure system settings and preferences",
-            category: "System"
-        }
     ];
 
     const createdPermissions = [];

@@ -10,7 +10,8 @@ const port = 8080;
 
 // createTestUser()
 app.get('/', (req, res) => res.send('Hello World!'))
-app.use(bodyParser.json())
+app.use(bodyParser.json({ limit: '1mb' }));
+app.use(bodyParser.urlencoded({ limit: '1mb', extended: true }));
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
@@ -51,6 +52,7 @@ app.use('/report', require('./report/report.controller'))
 app.use('/device', require('./device/device.controller'))
 app.use('/role', require('./role/role.controller'))
 app.use('/permission', require('./permission/permission.controller'))
+app.use('/outlet', require('./outlet/outlet.controller'))
 
 //error middleware
 app.use(errorMiddleware)

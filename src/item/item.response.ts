@@ -46,6 +46,9 @@ export class ItemDto {
     @Expose()
     reorderThreshold: number = 0;
 
+    @Expose()
+    hasTax: boolean = false;
+
     // @Expose()
     // isOpenPrice: boolean = false;
 

@@ -198,6 +198,7 @@ async function main(): Promise<void> {
     // Seed Tenant Outlet
     const outlet = await tenantPrisma1.outlet.create({
         data: {
+            tenantOutletId: globalOutlet.id,
             outletName: "Main Outlet",
             street: "123 Main Street",
             outletTel: "123-456-7890",
@@ -234,59 +235,6 @@ async function main(): Promise<void> {
             description: "All electronic items",
         }
     })
-
-    // Seed Tenant Items
-    // const item1 = await tenantPrisma1.item.create({
-    //     data: {
-    //         itemCode: "ITEM001",
-    //         itemName: "Sample Item",
-    //         itemType: "Type A",
-    //         itemModel: "Model X",
-    //         itemBrand: "Brand Y",
-    //         itemDescription: "This is a sample item description.",
-    //         cost: 100.0,
-    //         price: 150.0,
-    //         isOpenPrice: false,
-    //         unitOfMeasure: "pcs",
-    //         height: 10.0,
-    //         width: 5.0,
-    //         length: 20.0,
-    //         weight: 1.5,
-    //         alternateLookUp: "ALT001",
-    //         image: "sample-image-url",
-    //         deleted: false,
-    //         stockBalance: {
-    //             create: {
-    //                 outletId: outlet.id,
-    //                 availableQuantity: 1,
-    //                 onHandQuantity: 1,
-    //                 deleted: false,
-    //             },
-    //         },
-    //         stockMovement: {
-    //             create: [
-    //                 {
-    //                     previousAvailableQuantity: 0,
-    //                     previousOnHandQuantity: 0,
-    //                     availableQuantityDelta: 1,
-    //                     onHandQuantityDelta: 1,
-    //                     documentId: 0,
-    //                     movementType: "Create Item",
-    //                     reason: "",
-    //                     remark: "",
-    //                     outletId: outlet.id,
-    //                     deleted: false
-    //                 }
-    //             ]
-    //         },
-    //         supplier: {
-    //             connect: { id: supplier.id }
-    //         },
-    //         category: {
-    //             connect: { id: category1.id },
-    //         }
-    //     }
-    // });
     await tenantPrisma1.$disconnect();
 
     // Seed Tenant Users

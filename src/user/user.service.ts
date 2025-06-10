@@ -43,7 +43,7 @@ let create = async (databaseName: string, user: User) => {
                 firstName: user.firstName,
                 mobile: user.mobile,
                 email: user.email,
-                role: user.role
+                // role: user.role
             }
         })
         return newUser
@@ -65,7 +65,7 @@ let update = async (databaseName: string, user: User) => {
                 firstName: user.firstName,
                 mobile: user.mobile,
                 email: user.email,
-                role: user.role
+                // role: user.role
             }
         })
         return updatedUser

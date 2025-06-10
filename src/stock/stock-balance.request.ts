@@ -15,9 +15,11 @@ export interface StockAdjustmentRequestBody {
 export interface StockAdjustment {
     itemId: number,
     adjustQuantity?: number,
-    overrideQuantity?: number;
+    overrideQuantity?: number,
+    cost: number,
     outletId: number,
     reason: string,
     remark: string,
-    version: number
+    version: number,
+    performedBy?: string,
 }

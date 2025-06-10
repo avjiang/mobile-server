@@ -46,7 +46,7 @@ let getAllBySupplierId = (req: AuthRequest, res: Response, next: NextFunction) =
     }
     const supplierIdParam = Number(supplierId)
     service.getAllBySupplierId(req.user.databaseName, supplierIdParam)
-        .then((items: ItemDto[]) => sendResponse(res, items))
+        .then((items: any[]) => sendResponse(res, items))
         .catch(next)
 }
 
@@ -64,7 +64,7 @@ let getAllByCategoryId = (req: AuthRequest, res: Response, next: NextFunction) =
     }
     const categoryIdParam = Number(categoryId)
     service.getAllByCategoryId(req.user.databaseName, categoryIdParam)
-        .then((items: ItemDto[]) => sendResponse(res, items))
+        .then((items: any[]) => sendResponse(res, items))
         .catch(next)
 }
 

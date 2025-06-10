@@ -98,7 +98,7 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
             const sku = `${categoryCode}-${brandCode}-${sequentialNumber}`;
 
             const availableQuantity = getRandomInt(0, 100);
-            const onHandQuantity = getRandomInt(0, 100);
+            const onHandQuantity = availableQuantity;
 
             items.push({
                 itemCode,
@@ -143,6 +143,14 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
                         outletId,
                         deleted: false
                     }
+                },
+                stockReceipts: {
+                    create: [{
+                        outletId,
+                        quantity: availableQuantity,
+                        cost,
+                        deleted: false,
+                    }]
                 },
                 supplier: {
                     connect: { id: supplierId }

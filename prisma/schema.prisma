@@ -233,28 +233,30 @@ model Company {
 }
 
 model Outlet {
-  id            Int             @id @default(autoincrement()) @map("ID")
-  outletName    String          @map("OUTLET_NAME")
-  street        String          @default("") @map("STREET")
-  city          String          @default("") @map("CITY")
-  state         String          @default("") @map("STATE")
-  postalCode    String          @default("") @map("POSTAL_CODE")
-  country       String          @default("") @map("COUNTRY")
-  outletTel     String          @default("") @map("OUTLET_TEL")
-  outletEmail   String          @default("") @map("OUTLET_EMAIL")
-  deleted       Boolean         @default(false) @map("IS_DELETED")
-  deletedAt     DateTime?       @map("DELETED_AT")
-  createdAt     DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt     DateTime?       @updatedAt @map("UPDATED_AT")
-  version       Int?            @default(1) @map("VERSION")
-  StockBalance  StockBalance[]
-  StockMovement StockMovement[]
-  StockSnapshot StockSnapshot[]
-  settings      Setting[] // Outlet-specific settings
-  tables        Table[]
-  stations      Station[]
-  reservations  Reservation[]
-  waitlists     Waitlist[]
+  id             Int             @id @default(autoincrement()) @map("ID")
+  tenantOutletId Int             @map("TENANT_OUTLET_ID")
+  outletName     String          @map("OUTLET_NAME")
+  street         String          @default("") @map("STREET")
+  city           String          @default("") @map("CITY")
+  state          String          @default("") @map("STATE")
+  postalCode     String          @default("") @map("POSTAL_CODE")
+  country        String          @default("") @map("COUNTRY")
+  outletTel      String          @default("") @map("OUTLET_TEL")
+  outletEmail    String          @default("") @map("OUTLET_EMAIL")
+  deleted        Boolean         @default(false) @map("IS_DELETED")
+  deletedAt      DateTime?       @map("DELETED_AT")
+  createdAt      DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt      DateTime?       @updatedAt @map("UPDATED_AT")
+  version        Int?            @default(1) @map("VERSION")
+  StockBalance   StockBalance[]
+  StockMovement  StockMovement[]
+  StockSnapshot  StockSnapshot[]
+  stockReceipts  StockReceipt[]
+  settings       Setting[] // Outlet-specific settings
+  tables         Table[]
+  stations       Station[]
+  reservations   Reservation[]
+  waitlists      Waitlist[]
 
   @@map("OUTLET")
 }
@@ -280,6 +282,7 @@ model Item {
   weight          Float?          @default(0) @map("WEIGHT")
   alternateLookUp String?         @default("") @map("ALTERNATE_LOOKUP")
   image           String?         @default("") @map("IMAGE")
+  hasTax          Boolean?        @map("HAS_TAX")
   supplierId      Int             @map("SUPPLIER_ID")
   deleted         Boolean         @default(false) @map("IS_DELETED")
   deletedAt       DateTime?       @map("DELETED_AT")
@@ -290,6 +293,7 @@ model Item {
   stockBalance    StockBalance[]
   stockMovement   StockMovement[]
   stockSnapshot   StockSnapshot[]
+  stockReceipts   StockReceipt[]
   recipes         Recipe[]
 
   @@index([createdAt])
@@ -320,7 +324,7 @@ model Sales {
   id                      Int           @id @default(autoincrement()) @map("ID")
   outletId                Int           @map("OUTLET_ID")
   businessDate            DateTime      @map("BUSINESS_DATE")
-  salesType               SalesType     @map("SALES_TYPE")
+  salesType               String        @map("SALES_TYPE")
   customerId              Int?          @map("CUSTOMER_ID")
   billStreet              String        @default("") @map("BILL_STREET")
   billCity                String        @default("") @map("BILL_CITY")
@@ -348,14 +352,14 @@ model Sales {
   sessionId               Int           @map("SESSION_ID")
   eodId                   Int           @map("EOD_ID")
   salesQuotationId        Int           @default(0) @map("SALES_QUOTATION_ID")
-  performedBy             Int           @map("PERFORMED_BY")
+  performedBy             String?       @default("") @map("PERFORMED_BY")
   deleted                 Boolean       @default(false) @map("IS_DELETED")
   deletedAt               DateTime?     @map("DELETED_AT")
   createdAt               DateTime?     @default(now()) @map("CREATED_AT")
   updatedAt               DateTime?     @updatedAt @map("UPDATED_AT")
   version                 Int?          @default(1) @map("VERSION")
   tableId                 Int?          @map("TABLE_ID")
-  orderStatus             OrderStatus   @map("ORDER_STATUS")
+  orderStatus             String?       @map("ORDER_STATUS")
   salesItems              SalesItem[]
   payments                Payment[]
   registerLogs            RegisterLog[]
@@ -389,7 +393,7 @@ model SalesItem {
   updatedAt           DateTime?           @updatedAt @map("UPDATED_AT")
   version             Int?                @default(1) @map("VERSION")
   specialInstructions String?             @default("") @map("SPECIAL_INSTRUCTIONS")
-  itemStatus          OrderStatus?        @map("ITEM_STATUS")
+  itemStatus          String?             @map("ITEM_STATUS")
   priority            String?             @map("PRIORITY") // e.g., "NORMAL", "RUSH"
   estimatedPrepTime   Int?                @map("ESTIMATED_PREP_TIME") // In minutes
   sales               Sales               @relation(fields: [salesId], references: [id])
@@ -444,7 +448,7 @@ model SalesQuotation {
   totalAmount         Float                @map("TOTAL_AMOUNT")
   status              String               @map("STATUS")
   remark              String?              @map("REMARK")
-  performedBy         Int                  @map("PERFORMED_BY")
+  performedBy         String?              @default("") @map("PERFORMED_BY")
   deleted             Boolean              @default(false) @map("IS_DELETED")
   deletedAt           DateTime?            @map("DELETED_AT")
   createdAt           DateTime?            @default(now()) @map("CREATED_AT")
@@ -481,7 +485,7 @@ model DeliveryOrder {
   deliveryCountry    String?             @map("DELIVERY_COUNTRY")
   status             String              @map("STATUS")
   remark             String?             @map("REMARK")
-  performedBy        Int                 @map("PERFORMED_BY")
+  performedBy        String?             @default("") @map("PERFORMED_BY")
   deleted            Boolean             @default(false) @map("IS_DELETED")
   deletedAt          DateTime?           @map("DELETED_AT")
   createdAt          DateTime?           @default(now()) @map("CREATED_AT")
@@ -525,7 +529,7 @@ model PurchaseOrder {
   totalAmount         Float               @map("TOTAL_AMOUNT")
   status              String              @map("STATUS")
   remark              String?             @map("REMARK")
-  performedBy         Int                 @map("PERFORMED_BY")
+  performedBy         String?             @default("") @map("PERFORMED_BY")
   deleted             Boolean             @default(false) @map("IS_DELETED")
   deletedAt           DateTime?           @map("DELETED_AT")
   createdAt           DateTime?           @default(now()) @map("CREATED_AT")
@@ -565,7 +569,7 @@ model Payment {
   outletId       Int         @map("OUTLET_ID")
   sessionId      Int         @map("SESSION_ID")
   eodId          Int         @map("EOD_ID")
-  performedBy    Int         @map("PERFORMED_BY")
+  performedBy    String?     @default("") @map("PERFORMED_BY")
   deleted        Boolean     @default(false) @map("IS_DELETED")
   deletedAt      DateTime?   @map("DELETED_AT")
   createdAt      DateTime?   @default(now()) @map("CREATED_AT")
@@ -591,7 +595,7 @@ model RegisterLog {
   outletId       Int       @map("OUTLET_ID")
   sessionId      Int       @map("SESSION_ID")
   eodId          Int       @map("EOD_ID")
-  performedBy    Int       @map("PERFORMED_BY")
+  performedBy    String?   @default("") @map("PERFORMED_BY")
   deleted        Boolean   @default(false) @map("IS_DELETED")
   createdAt      DateTime? @default(now()) @map("CREATED_AT")
   updatedAt      DateTime? @updatedAt @map("UPDATED_AT")
@@ -678,6 +682,42 @@ model StockBalance {
   @@map("STOCK_BALANCE")
 }
 
+model StockReceipt {
+  id          Int       @id @default(autoincrement()) @map("ID")
+  itemId      Int       @map("ITEM_ID")
+  outletId    Int       @map("OUTLET_ID")
+  quantity    Float     @map("QUANTITY")
+  cost        Float     @map("COST") // Cost at the time of this receipt
+  receiptDate DateTime  @default(now()) @map("RECEIPT_DATE")
+  createdAt   DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt   DateTime? @updatedAt @map("UPDATED_AT")
+  deleted     Boolean   @default(false) @map("IS_DELETED")
+  deletedAt   DateTime? @map("DELETED_AT")
+  version     Int?      @default(1) @map("VERSION")
+  item        Item      @relation(fields: [itemId], references: [id])
+  outlet      Outlet    @relation(fields: [outletId], references: [id])
+
+  @@map("STOCK_RECEIPT")
+}
+
+model StockReceiptArchive {
+  id          Int       @id @default(autoincrement()) @map("ID")
+  itemId      Int       @map("ITEM_ID")
+  outletId    Int       @map("OUTLET_ID")
+  quantity    Float     @map("QUANTITY")
+  cost        Float     @map("COST")
+  receiptDate DateTime  @map("RECEIPT_DATE")
+  createdAt   DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt   DateTime? @updatedAt @map("UPDATED_AT")
+  deleted     Boolean   @default(false) @map("IS_DELETED")
+  deletedAt   DateTime? @map("DELETED_AT")
+  version     Int?      @default(1) @map("VERSION")
+
+  @@index([itemId, receiptDate])
+  @@index([outletId])
+  @@map("STOCK_RECEIPT_ARCHIVE")
+}
+
 model StockMovement {
   id                        Int       @id @default(autoincrement()) @map("ID")
   itemId                    Int       @map("ITEM_ID")
@@ -694,12 +734,14 @@ model StockMovement {
   createdAt                 DateTime? @default(now()) @map("CREATED_AT")
   updatedAt                 DateTime? @updatedAt @map("UPDATED_AT")
   version                   Int?      @default(1) @map("VERSION")
+  performedBy               String?   @default("") @map("PERFORMED_BY")
   item                      Item      @relation(fields: [itemId], references: [id])
   outlet                    Outlet    @relation(fields: [outletId], references: [id])
 
   @@index([itemId, createdAt])
   @@index([outletId])
   @@index([movementType])
+  @@index([deleted])
   @@map("STOCK_MOVEMENT")
 }
 

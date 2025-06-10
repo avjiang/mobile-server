@@ -382,26 +382,155 @@ let create = async (databaseName: string, salesBody: SalesCreationRequest) => {
     }
 }
 
-let completeNewSales = async (databaseName: string, salesBody: CreateSalesRequest, payments: Payment[]) => {
+async function getFIFOCostForSalesItem(
+    tenantPrisma: Prisma.TransactionClient,
+    itemId: number,
+    outletId: number,
+    quantity: number
+): Promise<{ usedReceipts: { id: number; quantityUsed: number; cost: number }[] }> {
+    try {
+        // Get stock receipts ordered by FIFO (oldest first)
+        const stockReceipts = await tenantPrisma.stockReceipt.findMany({
+            where: {
+                itemId: itemId,
+                outletId: outletId,
+                deleted: false,
+                quantity: { gt: 0 },
+            },
+            orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
+        });
+
+        if (stockReceipts.length === 0) {
+            // Fallback to item cost if no stock receipts found
+            const item = await tenantPrisma.item.findUnique({
+                where: { id: itemId },
+            });
+            return {
+                usedReceipts: [{ id: -1, quantityUsed: quantity, cost: item?.cost || 0 }],
+            };
+        }
+
+        let remainingQuantity = quantity;
+        let usedReceipts: { id: number; quantityUsed: number; cost: number }[] = [];
+
+        // Use FIFO to assign quantities and costs from stock receipts
+        for (const receipt of stockReceipts) {
+            if (remainingQuantity <= 0) break;
+
+            const quantityToUse = Math.min(remainingQuantity, receipt.quantity);
+            remainingQuantity -= quantityToUse;
+
+            usedReceipts.push({
+                id: receipt.id,
+                quantityUsed: quantityToUse,
+                cost: receipt.cost,
+            });
+        }
+
+        // If remaining quantity exists, use the last receipt's cost
+        if (remainingQuantity > 0 && stockReceipts.length > 0) {
+            const lastReceipt = stockReceipts[stockReceipts.length - 1];
+            usedReceipts.push({
+                id: -1,
+                quantityUsed: remainingQuantity,
+                cost: lastReceipt.cost,
+            });
+        }
+
+        if (remainingQuantity > 0 && usedReceipts.length === 0) {
+            throw new Error(`Insufficient stock receipts for item ${itemId}`);
+        }
+        return { usedReceipts };
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function updateStockReceiptsAfterSale(
+    tenantPrisma: Prisma.TransactionClient,
+    usedReceipts: { id: number; quantityUsed: number; cost: number }[]
+) {
+    try {
+        // Update stock receipt quantities based on FIFO usage
+        await Promise.all(
+            usedReceipts
+                .filter((usage) => usage.id !== -1) // Skip fallback receipts
+                .map(async (usage) => {
+                    const receipt = await tenantPrisma.stockReceipt.findUnique({
+                        where: { id: usage.id },
+                    });
+                    if (!receipt) {
+                        throw new Error(`StockReceipt with id ${usage.id} not found`);
+                    }
+                    const newQuantity = receipt.quantity - usage.quantityUsed;
+                    await tenantPrisma.stockReceipt.update({
+                        where: { id: usage.id },
+                        data: {
+                            quantity: newQuantity,
+                            updatedAt: new Date(),
+                            version: { increment: 1 },
+                            deleted: newQuantity === 0 ? true : undefined,
+                            deletedAt: newQuantity === 0 ? new Date() : undefined,
+                        },
+                    });
+                })
+        );
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function completeNewSales(databaseName: string, salesBody: CreateSalesRequest, payments: Payment[]) {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Calculate total payment amount
+            const itemIds = salesBody.salesItems.map((item) => item.itemId);
+            const stockBalances = await tx.stockBalance.findMany({
+                where: {
+                    itemId: { in: itemIds },
+                    outletId: salesBody.outletId,
+                    deleted: false,
+                },
+                select: {
+                    itemId: true,
+                    availableQuantity: true,
+                    item: {
+                        select: {
+                            itemName: true,
+                            itemCode: true,
+                        },
+                    },
+                },
+            });
+
+            // Validate stock availability
+            const stockValidationErrors: string[] = [];
+            for (const item of salesBody.salesItems) {
+                const stockBalance = stockBalances.find((sb) => sb.itemId === item.itemId);
+                if (!stockBalance) {
+                    stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}`);
+                    continue;
+                }
+                if (stockBalance.availableQuantity < item.quantity) {
+                    stockValidationErrors.push(
+                        `Insufficient stock for ${stockBalance.item.itemName} (${stockBalance.item.itemCode}). ` +
+                        `Available: ${stockBalance.availableQuantity}, Required: ${item.quantity}`
+                    );
+                }
+            }
+            if (stockValidationErrors.length > 0) {
+                throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
+            }
+
+            // Calculate total payment and sales status
             let totalSalesAmount = salesBody.totalAmount;
             let totalPaymentAmount = payments.reduce((sum, payment) => sum + payment.tenderedAmount, 0);
+            const salesStatus = totalPaymentAmount >= totalSalesAmount ? 'Completed' : 'Partially Paid';
+            const changeAmount = totalPaymentAmount >= totalSalesAmount ? totalPaymentAmount - totalSalesAmount : 0;
 
-            // Determine sales status based on payment amount
-            const salesStatus = totalPaymentAmount >= totalSalesAmount ? "Completed" : "Partially Paid";
-
-            // Calculate profit amount for sales items
-            let updatedSales = performProfitCalculation(salesBody);
-
-            // Calculate change amount (will be 0 for partial payments)
-            const changeAmount = totalPaymentAmount >= totalSalesAmount ?
-                totalPaymentAmount - totalSalesAmount : 0;
-
+            // Validate customer if provided
             if (salesBody.customerId) {
-                const customer = await tenantPrisma.customer.findUnique({
+                const customer = await tx.customer.findUnique({
                     where: { id: salesBody.customerId },
                 });
                 if (!customer || customer.deleted) {
@@ -409,81 +538,122 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                 }
             }
 
-            // Create sales record
-            const createdSales = await tx.sales.create({
-                data: {
-                    outletId: updatedSales.outletId,
-                    businessDate: updatedSales.businessDate,
-                    salesType: updatedSales.salesType.replace(/\b\w/g, char => char.toUpperCase()),
-                    customerId: updatedSales.customerId || null,
-                    billStreet: updatedSales.billStreet,
-                    billCity: updatedSales.billCity,
-                    billState: updatedSales.billState,
-                    billPostalCode: updatedSales.billPostalCode,
-                    billCountry: updatedSales.billCountry,
-                    shipStreet: updatedSales.shipStreet,
-                    shipCity: updatedSales.shipCity,
-                    shipState: updatedSales.shipState,
-                    shipPostalCode: updatedSales.shipPostalCode,
-                    shipCountry: updatedSales.shipCountry,
-                    totalItemDiscountAmount: updatedSales.totalItemDiscountAmount,
-                    discountPercentage: updatedSales.discountPercentage,
-                    discountAmount: updatedSales.discountAmount,
-                    serviceChargeAmount: updatedSales.serviceChargeAmount,
-                    taxAmount: updatedSales.taxAmount,
-                    roundingAmount: updatedSales.roundingAmount,
-                    subtotalAmount: updatedSales.subtotalAmount,
-                    totalAmount: updatedSales.totalAmount,
-                    paidAmount: totalPaymentAmount,
-                    changeAmount: changeAmount,
-                    status: salesStatus,
-                    remark: updatedSales.remark,
-                    sessionId: updatedSales.sessionId,
-                    eodId: updatedSales.eodId,
-                    salesQuotationId: updatedSales.salesQuotationId,
-                    performedBy: updatedSales.performedBy,
-                    deleted: false,
-                    profitAmount: salesBody.salesItems.reduce((sum, item) =>
-                        sum + ((item.price - item.cost) * item.quantity - (item.discountAmount || 0)), 0),
+            // Get FIFO costs for all sales items
+            const salesItemsWithFIFOCost = await Promise.all(
+                salesBody.salesItems.map(async (item) => {
+                    const { usedReceipts } = await getFIFOCostForSalesItem(tx, item.itemId, salesBody.outletId, item.quantity);
+                    return { ...item, usedReceipts };
+                })
+            );
+
+            // Validate total quantity from used receipts
+            salesItemsWithFIFOCost.forEach((item) => {
+                const totalQuantity = item.usedReceipts.reduce((sum, receipt) => sum + receipt.quantityUsed, 0);
+                if (totalQuantity !== item.quantity) {
+                    throw new Error(`Quantity mismatch for item ${item.itemId}: expected ${item.quantity}, got ${totalQuantity}`);
                 }
             });
 
-            // Create sales items
-            const salesItems = await Promise.all(salesBody.salesItems.map(async (item) => {
-                return tx.salesItem.create({
-                    data: {
-                        salesId: createdSales.id,
+            // Calculate total profit and prepare sales item data
+            let totalProfit = 0;
+            const salesItemData = salesItemsWithFIFOCost.flatMap((item) => {
+                const totalQuantity = item.quantity;
+                const discountPerUnit = (item.discountAmount || 0) / totalQuantity;
+                return item.usedReceipts.map((receipt) => {
+                    const profit = (item.price - receipt.cost) * receipt.quantityUsed - discountPerUnit * receipt.quantityUsed;
+                    totalProfit += profit;
+                    return {
+                        salesId: 0, // Will be set after sales creation
                         itemId: item.itemId,
                         itemName: item.itemName,
                         itemCode: item.itemCode,
                         itemBrand: item.itemBrand,
-                        quantity: item.quantity,
-                        cost: item.cost,
+                        quantity: receipt.quantityUsed,
+                        cost: receipt.cost,
                         price: item.price,
-                        profit: (item.price - item.cost) * item.quantity - (item.discountAmount || 0),
+                        profit: profit,
                         discountPercentage: item.discountPercentage,
-                        discountAmount: item.discountAmount,
+                        discountAmount: discountPerUnit * receipt.quantityUsed,
                         serviceChargeAmount: item.serviceChargeAmount,
                         taxAmount: item.taxAmount,
                         subtotalAmount: item.subtotalAmount,
-                        remark: item.remark || "",
-                        deleted: false
-                    }
+                        remark: item.remark || '',
+                        deleted: false,
+                    };
                 });
-            }));
-            // Update payments with the new salesId
-            const updatedPayments = payments.map(payment => ({
-                ...payment,
-                salesId: createdSales.id
-            }));
-            // Create payments
-            await tx.payment.createMany({
-                data: updatedPayments
             });
-            // 4. Update Stock Balance and Create Stock Movement
+
+            // Create sales record
+            const createdSales = await tx.sales.create({
+                data: {
+                    outletId: salesBody.outletId,
+                    businessDate: salesBody.businessDate,
+                    salesType: salesBody.salesType.replace(/\b\w/g, (char) => char.toUpperCase()),
+                    customerId: salesBody.customerId || null,
+                    billStreet: salesBody.billStreet,
+                    billCity: salesBody.billCity,
+                    billState: salesBody.billState,
+                    billPostalCode: salesBody.billPostalCode,
+                    billCountry: salesBody.billCountry,
+                    shipStreet: salesBody.shipStreet,
+                    shipCity: salesBody.shipCity,
+                    shipState: salesBody.shipState,
+                    shipPostalCode: salesBody.shipPostalCode,
+                    shipCountry: salesBody.shipCountry,
+                    totalItemDiscountAmount: salesBody.totalItemDiscountAmount,
+                    discountPercentage: salesBody.discountPercentage,
+                    discountAmount: salesBody.discountAmount,
+                    serviceChargeAmount: salesBody.serviceChargeAmount,
+                    taxAmount: salesBody.taxAmount,
+                    roundingAmount: salesBody.roundingAmount,
+                    subtotalAmount: salesBody.subtotalAmount,
+                    totalAmount: salesBody.totalAmount,
+                    paidAmount: totalPaymentAmount,
+                    changeAmount: changeAmount,
+                    status: salesStatus,
+                    remark: salesBody.remark,
+                    sessionId: salesBody.sessionId,
+                    eodId: salesBody.eodId,
+                    salesQuotationId: salesBody.salesQuotationId,
+                    performedBy: salesBody.performedBy,
+                    deleted: false,
+                    profitAmount: totalProfit,
+                },
+            });
+
+            // Create sales items with FIFO costs
+            await Promise.all(
+                salesItemData.map(async (item) => {
+                    await tx.salesItem.create({
+                        data: {
+                            ...item,
+                            salesId: createdSales.id,
+                        },
+                    });
+                })
+            );
+
+            // Update stock receipts based on FIFO usage
+            await Promise.all(
+                salesItemsWithFIFOCost.map(async (item) => {
+                    if (item.usedReceipts && item.usedReceipts.length > 0) {
+                        await updateStockReceiptsAfterSale(tx, item.usedReceipts);
+                    }
+                })
+            );
+
+            // Update payments with the new salesId
+            const updatedPayments = payments.map((payment) => ({
+                ...payment,
+                salesId: createdSales.id,
+            }));
+            await tx.payment.createMany({
+                data: updatedPayments,
+            });
+
+            // Update Stock Balance and Create Stock Movement
             const stockUpdates = await Promise.all(
                 salesBody.salesItems.map(async (item) => {
-                    // Update Stock Balance
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
                             itemId: item.itemId,
@@ -499,15 +669,12 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                             id: stockBalance.id,
                         },
                         data: {
-                            availableQuantity: {
-                                decrement: item.quantity,
-                            },
-                            onHandQuantity: {
-                                decrement: item.quantity,
-                            },
+                            availableQuantity: { decrement: item.quantity },
+                            onHandQuantity: { decrement: item.quantity },
+                            version: { increment: 1 },
+                            updatedAt: new Date(),
                         },
                     });
-                    // Create Stock Movement
                     const stockMovement = await tx.stockMovement.create({
                         data: {
                             itemId: item.itemId,
@@ -525,12 +692,11 @@ let completeNewSales = async (databaseName: string, salesBody: CreateSalesReques
                     return { stockBalance: updatedStockBalance, stockMovement };
                 })
             );
+
             return createdSales;
         });
-        // Return the complete sales record with all related data
         return getById(databaseName, result.id);
-    }
-    catch (error) {
+    } catch (error) {
         throw error;
     }
 }
@@ -621,6 +787,7 @@ let completeSales = async (databaseName: string, salesId: number, payments: Paym
                         remark: '',
                         deleted: false,
                         version: 1,
+                        performedBy: sales.performedBy,
                         createdAt: new Date(),
                         updatedAt: new Date(),
                     }

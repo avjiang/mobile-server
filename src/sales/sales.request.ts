@@ -50,7 +50,7 @@ export class CreateSalesRequest {
     @Expose() sessionId: number = 0;
     @Expose() eodId: number = 0;
     @Expose() salesQuotationId: number | undefined;
-    @Expose() performedBy: number = 0;
+    @Expose() performedBy: string = "";
     @Expose() deleted: boolean | undefined;
     @Expose()
     @Type(() => CreateSalesItemRequest)

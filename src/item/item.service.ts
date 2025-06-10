@@ -9,7 +9,7 @@ import { SyncRequest } from "./item.request"
 let getAll = async (
     databaseName: string,
     syncRequest: SyncRequest
-): Promise<{ items: ItemDto[]; total: number; serverTimestamp: string }> => {
+): Promise<{ items: any[]; total: number; serverTimestamp: string }> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
 
@@ -18,10 +18,11 @@ let getAll = async (
         const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
             new Date(lastSyncTimestamp) : new Date(0);
 
-        // Build query conditions
+        // Build query conditions - add deleted filter
         const where = lastVersion
-            ? { version: { gt: lastVersion } }
+            ? { version: { gt: lastVersion }, deleted: false }
             : {
+                deleted: false,
                 OR: [
                     { createdAt: { gte: lastSync } },
                     { updatedAt: { gte: lastSync } },
@@ -37,6 +38,7 @@ let getAll = async (
             include: {
                 stockBalance: {
                     select: { availableQuantity: true, id: true, reorderThreshold: true },
+                    where: { deleted: false }
                 },
             },
             skip,
@@ -296,35 +298,71 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
     }
 };
 
-let update = async (databaseName: string, item: Item) => {
+let update = async (databaseName: string, item: Item & { reorderThreshold?: number }) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Extract id, version, and relation fields from the item object
+        const { id, version, categoryId, supplierId, reorderThreshold, ...updateData } = item;
+
         // Check if SKU is being updated and if it already exists
-        if (item.sku) {
+        if (updateData.sku) {
             const existingItemWithSKU = await tenantPrisma.item.findFirst({
                 where: {
-                    sku: item.sku,
+                    sku: updateData.sku,
                     deleted: false,
-                    id: { not: item.id }, // Exclude the current item being updated
+                    id: { not: id }, // Exclude the current item being updated
                 },
                 select: { sku: true },
             });
 
             if (existingItemWithSKU) {
-                throw new Error(`SKU '${item.sku}' already exists`);
+                throw new Error(`SKU '${updateData.sku}' already exists`);
             }
         }
 
-        const updatedItem = await tenantPrisma.item.update({
-            where: {
-                id: item.id
-            },
-            data: item
-        })
-        return updatedItem
+        const updatedItem = await tenantPrisma.$transaction(async (tx) => {
+            // Update the item
+            const itemUpdate = await tx.item.update({
+                where: {
+                    id: id
+                },
+                data: {
+                    ...updateData,
+                    ...(categoryId && {
+                        category: {
+                            connect: { id: categoryId }
+                        }
+                    }),
+                    ...(supplierId && {
+                        supplier: {
+                            connect: { id: supplierId }
+                        }
+                    }),
+                    updatedAt: new Date(),
+                }
+            });
+
+            // Update reorderThreshold in StockBalance if provided
+            if (reorderThreshold !== undefined) {
+                await tx.stockBalance.updateMany({
+                    where: {
+                        itemId: id,
+                        deleted: false
+                    },
+                    data: {
+                        reorderThreshold: reorderThreshold,
+                        updatedAt: new Date()
+                    }
+                });
+            }
+
+            return itemUpdate;
+        });
+
+        return updatedItem;
     }
     catch (error) {
-        throw error
+        throw error;
     }
 }
 

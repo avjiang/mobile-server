@@ -61,9 +61,9 @@ let create = (req: NetworkRequest<User>, res: Response, next: NextFunction) => {
         throw new RequestValidateError('Create failed: [password] format incorrect')
     }
 
-    if (!user.role) {
-        throw new RequestValidateError('Create failed: [role] not found')
-    }
+    // if (!user.role) {
+    //     throw new RequestValidateError('Create failed: [role] not found')
+    // }
 
     if (user.email && !validator.isEmail(user.email)) {
         throw new RequestValidateError('Create failed: [email] format incorrect')
@@ -147,10 +147,10 @@ let changePassword = (req: NetworkRequest<ChangePasswordRequestBody>, res: Respo
 }
 
 
-//helper function
+// helper function
 let basicDetails = (user: User) => {
-    const { id, firstName, lastName, mobile, email, role } = user;
-    return { id, firstName, lastName, mobile, email, role };
+    const { id, firstName, lastName, mobile, email } = user;
+    return { id, firstName, lastName, mobile, email, };
 }
 
 let isValidPassword = (password: string) => {

@@ -39,7 +39,7 @@ let createTenant = async (body: CreateTenantRequest) => {
             });
             createdTenantId = newTenant.id;
 
-            const newOutlet = await tx.tenantOutlet.create({
+            const newTenantOutlet = await tx.tenantOutlet.create({
                 data: {
                     outletName: "Main Outlet",
                     tenantId: newTenant.id,
@@ -64,7 +64,7 @@ let createTenant = async (body: CreateTenantRequest) => {
             const subscription = await tx.tenantSubscription.create({
                 data: {
                     tenantId: newTenant.id,
-                    outletId: newOutlet.id,
+                    outletId: newTenantOutlet.id,
                     subscriptionPlanId: subscriptionPlan!.id,
                     nextPaymentDate,
                     subscriptionValidUntil,
@@ -107,6 +107,7 @@ let createTenant = async (body: CreateTenantRequest) => {
             const newOutlet = await tenantPrisma.outlet.create({
                 data: {
                     outletName: "Main Outlet",
+                    tenantOutletId: result.subscription.outletId,
                 }
             })
             await tenantPrisma.$disconnect();

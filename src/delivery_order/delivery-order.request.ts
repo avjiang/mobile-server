@@ -1,0 +1,32 @@
+import { DeliveryOrder, StockBalance } from "@prisma/client"
+
+interface DeliveryOrderItemInput {
+    id?: number; // Add id for updates
+    itemId: number;
+    orderedQuantity: number;
+    receivedQuantity: number;
+    unitPrice?: number;
+    remark?: string;
+}
+
+export interface DeliveryOrderInput {
+    id?: number; // Optional for creation, required for updates
+    outletId: number;
+    customerId?: number;
+    purchaseOrderId?: number;
+    deliveryDate?: Date;
+    deliveryStreet?: string;
+    deliveryCity?: string;
+    deliveryState?: string;
+    deliveryPostalCode?: string;
+    deliveryCountry?: string;
+    trackingNumber?: string;
+    status?: string;
+    remark?: string;
+    performedBy?: string;
+    deliveryOrderItems?: DeliveryOrderItemInput[]; // Add items here
+}
+
+export interface CreateDeliveryOrderRequestBody {
+    deliveryOrders: DeliveryOrderInput[];
+}

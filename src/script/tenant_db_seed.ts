@@ -130,7 +130,7 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
                         deleted: false,
                     },
                 },
-                stockMovement: {
+                stockMovements: {
                     create: {
                         previousAvailableQuantity: 0,
                         previousOnHandQuantity: 0,

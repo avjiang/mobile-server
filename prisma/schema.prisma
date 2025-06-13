@@ -30,6 +30,29 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PurchaseOrderStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  COMPLETED
+  CANCELLED
+}
+
+enum DeliveryOrderStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
 // Promotion Types Enum
 enum PromotionType {
   DAILY // Daily promotions
@@ -152,27 +175,30 @@ model Referral {
 }
 
 model Supplier {
-  id                      Int       @id @default(autoincrement()) @map("ID")
-  companyName             String    @unique @map("COMPANY_NAME")
-  companyStreet           String?   @map("COMPANY_STREET")
-  companyCity             String?   @map("COMPANY_CITY")
-  companyState            String?   @map("COMPANY_STATE")
-  companyPostalCode       String?   @map("COMPANY_POSTAL_CODE")
-  companyCountry          String?   @map("COMPANY_COUNTRY")
-  companyRegisterNumber   String?   @map("COMPANY_REGISTRATION_NUMBER")
-  personInChargeLastName  String?   @map("PERSON_IN_CHARGE_LAST_NAME")
-  personInChargeFirstName String?   @map("PERSON_IN_CHARGE_FIRST_NAME")
-  mobile                  String?   @map("MOBILE")
-  email                   String?   @map("EMAIL")
-  remark                  String?   @map("REMARK")
-  hasTax                  Boolean   @map("HAS_TAX")
-  deleted                 Boolean   @default(false) @map("IS_DELETED")
-  deletedAt               DateTime? @map("DELETED_AT")
-  createdAt               DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt               DateTime? @updatedAt @map("UPDATED_AT")
-  version                 Int?      @default(1) @map("VERSION")
-  Item                    Item[]
+  id                      Int             @id @default(autoincrement()) @map("ID")
+  companyName             String          @unique @map("COMPANY_NAME")
+  companyStreet           String?         @map("COMPANY_STREET")
+  companyCity             String?         @map("COMPANY_CITY")
+  companyState            String?         @map("COMPANY_STATE")
+  companyPostalCode       String?         @map("COMPANY_POSTAL_CODE")
+  companyCountry          String?         @map("COMPANY_COUNTRY")
+  companyRegisterNumber   String?         @map("COMPANY_REGISTRATION_NUMBER")
+  personInChargeLastName  String?         @map("PERSON_IN_CHARGE_LAST_NAME")
+  personInChargeFirstName String?         @map("PERSON_IN_CHARGE_FIRST_NAME")
+  mobile                  String?         @map("MOBILE")
+  email                   String?         @map("EMAIL")
+  remark                  String?         @map("REMARK")
+  hasTax                  Boolean         @map("HAS_TAX")
+  deleted                 Boolean         @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?       @map("DELETED_AT")
+  createdAt               DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt               DateTime?       @updatedAt @map("UPDATED_AT")
+  version                 Int?            @default(1) @map("VERSION")
+  items                   Item[]
+  purchaseOrders          PurchaseOrder[]
+  invoices                Invoice[]
 
+  @@index([companyName])
   @@map("SUPPLIER")
 }
 
@@ -248,9 +274,9 @@ model Outlet {
   createdAt      DateTime?       @default(now()) @map("CREATED_AT")
   updatedAt      DateTime?       @updatedAt @map("UPDATED_AT")
   version        Int?            @default(1) @map("VERSION")
-  StockBalance   StockBalance[]
-  StockMovement  StockMovement[]
-  StockSnapshot  StockSnapshot[]
+  stockBalances  StockBalance[]
+  stockMovements StockMovement[]
+  stockSnapshots StockSnapshot[]
   stockReceipts  StockReceipt[]
   settings       Setting[] // Outlet-specific settings
   tables         Table[]
@@ -262,45 +288,51 @@ model Outlet {
 }
 
 model Item {
-  id              Int             @id @default(autoincrement()) @map("ID")
-  itemName        String          @map("ITEM_NAME")
-  itemCode        String          @map("ITEM_CODE")
-  itemType        String          @default("") @map("ITEM_TYPE")
-  itemModel       String          @default("") @map("ITEM_MODEL")
-  itemBrand       String          @default("") @map("ITEM_BRAND")
-  itemDescription String?         @default("") @map("ITEM_DESCRIPTION")
-  sku             String          @unique @map("SKU")
-  categoryId      Int             @map("CATEGORY_ID")
-  category        Category        @relation(fields: [categoryId], references: [id])
-  cost            Float           @map("COST")
-  price           Float           @map("PRICE")
-  isOpenPrice     Boolean?        @default(false) @map("IS_OPEN_PRICE")
-  unitOfMeasure   String          @default("") @map("UNIT_OF_MEASURE")
-  height          Float?          @default(0) @map("HEIGHT")
-  width           Float?          @default(0) @map("WIDTH")
-  length          Float?          @default(0) @map("LENGTH")
-  weight          Float?          @default(0) @map("WEIGHT")
-  alternateLookUp String?         @default("") @map("ALTERNATE_LOOKUP")
-  image           String?         @default("") @map("IMAGE")
-  hasTax          Boolean?        @map("HAS_TAX")
-  supplierId      Int             @map("SUPPLIER_ID")
-  deleted         Boolean         @default(false) @map("IS_DELETED")
-  deletedAt       DateTime?       @map("DELETED_AT")
-  createdAt       DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt       DateTime?       @updatedAt @map("UPDATED_AT")
-  version         Int?            @default(1) @map("VERSION")
-  supplier        Supplier        @relation(fields: [supplierId], references: [id])
-  stockBalance    StockBalance[]
-  stockMovement   StockMovement[]
-  stockSnapshot   StockSnapshot[]
-  stockReceipts   StockReceipt[]
-  recipes         Recipe[]
+  id                 Int                 @id @default(autoincrement()) @map("ID")
+  itemName           String              @map("ITEM_NAME")
+  itemCode           String              @map("ITEM_CODE")
+  itemType           String              @default("") @map("ITEM_TYPE")
+  itemModel          String              @default("") @map("ITEM_MODEL")
+  itemBrand          String              @default("") @map("ITEM_BRAND")
+  itemDescription    String?             @default("") @map("ITEM_DESCRIPTION")
+  sku                String              @unique @map("SKU")
+  categoryId         Int                 @map("CATEGORY_ID")
+  cost               Float               @map("COST")
+  price              Float               @map("PRICE")
+  currency           String              @default("IDR") @map("CURRENCY")
+  isOpenPrice        Boolean?            @default(false) @map("IS_OPEN_PRICE")
+  unitOfMeasure      String              @default("") @map("UNIT_OF_MEASURE")
+  height             Float?              @default(0) @map("HEIGHT")
+  width              Float?              @default(0) @map("WIDTH")
+  length             Float?              @default(0) @map("LENGTH")
+  weight             Float?              @default(0) @map("WEIGHT")
+  alternateLookUp    String?             @default("") @map("ALTERNATE_LOOKUP")
+  image              String?             @default("") @map("IMAGE")
+  hasTax             Boolean?            @map("HAS_TAX")
+  taxRate            Float?              @map("TAX_RATE")
+  supplierId         Int                 @map("SUPPLIER_ID")
+  deleted            Boolean             @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?           @map("DELETED_AT")
+  createdAt          DateTime?           @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
+  version            Int?                @default(1) @map("VERSION")
+  category           Category            @relation(fields: [categoryId], references: [id])
+  supplier           Supplier            @relation(fields: [supplierId], references: [id])
+  stockBalance       StockBalance[]
+  stockMovements     StockMovement[]
+  stockSnapshots     StockSnapshot[]
+  stockReceipts      StockReceipt[]
+  recipes            Recipe[]
+  purchaseOrderItems PurchaseOrderItem[]
+  deliveryOrderItems DeliveryOrderItem[]
+  invoiceItems       InvoiceItem[]
 
   @@index([createdAt])
   @@index([deletedAt])
   @@index([categoryId])
   @@index([updatedAt])
   @@index([sku])
+  @@index([supplierId])
   @@map("ITEM")
 }
 
@@ -474,15 +506,75 @@ model SalesQuotationItem {
   @@map("SALES_QUOTATION_ITEM")
 }
 
+model Invoice {
+  id              Int            @id @default(autoincrement()) @map("ID")
+  invoiceNumber   String         @unique @map("INVOICE_NUMBER")
+  purchaseOrderId Int?           @map("PURCHASE_ORDER_ID")
+  deliveryOrderId Int?           @map("DELIVERY_ORDER_ID") // Foreign key to DeliveryOrder
+  supplierId      Int?           @map("SUPPLIER_ID")
+  outletId        Int            @map("OUTLET_ID")
+  subtotalAmount  Float          @map("SUBTOTAL_AMOUNT")
+  taxAmount       Float          @map("TAX_AMOUNT")
+  discountAmount  Float          @map("DISCOUNT_AMOUNT")
+  totalAmount     Float          @map("TOTAL_AMOUNT")
+  currency        String         @map("CURRENCY")
+  status          String         @map("STATUS")
+  invoiceDate     DateTime?      @map("INVOICE_DATE")
+  paymentDate     DateTime?      @map("PAYMENT_DATE")
+  dueDate         DateTime?      @map("DUE_DATE")
+  remark          String?        @default("") @map("REMARK")
+  performedBy     String?        @default("") @map("PERFORMED_BY")
+  deleted         Boolean        @default(false) @map("IS_DELETED")
+  deletedAt       DateTime?      @map("DELETED_AT")
+  createdAt       DateTime?      @default(now()) @map("CREATED_AT")
+  updatedAt       DateTime?      @updatedAt @map("UPDATED_AT")
+  version         Int?           @default(1) @map("VERSION")
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  deliveryOrder   DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id]) // Relation to DeliveryOrder
+  supplier        Supplier?      @relation(fields: [supplierId], references: [id])
+  invoiceItems    InvoiceItem[]
+
+  @@index([purchaseOrderId])
+  @@index([deliveryOrderId])
+  @@index([supplierId])
+  @@index([outletId])
+  @@index([createdAt, updatedAt, deletedAt])
+  @@map("INVOICE")
+}
+
+model InvoiceItem {
+  id        Int       @id @default(autoincrement()) @map("ID")
+  invoiceId Int       @map("INVOICE_ID")
+  itemId    Int       @map("ITEM_ID")
+  quantity  Float     @map("QUANTITY")
+  unitPrice Float     @map("UNIT_PRICE")
+  subtotal  Float     @map("SUBTOTAL")
+  remark    String?   @default("") @map("REMARK")
+  createdAt DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt DateTime? @map("UPDATED_AT")
+  deleted   Boolean   @default(false) @map("IS_DELETED")
+  deletedAt DateTime? @map("DELETED_AT")
+  version   Int?      @default(1) @map("VERSION")
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id])
+  item      Item      @relation(fields: [itemId], references: [id])
+
+  @@index([invoiceId])
+  @@index([itemId])
+  @@map("INVOICE_ITEM")
+}
+
 model DeliveryOrder {
   id                 Int                 @id @default(autoincrement()) @map("ID")
   outletId           Int                 @map("OUTLET_ID")
   customerId         Int?                @map("CUSTOMER_ID")
+  purchaseOrderId    Int?                @map("PURCHASE_ORDER_ID")
+  deliveryDate       DateTime?           @map("DELIVERY_DATE")
   deliveryStreet     String?             @map("DELIVERY_STREET")
   deliveryCity       String?             @map("DELIVERY_CITY")
   deliveryState      String?             @map("DELIVERY_STATE")
   deliveryPostalCode String?             @map("DELIVERY_POSTAL_CODE")
   deliveryCountry    String?             @map("DELIVERY_COUNTRY")
+  trackingNumber     String?             @map("TRACKING_NUMBER")
   status             String              @map("STATUS")
   remark             String?             @map("REMARK")
   performedBy        String?             @default("") @map("PERFORMED_BY")
@@ -491,52 +583,68 @@ model DeliveryOrder {
   createdAt          DateTime?           @default(now()) @map("CREATED_AT")
   updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
   version            Int?                @default(1) @map("VERSION")
+  purchaseOrder      PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
+  invoices           Invoice[]
   deliveryOrderItems DeliveryOrderItem[]
 
+  @@index([outletId])
+  @@index([customerId])
+  @@index([purchaseOrderId])
+  @@index([createdAt, updatedAt, deletedAt])
   @@map("DELIVERY_ORDER")
 }
 
 model DeliveryOrderItem {
-  id              Int           @id @default(autoincrement()) @map("ID")
-  deliveryOrderId Int           @map("DELIVERY_ORDER_ID")
-  itemId          Int           @map("ITEM_ID")
-  quantity        Float         @map("QUANTITY")
-  remark          String?       @map("REMARK")
-  deleted         Boolean       @default(false) @map("IS_DELETED")
-  createdAt       DateTime?     @default(now()) @map("CREATED_AT")
-  updatedAt       DateTime?     @map("UPDATED_AT")
-  version         Int?          @default(1) @map("VERSION")
-  deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+  id               Int           @id @default(autoincrement()) @map("ID")
+  deliveryOrderId  Int           @map("DELIVERY_ORDER_ID")
+  itemId           Int           @map("ITEM_ID")
+  orderedQuantity  Float         @map("ORDERED_QUANTITY")
+  receivedQuantity Float         @map("RECEIVED_QUANTITY")
+  unitPrice        Float?        @default(0) @map("UNIT_PRICE")
+  remark           String?       @default("") @map("REMARK")
+  version          Int?          @default(1) @map("VERSION")
+  createdAt        DateTime?     @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime?     @map("UPDATED_AT")
+  deleted          Boolean       @default(false) @map("IS_DELETED")
+  deletedAt        DateTime?     @map("DELETED_AT")
+  deliveryOrder    DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+  item             Item          @relation(fields: [itemId], references: [id])
 
+  @@index([deliveryOrderId])
+  @@index([itemId])
   @@map("DELIVERY_ORDER_ITEM")
 }
 
 model PurchaseOrder {
   id                  Int                 @id @default(autoincrement()) @map("ID")
+  purchaseOrderNumber String              @unique @map("PURCHASE_ORDER_NUMBER")
   outletId            Int                 @map("OUTLET_ID")
-  supplierId          Int?                @map("SUPPLIER_ID")
-  supplierStreet      String?             @map("SUPPLIER_STREET")
-  supplierCity        String?             @map("SUPPLIER_CITY")
-  supplierState       String?             @map("SUPPLIER_STATE")
-  supplierPostalCode  String?             @map("SUPPLIER_POSTAL_CODE")
-  supplierCountry     String?             @map("SUPPLIER_COUNTRY")
-  discountPercentage  Float               @map("DISCOUNT_PERCENTAGE")
-  discountAmount      Float               @map("DISCOUNT_AMOUNT")
-  serviceChargeAmount Float               @map("SERVICE_CHARGE_AMOUNT")
-  taxAmount           Float               @map("TAX_AMOUNT")
-  roundingAmount      Float               @map("ROUNDING_AMOUNT")
+  supplierId          Int                 @map("SUPPLIER_ID")
+  purchaseOrderDate   DateTime?           @map("PURCHASE_ORDER_DATE")
+  discountPercentage  Float?              @map("DISCOUNT_PERCENTAGE")
+  discountAmount      Float?              @map("DISCOUNT_AMOUNT")
+  serviceChargeAmount Float?              @map("SERVICE_CHARGE_AMOUNT")
+  taxAmount           Float?              @map("TAX_AMOUNT")
+  roundingAmount      Float?              @map("ROUNDING_AMOUNT")
   subtotalAmount      Float               @map("SUBTOTAL_AMOUNT")
   totalAmount         Float               @map("TOTAL_AMOUNT")
   status              String              @map("STATUS")
   remark              String?             @map("REMARK")
+  currency            String              @default("IDR") @map("CURRENCY")
   performedBy         String?             @default("") @map("PERFORMED_BY")
   deleted             Boolean             @default(false) @map("IS_DELETED")
   deletedAt           DateTime?           @map("DELETED_AT")
   createdAt           DateTime?           @default(now()) @map("CREATED_AT")
   updatedAt           DateTime?           @updatedAt @map("UPDATED_AT")
   version             Int?                @default(1) @map("VERSION")
+  supplier            Supplier            @relation(fields: [supplierId], references: [id])
   purchaseOrderItems  PurchaseOrderItem[]
+  deliveryOrders      DeliveryOrder[]
+  invoices            Invoice[]
 
+  @@index([supplierId])
+  @@index([outletId])
+  @@index([createdAt, updatedAt, deletedAt])
   @@map("PURCHASE_ORDER")
 }
 
@@ -545,13 +653,19 @@ model PurchaseOrderItem {
   purchaseOrderId Int           @map("PURCHASE_ORDER_ID")
   itemId          Int           @map("ITEM_ID")
   quantity        Float         @map("QUANTITY")
-  remark          String?       @map("REMARK")
-  deleted         Boolean       @default(false) @map("IS_DELETED")
+  unitPrice       Float         @map("UNIT_PRICE")
+  subtotal        Float         @map("SUBTOTAL")
+  remark          String?       @default("") @map("REMARK")
+  version         Int?          @default(1) @map("VERSION")
   createdAt       DateTime?     @default(now()) @map("CREATED_AT")
   updatedAt       DateTime?     @map("UPDATED_AT")
-  version         Int?          @default(1) @map("VERSION")
+  deleted         Boolean       @default(false) @map("IS_DELETED")
+  deletedAt       DateTime?     @map("DELETED_AT")
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  item            Item          @relation(fields: [itemId], references: [id])
 
+  @@index([purchaseOrderId])
+  @@index([itemId])
   @@map("PURCHASE_ORDER_ITEM")
 }
 

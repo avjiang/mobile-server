@@ -53,6 +53,9 @@ app.use('/device', require('./device/device.controller'))
 app.use('/role', require('./role/role.controller'))
 app.use('/permission', require('./permission/permission.controller'))
 app.use('/outlet', require('./outlet/outlet.controller'))
+app.use('/purchaseOrder', require('./purchase_order/purchase-order.controller'))
+app.use('/deliveryOrder', require('./delivery_order/delivery-order.controller'))
+app.use('/invoice', require('./invoice/invoice.controller'))
 
 //error middleware
 app.use(errorMiddleware)

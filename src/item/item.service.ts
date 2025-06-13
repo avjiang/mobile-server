@@ -72,7 +72,7 @@ let getByIdRaw = async (databaseName: string, id: number) => {
             },
             include: {
                 stockBalance: true,
-                stockMovement: true
+                stockMovements: true
             }
         })
         return item
@@ -200,25 +200,44 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
             );
             const countMap = new Map(itemCounts.map(item => [item.combo, item.count]));
 
-            // Generate SKUs efficiently
-            const itemsWithSKUs = itemBodyArray.map((itemBody) => {
-                const category = categoryMap.get(itemBody.categoryId);
-                if (!category) {
-                    throw new Error(`Category with ID ${itemBody.categoryId} not found`);
+            // Group items by category-brand combination
+            const itemGroups = new Map<string, ItemDto[]>();
+            itemBodyArray.forEach((item) => {
+                const comboKey = `${item.categoryId}-${item.itemBrand}`;
+                if (!itemGroups.has(comboKey)) {
+                    itemGroups.set(comboKey, []);
                 }
-                const categoryCode = generateCode(category.name);
-                const brandCode = generateCode(itemBody.itemBrand);
-                const comboKey = `${itemBody.categoryId}-${itemBody.itemBrand}`;
-                const currentCount = countMap.get(comboKey) || 0;
-
-                // Increment count for this combination to avoid duplicates within the batch
-                countMap.set(comboKey, currentCount + 1);
-
-                const sequentialNumber = currentCount.toString().padStart(4, '0');
-                const sku = `${categoryCode}-${brandCode}-${sequentialNumber}`;
-
-                return { ...itemBody, sku };
+                itemGroups.get(comboKey)!.push(item);
             });
+
+            // Generate SKUs efficiently - process each group sequentially
+            const itemsWithSKUs: (ItemDto & { sku: string })[] = [];
+
+            for (const [comboKey, items] of itemGroups) {
+                const [categoryIdStr, itemBrand] = comboKey.split('-');
+                const categoryId = parseInt(categoryIdStr);
+                const category = categoryMap.get(categoryId);
+
+                if (!category) {
+                    throw new Error(`Category with ID ${categoryId} not found`);
+                }
+
+                const categoryCode = generateCode(category.name) + categoryId;
+                const brandCode = generateCode(itemBrand);
+                let currentCount = countMap.get(comboKey) || 0;
+
+                // Generate SKUs for each item in this group
+                items.forEach((itemBody) => {
+                    const sequentialNumber = currentCount.toString().padStart(4, '0');
+                    const sku = `${categoryCode}-${brandCode}-${sequentialNumber}`;
+
+                    console.log(`Generated SKU: ${sku} for item: ${itemBody.itemName}`);
+                    itemsWithSKUs.push({ ...itemBody, sku });
+
+                    // Increment count for next item in this combination
+                    currentCount++;
+                });
+            }
 
             // Check if any of the generated SKUs already exist
             const generatedSKUs = itemsWithSKUs.map(item => item.sku);
@@ -251,7 +270,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                     reorderThreshold: reorderThreshold || 0,
                                 },
                             },
-                            stockMovement: {
+                            stockMovements: {
                                 create: {
                                     previousAvailableQuantity: 0,
                                     previousOnHandQuantity: 0,
@@ -577,12 +596,22 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
     }
 }
 
-function generateCode(str: string, length: number = 4): string {
-    return str
+// function generateCode(str: string, length: number = 4): string {
+//     return str
+//         .replace(/[^a-zA-Z0-9]/g, '')
+//         .substring(0, length)
+//         .toUpperCase()
+//         .padEnd(length, 'X');
+// }
+
+function generateCode(name: string): string {
+    if (!name || typeof name !== 'string') {
+        throw new Error(`Invalid name for code generation: ${name}`);
+    }
+    return name
         .replace(/[^a-zA-Z0-9]/g, '')
-        .substring(0, length)
-        .toUpperCase()
-        .padEnd(length, 'X');
+        .substring(0, 4)
+        .toUpperCase();
 }
 
 export = {

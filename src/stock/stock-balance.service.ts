@@ -96,53 +96,93 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
             const stockUpdates: { id: number; availableQuantity: number; onHandQuantity: number; clientVersion: number }[] = [];
             const versionMismatches: VersionMismatchDetail[] = [];
 
-            // Step 1: Fetch and validate adjustments
-            const stockBalances = await Promise.all(
-                stockAdjustments.map(async (adjustment) => {
-                    // Validate input
-                    if (adjustment.adjustQuantity !== undefined && adjustment.overrideQuantity !== undefined) {
-                        throw new RequestValidateError('Provide either adjustQuantity or overrideQuantity, not both');
-                    }
-                    if (adjustment.adjustQuantity === undefined && adjustment.overrideQuantity === undefined) {
-                        throw new RequestValidateError('Either adjustQuantity or overrideQuantity must be provided');
-                    }
-                    if (adjustment.version === undefined || adjustment.version < 0) {
-                        throw new RequestValidateError('Valid version number must be provided');
-                    }
-                    if (adjustment.overrideQuantity !== undefined && adjustment.overrideQuantity < 0) {
-                        throw new RequestValidateError('Override quantity cannot be negative');
-                    }
+            // Step 1: Validate input first (before any DB queries)
+            for (const adjustment of stockAdjustments) {
+                if (adjustment.adjustQuantity !== undefined && adjustment.overrideQuantity !== undefined) {
+                    throw new RequestValidateError('Provide either adjustQuantity or overrideQuantity, not both');
+                }
+                if (adjustment.adjustQuantity === undefined && adjustment.overrideQuantity === undefined) {
+                    throw new RequestValidateError('Either adjustQuantity or overrideQuantity must be provided');
+                }
+                if (adjustment.version === undefined || adjustment.version < 0) {
+                    throw new RequestValidateError('Valid version number must be provided');
+                }
+                if (adjustment.overrideQuantity !== undefined && adjustment.overrideQuantity < 0) {
+                    throw new RequestValidateError('Override quantity cannot be negative');
+                }
+            }
 
-                    // Fetch stock
-                    const stock = await tx.stockBalance.findFirst({
-                        where: { itemId: adjustment.itemId, outletId: adjustment.outletId, deleted: false },
-                        select: { id: true, availableQuantity: true, onHandQuantity: true, version: true },
-                    });
+            // Step 2: Batch fetch all stock balances in a single query
+            const stockBalanceKeys = stockAdjustments.map(adj => ({ itemId: adj.itemId, outletId: adj.outletId }));
+            const stockBalances = await tx.stockBalance.findMany({
+                where: {
+                    OR: stockBalanceKeys,
+                    deleted: false
+                },
+                select: { id: true, itemId: true, outletId: true, availableQuantity: true, onHandQuantity: true, version: true }
+            });
 
-                    if (!stock) {
-                        throw new NotFoundError(`Stock not found for itemId ${adjustment.itemId} not found`);
-                    }
-
-                    // Check version
-                    const currentVersion = stock.version || 1;
-                    if (currentVersion !== adjustment.version) {
-                        versionMismatches.push({
-                            itemId: adjustment.itemId,
-                            expectedVersion: adjustment.version,
-                            foundVersion: currentVersion,
-                        });
-                    }
-                    return { adjustment, stock };
-                })
+            // Create a map for quick lookup
+            const stockBalanceMap = new Map(
+                stockBalances.map(stock => [`${stock.itemId}-${stock.outletId}`, stock])
             );
 
-            // Step 2: Throw if version mismatches
+            // Step 3: Validate all adjustments against fetched stocks
+            const validatedAdjustments = stockAdjustments.map(adjustment => {
+                const stockKey = `${adjustment.itemId}-${adjustment.outletId}`;
+                const stock = stockBalanceMap.get(stockKey);
+
+                if (!stock) {
+                    throw new NotFoundError(`Stock not found for itemId ${adjustment.itemId} and outletId ${adjustment.outletId}`);
+                }
+
+                const currentVersion = stock.version || 1;
+                if (currentVersion !== adjustment.version) {
+                    versionMismatches.push({
+                        itemId: adjustment.itemId,
+                        expectedVersion: adjustment.version,
+                        foundVersion: currentVersion,
+                    });
+                }
+
+                return { adjustment, stock };
+            });
+
+            // Step 4: Throw if version mismatches
             if (versionMismatches.length > 0) {
                 throw new VersionMismatchError(`Version mismatches detected for ${versionMismatches.length} item(s)`, versionMismatches);
             }
 
-            // Step 3: Process adjustments
-            for (const { adjustment, stock } of stockBalances) {
+            // Step 5: Batch fetch all stock receipts that might be affected
+            const receiptKeys = validatedAdjustments
+                .filter(({ adjustment }) => adjustment.overrideQuantity !== undefined || (adjustment.adjustQuantity && adjustment.adjustQuantity < 0))
+                .map(({ adjustment }) => ({ itemId: adjustment.itemId, outletId: adjustment.outletId }));
+
+            const stockReceipts = receiptKeys.length > 0 ? await tx.stockReceipt.findMany({
+                where: {
+                    OR: receiptKeys,
+                    quantity: { gt: 0 },
+                    deleted: false,
+                },
+                orderBy: [{ itemId: 'asc' }, { outletId: 'asc' }, { receiptDate: 'asc' }]
+            }) : [];
+
+            // Group receipts by itemId-outletId for quick lookup
+            const receiptsByKey = stockReceipts.reduce((acc, receipt) => {
+                const key = `${receipt.itemId}-${receipt.outletId}`;
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(receipt);
+                return acc;
+            }, {} as Record<string, typeof stockReceipts>);
+
+            // Step 6: Process adjustments and prepare bulk operations
+            const receiptUpdates: { id: number; quantity: number; deleted?: boolean; deletedAt?: Date }[] = [];
+            const receiptCreates: any[] = [];
+
+            for (const { adjustment, stock } of validatedAdjustments) {
+                const receiptKey = `${adjustment.itemId}-${adjustment.outletId}`;
+                const receipts = receiptsByKey[receiptKey] || [];
+
                 const previousAvailableQuantity = stock.availableQuantity;
                 const previousOnHandQuantity = stock.onHandQuantity;
 
@@ -185,20 +225,8 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     clientVersion: adjustment.version,
                 });
 
-                // Handle StockReceipt
+                // Handle StockReceipt adjustments
                 if (adjustment.overrideQuantity !== undefined) {
-                    // Fetch existing receipts
-                    const receipts = await tx.stockReceipt.findMany({
-                        where: {
-                            itemId: adjustment.itemId,
-                            outletId: adjustment.outletId,
-                            quantity: { gt: 0 },
-                            deleted: false,
-                        },
-                        orderBy: { receiptDate: 'asc' }, // FIFO: oldest first
-                    });
-
-                    // Calculate total current receipt quantity
                     const totalReceiptQuantity = receipts.reduce((sum, receipt) => sum + receipt.quantity, 0);
 
                     if (deltaQuantity < 0) {
@@ -207,15 +235,12 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                         for (const receipt of receipts) {
                             if (remainingReduction <= 0) break;
                             const reduction = Math.min(receipt.quantity, remainingReduction);
-                            await tx.stockReceipt.update({
-                                where: { id: receipt.id },
-                                data: {
-                                    quantity: receipt.quantity - reduction,
-                                    updatedAt: new Date(),
-                                    version: { increment: 1 },
-                                    deleted: receipt.quantity - reduction === 0 ? true : undefined,
-                                    deletedAt: receipt.quantity - reduction === 0 ? new Date() : undefined,
-                                },
+                            const newQuantity = receipt.quantity - reduction;
+                            receiptUpdates.push({
+                                id: receipt.id,
+                                quantity: newQuantity,
+                                deleted: newQuantity === 0 ? true : undefined,
+                                deletedAt: newQuantity === 0 ? new Date() : undefined,
                             });
                             remainingReduction -= reduction;
                         }
@@ -223,66 +248,48 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                             throw new RequestValidateError(`Insufficient StockReceipt quantity for item ${adjustment.itemId}`);
                         }
                     } else if (deltaQuantity > 0) {
-                        // Clear existing receipts if overrideQuantity < totalReceiptQuantity
+                        // Handle override with increase
                         if (newAvailableQuantity < totalReceiptQuantity) {
                             let remainingReduction = totalReceiptQuantity - newAvailableQuantity;
                             for (const receipt of receipts) {
                                 if (remainingReduction <= 0) break;
                                 const reduction = Math.min(receipt.quantity, remainingReduction);
-                                await tx.stockReceipt.update({
-                                    where: { id: receipt.id },
-                                    data: {
-                                        quantity: receipt.quantity - reduction,
-                                        updatedAt: new Date(),
-                                        version: { increment: 1 },
-                                        deleted: receipt.quantity - reduction === 0 ? true : undefined,
-                                        deletedAt: receipt.quantity - reduction === 0 ? new Date() : undefined,
-                                    },
+                                const newQuantity = receipt.quantity - reduction;
+                                receiptUpdates.push({
+                                    id: receipt.id,
+                                    quantity: newQuantity,
+                                    deleted: newQuantity === 0 ? true : undefined,
+                                    deletedAt: newQuantity === 0 ? new Date() : undefined,
                                 });
                                 remainingReduction -= reduction;
                             }
                         }
                         // Create new receipt for the new balance
                         if (newAvailableQuantity > 0) {
-                            await tx.stockReceipt.create({
-                                data: {
-                                    itemId: adjustment.itemId,
-                                    outletId: adjustment.outletId,
-                                    quantity: newAvailableQuantity,
-                                    cost: adjustment.cost,
-                                    receiptDate: new Date(),
-                                    createdAt: new Date(),
-                                    deleted: false,
-                                    version: 1,
-                                },
+                            receiptCreates.push({
+                                itemId: adjustment.itemId,
+                                outletId: adjustment.outletId,
+                                quantity: newAvailableQuantity,
+                                cost: adjustment.cost,
+                                receiptDate: new Date(),
+                                createdAt: new Date(),
+                                deleted: false,
+                                version: 1,
                             });
                         }
                     }
                 } else if (deltaQuantity < 0) {
                     // Handle negative adjustments
-                    const receipts = await tx.stockReceipt.findMany({
-                        where: {
-                            itemId: adjustment.itemId,
-                            outletId: adjustment.outletId,
-                            quantity: { gt: 0 },
-                            deleted: false,
-                        },
-                        orderBy: { receiptDate: 'asc' },
-                    });
-
                     let remainingReduction = Math.abs(deltaQuantity);
                     for (const receipt of receipts) {
                         if (remainingReduction <= 0) break;
                         const reduction = Math.min(receipt.quantity, remainingReduction);
-                        await tx.stockReceipt.update({
-                            where: { id: receipt.id },
-                            data: {
-                                quantity: receipt.quantity - reduction,
-                                updatedAt: new Date(),
-                                version: { increment: 1 },
-                                deleted: receipt.quantity - reduction === 0 ? true : undefined,
-                                deletedAt: receipt.quantity - reduction === 0 ? new Date() : undefined,
-                            },
+                        const newQuantity = receipt.quantity - reduction;
+                        receiptUpdates.push({
+                            id: receipt.id,
+                            quantity: newQuantity,
+                            deleted: newQuantity === 0 ? true : undefined,
+                            deletedAt: newQuantity === 0 ? new Date() : undefined,
                         });
                         remainingReduction -= reduction;
                     }
@@ -291,29 +298,42 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     }
                 } else if (deltaQuantity > 0) {
                     // Handle positive adjustments
-                    await tx.stockReceipt.create({
-                        data: {
-                            itemId: adjustment.itemId,
-                            outletId: adjustment.outletId,
-                            quantity: deltaQuantity,
-                            cost: adjustment.cost,
-                            receiptDate: new Date(),
-                            createdAt: new Date(),
-                            deleted: false,
-                            version: 1,
-                        },
+                    receiptCreates.push({
+                        itemId: adjustment.itemId,
+                        outletId: adjustment.outletId,
+                        quantity: deltaQuantity,
+                        cost: adjustment.cost,
+                        receiptDate: new Date(),
+                        createdAt: new Date(),
+                        deleted: false,
+                        version: 1,
                     });
                 }
             }
 
-            // Step 4: Bulk insert stock movements
-            await tx.stockMovement.createMany({
-                data: stockMovements,
-            });
+            // Step 7: Execute all bulk operations
+            await Promise.all([
+                // Bulk insert stock movements
+                stockMovements.length > 0 && tx.stockMovement.createMany({ data: stockMovements }),
 
-            // Step 5: Bulk update stock balances
-            await Promise.all(
-                stockUpdates.map((update) =>
+                // Bulk create receipts
+                receiptCreates.length > 0 && tx.stockReceipt.createMany({ data: receiptCreates }),
+
+                // Bulk update receipts
+                ...receiptUpdates.map(update =>
+                    tx.stockReceipt.update({
+                        where: { id: update.id },
+                        data: {
+                            quantity: update.quantity,
+                            updatedAt: new Date(),
+                            version: { increment: 1 },
+                            ...(update.deleted && { deleted: update.deleted, deletedAt: update.deletedAt })
+                        }
+                    })
+                ),
+
+                // Bulk update stock balances
+                ...stockUpdates.map(update =>
                     tx.stockBalance.update({
                         where: {
                             id: update.id,
@@ -328,7 +348,8 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                         },
                     })
                 )
-            );
+            ].filter(Boolean));
+
             adjustedCount = stockUpdates.length;
         });
 

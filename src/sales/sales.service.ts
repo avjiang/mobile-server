@@ -485,101 +485,190 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
             const itemIds = salesBody.salesItems.map((item) => item.itemId);
-            const stockBalances = await tx.stockBalance.findMany({
-                where: {
-                    itemId: { in: itemIds },
-                    outletId: salesBody.outletId,
-                    deleted: false,
-                },
-                select: {
-                    itemId: true,
-                    availableQuantity: true,
-                    item: {
-                        select: {
-                            itemName: true,
-                            itemCode: true,
+
+            // Batch all initial queries
+            const [stockBalances, stockReceipts, customer] = await Promise.all([
+                // Get stock balances for validation
+                tx.stockBalance.findMany({
+                    where: {
+                        itemId: { in: itemIds },
+                        outletId: salesBody.outletId,
+                        deleted: false,
+                    },
+                    select: {
+                        itemId: true,
+                        availableQuantity: true,
+                        item: {
+                            select: {
+                                itemName: true,
+                                itemCode: true,
+                                cost: true, // Fallback cost
+                            },
                         },
                     },
-                },
+                }),
+
+                // Get all stock receipts needed for FIFO in one query
+                tx.stockReceipt.findMany({
+                    where: {
+                        itemId: { in: itemIds },
+                        outletId: salesBody.outletId,
+                        deleted: false,
+                        quantity: { gt: 0 },
+                    },
+                    select: {
+                        id: true,
+                        itemId: true,
+                        quantity: true,
+                        cost: true,
+                        receiptDate: true,
+                        createdAt: true,
+                    },
+                    orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
+                }),
+
+                // Validate customer if provided
+                salesBody.customerId ? tx.customer.findUnique({
+                    where: { id: salesBody.customerId },
+                    select: { id: true, deleted: true }
+                }) : null
+            ]);
+
+            // Validate customer
+            if (salesBody.customerId && (!customer || customer.deleted)) {
+                throw new Error(`Invalid customerId: ${salesBody.customerId}`);
+            }
+
+            // Create lookup maps for better performance
+            const stockBalanceMap = new Map(stockBalances.map(sb => [sb.itemId, sb]));
+            const stockReceiptsByItem = new Map<number, typeof stockReceipts>();
+            stockReceipts.forEach(receipt => {
+                if (!stockReceiptsByItem.has(receipt.itemId)) {
+                    stockReceiptsByItem.set(receipt.itemId, []);
+                }
+                stockReceiptsByItem.get(receipt.itemId)!.push(receipt);
             });
 
-            // Validate stock availability
+            // Validate stock availability and calculate FIFO costs in one pass
             const stockValidationErrors: string[] = [];
+            const salesItemsWithFIFOCost: Array<typeof salesBody.salesItems[0] & {
+                usedReceipts: { id: number; quantityUsed: number; cost: number }[]
+            }> = [];
+
             for (const item of salesBody.salesItems) {
-                const stockBalance = stockBalances.find((sb) => sb.itemId === item.itemId);
+                const stockBalance = stockBalanceMap.get(item.itemId);
                 if (!stockBalance) {
                     stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}`);
                     continue;
                 }
+
                 if (stockBalance.availableQuantity < item.quantity) {
                     stockValidationErrors.push(
                         `Insufficient stock for ${stockBalance.item.itemName} (${stockBalance.item.itemCode}). ` +
                         `Available: ${stockBalance.availableQuantity}, Required: ${item.quantity}`
                     );
+                    continue;
                 }
+
+                // Calculate FIFO cost
+                const itemReceipts = stockReceiptsByItem.get(item.itemId) || [];
+                let remainingQuantity = item.quantity;
+                let usedReceipts: { id: number; quantityUsed: number; cost: number }[] = [];
+
+                if (itemReceipts.length === 0) {
+                    // Fallback to item cost
+                    usedReceipts.push({
+                        id: -1,
+                        quantityUsed: item.quantity,
+                        cost: stockBalance.item.cost || 0
+                    });
+                } else {
+                    // Use FIFO
+                    for (const receipt of itemReceipts) {
+                        if (remainingQuantity <= 0) break;
+
+                        const quantityToUse = Math.min(remainingQuantity, receipt.quantity);
+                        remainingQuantity -= quantityToUse;
+
+                        usedReceipts.push({
+                            id: receipt.id,
+                            quantityUsed: quantityToUse,
+                            cost: receipt.cost,
+                        });
+                    }
+
+                    // If still remaining, use last receipt's cost
+                    if (remainingQuantity > 0 && itemReceipts.length > 0) {
+                        const lastReceipt = itemReceipts[itemReceipts.length - 1];
+                        usedReceipts.push({
+                            id: -1,
+                            quantityUsed: remainingQuantity,
+                            cost: lastReceipt.cost,
+                        });
+                    }
+                }
+
+                salesItemsWithFIFOCost.push({ ...item, usedReceipts });
             }
+
             if (stockValidationErrors.length > 0) {
                 throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
             }
 
-            // Calculate total payment and sales status
-            let totalSalesAmount = salesBody.totalAmount;
-            let totalPaymentAmount = payments.reduce((sum, payment) => sum + payment.tenderedAmount, 0);
+            // Calculate payments and sales status
+            const totalSalesAmount = salesBody.totalAmount;
+            const totalPaymentAmount = payments.reduce((sum, payment) => sum + payment.tenderedAmount, 0);
             const salesStatus = totalPaymentAmount >= totalSalesAmount ? 'Completed' : 'Partially Paid';
             const changeAmount = totalPaymentAmount >= totalSalesAmount ? totalPaymentAmount - totalSalesAmount : 0;
 
-            // Validate customer if provided
-            if (salesBody.customerId) {
-                const customer = await tx.customer.findUnique({
-                    where: { id: salesBody.customerId },
-                });
-                if (!customer || customer.deleted) {
-                    throw new Error(`Invalid customerId: ${salesBody.customerId}`);
-                }
-            }
-
-            // Get FIFO costs for all sales items
-            const salesItemsWithFIFOCost = await Promise.all(
-                salesBody.salesItems.map(async (item) => {
-                    const { usedReceipts } = await getFIFOCostForSalesItem(tx, item.itemId, salesBody.outletId, item.quantity);
-                    return { ...item, usedReceipts };
-                })
-            );
-
-            // Validate total quantity from used receipts
-            salesItemsWithFIFOCost.forEach((item) => {
-                const totalQuantity = item.usedReceipts.reduce((sum, receipt) => sum + receipt.quantityUsed, 0);
-                if (totalQuantity !== item.quantity) {
-                    throw new Error(`Quantity mismatch for item ${item.itemId}: expected ${item.quantity}, got ${totalQuantity}`);
-                }
-            });
-
             // Calculate total profit and prepare sales item data
             let totalProfit = 0;
-            const salesItemData = salesItemsWithFIFOCost.flatMap((item) => {
+            const salesItemData: any[] = [];
+            const stockReceiptUpdates: { id: number; newQuantity: number }[] = [];
+
+            salesItemsWithFIFOCost.forEach((item) => {
                 const totalQuantity = item.quantity;
                 const discountPerUnit = (item.discountAmount || 0) / totalQuantity;
-                return item.usedReceipts.map((receipt) => {
-                    const profit = (item.price - receipt.cost) * receipt.quantityUsed - discountPerUnit * receipt.quantityUsed;
+                const serviceChargePerUnit = (item.serviceChargeAmount || 0) / totalQuantity;
+                const taxPerUnit = item.taxAmount ?? 0;
+
+                item.usedReceipts.forEach((receipt) => {
+                    const revenueForQuantity = item.price * receipt.quantityUsed;
+                    const costForQuantity = receipt.cost * receipt.quantityUsed;
+                    const totalDiscountForQuantity = discountPerUnit * receipt.quantityUsed;
+                    const totalTaxForQuantity = taxPerUnit * receipt.quantityUsed;
+                    const totalServiceChargeForQuantity = serviceChargePerUnit * receipt.quantityUsed;
+                    const totalSubtotalForQuantity = (item.subtotalAmount / totalQuantity) * receipt.quantityUsed;
+
+                    const profit = revenueForQuantity - costForQuantity - totalDiscountForQuantity - totalTaxForQuantity - totalServiceChargeForQuantity;
                     totalProfit += profit;
-                    return {
-                        salesId: 0, // Will be set after sales creation
+
+                    salesItemData.push({
                         itemId: item.itemId,
                         itemName: item.itemName,
                         itemCode: item.itemCode,
                         itemBrand: item.itemBrand,
                         quantity: receipt.quantityUsed,
-                        cost: receipt.cost,
-                        price: item.price,
+                        cost: costForQuantity,
+                        price: revenueForQuantity,
                         profit: profit,
                         discountPercentage: item.discountPercentage,
-                        discountAmount: discountPerUnit * receipt.quantityUsed,
-                        serviceChargeAmount: item.serviceChargeAmount,
-                        taxAmount: item.taxAmount,
-                        subtotalAmount: item.subtotalAmount,
+                        discountAmount: totalDiscountForQuantity,
+                        serviceChargeAmount: totalServiceChargeForQuantity,
+                        taxAmount: totalTaxForQuantity,
+                        subtotalAmount: totalSubtotalForQuantity,
                         remark: item.remark || '',
                         deleted: false,
-                    };
+                    });
+
+                    // Prepare stock receipt updates
+                    if (receipt.id !== -1) {
+                        const existingReceipt = stockReceipts.find(sr => sr.id === receipt.id);
+                        if (existingReceipt) {
+                            const newQuantity = existingReceipt.quantity - receipt.quantityUsed;
+                            stockReceiptUpdates.push({ id: receipt.id, newQuantity });
+                        }
+                    }
                 });
             });
 
@@ -621,80 +710,95 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                 },
             });
 
-            // Create sales items with FIFO costs
+            // Batch create sales items
+            await tx.salesItem.createMany({
+                data: salesItemData.map(item => ({
+                    ...item,
+                    salesId: createdSales.id,
+                }))
+            });
+
+            // Batch create payments
+            await tx.payment.createMany({
+                data: payments.map(payment => ({
+                    ...payment,
+                    salesId: createdSales.id,
+                }))
+            });
+
+            // Batch update stock receipts
             await Promise.all(
-                salesItemData.map(async (item) => {
-                    await tx.salesItem.create({
+                stockReceiptUpdates.map(async (update) => {
+                    await tx.stockReceipt.update({
+                        where: { id: update.id },
                         data: {
-                            ...item,
-                            salesId: createdSales.id,
+                            quantity: update.newQuantity,
+                            updatedAt: new Date(),
+                            version: { increment: 1 },
+                            deleted: update.newQuantity === 0 ? true : undefined,
+                            deletedAt: update.newQuantity === 0 ? new Date() : undefined,
                         },
                     });
                 })
             );
 
-            // Update stock receipts based on FIFO usage
-            await Promise.all(
-                salesItemsWithFIFOCost.map(async (item) => {
-                    if (item.usedReceipts && item.usedReceipts.length > 0) {
-                        await updateStockReceiptsAfterSale(tx, item.usedReceipts);
-                    }
-                })
-            );
-
-            // Update payments with the new salesId
-            const updatedPayments = payments.map((payment) => ({
-                ...payment,
-                salesId: createdSales.id,
-            }));
-            await tx.payment.createMany({
-                data: updatedPayments,
+            // Prepare stock balance updates and movements
+            const stockUpdates = salesBody.salesItems.map(item => {
+                const stockBalance = stockBalanceMap.get(item.itemId)!;
+                return {
+                    id: stockBalance.itemId, // Using itemId as identifier
+                    outletId: salesBody.outletId,
+                    itemId: item.itemId,
+                    quantity: item.quantity,
+                    previousAvailable: stockBalance.availableQuantity,
+                    previousOnHand: stockBalance.availableQuantity, // Assuming same as available
+                };
             });
 
-            // Update Stock Balance and Create Stock Movement
-            const stockUpdates = await Promise.all(
-                salesBody.salesItems.map(async (item) => {
+            // Batch update stock balances and create movements
+            await Promise.all([
+                ...stockUpdates.map(async (update) => {
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
-                            itemId: item.itemId,
-                            outletId: salesBody.outletId,
+                            itemId: update.itemId,
+                            outletId: update.outletId,
                             deleted: false,
                         },
                     });
-                    if (!stockBalance) {
-                        throw new Error(`Stock balance not found for item ${item.itemId} in outlet ${salesBody.outletId}`);
+
+                    if (stockBalance) {
+                        await tx.stockBalance.update({
+                            where: { id: stockBalance.id },
+                            data: {
+                                availableQuantity: { decrement: update.quantity },
+                                onHandQuantity: { decrement: update.quantity },
+                                version: { increment: 1 },
+                                updatedAt: new Date(),
+                            },
+                        });
                     }
-                    const updatedStockBalance = await tx.stockBalance.update({
-                        where: {
-                            id: stockBalance.id,
-                        },
-                        data: {
-                            availableQuantity: { decrement: item.quantity },
-                            onHandQuantity: { decrement: item.quantity },
-                            version: { increment: 1 },
-                            updatedAt: new Date(),
-                        },
-                    });
-                    const stockMovement = await tx.stockMovement.create({
-                        data: {
-                            itemId: item.itemId,
-                            outletId: salesBody.outletId,
-                            previousAvailableQuantity: stockBalance.availableQuantity,
-                            previousOnHandQuantity: stockBalance.onHandQuantity,
-                            availableQuantityDelta: -item.quantity,
-                            onHandQuantityDelta: -item.quantity,
-                            movementType: 'Sales',
-                            documentId: createdSales.id,
-                            reason: 'Sales transaction',
-                            remark: `Sales #${createdSales.id}`,
-                        },
-                    });
-                    return { stockBalance: updatedStockBalance, stockMovement };
+                }),
+
+                // Batch create stock movements
+                tx.stockMovement.createMany({
+                    data: stockUpdates.map(update => ({
+                        itemId: update.itemId,
+                        outletId: update.outletId,
+                        previousAvailableQuantity: update.previousAvailable,
+                        previousOnHandQuantity: update.previousOnHand,
+                        availableQuantityDelta: -update.quantity,
+                        onHandQuantityDelta: -update.quantity,
+                        movementType: 'Sales',
+                        documentId: createdSales.id,
+                        reason: 'Sales transaction',
+                        remark: `Sales #${createdSales.id}`,
+                    }))
                 })
-            );
+            ]);
 
             return createdSales;
         });
+
         return getById(databaseName, result.id);
     } catch (error) {
         throw error;

@@ -76,8 +76,8 @@ const getAllByDateRange = (req: AuthRequest, res: Response, next: NextFunction) 
         endDate: endDate as string
     };
     service.getByDateRange(req.user.databaseName, dateRangeRequest)
-        .then(({ data, total, serverTimestamp }) => {
-            sendResponse(res, { data, total, serverTimestamp });
+        .then(({ purchaseOrders, total, serverTimestamp }) => {
+            sendResponse(res, { data: purchaseOrders, total, serverTimestamp });
         })
         .catch(next);
 }
@@ -110,6 +110,25 @@ let createMany = (req: NetworkRequest<CreatePurchaseOrderRequestBody>, res: Resp
         .catch(next)
 }
 
+let cancel = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+    const purchaseOrder = req.body
+    if (!purchaseOrder) {
+        throw new RequestValidateError('Update failed: data missing')
+    }
+    if (!purchaseOrder.id) {
+        throw new RequestValidateError('Update failed: [id] not found')
+    }
+    service.cancel(purchaseOrder, req.user.databaseName)
+        .then((updatedPurchaseOrder: any) => sendResponse(res, updatedPurchaseOrder))
+        .catch(next)
+}
+
 let update = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -133,6 +152,7 @@ let update = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: Next
 router.get("/sync", getAll)
 router.get('/dateRange', getAllByDateRange)
 router.get('/:id', getById)
+router.post('/cancel', cancel)
 router.post('/create', createMany)
 router.put('/update', update)
 export = router

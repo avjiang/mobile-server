@@ -39,7 +39,6 @@ let getAll = async (
         // Ensure outletId is a number
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
-        // Build query conditions
         const where = {
             outletId: parsedOutletId,
             deleted: false,
@@ -49,59 +48,61 @@ let getAll = async (
                 { deletedAt: { gte: lastSync } },
             ],
         };
-        // Count total matching records
-        const total = await tenantPrisma.deliveryOrder.count({ where });
 
-        // Fetch paginated delivery orders with minimal data
-        const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
-            where,
-            skip,
-            take,
-            include: {
-                _count: {
-                    select: {
-                        deliveryOrderItems: {
-                            where: { deleted: false }
+        // Execute count and fetch in parallel for better performance
+        const [total, deliveryOrders] = await Promise.all([
+            tenantPrisma.deliveryOrder.count({ where }),
+            tenantPrisma.deliveryOrder.findMany({
+                where,
+                skip,
+                take,
+                select: {
+                    id: true,
+                    outletId: true,
+                    customerId: true,
+                    purchaseOrderId: true,
+                    deliveryDate: true,
+                    deliveryStreet: true,
+                    deliveryCity: true,
+                    deliveryState: true,
+                    deliveryPostalCode: true,
+                    deliveryCountry: true,
+                    trackingNumber: true,
+                    status: true,
+                    remark: true,
+                    performedBy: true,
+                    version: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    deletedAt: true,
+                    _count: {
+                        select: {
+                            deliveryOrderItems: {
+                                where: { deleted: false }
+                            }
                         }
+                    },
+                    purchaseOrder: {
+                        select: {
+                            id: true,
+                            purchaseOrderNumber: true,
+                            purchaseOrderDate: true
+                        },
+                        where: { deleted: false }
                     }
                 }
-            }
-        });
+            })
+        ]);
 
-        // Batch fetch delivery orders for all delivery orders (if needed for additional data)
-        const deliveryOrderIds = deliveryOrders.map(do_ => do_.id);
-
-        // Batch fetch purchase order for each delivery order (keeping purchase order fetch for reference)
-        const purchaseOrders = await tenantPrisma.purchaseOrder.findMany({
-            where: {
-                id: { in: deliveryOrders.map(do_ => do_.purchaseOrderId).filter((id): id is number => typeof id === 'number') },
-                deleted: false
-            },
-            select: {
-                id: true,
-                purchaseOrderNumber: true,
-                purchaseOrderDate: true
-            }
-        });
-
-        // Create lookup map for O(1) access
-        const purchaseOrderMap = new Map();
-        purchaseOrders.forEach(po => {
-            purchaseOrderMap.set(po.id, po);
-        });
-
-        // Enrich delivery orders with purchase order info
-        const enrichedDeliveryOrders = deliveryOrders.map(do_ => {
-            const purchaseOrder = purchaseOrderMap.get(do_.purchaseOrderId);
-
-            return {
-                ...do_,
-                itemCount: do_._count.deliveryOrderItems,
-                purchaseOrderNumber: purchaseOrder?.purchaseOrderNumber || null,
-                purchaseOrderDate: purchaseOrder?.purchaseOrderDate || null,
-                _count: undefined // Remove the _count field from response
-            };
-        });
+        // Transform response to maintain backward compatibility
+        const enrichedDeliveryOrders = deliveryOrders.map(do_ => ({
+            ...do_,
+            itemCount: do_._count.deliveryOrderItems,
+            purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
+            purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
+            _count: undefined,
+            purchaseOrder: undefined
+        }));
 
         return {
             deliveryOrders: enrichedDeliveryOrders,
@@ -123,9 +124,17 @@ let getById = async (id: number, databaseName: string) => {
             },
             include: {
                 deliveryOrderItems: {
-                    where: {
-                        deleted: false
-                    },
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        itemId: true,
+                        orderedQuantity: true,
+                        receivedQuantity: true,
+                        unitPrice: true,
+                        remark: true,
+                        createdAt: true,
+                        updatedAt: true
+                    }
                 },
             }
         });
@@ -133,10 +142,7 @@ let getById = async (id: number, databaseName: string) => {
         if (!deliveryOrder) {
             throw new NotFoundError("Delivery Order");
         }
-        // Return delivery order with itemCount added
-        return {
-            ...deliveryOrder
-        };
+        return deliveryOrder;
     }
     catch (error) {
         throw error;
@@ -157,54 +163,47 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
         const customerIds = [...new Set(deliveryOrders.map(do_ => do_.customerId).filter((id): id is number => typeof id === 'number'))];
         const purchaseOrderIds = [...new Set(deliveryOrders.map(do_ => do_.purchaseOrderId).filter((id): id is number => typeof id === 'number'))];
 
-        // Batch validate all outlets exist
+        // Batch validation in parallel for better performance
+        const validationPromises = [];
+
         if (outletIds.length > 0) {
-            const existingOutlets = await tenantPrisma.outlet.findMany({
-                where: {
-                    id: { in: outletIds },
-                    deleted: false
-                },
-                select: { id: true }
-            });
-            const existingOutletIds = new Set(existingOutlets.map(o => o.id));
-            const missingOutletIds = outletIds.filter(id => !existingOutletIds.has(id));
-
-            if (missingOutletIds.length > 0) {
-                throw new RequestValidateError(`Outlets with IDs ${missingOutletIds.join(', ')} do not exist`);
-            }
+            validationPromises.push(
+                tenantPrisma.outlet.findMany({
+                    where: { id: { in: outletIds }, deleted: false },
+                    select: { id: true }
+                }).then(outlets => ({ type: 'outlets', existing: outlets.map(o => o.id), requested: outletIds }))
+            );
         }
 
-        // Batch validate all customers exist
         if (customerIds.length > 0) {
-            const existingCustomers = await tenantPrisma.customer.findMany({
-                where: {
-                    id: { in: customerIds },
-                    deleted: false
-                },
-                select: { id: true }
-            });
-            const existingCustomerIds = new Set(existingCustomers.map(c => c.id));
-            const missingCustomerIds = customerIds.filter((id) => !existingCustomerIds.has(id));
-
-            if (missingCustomerIds.length > 0) {
-                throw new RequestValidateError(`Customers with IDs ${missingCustomerIds.join(', ')} do not exist`);
-            }
+            validationPromises.push(
+                tenantPrisma.customer.findMany({
+                    where: { id: { in: customerIds }, deleted: false },
+                    select: { id: true }
+                }).then(customers => ({ type: 'customers', existing: customers.map(c => c.id), requested: customerIds }))
+            );
         }
 
-        // Batch validate all purchase orders exist
         if (purchaseOrderIds.length > 0) {
-            const existingPurchaseOrders = await tenantPrisma.purchaseOrder.findMany({
-                where: {
-                    id: { in: purchaseOrderIds },
-                    deleted: false
-                },
-                select: { id: true }
-            });
-            const existingPurchaseOrderIds = new Set(existingPurchaseOrders.map(po => po.id));
-            const missingPurchaseOrderIds = purchaseOrderIds.filter((id) => !existingPurchaseOrderIds.has(id));
+            validationPromises.push(
+                tenantPrisma.purchaseOrder.findMany({
+                    where: { id: { in: purchaseOrderIds }, deleted: false },
+                    select: { id: true }
+                }).then(pos => ({ type: 'purchaseOrders', existing: pos.map(po => po.id), requested: purchaseOrderIds }))
+            );
+        }
 
-            if (missingPurchaseOrderIds.length > 0) {
-                throw new RequestValidateError(`Purchase orders with IDs ${missingPurchaseOrderIds.join(', ')} do not exist`);
+        // Execute all validations in parallel
+        const validationResults = await Promise.all(validationPromises);
+
+        // Process validation results
+        for (const result of validationResults) {
+            const existingIds = new Set(result.existing);
+            const missingIds = result.requested.filter((id: number) => !existingIds.has(id));
+
+            if (missingIds.length > 0) {
+                const entityName = result.type.charAt(0).toUpperCase() + result.type.slice(1, -1); // Remove 's' and capitalize
+                throw new RequestValidateError(`${entityName} with IDs ${missingIds.join(', ')} do not exist`);
             }
         }
 
@@ -229,15 +228,10 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         status: deliveryOrderData.status || 'PENDING',
                         remark: deliveryOrderData.remark,
                         performedBy: deliveryOrderData.performedBy
-                    },
-                    include: {
-                        deliveryOrderItems: {
-                            include: {
-                                item: true
-                            }
-                        }
                     }
                 });
+
+                let deliveryOrderItems: any[] = [];
 
                 // Create delivery order items if provided
                 if (deliveryOrderData.deliveryOrderItems && Array.isArray(deliveryOrderData.deliveryOrderItems) && deliveryOrderData.deliveryOrderItems.length > 0) {
@@ -252,18 +246,23 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         })),
                     });
 
-                    // Fetch the created items to include in response
-                    const deliveryOrderItems = await tx.deliveryOrderItem.findMany({
+                    deliveryOrderItems = await tx.deliveryOrderItem.findMany({
                         where: { deliveryOrderId: newDeliveryOrder.id },
                     });
 
-                    createdDeliveryOrders.push({
-                        ...newDeliveryOrder,
-                        deliveryOrderItems
-                    });
-                } else {
-                    createdDeliveryOrders.push(newDeliveryOrder);
+                    // Batch stock operations for better performance
+                    await updateStockBalancesAndMovements(tx, deliveryOrderData.deliveryOrderItems, newDeliveryOrder, deliveryOrderData.performedBy || "Cashier");
+
+                    // Check purchase order status with partial delivery support
+                    if (newDeliveryOrder.purchaseOrderId) {
+                        await checkAndUpdatePurchaseOrderStatusWithPartialDelivery(tx, newDeliveryOrder.purchaseOrderId);
+                    }
                 }
+
+                createdDeliveryOrders.push({
+                    ...newDeliveryOrder,
+                    deliveryOrderItems
+                });
             }
 
             return createdDeliveryOrders;
@@ -276,6 +275,98 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
     }
 }
 
+// Optimized helper function for batch stock operations
+const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string) => {
+    const stockOperations = [];
+    const movementOperations = [];
+    const receiptOperations = [];
+
+    // Get all current stock balances in one query
+    const currentStockBalances = await tx.stockBalance.findMany({
+        where: {
+            itemId: { in: items.map(item => item.itemId) },
+            outletId: deliveryOrder.outletId,
+            deleted: false
+        }
+    });
+
+    const stockBalanceMap = new Map();
+    currentStockBalances.forEach((balance: any) => {
+        stockBalanceMap.set(balance.itemId, balance);
+    });
+
+    for (const item of items) {
+        if (item.receivedQuantity > 0) {
+            const currentBalance = stockBalanceMap.get(item.itemId);
+            const previousAvailableQuantity = currentBalance?.availableQuantity || 0;
+            const previousOnHandQuantity = currentBalance?.onHandQuantity || 0;
+            const quantityDelta = item.receivedQuantity;
+
+            // Prepare stock balance operation - fix the where clause
+            stockOperations.push({
+                where: {
+                    itemId_outletId_reorderThreshold_deleted_availableQuantity: {
+                        itemId: item.itemId,
+                        outletId: deliveryOrder.outletId,
+                        reorderThreshold: currentBalance?.reorderThreshold ?? 0,
+                        deleted: false,
+                        availableQuantity: previousAvailableQuantity // Use current quantity, not new quantity
+                    }
+                },
+                update: {
+                    availableQuantity: previousAvailableQuantity + quantityDelta,
+                    onHandQuantity: previousOnHandQuantity + quantityDelta,
+                    lastRestockDate: new Date(),
+                    updatedAt: new Date()
+                },
+                create: {
+                    itemId: item.itemId,
+                    outletId: deliveryOrder.outletId,
+                    availableQuantity: quantityDelta,
+                    onHandQuantity: quantityDelta,
+                    reorderThreshold: null,
+                    lastRestockDate: new Date()
+                }
+            });
+
+            // Prepare movement operation
+            movementOperations.push({
+                itemId: item.itemId,
+                outletId: deliveryOrder.outletId,
+                previousAvailableQuantity: previousAvailableQuantity,
+                previousOnHandQuantity: previousOnHandQuantity,
+                availableQuantityDelta: quantityDelta,
+                onHandQuantityDelta: quantityDelta,
+                movementType: 'DELIVERY_RECEIPT',
+                documentId: deliveryOrder.id,
+                reason: 'Stock received from delivery order',
+                remark: item.remark || `Delivery Order #${deliveryOrder.id}`,
+                performedBy: performedBy || 'SYSTEM'
+            });
+
+            // Prepare receipt operation with cost from delivery order item
+            receiptOperations.push({
+                itemId: item.itemId,
+                outletId: deliveryOrder.outletId,
+                quantity: quantityDelta,
+                cost: item.unitPrice || 0,
+                receiptDate: new Date()
+            });
+        }
+    }
+
+    // Execute stock balance upserts sequentially to avoid unique constraint conflicts
+    for (const stockOp of stockOperations) {
+        await tx.stockBalance.upsert(stockOp);
+    }
+
+    // Execute movements and receipts in batch
+    await Promise.all([
+        movementOperations.length > 0 ? tx.stockMovement.createMany({ data: movementOperations }) : Promise.resolve(),
+        receiptOperations.length > 0 ? tx.stockReceipt.createMany({ data: receiptOperations }) : Promise.resolve()
+    ]);
+};
+
 let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -285,15 +376,18 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             throw new RequestValidateError('Delivery order ID is required');
         }
 
-        // Single query to get existing delivery order with related data
+        // Single query to get existing delivery order
         const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
-            where: {
-                id: id,
-                deleted: false
-            },
-            include: {
+            where: { id: id, deleted: false },
+            select: {
+                id: true,
+                outletId: true,
+                customerId: true,
+                purchaseOrderId: true,
+                version: true,
                 deliveryOrderItems: {
-                    where: { deleted: false }
+                    where: { deleted: false },
+                    select: { id: true }
                 }
             }
         });
@@ -302,10 +396,9 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             throw new NotFoundError("Delivery Order");
         }
 
-        // Batch validation queries for better performance
+        // Batch validation queries in parallel
         const validationPromises = [];
 
-        // Validate outlet if being updated
         if (updateData.outletId && updateData.outletId !== existingDeliveryOrder.outletId) {
             validationPromises.push(
                 tenantPrisma.outlet.findFirst({
@@ -315,7 +408,6 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             );
         }
 
-        // Validate customer if being updated
         if (updateData.customerId && updateData.customerId !== existingDeliveryOrder.customerId) {
             validationPromises.push(
                 tenantPrisma.customer.findFirst({
@@ -325,7 +417,6 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             );
         }
 
-        // Validate purchase order if being updated
         if (updateData.purchaseOrderId && updateData.purchaseOrderId !== existingDeliveryOrder.purchaseOrderId) {
             validationPromises.push(
                 tenantPrisma.purchaseOrder.findFirst({
@@ -335,7 +426,6 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             );
         }
 
-        // Validate items if being updated
         if (updateData.deliveryOrderItems && Array.isArray(updateData.deliveryOrderItems)) {
             const itemIds = [...new Set(updateData.deliveryOrderItems.map(item => item.itemId).filter(Boolean))];
             if (itemIds.length > 0) {
@@ -352,40 +442,24 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             }
         }
 
-        // Execute all validations in parallel
-        const validationResults = await Promise.all(validationPromises);
+        // Execute validations in parallel
+        if (validationPromises.length > 0) {
+            const validationResults = await Promise.all(validationPromises);
 
-        // Process validation results
-        for (const result of validationResults) {
-            switch (result.type) {
-                case 'outlet':
-                    if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Outlet with ID ${result.id} does not exist`);
+            for (const result of validationResults) {
+                if (result.type === 'items' && 'existing' in result && 'requested' in result) {
+                    const existingItemIds = new Set<number>(result.existing);
+                    const missingItemIds = result.requested.filter((id: number) => !existingItemIds.has(id));
+                    if (missingItemIds.length > 0) {
+                        throw new RequestValidateError(`Items with IDs ${missingItemIds.join(', ')} do not exist`);
                     }
-                    break;
-                case 'customer':
-                    if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Customer with ID ${result.id} does not exist`);
-                    }
-                    break;
-                case 'purchaseOrder':
-                    if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Purchase order with ID ${result.id} does not exist`);
-                    }
-                    break;
-                case 'items':
-                    if ('existing' in result && 'requested' in result) {
-                        const existingItemIds = new Set<number>(result.existing);
-                        const missingItemIds = result.requested.filter((id: number) => !existingItemIds.has(id));
-                        if (missingItemIds.length > 0) {
-                            throw new RequestValidateError(`Items with IDs ${missingItemIds.join(', ')} do not exist`);
-                        }
-                    }
-                    break;
+                } else if ('exists' in result && !result.exists) {
+                    throw new RequestValidateError(`${result.type} with ID ${result.id} does not exist`);
+                }
             }
         }
 
-        // Use transaction to ensure data consistency
+        // Use transaction for consistency
         const result = await tenantPrisma.$transaction(async (tx) => {
             // Update delivery order
             const updatedDeliveryOrder = await tx.deliveryOrder.update({
@@ -408,20 +482,13 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                 }
             });
 
-            // Handle delivery order items if provided
+            // Handle delivery order items efficiently
             if (updateData.deliveryOrderItems && Array.isArray(updateData.deliveryOrderItems)) {
-                // Simple approach: delete all existing items and recreate
-                // This ensures clean data and consistent updatedAt timestamps
-
-                // 1. Hard delete all existing delivery order items
+                // Use deleteMany for better performance
                 await tx.deliveryOrderItem.deleteMany({
-                    where: {
-                        deliveryOrderId: id,
-                        deleted: false
-                    }
+                    where: { deliveryOrderId: id, deleted: false }
                 });
 
-                // 2. Create all new items (if any provided)
                 if (updateData.deliveryOrderItems.length > 0) {
                     await tx.deliveryOrderItem.createMany({
                         data: updateData.deliveryOrderItems.map(item => ({
@@ -435,9 +502,13 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                         }))
                     });
                 }
+
+                if (updatedDeliveryOrder.purchaseOrderId) {
+                    await checkAndUpdatePurchaseOrderStatus(tx, updatedDeliveryOrder.purchaseOrderId);
+                }
             }
 
-            // Single query to fetch final result with all relationships
+            // Single optimized query for final result
             return await tx.deliveryOrder.findUnique({
                 where: { id: id },
                 include: {
@@ -473,5 +544,67 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
         throw error;
     }
 }
+
+// Updated helper function with partial delivery logic
+const checkAndUpdatePurchaseOrderStatusWithPartialDelivery = async (tx: Prisma.TransactionClient, purchaseOrderId: number) => {
+    // Use a single query with aggregation for better performance
+    const [orderData, deliveryData] = await Promise.all([
+        tx.purchaseOrderItem.groupBy({
+            by: ['itemId'],
+            where: { purchaseOrderId: purchaseOrderId, deleted: false },
+            _sum: { quantity: true }
+        }),
+        tx.deliveryOrderItem.groupBy({
+            by: ['itemId'],
+            where: {
+                deliveryOrder: { purchaseOrderId: purchaseOrderId, deleted: false },
+                deleted: false
+            },
+            _sum: { receivedQuantity: true }
+        })
+    ]);
+
+    // Create maps for O(1) lookup
+    const orderedMap = new Map(orderData.map(item => [item.itemId, item._sum.quantity || 0]));
+    const receivedMap = new Map(deliveryData.map(item => [item.itemId, item._sum.receivedQuantity || 0]));
+
+    if (orderedMap.size === 0) return; // No items to check
+
+    let hasAnyDelivery = false;
+    let allItemsFullyDelivered = true;
+
+    // Check delivery status for each item
+    Array.from(orderedMap.entries()).forEach(([itemId, orderedQty]) => {
+        const receivedQty = receivedMap.get(itemId) || 0;
+
+        if (receivedQty > 0) {
+            hasAnyDelivery = true;
+        }
+
+        if (receivedQty < orderedQty) {
+            allItemsFullyDelivered = false;
+        }
+    });
+
+    // Determine and update status
+    let newStatus: string;
+    if (allItemsFullyDelivered && hasAnyDelivery) {
+        newStatus = 'DELIVERED';
+    } else if (hasAnyDelivery) {
+        newStatus = 'PARTIALLY DELIVERED';
+    } else {
+        return; // No deliveries yet, keep current status
+    }
+
+    await tx.purchaseOrder.update({
+        where: { id: purchaseOrderId },
+        data: { status: newStatus, version: { increment: 1 } }
+    });
+};
+
+// Update the existing function to use the new logic
+const checkAndUpdatePurchaseOrderStatus = async (tx: Prisma.TransactionClient, purchaseOrderId: number) => {
+    await checkAndUpdatePurchaseOrderStatusWithPartialDelivery(tx, purchaseOrderId);
+};
 
 export = { getAll, getById, createMany, update };

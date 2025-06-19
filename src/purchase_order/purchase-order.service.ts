@@ -108,65 +108,51 @@ let getAll = async (
         // Batch fetch delivery orders and invoices for all purchase orders
         const purchaseOrderIds = purchaseOrders.map(po => po.id);
 
-        // Batch fetch first delivery order for each purchase order
-        const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
+        // Count delivery orders for each purchase order
+        const deliveryOrderCounts = await tenantPrisma.deliveryOrder.groupBy({
+            by: ['purchaseOrderId'],
             where: {
                 purchaseOrderId: { in: purchaseOrderIds },
                 deleted: false
             },
-            select: {
-                id: true,
-                purchaseOrderId: true,
-                deliveryDate: true
-            },
-            orderBy: {
-                deliveryDate: 'asc'
+            _count: {
+                id: true
             }
         });
 
-        // Batch fetch first invoice for each purchase order
-        const invoices = await tenantPrisma.invoice.findMany({
+        // Count invoices for each purchase order
+        const invoiceCounts = await tenantPrisma.invoice.groupBy({
+            by: ['purchaseOrderId'],
             where: {
                 purchaseOrderId: { in: purchaseOrderIds },
                 deleted: false
             },
-            select: {
-                id: true,
-                purchaseOrderId: true,
-                invoiceDate: true
-            },
-            orderBy: {
-                invoiceDate: 'asc'
+            _count: {
+                id: true
             }
         });
 
         // Create lookup maps for O(1) access
-        const deliveryOrderMap = new Map();
-        deliveryOrders.forEach(do_ => {
-            if (!deliveryOrderMap.has(do_.purchaseOrderId)) {
-                deliveryOrderMap.set(do_.purchaseOrderId, do_);
-            }
+        const deliveryOrderCountMap = new Map();
+        deliveryOrderCounts.forEach(doc => {
+            deliveryOrderCountMap.set(doc.purchaseOrderId, doc._count.id);
         });
 
-        const invoiceMap = new Map();
-        invoices.forEach(invoice => {
-            if (!invoiceMap.has(invoice.purchaseOrderId)) {
-                invoiceMap.set(invoice.purchaseOrderId, invoice);
-            }
+        const invoiceCountMap = new Map();
+        invoiceCounts.forEach(ic => {
+            invoiceCountMap.set(ic.purchaseOrderId, ic._count.id);
         });
 
-        // Enrich purchase orders with delivery order and invoice info
+        // Enrich purchase orders with counts
         const enrichedPurchaseOrders = purchaseOrders.map(po => {
-            const deliveryOrder = deliveryOrderMap.get(po.id);
-            const invoice = invoiceMap.get(po.id);
+            const deliveryOrderCount = deliveryOrderCountMap.get(po.id) || 0;
+            const invoiceCount = invoiceCountMap.get(po.id) || 0;
 
             return {
                 ...po,
                 itemCount: po._count.purchaseOrderItems,
-                deliveryOrderId: deliveryOrder?.id || null,
-                deliveryOrderDate: deliveryOrder?.deliveryDate || null,
-                invoiceId: invoice?.id || null,
-                invoiceDate: invoice?.invoiceDate || null,
+                deliveryOrderCount,
+                invoiceCount,
                 _count: undefined // Remove the _count field from response
             };
         });
@@ -205,69 +191,133 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             throw new Error('Invalid date format');
         }
 
-        // Build query conditions with date range
+        // Build query conditions with date range for purchase orders
         const where = {
             outletId: parsedOutletId,
-            businessDate: {
+            purchaseOrderDate: {
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
             deleted: false,
-        };
-
-        // Count total records
-        const total = await tenantPrisma.sales.count({ where });
-
-        const salesArray = await tenantPrisma.sales.findMany({
-            where,
-            select: {
-                id: true,
-                businessDate: true,
-                salesType: true,
-                customerId: true,
-                totalAmount: true,
-                paidAmount: true,
-                status: true,
-                remark: true,
-                customer: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                    },
-                },
-                payments: {
-                    select: {
-                        method: true
+            OR: [
+                // Purchase order itself was modified
+                { createdAt: { gte: lastSync } },
+                { updatedAt: { gte: lastSync } },
+                { deletedAt: { gte: lastSync } },
+                // Purchase order has delivery orders that were modified
+                {
+                    deliveryOrders: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
                     }
                 },
-                salesItems: true
-            },
+                // Purchase order has invoices that were modified
+                {
+                    invoices: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Purchase order has purchase order items that were modified
+                {
+                    purchaseOrderItems: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                }
+            ],
+        };
+
+        // Count total matching records
+        const total = await tenantPrisma.purchaseOrder.count({ where });
+
+        // Fetch paginated purchase orders with minimal data
+        const purchaseOrders = await tenantPrisma.purchaseOrder.findMany({
+            where,
             skip,
             take,
+            include: {
+                _count: {
+                    select: {
+                        purchaseOrderItems: {
+                            where: { deleted: false }
+                        }
+                    }
+                }
+            }
         });
 
-        // Transform results to include customerName
-        const transformedSales = salesArray.map(sale => ({
-            id: sale.id,
-            businessDate: sale.businessDate,
-            salesType: sale.salesType,
-            customerId: sale.customerId,
-            totalAmount: sale.totalAmount,
-            paidAmount: sale.paidAmount,
-            status: sale.status,
-            remark: sale.remark,
-            totalItems: sale.salesItems.length,
-            payments: sale.payments || [],
-            customerName: sale.customer
-                ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                : 'Guest',
-        }));
+        // Batch fetch delivery orders and invoices for all purchase orders
+        const purchaseOrderIds = purchaseOrders.map(po => po.id);
 
-        // Return with pagination metadata and server timestamp
+        // Count delivery orders for each purchase order
+        const deliveryOrderCounts = await tenantPrisma.deliveryOrder.groupBy({
+            by: ['purchaseOrderId'],
+            where: {
+                purchaseOrderId: { in: purchaseOrderIds },
+                deleted: false
+            },
+            _count: {
+                id: true
+            }
+        });
+
+        // Count invoices for each purchase order
+        const invoiceCounts = await tenantPrisma.invoice.groupBy({
+            by: ['purchaseOrderId'],
+            where: {
+                purchaseOrderId: { in: purchaseOrderIds },
+                deleted: false
+            },
+            _count: {
+                id: true
+            }
+        });
+
+        // Create lookup maps for O(1) access
+        const deliveryOrderCountMap = new Map();
+        deliveryOrderCounts.forEach(doc => {
+            deliveryOrderCountMap.set(doc.purchaseOrderId, doc._count.id);
+        });
+
+        const invoiceCountMap = new Map();
+        invoiceCounts.forEach(ic => {
+            invoiceCountMap.set(ic.purchaseOrderId, ic._count.id);
+        });
+
+        // Enrich purchase orders with counts
+        const enrichedPurchaseOrders = purchaseOrders.map(po => {
+            const deliveryOrderCount = deliveryOrderCountMap.get(po.id) || 0;
+            const invoiceCount = invoiceCountMap.get(po.id) || 0;
+
+            return {
+                ...po,
+                itemCount: po._count.purchaseOrderItems,
+                deliveryOrderCount,
+                invoiceCount,
+                _count: undefined // Remove the _count field from response
+            };
+        });
+
         return {
-            data: transformedSales,
+            purchaseOrders: enrichedPurchaseOrders,
             total,
-            serverTimestamp: new Date().toISOString()
+            serverTimestamp: new Date().toISOString(),
         };
     }
     catch (error) {
@@ -292,6 +342,13 @@ let getById = async (id: number, databaseName: string) => {
                 deliveryOrders: {
                     where: {
                         deleted: false
+                    },
+                    include: {
+                        deliveryOrderItems: {
+                            where: {
+                                deleted: false
+                            }
+                        }
                     }
                 },
                 invoices: {
@@ -403,7 +460,7 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         roundingAmount: purchaseOrderData.roundingAmount || 0,
                         subtotalAmount: purchaseOrderData.subtotalAmount,
                         totalAmount: purchaseOrderData.totalAmount,
-                        status: purchaseOrderData.status || 'DRAFT',
+                        status: purchaseOrderData.status || 'CONFIRMED',
                         remark: purchaseOrderData.remark,
                         currency: purchaseOrderData.currency || 'IDR',
                         performedBy: purchaseOrderData.performedBy
@@ -453,6 +510,71 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
         throw error
     }
 }
+
+let cancel = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const { id, ...updateData } = purchaseOrder;
+
+        if (!id) {
+            throw new RequestValidateError('Purchase order ID is required');
+        }
+
+        // Single query to get existing purchase order with related data
+        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findUnique({
+            where: {
+                id: id,
+                deleted: false
+            },
+        });
+
+        if (!existingPurchaseOrder) {
+            throw new NotFoundError("Purchase Order");
+        }
+
+        // Use transaction to ensure data consistency
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Update purchase order status to Cancelled
+            const updatedPurchaseOrder = await tx.purchaseOrder.update({
+                where: { id: id },
+                data: {
+                    status: 'CANCELLED',
+                    version: { increment: 1 }
+                }
+            });
+
+            // Single query to fetch final result with all relationships (same as getById)
+            const updatedPurchaseOrderWithRelations = await tx.purchaseOrder.findUnique({
+                where: { id: id },
+                include: {
+                    purchaseOrderItems: {
+                        where: {
+                            deleted: false
+                        },
+                    },
+                    deliveryOrders: {
+                        where: {
+                            deleted: false
+                        }
+                    },
+                    invoices: {
+                        where: {
+                            deleted: false
+                        }
+                    }
+                }
+            });
+
+            return updatedPurchaseOrderWithRelations;
+        });
+
+        return result;
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
 
 let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -626,41 +748,29 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                 }
             }
 
-            // Single query to fetch final result with all relationships
-            return await tx.purchaseOrder.findUnique({
+            // Single query to fetch final result with all relationships (same as getById)
+            const updatedPurchaseOrderWithRelations = await tx.purchaseOrder.findUnique({
                 where: { id: id },
                 include: {
-                    supplier: {
-                        select: {
-                            id: true,
-                            companyName: true,
-                            email: true,
-                            mobile: true,
-                            deleted: true
-                        }
-                    },
                     purchaseOrderItems: {
-                        where: { deleted: false },
-                        include: {
-                            item: {
-                                select: {
-                                    id: true,
-                                    itemName: true,
-                                    itemCode: true,
-                                    sku: true,
-                                    unitOfMeasure: true
-                                }
-                            }
-                        }
+                        where: {
+                            deleted: false
+                        },
                     },
                     deliveryOrders: {
-                        where: { deleted: false }
+                        where: {
+                            deleted: false
+                        }
                     },
                     invoices: {
-                        where: { deleted: false }
+                        where: {
+                            deleted: false
+                        }
                     }
                 }
             });
+
+            return updatedPurchaseOrderWithRelations;
         });
 
         return result;
@@ -670,4 +780,4 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
     }
 }
 
-export = { getAll, getByDateRange, getById, createMany, update };
+export = { getAll, getByDateRange, getById, createMany, cancel, update };

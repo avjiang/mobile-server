@@ -179,7 +179,7 @@ async function main(): Promise<void> {
     const tenantPrisma1 = getTenantPrisma('web_bytes_db');
     try {
         // Seed 200 items
-        await seedItems(tenantPrisma1, 1, 1, 1, 200);
+        // await seedItems(tenantPrisma1, 1, 1, 1, 200);
 
         console.log("Seeding completed successfully!");
     } catch (error) {

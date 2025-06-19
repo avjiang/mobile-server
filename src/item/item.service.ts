@@ -35,22 +35,12 @@ let getAll = async (
         // Fetch paginated items
         const items = await tenantPrisma.item.findMany({
             where,
-            include: {
-                stockBalance: {
-                    select: { availableQuantity: true, id: true, reorderThreshold: true },
-                    where: { deleted: false }
-                },
-            },
             skip,
             take,
         });
         // Map to DTO
         const response = items.map((item) => ({
             ...item,
-            stockBalanceId: item.stockBalance[0]?.id || null,
-            stockBalance: undefined,
-            stockQuantity: item.stockBalance[0]?.availableQuantity || 0,
-            reorderThreshold: item.stockBalance[0]?.reorderThreshold || 0,
         }));
         // Return with server timestamp
         return {

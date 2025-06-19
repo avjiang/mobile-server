@@ -47,16 +47,6 @@ let getAllStock = async (
             skip,
             take,
         });
-
-        // // Transform to expected response format
-        // const response = stocks.map(stock => ({
-        //     ...stock,
-        //     item: undefined, // Remove the nested item object
-        //     itemName: stock.item?.itemName || "",
-        //     itemCode: stock.item?.itemCode || "",
-        //     // Add other item fields you need here
-        // }));
-
         return {
             stockBalances: stocks,
             total,

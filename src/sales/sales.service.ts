@@ -48,10 +48,12 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                 businessDate: true,
                 salesType: true,
                 customerId: true,
+                customerName: true,
                 totalAmount: true,
                 paidAmount: true,
                 status: true,
                 remark: true,
+                shipStreet: true,
                 customer: {
                     select: {
                         firstName: true,
@@ -79,15 +81,14 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             businessDate: sale.businessDate,
             salesType: sale.salesType,
             customerId: sale.customerId,
+            customerName: sale.customerName,
             totalAmount: sale.totalAmount,
             paidAmount: sale.paidAmount,
             status: sale.status,
+            shipStreet: sale.shipStreet,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
             payments: sale.payments || [],
-            customerName: sale.customer
-                ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                : 'Guest',
         }));
 
         // Return with pagination metadata and server timestamp
@@ -147,6 +148,8 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 businessDate: true,
                 salesType: true,
                 customerId: true,
+                customerName: true,
+                shipStreet: true,
                 totalAmount: true,
                 paidAmount: true,
                 status: true,
@@ -174,15 +177,14 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             businessDate: sale.businessDate,
             salesType: sale.salesType,
             customerId: sale.customerId,
+            customerName: sale.customerName,
+            shipStreet: sale.shipStreet,
             totalAmount: sale.totalAmount,
             paidAmount: sale.paidAmount,
             status: sale.status,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
-            payments: sale.payments || [],
-            customerName: sale.customer
-                ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                : 'Guest',
+            payments: sale.payments || []
         }));
 
         // Return with pagination metadata and server timestamp
@@ -231,6 +233,8 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
                 businessDate: true,
                 salesType: true,
                 customerId: true,
+                customerName: true,
+                shipStreet: true,
                 totalAmount: true,
                 paidAmount: true,
                 status: true,
@@ -258,15 +262,14 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
             businessDate: sale.businessDate,
             salesType: sale.salesType,
             customerId: sale.customerId,
+            customerName: sale.customerName,
+            shipStreet: sale.shipStreet,
             totalAmount: sale.totalAmount,
             paidAmount: sale.paidAmount,
             status: sale.status,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
-            payments: sale.payments || [],
-            customerName: sale.customer
-                ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                : 'Guest',
+            payments: sale.payments || []
         }));
 
         // Return with pagination metadata and server timestamp
@@ -678,7 +681,9 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     outletId: salesBody.outletId,
                     businessDate: salesBody.businessDate,
                     salesType: salesBody.salesType.replace(/\b\w/g, (char) => char.toUpperCase()),
+                    customerName: salesBody.customerName || '',
                     customerId: salesBody.customerId || null,
+                    phoneNumber: salesBody.phoneNumber || '',
                     billStreet: salesBody.billStreet,
                     billCity: salesBody.billCity,
                     billState: salesBody.billState,
@@ -702,6 +707,7 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     status: salesStatus,
                     remark: salesBody.remark,
                     sessionId: salesBody.sessionId,
+                    completedSessionId: totalPaymentAmount >= totalSalesAmount ? salesBody.sessionId : null,
                     eodId: salesBody.eodId,
                     salesQuotationId: salesBody.salesQuotationId,
                     performedBy: salesBody.performedBy,

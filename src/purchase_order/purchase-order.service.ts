@@ -354,6 +354,13 @@ let getById = async (id: number, databaseName: string) => {
                 invoices: {
                     where: {
                         deleted: false
+                    },
+                    include: {
+                        invoiceItems: {
+                            where: {
+                                deleted: false
+                            }
+                        }
                     }
                 }
             }
@@ -362,9 +369,13 @@ let getById = async (id: number, databaseName: string) => {
         if (!purchaseOrder) {
             throw new NotFoundError("Purchase Order");
         }
-        // Return purchase order with itemCount added
+
+        // Return purchase order with counts added to align with getAll response
         return {
-            ...purchaseOrder
+            ...purchaseOrder,
+            itemCount: purchaseOrder.purchaseOrderItems.length,
+            deliveryOrderCount: purchaseOrder.deliveryOrders.length,
+            invoiceCount: purchaseOrder.invoices.length
         };
     }
     catch (error) {
@@ -452,8 +463,9 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         purchaseOrderNumber: purchaseOrderData.purchaseOrderNumber,
                         outletId: purchaseOrderData.outletId,
                         supplierId: purchaseOrderData.supplierId,
+                        sessionId: purchaseOrderData.sessionId || null,
                         purchaseOrderDate: purchaseOrderData.purchaseOrderDate,
-                        discountPercentage: purchaseOrderData.discountPercentage || 0,
+                        discountType: purchaseOrderData.discountType || '',
                         discountAmount: purchaseOrderData.discountAmount || 0,
                         serviceChargeAmount: purchaseOrderData.serviceChargeAmount || 0,
                         taxAmount: purchaseOrderData.taxAmount || 0,
@@ -482,7 +494,10 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                             itemId: item.itemId,
                             quantity: item.quantity,
                             unitPrice: item.unitPrice,
+                            discountType: item.discountType || '',
+                            discountAmount: item.discountAmount || 0,
                             subtotal: item.subtotal,
+                            taxAmount: item.taxAmount || 0,
                             remark: item.remark || null,
                         })),
                     });
@@ -704,7 +719,7 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                     outletId: updateData.outletId,
                     supplierId: updateData.supplierId,
                     purchaseOrderDate: updateData.purchaseOrderDate,
-                    discountPercentage: updateData.discountPercentage,
+                    discountType: updateData.discountType || '',
                     discountAmount: updateData.discountAmount,
                     serviceChargeAmount: updateData.serviceChargeAmount,
                     taxAmount: updateData.taxAmount,
@@ -740,6 +755,9 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                             itemId: item.itemId,
                             quantity: item.quantity,
                             unitPrice: item.unitPrice,
+                            taxAmount: item.taxAmount || 0,
+                            discountType: item.discountType || '',
+                            discountAmount: item.discountAmount || 0,
                             subtotal: item.subtotal,
                             remark: item.remark || null,
                             updatedAt: new Date()

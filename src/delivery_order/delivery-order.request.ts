@@ -14,6 +14,8 @@ export interface DeliveryOrderInput {
     outletId: number;
     customerId?: number;
     purchaseOrderId?: number;
+    supplierId?: number;
+    sessionId?: number; // Optional for backwards compatibility
     deliveryDate?: Date;
     deliveryStreet?: string;
     deliveryCity?: string;

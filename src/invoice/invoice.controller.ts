@@ -50,6 +50,51 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+const getAllByDateRange = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { outletId, skip, take, lastSyncTimestamp, startDate, endDate } = req.query;
+
+    // Validate outletId
+    if (!outletId || !validator.isNumeric(outletId as string)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+    // Validate date parameters
+    if (!startDate || !endDate) {
+        throw new RequestValidateError('Both startDate and endDate are required');
+    }
+    try {
+        // Basic date format validation
+        const parsedStartDate = new Date(startDate as string);
+        const parsedEndDate = new Date(endDate as string);
+
+        if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+            throw new Error('Invalid date format');
+        }
+        if (parsedEndDate < parsedStartDate) {
+            throw new Error('endDate cannot be before startDate');
+        }
+    } catch (error) {
+        throw new RequestValidateError(`Date validation error`);
+    }
+    const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
+    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+    const dateRangeRequest = {
+        outletId: outletId as string,
+        skip: skipNum,
+        take: takeNum,
+        lastSyncTimestamp: lastSyncTimestamp as string,
+        startDate: startDate as string,
+        endDate: endDate as string
+    };
+    service.getByDateRange(req.user.databaseName, dateRangeRequest)
+        .then(({ invoices, total, serverTimestamp }) => {
+            sendResponse(res, { data: invoices, total, serverTimestamp });
+        })
+        .catch(next);
+}
+
 let createMany = (req: NetworkRequest<CreateInvoiceRequestBody>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -86,6 +131,7 @@ let update = (req: NetworkRequest<InvoiceInput>, res: Response, next: NextFuncti
 
 //routes
 router.get("/sync", getAll)
+router.get('/dateRange', getAllByDateRange)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)

@@ -5,19 +5,25 @@ interface InvoiceItemInput {
     itemId: number;
     quantity: number;
     unitPrice: number;
+    taxAmount?: number;
+    discountType?: string; // e.g., 'percentage' or 'fixed'
+    discountAmount: number;
     subtotal: number;
     remark?: string;
 }
 
 export interface InvoiceInput {
-    id?: number; // Optional for creation, required for updates
+    id?: number;
     invoiceNumber: string;
+    taxInvoiceNumber?: string;
     purchaseOrderId?: number;
-    deliveryOrderId?: number;
     supplierId?: number;
+    sessionId?: number; // Optional for backwards compatibility
+    deliveryOrderIds?: number[]; // Changed from deliveryOrderId to deliveryOrderIds array
     outletId: number;
     subtotalAmount: number;
     taxAmount: number;
+    discountType?: string; // e.g., 'percentage' or 'fixed'
     discountAmount: number;
     totalAmount: number;
     currency?: string;

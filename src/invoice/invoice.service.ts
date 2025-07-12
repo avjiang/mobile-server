@@ -81,11 +81,12 @@ let getAll = async (
         // Batch fetch delivery orders for each invoice
         const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
             where: {
-                id: { in: invoices.map(inv => inv.deliveryOrderId).filter((id): id is number => typeof id === 'number') },
+                invoiceId: { in: invoiceIds },
                 deleted: false
             },
             select: {
                 id: true,
+                invoiceId: true,
                 deliveryDate: true,
                 trackingNumber: true
             }
@@ -97,23 +98,31 @@ let getAll = async (
             purchaseOrderMap.set(po.id, po);
         });
 
-        const deliveryOrderMap = new Map();
+        // Create lookup map for delivery orders grouped by invoice ID
+        const deliveryOrderMap = new Map<number, any[]>();
         deliveryOrders.forEach(do_ => {
-            deliveryOrderMap.set(do_.id, do_);
+            if (!deliveryOrderMap.has(do_.invoiceId!)) {
+                deliveryOrderMap.set(do_.invoiceId!, []);
+            }
+            deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
         // Enrich invoices with purchase order and delivery order info
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
-            const deliveryOrder = deliveryOrderMap.get(inv.deliveryOrderId);
+            const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
 
             return {
                 ...inv,
                 itemCount: inv._count.invoiceItems,
+                deliveryOrderCount: relatedDeliveryOrders.length,
                 purchaseOrderNumber: purchaseOrder?.purchaseOrderNumber || null,
                 purchaseOrderDate: purchaseOrder?.purchaseOrderDate || null,
-                deliveryDate: deliveryOrder?.deliveryDate || null,
-                trackingNumber: deliveryOrder?.trackingNumber || null,
+                deliveryOrders: relatedDeliveryOrders.map(do_ => ({
+                    id: do_.id,
+                    deliveryDate: do_.deliveryDate,
+                    trackingNumber: do_.trackingNumber
+                })),
                 _count: undefined // Remove the _count field from response
             };
         });
@@ -142,35 +151,185 @@ let getById = async (id: number, databaseName: string) => {
                         deleted: false
                     },
                 },
-                // purchaseOrder: {
-                //     where: {
-                //         deleted: false
-                //     },
-                //     select: {
-                //         id: true,
-                //         purchaseOrderNumber: true,
-                //         purchaseOrderDate: true,
-                //     }
-                // },
-                // deliveryOrder: {
-                //     where: {
-                //         deleted: false
-                //     },
-                //     select: {
-                //         id: true,
-                //         deliveryDate: true,
-                //         trackingNumber: true
-                //     }
-                // }
+                purchaseOrder: {
+                    where: {
+                        deleted: false
+                    },
+                    select: {
+                        id: true,
+                        purchaseOrderNumber: true,
+                        purchaseOrderDate: true,
+                        supplierId: true,
+                        outletId: true,
+                        subtotalAmount: true,
+                        taxAmount: true,
+                        discountAmount: true,
+                        totalAmount: true,
+                        currency: true,
+                        status: true,
+                        remark: true,
+                        purchaseOrderItems: {
+                            where: {
+                                deleted: false
+                            },
+                        }
+                    }
+                },
+                deliveryOrders: {
+                    where: {
+                        deleted: false
+                    },
+                    include: {
+                        deliveryOrderItems: {
+                            where: {
+                                deleted: false
+                            }
+                        }
+                    }
+                }
             }
         });
 
         if (!invoice) {
             throw new NotFoundError("Invoice");
         }
-        // Return invoice with itemCount added
+
         return {
             ...invoice
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+let getByDateRange = async (databaseName: string, request: SyncRequest & { startDate: string, endDate: string }) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { outletId, skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+
+    try {
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Ensure outletId is a number
+        const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
+
+        // Parse and validate date range
+        const parsedStartDate = new Date(startDate);
+        parsedStartDate.setHours(0, 0, 0, 0); // Start of day
+
+        const parsedEndDate = new Date(endDate);
+        parsedEndDate.setHours(23, 59, 59, 999); // End of day
+
+        // Ensure dates are valid
+        if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+            throw new Error('Invalid date format');
+        }
+
+        // Build query conditions with date range for invoices
+        const where = {
+            outletId: parsedOutletId,
+            invoiceDate: {
+                gte: parsedStartDate,
+                lte: parsedEndDate
+            },
+            deleted: false,
+            OR: [
+                { createdAt: { gte: lastSync } },
+                { updatedAt: { gte: lastSync } },
+                { deletedAt: { gte: lastSync } },
+            ],
+        };
+
+        // Count total matching records
+        const total = await tenantPrisma.invoice.count({ where });
+
+        // Fetch paginated invoices with minimal data
+        const invoices = await tenantPrisma.invoice.findMany({
+            where,
+            skip,
+            take,
+            include: {
+                _count: {
+                    select: {
+                        invoiceItems: {
+                            where: { deleted: false }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Batch fetch delivery orders for all invoices (if needed for additional data)
+        const invoiceIds = invoices.map(inv => inv.id);
+
+        // Batch fetch purchase order for each invoice
+        const purchaseOrders = await tenantPrisma.purchaseOrder.findMany({
+            where: {
+                id: { in: invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number') },
+                deleted: false
+            },
+            select: {
+                id: true,
+                purchaseOrderNumber: true,
+                purchaseOrderDate: true
+            }
+        });
+
+        // Batch fetch delivery orders for each invoice
+        const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
+            where: {
+                invoiceId: { in: invoiceIds },
+                deleted: false
+            },
+            select: {
+                id: true,
+                invoiceId: true,
+                deliveryDate: true,
+                trackingNumber: true
+            }
+        });
+
+        // Create lookup maps for O(1) access
+        const purchaseOrderMap = new Map();
+        purchaseOrders.forEach(po => {
+            purchaseOrderMap.set(po.id, po);
+        });
+
+        // Create lookup map for delivery orders grouped by invoice ID
+        const deliveryOrderMap = new Map<number, any[]>();
+        deliveryOrders.forEach(do_ => {
+            if (!deliveryOrderMap.has(do_.invoiceId!)) {
+                deliveryOrderMap.set(do_.invoiceId!, []);
+            }
+            deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
+        });
+
+        // Enrich invoices with purchase order and delivery order info
+        const enrichedInvoices = invoices.map(inv => {
+            const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
+            const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
+
+            return {
+                ...inv,
+                itemCount: inv._count.invoiceItems,
+                deliveryOrderCount: relatedDeliveryOrders.length,
+                purchaseOrderNumber: purchaseOrder?.purchaseOrderNumber || null,
+                purchaseOrderDate: purchaseOrder?.purchaseOrderDate || null,
+                deliveryOrders: relatedDeliveryOrders.map(do_ => ({
+                    id: do_.id,
+                    deliveryDate: do_.deliveryDate,
+                    trackingNumber: do_.trackingNumber
+                })),
+                _count: undefined
+            };
+        });
+
+        return {
+            invoices: enrichedInvoices,
+            total,
+            serverTimestamp: new Date().toISOString(),
         };
     }
     catch (error) {
@@ -191,7 +350,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
         const outletIds = [...new Set(invoices.map(inv => inv.outletId).filter(Boolean))];
         const supplierIds = [...new Set(invoices.map(inv => inv.supplierId).filter((id): id is number => typeof id === 'number'))];
         const purchaseOrderIds = [...new Set(invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number'))];
-        const deliveryOrderIds = [...new Set(invoices.map(inv => inv.deliveryOrderId).filter((id): id is number => typeof id === 'number'))];
+        const deliveryOrderIds = [...new Set(invoices.flatMap(inv => inv.deliveryOrderIds || []).filter((id): id is number => typeof id === 'number'))];
 
         // Check for duplicate invoice numbers
         const invoiceNumbers = invoices.map(inv => inv.invoiceNumber).filter(Boolean);
@@ -266,7 +425,8 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const existingDeliveryOrders = await tenantPrisma.deliveryOrder.findMany({
                 where: {
                     id: { in: deliveryOrderIds },
-                    deleted: false
+                    deleted: false,
+                    invoiceId: null // Ensure delivery orders are not already linked to another invoice
                 },
                 select: { id: true }
             });
@@ -274,7 +434,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const missingDeliveryOrderIds = deliveryOrderIds.filter((id) => !existingDeliveryOrderIds.has(id));
 
             if (missingDeliveryOrderIds.length > 0) {
-                throw new RequestValidateError(`Delivery orders with IDs ${missingDeliveryOrderIds.join(', ')} do not exist`);
+                throw new RequestValidateError(`Delivery orders with IDs ${missingDeliveryOrderIds.join(', ')} do not exist or are already linked to another invoice`);
             }
         }
 
@@ -283,20 +443,26 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const createdInvoices = [];
 
             for (const invoiceData of invoices) {
-                // Create invoice
+                // Determine invoice status based on taxInvoiceNumber
+                const invoiceStatus = (invoiceData.taxInvoiceNumber && invoiceData.taxInvoiceNumber.trim() !== '')
+                    ? 'Completed'
+                    : 'Incomplete';
+
                 const newInvoice = await tx.invoice.create({
                     data: {
                         invoiceNumber: invoiceData.invoiceNumber,
+                        taxInvoiceNumber: invoiceData.taxInvoiceNumber || "",
                         purchaseOrderId: invoiceData.purchaseOrderId,
-                        deliveryOrderId: invoiceData.deliveryOrderId,
                         supplierId: invoiceData.supplierId,
+                        sessionId: invoiceData.sessionId || null,
                         outletId: invoiceData.outletId,
                         subtotalAmount: invoiceData.subtotalAmount,
                         taxAmount: invoiceData.taxAmount,
                         discountAmount: invoiceData.discountAmount,
+                        discountType: invoiceData.discountType || '',
                         totalAmount: invoiceData.totalAmount,
                         currency: invoiceData.currency || 'IDR',
-                        status: invoiceData.status || 'DRAFT',
+                        status: invoiceStatus,
                         invoiceDate: invoiceData.invoiceDate,
                         paymentDate: invoiceData.paymentDate,
                         dueDate: invoiceData.dueDate,
@@ -312,6 +478,32 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                     }
                 });
 
+                // Update purchase order status to COMPLETED if purchaseOrderId exists
+                if (invoiceData.purchaseOrderId) {
+                    await tx.purchaseOrder.update({
+                        where: {
+                            id: invoiceData.purchaseOrderId,
+                            deleted: false
+                        },
+                        data: {
+                            status: 'COMPLETED'
+                        }
+                    });
+                }
+
+                // Link delivery orders to this invoice
+                if (invoiceData.deliveryOrderIds && invoiceData.deliveryOrderIds.length > 0) {
+                    await tx.deliveryOrder.updateMany({
+                        where: {
+                            id: { in: invoiceData.deliveryOrderIds },
+                            deleted: false
+                        },
+                        data: {
+                            invoiceId: newInvoice.id
+                        }
+                    });
+                }
+
                 // Create invoice items if provided
                 if (invoiceData.invoiceItems && Array.isArray(invoiceData.invoiceItems) && invoiceData.invoiceItems.length > 0) {
                     await tx.invoiceItem.createMany({
@@ -319,7 +511,10 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                             invoiceId: newInvoice.id,
                             itemId: item.itemId,
                             quantity: item.quantity,
+                            discountType: item.discountType || '',
+                            discountAmount: item.discountAmount || 0,
                             unitPrice: item.unitPrice,
+                            taxAmount: item.taxAmount || 0,
                             subtotal: item.subtotal,
                             remark: item.remark || null,
                         })),
@@ -358,16 +553,16 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
             throw new RequestValidateError('Invoice ID is required');
         }
 
-        // Single query to get existing invoice with related data
+        // Get existing invoice
         const existingInvoice = await tenantPrisma.invoice.findUnique({
-            where: {
-                id: id,
-                deleted: false
-            },
-            include: {
-                invoiceItems: {
-                    where: { deleted: false }
-                }
+            where: { id: id, deleted: false },
+            select: {
+                id: true,
+                version: true,
+                outletId: true,
+                supplierId: true,
+                purchaseOrderId: true,
+                invoiceNumber: true
             }
         });
 
@@ -375,121 +570,112 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
             throw new NotFoundError("Invoice");
         }
 
-        // Batch validation queries for better performance
-        const validationPromises = [];
+        // Check for duplicate invoice number if being updated
+        if (updateData.invoiceNumber && updateData.invoiceNumber !== existingInvoice.invoiceNumber) {
+            const duplicateInvoice = await tenantPrisma.invoice.findFirst({
+                where: {
+                    invoiceNumber: updateData.invoiceNumber,
+                    deleted: false,
+                    id: { not: id }
+                },
+                select: { id: true }
+            });
 
-        // Validate outlet if being updated
-        if (updateData.outletId && updateData.outletId !== existingInvoice.outletId) {
-            validationPromises.push(
-                tenantPrisma.outlet.findFirst({
-                    where: { id: updateData.outletId, deleted: false },
-                    select: { id: true }
-                }).then(outlet => ({ type: 'outlet', exists: !!outlet, id: updateData.outletId }))
-            );
-        }
-
-        // Validate supplier if being updated
-        if (updateData.supplierId && updateData.supplierId !== existingInvoice.supplierId) {
-            validationPromises.push(
-                tenantPrisma.supplier.findFirst({
-                    where: { id: updateData.supplierId, deleted: false },
-                    select: { id: true }
-                }).then(supplier => ({ type: 'supplier', exists: !!supplier, id: updateData.supplierId }))
-            );
-        }
-
-        // Validate purchase order if being updated
-        if (updateData.purchaseOrderId && updateData.purchaseOrderId !== existingInvoice.purchaseOrderId) {
-            validationPromises.push(
-                tenantPrisma.purchaseOrder.findFirst({
-                    where: { id: updateData.purchaseOrderId, deleted: false },
-                    select: { id: true }
-                }).then(purchaseOrder => ({ type: 'purchaseOrder', exists: !!purchaseOrder, id: updateData.purchaseOrderId }))
-            );
-        }
-
-        // Validate delivery order if being updated
-        if (updateData.deliveryOrderId && updateData.deliveryOrderId !== existingInvoice.deliveryOrderId) {
-            validationPromises.push(
-                tenantPrisma.deliveryOrder.findFirst({
-                    where: { id: updateData.deliveryOrderId, deleted: false },
-                    select: { id: true }
-                }).then(deliveryOrder => ({ type: 'deliveryOrder', exists: !!deliveryOrder, id: updateData.deliveryOrderId }))
-            );
-        }
-
-        // Validate items if being updated
-        if (updateData.invoiceItems && Array.isArray(updateData.invoiceItems)) {
-            const itemIds = [...new Set(updateData.invoiceItems.map(item => item.itemId).filter(Boolean))];
-            if (itemIds.length > 0) {
-                validationPromises.push(
-                    tenantPrisma.item.findMany({
-                        where: { id: { in: itemIds }, deleted: false },
-                        select: { id: true }
-                    }).then(items => ({
-                        type: 'items',
-                        existing: items.map(item => item.id),
-                        requested: itemIds
-                    }))
-                );
+            if (duplicateInvoice) {
+                throw new RequestValidateError(`Invoice number ${updateData.invoiceNumber} already exists`);
             }
         }
 
-        // Execute all validations in parallel
-        const validationResults = await Promise.all(validationPromises);
+        // Collect IDs for batch validation
+        const validationIds = {
+            outletIds: updateData.outletId && updateData.outletId !== existingInvoice.outletId ? [updateData.outletId] : [],
+            supplierIds: updateData.supplierId && updateData.supplierId !== existingInvoice.supplierId ? [updateData.supplierId] : [],
+            purchaseOrderIds: updateData.purchaseOrderId && updateData.purchaseOrderId !== existingInvoice.purchaseOrderId ? [updateData.purchaseOrderId] : [],
+            deliveryOrderIds: updateData.deliveryOrderIds && Array.isArray(updateData.deliveryOrderIds) ? updateData.deliveryOrderIds.filter(Boolean) : [],
+            itemIds: updateData.invoiceItems && Array.isArray(updateData.invoiceItems) ? [...new Set(updateData.invoiceItems.map(item => item.itemId).filter(Boolean))] : []
+        };
 
-        // Process validation results
-        for (const result of validationResults) {
-            switch (result.type) {
-                case 'outlet':
-                    if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Outlet with ID ${result.id} does not exist`);
-                    }
-                    break;
-                case 'supplier':
-                    if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Supplier with ID ${result.id} does not exist`);
-                    }
-                    break;
-                case 'purchaseOrder':
-                    if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Purchase order with ID ${result.id} does not exist`);
-                    }
-                    break;
-                case 'deliveryOrder':
-                    if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Delivery order with ID ${result.id} does not exist`);
-                    }
-                    break;
-                case 'items':
-                    if ('existing' in result && 'requested' in result) {
-                        const existingItemIds = new Set<number>(result.existing);
-                        const missingItemIds = result.requested.filter((id: number) => !existingItemIds.has(id));
-                        if (missingItemIds.length > 0) {
-                            throw new RequestValidateError(`Items with IDs ${missingItemIds.join(', ')} do not exist`);
-                        }
-                    }
-                    break;
-            }
+        // Batch validation queries
+        const [outlets, suppliers, purchaseOrders, deliveryOrders, items] = await Promise.all([
+            validationIds.outletIds.length > 0 ? tenantPrisma.outlet.findMany({
+                where: { id: { in: validationIds.outletIds }, deleted: false },
+                select: { id: true }
+            }) : [],
+            validationIds.supplierIds.length > 0 ? tenantPrisma.supplier.findMany({
+                where: { id: { in: validationIds.supplierIds }, deleted: false },
+                select: { id: true }
+            }) : [],
+            validationIds.purchaseOrderIds.length > 0 ? tenantPrisma.purchaseOrder.findMany({
+                where: { id: { in: validationIds.purchaseOrderIds }, deleted: false },
+                select: { id: true }
+            }) : [],
+            validationIds.deliveryOrderIds.length > 0 ? tenantPrisma.deliveryOrder.findMany({
+                where: {
+                    id: { in: validationIds.deliveryOrderIds },
+                    deleted: false,
+                    OR: [{ invoiceId: null }, { invoiceId: id }]
+                },
+                select: { id: true }
+            }) : [],
+            validationIds.itemIds.length > 0 ? tenantPrisma.item.findMany({
+                where: { id: { in: validationIds.itemIds }, deleted: false },
+                select: { id: true }
+            }) : []
+        ]);
+
+        // Validate existence of referenced entities
+        const validationErrors = [];
+
+        if (validationIds.outletIds.length > 0 && outlets.length !== validationIds.outletIds.length) {
+            const missingIds = validationIds.outletIds.filter(id => !outlets.some(o => o.id === id));
+            validationErrors.push(`Outlets with IDs ${missingIds.join(', ')} do not exist`);
         }
 
-        // Use transaction to ensure data consistency
+        if (validationIds.supplierIds.length > 0 && suppliers.length !== validationIds.supplierIds.length) {
+            const missingIds = validationIds.supplierIds.filter(id => !suppliers.some(s => s.id === id));
+            validationErrors.push(`Suppliers with IDs ${missingIds.join(', ')} do not exist`);
+        }
+
+        if (validationIds.purchaseOrderIds.length > 0 && purchaseOrders.length !== validationIds.purchaseOrderIds.length) {
+            const missingIds = validationIds.purchaseOrderIds.filter(id => !purchaseOrders.some(po => po.id === id));
+            validationErrors.push(`Purchase orders with IDs ${missingIds.join(', ')} do not exist`);
+        }
+
+        if (validationIds.deliveryOrderIds.length > 0 && deliveryOrders.length !== validationIds.deliveryOrderIds.length) {
+            const missingIds = validationIds.deliveryOrderIds.filter(id => !deliveryOrders.some(do_ => do_.id === id));
+            validationErrors.push(`Delivery orders with IDs ${missingIds.join(', ')} do not exist or are already linked to another invoice`);
+        }
+
+        if (validationIds.itemIds.length > 0 && items.length !== validationIds.itemIds.length) {
+            const missingIds = validationIds.itemIds.filter(id => !items.some(i => i.id === id));
+            validationErrors.push(`Items with IDs ${missingIds.join(', ')} do not exist`);
+        }
+
+        if (validationErrors.length > 0) {
+            throw new RequestValidateError(validationErrors.join('; '));
+        }
+
+        // Determine invoice status based on taxInvoiceNumber
+        const invoiceStatus = updateData.taxInvoiceNumber && updateData.taxInvoiceNumber.trim() !== '' ? 'Completed' : 'Incomplete';
+
+        // Use transaction for all updates
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Update invoice
+            // Update main invoice
             const updatedInvoice = await tx.invoice.update({
                 where: { id: id },
                 data: {
                     invoiceNumber: updateData.invoiceNumber,
-                    purchaseOrderId: existingInvoice.purchaseOrderId !== updateData.purchaseOrderId ? updateData.purchaseOrderId : undefined,
-                    deliveryOrderId: existingInvoice.deliveryOrderId !== updateData.deliveryOrderId ? updateData.deliveryOrderId : undefined,
-                    supplierId: existingInvoice.supplierId !== updateData.supplierId ? updateData.supplierId : undefined,
+                    taxInvoiceNumber: updateData.taxInvoiceNumber,
+                    purchaseOrderId: updateData.purchaseOrderId,
+                    supplierId: updateData.supplierId,
                     outletId: updateData.outletId,
                     subtotalAmount: updateData.subtotalAmount,
                     taxAmount: updateData.taxAmount,
                     discountAmount: updateData.discountAmount,
+                    discountType: updateData.discountType,
                     totalAmount: updateData.totalAmount,
-                    currency: updateData.currency,
-                    status: updateData.status,
+                    currency: updateData.currency || 'IDR',
+                    status: updateData.status || invoiceStatus,
                     invoiceDate: updateData.invoiceDate,
                     paymentDate: updateData.paymentDate,
                     dueDate: updateData.dueDate,
@@ -499,64 +685,87 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                 }
             });
 
-            // Handle invoice items if provided
-            if (updateData.invoiceItems && Array.isArray(updateData.invoiceItems)) {
-                // Simple approach: delete all existing items and recreate
-                // This ensures clean data and consistent updatedAt timestamps
-
-                // 1. Hard delete all existing invoice items
-                await tx.invoiceItem.deleteMany({
-                    where: {
-                        invoiceId: id,
-                        deleted: false
-                    }
+            // Handle delivery order associations only if deliveryOrderIds is explicitly provided
+            if (updateData.deliveryOrderIds !== undefined) {
+                // First, get currently linked delivery orders for this invoice
+                const currentDeliveryOrders = await tx.deliveryOrder.findMany({
+                    where: { invoiceId: id, deleted: false },
+                    select: { id: true }
                 });
 
-                // 2. Create all new items (if any provided)
+                // Unlink only the currently linked delivery orders
+                if (currentDeliveryOrders.length > 0) {
+                    await tx.deliveryOrder.updateMany({
+                        where: {
+                            id: { in: currentDeliveryOrders.map(do_ => do_.id) },
+                            deleted: false
+                        },
+                        data: { invoiceId: null }
+                    });
+                }
+
+                // Link new delivery orders
+                if (updateData.deliveryOrderIds.length > 0) {
+                    await tx.deliveryOrder.updateMany({
+                        where: { id: { in: updateData.deliveryOrderIds }, deleted: false },
+                        data: { invoiceId: id }
+                    });
+                }
+            }
+
+            // Handle invoice items
+            if (updateData.invoiceItems !== undefined) {
+                // Delete existing items
+                await tx.invoiceItem.deleteMany({
+                    where: { invoiceId: id }
+                });
+
+                // Create new items
                 if (updateData.invoiceItems.length > 0) {
                     await tx.invoiceItem.createMany({
                         data: updateData.invoiceItems.map(item => ({
                             invoiceId: id,
                             itemId: item.itemId,
                             quantity: item.quantity,
+                            discountType: item.discountType || '',
+                            discountAmount: item.discountAmount || 0,
                             unitPrice: item.unitPrice,
+                            taxAmount: item.taxAmount || 0,
                             subtotal: item.subtotal,
-                            remark: item.remark || null,
-                            updatedAt: new Date()
+                            remark: item.remark || null
                         }))
                     });
                 }
             }
 
-            // Single query to fetch final result with all relationships
+            // Return updated invoice with relationships
             return await tx.invoice.findUnique({
                 where: { id: id },
                 include: {
+                    invoiceItems: { where: { deleted: false } },
                     purchaseOrder: {
+                        where: { deleted: false },
                         select: {
                             id: true,
                             purchaseOrderNumber: true,
+                            purchaseOrderDate: true,
                             supplierId: true,
-                            deleted: true
+                            outletId: true,
+                            subtotalAmount: true,
+                            taxAmount: true,
+                            discountAmount: true,
+                            totalAmount: true,
+                            currency: true,
+                            status: true,
+                            remark: true,
+                            purchaseOrderItems: { where: { deleted: false } }
                         }
                     },
-                    deliveryOrder: {
-                        select: {
-                            id: true,
-                            deliveryDate: true,
-                            trackingNumber: true,
-                            deleted: true
-                        }
-                    },
-                    supplier: {
-                        select: {
-                            id: true,
-                            companyName: true,
-                            deleted: true
-                        }
-                    },
-                    invoiceItems: {
+                    deliveryOrders: {
                         where: { deleted: false },
+                        include: {
+                            deliveryOrderItems: { where: { deleted: false } }
+                        }
                     }
                 }
             });
@@ -569,4 +778,4 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
     }
 }
 
-export = { getAll, getById, createMany, update };
+export = { getAll, getById, getByDateRange, createMany, update };

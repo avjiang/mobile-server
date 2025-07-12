@@ -18,6 +18,14 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         // All queries will filter by this session ID
         const sessionFilter = { sessionId: sessionId };
 
+        // Filter for completed sales with completedSessionId
+        const completedSessionFilter = { completedSessionId: sessionId };
+
+        // Get today's date for PO/DO/Invoice filtering
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+
         // Run all queries concurrently for better performance
         const [
             voidedSales,
@@ -29,7 +37,10 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             mostProfitableItems,
             salesSummary,
             paymentBreakdown,
-            salesItems
+            salesItems,
+            todayPurchaseOrders,
+            todayDeliveryOrders,
+            todayInvoices
         ] = await Promise.all([
             // Voided sales
             tenantPrisma.sales.aggregate({
@@ -86,10 +97,10 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
-            // Completed sales details
+            // Completed sales from completedSessionId only
             tenantPrisma.sales.aggregate({
                 where: {
-                    ...sessionFilter,
+                    ...completedSessionFilter,
                     status: "Completed",
                     deleted: false
                 },
@@ -102,13 +113,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
-            // Only include active sales (completed and partially paid) for top selling items
+            // Only include completed sales from completedSessionId for top selling items
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
                 where: {
                     sales: {
-                        ...sessionFilter,
-                        status: { in: ["Completed", "Partially Paid"] }
+                        ...completedSessionFilter,
+                        status: "Completed"
                     }
                 },
                 _sum: {
@@ -123,13 +134,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 take: 10
             }),
 
-            // Only include active sales for most profitable items
+            // Only include completed sales from completedSessionId for most profitable items
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
                 where: {
                     sales: {
-                        ...sessionFilter,
-                        status: { in: ["Completed", "Partially Paid"] }
+                        ...completedSessionFilter,
+                        status: "Completed"
                     }
                 },
                 _sum: {
@@ -143,12 +154,12 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 take: 10
             }),
 
-            // Include all non-voided sales for overall summary
+            // Include only completed sales from completedSessionId for overall summary
             tenantPrisma.sales.aggregate({
                 where: {
-                    ...sessionFilter,
-                    deleted: false,
-                    status: { in: ["Completed", "Partially Paid"] }
+                    ...completedSessionFilter,
+                    status: "Completed",
+                    deleted: false
                 },
                 _sum: {
                     paidAmount: true,
@@ -175,18 +186,85 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
-            // Get all distinct items sold in this session (only active sales)
+            // Get all distinct items sold from completed sales only
             tenantPrisma.salesItem.findMany({
                 where: {
                     sales: {
-                        ...sessionFilter,
-                        status: { in: ["Completed", "Partially Paid"] }
+                        ...completedSessionFilter,
+                        status: "Completed"
                     }
                 },
                 select: {
                     itemId: true,
                     quantity: true,
                     subtotalAmount: true
+                }
+            }),
+
+            // Today's Purchase Orders
+            tenantPrisma.purchaseOrder.findMany({
+                where: {
+                    outletId: session.outletId,
+                    createdAt: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    },
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    purchaseOrderNumber: true,
+                    totalAmount: true,
+                    status: true,
+                    createdAt: true,
+                    supplier: {
+                        select: {
+                            companyName: true
+                        }
+                    }
+                }
+            }),
+
+            // Today's Delivery Orders
+            tenantPrisma.deliveryOrder.findMany({
+                where: {
+                    outletId: session.outletId,
+                    createdAt: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    },
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    trackingNumber: true,
+                    status: true,
+                    createdAt: true,
+                    deliveryDate: true
+                }
+            }),
+
+            // Today's Invoices
+            tenantPrisma.invoice.findMany({
+                where: {
+                    outletId: session.outletId,
+                    createdAt: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    },
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    invoiceNumber: true,
+                    totalAmount: true,
+                    status: true,
+                    createdAt: true,
+                    supplier: {
+                        select: {
+                            companyName: true
+                        }
+                    }
                 }
             })
         ]);
@@ -362,7 +440,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     select: {
                         id: true,
                         itemName: true,
-                        itemCode: true
+                        itemCode: true,
+                        itemBrand: true,
                     }
                 },
                 outlet: {
@@ -383,35 +462,38 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             ? ((partiallyPaidSales._sum?.paidAmount || 0) / (partiallyPaidSales._sum?.totalAmount || 0)) * 100
             : 0;
 
-        // Calculate average transaction value
-        const averageTransactionValue = salesSummary._count.id > 0
-            ? (salesSummary._sum.totalAmount ?? 0) / salesSummary._count.id
+        // Calculate average transaction value (only from completedSessionId)
+        const totalCompletedSalesCount = completedSales._count.id || 0;
+        const totalCompletedRevenue = completedSales._sum?.totalAmount || 0;
+        const averageTransactionValue = totalCompletedSalesCount > 0
+            ? totalCompletedRevenue / totalCompletedSalesCount
             : 0;
 
-        // Calculate net revenue (excluding returned/refunded amounts)
-        const netRevenue = (completedSales._sum?.totalAmount || 0) + (partiallyPaidSales._sum?.totalAmount || 0);
+        // Calculate net revenue and profit (only from completed sales)
+        const netRevenue = totalCompletedRevenue;
+        const totalProfit = completedSales._sum?.profitAmount || 0;
         const grossRevenue = salesSummary._sum?.totalAmount || 0;
         const returnRefundImpact = (returnedSales._sum?.totalAmount || 0) + (refundedSales._sum?.totalAmount || 0);
 
         // Prepare response object
         return {
-            // Overall metrics (net values)
+            // Overall metrics (only from completed sales)
             totalRevenue: netRevenue,
             grossRevenue: grossRevenue,
             returnRefundImpact: returnRefundImpact,
-            totalProfit: (completedSales._sum?.profitAmount || 0) + (partiallyPaidSales._sum?.profitAmount || 0),
+            totalProfit: totalProfit,
             averageTransactionValue,
-            totalPaidAmount: salesSummary._sum?.paidAmount || 0,
-            changeGiven: salesSummary._sum?.changeAmount || 0,
+            totalPaidAmount: completedSales._sum?.paidAmount || 0,
+            changeGiven: completedSales._sum?.changeAmount || 0,
             voidedSalesCount: voidedSales._count?.id || 0,
             voidedSalesAmount: voidedSales._sum?.totalAmount || 0,
 
-            // Completed sales info
+            // Completed sales info (only from completedSessionId)
             completedSales: {
-                count: completedSales._count?.id || 0,
-                totalAmount: completedSales._sum?.totalAmount || 0,
+                count: totalCompletedSalesCount,
+                totalAmount: totalCompletedRevenue,
                 paidAmount: completedSales._sum?.paidAmount || 0,
-                profit: completedSales._sum?.profitAmount || 0,
+                profit: totalProfit,
                 changeGiven: completedSales._sum?.changeAmount || 0
             },
 
@@ -505,6 +587,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 itemId: item.itemId,
                 itemName: item.itemName,
                 itemCode: item.itemCode,
+                itemBrand: item.itemBrand,
                 quantitySold: item._sum.quantity || 0,
                 revenue: item._sum.subtotalAmount || 0
             })),
@@ -515,6 +598,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 itemId: item.itemId,
                 itemName: item.itemName,
                 itemCode: item.itemCode,
+                itemBrand: item.itemBrand,
                 profit: item._sum.profit || 0
             })),
 
@@ -527,11 +611,53 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             stockBalance: stockBalanceItems.map(stock => ({
                 itemId: stock.item.id,
                 itemName: stock.item.itemName,
+                itemCode: stock.item.itemCode,
+                itemBrand: stock.item.itemBrand,
                 quantitySold: itemQuantitiesSold[stock.item.id] || 0,
                 availableQuantity: stock.availableQuantity,
                 status: stock.availableQuantity <= 0 ? 'Out of Stock' :
                     (stock.reorderThreshold && stock.availableQuantity <= stock.reorderThreshold) ? 'Low Stock' : 'In Stock'
-            }))
+            })),
+
+            // Today's Purchase Orders
+            todayPurchaseOrders: {
+                count: todayPurchaseOrders.length,
+                totalAmount: todayPurchaseOrders.reduce((sum, po) => sum + po.totalAmount, 0),
+                orders: todayPurchaseOrders.map(po => ({
+                    id: po.id,
+                    purchaseOrderNumber: po.purchaseOrderNumber,
+                    totalAmount: po.totalAmount,
+                    status: po.status,
+                    supplierName: po.supplier?.companyName || 'Unknown',
+                    createdAt: po.createdAt
+                }))
+            },
+
+            // Today's Delivery Orders
+            todayDeliveryOrders: {
+                count: todayDeliveryOrders.length,
+                orders: todayDeliveryOrders.map(order => ({
+                    id: order.id,
+                    trackingNumber: order.trackingNumber,
+                    status: order.status,
+                    deliveryDate: order.deliveryDate,
+                    createdAt: order.createdAt
+                }))
+            },
+
+            // Today's Invoices
+            todayInvoices: {
+                count: todayInvoices.length,
+                totalAmount: todayInvoices.reduce((sum, invoice) => sum + invoice.totalAmount, 0),
+                invoices: todayInvoices.map(invoice => ({
+                    id: invoice.id,
+                    invoiceNumber: invoice.invoiceNumber,
+                    totalAmount: invoice.totalAmount,
+                    status: invoice.status,
+                    supplierName: invoice.supplier?.companyName || 'Unknown',
+                    createdAt: invoice.createdAt
+                }))
+            },
         };
     }
     catch (error) {

@@ -5,6 +5,9 @@ interface PurchaseOrderItemInput {
     itemId: number;
     quantity: number;
     unitPrice: number;
+    taxAmount?: number;
+    discountType?: string; // e.g., 'percentage' or 'fixed'
+    discountAmount: number;
     subtotal: number;
     remark?: string;
 }
@@ -14,8 +17,9 @@ export interface PurchaseOrderInput {
     purchaseOrderNumber: string;
     outletId: number;
     supplierId: number;
+    sessionId?: number; // Optional for backwards compatibility
     purchaseOrderDate?: Date;
-    discountPercentage?: number;
+    discountType?: string; // e.g., 'percentage' or 'fixed'
     discountAmount?: number;
     serviceChargeAmount?: number;
     taxAmount?: number;

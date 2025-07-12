@@ -19,11 +19,12 @@ export interface SalesRequestBody {
 
 export class CreateSalesRequest {
     @Expose() id: number = 0;
-    // @Expose() created: Date | undefined;
     @Expose() outletId: number = 0;
     @Expose() businessDate: Date = new Date();
     @Expose() salesType: string = "";
     @Expose() customerId?: number;
+    @Expose() customerName: string | undefined;
+    @Expose() phoneNumber?: string;
     @Expose() billStreet: string | undefined;
     @Expose() billCity: string | undefined;
     @Expose() billState: string | undefined;
@@ -65,12 +66,12 @@ export class SalesCreationRequest {
 
 export class CreateSalesItemRequest {
     @Expose() id: number = 0;
-    // @Expose() created: Date | undefined;
     @Expose() salesId: number = 0;
     @Expose() itemId: number = 0;
     @Expose() itemCode: string = "";
     @Expose() itemName: string = "";
     @Expose() itemBrand: string = "";
+    @Expose() itemModel: string = "";
     @Expose() quantity: number = 0;
     @Expose() cost: number = 0;
     @Expose() price: number = 0;

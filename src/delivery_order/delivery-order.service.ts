@@ -61,6 +61,8 @@ let getAll = async (
                     outletId: true,
                     customerId: true,
                     purchaseOrderId: true,
+                    invoiceId: true, // Add invoiceId field
+                    supplierId: true, // Add supplierId field
                     deliveryDate: true,
                     deliveryStreet: true,
                     deliveryCity: true,
@@ -89,19 +91,31 @@ let getAll = async (
                             purchaseOrderDate: true
                         },
                         where: { deleted: false }
+                    },
+                    invoice: { // Update to singular invoice relationship
+                        select: {
+                            id: true,
+                            invoiceNumber: true,
+                            invoiceDate: true
+                        },
+                        where: { deleted: false }
                     }
                 }
             })
         ]);
 
+        // Remove the batch invoice counting logic since we now get invoice directly
         // Transform response to maintain backward compatibility
         const enrichedDeliveryOrders = deliveryOrders.map(do_ => ({
             ...do_,
             itemCount: do_._count.deliveryOrderItems,
             purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
             purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
+            invoiceNumber: do_.invoice?.invoiceNumber || null,
+            invoiceDate: do_.invoice?.invoiceDate || null,
             _count: undefined,
-            purchaseOrder: undefined
+            purchaseOrder: undefined,
+            invoice: undefined
         }));
 
         return {
@@ -133,9 +147,78 @@ let getById = async (id: number, databaseName: string) => {
                         unitPrice: true,
                         remark: true,
                         createdAt: true,
-                        updatedAt: true
+                        updatedAt: true,
                     }
                 },
+                purchaseOrder: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        purchaseOrderNumber: true,
+                        purchaseOrderDate: true,
+                        discountType: true,
+                        discountAmount: true,
+                        serviceChargeAmount: true,
+                        taxAmount: true,
+                        roundingAmount: true,
+                        subtotalAmount: true,
+                        totalAmount: true,
+                        status: true,
+                        remark: true,
+                        currency: true,
+                        supplierId: true,
+                        purchaseOrderItems: {
+                            where: { deleted: false },
+                            select: {
+                                id: true,
+                                itemId: true,
+                                quantity: true,
+                                taxAmount: true,
+                                unitPrice: true,
+                                subtotal: true,
+                            }
+                        }
+                    }
+                },
+                invoice: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        invoiceNumber: true,
+                        invoiceDate: true,
+                        taxInvoiceNumber: true,
+                        dueDate: true,
+                        paymentDate: true,
+                        subtotalAmount: true,
+                        taxAmount: true,
+                        discountType: true,
+                        discountAmount: true,
+                        totalAmount: true,
+                        currency: true,
+                        status: true,
+                        remark: true,
+                        supplier: {
+                            select: {
+                                id: true,
+                                companyName: true,
+                                mobile: true,
+                                email: true
+                            }
+                        },
+                        invoiceItems: {
+                            where: { deleted: false },
+                            select: {
+                                id: true,
+                                itemId: true,
+                                quantity: true,
+                                taxAmount: true,
+                                unitPrice: true,
+                                subtotal: true,
+
+                            }
+                        }
+                    }
+                }
             }
         });
 
@@ -143,6 +226,148 @@ let getById = async (id: number, databaseName: string) => {
             throw new NotFoundError("Delivery Order");
         }
         return deliveryOrder;
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+let getByDateRange = async (databaseName: string, request: SyncRequest & { startDate: string, endDate: string }) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { outletId, skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+
+    try {
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Ensure outletId is a number
+        const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
+
+        // Parse and validate date range
+        const parsedStartDate = new Date(startDate);
+        parsedStartDate.setHours(0, 0, 0, 0); // Start of day
+
+        const parsedEndDate = new Date(endDate);
+        parsedEndDate.setHours(23, 59, 59, 999); // End of day
+
+        // Ensure dates are valid
+        if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+            throw new Error('Invalid date format');
+        }
+
+        // Build query conditions with date range for delivery orders
+        const where = {
+            outletId: parsedOutletId,
+            deliveryDate: {
+                gte: parsedStartDate,
+                lte: parsedEndDate
+            },
+            deleted: false,
+            OR: [
+                // Delivery order itself was modified
+                { createdAt: { gte: lastSync } },
+                { updatedAt: { gte: lastSync } },
+                { deletedAt: { gte: lastSync } },
+                // Delivery order has delivery order items that were modified
+                {
+                    deliveryOrderItems: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Delivery order has invoice that was modified
+                {
+                    invoice: { // Update to singular relationship
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
+                        ]
+                    }
+                }
+            ],
+        };
+
+        // Count total matching records
+        const total = await tenantPrisma.deliveryOrder.count({ where });
+
+        // Fetch paginated delivery orders with minimal data
+        const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
+            where,
+            skip,
+            take,
+            select: {
+                id: true,
+                outletId: true,
+                customerId: true,
+                purchaseOrderId: true,
+                invoiceId: true,
+                supplierId: true, // Add supplierId field
+                deliveryDate: true,
+                deliveryStreet: true,
+                deliveryCity: true,
+                deliveryState: true,
+                deliveryPostalCode: true,
+                deliveryCountry: true,
+                trackingNumber: true,
+                status: true,
+                remark: true,
+                performedBy: true,
+                version: true,
+                createdAt: true,
+                updatedAt: true,
+                deletedAt: true,
+                _count: {
+                    select: {
+                        deliveryOrderItems: {
+                            where: { deleted: false }
+                        }
+                    }
+                },
+                purchaseOrder: {
+                    select: {
+                        id: true,
+                        purchaseOrderNumber: true,
+                        purchaseOrderDate: true
+                    },
+                    where: { deleted: false }
+                },
+                invoice: { // Update to singular relationship
+                    select: {
+                        id: true,
+                        invoiceNumber: true,
+                        invoiceDate: true
+                    },
+                    where: { deleted: false }
+                }
+            }
+        });
+
+        // Remove batch invoice counting since we get invoice directly
+        // Enrich delivery orders with counts
+        const enrichedDeliveryOrders = deliveryOrders.map(do_ => ({
+            ...do_,
+            itemCount: do_._count.deliveryOrderItems,
+            purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
+            purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
+            invoiceNumber: do_.invoice?.invoiceNumber || null,
+            invoiceDate: do_.invoice?.invoiceDate || null,
+            _count: undefined,
+            purchaseOrder: undefined,
+            invoice: undefined
+        }));
+
+        return {
+            deliveryOrders: enrichedDeliveryOrders,
+            total,
+            serverTimestamp: new Date().toISOString(),
+        };
     }
     catch (error) {
         throw error;
@@ -218,6 +443,8 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         outletId: deliveryOrderData.outletId,
                         customerId: deliveryOrderData.customerId,
                         purchaseOrderId: deliveryOrderData.purchaseOrderId,
+                        supplierId: deliveryOrderData.supplierId || null,
+                        sessionId: deliveryOrderData.sessionId || null,
                         deliveryDate: deliveryOrderData.deliveryDate,
                         deliveryStreet: deliveryOrderData.deliveryStreet,
                         deliveryCity: deliveryOrderData.deliveryCity,
@@ -301,21 +528,23 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             const previousAvailableQuantity = currentBalance?.availableQuantity || 0;
             const previousOnHandQuantity = currentBalance?.onHandQuantity || 0;
             const quantityDelta = item.receivedQuantity;
+            const newAvailableQuantity = previousAvailableQuantity + quantityDelta;
+            const newOnHandQuantity = previousOnHandQuantity + quantityDelta;
 
-            // Prepare stock balance operation - fix the where clause
+            // Fix stock balance operation to match the actual unique constraint
             stockOperations.push({
                 where: {
                     itemId_outletId_reorderThreshold_deleted_availableQuantity: {
                         itemId: item.itemId,
                         outletId: deliveryOrder.outletId,
-                        reorderThreshold: currentBalance?.reorderThreshold ?? 0,
+                        reorderThreshold: currentBalance?.reorderThreshold ?? null,
                         deleted: false,
-                        availableQuantity: previousAvailableQuantity // Use current quantity, not new quantity
+                        availableQuantity: previousAvailableQuantity
                     }
                 },
                 update: {
-                    availableQuantity: previousAvailableQuantity + quantityDelta,
-                    onHandQuantity: previousOnHandQuantity + quantityDelta,
+                    availableQuantity: newAvailableQuantity,
+                    onHandQuantity: newOnHandQuantity,
                     lastRestockDate: new Date(),
                     updatedAt: new Date()
                 },
@@ -339,8 +568,8 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 onHandQuantityDelta: quantityDelta,
                 movementType: 'DELIVERY_RECEIPT',
                 documentId: deliveryOrder.id,
-                reason: 'Stock received from delivery order',
-                remark: item.remark || `Delivery Order #${deliveryOrder.id}`,
+                reason: `Stock received from delivery order #${deliveryOrder.id}`,
+                remark: item.remark || '',
                 performedBy: performedBy || 'SYSTEM'
             });
 
@@ -528,7 +757,6 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                                     id: true,
                                     itemName: true,
                                     itemCode: true,
-                                    sku: true,
                                     unitOfMeasure: true
                                 }
                             }
@@ -607,4 +835,4 @@ const checkAndUpdatePurchaseOrderStatus = async (tx: Prisma.TransactionClient, p
     await checkAndUpdatePurchaseOrderStatusWithPartialDelivery(tx, purchaseOrderId);
 };
 
-export = { getAll, getById, createMany, update };
+export = { getAll, getById, getByDateRange, createMany, update };

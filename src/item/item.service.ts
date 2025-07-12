@@ -162,91 +162,9 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const createdItems = await tenantPrisma.$transaction(async (tx) => {
-            // Batch fetch categories once
-            const categoryIds = [...new Set(itemBodyArray.map(item => item.categoryId))];
-            const categories = await tx.category.findMany({
-                where: { id: { in: categoryIds } },
-                select: { id: true, name: true }
-            });
-            const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
-
-            // Pre-count existing items by category-brand combination to avoid sequential counts
-            const brandCategoryCombos = [...new Set(
-                itemBodyArray.map(item => `${item.categoryId}-${item.itemBrand}`)
-            )];
-
-            const itemCounts = await Promise.all(
-                brandCategoryCombos.map(async (combo) => {
-                    const [categoryId, itemBrand] = combo.split('-');
-                    const count = await tx.item.count({
-                        where: {
-                            categoryId: parseInt(categoryId),
-                            itemBrand,
-                            deleted: false,
-                        },
-                    });
-                    return { combo, count };
-                })
-            );
-            const countMap = new Map(itemCounts.map(item => [item.combo, item.count]));
-
-            // Group items by category-brand combination
-            const itemGroups = new Map<string, ItemDto[]>();
-            itemBodyArray.forEach((item) => {
-                const comboKey = `${item.categoryId}-${item.itemBrand}`;
-                if (!itemGroups.has(comboKey)) {
-                    itemGroups.set(comboKey, []);
-                }
-                itemGroups.get(comboKey)!.push(item);
-            });
-
-            // Generate SKUs efficiently - process each group sequentially
-            const itemsWithSKUs: (ItemDto & { sku: string })[] = [];
-
-            for (const [comboKey, items] of itemGroups) {
-                const [categoryIdStr, itemBrand] = comboKey.split('-');
-                const categoryId = parseInt(categoryIdStr);
-                const category = categoryMap.get(categoryId);
-
-                if (!category) {
-                    throw new Error(`Category with ID ${categoryId} not found`);
-                }
-
-                const categoryCode = generateCode(category.name) + categoryId;
-                const brandCode = generateCode(itemBrand);
-                let currentCount = countMap.get(comboKey) || 0;
-
-                // Generate SKUs for each item in this group
-                items.forEach((itemBody) => {
-                    const sequentialNumber = currentCount.toString().padStart(4, '0');
-                    const sku = `${categoryCode}-${brandCode}-${sequentialNumber}`;
-
-                    console.log(`Generated SKU: ${sku} for item: ${itemBody.itemName}`);
-                    itemsWithSKUs.push({ ...itemBody, sku });
-
-                    // Increment count for next item in this combination
-                    currentCount++;
-                });
-            }
-
-            // Check if any of the generated SKUs already exist
-            const generatedSKUs = itemsWithSKUs.map(item => item.sku);
-            const existingSKUs = await tx.item.findMany({
-                where: {
-                    sku: { in: generatedSKUs },
-                    deleted: false,
-                },
-                select: { sku: true },
-            });
-
-            if (existingSKUs.length > 0) {
-                const duplicateSKUs = existingSKUs.map(item => item.sku);
-                throw new Error(`The following SKUs already exist: ${duplicateSKUs.join(', ')}`);
-            }
-
             // Create items with nested relations in parallel
             return Promise.all(
-                itemsWithSKUs.map((itemBody) => {
+                itemBodyArray.map((itemBody) => {
                     const { stockQuantity, id, categoryId, supplierId, reorderThreshold, ...itemWithoutId } = itemBody;
                     return tx.item.create({
                         data: {
@@ -312,22 +230,6 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
     try {
         // Extract id, version, and relation fields from the item object
         const { id, version, categoryId, supplierId, reorderThreshold, ...updateData } = item;
-
-        // Check if SKU is being updated and if it already exists
-        if (updateData.sku) {
-            const existingItemWithSKU = await tenantPrisma.item.findFirst({
-                where: {
-                    sku: updateData.sku,
-                    deleted: false,
-                    id: { not: id }, // Exclude the current item being updated
-                },
-                select: { sku: true },
-            });
-
-            if (existingItemWithSKU) {
-                throw new Error(`SKU '${updateData.sku}' already exists`);
-            }
-        }
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Update the item
@@ -584,24 +486,6 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
         console.error("Error in getSoldItemsBySessionId:", error);
         throw error;
     }
-}
-
-// function generateCode(str: string, length: number = 4): string {
-//     return str
-//         .replace(/[^a-zA-Z0-9]/g, '')
-//         .substring(0, length)
-//         .toUpperCase()
-//         .padEnd(length, 'X');
-// }
-
-function generateCode(name: string): string {
-    if (!name || typeof name !== 'string') {
-        throw new Error(`Invalid name for code generation: ${name}`);
-    }
-    return name
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .substring(0, 4)
-        .toUpperCase();
 }
 
 export = {

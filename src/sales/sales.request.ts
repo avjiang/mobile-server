@@ -1,4 +1,5 @@
 import { Payment, Sales, SalesItem } from "@prisma/client"
+import { Decimal } from "@prisma/client/runtime/library"
 import { Expose, Type } from 'class-transformer';
 
 export enum DiscountBy {
@@ -35,17 +36,17 @@ export class CreateSalesRequest {
     @Expose() shipState: string | undefined;
     @Expose() shipPostalCode: string | undefined;
     @Expose() shipCountry: string | undefined;
-    @Expose() totalItemDiscountAmount: number | undefined;
-    @Expose() discountPercentage: number | undefined;
-    @Expose() discountAmount: number | undefined;
-    @Expose() profitAmount: number = 0;
-    @Expose() serviceChargeAmount: number | undefined;
-    @Expose() taxAmount: number | undefined;
-    @Expose() roundingAmount: number | undefined;
-    @Expose() subtotalAmount: number = 0;
-    @Expose() totalAmount: number = 0;
-    @Expose() paidAmount: number | undefined;
-    @Expose() changeAmount: number | undefined;
+    @Expose() totalItemDiscountAmount: Decimal | undefined;
+    @Expose() discountPercentage: Decimal | undefined;
+    @Expose() discountAmount: Decimal | undefined;
+    @Expose() profitAmount: Decimal = new Decimal(0);
+    @Expose() serviceChargeAmount: Decimal | undefined;
+    @Expose() taxAmount: Decimal | undefined;
+    @Expose() roundingAmount: Decimal | undefined;
+    @Expose() subtotalAmount: Decimal = new Decimal(0);
+    @Expose() totalAmount: Decimal = new Decimal(0);
+    @Expose() paidAmount: Decimal | undefined;
+    @Expose() changeAmount: Decimal | undefined;
     @Expose() status: string = "";
     @Expose() remark: string | undefined;
     @Expose() sessionId: number = 0;
@@ -72,42 +73,43 @@ export class CreateSalesItemRequest {
     @Expose() itemName: string = "";
     @Expose() itemBrand: string = "";
     @Expose() itemModel: string = "";
-    @Expose() quantity: number = 0;
-    @Expose() cost: number = 0;
-    @Expose() price: number = 0;
-    @Expose() profit: number = 0;
-    @Expose() discountPercentage: number | undefined;
-    @Expose() discountAmount: number | undefined;
-    @Expose() serviceChargeAmount: number | undefined;
-    @Expose() taxAmount: number | undefined;
-    @Expose() subtotalAmount: number = 0;
+    @Expose() quantity: Decimal = new Decimal(0);
+    @Expose() cost: Decimal = new Decimal(0);
+    @Expose() price: Decimal = new Decimal(0);
+    @Expose() priceBeforeTax: Decimal = new Decimal(0);
+    @Expose() profit: Decimal = new Decimal(0);
+    @Expose() discountPercentage: Decimal | undefined;
+    @Expose() discountAmount: Decimal | undefined;
+    @Expose() serviceChargeAmount: Decimal | undefined;
+    @Expose() taxAmount: Decimal | undefined;
+    @Expose() subtotalAmount: Decimal = new Decimal(0);
     @Expose() remark: string | undefined;
     @Expose() deleted: boolean | undefined;
 }
 
 export class CalculateSalesObject {
     @Expose() discountBy: DiscountBy = DiscountBy.None
-    @Expose() discountPercentage: number = 0
-    @Expose() discountAmount: number = 0
-    @Expose() totalItemDiscountAmount: number = 0
-    @Expose() serviceChargeAmount: number = 0
-    @Expose() taxAmount: number = 0
-    @Expose() roundingAmount: number = 0
-    @Expose() subtotalAmount: number = 0
-    @Expose() totalAmount: number = 0
+    @Expose() discountPercentage: Decimal = new Decimal(0)
+    @Expose() discountAmount: Decimal = new Decimal(0)
+    @Expose() totalItemDiscountAmount: Decimal = new Decimal(0)
+    @Expose() serviceChargeAmount: Decimal = new Decimal(0)
+    @Expose() taxAmount: Decimal = new Decimal(0)
+    @Expose() roundingAmount: Decimal = new Decimal(0)
+    @Expose() subtotalAmount: Decimal = new Decimal(0)
+    @Expose() totalAmount: Decimal = new Decimal(0)
     @Type(() => CalculateSalesItemObject)
     @Expose() salesItems: CalculateSalesItemObject[] = []
 }
 
 export class CalculateSalesItemObject {
     @Expose() itemId: number = 0
-    @Expose() price: number = 0
-    @Expose() quantity: number = 0
+    @Expose() price: Decimal = new Decimal(0)
+    @Expose() quantity: Decimal = new Decimal(0)
     @Expose() discountType: DiscountType = DiscountType.None
     @Expose() discountBy: DiscountBy = DiscountBy.None
-    @Expose() discountPercentage: number = 0
-    @Expose() discountAmount: number = 0
-    @Expose() subtotalAmount: number = 0
+    @Expose() discountPercentage: Decimal = new Decimal(0)
+    @Expose() discountAmount: Decimal = new Decimal(0)
+    @Expose() subtotalAmount: Decimal = new Decimal(0)
 }
 
 export class CalculateSalesDto {

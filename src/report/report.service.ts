@@ -113,13 +113,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
-            // Only include completed sales from completedSessionId for top selling items
+            // Include all non-voided sales for top selling items (not just completed)
             tenantPrisma.salesItem.groupBy({
                 by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
                 where: {
                     sales: {
-                        ...completedSessionFilter,
-                        status: "Completed"
+                        ...sessionFilter,
+                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
                     }
                 },
                 _sum: {
@@ -186,12 +186,12 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
-            // Get all distinct items sold from completed sales only
+            // Get all distinct items sold from all non-voided sales (not just completed)
             tenantPrisma.salesItem.findMany({
                 where: {
                     sales: {
-                        ...completedSessionFilter,
-                        status: "Completed"
+                        ...sessionFilter,
+                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
                     }
                 },
                 select: {
@@ -221,6 +221,11 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                         select: {
                             companyName: true
                         }
+                    },
+                    purchaseOrderItems: {
+                        select: {
+                            quantity: true
+                        }
                     }
                 }
             }),
@@ -240,7 +245,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     trackingNumber: true,
                     status: true,
                     createdAt: true,
-                    deliveryDate: true
+                    deliveryDate: true,
+                    supplierId: true,
+                    deliveryOrderItems: {
+                        select: {
+                            receivedQuantity: true
+                        }
+                    }
                 }
             }),
 
@@ -264,6 +275,11 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                         select: {
                             companyName: true
                         }
+                    },
+                    invoiceItems: {
+                        select: {
+                            quantity: true
+                        }
                     }
                 }
             })
@@ -283,12 +299,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 customerId: true,
                 businessDate: true,
                 remark: true,
-                customer: {
-                    select: {
-                        firstName: true,
-                        lastName: true
-                    }
-                }
+                customerName: true,
+                phoneNumber: true
             }
         });
 
@@ -306,12 +318,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 customerId: true,
                 businessDate: true,
                 remark: true,
-                customer: {
-                    select: {
-                        firstName: true,
-                        lastName: true
-                    }
-                }
+                customerName: true,
+                phoneNumber: true
             }
         });
 
@@ -328,12 +336,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 paidAmount: true,
                 customerId: true,
                 businessDate: true,
-                customer: {
-                    select: {
-                        firstName: true,
-                        lastName: true
-                    }
-                }
+                customerName: true,
+                phoneNumber: true
             }
         });
 
@@ -351,12 +355,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 customerId: true,
                 businessDate: true,
                 remark: true,
-                customer: {
-                    select: {
-                        firstName: true,
-                        lastName: true
-                    }
-                }
+                customerName: true,
+                phoneNumber: true
             }
         });
 
@@ -375,7 +375,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             }
         });
 
-        // Create a map of sold quantities by itemId for faster lookup
+        // Create a map of sold quantities by itemId for faster lookup (using all non-voided sales)
         const itemQuantitiesSold: { [key: number]: number } = {};
         salesItems.forEach(item => {
             if (!itemQuantitiesSold[item.itemId]) {
@@ -419,7 +419,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             }
         });
 
-        // Get the list of unique item IDs sold in this session for stock balance
+        // Get the list of unique item IDs sold in this session for stock balance (from all non-voided sales)
         const uniqueSoldItemIds = [...new Set(salesItems.map(item => item.itemId))];
 
         // Now get stock information ONLY for items that were sold in this session
@@ -511,9 +511,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     totalAmount: sale.totalAmount,
                     paidAmount: sale.paidAmount,
                     outstandingAmount: sale.totalAmount - sale.paidAmount,
-                    customerName: sale.customer
-                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                        : 'Guest',
+                    customerName: sale.customerName || 'Guest',
+                    phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate
                 }))
             },
@@ -528,9 +527,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     salesId: sale.id,
                     totalAmount: sale.totalAmount,
                     paidAmount: sale.paidAmount,
-                    customerName: sale.customer
-                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                        : 'Guest',
+                    customerName: sale.customerName || 'Guest',
+                    phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate,
                     remark: sale.remark || ''
                 }))
@@ -546,9 +544,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     salesId: sale.id,
                     totalAmount: sale.totalAmount,
                     paidAmount: sale.paidAmount,
-                    customerName: sale.customer
-                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                        : 'Guest',
+                    customerName: sale.customerName || 'Guest',
+                    phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate,
                     remark: sale.remark || ''
                 }))
@@ -563,9 +560,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     salesId: sale.id,
                     totalAmount: sale.totalAmount,
                     paidAmount: sale.paidAmount,
-                    customerName: sale.customer
-                        ? `${sale.customer.firstName} ${sale.customer.lastName}`.trim()
-                        : 'Guest',
+                    customerName: sale.customerName || 'Guest',
+                    phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate,
                     remark: sale.remark || ''
                 }))
@@ -623,25 +619,32 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             todayPurchaseOrders: {
                 count: todayPurchaseOrders.length,
                 totalAmount: todayPurchaseOrders.reduce((sum, po) => sum + po.totalAmount, 0),
+                totalItems: todayPurchaseOrders.reduce((sum, po) =>
+                    sum + po.purchaseOrderItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
                 orders: todayPurchaseOrders.map(po => ({
                     id: po.id,
                     purchaseOrderNumber: po.purchaseOrderNumber,
                     totalAmount: po.totalAmount,
                     status: po.status,
                     supplierName: po.supplier?.companyName || 'Unknown',
-                    createdAt: po.createdAt
+                    createdAt: po.createdAt,
+                    itemCount: po.purchaseOrderItems.reduce((sum, item) => sum + item.quantity, 0)
                 }))
             },
 
             // Today's Delivery Orders
             todayDeliveryOrders: {
                 count: todayDeliveryOrders.length,
+                totalItems: todayDeliveryOrders.reduce((sum, order) =>
+                    sum + order.deliveryOrderItems.reduce((itemSum, item) => itemSum + item.receivedQuantity, 0), 0),
                 orders: todayDeliveryOrders.map(order => ({
                     id: order.id,
                     trackingNumber: order.trackingNumber,
                     status: order.status,
                     deliveryDate: order.deliveryDate,
-                    createdAt: order.createdAt
+                    createdAt: order.createdAt,
+                    supplierId: order.supplierId,
+                    itemCount: order.deliveryOrderItems.reduce((sum, item) => sum + item.receivedQuantity, 0)
                 }))
             },
 
@@ -649,13 +652,16 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             todayInvoices: {
                 count: todayInvoices.length,
                 totalAmount: todayInvoices.reduce((sum, invoice) => sum + invoice.totalAmount, 0),
+                totalItems: todayInvoices.reduce((sum, invoice) =>
+                    sum + invoice.invoiceItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
                 invoices: todayInvoices.map(invoice => ({
                     id: invoice.id,
                     invoiceNumber: invoice.invoiceNumber,
                     totalAmount: invoice.totalAmount,
                     status: invoice.status,
                     supplierName: invoice.supplier?.companyName || 'Unknown',
-                    createdAt: invoice.createdAt
+                    createdAt: invoice.createdAt,
+                    itemCount: invoice.invoiceItems.reduce((sum, item) => sum + item.quantity, 0)
                 }))
             },
         };

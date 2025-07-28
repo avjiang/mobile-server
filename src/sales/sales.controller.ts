@@ -113,28 +113,28 @@ const getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
-const create = (req: NetworkRequest<SalesCreationRequest>, res: Response, next: NextFunction) => {
-    if (!req.user) {
-        throw new RequestValidateError('User not authenticated');
-    }
-    if (Object.keys(req.body).length === 0) {
-        throw new RequestValidateError('Request body is empty')
-    }
+// const create = (req: NetworkRequest<SalesCreationRequest>, res: Response, next: NextFunction) => {
+//     if (!req.user) {
+//         throw new RequestValidateError('User not authenticated');
+//     }
+//     if (Object.keys(req.body).length === 0) {
+//         throw new RequestValidateError('Request body is empty')
+//     }
 
-    const salesBody = req.body
-    if (!salesBody) {
-        throw new RequestValidateError('Create failed: data missing')
-    }
+//     const salesBody = req.body
+//     if (!salesBody) {
+//         throw new RequestValidateError('Create failed: data missing')
+//     }
 
-    const sales = salesBody.sales
-    if (!sales) {
-        throw new RequestValidateError('Create failed: sales data missing')
-    }
+//     const sales = salesBody.sales
+//     if (!sales) {
+//         throw new RequestValidateError('Create failed: sales data missing')
+//     }
 
-    service.create(req.user.databaseName, salesBody)
-        .then((sales: Sales) => sendResponse(res, sales))
-        .catch(next)
-}
+//     service.create(req.user.databaseName, salesBody)
+//         .then((sales: Sales) => sendResponse(res, sales))
+//         .catch(next)
+// }
 
 const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -157,37 +157,37 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
         .catch(next)
 }
 
-const completeSales = (req: NetworkRequest<CompleteSalesRequest>, res: Response, next: NextFunction) => {
-    if (!req.user) {
-        throw new RequestValidateError('User not authenticated');
-    }
-    if (Object.keys(req.body).length === 0) {
-        throw new RequestValidateError('Request body is empty')
-    }
+// const completeSales = (req: NetworkRequest<CompleteSalesRequest>, res: Response, next: NextFunction) => {
+//     if (!req.user) {
+//         throw new RequestValidateError('User not authenticated');
+//     }
+//     if (Object.keys(req.body).length === 0) {
+//         throw new RequestValidateError('Request body is empty')
+//     }
 
-    const requestBody = req.body
-    if (!requestBody) {
-        throw new RequestValidateError('Data missing')
-    }
+//     const requestBody = req.body
+//     if (!requestBody) {
+//         throw new RequestValidateError('Data missing')
+//     }
 
-    const salesId = requestBody.salesId
-    if (salesId == 0) {
-        throw new RequestValidateError('sales ID cannot be 0')
-    }
+//     const salesId = requestBody.salesId
+//     if (salesId == 0) {
+//         throw new RequestValidateError('sales ID cannot be 0')
+//     }
 
-    const payments = requestBody.payments
-    if (payments.length > 0) {
-        for (const payment of payments) {
-            if (payment.salesId != salesId) {
-                throw new RequestValidateError('payment has different sales ID')
-            }
-        }
-    }
+//     const payments = requestBody.payments
+//     if (payments.length > 0) {
+//         for (const payment of payments) {
+//             if (payment.salesId != salesId) {
+//                 throw new RequestValidateError('payment has different sales ID')
+//             }
+//         }
+//     }
 
-    service.completeSales(req.user.databaseName, salesId, payments)
-        .then((sales: Sales) => sendResponse(res, sales))
-        .catch(next)
-}
+//     service.completeSales(req.user.databaseName, salesId, payments)
+//         .then((sales: Sales) => sendResponse(res, sales))
+//         .catch(next)
+// }
 
 const calculateSales = (req: NetworkRequest<CalculateSalesDto>, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -362,10 +362,10 @@ router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
 router.get('/outlet', getAll)
 router.get('/dateRange', getAllByDateRange)
 router.get('/:id', getById)
-router.post('/create', create)
+// router.post('/create', create)
 router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
-router.post('/completeSales', completeSales)
+// router.post('/completeSales', completeSales)
 router.post('/addPayment', addPaymentToPartiallyPaidSales);
 router.put('/update', update)
 router.put('/void/:id', voidSales)

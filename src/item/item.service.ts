@@ -1,4 +1,5 @@
 import { PrismaClient, Item, Prisma } from "@prisma/client"
+import { Decimal } from 'decimal.js';
 import { NotFoundError } from "../api-helpers/error"
 import salesService from "../sales/sales.service"
 import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.response"
@@ -150,8 +151,7 @@ let getById = async (databaseName: string, id: number) => {
             ...item,
             stockQuantity: item.stockBalance[0]?.availableQuantity || 0
         };
-        const itemWithStock = plainToInstance(ItemDto, rawItemWithStock, { excludeExtraneousValues: true })
-        return itemWithStock
+        return rawItemWithStock
     }
     catch (error) {
         throw error
@@ -432,10 +432,10 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
 
         const salesIDArray = salesWithSession.map(sales => sales.id);
         if (salesIDArray.length === 0) {
-            return plainToInstance(ItemSoldRankingResponseBody, {
+            return {
                 topSoldItems: [],
                 leastSoldItem: null
-            }, { excludeExtraneousValues: true });
+            };
         }
 
         // Get the top 5 sales items for these sales and group them by itemId
@@ -462,20 +462,23 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
         });
 
         if (topSoldItemsData.length === 0) {
-            return plainToInstance(ItemSoldRankingResponseBody, {
+            return {
                 topSoldItems: [],
-                leastSoldItem: null
-            }, { excludeExtraneousValues: true });
+            };
         }
 
         const topSoldItems = [];
         for (const soldItem of topSoldItemsData) {
             const itemDetails = await getById(databaseName, soldItem.itemId);
             if (!itemDetails) continue;
+
+            const quantitySold = soldItem._sum.quantity ? new Decimal(soldItem._sum.quantity) : new Decimal(0);
+            const itemPrice = itemDetails.price ? new Decimal(itemDetails.price) : new Decimal(0);
+
             topSoldItems.push({
                 item: itemDetails,
-                quantitySold: soldItem._sum.quantity || 0,
-                totalRevenue: (soldItem._sum.quantity || 0) * (itemDetails.price || 0)
+                quantitySold: quantitySold.toNumber(),
+                totalRevenue: itemPrice.mul(quantitySold)
             });
         }
         return {

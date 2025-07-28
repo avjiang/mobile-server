@@ -1,5 +1,5 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "@prisma/client"
-import { Decimal } from "@prisma/client/runtime/library"
+import { Decimal } from 'decimal.js';
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
@@ -397,8 +397,8 @@ async function getFIFOCostForSalesItem(
     tenantPrisma: Prisma.TransactionClient,
     itemId: number,
     outletId: number,
-    quantity: number
-): Promise<{ usedReceipts: { id: number; quantityUsed: number; cost: number }[] }> {
+    quantity: Decimal
+): Promise<{ usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] }> {
     try {
         // Get stock receipts ordered by FIFO (oldest first)
         const stockReceipts = await tenantPrisma.stockReceipt.findMany({
@@ -417,38 +417,38 @@ async function getFIFOCostForSalesItem(
                 where: { id: itemId },
             });
             return {
-                usedReceipts: [{ id: -1, quantityUsed: quantity, cost: item?.cost || 0 }],
+                usedReceipts: [{ id: -1, quantityUsed: new Decimal(quantity), cost: new Decimal(item?.cost || 0) }],
             };
         }
 
-        let remainingQuantity = quantity;
-        let usedReceipts: { id: number; quantityUsed: number; cost: number }[] = [];
+        let remainingQuantity = new Decimal(quantity);
+        let usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
 
-        // Use FIFO to assign quantities and costs from stock receipts
+        // Use FIFO to assign quantities and costs from stock receipts using Decimal
         for (const receipt of stockReceipts) {
-            if (remainingQuantity <= 0) break;
+            if (remainingQuantity.lte(0)) break;
 
-            const quantityToUse = Math.min(remainingQuantity, receipt.quantity);
-            remainingQuantity -= quantityToUse;
+            const quantityToUse = Decimal.min(remainingQuantity, new Decimal(receipt.quantity));
+            remainingQuantity = remainingQuantity.minus(quantityToUse);
 
             usedReceipts.push({
                 id: receipt.id,
                 quantityUsed: quantityToUse,
-                cost: receipt.cost,
+                cost: new Decimal(receipt.cost),
             });
         }
 
         // If remaining quantity exists, use the last receipt's cost
-        if (remainingQuantity > 0 && stockReceipts.length > 0) {
+        if (remainingQuantity.gt(0) && stockReceipts.length > 0) {
             const lastReceipt = stockReceipts[stockReceipts.length - 1];
             usedReceipts.push({
                 id: -1,
                 quantityUsed: remainingQuantity,
-                cost: lastReceipt.cost,
+                cost: new Decimal(lastReceipt.cost),
             });
         }
 
-        if (remainingQuantity > 0 && usedReceipts.length === 0) {
+        if (remainingQuantity.gt(0) && usedReceipts.length === 0) {
             throw new Error(`Insufficient stock receipts for item ${itemId}`);
         }
         return { usedReceipts };
@@ -473,7 +473,7 @@ async function updateStockReceiptsAfterSale(
                     if (!receipt) {
                         throw new Error(`StockReceipt with id ${usage.id} not found`);
                     }
-                    const newQuantity = receipt.quantity - usage.quantityUsed;
+                    const newQuantity = Number(receipt.quantity) - Number(usage.quantityUsed);
                     await tenantPrisma.stockReceipt.update({
                         where: { id: usage.id },
                         data: {
@@ -563,7 +563,7 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
             // Validate stock availability and calculate FIFO costs in one pass
             const stockValidationErrors: string[] = [];
             const salesItemsWithFIFOCost: Array<typeof salesBody.salesItems[0] & {
-                usedReceipts: { id: number; quantityUsed: number; cost: number }[]
+                usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[]
             }> = [];
 
             for (const item of salesBody.salesItems) {
@@ -573,7 +573,7 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     continue;
                 }
 
-                if (stockBalance.availableQuantity < item.quantity) {
+                if (new Decimal(stockBalance.availableQuantity).lt(item.quantity)) {
                     stockValidationErrors.push(
                         `Insufficient stock for ${stockBalance.item.itemName} (${stockBalance.item.itemCode}). ` +
                         `Available: ${stockBalance.availableQuantity}, Required: ${item.quantity}`
@@ -583,38 +583,38 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
 
                 // Calculate FIFO cost
                 const itemReceipts = stockReceiptsByItem.get(item.itemId) || [];
-                let remainingQuantity = item.quantity;
-                let usedReceipts: { id: number; quantityUsed: number; cost: number }[] = [];
+                let remainingQuantity = new Decimal(item.quantity);
+                let usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
 
                 if (itemReceipts.length === 0) {
                     // Fallback to item cost
                     usedReceipts.push({
                         id: -1,
-                        quantityUsed: item.quantity,
-                        cost: stockBalance.item.cost || 0
+                        quantityUsed: remainingQuantity,
+                        cost: new Decimal(stockBalance.item.cost || 0)
                     });
                 } else {
                     // Use FIFO
                     for (const receipt of itemReceipts) {
-                        if (remainingQuantity <= 0) break;
+                        if (remainingQuantity.lte(0)) break;
 
-                        const quantityToUse = Math.min(remainingQuantity, receipt.quantity);
-                        remainingQuantity -= quantityToUse;
+                        const quantityToUse = Decimal.min(remainingQuantity, new Decimal(receipt.quantity));
+                        remainingQuantity = remainingQuantity.minus(quantityToUse);
 
                         usedReceipts.push({
                             id: receipt.id,
                             quantityUsed: quantityToUse,
-                            cost: receipt.cost,
+                            cost: new Decimal(receipt.cost),
                         });
                     }
 
                     // If still remaining, use last receipt's cost
-                    if (remainingQuantity > 0 && itemReceipts.length > 0) {
+                    if (remainingQuantity.gt(0) && itemReceipts.length > 0) {
                         const lastReceipt = itemReceipts[itemReceipts.length - 1];
                         usedReceipts.push({
                             id: -1,
                             quantityUsed: remainingQuantity,
-                            cost: lastReceipt.cost,
+                            cost: new Decimal(lastReceipt.cost),
                         });
                     }
                 }
@@ -627,33 +627,33 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
             }
 
             // Calculate payments and sales status
-            const totalSalesAmount = salesBody.totalAmount;
-            const totalPaymentAmount = payments.reduce((sum, payment) => sum.plus(payment.tenderedAmount), new Decimal(0));
+            const totalSalesAmount = new Decimal(salesBody.totalAmount);
+            const totalPaymentAmount = payments.reduce((sum, payment) => sum.plus(new Decimal(payment.tenderedAmount)), new Decimal(0));
             const salesStatus = totalPaymentAmount.gte(totalSalesAmount) ? 'Completed' : 'Partially Paid';
             const changeAmount = totalPaymentAmount.gte(totalSalesAmount) ? totalPaymentAmount.minus(totalSalesAmount) : new Decimal(0);
 
             // Calculate total profit and prepare sales item data
             let totalProfit = new Decimal(0);
             const salesItemData: any[] = [];
-            const stockReceiptUpdates: { id: number; newQuantity: number }[] = [];
+            const stockReceiptUpdates: { id: number; newQuantity: Decimal }[] = [];
 
             salesItemsWithFIFOCost.forEach((item) => {
-                const totalQuantity = item.quantity;
-                const discountPerUnit = (item.discountAmount || new Decimal(0)).dividedBy(totalQuantity);
-                const serviceChargePerUnit = (item.serviceChargeAmount || new Decimal(0)).dividedBy(totalQuantity);
-                const taxPerUnit = item.taxAmount ?? new Decimal(0);
+                const totalQuantity = new Decimal(item.quantity);
+                const discountPerUnit = (item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0)).dividedBy(totalQuantity);
+                const serviceChargePerUnit = (item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0)).dividedBy(totalQuantity);
+                const taxPerUnit = item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0);
 
                 item.usedReceipts.forEach((receipt) => {
                     const receiptQuantity = new Decimal(receipt.quantityUsed);
                     const receiptCost = new Decimal(receipt.cost);
 
-                    const revenueForQuantity = item.priceBeforeTax.times(receiptQuantity);
+                    const revenueForQuantity = new Decimal(item.price).times(receiptQuantity);
                     const costForQuantity = receiptCost.times(receiptQuantity);
                     const totalDiscountForQuantity = discountPerUnit.times(receiptQuantity);
                     const totalTaxForQuantity = taxPerUnit.times(receiptQuantity);
                     const totalServiceChargeForQuantity = serviceChargePerUnit.times(receiptQuantity);
-                    const totalPriceBeforeTax = item.priceBeforeTax.times(receiptQuantity);
-                    const totalSubtotalForQuantity = (item.subtotalAmount.dividedBy(totalQuantity)).times(receiptQuantity);
+                    const totalPriceBeforeTax = new Decimal(item.priceBeforeTax).times(receiptQuantity);
+                    const totalSubtotalForQuantity = (new Decimal(item.subtotalAmount).dividedBy(totalQuantity)).times(receiptQuantity);
 
                     const profit = revenueForQuantity.minus(costForQuantity).minus(totalDiscountForQuantity).minus(totalTaxForQuantity).minus(totalServiceChargeForQuantity);
                     totalProfit = totalProfit.plus(profit);
@@ -682,7 +682,7 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     if (receipt.id !== -1) {
                         const existingReceipt = stockReceipts.find(sr => sr.id === receipt.id);
                         if (existingReceipt) {
-                            const newQuantity = existingReceipt.quantity - receipt.quantityUsed;
+                            const newQuantity = new Decimal(existingReceipt.quantity).minus(new Decimal(receipt.quantityUsed));
                             stockReceiptUpdates.push({ id: receipt.id, newQuantity });
                         }
                     }
@@ -755,8 +755,8 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                             quantity: update.newQuantity,
                             updatedAt: new Date(),
                             version: { increment: 1 },
-                            deleted: update.newQuantity === 0 ? true : undefined,
-                            deletedAt: update.newQuantity === 0 ? new Date() : undefined,
+                            deleted: update.newQuantity.eq(0) ? true : undefined,
+                            deletedAt: update.newQuantity.eq(0) ? new Date() : undefined,
                         },
                     });
                 })
@@ -769,9 +769,9 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     id: stockBalance.itemId, // Using itemId as identifier
                     outletId: salesBody.outletId,
                     itemId: item.itemId,
-                    quantity: item.quantity,
-                    previousAvailable: stockBalance.availableQuantity,
-                    previousOnHand: stockBalance.availableQuantity, // Assuming same as available
+                    quantity: new Decimal(item.quantity),
+                    previousAvailable: new Decimal(stockBalance.availableQuantity),
+                    previousOnHand: new Decimal(stockBalance.availableQuantity), // Assuming same as available
                 };
             });
 
@@ -790,8 +790,8 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                         await tx.stockBalance.update({
                             where: { id: stockBalance.id },
                             data: {
-                                availableQuantity: { decrement: update.quantity },
-                                onHandQuantity: { decrement: update.quantity },
+                                availableQuantity: { decrement: update.quantity.toNumber() },
+                                onHandQuantity: { decrement: update.quantity.toNumber() },
                                 version: { increment: 1 },
                                 updatedAt: new Date(),
                             },
@@ -804,10 +804,10 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     data: stockUpdates.map(update => ({
                         itemId: update.itemId,
                         outletId: update.outletId,
-                        previousAvailableQuantity: update.previousAvailable,
-                        previousOnHandQuantity: update.previousOnHand,
-                        availableQuantityDelta: -update.quantity,
-                        onHandQuantityDelta: -update.quantity,
+                        previousAvailableQuantity: update.previousAvailable.toNumber(),
+                        previousOnHandQuantity: update.previousOnHand.toNumber(),
+                        availableQuantityDelta: -update.quantity.toNumber(),
+                        onHandQuantityDelta: -update.quantity.toNumber(),
                         movementType: 'Sales',
                         documentId: createdSales.id,
                         reason: 'Sales transaction',
@@ -996,7 +996,7 @@ let performSalesCalculation = async (sales: CalculateSalesObject) => {
         var totalItemDiscountAmount = new Decimal(0);
 
         items.forEach(function (item) {
-            item.subtotalAmount = item.price.times(item.quantity);
+            item.subtotalAmount = new Decimal(item.price).times(new Decimal(item.quantity));
             item = calculateItemDiscount(item);
             item.subtotalAmount = item.subtotalAmount.minus(item.discountAmount);
             totalItemDiscountAmount = totalItemDiscountAmount.plus(item.discountAmount);
@@ -1018,46 +1018,25 @@ let performSalesCalculation = async (sales: CalculateSalesObject) => {
     }
 }
 
-let calculateSalesDiscount = (sales: CalculateSalesObject) => {
-    switch (sales.discountBy) {
-        case DiscountBy.Amount:
-            let discountPercentage = (sales.discountAmount.times(100)).dividedBy(sales.subtotalAmount);
-            if (discountPercentage.gt(100)) {
-                sales.discountPercentage = new Decimal(100);
-                sales.discountAmount = sales.subtotalAmount;
-            }
-            else {
-                sales.discountPercentage = discountPercentage;
-            }
-            break
-        case DiscountBy.Percentage:
-            sales.discountAmount = sales.subtotalAmount.times(sales.discountPercentage.dividedBy(100));
-            break
-        default:
-            sales.discountAmount = new Decimal(0);
-            sales.discountPercentage = new Decimal(0);
-            break
-    }
-    return sales
-}
-
 let calculateItemDiscount = (item: CalculateSalesItemObject) => {
     switch (item.discountType) {
         case DiscountType.Manual:
-            let subtotalBeforeDiscount = item.subtotalAmount
+            let subtotalBeforeDiscount = new Decimal(item.subtotalAmount)
             switch (item.discountBy) {
                 case DiscountBy.Amount:
-                    let discountPercentage = (item.discountAmount.times(100)).dividedBy(subtotalBeforeDiscount);
+                    let discountPercentage = (new Decimal(item.discountAmount).times(100)).dividedBy(subtotalBeforeDiscount);
                     if (discountPercentage.gt(100)) {
                         item.discountPercentage = new Decimal(100);
                         item.discountAmount = subtotalBeforeDiscount;
                     }
                     else {
                         item.discountPercentage = discountPercentage;
+                        item.discountAmount = new Decimal(item.discountAmount);
                     }
                     break
                 case DiscountBy.Percentage:
-                    item.discountAmount = subtotalBeforeDiscount.times(item.discountPercentage.dividedBy(100));
+                    item.discountAmount = subtotalBeforeDiscount.times(new Decimal(item.discountPercentage).dividedBy(100));
+                    item.discountPercentage = new Decimal(item.discountPercentage);
                     break
                 default:
                     item.discountAmount = new Decimal(0);
@@ -1065,8 +1044,38 @@ let calculateItemDiscount = (item: CalculateSalesItemObject) => {
                     break
             }
             break
+        default:
+            // Ensure discountAmount and discountPercentage are Decimal for non-manual discount types
+            item.discountAmount = new Decimal(item.discountAmount || 0);
+            item.discountPercentage = new Decimal(item.discountPercentage || 0);
+            break
     }
     return item
+}
+
+let calculateSalesDiscount = (sales: CalculateSalesObject) => {
+    switch (sales.discountBy) {
+        case DiscountBy.Amount:
+            let discountPercentage = (new Decimal(sales.discountAmount).times(100)).dividedBy(new Decimal(sales.subtotalAmount));
+            if (discountPercentage.gt(100)) {
+                sales.discountPercentage = new Decimal(100);
+                sales.discountAmount = new Decimal(sales.subtotalAmount);
+            }
+            else {
+                sales.discountPercentage = discountPercentage;
+                sales.discountAmount = new Decimal(sales.discountAmount);
+            }
+            break
+        case DiscountBy.Percentage:
+            sales.discountAmount = new Decimal(sales.subtotalAmount).times(new Decimal(sales.discountPercentage).dividedBy(100));
+            sales.discountPercentage = new Decimal(sales.discountPercentage);
+            break
+        default:
+            sales.discountAmount = new Decimal(0);
+            sales.discountPercentage = new Decimal(0);
+            break
+    }
+    return sales
 }
 
 let update = async (databaseName: string, salesRequest: SalesRequestBody) => {
@@ -1204,18 +1213,18 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
             })
         ]);
 
-        // Calculate derived metrics
-        const netRevenue = (activeSales._sum?.totalAmount || 0);
-        const netProfit = (activeSales._sum?.profitAmount || 0);
+        // Calculate derived metrics using Decimal arithmetic
+        const netRevenue = (activeSales._sum?.totalAmount || new Decimal(0));
+        const netProfit = (activeSales._sum?.profitAmount || new Decimal(0));
 
         const totalTransactions = (activeSales._count?.id || 0) + voidedSales +
             returnedSales + refundedSales;
 
         const averageTransactionValue = activeSales._count.id > 0 ?
-            netRevenue / activeSales._count.id : 0;
+            netRevenue.dividedBy(activeSales._count.id) : new Decimal(0);
 
-        const outstandingAmount = (partiallyPaidSales._sum?.totalAmount || 0) -
-            (partiallyPaidSales._sum?.paidAmount || 0);
+        const outstandingAmount = (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).minus(
+            partiallyPaidSales._sum?.paidAmount || new Decimal(0));
 
         return {
             // Summary metrics
@@ -1224,9 +1233,9 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
             totalProfit: netProfit,
 
             // Enhanced metrics
-            averageTransactionValue: Math.round(averageTransactionValue * 100) / 100,
-            totalPaidAmount: activeSales._sum?.paidAmount || 0,
-            totalChangeGiven: activeSales._sum?.changeAmount || 0,
+            averageTransactionValue: Math.round(averageTransactionValue.toNumber() * 100) / 100,
+            totalPaidAmount: activeSales._sum?.paidAmount || new Decimal(0),
+            totalChangeGiven: activeSales._sum?.changeAmount || new Decimal(0),
             outstandingAmount: outstandingAmount,
 
             // Transaction counts by status
@@ -1239,20 +1248,6 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
                 refunded: refundedSales,
                 // active: activeSales._count?.id || 0
             },
-
-            // // Performance indicators
-            // performanceMetrics: {
-            //     profitMargin: netRevenue > 0 ?
-            //         Math.round((netProfit / netRevenue * 100) * 100) / 100 : 0,
-            //     voidRate: totalTransactions > 0 ?
-            //         Math.round((voidedSales / totalTransactions * 100) * 100) / 100 : 0,
-            //     returnRate: totalTransactions > 0 ?
-            //         Math.round((returnedSales / totalTransactions * 100) * 100) / 100 : 0,
-            //     refundRate: totalTransactions > 0 ?
-            //         Math.round((refundedSales / totalTransactions * 100) * 100) / 100 : 0,
-            //     partialPaymentRate: totalTransactions > 0 ?
-            //         Math.round(((partiallyPaidSales._count?.id || 0) / totalTransactions * 100) * 100) / 100 : 0
-            // }
         };
     }
     catch (error) {
@@ -1277,13 +1272,13 @@ let addPaymentToPartiallyPaidSales = async (databaseName: string, salesId: numbe
                 throw new BusinessLogicError("Only partially paid sales can receive additional payments");
             }
             // Calculate the remaining amount to be paid
-            const remainingAmount = sales.totalAmount.minus(sales.paidAmount);
+            const remainingAmount = new Decimal(sales.totalAmount).minus(new Decimal(sales.paidAmount));
             if (remainingAmount.lte(0)) {
                 throw new BusinessLogicError("This sales record is already fully paid");
             }
 
             // Calculate total of new payments
-            const totalNewPaymentAmount = payments.reduce((sum, payment) => sum.plus(payment.tenderedAmount), new Decimal(0));
+            const totalNewPaymentAmount = payments.reduce((sum, payment) => sum.plus(new Decimal(payment.tenderedAmount)), new Decimal(0));
             if (totalNewPaymentAmount.lte(0)) {
                 throw new BusinessLogicError("Total payment amount must be greater than zero");
             }
@@ -1298,12 +1293,12 @@ let addPaymentToPartiallyPaidSales = async (databaseName: string, salesId: numbe
                 data: paymentsWithSalesId
             });
             // Update the sales record
-            const updatedPaidAmount = sales.paidAmount.plus(totalNewPaymentAmount);
-            const isFullyPaid = updatedPaidAmount.gte(sales.totalAmount);
+            const updatedPaidAmount = new Decimal(sales.paidAmount).plus(totalNewPaymentAmount);
+            const isFullyPaid = updatedPaidAmount.gte(new Decimal(sales.totalAmount));
 
             // Calculate change amount if payment exceeds the remaining amount
             const changeAmount = isFullyPaid ?
-                updatedPaidAmount.minus(sales.totalAmount) :
+                updatedPaidAmount.minus(new Decimal(sales.totalAmount)) :
                 new Decimal(0); // No change if still partially paid
 
             // Update sales status and payment details
@@ -1402,10 +1397,10 @@ let voidSales = async (databaseName: string, salesId: number) => {
                             data: {
                                 itemId: salesItem.itemId,
                                 outletId: sales.outletId,
-                                previousAvailableQuantity: stockBalance.availableQuantity,
-                                previousOnHandQuantity: stockBalance.onHandQuantity,
-                                availableQuantityDelta: salesItem.quantity,
-                                onHandQuantityDelta: salesItem.quantity,
+                                previousAvailableQuantity: stockBalance.availableQuantity.toNumber(),
+                                previousOnHandQuantity: stockBalance.onHandQuantity.toNumber(),
+                                availableQuantityDelta: salesItem.quantity.toNumber(),
+                                onHandQuantityDelta: salesItem.quantity.toNumber(),
                                 movementType: 'Sales Void',
                                 documentId: salesId,
                                 reason: '',

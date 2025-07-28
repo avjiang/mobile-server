@@ -254,7 +254,7 @@ const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) 
         throw new RequestValidateError('sessionID is required and must be a number')
     }
     service.getTotalSalesData(req.user.databaseName, sessionIdNum)
-        .then((salesData: SalesAnalyticResponseBody) => sendResponse(res, salesData))
+        .then((salesData) => sendResponse(res, salesData))
         .catch(next)
 }
 

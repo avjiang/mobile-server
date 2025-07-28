@@ -1,4 +1,5 @@
 import { PrismaClient, Supplier } from "@prisma/client"
+import { Decimal } from 'decimal.js';
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
@@ -376,16 +377,16 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         });
 
         // Create a map of sold quantities by itemId for faster lookup (using all non-voided sales)
-        const itemQuantitiesSold: { [key: number]: number } = {};
+        const itemQuantitiesSold: { [key: number]: Decimal } = {};
         salesItems.forEach(item => {
             if (!itemQuantitiesSold[item.itemId]) {
-                itemQuantitiesSold[item.itemId] = 0;
+                itemQuantitiesSold[item.itemId] = new Decimal(0);
             }
-            itemQuantitiesSold[item.itemId] += item.quantity;
+            itemQuantitiesSold[item.itemId] = itemQuantitiesSold[item.itemId].plus(item.quantity);
         });
 
         // Calculate top-selling categories
-        const categorySales: Record<number, { categoryName: string, quantitySold: number, revenue: number }> = {};
+        const categorySales: Record<number, { categoryName: string, quantitySold: Decimal, revenue: Decimal }> = {};
 
         // Process each sales item and aggregate by category
         salesItems.forEach(salesItem => {
@@ -398,18 +399,23 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             if (!categorySales[categoryId]) {
                 categorySales[categoryId] = {
                     categoryName,
-                    quantitySold: 0,
-                    revenue: 0
+                    quantitySold: new Decimal(0),
+                    revenue: new Decimal(0)
                 };
             }
-            categorySales[categoryId].quantitySold += salesItem.quantity;
-            categorySales[categoryId].revenue += salesItem.subtotalAmount;
+            categorySales[categoryId].quantitySold = categorySales[categoryId].quantitySold.plus(salesItem.quantity);
+            categorySales[categoryId].revenue = categorySales[categoryId].revenue.plus(salesItem.subtotalAmount);
         });
 
         // Convert to array and sort by quantity
         const topSellingCategories = Object.values(categorySales)
-            .sort((a, b) => b.quantitySold - a.quantitySold)
-            .slice(0, 5); // Take top 5
+            .sort((a, b) => b.quantitySold.minus(a.quantitySold).toNumber())
+            .slice(0, 5) // Take top 5
+            .map(category => ({
+                categoryName: category.categoryName,
+                quantitySold: category.quantitySold,
+                revenue: category.revenue
+            }));
 
         // Calculate session sales count (all non-voided)
         const sessionSalesCount = await tenantPrisma.sales.count({
@@ -454,63 +460,63 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         });
 
         // Calculate metrics for partially paid sales
-        const totalOutstandingAmount = (partiallyPaidSales._sum?.totalAmount || 0) - (partiallyPaidSales._sum?.paidAmount || 0);
+        const totalOutstandingAmount = (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).minus(partiallyPaidSales._sum?.paidAmount || new Decimal(0));
         const averageOutstandingPerTransaction = partiallyPaidSales._count.id > 0
-            ? totalOutstandingAmount / partiallyPaidSales._count.id
-            : 0;
-        const paymentCoverageRatio = (partiallyPaidSales._sum?.totalAmount || 0) > 0
-            ? ((partiallyPaidSales._sum?.paidAmount || 0) / (partiallyPaidSales._sum?.totalAmount || 0)) * 100
-            : 0;
+            ? totalOutstandingAmount.dividedBy(partiallyPaidSales._count.id)
+            : new Decimal(0);
+        const paymentCoverageRatio = (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).gt(0)
+            ? ((partiallyPaidSales._sum?.paidAmount || new Decimal(0)).dividedBy(partiallyPaidSales._sum?.totalAmount || new Decimal(1))).times(100)
+            : new Decimal(0);
 
         // Calculate average transaction value (only from completedSessionId)
         const totalCompletedSalesCount = completedSales._count.id || 0;
-        const totalCompletedRevenue = completedSales._sum?.totalAmount || 0;
+        const totalCompletedRevenue = completedSales._sum?.totalAmount || new Decimal(0);
         const averageTransactionValue = totalCompletedSalesCount > 0
-            ? totalCompletedRevenue / totalCompletedSalesCount
-            : 0;
+            ? totalCompletedRevenue.dividedBy(totalCompletedSalesCount)
+            : new Decimal(0);
 
         // Calculate net revenue and profit (only from completed sales)
         const netRevenue = totalCompletedRevenue;
-        const totalProfit = completedSales._sum?.profitAmount || 0;
-        const grossRevenue = salesSummary._sum?.totalAmount || 0;
-        const returnRefundImpact = (returnedSales._sum?.totalAmount || 0) + (refundedSales._sum?.totalAmount || 0);
+        const totalProfit = completedSales._sum?.profitAmount || new Decimal(0);
+        const grossRevenue = salesSummary._sum?.totalAmount || new Decimal(0);
+        const returnRefundImpact = (returnedSales._sum?.totalAmount || new Decimal(0)).plus(refundedSales._sum?.totalAmount || new Decimal(0));
 
         // Prepare response object
         return {
             // Overall metrics (only from completed sales)
-            totalRevenue: netRevenue,
-            grossRevenue: grossRevenue,
-            returnRefundImpact: returnRefundImpact,
-            totalProfit: totalProfit,
-            averageTransactionValue,
-            totalPaidAmount: completedSales._sum?.paidAmount || 0,
-            changeGiven: completedSales._sum?.changeAmount || 0,
+            totalRevenue: netRevenue.toNumber(),
+            grossRevenue: grossRevenue.toNumber(),
+            returnRefundImpact: returnRefundImpact.toNumber(),
+            totalProfit: totalProfit.toNumber(),
+            averageTransactionValue: averageTransactionValue.toNumber(),
+            totalPaidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+            changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber(),
             voidedSalesCount: voidedSales._count?.id || 0,
-            voidedSalesAmount: voidedSales._sum?.totalAmount || 0,
+            voidedSalesAmount: (voidedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
 
             // Completed sales info (only from completedSessionId)
             completedSales: {
                 count: totalCompletedSalesCount,
-                totalAmount: totalCompletedRevenue,
-                paidAmount: completedSales._sum?.paidAmount || 0,
-                profit: totalProfit,
-                changeGiven: completedSales._sum?.changeAmount || 0
+                totalAmount: totalCompletedRevenue.toNumber(),
+                paidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+                profit: totalProfit.toNumber(),
+                changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber()
             },
 
             // Partially paid sales info
             partiallyPaidSales: {
                 count: partiallyPaidSales._count?.id || 0,
-                totalAmount: partiallyPaidSales._sum?.totalAmount || 0,
-                paidAmount: partiallyPaidSales._sum?.paidAmount || 0,
-                outstandingAmount: totalOutstandingAmount,
-                profit: partiallyPaidSales._sum?.profitAmount || 0,
-                averageOutstandingPerTransaction,
-                paymentCoverageRatio: Math.round(paymentCoverageRatio * 100) / 100,
+                totalAmount: (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (partiallyPaidSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+                outstandingAmount: totalOutstandingAmount.toNumber(),
+                profit: (partiallyPaidSales._sum?.profitAmount || new Decimal(0)).toNumber(),
+                averageOutstandingPerTransaction: averageOutstandingPerTransaction.toNumber(),
+                paymentCoverageRatio: Math.round(paymentCoverageRatio.toNumber() * 100) / 100,
                 details: partiallyPaidSalesDetails.map(sale => ({
                     salesId: sale.id,
-                    totalAmount: sale.totalAmount,
-                    paidAmount: sale.paidAmount,
-                    outstandingAmount: sale.totalAmount - sale.paidAmount,
+                    totalAmount: sale.totalAmount.toNumber(),
+                    paidAmount: sale.paidAmount.toNumber(),
+                    outstandingAmount: sale.totalAmount.minus(sale.paidAmount).toNumber(),
                     customerName: sale.customerName || 'Guest',
                     phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate
@@ -520,13 +526,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             // Returned sales info
             returnedSales: {
                 count: returnedSales._count?.id || 0,
-                totalAmount: returnedSales._sum?.totalAmount || 0,
-                paidAmount: returnedSales._sum?.paidAmount || 0,
-                lostProfit: returnedSales._sum?.profitAmount || 0,
+                totalAmount: (returnedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (returnedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+                lostProfit: (returnedSales._sum?.profitAmount || new Decimal(0)).toNumber(),
                 details: returnedSalesDetails.map(sale => ({
                     salesId: sale.id,
-                    totalAmount: sale.totalAmount,
-                    paidAmount: sale.paidAmount,
+                    totalAmount: sale.totalAmount.toNumber(),
+                    paidAmount: sale.paidAmount.toNumber(),
                     customerName: sale.customerName || 'Guest',
                     phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate,
@@ -537,13 +543,13 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             // Refunded sales info
             refundedSales: {
                 count: refundedSales._count?.id || 0,
-                totalAmount: refundedSales._sum?.totalAmount || 0,
-                paidAmount: refundedSales._sum?.paidAmount || 0,
-                lostProfit: refundedSales._sum?.profitAmount || 0,
+                totalAmount: (refundedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (refundedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+                lostProfit: (refundedSales._sum?.profitAmount || new Decimal(0)).toNumber(),
                 details: refundedSalesDetails.map(sale => ({
                     salesId: sale.id,
-                    totalAmount: sale.totalAmount,
-                    paidAmount: sale.paidAmount,
+                    totalAmount: sale.totalAmount.toNumber(),
+                    paidAmount: sale.paidAmount.toNumber(),
                     customerName: sale.customerName || 'Guest',
                     phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate,
@@ -554,12 +560,12 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             // Voided sales info
             voidedSales: {
                 count: voidedSales._count?.id || 0,
-                totalAmount: voidedSales._sum?.totalAmount || 0,
-                paidAmount: voidedSales._sum?.paidAmount || 0,
+                totalAmount: (voidedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (voidedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
                 details: voidedSalesDetails.map(sale => ({
                     salesId: sale.id,
-                    totalAmount: sale.totalAmount,
-                    paidAmount: sale.paidAmount,
+                    totalAmount: sale.totalAmount.toNumber(),
+                    paidAmount: sale.paidAmount.toNumber(),
                     customerName: sale.customerName || 'Guest',
                     phoneNumber: sale.phoneNumber || '',
                     businessDate: sale.businessDate,
@@ -573,7 +579,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 businessDate: session.businessDate,
                 openingDateTime: session.openingDateTime,
                 closingDateTime: session.closingDateTime,
-                openingAmount: session.openingAmount,
+                openingAmount: session.openingAmount.toNumber(),
                 totalSalesCount: sessionSalesCount,
                 openByUserID: session.openByUserID,
                 closeByUserID: session.closeByUserID
@@ -584,23 +590,27 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 itemName: item.itemName,
                 itemCode: item.itemCode,
                 itemBrand: item.itemBrand,
-                quantitySold: item._sum.quantity || 0,
-                revenue: item._sum.subtotalAmount || 0
+                quantitySold: (item._sum.quantity || new Decimal(0)).toNumber(),
+                revenue: (item._sum.subtotalAmount || new Decimal(0)).toNumber()
             })),
 
-            topSellingCategories,
+            topSellingCategories: topSellingCategories.map(category => ({
+                categoryName: category.categoryName,
+                quantitySold: category.quantitySold.toNumber(),
+                revenue: category.revenue.toNumber()
+            })),
 
             mostProfitableItems: mostProfitableItems.map(item => ({
                 itemId: item.itemId,
                 itemName: item.itemName,
                 itemCode: item.itemCode,
                 itemBrand: item.itemBrand,
-                profit: item._sum.profit || 0
+                profit: (item._sum.profit || new Decimal(0)).toNumber()
             })),
 
             paymentBreakdown: paymentBreakdown.map(payment => ({
                 method: payment.method,
-                amount: payment._sum.paidAmount || 0
+                amount: (payment._sum.paidAmount || new Decimal(0)).toNumber()
             })),
 
             // Only show stock balance for items sold in this session
@@ -609,16 +619,16 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 itemName: stock.item.itemName,
                 itemCode: stock.item.itemCode,
                 itemBrand: stock.item.itemBrand,
-                quantitySold: itemQuantitiesSold[stock.item.id] || 0,
-                availableQuantity: stock.availableQuantity,
-                status: stock.availableQuantity <= 0 ? 'Out of Stock' :
-                    (stock.reorderThreshold && stock.availableQuantity <= stock.reorderThreshold) ? 'Low Stock' : 'In Stock'
+                quantitySold: (itemQuantitiesSold[stock.item.id] || new Decimal(0)).toNumber(),
+                availableQuantity: stock.availableQuantity.toNumber(),
+                status: stock.availableQuantity.lte(0) ? 'Out of Stock' :
+                    (stock.reorderThreshold && stock.availableQuantity.lte(stock.reorderThreshold)) ? 'Low Stock' : 'In Stock'
             })),
 
             // Today's Purchase Orders
             todayPurchaseOrders: {
                 count: todayPurchaseOrders.length,
-                totalAmount: todayPurchaseOrders.reduce((sum, po) => sum + po.totalAmount, 0),
+                totalAmount: todayPurchaseOrders.reduce((sum, po) => sum.plus(po.totalAmount), new Decimal(0)).toNumber(),
                 totalItems: todayPurchaseOrders.reduce((sum, po) =>
                     sum + po.purchaseOrderItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
                 orders: todayPurchaseOrders.map(po => ({
@@ -651,7 +661,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             // Today's Invoices
             todayInvoices: {
                 count: todayInvoices.length,
-                totalAmount: todayInvoices.reduce((sum, invoice) => sum + invoice.totalAmount, 0),
+                totalAmount: todayInvoices.reduce((sum, invoice) => sum.plus(invoice.totalAmount), new Decimal(0)).toNumber(),
                 totalItems: todayInvoices.reduce((sum, invoice) =>
                     sum + invoice.invoiceItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
                 invoices: todayInvoices.map(invoice => ({

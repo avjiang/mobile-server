@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement } from "@prisma/client"
+import { Decimal } from 'decimal.js';
 import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
 import { StockAdjustment, StockAdjustmentRequestBody } from "./stock-balance.request"
 import stockMovementService from "./stock-movement.service"
@@ -83,7 +84,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
     try {
         await tenantPrisma.$transaction(async (tx) => {
             const stockMovements = [];
-            const stockUpdates: { id: number; availableQuantity: number; onHandQuantity: number; clientVersion: number }[] = [];
+            const stockUpdates: { id: number; availableQuantity: Decimal; onHandQuantity: Decimal; clientVersion: number }[] = [];
             const versionMismatches: VersionMismatchDetail[] = [];
 
             // Step 1: Validate input first (before any DB queries)
@@ -166,7 +167,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
             }, {} as Record<string, typeof stockReceipts>);
 
             // Step 6: Process adjustments and prepare bulk operations
-            const receiptUpdates: { id: number; quantity: number; deleted?: boolean; deletedAt?: Date }[] = [];
+            const receiptUpdates: { id: number; quantity: Decimal; deleted?: boolean; deletedAt?: Date }[] = [];
             const receiptCreates: any[] = [];
 
             for (const { adjustment, stock } of validatedAdjustments) {
@@ -176,18 +177,19 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                 const previousAvailableQuantity = stock.availableQuantity;
                 const previousOnHandQuantity = stock.onHandQuantity;
 
-                let newAvailableQuantity: number;
-                let newOnHandQuantity: number;
-                let deltaQuantity: number;
+                let newAvailableQuantity: Decimal;
+                let newOnHandQuantity: Decimal;
+                let deltaQuantity: Decimal;
 
                 if (adjustment.overrideQuantity !== undefined) {
-                    newAvailableQuantity = adjustment.overrideQuantity;
-                    newOnHandQuantity = adjustment.overrideQuantity;
-                    deltaQuantity = adjustment.overrideQuantity - stock.availableQuantity;
+                    newAvailableQuantity = new Decimal(adjustment.overrideQuantity);
+                    newOnHandQuantity = new Decimal(adjustment.overrideQuantity);
+                    deltaQuantity = newAvailableQuantity.sub(stock.availableQuantity);
                 } else {
-                    newAvailableQuantity = stock.availableQuantity + (adjustment.adjustQuantity || 0);
-                    newOnHandQuantity = stock.onHandQuantity + (adjustment.adjustQuantity || 0);
-                    deltaQuantity = adjustment.adjustQuantity || 0;
+                    const adjustValue = new Decimal(adjustment.adjustQuantity || 0);
+                    newAvailableQuantity = stock.availableQuantity.add(adjustValue);
+                    newOnHandQuantity = stock.onHandQuantity.add(adjustValue);
+                    deltaQuantity = adjustValue;
                 }
 
                 // Prepare stock movement
@@ -217,50 +219,50 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
 
                 // Handle StockReceipt adjustments
                 if (adjustment.overrideQuantity !== undefined) {
-                    const totalReceiptQuantity = receipts.reduce((sum, receipt) => sum + receipt.quantity, 0);
+                    const totalReceiptQuantity = receipts.reduce((sum, receipt) => sum.add(receipt.quantity), new Decimal(0));
 
-                    if (deltaQuantity < 0) {
+                    if (deltaQuantity.lessThan(0)) {
                         // Reduce stock using FIFO
-                        let remainingReduction = Math.abs(deltaQuantity);
+                        let remainingReduction = deltaQuantity.abs();
                         for (const receipt of receipts) {
-                            if (remainingReduction <= 0) break;
-                            const reduction = Math.min(receipt.quantity, remainingReduction);
-                            const newQuantity = receipt.quantity - reduction;
+                            if (remainingReduction.lessThanOrEqualTo(0)) break;
+                            const reduction = Decimal.min(receipt.quantity, remainingReduction);
+                            const newQuantity = receipt.quantity.sub(reduction);
                             receiptUpdates.push({
                                 id: receipt.id,
                                 quantity: newQuantity,
-                                deleted: newQuantity === 0 ? true : undefined,
-                                deletedAt: newQuantity === 0 ? new Date() : undefined,
+                                deleted: newQuantity.equals(0) ? true : undefined,
+                                deletedAt: newQuantity.equals(0) ? new Date() : undefined,
                             });
-                            remainingReduction -= reduction;
+                            remainingReduction = remainingReduction.sub(reduction);
                         }
-                        if (remainingReduction > 0) {
+                        if (remainingReduction.greaterThan(0)) {
                             throw new RequestValidateError(`Insufficient StockReceipt quantity for item ${adjustment.itemId}`);
                         }
-                    } else if (deltaQuantity > 0) {
+                    } else if (deltaQuantity.greaterThan(0)) {
                         // Handle override with increase
-                        if (newAvailableQuantity < totalReceiptQuantity) {
-                            let remainingReduction = totalReceiptQuantity - newAvailableQuantity;
+                        if (newAvailableQuantity.lessThan(totalReceiptQuantity)) {
+                            let remainingReduction = totalReceiptQuantity.sub(newAvailableQuantity);
                             for (const receipt of receipts) {
-                                if (remainingReduction <= 0) break;
-                                const reduction = Math.min(receipt.quantity, remainingReduction);
-                                const newQuantity = receipt.quantity - reduction;
+                                if (remainingReduction.lessThanOrEqualTo(0)) break;
+                                const reduction = Decimal.min(receipt.quantity, remainingReduction);
+                                const newQuantity = receipt.quantity.sub(reduction);
                                 receiptUpdates.push({
                                     id: receipt.id,
                                     quantity: newQuantity,
-                                    deleted: newQuantity === 0 ? true : undefined,
-                                    deletedAt: newQuantity === 0 ? new Date() : undefined,
+                                    deleted: newQuantity.equals(0) ? true : undefined,
+                                    deletedAt: newQuantity.equals(0) ? new Date() : undefined,
                                 });
-                                remainingReduction -= reduction;
+                                remainingReduction = remainingReduction.sub(reduction);
                             }
                         }
                         // Create new receipt for the new balance
-                        if (newAvailableQuantity > 0) {
+                        if (newAvailableQuantity.greaterThan(0)) {
                             receiptCreates.push({
                                 itemId: adjustment.itemId,
                                 outletId: adjustment.outletId,
                                 quantity: newAvailableQuantity,
-                                cost: adjustment.cost,
+                                cost: new Decimal(adjustment.cost || 0),
                                 receiptDate: new Date(),
                                 createdAt: new Date(),
                                 deleted: false,
@@ -268,31 +270,31 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                             });
                         }
                     }
-                } else if (deltaQuantity < 0) {
+                } else if (deltaQuantity.lessThan(0)) {
                     // Handle negative adjustments
-                    let remainingReduction = Math.abs(deltaQuantity);
+                    let remainingReduction = deltaQuantity.abs();
                     for (const receipt of receipts) {
-                        if (remainingReduction <= 0) break;
-                        const reduction = Math.min(receipt.quantity, remainingReduction);
-                        const newQuantity = receipt.quantity - reduction;
+                        if (remainingReduction.lessThanOrEqualTo(0)) break;
+                        const reduction = Decimal.min(receipt.quantity, remainingReduction);
+                        const newQuantity = receipt.quantity.sub(reduction);
                         receiptUpdates.push({
                             id: receipt.id,
                             quantity: newQuantity,
-                            deleted: newQuantity === 0 ? true : undefined,
-                            deletedAt: newQuantity === 0 ? new Date() : undefined,
+                            deleted: newQuantity.equals(0) ? true : undefined,
+                            deletedAt: newQuantity.equals(0) ? new Date() : undefined,
                         });
-                        remainingReduction -= reduction;
+                        remainingReduction = remainingReduction.sub(reduction);
                     }
-                    if (remainingReduction > 0) {
+                    if (remainingReduction.greaterThan(0)) {
                         throw new RequestValidateError(`Insufficient StockReceipt quantity for item ${adjustment.itemId}`);
                     }
-                } else if (deltaQuantity > 0) {
+                } else if (deltaQuantity.greaterThan(0)) {
                     // Handle positive adjustments
                     receiptCreates.push({
                         itemId: adjustment.itemId,
                         outletId: adjustment.outletId,
                         quantity: deltaQuantity,
-                        cost: adjustment.cost,
+                        cost: new Decimal(adjustment.cost || 0),
                         receiptDate: new Date(),
                         createdAt: new Date(),
                         deleted: false,

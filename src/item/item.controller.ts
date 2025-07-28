@@ -77,7 +77,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
     const itemId: number = parseInt(req.params.id)
     service.getById(req.user?.databaseName, itemId)
-        .then((item: ItemDto) => sendResponse(res, item))
+        .then((item) => sendResponse(res, item))
         .catch(next)
 }
 

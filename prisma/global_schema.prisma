@@ -11,6 +11,7 @@ generator client {
 model SubscriptionPlan {
     id              Int                  @id @default(autoincrement()) @map("ID")
     planName        String               @unique @map("PLAN_NAME")
+    planType        String               @default("Retail") @map("PLAN_TYPE") // e.g., "Retail", "FnB"
     price           Float                @map("PRICE")
     maxTransactions Int?                 @map("MAX_TRANSACTIONS") // New: e.g., 75 for Free
     maxProducts     Int?                 @map("MAX_PRODUCTS") // New: e.g., 20 for Free

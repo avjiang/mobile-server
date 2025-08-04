@@ -91,7 +91,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "pm2 start ecosystem.config.js",
+    "start-pm2": "pm2 start ecosystem.config.js",
+    "start": "node dist/index.js",
     "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js",
     "seed_tenant_items": "ts-node src/script/tenant_db_seed.ts",
     "seed_global": "ts-node src/script/global_schema_seed.ts",

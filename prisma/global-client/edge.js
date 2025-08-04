@@ -340,11 +340,12 @@ const config = {
     "db"
   ],
   "activeProvider": "mysql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
         "fromEnvVar": "GLOBAL_DB_URL",
-        "value": "mysql://root:rootroot@127.0.0.1:3306/global"
+        "value": null
       }
     }
   },

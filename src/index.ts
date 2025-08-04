@@ -6,7 +6,7 @@ import authorizeMiddleware from './middleware/authorize-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
 const app = express()
-const port = 8080;
+const port = process.env.PORT || 8080;
 
 // createTestUser()
 app.get('/', (req, res) => res.send('Hello World!'))

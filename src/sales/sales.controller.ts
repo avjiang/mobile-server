@@ -7,7 +7,7 @@ import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
 import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
-import { Payment, Prisma, Sales } from "prisma/client"
+import { Payment, Prisma, Sales } from "../../prisma/client"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 

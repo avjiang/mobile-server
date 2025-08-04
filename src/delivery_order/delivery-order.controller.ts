@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from "express"
 import validator from "validator"
 import service from "./delivery-order.service"
-import { DeliveryOrder, StockBalance } from "prisma/client"
+import { DeliveryOrder, StockBalance } from "../../prisma/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"

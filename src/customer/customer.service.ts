@@ -1,4 +1,4 @@
-import { PrismaClient, Customer } from "prisma/client"
+import { PrismaClient, Customer } from "../../prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 

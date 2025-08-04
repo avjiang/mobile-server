@@ -4,7 +4,7 @@ import authorizeMiddleware, { UserInfo } from "../middleware/authorize-middlewar
 import NetworkRequest from "../api-helpers/network-request";
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request";
 import { TokenResponseBody, ValidateTokenResponseBody } from "./auth.response";
-import { PrismaClient, TenantUser, RefreshToken, Tenant } from "prisma/global-client";
+import { PrismaClient, TenantUser, RefreshToken, Tenant } from "../../prisma/global-client";
 import { sendResponse } from "../api-helpers/network";
 import { RequestValidateError } from "../api-helpers/error";
 import validator from "validator";

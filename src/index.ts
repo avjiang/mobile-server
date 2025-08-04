@@ -1,12 +1,12 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import cors from 'cors'
-import errorMiddleware from './middleware/error-middleware'
+// import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
 const app = express()
-const port = process.env.PORT || 8080;
+const port = process.env.PORT8080;
 
 // createTestUser()
 app.get('/', (req, res) => res.send('Hello World!'))
@@ -28,7 +28,6 @@ app.use(cors({
 
 // auth route need to execute before authentication middleware
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
-// app.use('/auth', require('./auth/auth.controller'))
 app.use('/auth', require('./auth/auth.controller'))
 
 //authentication middleware
@@ -58,7 +57,7 @@ app.use('/deliveryOrder', require('./delivery_order/delivery-order.controller'))
 app.use('/invoice', require('./invoice/invoice.controller'))
 
 //error middleware
-app.use(errorMiddleware)
+// app.use(errorMiddleware)
 
 const server = app.listen(port, () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);

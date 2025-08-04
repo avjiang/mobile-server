@@ -1,4 +1,4 @@
-import { User, PrismaClient } from "prisma/client"
+import { User, PrismaClient } from "../../prisma/client"
 import bcrypt from "bcryptjs"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';

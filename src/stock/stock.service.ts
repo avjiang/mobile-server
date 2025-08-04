@@ -1,4 +1,4 @@
-// import { Prisma, PrismaClient, Stock, StockCheck } from "prisma/client"
+// import { Prisma, PrismaClient, Stock, StockCheck } from "../../prisma/client"
 // import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 // import { StockAdjustment, StockAdjustmentRequestBody } from "./stockbalance.request"
 // import stockcheckService from "./stockcheck.service"

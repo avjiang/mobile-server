@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, StockBalance, StockMovement } from "prisma/client"
+import { Prisma, PrismaClient, StockBalance, StockMovement } from "../../prisma/client"
 import { Decimal } from 'decimal.js';
 import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
 import { StockAdjustment, StockAdjustmentRequestBody } from "./stock-balance.request"

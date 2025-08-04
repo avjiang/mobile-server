@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, StockBalance, StockMovement, Invoice } from "prisma/client"
+import { Prisma, PrismaClient, StockBalance, StockMovement, Invoice } from "../../prisma/client"
 import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { } from '../db';

@@ -1,12 +1,12 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import cors from 'cors'
-// import errorMiddleware from './middleware/error-middleware'
+import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
 const app = express()
-const port = process.env.PORT8080;
+const port = process.env.PORT || 8080;
 
 // createTestUser()
 app.get('/', (req, res) => res.send('Hello World!'))
@@ -56,14 +56,12 @@ app.use('/purchaseOrder', require('./purchase_order/purchase-order.controller'))
 app.use('/deliveryOrder', require('./delivery_order/delivery-order.controller'))
 app.use('/invoice', require('./invoice/invoice.controller'))
 
-//error middleware
-// app.use(errorMiddleware)
+// error middleware
+app.use(errorMiddleware)
 
 const server = app.listen(port, () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
 });
-
-// app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 server.on('error', (err) => {
   console.error('Server error:', err);

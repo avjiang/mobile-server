@@ -95,6 +95,7 @@ enum CombinationRule {
 model Role {
   id          Int              @id @default(autoincrement()) @map("ID")
   name        String           @unique @map("NAME") // e.g., "Admin", "Cashier"
+  category    String?          @map("CATEGORY") // e.g., "Cashier", "Admin"
   description String?          @map("DESCRIPTION")
   permission  RolePermission[] @relation("ROLE_PERMISSIONS") // Explicit relation to RolePermission
   users       User[]           @relation("USER_ROLES") // Many-to-many with users
@@ -517,12 +518,12 @@ model Invoice {
   purchaseOrderId  Int?            @map("PURCHASE_ORDER_ID")
   supplierId       Int?            @map("SUPPLIER_ID")
   outletId         Int             @map("OUTLET_ID")
-  subtotalAmount   Float           @map("SUBTOTAL_AMOUNT")
-  taxAmount        Float           @map("TAX_AMOUNT")
+  subtotalAmount   Decimal         @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
+  taxAmount        Decimal         @map("TAX_AMOUNT") @db.Decimal(15, 4)
   sessionId        Int?            @map("SESSION_ID") // Optional for backwards compatibility
   discountType     String?         @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
-  discountAmount   Float           @map("DISCOUNT_AMOUNT")
-  totalAmount      Float           @map("TOTAL_AMOUNT")
+  discountAmount   Decimal         @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  totalAmount      Decimal         @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
   currency         String          @map("CURRENCY")
   status           String          @map("STATUS")
   invoiceDate      DateTime?       @map("INVOICE_DATE")
@@ -552,12 +553,12 @@ model InvoiceItem {
   id             Int       @id @default(autoincrement()) @map("ID")
   invoiceId      Int       @map("INVOICE_ID")
   itemId         Int       @map("ITEM_ID")
-  quantity       Float     @map("QUANTITY")
-  unitPrice      Float     @map("UNIT_PRICE")
+  quantity       Decimal   @map("QUANTITY") @db.Decimal(15, 4)
+  unitPrice      Decimal   @map("UNIT_PRICE") @db.Decimal(15, 4)
   discountType   String?   @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
-  discountAmount Float?    @default(0) @map("DISCOUNT_AMOUNT")
-  taxAmount      Float?    @map("TAX_AMOUNT")
-  subtotal       Float     @map("SUBTOTAL")
+  discountAmount Decimal?  @default(0) @map("DISCOUNT_AMOUNT")
+  taxAmount      Decimal?  @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  subtotal       Decimal   @map("SUBTOTAL") @db.Decimal(15, 4)
   remark         String?   @default("") @map("REMARK")
   createdAt      DateTime? @default(now()) @map("CREATED_AT")
   updatedAt      DateTime? @map("UPDATED_AT")
@@ -614,7 +615,7 @@ model DeliveryOrderItem {
   itemId           Int           @map("ITEM_ID")
   orderedQuantity  Float         @map("ORDERED_QUANTITY")
   receivedQuantity Float         @map("RECEIVED_QUANTITY")
-  unitPrice        Float?        @default(0) @map("UNIT_PRICE")
+  unitPrice        Decimal?      @default(0) @map("UNIT_PRICE") @db.Decimal(15, 4)
   remark           String?       @default("") @map("REMARK")
   version          Int?          @default(1) @map("VERSION")
   createdAt        DateTime?     @default(now()) @map("CREATED_AT")
@@ -637,12 +638,12 @@ model PurchaseOrder {
   purchaseOrderDate   DateTime?           @map("PURCHASE_ORDER_DATE")
   sessionId           Int?                @map("SESSION_ID") // Optional for backwards compatibility
   discountType        String?             @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
-  discountAmount      Float?              @map("DISCOUNT_AMOUNT")
-  serviceChargeAmount Float?              @map("SERVICE_CHARGE_AMOUNT")
-  taxAmount           Float?              @map("TAX_AMOUNT")
-  roundingAmount      Float?              @map("ROUNDING_AMOUNT")
-  subtotalAmount      Float               @map("SUBTOTAL_AMOUNT")
-  totalAmount         Float               @map("TOTAL_AMOUNT")
+  discountAmount      Decimal?            @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  serviceChargeAmount Decimal?            @map("SERVICE_CHARGE_AMOUNT") @db.Decimal(15, 4)
+  taxAmount           Decimal?            @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  roundingAmount      Decimal?            @map("ROUNDING_AMOUNT") @db.Decimal(15, 4)
+  subtotalAmount      Decimal?            @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
+  totalAmount         Decimal?            @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
   status              String              @map("STATUS")
   remark              String?             @map("REMARK")
   currency            String              @default("IDR") @map("CURRENCY")
@@ -668,12 +669,12 @@ model PurchaseOrderItem {
   id              Int           @id @default(autoincrement()) @map("ID")
   purchaseOrderId Int           @map("PURCHASE_ORDER_ID")
   itemId          Int           @map("ITEM_ID")
-  quantity        Float         @map("QUANTITY")
-  taxAmount       Float?        @map("TAX_AMOUNT")
+  quantity        Decimal       @map("QUANTITY") @db.Decimal(15, 4)
+  taxAmount       Decimal?      @map("TAX_AMOUNT") @db.Decimal(15, 4)
   discountType    String?       @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
-  discountAmount  Float?        @default(0) @map("DISCOUNT_AMOUNT")
-  unitPrice       Float         @map("UNIT_PRICE")
-  subtotal        Float         @map("SUBTOTAL")
+  discountAmount  Decimal?      @default(0) @map("DISCOUNT_AMOUNT")
+  unitPrice       Decimal       @map("UNIT_PRICE") @db.Decimal(15, 4)
+  subtotal        Decimal       @map("SUBTOTAL") @db.Decimal(15, 4)
   remark          String?       @default("") @map("REMARK")
   version         Int?          @default(1) @map("VERSION")
   createdAt       DateTime?     @default(now()) @map("CREATED_AT")

@@ -188,15 +188,16 @@ model TenantSiteIdCounter {
 
 // Permission model to store granular permissions (e.g., "create_order", "view_reports")
 model Permission {
-    id          Int       @id @default(autoincrement()) @map("ID")
-    name        String    @unique @map("NAME") // e.g., "create_order", "view_reports"
-    category    String    @default("") @map("CATEGORY") // e.g., "Order Management"
-    description String?   @map("DESCRIPTION")
-    createdAt   DateTime? @default(now()) @map("CREATED_AT")
-    updatedAt   DateTime? @updatedAt @map("UPDATED_AT")
-    deleted     Boolean   @default(false) @map("IS_DELETED")
-    deletedAt   DateTime? @map("DELETED_AT")
-    version     Int?      @default(1) @map("VERSION")
+    id           Int       @id @default(autoincrement()) @map("ID")
+    name         String    @unique @map("NAME") // e.g., "create_order", "view_reports"
+    category     String    @default("") @map("CATEGORY") // e.g., "Order Management"
+    description  String?   @map("DESCRIPTION")
+    allowedRoles String?   @map("ALLOWED_ROLES") // e.g., "Cashier,Admin"
+    createdAt    DateTime? @default(now()) @map("CREATED_AT")
+    updatedAt    DateTime? @updatedAt @map("UPDATED_AT")
+    deleted      Boolean   @default(false) @map("IS_DELETED")
+    deletedAt    DateTime? @map("DELETED_AT")
+    version      Int?      @default(1) @map("VERSION")
 
     @@map("PERMISSION")
 }

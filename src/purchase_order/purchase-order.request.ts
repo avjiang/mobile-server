@@ -1,14 +1,15 @@
 import { PurchaseOrder, StockBalance } from "@prisma/client"
+import { Decimal as PrismaDecimal } from "@prisma/client/runtime/library";
 
 interface PurchaseOrderItemInput {
     id?: number; // Add id for updates
     itemId: number;
-    quantity: number;
-    unitPrice: number;
-    taxAmount?: number;
+    quantity: PrismaDecimal;
+    unitPrice: PrismaDecimal;
+    taxAmount?: PrismaDecimal;
     discountType?: string; // e.g., 'percentage' or 'fixed'
-    discountAmount: number;
-    subtotal: number;
+    discountAmount: PrismaDecimal;
+    subtotal: PrismaDecimal;
     remark?: string;
 }
 
@@ -20,12 +21,12 @@ export interface PurchaseOrderInput {
     sessionId?: number; // Optional for backwards compatibility
     purchaseOrderDate?: Date;
     discountType?: string; // e.g., 'percentage' or 'fixed'
-    discountAmount?: number;
-    serviceChargeAmount?: number;
-    taxAmount?: number;
-    roundingAmount?: number;
-    subtotalAmount: number;
-    totalAmount: number;
+    discountAmount?: PrismaDecimal;
+    serviceChargeAmount?: PrismaDecimal;
+    taxAmount?: PrismaDecimal;
+    roundingAmount?: PrismaDecimal;
+    subtotalAmount: PrismaDecimal;
+    totalAmount: PrismaDecimal;
     status?: string;
     remark?: string;
     currency?: string;

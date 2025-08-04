@@ -49,7 +49,7 @@ async function seedPermissions(tenantPrisma: any) {
         {
             name: "Manage Suppliers",
             description: "Add, edit, and delete suppliers",
-            category: "Supplier Management"
+            category: "Inventory"
         },
         {
             name: "Manage Outlets",
@@ -91,8 +91,8 @@ async function main(): Promise<void> {
         prisma.subscriptionPlan.create({
             data: {
                 planName: 'Basic',
-                price: 229000,
-                maxUsers: 1,
+                price: 259000,
+                maxUsers: 2,
                 description: 'Basic subscription plan for small businesses',
             },
         }),

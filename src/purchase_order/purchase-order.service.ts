@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement, PurchaseOrder } from "@prisma/client"
 import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
+import Decimal from "decimal.js";
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
@@ -466,12 +467,12 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         sessionId: purchaseOrderData.sessionId || null,
                         purchaseOrderDate: purchaseOrderData.purchaseOrderDate,
                         discountType: purchaseOrderData.discountType || '',
-                        discountAmount: purchaseOrderData.discountAmount || 0,
-                        serviceChargeAmount: purchaseOrderData.serviceChargeAmount || 0,
-                        taxAmount: purchaseOrderData.taxAmount || 0,
-                        roundingAmount: purchaseOrderData.roundingAmount || 0,
-                        subtotalAmount: purchaseOrderData.subtotalAmount,
-                        totalAmount: purchaseOrderData.totalAmount,
+                        discountAmount: purchaseOrderData.discountAmount ? new Decimal(purchaseOrderData.discountAmount) : new Decimal(0),
+                        serviceChargeAmount: purchaseOrderData.serviceChargeAmount ? new Decimal(purchaseOrderData.serviceChargeAmount) : new Decimal(0),
+                        taxAmount: purchaseOrderData.taxAmount ? new Decimal(purchaseOrderData.taxAmount) : new Decimal(0),
+                        roundingAmount: purchaseOrderData.roundingAmount ? new Decimal(purchaseOrderData.roundingAmount) : new Decimal(0),
+                        subtotalAmount: new Decimal(purchaseOrderData.subtotalAmount),
+                        totalAmount: new Decimal(purchaseOrderData.totalAmount),
                         status: purchaseOrderData.status || 'CONFIRMED',
                         remark: purchaseOrderData.remark,
                         currency: purchaseOrderData.currency || 'IDR',
@@ -492,12 +493,12 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         data: purchaseOrderData.purchaseOrderItems.map((item) => ({
                             purchaseOrderId: newPurchaseOrder.id,
                             itemId: item.itemId,
-                            quantity: item.quantity,
-                            unitPrice: item.unitPrice,
+                            quantity: new Decimal(item.quantity),
+                            unitPrice: new Decimal(item.unitPrice),
                             discountType: item.discountType || '',
-                            discountAmount: item.discountAmount || 0,
-                            subtotal: item.subtotal,
-                            taxAmount: item.taxAmount || 0,
+                            discountAmount: item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0),
+                            subtotal: new Decimal(item.subtotal),
+                            taxAmount: item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0),
                             remark: item.remark || null,
                         })),
                     });
@@ -720,12 +721,12 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                     supplierId: updateData.supplierId,
                     purchaseOrderDate: updateData.purchaseOrderDate,
                     discountType: updateData.discountType || '',
-                    discountAmount: updateData.discountAmount,
-                    serviceChargeAmount: updateData.serviceChargeAmount,
-                    taxAmount: updateData.taxAmount,
-                    roundingAmount: updateData.roundingAmount,
-                    subtotalAmount: updateData.subtotalAmount,
-                    totalAmount: updateData.totalAmount,
+                    discountAmount: updateData.discountAmount !== undefined ? new Decimal(updateData.discountAmount) : undefined,
+                    serviceChargeAmount: updateData.serviceChargeAmount !== undefined ? new Decimal(updateData.serviceChargeAmount) : undefined,
+                    taxAmount: updateData.taxAmount !== undefined ? new Decimal(updateData.taxAmount) : undefined,
+                    roundingAmount: updateData.roundingAmount !== undefined ? new Decimal(updateData.roundingAmount) : undefined,
+                    subtotalAmount: updateData.subtotalAmount !== undefined ? new Decimal(updateData.subtotalAmount) : undefined,
+                    totalAmount: updateData.totalAmount !== undefined ? new Decimal(updateData.totalAmount) : undefined,
                     status: updateData.status,
                     remark: updateData.remark,
                     currency: updateData.currency,
@@ -753,12 +754,12 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                         data: updateData.purchaseOrderItems.map(item => ({
                             purchaseOrderId: id,
                             itemId: item.itemId,
-                            quantity: item.quantity,
-                            unitPrice: item.unitPrice,
-                            taxAmount: item.taxAmount || 0,
+                            quantity: new Decimal(item.quantity),
+                            unitPrice: new Decimal(item.unitPrice),
+                            taxAmount: item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0),
                             discountType: item.discountType || '',
-                            discountAmount: item.discountAmount || 0,
-                            subtotal: item.subtotal,
+                            discountAmount: item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0),
+                            subtotal: new Decimal(item.subtotal),
                             remark: item.remark || null,
                             updatedAt: new Date()
                         }))

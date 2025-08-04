@@ -164,11 +164,13 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
         const createdItems = await tenantPrisma.$transaction(async (tx) => {
             // Create items with nested relations in parallel
             return Promise.all(
-                itemBodyArray.map((itemBody) => {
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, ...itemWithoutId } = itemBody;
-                    return tx.item.create({
+                itemBodyArray.map(async (itemBody) => {
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, ...itemWithoutId } = itemBody;
+
+                    const createdItem = await tx.item.create({
                         data: {
                             ...itemWithoutId,
+                            cost: 0, // Default cost to 0 if not provided
                             stockBalance: {
                                 create: {
                                     outletId: 1,
@@ -206,6 +208,23 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                             stockBalance: true,
                         },
                     });
+
+                    // Create StockReceipt if cost is provided and stockQuantity > 0
+                    if (cost !== undefined && cost > 0 && stockQuantity > 0) {
+                        await tx.stockReceipt.create({
+                            data: {
+                                itemId: createdItem.id,
+                                outletId: 1,
+                                quantity: stockQuantity,
+                                cost: cost,
+                                receiptDate: new Date(),
+                                deleted: false,
+                                version: 1,
+                            },
+                        });
+                    }
+
+                    return createdItem;
                 })
             );
         });

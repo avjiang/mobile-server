@@ -1,11 +1,12 @@
 import { DeliveryOrder, StockBalance } from "@prisma/client"
+import { Decimal as PrismaDecimal } from "@prisma/client/runtime/library";
 
 interface DeliveryOrderItemInput {
     id?: number; // Add id for updates
     itemId: number;
     orderedQuantity: number;
     receivedQuantity: number;
-    unitPrice?: number;
+    unitPrice?: PrismaDecimal;
     remark?: string;
 }
 

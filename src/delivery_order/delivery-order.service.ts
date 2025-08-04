@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement, DeliveryOrder } from "@prisma/client"
+import { Decimal } from 'decimal.js';
 import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { } from '../db';
@@ -773,7 +774,6 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
     }
 }
 
-// Updated helper function with partial delivery logic
 const checkAndUpdatePurchaseOrderStatusWithPartialDelivery = async (tx: Prisma.TransactionClient, purchaseOrderId: number) => {
     // Use a single query with aggregation for better performance
     const [orderData, deliveryData] = await Promise.all([
@@ -792,9 +792,20 @@ const checkAndUpdatePurchaseOrderStatusWithPartialDelivery = async (tx: Prisma.T
         })
     ]);
 
-    // Create maps for O(1) lookup
-    const orderedMap = new Map(orderData.map(item => [item.itemId, item._sum.quantity || 0]));
-    const receivedMap = new Map(deliveryData.map(item => [item.itemId, item._sum.receivedQuantity || 0]));
+    // Create maps for O(1) lookup - ensure all values are Decimal instances
+    const orderedMap = new Map(
+        orderData.map(item => [
+            item.itemId,
+            new Decimal(item._sum.quantity || 0)
+        ])
+    );
+
+    const receivedMap = new Map(
+        deliveryData.map(item => [
+            item.itemId,
+            new Decimal(item._sum.receivedQuantity || 0)
+        ])
+    );
 
     if (orderedMap.size === 0) return; // No items to check
 
@@ -802,17 +813,19 @@ const checkAndUpdatePurchaseOrderStatusWithPartialDelivery = async (tx: Prisma.T
     let allItemsFullyDelivered = true;
 
     // Check delivery status for each item
-    Array.from(orderedMap.entries()).forEach(([itemId, orderedQty]) => {
-        const receivedQty = receivedMap.get(itemId) || 0;
+    for (const [itemId, orderedQty] of orderedMap) {
+        const receivedQty = receivedMap.get(itemId) || new Decimal(0);
 
-        if (receivedQty > 0) {
+        // Fix 1: Compare with Decimal zero instead of primitive 0
+        if (receivedQty.gt(new Decimal(0))) {
             hasAnyDelivery = true;
         }
 
-        if (receivedQty < orderedQty) {
+        // Fix 2: Compare Decimal objects directly
+        if (receivedQty.lt(orderedQty)) {
             allItemsFullyDelivered = false;
         }
-    });
+    }
 
     // Determine and update status
     let newStatus: string;

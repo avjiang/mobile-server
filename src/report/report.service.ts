@@ -628,17 +628,17 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             // Today's Purchase Orders
             todayPurchaseOrders: {
                 count: todayPurchaseOrders.length,
-                totalAmount: todayPurchaseOrders.reduce((sum, po) => sum.plus(po.totalAmount), new Decimal(0)).toNumber(),
+                totalAmount: todayPurchaseOrders.reduce((sum, po) => sum.plus(po.totalAmount || new Decimal(0)), new Decimal(0)).toNumber(),
                 totalItems: todayPurchaseOrders.reduce((sum, po) =>
-                    sum + po.purchaseOrderItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
+                    sum + po.purchaseOrderItems.reduce((itemSum, item) => itemSum + item.quantity.toNumber(), 0), 0),
                 orders: todayPurchaseOrders.map(po => ({
                     id: po.id,
                     purchaseOrderNumber: po.purchaseOrderNumber,
-                    totalAmount: po.totalAmount,
+                    totalAmount: (po.totalAmount || new Decimal(0)).toNumber(),
                     status: po.status,
                     supplierName: po.supplier?.companyName || 'Unknown',
                     createdAt: po.createdAt,
-                    itemCount: po.purchaseOrderItems.reduce((sum, item) => sum + item.quantity, 0)
+                    itemCount: po.purchaseOrderItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
                 }))
             },
 
@@ -661,17 +661,17 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             // Today's Invoices
             todayInvoices: {
                 count: todayInvoices.length,
-                totalAmount: todayInvoices.reduce((sum, invoice) => sum.plus(invoice.totalAmount), new Decimal(0)).toNumber(),
+                totalAmount: todayInvoices.reduce((sum, invoice) => sum.plus(invoice.totalAmount || new Decimal(0)), new Decimal(0)).toNumber(),
                 totalItems: todayInvoices.reduce((sum, invoice) =>
-                    sum + invoice.invoiceItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
+                    sum + invoice.invoiceItems.reduce((itemSum, item) => itemSum + item.quantity.toNumber(), 0), 0),
                 invoices: todayInvoices.map(invoice => ({
                     id: invoice.id,
                     invoiceNumber: invoice.invoiceNumber,
-                    totalAmount: invoice.totalAmount,
+                    totalAmount: (invoice.totalAmount || new Decimal(0)).toNumber(),
                     status: invoice.status,
                     supplierName: invoice.supplier?.companyName || 'Unknown',
                     createdAt: invoice.createdAt,
-                    itemCount: invoice.invoiceItems.reduce((sum, item) => sum + item.quantity, 0)
+                    itemCount: invoice.invoiceItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
                 }))
             },
         };

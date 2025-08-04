@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from "express"
 import validator from "validator"
 import service from "./user.service"
-import { User } from "@prisma/client"
+import { User } from "prisma/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { ChangePasswordRequestBody } from "../auth/auth.request"

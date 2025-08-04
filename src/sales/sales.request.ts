@@ -1,5 +1,5 @@
-import { Payment, Sales, SalesItem } from "@prisma/client";
-import { Decimal as PrismaDecimal } from "@prisma/client/runtime/library";
+import { Payment, Sales, SalesItem } from "prisma/client";
+import { Decimal as PrismaDecimal } from "prisma/client/runtime/library";
 import { Expose, Type } from "class-transformer";
 import Decimal from "decimal.js";
 

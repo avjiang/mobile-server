@@ -4,7 +4,7 @@ import service from "./menu.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
-import { MenuProfile } from "@prisma/client"
+import { MenuProfile } from "prisma/client"
 import { CreateMenuProfileRequestBody } from "./menu.request"
 
 const router = express.Router()
@@ -49,7 +49,7 @@ let createMenuProfile = (req: NetworkRequest<CreateMenuProfileRequestBody>, res:
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    
+
     const menuProfileRequest = req.body
 
     if (!menuProfileRequest) {

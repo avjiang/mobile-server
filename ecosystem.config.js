@@ -16,6 +16,7 @@ module.exports = {
         //     //   PORT: 3000,
         //     // },
         // },
+
     {
       name: 'bayar-yuk',
       script: './dist/index.js',
@@ -33,7 +34,8 @@ module.exports = {
         //     NODE_ENV: 'development',
         //     PORT: 8080,
         // },
-      },
+        },
+        
     //   {
     //     name: 'archive',
     //     script: './dist/archive.js',

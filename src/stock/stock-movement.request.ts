@@ -1,4 +1,4 @@
-import { StockMovement } from "@prisma/client"
+import { StockMovement } from "prisma/client"
 
 export interface CreateStockChecksRequestBody {
     stockChecks: StockMovement[]

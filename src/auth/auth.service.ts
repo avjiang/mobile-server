@@ -1,13 +1,13 @@
 import { jwt_token_secret } from "../../config.json"
 import jwt, { MyJwtPayload } from "jsonwebtoken"
-import { PrismaClient, TenantUser, RefreshToken, Tenant } from "../../node_modules/.prisma/global-client";
+import { PrismaClient, TenantUser, RefreshToken, Tenant } from "prisma/global-client";
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request"
 import { TokenResponseBody } from "./auth.response"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
-import { User } from "@prisma/client"
+import { User } from "prisma/client"
 const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()

@@ -4,8 +4,9 @@ datasource db {
 }
 
 generator client {
-    provider = "prisma-client-js"
-    output   = "../node_modules/.prisma/global-client"
+    provider      = "prisma-client-js"
+    output        = "../prisma/global-client"
+    binaryTargets = ["native", "linux-musl"]
 }
 
 model SubscriptionPlan {

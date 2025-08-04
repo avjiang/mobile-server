@@ -8,8 +8,6 @@ import { disconnectAllPrismaClients } from './db';
 const app = express()
 const port = process.env.PORT || 8080;
 
-// createTestUser()
-app.get('/', (req, res) => res.send('Hello World!'))
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ limit: '1mb', extended: true }));
 app.use(express.urlencoded({ extended: false }))
@@ -28,6 +26,7 @@ app.use(cors({
 
 // auth route need to execute before authentication middleware
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
+app.get('/', (req, res) => res.send('Hello World!'))
 app.use('/auth', require('./auth/auth.controller'))
 
 //authentication middleware

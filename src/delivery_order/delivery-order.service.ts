@@ -526,11 +526,14 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
     for (const item of items) {
         if (item.receivedQuantity > 0) {
             const currentBalance = stockBalanceMap.get(item.itemId);
-            const previousAvailableQuantity = currentBalance?.availableQuantity || 0;
-            const previousOnHandQuantity = currentBalance?.onHandQuantity || 0;
-            const quantityDelta = item.receivedQuantity;
-            const newAvailableQuantity = previousAvailableQuantity + quantityDelta;
-            const newOnHandQuantity = previousOnHandQuantity + quantityDelta;
+            // Convert to Decimal objects for proper arithmetic
+            const previousAvailableQuantity = new Decimal(currentBalance?.availableQuantity || 0);
+            const previousOnHandQuantity = new Decimal(currentBalance?.onHandQuantity || 0);
+            const quantityDelta = new Decimal(item.receivedQuantity);
+
+            // Use Decimal.add() for proper arithmetic
+            const newAvailableQuantity = previousAvailableQuantity.add(quantityDelta);
+            const newOnHandQuantity = previousOnHandQuantity.add(quantityDelta);
 
             // Fix stock balance operation to match the actual unique constraint
             stockOperations.push({
@@ -559,7 +562,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 }
             });
 
-            // Prepare movement operation
+            // Prepare movement operation - convert Decimal to number for storage
             movementOperations.push({
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
@@ -579,7 +582,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
                 quantity: quantityDelta,
-                cost: item.unitPrice || 0,
+                cost: new Decimal(item.unitPrice || 0),
                 receiptDate: new Date()
             });
         }

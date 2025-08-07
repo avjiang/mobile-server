@@ -29,12 +29,12 @@ async function seedPermissions(tenantPrisma: any) {
         {
             name: "Manage Users",
             description: "Create, edit, and delete users",
-            category: "User Management"
+            category: "Access Control"
         },
         {
             name: "Manage Roles",
             description: "Create, edit, and delete roles",
-            category: "User Management"
+            category: "Access Control"
         },
         {
             name: "Manage Inventory",
@@ -56,16 +56,26 @@ async function seedPermissions(tenantPrisma: any) {
             description: "Create and manage outlet information",
             category: "Outlet Management"
         },
-        // {
-        //     name: "Manage System Settings",
-        //     description: "Configure system settings and preferences",
-        //     category: "System"
-        // },
         {
             name: "Process Sales",
             description: "Create and process sales transactions",
             category: "Sales"
         },
+        {
+            name: "Manage Master Data",
+            description: "Create and process master data",
+            category: "Function Management"
+        },
+        {
+            name: "Manage Procurement",
+            description: "Create and process procurement data",
+            category: "Function Management"
+        },
+        {
+            name: "Manage Access Control",
+            description: "Create and process access control data",
+            category: "Function Management"
+        }
     ];
 
     const createdPermissions = [];

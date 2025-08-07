@@ -18,16 +18,35 @@ let getAll = async (
             new Date(lastSyncTimestamp) : new Date(0);
 
         // Build query conditions
-        const where = lastVersion
-            ? { version: { gt: lastVersion } }
-            : {
+        let where: any;
+
+        if (lastVersion) {
+            where = { version: { gt: lastVersion } };
+        } else {
+            // Simplified delta change detection - now that we update Role.updatedAt
+            // for user assignment changes, we can rely on role timestamps
+            where = {
                 OR: [
+                    // Direct role changes (including user assignment changes)
                     { createdAt: { gte: lastSync } },
                     { updatedAt: { gte: lastSync } },
                     { deletedAt: { gte: lastSync } },
+                    // Role permission changes
+                    {
+                        permission: {
+                            some: {
+                                OR: [
+                                    { createdAt: { gte: lastSync } },
+                                    { updatedAt: { gte: lastSync } },
+                                    { deletedAt: { gte: lastSync } }
+                                ]
+                            }
+                        }
+                    }
                 ],
                 deleted: false
             };
+        }
 
         // Count total matching records
         const total = await tenantPrisma.role.count({ where });
@@ -391,30 +410,39 @@ let assignRoleToUser = async (databaseName: string, userId: number, roleIds: num
         }
 
         // Assign roles to user
-        const updatedUser = await tenantPrisma.user.update({
-            where: {
-                id: userId
-            },
-            data: {
-                updatedAt: new Date(),
-                roles: {
-                    connect: roleIds.map(roleId => ({ id: roleId }))
-                }
-            },
-            include: {
-                roles: {
-                    where: {
-                        deleted: false
-                    },
-                    include: {
-                        permission: {
-                            where: {
-                                deleted: false
+        const updatedUser = await tenantPrisma.$transaction(async (prisma) => {
+            // Update user with role assignments
+            const user = await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    updatedAt: new Date(),
+                    roles: {
+                        connect: roleIds.map(roleId => ({ id: roleId }))
+                    }
+                },
+                include: {
+                    roles: {
+                        where: { deleted: false },
+                        include: {
+                            permission: {
+                                where: { deleted: false }
                             }
                         }
                     }
                 }
-            }
+            });
+
+            // Update the roles' timestamps to trigger delta sync
+            await prisma.role.updateMany({
+                where: {
+                    id: { in: roleIds }
+                },
+                data: {
+                    updatedAt: new Date()
+                }
+            });
+
+            return user;
         });
 
         // Remove password field before returning
@@ -487,30 +515,39 @@ let removeRoleFromUser = async (databaseName: string, userId: number, roleIds: n
         }
 
         // Remove roles from user
-        const updatedUser = await tenantPrisma.user.update({
-            where: {
-                id: userId
-            },
-            data: {
-                updatedAt: new Date(),
-                roles: {
-                    disconnect: roleIds.map(roleId => ({ id: roleId }))
-                }
-            },
-            include: {
-                roles: {
-                    where: {
-                        deleted: false
-                    },
-                    include: {
-                        permission: {
-                            where: {
-                                deleted: false
+        const updatedUser = await tenantPrisma.$transaction(async (prisma) => {
+            // Update user by removing role assignments
+            const user = await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    updatedAt: new Date(),
+                    roles: {
+                        disconnect: roleIds.map(roleId => ({ id: roleId }))
+                    }
+                },
+                include: {
+                    roles: {
+                        where: { deleted: false },
+                        include: {
+                            permission: {
+                                where: { deleted: false }
                             }
                         }
                     }
                 }
-            }
+            });
+
+            // Update the roles' timestamps to trigger delta sync
+            await prisma.role.updateMany({
+                where: {
+                    id: { in: roleIds }
+                },
+                data: {
+                    updatedAt: new Date()
+                }
+            });
+
+            return user;
         });
 
         // Remove password field before returning

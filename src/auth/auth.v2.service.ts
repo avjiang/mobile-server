@@ -44,6 +44,11 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                     }
                 })
                 await tenantPrisma.$disconnect();
+
+                // Check if user not found in tenant database
+                if (!customerUser) {
+                    throw new RequestValidateError('User not found in tenant database')
+                }
             }
 
             // Authentication successful so generate jwt & refresh tokens

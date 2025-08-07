@@ -33,7 +33,6 @@ app.use('/auth', require('./auth/auth.controller'))
 app.use(authorizeMiddleware)
 
 // all api routes that need authorize should place here
-// api routes
 app.use('/admin', require('./admin/admin.controller'))
 app.use('/account', require('./account/account.controller'))
 app.use('/user', require('./user/user.controller'))

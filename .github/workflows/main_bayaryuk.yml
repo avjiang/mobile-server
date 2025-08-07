@@ -94,6 +94,9 @@ jobs:
       - name: Build TypeScript
         run: npm run build # Assumes you have a "build" script in your package.json
 
+      - name: Create app_offline.htm to stop the app
+        run: echo "Site is updating..." > app_offline.htm
+
       - name: Zip application for deployment
         # This step prunes dev dependencies and zips the compiled code,
         # excluding node_modules to let Azure install them on the server.

@@ -60,7 +60,7 @@ model TenantSubscription {
     tenantId               Int                       @map("TENANT_ID")
     outletId               Int                       @map("OUTLET_ID")
     subscriptionPlanId     Int                       @map("SUBSCRIPTION_PLAN_ID")
-    status                 String                    @default("active") @map("STATUS") // New: active, trial, expired
+    status                 String                    @default("Active") @map("STATUS") // New: active, trial, expired
     nextPaymentDate        DateTime                  @map("NEXT_PAYMENT_DATE")
     subscriptionValidUntil DateTime                  @map("SUBSCRIPTION_VALID_UNTIL")
     createdAt              DateTime                  @default(now()) @map("CREATED_AT")

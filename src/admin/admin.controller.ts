@@ -53,9 +53,32 @@ let getAllTenantSubscription = (req: AuthRequest, res: Response, next: NextFunct
         .catch(next)
 }
 
+// New: create tenant user (global) + user (tenant DB), no roles assigned
+let createTenantUser = (req: NetworkRequest<{ username: string; password: string }>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    if (!req.body || !req.body.username || !req.body.password) {
+        res.status(400).json({ error: 'Invalid request. Both username and password are required.' });
+        return;
+    }
+    const tenantId: number = parseInt(req.params.tenantId);
+    const { username, password } = req.body;
+
+    service.createTenantUser(tenantId, { username, password })
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+}
+
 //routes
 router.get('/tenantDetails/:id', getTenantDetails)
 router.get('/getAllTenantSubscription', getAllTenantSubscription)
 router.post('/signup', createTenant)
+router.post('/createTenantUser/:tenantId', createTenantUser)
 
 export = router

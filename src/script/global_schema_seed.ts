@@ -42,14 +42,19 @@ async function seedPermissions(tenantPrisma: any) {
             category: "Inventory"
         },
         {
-            name: "Manage Customers",
-            description: "Add, edit, and delete customers",
-            category: "Customer Management"
-        },
-        {
             name: "Manage Suppliers",
             description: "Add, edit, and delete suppliers",
             category: "Inventory"
+        },
+        {
+            name: "View Stock Amount",
+            description: "View complete stock amount",
+            category: "Inventory"
+        },
+        {
+            name: "Manage Customers",
+            description: "Add, edit, and delete customers",
+            category: "Customer Management"
         },
         {
             name: "Manage Outlets",
@@ -59,6 +64,16 @@ async function seedPermissions(tenantPrisma: any) {
         {
             name: "Process Sales",
             description: "Create and process sales transactions",
+            category: "Sales"
+        },
+        {
+            name: "View Sales History",
+            description: "View sales history and details",
+            category: "Sales"
+        },
+        {
+            name: "Modify Sales History",
+            description: "Modify existing sales histories",
             category: "Sales"
         },
         {
@@ -101,7 +116,7 @@ async function main(): Promise<void> {
         prisma.subscriptionPlan.create({
             data: {
                 planName: 'Basic',
-                price: 259000,
+                price: 249000,
                 maxUsers: 2,
                 description: 'Basic subscription plan for small businesses',
             },
@@ -117,24 +132,6 @@ async function main(): Promise<void> {
                 pricePerUnit: 49000,
                 maxQuantity: 1,
                 description: 'Add additional users to your plan',
-            },
-        }),
-        prisma.subscriptionAddOn.create({
-            data: {
-                name: 'Premium Inventory Management',
-                addOnType: 'feature',
-                pricePerUnit: 79000,
-                maxQuantity: 1,
-                description: '',
-            },
-        }),
-        prisma.subscriptionAddOn.create({
-            data: {
-                name: 'Advanced Reporting',
-                addOnType: 'feature',
-                pricePerUnit: 49000,
-                maxQuantity: 1,
-                description: '',
             },
         }),
     ]);
@@ -276,15 +273,15 @@ async function main(): Promise<void> {
     ]);
 
     // Seed Tenant Subscription Add-Ons
-    await Promise.all([
-        prisma.tenantSubscriptionAddOn.create({
-            data: {
-                tenantSubscriptionId: subscriptions[0].id,
-                addOnId: addOns[0].id,
-                quantity: 5,
-            },
-        }),
-    ]);
+    // await Promise.all([
+    //     prisma.tenantSubscriptionAddOn.create({
+    //         data: {
+    //             tenantSubscriptionId: subscriptions[0].id,
+    //             addOnId: addOns[0].id,
+    //             quantity: 5,
+    //         },
+    //     }),
+    // ]);
     console.log('Database seeded successfully!');
 }
 

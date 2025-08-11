@@ -50,6 +50,7 @@ let createTenant = async (body: CreateTenantRequest) => {
                 data: {
                     tenantId: newTenant.id,
                     username: username,
+                    role: "Owner",
                     password: bcrypt.hashSync(username, 10),
                 },
             })
@@ -460,4 +461,153 @@ const getAllTenantCost = async () => {
     }
 }
 
-export = { createTenant, getTenantCost, getAllTenantCost }
+// New: Create a tenant user in global DB and corresponding user in tenant DB (no roles assigned)
+const createTenantUser = async (tenantId: number, body: { username: string; password: string }) => {
+    if (!body || !body.username || !body.password) {
+        throw new RequestValidateError('Invalid request. Both username and password are required.');
+    }
+
+    // Find tenant and ensure tenant DB is available
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true, databaseName: true },
+    });
+    if (!tenant) {
+        throw new NotFoundError('Tenant not found');
+    }
+    if (!tenant.databaseName) {
+        throw new NotFoundError('Tenant database not initialized');
+    }
+
+    // Enforce unique username (global scope due to unique constraint)
+    const existingGlobal = await prisma.tenantUser.findUnique({
+        where: { username: body.username },
+    });
+    if (existingGlobal) {
+        throw new RequestValidateError('Username already exists');
+    }
+
+    const hashed = bcrypt.hashSync(body.password, 10);
+
+    // Create in global DB first
+    const createdTenantUser = await prisma.tenantUser.create({
+        data: {
+            tenantId: tenantId,
+            username: body.username,
+            password: hashed,
+            role: "User"
+        },
+        select: { id: true, username: true },
+    });
+
+    let createdTenantDbUserId: number | null = null;
+
+    try {
+        // Then create in tenant DB
+        const tenantPrisma = getTenantPrisma(tenant.databaseName);
+
+        const existingTenantUser = await tenantPrisma.user.findUnique({
+            where: { username: body.username },
+        });
+        if (existingTenantUser) {
+            // Rollback global user if tenant DB already has the username
+            await prisma.tenantUser.delete({ where: { id: createdTenantUser.id } });
+            await tenantPrisma.$disconnect();
+            throw new RequestValidateError('Username already exists in tenant database');
+        }
+
+        const createdUser = await tenantPrisma.user.create({
+            data: {
+                username: body.username,
+                password: hashed,
+                // no roles assigned
+            },
+            select: { id: true },
+        });
+        createdTenantDbUserId = createdUser.id;
+
+        // --- Begin: Subscription add-on logic for user overage ---
+        // Find active/trial subscription and plan
+        const activeSub = await prisma.tenantSubscription.findFirst({
+            where: { tenantId, status: { in: ['active', 'trial'] } },
+            include: { subscriptionPlan: true },
+            orderBy: { id: 'asc' },
+        });
+
+        if (activeSub?.subscriptionPlan) {
+            const includedMax = activeSub.subscriptionPlan.maxUsers; // nullable
+            if (includedMax !== null && includedMax !== undefined) {
+                // Count current active (non-deleted) users in global DB
+                const currentUserCount = await prisma.tenantUser.count({
+                    where: { tenantId, isDeleted: false },
+                });
+
+                // Required add-on quantity equals overage
+                const overage = Math.max(0, currentUserCount - includedMax);
+
+                if (overage > 0) {
+                    const addOnId = 1; // Add-on for extra user
+                    // Ensure composite unique key upsert behavior
+                    const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
+                        where: {
+                            tenantSubscriptionId_addOnId: {
+                                tenantSubscriptionId: activeSub.id,
+                                addOnId,
+                            }
+                        }
+                    });
+
+                    if (!existingAddOn) {
+                        await prisma.tenantSubscriptionAddOn.create({
+                            data: {
+                                tenantSubscriptionId: activeSub.id,
+                                addOnId,
+                                quantity: overage,
+                            }
+                        });
+                    } else if (existingAddOn.quantity < overage) {
+                        await prisma.tenantSubscriptionAddOn.update({
+                            where: {
+                                tenantSubscriptionId_addOnId: {
+                                    tenantSubscriptionId: activeSub.id,
+                                    addOnId,
+                                }
+                            },
+                            data: { quantity: overage }
+                        });
+                    }
+                }
+            }
+        }
+        // --- End: Subscription add-on logic for user overage ---
+
+        await tenantPrisma.$disconnect();
+
+        return {
+            tenantId,
+            tenantUserId: createdTenantUser.id,
+            userId: createdTenantDbUserId,
+            username: createdTenantUser.username,
+        };
+    } catch (err) {
+        // Best-effort rollback in tenant DB and global DB if later steps failed
+        try {
+            if (createdTenantDbUserId !== null && tenant.databaseName) {
+                const tenantPrisma = getTenantPrisma(tenant.databaseName);
+                try {
+                    await tenantPrisma.user.delete({ where: { id: createdTenantDbUserId } });
+                } finally {
+                    await tenantPrisma.$disconnect();
+                }
+            }
+        } catch (_) { /* swallow */ }
+
+        try {
+            await prisma.tenantUser.delete({ where: { id: createdTenantUser.id } });
+        } catch (_) { /* swallow */ }
+
+        throw err;
+    }
+}
+
+export = { createTenant, createTenantUser, getTenantCost, getAllTenantCost }

@@ -3,6 +3,7 @@ import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { plainToInstance } from "class-transformer"
 import { SupplierDto } from "./supplier.response"
 import { getTenantPrisma } from '../db';
+import { SyncRequest } from "src/item/item.request";
 
 let getAll = async (databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -25,6 +26,68 @@ let getAll = async (databaseName: string) => {
         throw error;
     }
 }
+
+let getAllSuppliers = async (
+    databaseName: string,
+    syncRequest: SyncRequest
+): Promise<{ suppliers: any[]; total: number; serverTimestamp: string }> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
+
+    try {
+        // Parse last sync timestamp or use a default (e.g., epoch start)
+        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
+            new Date(lastSyncTimestamp) : new Date(0);
+
+        // Build query conditions
+        let where: any;
+
+        if (lastVersion) {
+            where = { version: { gt: lastVersion } };
+        } else {
+            // Delta change detection for suppliers only
+            where = {
+                OR: [
+                    // Direct supplier changes
+                    { createdAt: { gte: lastSync } },
+                    { updatedAt: { gte: lastSync } },
+                    { deletedAt: { gte: lastSync } }
+                ],
+                deleted: false
+            };
+        }
+
+        // Count total matching records
+        const total = await tenantPrisma.supplier.count({ where });
+
+        // Fetch paginated suppliers with item count
+        const suppliers = await tenantPrisma.supplier.findMany({
+            where,
+            skip,
+            take,
+            include: {
+                _count: {
+                    select: { items: true }
+                }
+            }
+        });
+
+        // Transform response to include itemCount at root level
+        const transformedSuppliers = suppliers.map(supplier => ({
+            ...supplier,
+            itemCount: supplier._count.items,
+            _count: undefined
+        }));
+
+        return {
+            suppliers: transformedSuppliers,
+            total,
+            serverTimestamp: new Date().toISOString(),
+        };
+    } catch (error) {
+        throw error;
+    }
+};
 
 let getById = async (id: number, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -143,4 +206,4 @@ let remove = async (id: number, databaseName: string) => {
     }
 }
 
-export = { getAll, getById, createMany, update, remove }
+export = { getAll, getAllSuppliers, getById, createMany, update, remove }

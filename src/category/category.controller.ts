@@ -7,6 +7,7 @@ import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
 import { CreateCategoryRequestBody } from "./category.request"
+import { SyncRequest } from "src/item/item.request"
 
 const router = express.Router()
 
@@ -17,6 +18,22 @@ let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     service.getAll(req.user.databaseName)
         .then((categories: Category[]) => sendResponse(res, categories))
         .catch(next)
+}
+
+let getAllCategory = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const syncRequest: SyncRequest = {
+        lastSyncTimestamp: req.query.lastSyncTimestamp as string,
+        lastVersion: req.query.lastVersion ? parseInt(req.query.lastVersion as string) : undefined,
+        skip: req.query.skip ? parseInt(req.query.skip as string) : undefined,
+        take: req.query.take ? parseInt(req.query.take as string) : undefined,
+    };
+    service
+        .getAllCategories(req.user.databaseName, syncRequest)
+        .then(({ categories, total, serverTimestamp }) => sendResponse(res, { data: categories, total, serverTimestamp }))
+        .catch(next);
 }
 
 let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -85,6 +102,7 @@ let remove = (req: AuthRequest, res: Response, next: NextFunction) => {
 
 //routes
 router.get("/", getAll)
+router.get('/sync', getAllCategory)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)

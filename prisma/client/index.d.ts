@@ -66737,8 +66737,6 @@ export namespace Prisma {
   export type UserWhereUniqueInput = Prisma.AtLeast<{
     id?: number
     username?: string
-    mobile?: string
-    email?: string
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
@@ -66746,6 +66744,8 @@ export namespace Prisma {
     overridePin?: StringNullableFilter<"User"> | string | null
     lastName?: StringNullableFilter<"User"> | string | null
     firstName?: StringNullableFilter<"User"> | string | null
+    mobile?: StringNullableFilter<"User"> | string | null
+    email?: StringNullableFilter<"User"> | string | null
     deleted?: BoolFilter<"User"> | boolean
     deletedAt?: DateTimeNullableFilter<"User"> | Date | string | null
     createdAt?: DateTimeNullableFilter<"User"> | Date | string | null
@@ -66754,7 +66754,7 @@ export namespace Prisma {
     settings?: SettingListRelationFilter
     roles?: RoleListRelationFilter
     overrideRequests?: OverrideLogListRelationFilter
-  }, "id" | "username" | "mobile" | "email">
+  }, "id" | "username">
 
   export type UserOrderByWithAggregationInput = {
     id?: SortOrder

@@ -131,8 +131,8 @@ model User {
   overridePin      String?       @map("OVERRIDE_PIN") // Hashed PIN for overrides
   lastName         String?       @map("LAST_NAME")
   firstName        String?       @map("FIRST_NAME")
-  mobile           String?       @unique @map("MOBILE")
-  email            String?       @unique @map("EMAIL")
+  mobile           String?       @map("MOBILE")
+  email            String?       @map("EMAIL")
   deleted          Boolean       @default(false) @map("IS_DELETED")
   deletedAt        DateTime?     @map("DELETED_AT")
   createdAt        DateTime?     @default(now()) @map("CREATED_AT")

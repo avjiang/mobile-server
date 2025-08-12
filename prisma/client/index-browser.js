@@ -147,6 +147,7 @@ exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   username: 'username',
   password: 'password',
+  overridePin: 'overridePin',
   lastName: 'lastName',
   firstName: 'firstName',
   mobile: 'mobile',
@@ -156,6 +157,15 @@ exports.Prisma.UserScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   version: 'version'
+};
+
+exports.Prisma.OverrideLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  approverId: 'approverId',
+  action: 'action',
+  reason: 'reason',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SettingScalarFieldEnum = {
@@ -1009,6 +1019,20 @@ exports.Prisma.PromotionUsageScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.RegisteredDeviceScalarFieldEnum = {
+  id: 'id',
+  clientDeviceId: 'clientDeviceId',
+  siteId: 'siteId',
+  tenantId: 'tenantId',
+  deviceName: 'deviceName',
+  deviceType: 'deviceType',
+  status: 'status',
+  appVersion: 'appVersion',
+  lastSeenAt: 'lastSeenAt',
+  registeredAt: 'registeredAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1028,10 +1052,16 @@ exports.Prisma.RoleOrderByRelevanceFieldEnum = {
 exports.Prisma.UserOrderByRelevanceFieldEnum = {
   username: 'username',
   password: 'password',
+  overridePin: 'overridePin',
   lastName: 'lastName',
   firstName: 'firstName',
   mobile: 'mobile',
   email: 'email'
+};
+
+exports.Prisma.OverrideLogOrderByRelevanceFieldEnum = {
+  action: 'action',
+  reason: 'reason'
 };
 
 exports.Prisma.SettingOrderByRelevanceFieldEnum = {
@@ -1328,6 +1358,14 @@ exports.Prisma.PromotionItemOrderByRelevanceFieldEnum = {
   itemName: 'itemName',
   itemRole: 'itemRole'
 };
+
+exports.Prisma.RegisteredDeviceOrderByRelevanceFieldEnum = {
+  clientDeviceId: 'clientDeviceId',
+  deviceName: 'deviceName',
+  deviceType: 'deviceType',
+  status: 'status',
+  appVersion: 'appVersion'
+};
 exports.SettingType = exports.$Enums.SettingType = {
   INT: 'INT',
   STRING: 'STRING',
@@ -1373,6 +1411,7 @@ exports.Prisma.ModelName = {
   Role: 'Role',
   RolePermission: 'RolePermission',
   User: 'User',
+  OverrideLog: 'OverrideLog',
   Setting: 'Setting',
   Referral: 'Referral',
   Supplier: 'Supplier',
@@ -1419,7 +1458,8 @@ exports.Prisma.ModelName = {
   Promotion: 'Promotion',
   PromotionItem: 'PromotionItem',
   PromotionCustomer: 'PromotionCustomer',
-  PromotionUsage: 'PromotionUsage'
+  PromotionUsage: 'PromotionUsage',
+  RegisteredDevice: 'RegisteredDevice'
 };
 
 /**

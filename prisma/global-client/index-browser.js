@@ -209,25 +209,6 @@ exports.Prisma.RefreshTokenScalarFieldEnum = {
   deleted: 'deleted'
 };
 
-exports.Prisma.RegisteredDeviceScalarFieldEnum = {
-  id: 'id',
-  clientDeviceId: 'clientDeviceId',
-  siteId: 'siteId',
-  tenantId: 'tenantId',
-  deviceName: 'deviceName',
-  deviceType: 'deviceType',
-  status: 'status',
-  appVersion: 'appVersion',
-  lastSeenAt: 'lastSeenAt',
-  registeredAt: 'registeredAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.TenantSiteIdCounterScalarFieldEnum = {
-  tenantId: 'tenantId',
-  currentSiteId: 'currentSiteId'
-};
-
 exports.Prisma.PermissionScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -295,14 +276,6 @@ exports.Prisma.RefreshTokenOrderByRelevanceFieldEnum = {
   createdByIP: 'createdByIP'
 };
 
-exports.Prisma.RegisteredDeviceOrderByRelevanceFieldEnum = {
-  clientDeviceId: 'clientDeviceId',
-  deviceName: 'deviceName',
-  deviceType: 'deviceType',
-  status: 'status',
-  appVersion: 'appVersion'
-};
-
 exports.Prisma.PermissionOrderByRelevanceFieldEnum = {
   name: 'name',
   category: 'category',
@@ -321,8 +294,6 @@ exports.Prisma.ModelName = {
   Discount: 'Discount',
   TenantUser: 'TenantUser',
   RefreshToken: 'RefreshToken',
-  RegisteredDevice: 'RegisteredDevice',
-  TenantSiteIdCounter: 'TenantSiteIdCounter',
   Permission: 'Permission'
 };
 

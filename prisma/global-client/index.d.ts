@@ -59,16 +59,6 @@ export type TenantUser = $Result.DefaultSelection<Prisma.$TenantUserPayload>
  */
 export type RefreshToken = $Result.DefaultSelection<Prisma.$RefreshTokenPayload>
 /**
- * Model RegisteredDevice
- * 
- */
-export type RegisteredDevice = $Result.DefaultSelection<Prisma.$RegisteredDevicePayload>
-/**
- * Model TenantSiteIdCounter
- * 
- */
-export type TenantSiteIdCounter = $Result.DefaultSelection<Prisma.$TenantSiteIdCounterPayload>
-/**
  * Model Permission
  * 
  */
@@ -288,26 +278,6 @@ export class PrismaClient<
     * ```
     */
   get refreshToken(): Prisma.RefreshTokenDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.registeredDevice`: Exposes CRUD operations for the **RegisteredDevice** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more RegisteredDevices
-    * const registeredDevices = await prisma.registeredDevice.findMany()
-    * ```
-    */
-  get registeredDevice(): Prisma.RegisteredDeviceDelegate<ExtArgs, ClientOptions>;
-
-  /**
-   * `prisma.tenantSiteIdCounter`: Exposes CRUD operations for the **TenantSiteIdCounter** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more TenantSiteIdCounters
-    * const tenantSiteIdCounters = await prisma.tenantSiteIdCounter.findMany()
-    * ```
-    */
-  get tenantSiteIdCounter(): Prisma.TenantSiteIdCounterDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.permission`: Exposes CRUD operations for the **Permission** model.
@@ -767,8 +737,6 @@ export namespace Prisma {
     Discount: 'Discount',
     TenantUser: 'TenantUser',
     RefreshToken: 'RefreshToken',
-    RegisteredDevice: 'RegisteredDevice',
-    TenantSiteIdCounter: 'TenantSiteIdCounter',
     Permission: 'Permission'
   };
 
@@ -788,7 +756,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "registeredDevice" | "tenantSiteIdCounter" | "permission"
+      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1386,138 +1354,6 @@ export namespace Prisma {
           }
         }
       }
-      RegisteredDevice: {
-        payload: Prisma.$RegisteredDevicePayload<ExtArgs>
-        fields: Prisma.RegisteredDeviceFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.RegisteredDeviceFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.RegisteredDeviceFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
-          }
-          findFirst: {
-            args: Prisma.RegisteredDeviceFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.RegisteredDeviceFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
-          }
-          findMany: {
-            args: Prisma.RegisteredDeviceFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>[]
-          }
-          create: {
-            args: Prisma.RegisteredDeviceCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
-          }
-          createMany: {
-            args: Prisma.RegisteredDeviceCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          delete: {
-            args: Prisma.RegisteredDeviceDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
-          }
-          update: {
-            args: Prisma.RegisteredDeviceUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
-          }
-          deleteMany: {
-            args: Prisma.RegisteredDeviceDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.RegisteredDeviceUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.RegisteredDeviceUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
-          }
-          aggregate: {
-            args: Prisma.RegisteredDeviceAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateRegisteredDevice>
-          }
-          groupBy: {
-            args: Prisma.RegisteredDeviceGroupByArgs<ExtArgs>
-            result: $Utils.Optional<RegisteredDeviceGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.RegisteredDeviceCountArgs<ExtArgs>
-            result: $Utils.Optional<RegisteredDeviceCountAggregateOutputType> | number
-          }
-        }
-      }
-      TenantSiteIdCounter: {
-        payload: Prisma.$TenantSiteIdCounterPayload<ExtArgs>
-        fields: Prisma.TenantSiteIdCounterFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.TenantSiteIdCounterFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.TenantSiteIdCounterFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload>
-          }
-          findFirst: {
-            args: Prisma.TenantSiteIdCounterFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.TenantSiteIdCounterFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload>
-          }
-          findMany: {
-            args: Prisma.TenantSiteIdCounterFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload>[]
-          }
-          create: {
-            args: Prisma.TenantSiteIdCounterCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload>
-          }
-          createMany: {
-            args: Prisma.TenantSiteIdCounterCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          delete: {
-            args: Prisma.TenantSiteIdCounterDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload>
-          }
-          update: {
-            args: Prisma.TenantSiteIdCounterUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload>
-          }
-          deleteMany: {
-            args: Prisma.TenantSiteIdCounterDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.TenantSiteIdCounterUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.TenantSiteIdCounterUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TenantSiteIdCounterPayload>
-          }
-          aggregate: {
-            args: Prisma.TenantSiteIdCounterAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateTenantSiteIdCounter>
-          }
-          groupBy: {
-            args: Prisma.TenantSiteIdCounterGroupByArgs<ExtArgs>
-            result: $Utils.Optional<TenantSiteIdCounterGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.TenantSiteIdCounterCountArgs<ExtArgs>
-            result: $Utils.Optional<TenantSiteIdCounterCountAggregateOutputType> | number
-          }
-        }
-      }
       Permission: {
         payload: Prisma.$PermissionPayload<ExtArgs>
         fields: Prisma.PermissionFieldRefs
@@ -1677,8 +1513,6 @@ export namespace Prisma {
     discount?: DiscountOmit
     tenantUser?: TenantUserOmit
     refreshToken?: RefreshTokenOmit
-    registeredDevice?: RegisteredDeviceOmit
-    tenantSiteIdCounter?: TenantSiteIdCounterOmit
     permission?: PermissionOmit
   }
 
@@ -1839,14 +1673,12 @@ export namespace Prisma {
     tenantUsers: number
     subscription: number
     tenantOutlets: number
-    registeredDevices: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenantUsers?: boolean | TenantCountOutputTypeCountTenantUsersArgs
     subscription?: boolean | TenantCountOutputTypeCountSubscriptionArgs
     tenantOutlets?: boolean | TenantCountOutputTypeCountTenantOutletsArgs
-    registeredDevices?: boolean | TenantCountOutputTypeCountRegisteredDevicesArgs
   }
 
   // Custom InputTypes
@@ -1879,13 +1711,6 @@ export namespace Prisma {
    */
   export type TenantCountOutputTypeCountTenantOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TenantOutletWhereInput
-  }
-
-  /**
-   * TenantCountOutputType without action
-   */
-  export type TenantCountOutputTypeCountRegisteredDevicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: RegisteredDeviceWhereInput
   }
 
 
@@ -4236,7 +4061,6 @@ export namespace Prisma {
     tenantUsers?: boolean | Tenant$tenantUsersArgs<ExtArgs>
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
-    registeredDevices?: boolean | Tenant$registeredDevicesArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4254,7 +4078,6 @@ export namespace Prisma {
     tenantUsers?: boolean | Tenant$tenantUsersArgs<ExtArgs>
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
-    registeredDevices?: boolean | Tenant$registeredDevicesArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4264,7 +4087,6 @@ export namespace Prisma {
       tenantUsers: Prisma.$TenantUserPayload<ExtArgs>[]
       subscription: Prisma.$TenantSubscriptionPayload<ExtArgs>[]
       tenantOutlets: Prisma.$TenantOutletPayload<ExtArgs>[]
-      registeredDevices: Prisma.$RegisteredDevicePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -4614,7 +4436,6 @@ export namespace Prisma {
     tenantUsers<T extends Tenant$tenantUsersArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$tenantUsersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     subscription<T extends Tenant$subscriptionArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$subscriptionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     tenantOutlets<T extends Tenant$tenantOutletsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$tenantOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    registeredDevices<T extends Tenant$registeredDevicesArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$registeredDevicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5060,30 +4881,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: TenantOutletScalarFieldEnum | TenantOutletScalarFieldEnum[]
-  }
-
-  /**
-   * Tenant.registeredDevices
-   */
-  export type Tenant$registeredDevicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    where?: RegisteredDeviceWhereInput
-    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
-    cursor?: RegisteredDeviceWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: RegisteredDeviceScalarFieldEnum | RegisteredDeviceScalarFieldEnum[]
   }
 
   /**
@@ -11168,1930 +10965,6 @@ export namespace Prisma {
 
 
   /**
-   * Model RegisteredDevice
-   */
-
-  export type AggregateRegisteredDevice = {
-    _count: RegisteredDeviceCountAggregateOutputType | null
-    _avg: RegisteredDeviceAvgAggregateOutputType | null
-    _sum: RegisteredDeviceSumAggregateOutputType | null
-    _min: RegisteredDeviceMinAggregateOutputType | null
-    _max: RegisteredDeviceMaxAggregateOutputType | null
-  }
-
-  export type RegisteredDeviceAvgAggregateOutputType = {
-    id: number | null
-    siteId: number | null
-    tenantId: number | null
-  }
-
-  export type RegisteredDeviceSumAggregateOutputType = {
-    id: number | null
-    siteId: number | null
-    tenantId: number | null
-  }
-
-  export type RegisteredDeviceMinAggregateOutputType = {
-    id: number | null
-    clientDeviceId: string | null
-    siteId: number | null
-    tenantId: number | null
-    deviceName: string | null
-    deviceType: string | null
-    status: string | null
-    appVersion: string | null
-    lastSeenAt: Date | null
-    registeredAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type RegisteredDeviceMaxAggregateOutputType = {
-    id: number | null
-    clientDeviceId: string | null
-    siteId: number | null
-    tenantId: number | null
-    deviceName: string | null
-    deviceType: string | null
-    status: string | null
-    appVersion: string | null
-    lastSeenAt: Date | null
-    registeredAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type RegisteredDeviceCountAggregateOutputType = {
-    id: number
-    clientDeviceId: number
-    siteId: number
-    tenantId: number
-    deviceName: number
-    deviceType: number
-    status: number
-    appVersion: number
-    lastSeenAt: number
-    registeredAt: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type RegisteredDeviceAvgAggregateInputType = {
-    id?: true
-    siteId?: true
-    tenantId?: true
-  }
-
-  export type RegisteredDeviceSumAggregateInputType = {
-    id?: true
-    siteId?: true
-    tenantId?: true
-  }
-
-  export type RegisteredDeviceMinAggregateInputType = {
-    id?: true
-    clientDeviceId?: true
-    siteId?: true
-    tenantId?: true
-    deviceName?: true
-    deviceType?: true
-    status?: true
-    appVersion?: true
-    lastSeenAt?: true
-    registeredAt?: true
-    updatedAt?: true
-  }
-
-  export type RegisteredDeviceMaxAggregateInputType = {
-    id?: true
-    clientDeviceId?: true
-    siteId?: true
-    tenantId?: true
-    deviceName?: true
-    deviceType?: true
-    status?: true
-    appVersion?: true
-    lastSeenAt?: true
-    registeredAt?: true
-    updatedAt?: true
-  }
-
-  export type RegisteredDeviceCountAggregateInputType = {
-    id?: true
-    clientDeviceId?: true
-    siteId?: true
-    tenantId?: true
-    deviceName?: true
-    deviceType?: true
-    status?: true
-    appVersion?: true
-    lastSeenAt?: true
-    registeredAt?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type RegisteredDeviceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which RegisteredDevice to aggregate.
-     */
-    where?: RegisteredDeviceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RegisteredDevices to fetch.
-     */
-    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: RegisteredDeviceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RegisteredDevices from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RegisteredDevices.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned RegisteredDevices
-    **/
-    _count?: true | RegisteredDeviceCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: RegisteredDeviceAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: RegisteredDeviceSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: RegisteredDeviceMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: RegisteredDeviceMaxAggregateInputType
-  }
-
-  export type GetRegisteredDeviceAggregateType<T extends RegisteredDeviceAggregateArgs> = {
-        [P in keyof T & keyof AggregateRegisteredDevice]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateRegisteredDevice[P]>
-      : GetScalarType<T[P], AggregateRegisteredDevice[P]>
-  }
-
-
-
-
-  export type RegisteredDeviceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: RegisteredDeviceWhereInput
-    orderBy?: RegisteredDeviceOrderByWithAggregationInput | RegisteredDeviceOrderByWithAggregationInput[]
-    by: RegisteredDeviceScalarFieldEnum[] | RegisteredDeviceScalarFieldEnum
-    having?: RegisteredDeviceScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: RegisteredDeviceCountAggregateInputType | true
-    _avg?: RegisteredDeviceAvgAggregateInputType
-    _sum?: RegisteredDeviceSumAggregateInputType
-    _min?: RegisteredDeviceMinAggregateInputType
-    _max?: RegisteredDeviceMaxAggregateInputType
-  }
-
-  export type RegisteredDeviceGroupByOutputType = {
-    id: number
-    clientDeviceId: string
-    siteId: number
-    tenantId: number
-    deviceName: string
-    deviceType: string | null
-    status: string
-    appVersion: string | null
-    lastSeenAt: Date | null
-    registeredAt: Date
-    updatedAt: Date
-    _count: RegisteredDeviceCountAggregateOutputType | null
-    _avg: RegisteredDeviceAvgAggregateOutputType | null
-    _sum: RegisteredDeviceSumAggregateOutputType | null
-    _min: RegisteredDeviceMinAggregateOutputType | null
-    _max: RegisteredDeviceMaxAggregateOutputType | null
-  }
-
-  type GetRegisteredDeviceGroupByPayload<T extends RegisteredDeviceGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<RegisteredDeviceGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof RegisteredDeviceGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], RegisteredDeviceGroupByOutputType[P]>
-            : GetScalarType<T[P], RegisteredDeviceGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type RegisteredDeviceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    clientDeviceId?: boolean
-    siteId?: boolean
-    tenantId?: boolean
-    deviceName?: boolean
-    deviceType?: boolean
-    status?: boolean
-    appVersion?: boolean
-    lastSeenAt?: boolean
-    registeredAt?: boolean
-    updatedAt?: boolean
-    tenant?: boolean | TenantDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["registeredDevice"]>
-
-
-
-  export type RegisteredDeviceSelectScalar = {
-    id?: boolean
-    clientDeviceId?: boolean
-    siteId?: boolean
-    tenantId?: boolean
-    deviceName?: boolean
-    deviceType?: boolean
-    status?: boolean
-    appVersion?: boolean
-    lastSeenAt?: boolean
-    registeredAt?: boolean
-    updatedAt?: boolean
-  }
-
-  export type RegisteredDeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clientDeviceId" | "siteId" | "tenantId" | "deviceName" | "deviceType" | "status" | "appVersion" | "lastSeenAt" | "registeredAt" | "updatedAt", ExtArgs["result"]["registeredDevice"]>
-  export type RegisteredDeviceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    tenant?: boolean | TenantDefaultArgs<ExtArgs>
-  }
-
-  export type $RegisteredDevicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "RegisteredDevice"
-    objects: {
-      tenant: Prisma.$TenantPayload<ExtArgs>
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: number
-      clientDeviceId: string
-      siteId: number
-      tenantId: number
-      deviceName: string
-      deviceType: string | null
-      status: string
-      appVersion: string | null
-      lastSeenAt: Date | null
-      registeredAt: Date
-      updatedAt: Date
-    }, ExtArgs["result"]["registeredDevice"]>
-    composites: {}
-  }
-
-  type RegisteredDeviceGetPayload<S extends boolean | null | undefined | RegisteredDeviceDefaultArgs> = $Result.GetResult<Prisma.$RegisteredDevicePayload, S>
-
-  type RegisteredDeviceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<RegisteredDeviceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: RegisteredDeviceCountAggregateInputType | true
-    }
-
-  export interface RegisteredDeviceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RegisteredDevice'], meta: { name: 'RegisteredDevice' } }
-    /**
-     * Find zero or one RegisteredDevice that matches the filter.
-     * @param {RegisteredDeviceFindUniqueArgs} args - Arguments to find a RegisteredDevice
-     * @example
-     * // Get one RegisteredDevice
-     * const registeredDevice = await prisma.registeredDevice.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends RegisteredDeviceFindUniqueArgs>(args: SelectSubset<T, RegisteredDeviceFindUniqueArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one RegisteredDevice that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {RegisteredDeviceFindUniqueOrThrowArgs} args - Arguments to find a RegisteredDevice
-     * @example
-     * // Get one RegisteredDevice
-     * const registeredDevice = await prisma.registeredDevice.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends RegisteredDeviceFindUniqueOrThrowArgs>(args: SelectSubset<T, RegisteredDeviceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first RegisteredDevice that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RegisteredDeviceFindFirstArgs} args - Arguments to find a RegisteredDevice
-     * @example
-     * // Get one RegisteredDevice
-     * const registeredDevice = await prisma.registeredDevice.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends RegisteredDeviceFindFirstArgs>(args?: SelectSubset<T, RegisteredDeviceFindFirstArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first RegisteredDevice that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RegisteredDeviceFindFirstOrThrowArgs} args - Arguments to find a RegisteredDevice
-     * @example
-     * // Get one RegisteredDevice
-     * const registeredDevice = await prisma.registeredDevice.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends RegisteredDeviceFindFirstOrThrowArgs>(args?: SelectSubset<T, RegisteredDeviceFindFirstOrThrowArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more RegisteredDevices that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RegisteredDeviceFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all RegisteredDevices
-     * const registeredDevices = await prisma.registeredDevice.findMany()
-     * 
-     * // Get first 10 RegisteredDevices
-     * const registeredDevices = await prisma.registeredDevice.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const registeredDeviceWithIdOnly = await prisma.registeredDevice.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends RegisteredDeviceFindManyArgs>(args?: SelectSubset<T, RegisteredDeviceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a RegisteredDevice.
-     * @param {RegisteredDeviceCreateArgs} args - Arguments to create a RegisteredDevice.
-     * @example
-     * // Create one RegisteredDevice
-     * const RegisteredDevice = await prisma.registeredDevice.create({
-     *   data: {
-     *     // ... data to create a RegisteredDevice
-     *   }
-     * })
-     * 
-     */
-    create<T extends RegisteredDeviceCreateArgs>(args: SelectSubset<T, RegisteredDeviceCreateArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many RegisteredDevices.
-     * @param {RegisteredDeviceCreateManyArgs} args - Arguments to create many RegisteredDevices.
-     * @example
-     * // Create many RegisteredDevices
-     * const registeredDevice = await prisma.registeredDevice.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends RegisteredDeviceCreateManyArgs>(args?: SelectSubset<T, RegisteredDeviceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Delete a RegisteredDevice.
-     * @param {RegisteredDeviceDeleteArgs} args - Arguments to delete one RegisteredDevice.
-     * @example
-     * // Delete one RegisteredDevice
-     * const RegisteredDevice = await prisma.registeredDevice.delete({
-     *   where: {
-     *     // ... filter to delete one RegisteredDevice
-     *   }
-     * })
-     * 
-     */
-    delete<T extends RegisteredDeviceDeleteArgs>(args: SelectSubset<T, RegisteredDeviceDeleteArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one RegisteredDevice.
-     * @param {RegisteredDeviceUpdateArgs} args - Arguments to update one RegisteredDevice.
-     * @example
-     * // Update one RegisteredDevice
-     * const registeredDevice = await prisma.registeredDevice.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends RegisteredDeviceUpdateArgs>(args: SelectSubset<T, RegisteredDeviceUpdateArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more RegisteredDevices.
-     * @param {RegisteredDeviceDeleteManyArgs} args - Arguments to filter RegisteredDevices to delete.
-     * @example
-     * // Delete a few RegisteredDevices
-     * const { count } = await prisma.registeredDevice.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends RegisteredDeviceDeleteManyArgs>(args?: SelectSubset<T, RegisteredDeviceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more RegisteredDevices.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RegisteredDeviceUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many RegisteredDevices
-     * const registeredDevice = await prisma.registeredDevice.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends RegisteredDeviceUpdateManyArgs>(args: SelectSubset<T, RegisteredDeviceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one RegisteredDevice.
-     * @param {RegisteredDeviceUpsertArgs} args - Arguments to update or create a RegisteredDevice.
-     * @example
-     * // Update or create a RegisteredDevice
-     * const registeredDevice = await prisma.registeredDevice.upsert({
-     *   create: {
-     *     // ... data to create a RegisteredDevice
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the RegisteredDevice we want to update
-     *   }
-     * })
-     */
-    upsert<T extends RegisteredDeviceUpsertArgs>(args: SelectSubset<T, RegisteredDeviceUpsertArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of RegisteredDevices.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RegisteredDeviceCountArgs} args - Arguments to filter RegisteredDevices to count.
-     * @example
-     * // Count the number of RegisteredDevices
-     * const count = await prisma.registeredDevice.count({
-     *   where: {
-     *     // ... the filter for the RegisteredDevices we want to count
-     *   }
-     * })
-    **/
-    count<T extends RegisteredDeviceCountArgs>(
-      args?: Subset<T, RegisteredDeviceCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], RegisteredDeviceCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a RegisteredDevice.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RegisteredDeviceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends RegisteredDeviceAggregateArgs>(args: Subset<T, RegisteredDeviceAggregateArgs>): Prisma.PrismaPromise<GetRegisteredDeviceAggregateType<T>>
-
-    /**
-     * Group by RegisteredDevice.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RegisteredDeviceGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends RegisteredDeviceGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: RegisteredDeviceGroupByArgs['orderBy'] }
-        : { orderBy?: RegisteredDeviceGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, RegisteredDeviceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRegisteredDeviceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the RegisteredDevice model
-   */
-  readonly fields: RegisteredDeviceFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for RegisteredDevice.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__RegisteredDeviceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the RegisteredDevice model
-   */
-  interface RegisteredDeviceFieldRefs {
-    readonly id: FieldRef<"RegisteredDevice", 'Int'>
-    readonly clientDeviceId: FieldRef<"RegisteredDevice", 'String'>
-    readonly siteId: FieldRef<"RegisteredDevice", 'Int'>
-    readonly tenantId: FieldRef<"RegisteredDevice", 'Int'>
-    readonly deviceName: FieldRef<"RegisteredDevice", 'String'>
-    readonly deviceType: FieldRef<"RegisteredDevice", 'String'>
-    readonly status: FieldRef<"RegisteredDevice", 'String'>
-    readonly appVersion: FieldRef<"RegisteredDevice", 'String'>
-    readonly lastSeenAt: FieldRef<"RegisteredDevice", 'DateTime'>
-    readonly registeredAt: FieldRef<"RegisteredDevice", 'DateTime'>
-    readonly updatedAt: FieldRef<"RegisteredDevice", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * RegisteredDevice findUnique
-   */
-  export type RegisteredDeviceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * Filter, which RegisteredDevice to fetch.
-     */
-    where: RegisteredDeviceWhereUniqueInput
-  }
-
-  /**
-   * RegisteredDevice findUniqueOrThrow
-   */
-  export type RegisteredDeviceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * Filter, which RegisteredDevice to fetch.
-     */
-    where: RegisteredDeviceWhereUniqueInput
-  }
-
-  /**
-   * RegisteredDevice findFirst
-   */
-  export type RegisteredDeviceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * Filter, which RegisteredDevice to fetch.
-     */
-    where?: RegisteredDeviceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RegisteredDevices to fetch.
-     */
-    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for RegisteredDevices.
-     */
-    cursor?: RegisteredDeviceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RegisteredDevices from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RegisteredDevices.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of RegisteredDevices.
-     */
-    distinct?: RegisteredDeviceScalarFieldEnum | RegisteredDeviceScalarFieldEnum[]
-  }
-
-  /**
-   * RegisteredDevice findFirstOrThrow
-   */
-  export type RegisteredDeviceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * Filter, which RegisteredDevice to fetch.
-     */
-    where?: RegisteredDeviceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RegisteredDevices to fetch.
-     */
-    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for RegisteredDevices.
-     */
-    cursor?: RegisteredDeviceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RegisteredDevices from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RegisteredDevices.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of RegisteredDevices.
-     */
-    distinct?: RegisteredDeviceScalarFieldEnum | RegisteredDeviceScalarFieldEnum[]
-  }
-
-  /**
-   * RegisteredDevice findMany
-   */
-  export type RegisteredDeviceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * Filter, which RegisteredDevices to fetch.
-     */
-    where?: RegisteredDeviceWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RegisteredDevices to fetch.
-     */
-    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing RegisteredDevices.
-     */
-    cursor?: RegisteredDeviceWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RegisteredDevices from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RegisteredDevices.
-     */
-    skip?: number
-    distinct?: RegisteredDeviceScalarFieldEnum | RegisteredDeviceScalarFieldEnum[]
-  }
-
-  /**
-   * RegisteredDevice create
-   */
-  export type RegisteredDeviceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * The data needed to create a RegisteredDevice.
-     */
-    data: XOR<RegisteredDeviceCreateInput, RegisteredDeviceUncheckedCreateInput>
-  }
-
-  /**
-   * RegisteredDevice createMany
-   */
-  export type RegisteredDeviceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many RegisteredDevices.
-     */
-    data: RegisteredDeviceCreateManyInput | RegisteredDeviceCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * RegisteredDevice update
-   */
-  export type RegisteredDeviceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * The data needed to update a RegisteredDevice.
-     */
-    data: XOR<RegisteredDeviceUpdateInput, RegisteredDeviceUncheckedUpdateInput>
-    /**
-     * Choose, which RegisteredDevice to update.
-     */
-    where: RegisteredDeviceWhereUniqueInput
-  }
-
-  /**
-   * RegisteredDevice updateMany
-   */
-  export type RegisteredDeviceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update RegisteredDevices.
-     */
-    data: XOR<RegisteredDeviceUpdateManyMutationInput, RegisteredDeviceUncheckedUpdateManyInput>
-    /**
-     * Filter which RegisteredDevices to update
-     */
-    where?: RegisteredDeviceWhereInput
-    /**
-     * Limit how many RegisteredDevices to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * RegisteredDevice upsert
-   */
-  export type RegisteredDeviceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * The filter to search for the RegisteredDevice to update in case it exists.
-     */
-    where: RegisteredDeviceWhereUniqueInput
-    /**
-     * In case the RegisteredDevice found by the `where` argument doesn't exist, create a new RegisteredDevice with this data.
-     */
-    create: XOR<RegisteredDeviceCreateInput, RegisteredDeviceUncheckedCreateInput>
-    /**
-     * In case the RegisteredDevice was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<RegisteredDeviceUpdateInput, RegisteredDeviceUncheckedUpdateInput>
-  }
-
-  /**
-   * RegisteredDevice delete
-   */
-  export type RegisteredDeviceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-    /**
-     * Filter which RegisteredDevice to delete.
-     */
-    where: RegisteredDeviceWhereUniqueInput
-  }
-
-  /**
-   * RegisteredDevice deleteMany
-   */
-  export type RegisteredDeviceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which RegisteredDevices to delete
-     */
-    where?: RegisteredDeviceWhereInput
-    /**
-     * Limit how many RegisteredDevices to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * RegisteredDevice without action
-   */
-  export type RegisteredDeviceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RegisteredDevice
-     */
-    select?: RegisteredDeviceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the RegisteredDevice
-     */
-    omit?: RegisteredDeviceOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: RegisteredDeviceInclude<ExtArgs> | null
-  }
-
-
-  /**
-   * Model TenantSiteIdCounter
-   */
-
-  export type AggregateTenantSiteIdCounter = {
-    _count: TenantSiteIdCounterCountAggregateOutputType | null
-    _avg: TenantSiteIdCounterAvgAggregateOutputType | null
-    _sum: TenantSiteIdCounterSumAggregateOutputType | null
-    _min: TenantSiteIdCounterMinAggregateOutputType | null
-    _max: TenantSiteIdCounterMaxAggregateOutputType | null
-  }
-
-  export type TenantSiteIdCounterAvgAggregateOutputType = {
-    tenantId: number | null
-    currentSiteId: number | null
-  }
-
-  export type TenantSiteIdCounterSumAggregateOutputType = {
-    tenantId: number | null
-    currentSiteId: number | null
-  }
-
-  export type TenantSiteIdCounterMinAggregateOutputType = {
-    tenantId: number | null
-    currentSiteId: number | null
-  }
-
-  export type TenantSiteIdCounterMaxAggregateOutputType = {
-    tenantId: number | null
-    currentSiteId: number | null
-  }
-
-  export type TenantSiteIdCounterCountAggregateOutputType = {
-    tenantId: number
-    currentSiteId: number
-    _all: number
-  }
-
-
-  export type TenantSiteIdCounterAvgAggregateInputType = {
-    tenantId?: true
-    currentSiteId?: true
-  }
-
-  export type TenantSiteIdCounterSumAggregateInputType = {
-    tenantId?: true
-    currentSiteId?: true
-  }
-
-  export type TenantSiteIdCounterMinAggregateInputType = {
-    tenantId?: true
-    currentSiteId?: true
-  }
-
-  export type TenantSiteIdCounterMaxAggregateInputType = {
-    tenantId?: true
-    currentSiteId?: true
-  }
-
-  export type TenantSiteIdCounterCountAggregateInputType = {
-    tenantId?: true
-    currentSiteId?: true
-    _all?: true
-  }
-
-  export type TenantSiteIdCounterAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which TenantSiteIdCounter to aggregate.
-     */
-    where?: TenantSiteIdCounterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of TenantSiteIdCounters to fetch.
-     */
-    orderBy?: TenantSiteIdCounterOrderByWithRelationInput | TenantSiteIdCounterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: TenantSiteIdCounterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` TenantSiteIdCounters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` TenantSiteIdCounters.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned TenantSiteIdCounters
-    **/
-    _count?: true | TenantSiteIdCounterCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: TenantSiteIdCounterAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: TenantSiteIdCounterSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: TenantSiteIdCounterMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: TenantSiteIdCounterMaxAggregateInputType
-  }
-
-  export type GetTenantSiteIdCounterAggregateType<T extends TenantSiteIdCounterAggregateArgs> = {
-        [P in keyof T & keyof AggregateTenantSiteIdCounter]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateTenantSiteIdCounter[P]>
-      : GetScalarType<T[P], AggregateTenantSiteIdCounter[P]>
-  }
-
-
-
-
-  export type TenantSiteIdCounterGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: TenantSiteIdCounterWhereInput
-    orderBy?: TenantSiteIdCounterOrderByWithAggregationInput | TenantSiteIdCounterOrderByWithAggregationInput[]
-    by: TenantSiteIdCounterScalarFieldEnum[] | TenantSiteIdCounterScalarFieldEnum
-    having?: TenantSiteIdCounterScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: TenantSiteIdCounterCountAggregateInputType | true
-    _avg?: TenantSiteIdCounterAvgAggregateInputType
-    _sum?: TenantSiteIdCounterSumAggregateInputType
-    _min?: TenantSiteIdCounterMinAggregateInputType
-    _max?: TenantSiteIdCounterMaxAggregateInputType
-  }
-
-  export type TenantSiteIdCounterGroupByOutputType = {
-    tenantId: number
-    currentSiteId: number
-    _count: TenantSiteIdCounterCountAggregateOutputType | null
-    _avg: TenantSiteIdCounterAvgAggregateOutputType | null
-    _sum: TenantSiteIdCounterSumAggregateOutputType | null
-    _min: TenantSiteIdCounterMinAggregateOutputType | null
-    _max: TenantSiteIdCounterMaxAggregateOutputType | null
-  }
-
-  type GetTenantSiteIdCounterGroupByPayload<T extends TenantSiteIdCounterGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<TenantSiteIdCounterGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof TenantSiteIdCounterGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], TenantSiteIdCounterGroupByOutputType[P]>
-            : GetScalarType<T[P], TenantSiteIdCounterGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type TenantSiteIdCounterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    tenantId?: boolean
-    currentSiteId?: boolean
-  }, ExtArgs["result"]["tenantSiteIdCounter"]>
-
-
-
-  export type TenantSiteIdCounterSelectScalar = {
-    tenantId?: boolean
-    currentSiteId?: boolean
-  }
-
-  export type TenantSiteIdCounterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"tenantId" | "currentSiteId", ExtArgs["result"]["tenantSiteIdCounter"]>
-
-  export type $TenantSiteIdCounterPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "TenantSiteIdCounter"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      tenantId: number
-      currentSiteId: number
-    }, ExtArgs["result"]["tenantSiteIdCounter"]>
-    composites: {}
-  }
-
-  type TenantSiteIdCounterGetPayload<S extends boolean | null | undefined | TenantSiteIdCounterDefaultArgs> = $Result.GetResult<Prisma.$TenantSiteIdCounterPayload, S>
-
-  type TenantSiteIdCounterCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<TenantSiteIdCounterFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: TenantSiteIdCounterCountAggregateInputType | true
-    }
-
-  export interface TenantSiteIdCounterDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TenantSiteIdCounter'], meta: { name: 'TenantSiteIdCounter' } }
-    /**
-     * Find zero or one TenantSiteIdCounter that matches the filter.
-     * @param {TenantSiteIdCounterFindUniqueArgs} args - Arguments to find a TenantSiteIdCounter
-     * @example
-     * // Get one TenantSiteIdCounter
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends TenantSiteIdCounterFindUniqueArgs>(args: SelectSubset<T, TenantSiteIdCounterFindUniqueArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find one TenantSiteIdCounter that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {TenantSiteIdCounterFindUniqueOrThrowArgs} args - Arguments to find a TenantSiteIdCounter
-     * @example
-     * // Get one TenantSiteIdCounter
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends TenantSiteIdCounterFindUniqueOrThrowArgs>(args: SelectSubset<T, TenantSiteIdCounterFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first TenantSiteIdCounter that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {TenantSiteIdCounterFindFirstArgs} args - Arguments to find a TenantSiteIdCounter
-     * @example
-     * // Get one TenantSiteIdCounter
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends TenantSiteIdCounterFindFirstArgs>(args?: SelectSubset<T, TenantSiteIdCounterFindFirstArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find the first TenantSiteIdCounter that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {TenantSiteIdCounterFindFirstOrThrowArgs} args - Arguments to find a TenantSiteIdCounter
-     * @example
-     * // Get one TenantSiteIdCounter
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends TenantSiteIdCounterFindFirstOrThrowArgs>(args?: SelectSubset<T, TenantSiteIdCounterFindFirstOrThrowArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Find zero or more TenantSiteIdCounters that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {TenantSiteIdCounterFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all TenantSiteIdCounters
-     * const tenantSiteIdCounters = await prisma.tenantSiteIdCounter.findMany()
-     * 
-     * // Get first 10 TenantSiteIdCounters
-     * const tenantSiteIdCounters = await prisma.tenantSiteIdCounter.findMany({ take: 10 })
-     * 
-     * // Only select the `tenantId`
-     * const tenantSiteIdCounterWithTenantIdOnly = await prisma.tenantSiteIdCounter.findMany({ select: { tenantId: true } })
-     * 
-     */
-    findMany<T extends TenantSiteIdCounterFindManyArgs>(args?: SelectSubset<T, TenantSiteIdCounterFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
-
-    /**
-     * Create a TenantSiteIdCounter.
-     * @param {TenantSiteIdCounterCreateArgs} args - Arguments to create a TenantSiteIdCounter.
-     * @example
-     * // Create one TenantSiteIdCounter
-     * const TenantSiteIdCounter = await prisma.tenantSiteIdCounter.create({
-     *   data: {
-     *     // ... data to create a TenantSiteIdCounter
-     *   }
-     * })
-     * 
-     */
-    create<T extends TenantSiteIdCounterCreateArgs>(args: SelectSubset<T, TenantSiteIdCounterCreateArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Create many TenantSiteIdCounters.
-     * @param {TenantSiteIdCounterCreateManyArgs} args - Arguments to create many TenantSiteIdCounters.
-     * @example
-     * // Create many TenantSiteIdCounters
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends TenantSiteIdCounterCreateManyArgs>(args?: SelectSubset<T, TenantSiteIdCounterCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Delete a TenantSiteIdCounter.
-     * @param {TenantSiteIdCounterDeleteArgs} args - Arguments to delete one TenantSiteIdCounter.
-     * @example
-     * // Delete one TenantSiteIdCounter
-     * const TenantSiteIdCounter = await prisma.tenantSiteIdCounter.delete({
-     *   where: {
-     *     // ... filter to delete one TenantSiteIdCounter
-     *   }
-     * })
-     * 
-     */
-    delete<T extends TenantSiteIdCounterDeleteArgs>(args: SelectSubset<T, TenantSiteIdCounterDeleteArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Update one TenantSiteIdCounter.
-     * @param {TenantSiteIdCounterUpdateArgs} args - Arguments to update one TenantSiteIdCounter.
-     * @example
-     * // Update one TenantSiteIdCounter
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends TenantSiteIdCounterUpdateArgs>(args: SelectSubset<T, TenantSiteIdCounterUpdateArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-    /**
-     * Delete zero or more TenantSiteIdCounters.
-     * @param {TenantSiteIdCounterDeleteManyArgs} args - Arguments to filter TenantSiteIdCounters to delete.
-     * @example
-     * // Delete a few TenantSiteIdCounters
-     * const { count } = await prisma.tenantSiteIdCounter.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends TenantSiteIdCounterDeleteManyArgs>(args?: SelectSubset<T, TenantSiteIdCounterDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more TenantSiteIdCounters.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {TenantSiteIdCounterUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many TenantSiteIdCounters
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends TenantSiteIdCounterUpdateManyArgs>(args: SelectSubset<T, TenantSiteIdCounterUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one TenantSiteIdCounter.
-     * @param {TenantSiteIdCounterUpsertArgs} args - Arguments to update or create a TenantSiteIdCounter.
-     * @example
-     * // Update or create a TenantSiteIdCounter
-     * const tenantSiteIdCounter = await prisma.tenantSiteIdCounter.upsert({
-     *   create: {
-     *     // ... data to create a TenantSiteIdCounter
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the TenantSiteIdCounter we want to update
-     *   }
-     * })
-     */
-    upsert<T extends TenantSiteIdCounterUpsertArgs>(args: SelectSubset<T, TenantSiteIdCounterUpsertArgs<ExtArgs>>): Prisma__TenantSiteIdCounterClient<$Result.GetResult<Prisma.$TenantSiteIdCounterPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
-
-    /**
-     * Count the number of TenantSiteIdCounters.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {TenantSiteIdCounterCountArgs} args - Arguments to filter TenantSiteIdCounters to count.
-     * @example
-     * // Count the number of TenantSiteIdCounters
-     * const count = await prisma.tenantSiteIdCounter.count({
-     *   where: {
-     *     // ... the filter for the TenantSiteIdCounters we want to count
-     *   }
-     * })
-    **/
-    count<T extends TenantSiteIdCounterCountArgs>(
-      args?: Subset<T, TenantSiteIdCounterCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], TenantSiteIdCounterCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a TenantSiteIdCounter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {TenantSiteIdCounterAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends TenantSiteIdCounterAggregateArgs>(args: Subset<T, TenantSiteIdCounterAggregateArgs>): Prisma.PrismaPromise<GetTenantSiteIdCounterAggregateType<T>>
-
-    /**
-     * Group by TenantSiteIdCounter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {TenantSiteIdCounterGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends TenantSiteIdCounterGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: TenantSiteIdCounterGroupByArgs['orderBy'] }
-        : { orderBy?: TenantSiteIdCounterGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, TenantSiteIdCounterGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTenantSiteIdCounterGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the TenantSiteIdCounter model
-   */
-  readonly fields: TenantSiteIdCounterFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for TenantSiteIdCounter.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__TenantSiteIdCounterClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the TenantSiteIdCounter model
-   */
-  interface TenantSiteIdCounterFieldRefs {
-    readonly tenantId: FieldRef<"TenantSiteIdCounter", 'Int'>
-    readonly currentSiteId: FieldRef<"TenantSiteIdCounter", 'Int'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * TenantSiteIdCounter findUnique
-   */
-  export type TenantSiteIdCounterFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * Filter, which TenantSiteIdCounter to fetch.
-     */
-    where: TenantSiteIdCounterWhereUniqueInput
-  }
-
-  /**
-   * TenantSiteIdCounter findUniqueOrThrow
-   */
-  export type TenantSiteIdCounterFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * Filter, which TenantSiteIdCounter to fetch.
-     */
-    where: TenantSiteIdCounterWhereUniqueInput
-  }
-
-  /**
-   * TenantSiteIdCounter findFirst
-   */
-  export type TenantSiteIdCounterFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * Filter, which TenantSiteIdCounter to fetch.
-     */
-    where?: TenantSiteIdCounterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of TenantSiteIdCounters to fetch.
-     */
-    orderBy?: TenantSiteIdCounterOrderByWithRelationInput | TenantSiteIdCounterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for TenantSiteIdCounters.
-     */
-    cursor?: TenantSiteIdCounterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` TenantSiteIdCounters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` TenantSiteIdCounters.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of TenantSiteIdCounters.
-     */
-    distinct?: TenantSiteIdCounterScalarFieldEnum | TenantSiteIdCounterScalarFieldEnum[]
-  }
-
-  /**
-   * TenantSiteIdCounter findFirstOrThrow
-   */
-  export type TenantSiteIdCounterFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * Filter, which TenantSiteIdCounter to fetch.
-     */
-    where?: TenantSiteIdCounterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of TenantSiteIdCounters to fetch.
-     */
-    orderBy?: TenantSiteIdCounterOrderByWithRelationInput | TenantSiteIdCounterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for TenantSiteIdCounters.
-     */
-    cursor?: TenantSiteIdCounterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` TenantSiteIdCounters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` TenantSiteIdCounters.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of TenantSiteIdCounters.
-     */
-    distinct?: TenantSiteIdCounterScalarFieldEnum | TenantSiteIdCounterScalarFieldEnum[]
-  }
-
-  /**
-   * TenantSiteIdCounter findMany
-   */
-  export type TenantSiteIdCounterFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * Filter, which TenantSiteIdCounters to fetch.
-     */
-    where?: TenantSiteIdCounterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of TenantSiteIdCounters to fetch.
-     */
-    orderBy?: TenantSiteIdCounterOrderByWithRelationInput | TenantSiteIdCounterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing TenantSiteIdCounters.
-     */
-    cursor?: TenantSiteIdCounterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` TenantSiteIdCounters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` TenantSiteIdCounters.
-     */
-    skip?: number
-    distinct?: TenantSiteIdCounterScalarFieldEnum | TenantSiteIdCounterScalarFieldEnum[]
-  }
-
-  /**
-   * TenantSiteIdCounter create
-   */
-  export type TenantSiteIdCounterCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * The data needed to create a TenantSiteIdCounter.
-     */
-    data: XOR<TenantSiteIdCounterCreateInput, TenantSiteIdCounterUncheckedCreateInput>
-  }
-
-  /**
-   * TenantSiteIdCounter createMany
-   */
-  export type TenantSiteIdCounterCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many TenantSiteIdCounters.
-     */
-    data: TenantSiteIdCounterCreateManyInput | TenantSiteIdCounterCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * TenantSiteIdCounter update
-   */
-  export type TenantSiteIdCounterUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * The data needed to update a TenantSiteIdCounter.
-     */
-    data: XOR<TenantSiteIdCounterUpdateInput, TenantSiteIdCounterUncheckedUpdateInput>
-    /**
-     * Choose, which TenantSiteIdCounter to update.
-     */
-    where: TenantSiteIdCounterWhereUniqueInput
-  }
-
-  /**
-   * TenantSiteIdCounter updateMany
-   */
-  export type TenantSiteIdCounterUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update TenantSiteIdCounters.
-     */
-    data: XOR<TenantSiteIdCounterUpdateManyMutationInput, TenantSiteIdCounterUncheckedUpdateManyInput>
-    /**
-     * Filter which TenantSiteIdCounters to update
-     */
-    where?: TenantSiteIdCounterWhereInput
-    /**
-     * Limit how many TenantSiteIdCounters to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * TenantSiteIdCounter upsert
-   */
-  export type TenantSiteIdCounterUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * The filter to search for the TenantSiteIdCounter to update in case it exists.
-     */
-    where: TenantSiteIdCounterWhereUniqueInput
-    /**
-     * In case the TenantSiteIdCounter found by the `where` argument doesn't exist, create a new TenantSiteIdCounter with this data.
-     */
-    create: XOR<TenantSiteIdCounterCreateInput, TenantSiteIdCounterUncheckedCreateInput>
-    /**
-     * In case the TenantSiteIdCounter was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<TenantSiteIdCounterUpdateInput, TenantSiteIdCounterUncheckedUpdateInput>
-  }
-
-  /**
-   * TenantSiteIdCounter delete
-   */
-  export type TenantSiteIdCounterDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-    /**
-     * Filter which TenantSiteIdCounter to delete.
-     */
-    where: TenantSiteIdCounterWhereUniqueInput
-  }
-
-  /**
-   * TenantSiteIdCounter deleteMany
-   */
-  export type TenantSiteIdCounterDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which TenantSiteIdCounters to delete
-     */
-    where?: TenantSiteIdCounterWhereInput
-    /**
-     * Limit how many TenantSiteIdCounters to delete.
-     */
-    limit?: number
-  }
-
-  /**
-   * TenantSiteIdCounter without action
-   */
-  export type TenantSiteIdCounterDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TenantSiteIdCounter
-     */
-    select?: TenantSiteIdCounterSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TenantSiteIdCounter
-     */
-    omit?: TenantSiteIdCounterOmit<ExtArgs> | null
-  }
-
-
-  /**
    * Model Permission
    */
 
@@ -14196,31 +12069,6 @@ export namespace Prisma {
   export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum]
 
 
-  export const RegisteredDeviceScalarFieldEnum: {
-    id: 'id',
-    clientDeviceId: 'clientDeviceId',
-    siteId: 'siteId',
-    tenantId: 'tenantId',
-    deviceName: 'deviceName',
-    deviceType: 'deviceType',
-    status: 'status',
-    appVersion: 'appVersion',
-    lastSeenAt: 'lastSeenAt',
-    registeredAt: 'registeredAt',
-    updatedAt: 'updatedAt'
-  };
-
-  export type RegisteredDeviceScalarFieldEnum = (typeof RegisteredDeviceScalarFieldEnum)[keyof typeof RegisteredDeviceScalarFieldEnum]
-
-
-  export const TenantSiteIdCounterScalarFieldEnum: {
-    tenantId: 'tenantId',
-    currentSiteId: 'currentSiteId'
-  };
-
-  export type TenantSiteIdCounterScalarFieldEnum = (typeof TenantSiteIdCounterScalarFieldEnum)[keyof typeof TenantSiteIdCounterScalarFieldEnum]
-
-
   export const PermissionScalarFieldEnum: {
     id: 'id',
     name: 'name',
@@ -14319,17 +12167,6 @@ export namespace Prisma {
   };
 
   export type RefreshTokenOrderByRelevanceFieldEnum = (typeof RefreshTokenOrderByRelevanceFieldEnum)[keyof typeof RefreshTokenOrderByRelevanceFieldEnum]
-
-
-  export const RegisteredDeviceOrderByRelevanceFieldEnum: {
-    clientDeviceId: 'clientDeviceId',
-    deviceName: 'deviceName',
-    deviceType: 'deviceType',
-    status: 'status',
-    appVersion: 'appVersion'
-  };
-
-  export type RegisteredDeviceOrderByRelevanceFieldEnum = (typeof RegisteredDeviceOrderByRelevanceFieldEnum)[keyof typeof RegisteredDeviceOrderByRelevanceFieldEnum]
 
 
   export const PermissionOrderByRelevanceFieldEnum: {
@@ -14537,7 +12374,6 @@ export namespace Prisma {
     tenantUsers?: TenantUserListRelationFilter
     subscription?: TenantSubscriptionListRelationFilter
     tenantOutlets?: TenantOutletListRelationFilter
-    registeredDevices?: RegisteredDeviceListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -14548,7 +12384,6 @@ export namespace Prisma {
     tenantUsers?: TenantUserOrderByRelationAggregateInput
     subscription?: TenantSubscriptionOrderByRelationAggregateInput
     tenantOutlets?: TenantOutletOrderByRelationAggregateInput
-    registeredDevices?: RegisteredDeviceOrderByRelationAggregateInput
     _relevance?: TenantOrderByRelevanceInput
   }
 
@@ -14563,7 +12398,6 @@ export namespace Prisma {
     tenantUsers?: TenantUserListRelationFilter
     subscription?: TenantSubscriptionListRelationFilter
     tenantOutlets?: TenantOutletListRelationFilter
-    registeredDevices?: RegisteredDeviceListRelationFilter
   }, "id" | "databaseName">
 
   export type TenantOrderByWithAggregationInput = {
@@ -15016,134 +12850,6 @@ export namespace Prisma {
     deleted?: BoolWithAggregatesFilter<"RefreshToken"> | boolean
   }
 
-  export type RegisteredDeviceWhereInput = {
-    AND?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
-    OR?: RegisteredDeviceWhereInput[]
-    NOT?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
-    id?: IntFilter<"RegisteredDevice"> | number
-    clientDeviceId?: StringFilter<"RegisteredDevice"> | string
-    siteId?: IntFilter<"RegisteredDevice"> | number
-    tenantId?: IntFilter<"RegisteredDevice"> | number
-    deviceName?: StringFilter<"RegisteredDevice"> | string
-    deviceType?: StringNullableFilter<"RegisteredDevice"> | string | null
-    status?: StringFilter<"RegisteredDevice"> | string
-    appVersion?: StringNullableFilter<"RegisteredDevice"> | string | null
-    lastSeenAt?: DateTimeNullableFilter<"RegisteredDevice"> | Date | string | null
-    registeredAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
-    updatedAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
-    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
-  }
-
-  export type RegisteredDeviceOrderByWithRelationInput = {
-    id?: SortOrder
-    clientDeviceId?: SortOrder
-    siteId?: SortOrder
-    tenantId?: SortOrder
-    deviceName?: SortOrder
-    deviceType?: SortOrderInput | SortOrder
-    status?: SortOrder
-    appVersion?: SortOrderInput | SortOrder
-    lastSeenAt?: SortOrderInput | SortOrder
-    registeredAt?: SortOrder
-    updatedAt?: SortOrder
-    tenant?: TenantOrderByWithRelationInput
-    _relevance?: RegisteredDeviceOrderByRelevanceInput
-  }
-
-  export type RegisteredDeviceWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
-    clientDeviceId?: string
-    tenantId_siteId?: RegisteredDeviceTenantIdSiteIdCompoundUniqueInput
-    AND?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
-    OR?: RegisteredDeviceWhereInput[]
-    NOT?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
-    siteId?: IntFilter<"RegisteredDevice"> | number
-    tenantId?: IntFilter<"RegisteredDevice"> | number
-    deviceName?: StringFilter<"RegisteredDevice"> | string
-    deviceType?: StringNullableFilter<"RegisteredDevice"> | string | null
-    status?: StringFilter<"RegisteredDevice"> | string
-    appVersion?: StringNullableFilter<"RegisteredDevice"> | string | null
-    lastSeenAt?: DateTimeNullableFilter<"RegisteredDevice"> | Date | string | null
-    registeredAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
-    updatedAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
-    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
-  }, "id" | "clientDeviceId" | "tenantId_siteId">
-
-  export type RegisteredDeviceOrderByWithAggregationInput = {
-    id?: SortOrder
-    clientDeviceId?: SortOrder
-    siteId?: SortOrder
-    tenantId?: SortOrder
-    deviceName?: SortOrder
-    deviceType?: SortOrderInput | SortOrder
-    status?: SortOrder
-    appVersion?: SortOrderInput | SortOrder
-    lastSeenAt?: SortOrderInput | SortOrder
-    registeredAt?: SortOrder
-    updatedAt?: SortOrder
-    _count?: RegisteredDeviceCountOrderByAggregateInput
-    _avg?: RegisteredDeviceAvgOrderByAggregateInput
-    _max?: RegisteredDeviceMaxOrderByAggregateInput
-    _min?: RegisteredDeviceMinOrderByAggregateInput
-    _sum?: RegisteredDeviceSumOrderByAggregateInput
-  }
-
-  export type RegisteredDeviceScalarWhereWithAggregatesInput = {
-    AND?: RegisteredDeviceScalarWhereWithAggregatesInput | RegisteredDeviceScalarWhereWithAggregatesInput[]
-    OR?: RegisteredDeviceScalarWhereWithAggregatesInput[]
-    NOT?: RegisteredDeviceScalarWhereWithAggregatesInput | RegisteredDeviceScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"RegisteredDevice"> | number
-    clientDeviceId?: StringWithAggregatesFilter<"RegisteredDevice"> | string
-    siteId?: IntWithAggregatesFilter<"RegisteredDevice"> | number
-    tenantId?: IntWithAggregatesFilter<"RegisteredDevice"> | number
-    deviceName?: StringWithAggregatesFilter<"RegisteredDevice"> | string
-    deviceType?: StringNullableWithAggregatesFilter<"RegisteredDevice"> | string | null
-    status?: StringWithAggregatesFilter<"RegisteredDevice"> | string
-    appVersion?: StringNullableWithAggregatesFilter<"RegisteredDevice"> | string | null
-    lastSeenAt?: DateTimeNullableWithAggregatesFilter<"RegisteredDevice"> | Date | string | null
-    registeredAt?: DateTimeWithAggregatesFilter<"RegisteredDevice"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"RegisteredDevice"> | Date | string
-  }
-
-  export type TenantSiteIdCounterWhereInput = {
-    AND?: TenantSiteIdCounterWhereInput | TenantSiteIdCounterWhereInput[]
-    OR?: TenantSiteIdCounterWhereInput[]
-    NOT?: TenantSiteIdCounterWhereInput | TenantSiteIdCounterWhereInput[]
-    tenantId?: IntFilter<"TenantSiteIdCounter"> | number
-    currentSiteId?: IntFilter<"TenantSiteIdCounter"> | number
-  }
-
-  export type TenantSiteIdCounterOrderByWithRelationInput = {
-    tenantId?: SortOrder
-    currentSiteId?: SortOrder
-  }
-
-  export type TenantSiteIdCounterWhereUniqueInput = Prisma.AtLeast<{
-    tenantId?: number
-    AND?: TenantSiteIdCounterWhereInput | TenantSiteIdCounterWhereInput[]
-    OR?: TenantSiteIdCounterWhereInput[]
-    NOT?: TenantSiteIdCounterWhereInput | TenantSiteIdCounterWhereInput[]
-    currentSiteId?: IntFilter<"TenantSiteIdCounter"> | number
-  }, "tenantId">
-
-  export type TenantSiteIdCounterOrderByWithAggregationInput = {
-    tenantId?: SortOrder
-    currentSiteId?: SortOrder
-    _count?: TenantSiteIdCounterCountOrderByAggregateInput
-    _avg?: TenantSiteIdCounterAvgOrderByAggregateInput
-    _max?: TenantSiteIdCounterMaxOrderByAggregateInput
-    _min?: TenantSiteIdCounterMinOrderByAggregateInput
-    _sum?: TenantSiteIdCounterSumOrderByAggregateInput
-  }
-
-  export type TenantSiteIdCounterScalarWhereWithAggregatesInput = {
-    AND?: TenantSiteIdCounterScalarWhereWithAggregatesInput | TenantSiteIdCounterScalarWhereWithAggregatesInput[]
-    OR?: TenantSiteIdCounterScalarWhereWithAggregatesInput[]
-    NOT?: TenantSiteIdCounterScalarWhereWithAggregatesInput | TenantSiteIdCounterScalarWhereWithAggregatesInput[]
-    tenantId?: IntWithAggregatesFilter<"TenantSiteIdCounter"> | number
-    currentSiteId?: IntWithAggregatesFilter<"TenantSiteIdCounter"> | number
-  }
-
   export type PermissionWhereInput = {
     AND?: PermissionWhereInput | PermissionWhereInput[]
     OR?: PermissionWhereInput[]
@@ -15380,7 +13086,6 @@ export namespace Prisma {
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -15391,7 +13096,6 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -15401,7 +13105,6 @@ export namespace Prisma {
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -15412,7 +13115,6 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -15848,135 +13550,6 @@ export namespace Prisma {
     deleted?: BoolFieldUpdateOperationsInput | boolean
   }
 
-  export type RegisteredDeviceCreateInput = {
-    clientDeviceId: string
-    siteId: number
-    deviceName: string
-    deviceType?: string | null
-    status?: string
-    appVersion?: string | null
-    lastSeenAt?: Date | string | null
-    registeredAt?: Date | string
-    updatedAt?: Date | string
-    tenant: TenantCreateNestedOneWithoutRegisteredDevicesInput
-  }
-
-  export type RegisteredDeviceUncheckedCreateInput = {
-    id?: number
-    clientDeviceId: string
-    siteId: number
-    tenantId: number
-    deviceName: string
-    deviceType?: string | null
-    status?: string
-    appVersion?: string | null
-    lastSeenAt?: Date | string | null
-    registeredAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type RegisteredDeviceUpdateInput = {
-    clientDeviceId?: StringFieldUpdateOperationsInput | string
-    siteId?: IntFieldUpdateOperationsInput | number
-    deviceName?: StringFieldUpdateOperationsInput | string
-    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: StringFieldUpdateOperationsInput | string
-    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    tenant?: TenantUpdateOneRequiredWithoutRegisteredDevicesNestedInput
-  }
-
-  export type RegisteredDeviceUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    clientDeviceId?: StringFieldUpdateOperationsInput | string
-    siteId?: IntFieldUpdateOperationsInput | number
-    tenantId?: IntFieldUpdateOperationsInput | number
-    deviceName?: StringFieldUpdateOperationsInput | string
-    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: StringFieldUpdateOperationsInput | string
-    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type RegisteredDeviceCreateManyInput = {
-    id?: number
-    clientDeviceId: string
-    siteId: number
-    tenantId: number
-    deviceName: string
-    deviceType?: string | null
-    status?: string
-    appVersion?: string | null
-    lastSeenAt?: Date | string | null
-    registeredAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type RegisteredDeviceUpdateManyMutationInput = {
-    clientDeviceId?: StringFieldUpdateOperationsInput | string
-    siteId?: IntFieldUpdateOperationsInput | number
-    deviceName?: StringFieldUpdateOperationsInput | string
-    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: StringFieldUpdateOperationsInput | string
-    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type RegisteredDeviceUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    clientDeviceId?: StringFieldUpdateOperationsInput | string
-    siteId?: IntFieldUpdateOperationsInput | number
-    tenantId?: IntFieldUpdateOperationsInput | number
-    deviceName?: StringFieldUpdateOperationsInput | string
-    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: StringFieldUpdateOperationsInput | string
-    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type TenantSiteIdCounterCreateInput = {
-    tenantId: number
-    currentSiteId?: number
-  }
-
-  export type TenantSiteIdCounterUncheckedCreateInput = {
-    tenantId: number
-    currentSiteId?: number
-  }
-
-  export type TenantSiteIdCounterUpdateInput = {
-    tenantId?: IntFieldUpdateOperationsInput | number
-    currentSiteId?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type TenantSiteIdCounterUncheckedUpdateInput = {
-    tenantId?: IntFieldUpdateOperationsInput | number
-    currentSiteId?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type TenantSiteIdCounterCreateManyInput = {
-    tenantId: number
-    currentSiteId?: number
-  }
-
-  export type TenantSiteIdCounterUpdateManyMutationInput = {
-    tenantId?: IntFieldUpdateOperationsInput | number
-    currentSiteId?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type TenantSiteIdCounterUncheckedUpdateManyInput = {
-    tenantId?: IntFieldUpdateOperationsInput | number
-    currentSiteId?: IntFieldUpdateOperationsInput | number
-  }
-
   export type PermissionCreateInput = {
     name: string
     category?: string
@@ -16363,21 +13936,11 @@ export namespace Prisma {
     none?: TenantOutletWhereInput
   }
 
-  export type RegisteredDeviceListRelationFilter = {
-    every?: RegisteredDeviceWhereInput
-    some?: RegisteredDeviceWhereInput
-    none?: RegisteredDeviceWhereInput
-  }
-
   export type TenantUserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type TenantOutletOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type RegisteredDeviceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -16793,96 +14356,6 @@ export namespace Prisma {
     tenantUserId?: SortOrder
   }
 
-  export type RegisteredDeviceOrderByRelevanceInput = {
-    fields: RegisteredDeviceOrderByRelevanceFieldEnum | RegisteredDeviceOrderByRelevanceFieldEnum[]
-    sort: SortOrder
-    search: string
-  }
-
-  export type RegisteredDeviceTenantIdSiteIdCompoundUniqueInput = {
-    tenantId: number
-    siteId: number
-  }
-
-  export type RegisteredDeviceCountOrderByAggregateInput = {
-    id?: SortOrder
-    clientDeviceId?: SortOrder
-    siteId?: SortOrder
-    tenantId?: SortOrder
-    deviceName?: SortOrder
-    deviceType?: SortOrder
-    status?: SortOrder
-    appVersion?: SortOrder
-    lastSeenAt?: SortOrder
-    registeredAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type RegisteredDeviceAvgOrderByAggregateInput = {
-    id?: SortOrder
-    siteId?: SortOrder
-    tenantId?: SortOrder
-  }
-
-  export type RegisteredDeviceMaxOrderByAggregateInput = {
-    id?: SortOrder
-    clientDeviceId?: SortOrder
-    siteId?: SortOrder
-    tenantId?: SortOrder
-    deviceName?: SortOrder
-    deviceType?: SortOrder
-    status?: SortOrder
-    appVersion?: SortOrder
-    lastSeenAt?: SortOrder
-    registeredAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type RegisteredDeviceMinOrderByAggregateInput = {
-    id?: SortOrder
-    clientDeviceId?: SortOrder
-    siteId?: SortOrder
-    tenantId?: SortOrder
-    deviceName?: SortOrder
-    deviceType?: SortOrder
-    status?: SortOrder
-    appVersion?: SortOrder
-    lastSeenAt?: SortOrder
-    registeredAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type RegisteredDeviceSumOrderByAggregateInput = {
-    id?: SortOrder
-    siteId?: SortOrder
-    tenantId?: SortOrder
-  }
-
-  export type TenantSiteIdCounterCountOrderByAggregateInput = {
-    tenantId?: SortOrder
-    currentSiteId?: SortOrder
-  }
-
-  export type TenantSiteIdCounterAvgOrderByAggregateInput = {
-    tenantId?: SortOrder
-    currentSiteId?: SortOrder
-  }
-
-  export type TenantSiteIdCounterMaxOrderByAggregateInput = {
-    tenantId?: SortOrder
-    currentSiteId?: SortOrder
-  }
-
-  export type TenantSiteIdCounterMinOrderByAggregateInput = {
-    tenantId?: SortOrder
-    currentSiteId?: SortOrder
-  }
-
-  export type TenantSiteIdCounterSumOrderByAggregateInput = {
-    tenantId?: SortOrder
-    currentSiteId?: SortOrder
-  }
-
   export type PermissionOrderByRelevanceInput = {
     fields: PermissionOrderByRelevanceFieldEnum | PermissionOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -17075,13 +14548,6 @@ export namespace Prisma {
     connect?: TenantOutletWhereUniqueInput | TenantOutletWhereUniqueInput[]
   }
 
-  export type RegisteredDeviceCreateNestedManyWithoutTenantInput = {
-    create?: XOR<RegisteredDeviceCreateWithoutTenantInput, RegisteredDeviceUncheckedCreateWithoutTenantInput> | RegisteredDeviceCreateWithoutTenantInput[] | RegisteredDeviceUncheckedCreateWithoutTenantInput[]
-    connectOrCreate?: RegisteredDeviceCreateOrConnectWithoutTenantInput | RegisteredDeviceCreateOrConnectWithoutTenantInput[]
-    createMany?: RegisteredDeviceCreateManyTenantInputEnvelope
-    connect?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-  }
-
   export type TenantUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -17101,13 +14567,6 @@ export namespace Prisma {
     connectOrCreate?: TenantOutletCreateOrConnectWithoutTenantInput | TenantOutletCreateOrConnectWithoutTenantInput[]
     createMany?: TenantOutletCreateManyTenantInputEnvelope
     connect?: TenantOutletWhereUniqueInput | TenantOutletWhereUniqueInput[]
-  }
-
-  export type RegisteredDeviceUncheckedCreateNestedManyWithoutTenantInput = {
-    create?: XOR<RegisteredDeviceCreateWithoutTenantInput, RegisteredDeviceUncheckedCreateWithoutTenantInput> | RegisteredDeviceCreateWithoutTenantInput[] | RegisteredDeviceUncheckedCreateWithoutTenantInput[]
-    connectOrCreate?: RegisteredDeviceCreateOrConnectWithoutTenantInput | RegisteredDeviceCreateOrConnectWithoutTenantInput[]
-    createMany?: RegisteredDeviceCreateManyTenantInputEnvelope
-    connect?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -17156,20 +14615,6 @@ export namespace Prisma {
     deleteMany?: TenantOutletScalarWhereInput | TenantOutletScalarWhereInput[]
   }
 
-  export type RegisteredDeviceUpdateManyWithoutTenantNestedInput = {
-    create?: XOR<RegisteredDeviceCreateWithoutTenantInput, RegisteredDeviceUncheckedCreateWithoutTenantInput> | RegisteredDeviceCreateWithoutTenantInput[] | RegisteredDeviceUncheckedCreateWithoutTenantInput[]
-    connectOrCreate?: RegisteredDeviceCreateOrConnectWithoutTenantInput | RegisteredDeviceCreateOrConnectWithoutTenantInput[]
-    upsert?: RegisteredDeviceUpsertWithWhereUniqueWithoutTenantInput | RegisteredDeviceUpsertWithWhereUniqueWithoutTenantInput[]
-    createMany?: RegisteredDeviceCreateManyTenantInputEnvelope
-    set?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    disconnect?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    delete?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    connect?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    update?: RegisteredDeviceUpdateWithWhereUniqueWithoutTenantInput | RegisteredDeviceUpdateWithWhereUniqueWithoutTenantInput[]
-    updateMany?: RegisteredDeviceUpdateManyWithWhereWithoutTenantInput | RegisteredDeviceUpdateManyWithWhereWithoutTenantInput[]
-    deleteMany?: RegisteredDeviceScalarWhereInput | RegisteredDeviceScalarWhereInput[]
-  }
-
   export type TenantUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -17210,20 +14655,6 @@ export namespace Prisma {
     update?: TenantOutletUpdateWithWhereUniqueWithoutTenantInput | TenantOutletUpdateWithWhereUniqueWithoutTenantInput[]
     updateMany?: TenantOutletUpdateManyWithWhereWithoutTenantInput | TenantOutletUpdateManyWithWhereWithoutTenantInput[]
     deleteMany?: TenantOutletScalarWhereInput | TenantOutletScalarWhereInput[]
-  }
-
-  export type RegisteredDeviceUncheckedUpdateManyWithoutTenantNestedInput = {
-    create?: XOR<RegisteredDeviceCreateWithoutTenantInput, RegisteredDeviceUncheckedCreateWithoutTenantInput> | RegisteredDeviceCreateWithoutTenantInput[] | RegisteredDeviceUncheckedCreateWithoutTenantInput[]
-    connectOrCreate?: RegisteredDeviceCreateOrConnectWithoutTenantInput | RegisteredDeviceCreateOrConnectWithoutTenantInput[]
-    upsert?: RegisteredDeviceUpsertWithWhereUniqueWithoutTenantInput | RegisteredDeviceUpsertWithWhereUniqueWithoutTenantInput[]
-    createMany?: RegisteredDeviceCreateManyTenantInputEnvelope
-    set?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    disconnect?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    delete?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    connect?: RegisteredDeviceWhereUniqueInput | RegisteredDeviceWhereUniqueInput[]
-    update?: RegisteredDeviceUpdateWithWhereUniqueWithoutTenantInput | RegisteredDeviceUpdateWithWhereUniqueWithoutTenantInput[]
-    updateMany?: RegisteredDeviceUpdateManyWithWhereWithoutTenantInput | RegisteredDeviceUpdateManyWithWhereWithoutTenantInput[]
-    deleteMany?: RegisteredDeviceScalarWhereInput | RegisteredDeviceScalarWhereInput[]
   }
 
   export type TenantOutletCreateNestedOneWithoutSubscriptionsInput = {
@@ -17474,20 +14905,6 @@ export namespace Prisma {
     delete?: TenantWhereInput | boolean
     connect?: TenantWhereUniqueInput
     update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutTenantUsersInput, TenantUpdateWithoutTenantUsersInput>, TenantUncheckedUpdateWithoutTenantUsersInput>
-  }
-
-  export type TenantCreateNestedOneWithoutRegisteredDevicesInput = {
-    create?: XOR<TenantCreateWithoutRegisteredDevicesInput, TenantUncheckedCreateWithoutRegisteredDevicesInput>
-    connectOrCreate?: TenantCreateOrConnectWithoutRegisteredDevicesInput
-    connect?: TenantWhereUniqueInput
-  }
-
-  export type TenantUpdateOneRequiredWithoutRegisteredDevicesNestedInput = {
-    create?: XOR<TenantCreateWithoutRegisteredDevicesInput, TenantUncheckedCreateWithoutRegisteredDevicesInput>
-    connectOrCreate?: TenantCreateOrConnectWithoutRegisteredDevicesInput
-    upsert?: TenantUpsertWithoutRegisteredDevicesInput
-    connect?: TenantWhereUniqueInput
-    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutRegisteredDevicesInput, TenantUpdateWithoutRegisteredDevicesInput>, TenantUncheckedUpdateWithoutRegisteredDevicesInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -17912,41 +15329,6 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type RegisteredDeviceCreateWithoutTenantInput = {
-    clientDeviceId: string
-    siteId: number
-    deviceName: string
-    deviceType?: string | null
-    status?: string
-    appVersion?: string | null
-    lastSeenAt?: Date | string | null
-    registeredAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type RegisteredDeviceUncheckedCreateWithoutTenantInput = {
-    id?: number
-    clientDeviceId: string
-    siteId: number
-    deviceName: string
-    deviceType?: string | null
-    status?: string
-    appVersion?: string | null
-    lastSeenAt?: Date | string | null
-    registeredAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type RegisteredDeviceCreateOrConnectWithoutTenantInput = {
-    where: RegisteredDeviceWhereUniqueInput
-    create: XOR<RegisteredDeviceCreateWithoutTenantInput, RegisteredDeviceUncheckedCreateWithoutTenantInput>
-  }
-
-  export type RegisteredDeviceCreateManyTenantInputEnvelope = {
-    data: RegisteredDeviceCreateManyTenantInput | RegisteredDeviceCreateManyTenantInput[]
-    skipDuplicates?: boolean
-  }
-
   export type TenantUserUpsertWithWhereUniqueWithoutTenantInput = {
     where: TenantUserWhereUniqueInput
     update: XOR<TenantUserUpdateWithoutTenantInput, TenantUserUncheckedUpdateWithoutTenantInput>
@@ -18019,39 +15401,6 @@ export namespace Prisma {
     isActive?: BoolFilter<"TenantOutlet"> | boolean
   }
 
-  export type RegisteredDeviceUpsertWithWhereUniqueWithoutTenantInput = {
-    where: RegisteredDeviceWhereUniqueInput
-    update: XOR<RegisteredDeviceUpdateWithoutTenantInput, RegisteredDeviceUncheckedUpdateWithoutTenantInput>
-    create: XOR<RegisteredDeviceCreateWithoutTenantInput, RegisteredDeviceUncheckedCreateWithoutTenantInput>
-  }
-
-  export type RegisteredDeviceUpdateWithWhereUniqueWithoutTenantInput = {
-    where: RegisteredDeviceWhereUniqueInput
-    data: XOR<RegisteredDeviceUpdateWithoutTenantInput, RegisteredDeviceUncheckedUpdateWithoutTenantInput>
-  }
-
-  export type RegisteredDeviceUpdateManyWithWhereWithoutTenantInput = {
-    where: RegisteredDeviceScalarWhereInput
-    data: XOR<RegisteredDeviceUpdateManyMutationInput, RegisteredDeviceUncheckedUpdateManyWithoutTenantInput>
-  }
-
-  export type RegisteredDeviceScalarWhereInput = {
-    AND?: RegisteredDeviceScalarWhereInput | RegisteredDeviceScalarWhereInput[]
-    OR?: RegisteredDeviceScalarWhereInput[]
-    NOT?: RegisteredDeviceScalarWhereInput | RegisteredDeviceScalarWhereInput[]
-    id?: IntFilter<"RegisteredDevice"> | number
-    clientDeviceId?: StringFilter<"RegisteredDevice"> | string
-    siteId?: IntFilter<"RegisteredDevice"> | number
-    tenantId?: IntFilter<"RegisteredDevice"> | number
-    deviceName?: StringFilter<"RegisteredDevice"> | string
-    deviceType?: StringNullableFilter<"RegisteredDevice"> | string | null
-    status?: StringFilter<"RegisteredDevice"> | string
-    appVersion?: StringNullableFilter<"RegisteredDevice"> | string | null
-    lastSeenAt?: DateTimeNullableFilter<"RegisteredDevice"> | Date | string | null
-    registeredAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
-    updatedAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
-  }
-
   export type TenantOutletCreateWithoutSubscriptionsInput = {
     outletName: string
     address?: string | null
@@ -18108,7 +15457,6 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSubscriptionInput = {
@@ -18118,7 +15466,6 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSubscriptionInput = {
@@ -18252,7 +15599,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSubscriptionInput = {
@@ -18262,7 +15608,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SubscriptionPlanUpsertWithoutSubscriptionInput = {
@@ -18439,7 +15784,6 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantOutletsInput = {
@@ -18449,7 +15793,6 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantOutletsInput = {
@@ -18509,7 +15852,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantOutletsInput = {
@@ -18519,7 +15861,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithWhereUniqueWithoutOutletInput = {
@@ -18595,7 +15936,6 @@ export namespace Prisma {
     createdAt?: Date | string
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantUsersInput = {
@@ -18605,7 +15945,6 @@ export namespace Prisma {
     createdAt?: Date | string
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
-    registeredDevices?: RegisteredDeviceUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantUsersInput = {
@@ -18630,7 +15969,6 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantUsersInput = {
@@ -18638,61 +15976,6 @@ export namespace Prisma {
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
-    tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
-    registeredDevices?: RegisteredDeviceUncheckedUpdateManyWithoutTenantNestedInput
-  }
-
-  export type TenantCreateWithoutRegisteredDevicesInput = {
-    tenantName: string
-    databaseName?: string | null
-    createdAt?: Date | string
-    tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
-    subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
-    tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
-  }
-
-  export type TenantUncheckedCreateWithoutRegisteredDevicesInput = {
-    id?: number
-    tenantName: string
-    databaseName?: string | null
-    createdAt?: Date | string
-    tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
-    subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
-    tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
-  }
-
-  export type TenantCreateOrConnectWithoutRegisteredDevicesInput = {
-    where: TenantWhereUniqueInput
-    create: XOR<TenantCreateWithoutRegisteredDevicesInput, TenantUncheckedCreateWithoutRegisteredDevicesInput>
-  }
-
-  export type TenantUpsertWithoutRegisteredDevicesInput = {
-    update: XOR<TenantUpdateWithoutRegisteredDevicesInput, TenantUncheckedUpdateWithoutRegisteredDevicesInput>
-    create: XOR<TenantCreateWithoutRegisteredDevicesInput, TenantUncheckedCreateWithoutRegisteredDevicesInput>
-    where?: TenantWhereInput
-  }
-
-  export type TenantUpdateToOneWithWhereWithoutRegisteredDevicesInput = {
-    where?: TenantWhereInput
-    data: XOR<TenantUpdateWithoutRegisteredDevicesInput, TenantUncheckedUpdateWithoutRegisteredDevicesInput>
-  }
-
-  export type TenantUpdateWithoutRegisteredDevicesInput = {
-    tenantName?: StringFieldUpdateOperationsInput | string
-    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
-    subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
-    tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
-  }
-
-  export type TenantUncheckedUpdateWithoutRegisteredDevicesInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    tenantName?: StringFieldUpdateOperationsInput | string
-    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
   }
@@ -18797,19 +16080,6 @@ export namespace Prisma {
     isActive?: boolean
   }
 
-  export type RegisteredDeviceCreateManyTenantInput = {
-    id?: number
-    clientDeviceId: string
-    siteId: number
-    deviceName: string
-    deviceType?: string | null
-    status?: string
-    appVersion?: string | null
-    lastSeenAt?: Date | string | null
-    registeredAt?: Date | string
-    updatedAt?: Date | string
-  }
-
   export type TenantUserUpdateWithoutTenantInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18893,44 +16163,6 @@ export namespace Prisma {
     address?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
-  }
-
-  export type RegisteredDeviceUpdateWithoutTenantInput = {
-    clientDeviceId?: StringFieldUpdateOperationsInput | string
-    siteId?: IntFieldUpdateOperationsInput | number
-    deviceName?: StringFieldUpdateOperationsInput | string
-    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: StringFieldUpdateOperationsInput | string
-    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type RegisteredDeviceUncheckedUpdateWithoutTenantInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    clientDeviceId?: StringFieldUpdateOperationsInput | string
-    siteId?: IntFieldUpdateOperationsInput | number
-    deviceName?: StringFieldUpdateOperationsInput | string
-    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: StringFieldUpdateOperationsInput | string
-    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type RegisteredDeviceUncheckedUpdateManyWithoutTenantInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    clientDeviceId?: StringFieldUpdateOperationsInput | string
-    siteId?: IntFieldUpdateOperationsInput | number
-    deviceName?: StringFieldUpdateOperationsInput | string
-    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: StringFieldUpdateOperationsInput | string
-    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TenantSubscriptionAddOnCreateManyTenantSubscriptionInput = {

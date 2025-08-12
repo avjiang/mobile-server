@@ -125,22 +125,36 @@ model RolePermission {
 }
 
 model User {
-  id        Int       @id @default(autoincrement()) @map("ID")
-  username  String    @unique @map("USERNAME")
-  password  String    @map("PASSWORD")
-  lastName  String?   @map("LAST_NAME")
-  firstName String?   @map("FIRST_NAME")
-  mobile    String?   @unique @map("MOBILE")
-  email     String?   @unique @map("EMAIL")
-  deleted   Boolean   @default(false) @map("IS_DELETED")
-  deletedAt DateTime? @map("DELETED_AT")
-  createdAt DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt DateTime? @updatedAt @map("UPDATED_AT")
-  version   Int?      @default(1) @map("VERSION")
-  settings  Setting[] // Existing relation to Setting
-  roles     Role[]    @relation("USER_ROLES") // Many-to-many with roles
+  id               Int           @id @default(autoincrement()) @map("ID")
+  username         String        @unique @map("USERNAME")
+  password         String        @map("PASSWORD")
+  overridePin      String?       @map("OVERRIDE_PIN") // Hashed PIN for overrides
+  lastName         String?       @map("LAST_NAME")
+  firstName        String?       @map("FIRST_NAME")
+  mobile           String?       @unique @map("MOBILE")
+  email            String?       @unique @map("EMAIL")
+  deleted          Boolean       @default(false) @map("IS_DELETED")
+  deletedAt        DateTime?     @map("DELETED_AT")
+  createdAt        DateTime?     @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime?     @updatedAt @map("UPDATED_AT")
+  version          Int?          @default(1) @map("VERSION")
+  settings         Setting[] // Existing relation to Setting
+  roles            Role[]        @relation("USER_ROLES") // Many-to-many with roles
+  overrideRequests OverrideLog[] @relation("OverrideRequests")
 
   @@map("USER")
+}
+
+model OverrideLog {
+  id         Int      @id @default(autoincrement()) @map("ID")
+  userId     Int      @map("USER_ID") // Cashier requesting
+  approverId Int      @map("APPROVER_ID") // Manager approving
+  action     String   @map("ACTION") // e.g., "void_item"
+  reason     String?  @map("REASON") // Optional note
+  createdAt  DateTime @default(now()) @map("CREATED_AT")
+  user       User     @relation("OverrideRequests", fields: [userId], references: [id])
+
+  @@map("OVERRIDE_LOG")
 }
 
 model Setting {
@@ -1287,4 +1301,23 @@ model PromotionUsage {
   customer  Customer? @relation(fields: [customerId], references: [id])
 
   @@map("PROMOTION_USAGE")
+}
+
+model RegisteredDevice {
+  id             BigInt    @id @default(autoincrement()) @map("ID")
+  clientDeviceId String    @unique @map("CLIENT_DEVICE_ID") // Globally unique ID from Flutter app (e.g., UUID)
+  siteId         Int       @map("SITE_ID")
+  tenantId       Int       @map("TENANT_ID") // Denormalized from outlet for easier tenant-wide device queries
+  deviceName     String    @map("DEVICE_NAME") // User-friendly name given during registration
+  deviceType     String?   @map("DEVICE_TYPE") // Optional: "pos", "kds", "tablet", "mobile"
+  status         String    @default("active") @map("STATUS") // "active", "inactive", "pending_approval", "revoked"
+  appVersion     String?   @map("APP_VERSION") // Version of the Flutter app
+  lastSeenAt     DateTime? @map("LAST_SEEN_AT") // Updated on API activity
+  registeredAt   DateTime  @default(now()) @map("REGISTERED_AT")
+  updatedAt      DateTime  @updatedAt @map("UPDATED_AT")
+
+  @@unique([tenantId, siteId]) // Unique combination within tenant
+  @@index([clientDeviceId])
+  @@index([tenantId])
+  @@map("REGISTERED_DEVICE")
 }

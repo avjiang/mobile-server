@@ -29,6 +29,11 @@ export type RolePermission = $Result.DefaultSelection<Prisma.$RolePermissionPayl
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model OverrideLog
+ * 
+ */
+export type OverrideLog = $Result.DefaultSelection<Prisma.$OverrideLogPayload>
+/**
  * Model Setting
  * 
  */
@@ -263,6 +268,11 @@ export type PromotionCustomer = $Result.DefaultSelection<Prisma.$PromotionCustom
  * 
  */
 export type PromotionUsage = $Result.DefaultSelection<Prisma.$PromotionUsagePayload>
+/**
+ * Model RegisteredDevice
+ * 
+ */
+export type RegisteredDevice = $Result.DefaultSelection<Prisma.$RegisteredDevicePayload>
 
 /**
  * Enums
@@ -564,6 +574,16 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.overrideLog`: Exposes CRUD operations for the **OverrideLog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more OverrideLogs
+    * const overrideLogs = await prisma.overrideLog.findMany()
+    * ```
+    */
+  get overrideLog(): Prisma.OverrideLogDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.setting`: Exposes CRUD operations for the **Setting** model.
@@ -1034,6 +1054,16 @@ export class PrismaClient<
     * ```
     */
   get promotionUsage(): Prisma.PromotionUsageDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.registeredDevice`: Exposes CRUD operations for the **RegisteredDevice** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RegisteredDevices
+    * const registeredDevices = await prisma.registeredDevice.findMany()
+    * ```
+    */
+  get registeredDevice(): Prisma.RegisteredDeviceDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1477,6 +1507,7 @@ export namespace Prisma {
     Role: 'Role',
     RolePermission: 'RolePermission',
     User: 'User',
+    OverrideLog: 'OverrideLog',
     Setting: 'Setting',
     Referral: 'Referral',
     Supplier: 'Supplier',
@@ -1523,7 +1554,8 @@ export namespace Prisma {
     Promotion: 'Promotion',
     PromotionItem: 'PromotionItem',
     PromotionCustomer: 'PromotionCustomer',
-    PromotionUsage: 'PromotionUsage'
+    PromotionUsage: 'PromotionUsage',
+    RegisteredDevice: 'RegisteredDevice'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1542,7 +1574,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "role" | "rolePermission" | "user" | "setting" | "referral" | "supplier" | "customer" | "company" | "outlet" | "item" | "category" | "sales" | "salesItem" | "salesItemModifier" | "salesQuotation" | "salesQuotationItem" | "invoice" | "invoiceItem" | "deliveryOrder" | "deliveryOrderItem" | "purchaseOrder" | "purchaseOrderItem" | "payment" | "registerLog" | "cardInfo" | "session" | "declaration" | "stockBalance" | "stockReceipt" | "stockReceiptArchive" | "stockMovement" | "stockMovementArchive" | "stockSnapshot" | "menuProfileOutlet" | "menuProfile" | "menuCategory" | "menuItem" | "menuItemModifierGroup" | "menuItemModifier" | "table" | "recipe" | "station" | "reservation" | "orderRouting" | "waitlist" | "splitBill" | "promotion" | "promotionItem" | "promotionCustomer" | "promotionUsage"
+      modelProps: "role" | "rolePermission" | "user" | "overrideLog" | "setting" | "referral" | "supplier" | "customer" | "company" | "outlet" | "item" | "category" | "sales" | "salesItem" | "salesItemModifier" | "salesQuotation" | "salesQuotationItem" | "invoice" | "invoiceItem" | "deliveryOrder" | "deliveryOrderItem" | "purchaseOrder" | "purchaseOrderItem" | "payment" | "registerLog" | "cardInfo" | "session" | "declaration" | "stockBalance" | "stockReceipt" | "stockReceiptArchive" | "stockMovement" | "stockMovementArchive" | "stockSnapshot" | "menuProfileOutlet" | "menuProfile" | "menuCategory" | "menuItem" | "menuItemModifierGroup" | "menuItemModifier" | "table" | "recipe" | "station" | "reservation" | "orderRouting" | "waitlist" | "splitBill" | "promotion" | "promotionItem" | "promotionCustomer" | "promotionUsage" | "registeredDevice"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1741,6 +1773,72 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      OverrideLog: {
+        payload: Prisma.$OverrideLogPayload<ExtArgs>
+        fields: Prisma.OverrideLogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.OverrideLogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.OverrideLogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload>
+          }
+          findFirst: {
+            args: Prisma.OverrideLogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.OverrideLogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload>
+          }
+          findMany: {
+            args: Prisma.OverrideLogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload>[]
+          }
+          create: {
+            args: Prisma.OverrideLogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload>
+          }
+          createMany: {
+            args: Prisma.OverrideLogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.OverrideLogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload>
+          }
+          update: {
+            args: Prisma.OverrideLogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload>
+          }
+          deleteMany: {
+            args: Prisma.OverrideLogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.OverrideLogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.OverrideLogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OverrideLogPayload>
+          }
+          aggregate: {
+            args: Prisma.OverrideLogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateOverrideLog>
+          }
+          groupBy: {
+            args: Prisma.OverrideLogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<OverrideLogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.OverrideLogCountArgs<ExtArgs>
+            result: $Utils.Optional<OverrideLogCountAggregateOutputType> | number
           }
         }
       }
@@ -4846,6 +4944,72 @@ export namespace Prisma {
           }
         }
       }
+      RegisteredDevice: {
+        payload: Prisma.$RegisteredDevicePayload<ExtArgs>
+        fields: Prisma.RegisteredDeviceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RegisteredDeviceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RegisteredDeviceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
+          }
+          findFirst: {
+            args: Prisma.RegisteredDeviceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RegisteredDeviceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
+          }
+          findMany: {
+            args: Prisma.RegisteredDeviceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>[]
+          }
+          create: {
+            args: Prisma.RegisteredDeviceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
+          }
+          createMany: {
+            args: Prisma.RegisteredDeviceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.RegisteredDeviceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
+          }
+          update: {
+            args: Prisma.RegisteredDeviceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
+          }
+          deleteMany: {
+            args: Prisma.RegisteredDeviceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RegisteredDeviceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RegisteredDeviceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegisteredDevicePayload>
+          }
+          aggregate: {
+            args: Prisma.RegisteredDeviceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRegisteredDevice>
+          }
+          groupBy: {
+            args: Prisma.RegisteredDeviceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RegisteredDeviceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RegisteredDeviceCountArgs<ExtArgs>
+            result: $Utils.Optional<RegisteredDeviceCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4933,6 +5097,7 @@ export namespace Prisma {
     role?: RoleOmit
     rolePermission?: RolePermissionOmit
     user?: UserOmit
+    overrideLog?: OverrideLogOmit
     setting?: SettingOmit
     referral?: ReferralOmit
     supplier?: SupplierOmit
@@ -4980,6 +5145,7 @@ export namespace Prisma {
     promotionItem?: PromotionItemOmit
     promotionCustomer?: PromotionCustomerOmit
     promotionUsage?: PromotionUsageOmit
+    registeredDevice?: RegisteredDeviceOmit
   }
 
   /* Types for Logging */
@@ -5116,11 +5282,13 @@ export namespace Prisma {
   export type UserCountOutputType = {
     settings: number
     roles: number
+    overrideRequests: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     settings?: boolean | UserCountOutputTypeCountSettingsArgs
     roles?: boolean | UserCountOutputTypeCountRolesArgs
+    overrideRequests?: boolean | UserCountOutputTypeCountOverrideRequestsArgs
   }
 
   // Custom InputTypes
@@ -5146,6 +5314,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountRolesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: RoleWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountOverrideRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OverrideLogWhereInput
   }
 
 
@@ -8236,6 +8411,7 @@ export namespace Prisma {
     id: number | null
     username: string | null
     password: string | null
+    overridePin: string | null
     lastName: string | null
     firstName: string | null
     mobile: string | null
@@ -8251,6 +8427,7 @@ export namespace Prisma {
     id: number | null
     username: string | null
     password: string | null
+    overridePin: string | null
     lastName: string | null
     firstName: string | null
     mobile: string | null
@@ -8266,6 +8443,7 @@ export namespace Prisma {
     id: number
     username: number
     password: number
+    overridePin: number
     lastName: number
     firstName: number
     mobile: number
@@ -8293,6 +8471,7 @@ export namespace Prisma {
     id?: true
     username?: true
     password?: true
+    overridePin?: true
     lastName?: true
     firstName?: true
     mobile?: true
@@ -8308,6 +8487,7 @@ export namespace Prisma {
     id?: true
     username?: true
     password?: true
+    overridePin?: true
     lastName?: true
     firstName?: true
     mobile?: true
@@ -8323,6 +8503,7 @@ export namespace Prisma {
     id?: true
     username?: true
     password?: true
+    overridePin?: true
     lastName?: true
     firstName?: true
     mobile?: true
@@ -8425,6 +8606,7 @@ export namespace Prisma {
     id: number
     username: string
     password: string
+    overridePin: string | null
     lastName: string | null
     firstName: string | null
     mobile: string | null
@@ -8459,6 +8641,7 @@ export namespace Prisma {
     id?: boolean
     username?: boolean
     password?: boolean
+    overridePin?: boolean
     lastName?: boolean
     firstName?: boolean
     mobile?: boolean
@@ -8470,6 +8653,7 @@ export namespace Prisma {
     version?: boolean
     settings?: boolean | User$settingsArgs<ExtArgs>
     roles?: boolean | User$rolesArgs<ExtArgs>
+    overrideRequests?: boolean | User$overrideRequestsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -8479,6 +8663,7 @@ export namespace Prisma {
     id?: boolean
     username?: boolean
     password?: boolean
+    overridePin?: boolean
     lastName?: boolean
     firstName?: boolean
     mobile?: boolean
@@ -8490,10 +8675,11 @@ export namespace Prisma {
     version?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "username" | "password" | "lastName" | "firstName" | "mobile" | "email" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "username" | "password" | "overridePin" | "lastName" | "firstName" | "mobile" | "email" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     settings?: boolean | User$settingsArgs<ExtArgs>
     roles?: boolean | User$rolesArgs<ExtArgs>
+    overrideRequests?: boolean | User$overrideRequestsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -8502,11 +8688,13 @@ export namespace Prisma {
     objects: {
       settings: Prisma.$SettingPayload<ExtArgs>[]
       roles: Prisma.$RolePayload<ExtArgs>[]
+      overrideRequests: Prisma.$OverrideLogPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
       username: string
       password: string
+      overridePin: string | null
       lastName: string | null
       firstName: string | null
       mobile: string | null
@@ -8858,6 +9046,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     settings<T extends User$settingsArgs<ExtArgs> = {}>(args?: Subset<T, User$settingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     roles<T extends User$rolesArgs<ExtArgs> = {}>(args?: Subset<T, User$rolesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    overrideRequests<T extends User$overrideRequestsArgs<ExtArgs> = {}>(args?: Subset<T, User$overrideRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8890,6 +9079,7 @@ export namespace Prisma {
     readonly id: FieldRef<"User", 'Int'>
     readonly username: FieldRef<"User", 'String'>
     readonly password: FieldRef<"User", 'String'>
+    readonly overridePin: FieldRef<"User", 'String'>
     readonly lastName: FieldRef<"User", 'String'>
     readonly firstName: FieldRef<"User", 'String'>
     readonly mobile: FieldRef<"User", 'String'>
@@ -9290,6 +9480,30 @@ export namespace Prisma {
   }
 
   /**
+   * User.overrideRequests
+   */
+  export type User$overrideRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    where?: OverrideLogWhereInput
+    orderBy?: OverrideLogOrderByWithRelationInput | OverrideLogOrderByWithRelationInput[]
+    cursor?: OverrideLogWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: OverrideLogScalarFieldEnum | OverrideLogScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -9305,6 +9519,988 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model OverrideLog
+   */
+
+  export type AggregateOverrideLog = {
+    _count: OverrideLogCountAggregateOutputType | null
+    _avg: OverrideLogAvgAggregateOutputType | null
+    _sum: OverrideLogSumAggregateOutputType | null
+    _min: OverrideLogMinAggregateOutputType | null
+    _max: OverrideLogMaxAggregateOutputType | null
+  }
+
+  export type OverrideLogAvgAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    approverId: number | null
+  }
+
+  export type OverrideLogSumAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    approverId: number | null
+  }
+
+  export type OverrideLogMinAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    approverId: number | null
+    action: string | null
+    reason: string | null
+    createdAt: Date | null
+  }
+
+  export type OverrideLogMaxAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    approverId: number | null
+    action: string | null
+    reason: string | null
+    createdAt: Date | null
+  }
+
+  export type OverrideLogCountAggregateOutputType = {
+    id: number
+    userId: number
+    approverId: number
+    action: number
+    reason: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type OverrideLogAvgAggregateInputType = {
+    id?: true
+    userId?: true
+    approverId?: true
+  }
+
+  export type OverrideLogSumAggregateInputType = {
+    id?: true
+    userId?: true
+    approverId?: true
+  }
+
+  export type OverrideLogMinAggregateInputType = {
+    id?: true
+    userId?: true
+    approverId?: true
+    action?: true
+    reason?: true
+    createdAt?: true
+  }
+
+  export type OverrideLogMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    approverId?: true
+    action?: true
+    reason?: true
+    createdAt?: true
+  }
+
+  export type OverrideLogCountAggregateInputType = {
+    id?: true
+    userId?: true
+    approverId?: true
+    action?: true
+    reason?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type OverrideLogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OverrideLog to aggregate.
+     */
+    where?: OverrideLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OverrideLogs to fetch.
+     */
+    orderBy?: OverrideLogOrderByWithRelationInput | OverrideLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: OverrideLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OverrideLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OverrideLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned OverrideLogs
+    **/
+    _count?: true | OverrideLogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: OverrideLogAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: OverrideLogSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: OverrideLogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: OverrideLogMaxAggregateInputType
+  }
+
+  export type GetOverrideLogAggregateType<T extends OverrideLogAggregateArgs> = {
+        [P in keyof T & keyof AggregateOverrideLog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateOverrideLog[P]>
+      : GetScalarType<T[P], AggregateOverrideLog[P]>
+  }
+
+
+
+
+  export type OverrideLogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OverrideLogWhereInput
+    orderBy?: OverrideLogOrderByWithAggregationInput | OverrideLogOrderByWithAggregationInput[]
+    by: OverrideLogScalarFieldEnum[] | OverrideLogScalarFieldEnum
+    having?: OverrideLogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: OverrideLogCountAggregateInputType | true
+    _avg?: OverrideLogAvgAggregateInputType
+    _sum?: OverrideLogSumAggregateInputType
+    _min?: OverrideLogMinAggregateInputType
+    _max?: OverrideLogMaxAggregateInputType
+  }
+
+  export type OverrideLogGroupByOutputType = {
+    id: number
+    userId: number
+    approverId: number
+    action: string
+    reason: string | null
+    createdAt: Date
+    _count: OverrideLogCountAggregateOutputType | null
+    _avg: OverrideLogAvgAggregateOutputType | null
+    _sum: OverrideLogSumAggregateOutputType | null
+    _min: OverrideLogMinAggregateOutputType | null
+    _max: OverrideLogMaxAggregateOutputType | null
+  }
+
+  type GetOverrideLogGroupByPayload<T extends OverrideLogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<OverrideLogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof OverrideLogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], OverrideLogGroupByOutputType[P]>
+            : GetScalarType<T[P], OverrideLogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type OverrideLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    approverId?: boolean
+    action?: boolean
+    reason?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["overrideLog"]>
+
+
+
+  export type OverrideLogSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    approverId?: boolean
+    action?: boolean
+    reason?: boolean
+    createdAt?: boolean
+  }
+
+  export type OverrideLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "approverId" | "action" | "reason" | "createdAt", ExtArgs["result"]["overrideLog"]>
+  export type OverrideLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $OverrideLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "OverrideLog"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      userId: number
+      approverId: number
+      action: string
+      reason: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["overrideLog"]>
+    composites: {}
+  }
+
+  type OverrideLogGetPayload<S extends boolean | null | undefined | OverrideLogDefaultArgs> = $Result.GetResult<Prisma.$OverrideLogPayload, S>
+
+  type OverrideLogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<OverrideLogFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: OverrideLogCountAggregateInputType | true
+    }
+
+  export interface OverrideLogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['OverrideLog'], meta: { name: 'OverrideLog' } }
+    /**
+     * Find zero or one OverrideLog that matches the filter.
+     * @param {OverrideLogFindUniqueArgs} args - Arguments to find a OverrideLog
+     * @example
+     * // Get one OverrideLog
+     * const overrideLog = await prisma.overrideLog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends OverrideLogFindUniqueArgs>(args: SelectSubset<T, OverrideLogFindUniqueArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one OverrideLog that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {OverrideLogFindUniqueOrThrowArgs} args - Arguments to find a OverrideLog
+     * @example
+     * // Get one OverrideLog
+     * const overrideLog = await prisma.overrideLog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends OverrideLogFindUniqueOrThrowArgs>(args: SelectSubset<T, OverrideLogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first OverrideLog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OverrideLogFindFirstArgs} args - Arguments to find a OverrideLog
+     * @example
+     * // Get one OverrideLog
+     * const overrideLog = await prisma.overrideLog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends OverrideLogFindFirstArgs>(args?: SelectSubset<T, OverrideLogFindFirstArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first OverrideLog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OverrideLogFindFirstOrThrowArgs} args - Arguments to find a OverrideLog
+     * @example
+     * // Get one OverrideLog
+     * const overrideLog = await prisma.overrideLog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends OverrideLogFindFirstOrThrowArgs>(args?: SelectSubset<T, OverrideLogFindFirstOrThrowArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more OverrideLogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OverrideLogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all OverrideLogs
+     * const overrideLogs = await prisma.overrideLog.findMany()
+     * 
+     * // Get first 10 OverrideLogs
+     * const overrideLogs = await prisma.overrideLog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const overrideLogWithIdOnly = await prisma.overrideLog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends OverrideLogFindManyArgs>(args?: SelectSubset<T, OverrideLogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a OverrideLog.
+     * @param {OverrideLogCreateArgs} args - Arguments to create a OverrideLog.
+     * @example
+     * // Create one OverrideLog
+     * const OverrideLog = await prisma.overrideLog.create({
+     *   data: {
+     *     // ... data to create a OverrideLog
+     *   }
+     * })
+     * 
+     */
+    create<T extends OverrideLogCreateArgs>(args: SelectSubset<T, OverrideLogCreateArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many OverrideLogs.
+     * @param {OverrideLogCreateManyArgs} args - Arguments to create many OverrideLogs.
+     * @example
+     * // Create many OverrideLogs
+     * const overrideLog = await prisma.overrideLog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends OverrideLogCreateManyArgs>(args?: SelectSubset<T, OverrideLogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a OverrideLog.
+     * @param {OverrideLogDeleteArgs} args - Arguments to delete one OverrideLog.
+     * @example
+     * // Delete one OverrideLog
+     * const OverrideLog = await prisma.overrideLog.delete({
+     *   where: {
+     *     // ... filter to delete one OverrideLog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends OverrideLogDeleteArgs>(args: SelectSubset<T, OverrideLogDeleteArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one OverrideLog.
+     * @param {OverrideLogUpdateArgs} args - Arguments to update one OverrideLog.
+     * @example
+     * // Update one OverrideLog
+     * const overrideLog = await prisma.overrideLog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends OverrideLogUpdateArgs>(args: SelectSubset<T, OverrideLogUpdateArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more OverrideLogs.
+     * @param {OverrideLogDeleteManyArgs} args - Arguments to filter OverrideLogs to delete.
+     * @example
+     * // Delete a few OverrideLogs
+     * const { count } = await prisma.overrideLog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends OverrideLogDeleteManyArgs>(args?: SelectSubset<T, OverrideLogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more OverrideLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OverrideLogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many OverrideLogs
+     * const overrideLog = await prisma.overrideLog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends OverrideLogUpdateManyArgs>(args: SelectSubset<T, OverrideLogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one OverrideLog.
+     * @param {OverrideLogUpsertArgs} args - Arguments to update or create a OverrideLog.
+     * @example
+     * // Update or create a OverrideLog
+     * const overrideLog = await prisma.overrideLog.upsert({
+     *   create: {
+     *     // ... data to create a OverrideLog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the OverrideLog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends OverrideLogUpsertArgs>(args: SelectSubset<T, OverrideLogUpsertArgs<ExtArgs>>): Prisma__OverrideLogClient<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of OverrideLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OverrideLogCountArgs} args - Arguments to filter OverrideLogs to count.
+     * @example
+     * // Count the number of OverrideLogs
+     * const count = await prisma.overrideLog.count({
+     *   where: {
+     *     // ... the filter for the OverrideLogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends OverrideLogCountArgs>(
+      args?: Subset<T, OverrideLogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], OverrideLogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a OverrideLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OverrideLogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends OverrideLogAggregateArgs>(args: Subset<T, OverrideLogAggregateArgs>): Prisma.PrismaPromise<GetOverrideLogAggregateType<T>>
+
+    /**
+     * Group by OverrideLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OverrideLogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends OverrideLogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: OverrideLogGroupByArgs['orderBy'] }
+        : { orderBy?: OverrideLogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, OverrideLogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetOverrideLogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the OverrideLog model
+   */
+  readonly fields: OverrideLogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for OverrideLog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__OverrideLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the OverrideLog model
+   */
+  interface OverrideLogFieldRefs {
+    readonly id: FieldRef<"OverrideLog", 'Int'>
+    readonly userId: FieldRef<"OverrideLog", 'Int'>
+    readonly approverId: FieldRef<"OverrideLog", 'Int'>
+    readonly action: FieldRef<"OverrideLog", 'String'>
+    readonly reason: FieldRef<"OverrideLog", 'String'>
+    readonly createdAt: FieldRef<"OverrideLog", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * OverrideLog findUnique
+   */
+  export type OverrideLogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * Filter, which OverrideLog to fetch.
+     */
+    where: OverrideLogWhereUniqueInput
+  }
+
+  /**
+   * OverrideLog findUniqueOrThrow
+   */
+  export type OverrideLogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * Filter, which OverrideLog to fetch.
+     */
+    where: OverrideLogWhereUniqueInput
+  }
+
+  /**
+   * OverrideLog findFirst
+   */
+  export type OverrideLogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * Filter, which OverrideLog to fetch.
+     */
+    where?: OverrideLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OverrideLogs to fetch.
+     */
+    orderBy?: OverrideLogOrderByWithRelationInput | OverrideLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OverrideLogs.
+     */
+    cursor?: OverrideLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OverrideLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OverrideLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OverrideLogs.
+     */
+    distinct?: OverrideLogScalarFieldEnum | OverrideLogScalarFieldEnum[]
+  }
+
+  /**
+   * OverrideLog findFirstOrThrow
+   */
+  export type OverrideLogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * Filter, which OverrideLog to fetch.
+     */
+    where?: OverrideLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OverrideLogs to fetch.
+     */
+    orderBy?: OverrideLogOrderByWithRelationInput | OverrideLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OverrideLogs.
+     */
+    cursor?: OverrideLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OverrideLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OverrideLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OverrideLogs.
+     */
+    distinct?: OverrideLogScalarFieldEnum | OverrideLogScalarFieldEnum[]
+  }
+
+  /**
+   * OverrideLog findMany
+   */
+  export type OverrideLogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * Filter, which OverrideLogs to fetch.
+     */
+    where?: OverrideLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OverrideLogs to fetch.
+     */
+    orderBy?: OverrideLogOrderByWithRelationInput | OverrideLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing OverrideLogs.
+     */
+    cursor?: OverrideLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OverrideLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OverrideLogs.
+     */
+    skip?: number
+    distinct?: OverrideLogScalarFieldEnum | OverrideLogScalarFieldEnum[]
+  }
+
+  /**
+   * OverrideLog create
+   */
+  export type OverrideLogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * The data needed to create a OverrideLog.
+     */
+    data: XOR<OverrideLogCreateInput, OverrideLogUncheckedCreateInput>
+  }
+
+  /**
+   * OverrideLog createMany
+   */
+  export type OverrideLogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many OverrideLogs.
+     */
+    data: OverrideLogCreateManyInput | OverrideLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * OverrideLog update
+   */
+  export type OverrideLogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * The data needed to update a OverrideLog.
+     */
+    data: XOR<OverrideLogUpdateInput, OverrideLogUncheckedUpdateInput>
+    /**
+     * Choose, which OverrideLog to update.
+     */
+    where: OverrideLogWhereUniqueInput
+  }
+
+  /**
+   * OverrideLog updateMany
+   */
+  export type OverrideLogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update OverrideLogs.
+     */
+    data: XOR<OverrideLogUpdateManyMutationInput, OverrideLogUncheckedUpdateManyInput>
+    /**
+     * Filter which OverrideLogs to update
+     */
+    where?: OverrideLogWhereInput
+    /**
+     * Limit how many OverrideLogs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * OverrideLog upsert
+   */
+  export type OverrideLogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * The filter to search for the OverrideLog to update in case it exists.
+     */
+    where: OverrideLogWhereUniqueInput
+    /**
+     * In case the OverrideLog found by the `where` argument doesn't exist, create a new OverrideLog with this data.
+     */
+    create: XOR<OverrideLogCreateInput, OverrideLogUncheckedCreateInput>
+    /**
+     * In case the OverrideLog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<OverrideLogUpdateInput, OverrideLogUncheckedUpdateInput>
+  }
+
+  /**
+   * OverrideLog delete
+   */
+  export type OverrideLogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
+    /**
+     * Filter which OverrideLog to delete.
+     */
+    where: OverrideLogWhereUniqueInput
+  }
+
+  /**
+   * OverrideLog deleteMany
+   */
+  export type OverrideLogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OverrideLogs to delete
+     */
+    where?: OverrideLogWhereInput
+    /**
+     * Limit how many OverrideLogs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * OverrideLog without action
+   */
+  export type OverrideLogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OverrideLog
+     */
+    select?: OverrideLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OverrideLog
+     */
+    omit?: OverrideLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OverrideLogInclude<ExtArgs> | null
   }
 
 
@@ -62708,6 +63904,996 @@ export namespace Prisma {
 
 
   /**
+   * Model RegisteredDevice
+   */
+
+  export type AggregateRegisteredDevice = {
+    _count: RegisteredDeviceCountAggregateOutputType | null
+    _avg: RegisteredDeviceAvgAggregateOutputType | null
+    _sum: RegisteredDeviceSumAggregateOutputType | null
+    _min: RegisteredDeviceMinAggregateOutputType | null
+    _max: RegisteredDeviceMaxAggregateOutputType | null
+  }
+
+  export type RegisteredDeviceAvgAggregateOutputType = {
+    id: number | null
+    siteId: number | null
+    tenantId: number | null
+  }
+
+  export type RegisteredDeviceSumAggregateOutputType = {
+    id: bigint | null
+    siteId: number | null
+    tenantId: number | null
+  }
+
+  export type RegisteredDeviceMinAggregateOutputType = {
+    id: bigint | null
+    clientDeviceId: string | null
+    siteId: number | null
+    tenantId: number | null
+    deviceName: string | null
+    deviceType: string | null
+    status: string | null
+    appVersion: string | null
+    lastSeenAt: Date | null
+    registeredAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RegisteredDeviceMaxAggregateOutputType = {
+    id: bigint | null
+    clientDeviceId: string | null
+    siteId: number | null
+    tenantId: number | null
+    deviceName: string | null
+    deviceType: string | null
+    status: string | null
+    appVersion: string | null
+    lastSeenAt: Date | null
+    registeredAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RegisteredDeviceCountAggregateOutputType = {
+    id: number
+    clientDeviceId: number
+    siteId: number
+    tenantId: number
+    deviceName: number
+    deviceType: number
+    status: number
+    appVersion: number
+    lastSeenAt: number
+    registeredAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RegisteredDeviceAvgAggregateInputType = {
+    id?: true
+    siteId?: true
+    tenantId?: true
+  }
+
+  export type RegisteredDeviceSumAggregateInputType = {
+    id?: true
+    siteId?: true
+    tenantId?: true
+  }
+
+  export type RegisteredDeviceMinAggregateInputType = {
+    id?: true
+    clientDeviceId?: true
+    siteId?: true
+    tenantId?: true
+    deviceName?: true
+    deviceType?: true
+    status?: true
+    appVersion?: true
+    lastSeenAt?: true
+    registeredAt?: true
+    updatedAt?: true
+  }
+
+  export type RegisteredDeviceMaxAggregateInputType = {
+    id?: true
+    clientDeviceId?: true
+    siteId?: true
+    tenantId?: true
+    deviceName?: true
+    deviceType?: true
+    status?: true
+    appVersion?: true
+    lastSeenAt?: true
+    registeredAt?: true
+    updatedAt?: true
+  }
+
+  export type RegisteredDeviceCountAggregateInputType = {
+    id?: true
+    clientDeviceId?: true
+    siteId?: true
+    tenantId?: true
+    deviceName?: true
+    deviceType?: true
+    status?: true
+    appVersion?: true
+    lastSeenAt?: true
+    registeredAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RegisteredDeviceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RegisteredDevice to aggregate.
+     */
+    where?: RegisteredDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegisteredDevices to fetch.
+     */
+    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RegisteredDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegisteredDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegisteredDevices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RegisteredDevices
+    **/
+    _count?: true | RegisteredDeviceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RegisteredDeviceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RegisteredDeviceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RegisteredDeviceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RegisteredDeviceMaxAggregateInputType
+  }
+
+  export type GetRegisteredDeviceAggregateType<T extends RegisteredDeviceAggregateArgs> = {
+        [P in keyof T & keyof AggregateRegisteredDevice]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRegisteredDevice[P]>
+      : GetScalarType<T[P], AggregateRegisteredDevice[P]>
+  }
+
+
+
+
+  export type RegisteredDeviceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RegisteredDeviceWhereInput
+    orderBy?: RegisteredDeviceOrderByWithAggregationInput | RegisteredDeviceOrderByWithAggregationInput[]
+    by: RegisteredDeviceScalarFieldEnum[] | RegisteredDeviceScalarFieldEnum
+    having?: RegisteredDeviceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RegisteredDeviceCountAggregateInputType | true
+    _avg?: RegisteredDeviceAvgAggregateInputType
+    _sum?: RegisteredDeviceSumAggregateInputType
+    _min?: RegisteredDeviceMinAggregateInputType
+    _max?: RegisteredDeviceMaxAggregateInputType
+  }
+
+  export type RegisteredDeviceGroupByOutputType = {
+    id: bigint
+    clientDeviceId: string
+    siteId: number
+    tenantId: number
+    deviceName: string
+    deviceType: string | null
+    status: string
+    appVersion: string | null
+    lastSeenAt: Date | null
+    registeredAt: Date
+    updatedAt: Date
+    _count: RegisteredDeviceCountAggregateOutputType | null
+    _avg: RegisteredDeviceAvgAggregateOutputType | null
+    _sum: RegisteredDeviceSumAggregateOutputType | null
+    _min: RegisteredDeviceMinAggregateOutputType | null
+    _max: RegisteredDeviceMaxAggregateOutputType | null
+  }
+
+  type GetRegisteredDeviceGroupByPayload<T extends RegisteredDeviceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RegisteredDeviceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RegisteredDeviceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RegisteredDeviceGroupByOutputType[P]>
+            : GetScalarType<T[P], RegisteredDeviceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RegisteredDeviceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    clientDeviceId?: boolean
+    siteId?: boolean
+    tenantId?: boolean
+    deviceName?: boolean
+    deviceType?: boolean
+    status?: boolean
+    appVersion?: boolean
+    lastSeenAt?: boolean
+    registeredAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["registeredDevice"]>
+
+
+
+  export type RegisteredDeviceSelectScalar = {
+    id?: boolean
+    clientDeviceId?: boolean
+    siteId?: boolean
+    tenantId?: boolean
+    deviceName?: boolean
+    deviceType?: boolean
+    status?: boolean
+    appVersion?: boolean
+    lastSeenAt?: boolean
+    registeredAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type RegisteredDeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clientDeviceId" | "siteId" | "tenantId" | "deviceName" | "deviceType" | "status" | "appVersion" | "lastSeenAt" | "registeredAt" | "updatedAt", ExtArgs["result"]["registeredDevice"]>
+
+  export type $RegisteredDevicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RegisteredDevice"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      clientDeviceId: string
+      siteId: number
+      tenantId: number
+      deviceName: string
+      deviceType: string | null
+      status: string
+      appVersion: string | null
+      lastSeenAt: Date | null
+      registeredAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["registeredDevice"]>
+    composites: {}
+  }
+
+  type RegisteredDeviceGetPayload<S extends boolean | null | undefined | RegisteredDeviceDefaultArgs> = $Result.GetResult<Prisma.$RegisteredDevicePayload, S>
+
+  type RegisteredDeviceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<RegisteredDeviceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: RegisteredDeviceCountAggregateInputType | true
+    }
+
+  export interface RegisteredDeviceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RegisteredDevice'], meta: { name: 'RegisteredDevice' } }
+    /**
+     * Find zero or one RegisteredDevice that matches the filter.
+     * @param {RegisteredDeviceFindUniqueArgs} args - Arguments to find a RegisteredDevice
+     * @example
+     * // Get one RegisteredDevice
+     * const registeredDevice = await prisma.registeredDevice.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RegisteredDeviceFindUniqueArgs>(args: SelectSubset<T, RegisteredDeviceFindUniqueArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one RegisteredDevice that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {RegisteredDeviceFindUniqueOrThrowArgs} args - Arguments to find a RegisteredDevice
+     * @example
+     * // Get one RegisteredDevice
+     * const registeredDevice = await prisma.registeredDevice.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RegisteredDeviceFindUniqueOrThrowArgs>(args: SelectSubset<T, RegisteredDeviceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RegisteredDevice that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegisteredDeviceFindFirstArgs} args - Arguments to find a RegisteredDevice
+     * @example
+     * // Get one RegisteredDevice
+     * const registeredDevice = await prisma.registeredDevice.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RegisteredDeviceFindFirstArgs>(args?: SelectSubset<T, RegisteredDeviceFindFirstArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RegisteredDevice that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegisteredDeviceFindFirstOrThrowArgs} args - Arguments to find a RegisteredDevice
+     * @example
+     * // Get one RegisteredDevice
+     * const registeredDevice = await prisma.registeredDevice.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RegisteredDeviceFindFirstOrThrowArgs>(args?: SelectSubset<T, RegisteredDeviceFindFirstOrThrowArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more RegisteredDevices that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegisteredDeviceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RegisteredDevices
+     * const registeredDevices = await prisma.registeredDevice.findMany()
+     * 
+     * // Get first 10 RegisteredDevices
+     * const registeredDevices = await prisma.registeredDevice.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const registeredDeviceWithIdOnly = await prisma.registeredDevice.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RegisteredDeviceFindManyArgs>(args?: SelectSubset<T, RegisteredDeviceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a RegisteredDevice.
+     * @param {RegisteredDeviceCreateArgs} args - Arguments to create a RegisteredDevice.
+     * @example
+     * // Create one RegisteredDevice
+     * const RegisteredDevice = await prisma.registeredDevice.create({
+     *   data: {
+     *     // ... data to create a RegisteredDevice
+     *   }
+     * })
+     * 
+     */
+    create<T extends RegisteredDeviceCreateArgs>(args: SelectSubset<T, RegisteredDeviceCreateArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many RegisteredDevices.
+     * @param {RegisteredDeviceCreateManyArgs} args - Arguments to create many RegisteredDevices.
+     * @example
+     * // Create many RegisteredDevices
+     * const registeredDevice = await prisma.registeredDevice.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RegisteredDeviceCreateManyArgs>(args?: SelectSubset<T, RegisteredDeviceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a RegisteredDevice.
+     * @param {RegisteredDeviceDeleteArgs} args - Arguments to delete one RegisteredDevice.
+     * @example
+     * // Delete one RegisteredDevice
+     * const RegisteredDevice = await prisma.registeredDevice.delete({
+     *   where: {
+     *     // ... filter to delete one RegisteredDevice
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RegisteredDeviceDeleteArgs>(args: SelectSubset<T, RegisteredDeviceDeleteArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one RegisteredDevice.
+     * @param {RegisteredDeviceUpdateArgs} args - Arguments to update one RegisteredDevice.
+     * @example
+     * // Update one RegisteredDevice
+     * const registeredDevice = await prisma.registeredDevice.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RegisteredDeviceUpdateArgs>(args: SelectSubset<T, RegisteredDeviceUpdateArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more RegisteredDevices.
+     * @param {RegisteredDeviceDeleteManyArgs} args - Arguments to filter RegisteredDevices to delete.
+     * @example
+     * // Delete a few RegisteredDevices
+     * const { count } = await prisma.registeredDevice.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RegisteredDeviceDeleteManyArgs>(args?: SelectSubset<T, RegisteredDeviceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RegisteredDevices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegisteredDeviceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RegisteredDevices
+     * const registeredDevice = await prisma.registeredDevice.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RegisteredDeviceUpdateManyArgs>(args: SelectSubset<T, RegisteredDeviceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RegisteredDevice.
+     * @param {RegisteredDeviceUpsertArgs} args - Arguments to update or create a RegisteredDevice.
+     * @example
+     * // Update or create a RegisteredDevice
+     * const registeredDevice = await prisma.registeredDevice.upsert({
+     *   create: {
+     *     // ... data to create a RegisteredDevice
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RegisteredDevice we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RegisteredDeviceUpsertArgs>(args: SelectSubset<T, RegisteredDeviceUpsertArgs<ExtArgs>>): Prisma__RegisteredDeviceClient<$Result.GetResult<Prisma.$RegisteredDevicePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of RegisteredDevices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegisteredDeviceCountArgs} args - Arguments to filter RegisteredDevices to count.
+     * @example
+     * // Count the number of RegisteredDevices
+     * const count = await prisma.registeredDevice.count({
+     *   where: {
+     *     // ... the filter for the RegisteredDevices we want to count
+     *   }
+     * })
+    **/
+    count<T extends RegisteredDeviceCountArgs>(
+      args?: Subset<T, RegisteredDeviceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RegisteredDeviceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RegisteredDevice.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegisteredDeviceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RegisteredDeviceAggregateArgs>(args: Subset<T, RegisteredDeviceAggregateArgs>): Prisma.PrismaPromise<GetRegisteredDeviceAggregateType<T>>
+
+    /**
+     * Group by RegisteredDevice.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegisteredDeviceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RegisteredDeviceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RegisteredDeviceGroupByArgs['orderBy'] }
+        : { orderBy?: RegisteredDeviceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RegisteredDeviceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRegisteredDeviceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RegisteredDevice model
+   */
+  readonly fields: RegisteredDeviceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RegisteredDevice.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RegisteredDeviceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RegisteredDevice model
+   */
+  interface RegisteredDeviceFieldRefs {
+    readonly id: FieldRef<"RegisteredDevice", 'BigInt'>
+    readonly clientDeviceId: FieldRef<"RegisteredDevice", 'String'>
+    readonly siteId: FieldRef<"RegisteredDevice", 'Int'>
+    readonly tenantId: FieldRef<"RegisteredDevice", 'Int'>
+    readonly deviceName: FieldRef<"RegisteredDevice", 'String'>
+    readonly deviceType: FieldRef<"RegisteredDevice", 'String'>
+    readonly status: FieldRef<"RegisteredDevice", 'String'>
+    readonly appVersion: FieldRef<"RegisteredDevice", 'String'>
+    readonly lastSeenAt: FieldRef<"RegisteredDevice", 'DateTime'>
+    readonly registeredAt: FieldRef<"RegisteredDevice", 'DateTime'>
+    readonly updatedAt: FieldRef<"RegisteredDevice", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RegisteredDevice findUnique
+   */
+  export type RegisteredDeviceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * Filter, which RegisteredDevice to fetch.
+     */
+    where: RegisteredDeviceWhereUniqueInput
+  }
+
+  /**
+   * RegisteredDevice findUniqueOrThrow
+   */
+  export type RegisteredDeviceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * Filter, which RegisteredDevice to fetch.
+     */
+    where: RegisteredDeviceWhereUniqueInput
+  }
+
+  /**
+   * RegisteredDevice findFirst
+   */
+  export type RegisteredDeviceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * Filter, which RegisteredDevice to fetch.
+     */
+    where?: RegisteredDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegisteredDevices to fetch.
+     */
+    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RegisteredDevices.
+     */
+    cursor?: RegisteredDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegisteredDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegisteredDevices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RegisteredDevices.
+     */
+    distinct?: RegisteredDeviceScalarFieldEnum | RegisteredDeviceScalarFieldEnum[]
+  }
+
+  /**
+   * RegisteredDevice findFirstOrThrow
+   */
+  export type RegisteredDeviceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * Filter, which RegisteredDevice to fetch.
+     */
+    where?: RegisteredDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegisteredDevices to fetch.
+     */
+    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RegisteredDevices.
+     */
+    cursor?: RegisteredDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegisteredDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegisteredDevices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RegisteredDevices.
+     */
+    distinct?: RegisteredDeviceScalarFieldEnum | RegisteredDeviceScalarFieldEnum[]
+  }
+
+  /**
+   * RegisteredDevice findMany
+   */
+  export type RegisteredDeviceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * Filter, which RegisteredDevices to fetch.
+     */
+    where?: RegisteredDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegisteredDevices to fetch.
+     */
+    orderBy?: RegisteredDeviceOrderByWithRelationInput | RegisteredDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RegisteredDevices.
+     */
+    cursor?: RegisteredDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegisteredDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegisteredDevices.
+     */
+    skip?: number
+    distinct?: RegisteredDeviceScalarFieldEnum | RegisteredDeviceScalarFieldEnum[]
+  }
+
+  /**
+   * RegisteredDevice create
+   */
+  export type RegisteredDeviceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * The data needed to create a RegisteredDevice.
+     */
+    data: XOR<RegisteredDeviceCreateInput, RegisteredDeviceUncheckedCreateInput>
+  }
+
+  /**
+   * RegisteredDevice createMany
+   */
+  export type RegisteredDeviceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RegisteredDevices.
+     */
+    data: RegisteredDeviceCreateManyInput | RegisteredDeviceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RegisteredDevice update
+   */
+  export type RegisteredDeviceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * The data needed to update a RegisteredDevice.
+     */
+    data: XOR<RegisteredDeviceUpdateInput, RegisteredDeviceUncheckedUpdateInput>
+    /**
+     * Choose, which RegisteredDevice to update.
+     */
+    where: RegisteredDeviceWhereUniqueInput
+  }
+
+  /**
+   * RegisteredDevice updateMany
+   */
+  export type RegisteredDeviceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RegisteredDevices.
+     */
+    data: XOR<RegisteredDeviceUpdateManyMutationInput, RegisteredDeviceUncheckedUpdateManyInput>
+    /**
+     * Filter which RegisteredDevices to update
+     */
+    where?: RegisteredDeviceWhereInput
+    /**
+     * Limit how many RegisteredDevices to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RegisteredDevice upsert
+   */
+  export type RegisteredDeviceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * The filter to search for the RegisteredDevice to update in case it exists.
+     */
+    where: RegisteredDeviceWhereUniqueInput
+    /**
+     * In case the RegisteredDevice found by the `where` argument doesn't exist, create a new RegisteredDevice with this data.
+     */
+    create: XOR<RegisteredDeviceCreateInput, RegisteredDeviceUncheckedCreateInput>
+    /**
+     * In case the RegisteredDevice was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RegisteredDeviceUpdateInput, RegisteredDeviceUncheckedUpdateInput>
+  }
+
+  /**
+   * RegisteredDevice delete
+   */
+  export type RegisteredDeviceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+    /**
+     * Filter which RegisteredDevice to delete.
+     */
+    where: RegisteredDeviceWhereUniqueInput
+  }
+
+  /**
+   * RegisteredDevice deleteMany
+   */
+  export type RegisteredDeviceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RegisteredDevices to delete
+     */
+    where?: RegisteredDeviceWhereInput
+    /**
+     * Limit how many RegisteredDevices to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * RegisteredDevice without action
+   */
+  export type RegisteredDeviceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisteredDevice
+     */
+    select?: RegisteredDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisteredDevice
+     */
+    omit?: RegisteredDeviceOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -62754,6 +64940,7 @@ export namespace Prisma {
     id: 'id',
     username: 'username',
     password: 'password',
+    overridePin: 'overridePin',
     lastName: 'lastName',
     firstName: 'firstName',
     mobile: 'mobile',
@@ -62766,6 +64953,18 @@ export namespace Prisma {
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+  export const OverrideLogScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    approverId: 'approverId',
+    action: 'action',
+    reason: 'reason',
+    createdAt: 'createdAt'
+  };
+
+  export type OverrideLogScalarFieldEnum = (typeof OverrideLogScalarFieldEnum)[keyof typeof OverrideLogScalarFieldEnum]
 
 
   export const SettingScalarFieldEnum: {
@@ -63760,6 +65959,23 @@ export namespace Prisma {
   export type PromotionUsageScalarFieldEnum = (typeof PromotionUsageScalarFieldEnum)[keyof typeof PromotionUsageScalarFieldEnum]
 
 
+  export const RegisteredDeviceScalarFieldEnum: {
+    id: 'id',
+    clientDeviceId: 'clientDeviceId',
+    siteId: 'siteId',
+    tenantId: 'tenantId',
+    deviceName: 'deviceName',
+    deviceType: 'deviceType',
+    status: 'status',
+    appVersion: 'appVersion',
+    lastSeenAt: 'lastSeenAt',
+    registeredAt: 'registeredAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RegisteredDeviceScalarFieldEnum = (typeof RegisteredDeviceScalarFieldEnum)[keyof typeof RegisteredDeviceScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -63788,6 +66004,7 @@ export namespace Prisma {
   export const UserOrderByRelevanceFieldEnum: {
     username: 'username',
     password: 'password',
+    overridePin: 'overridePin',
     lastName: 'lastName',
     firstName: 'firstName',
     mobile: 'mobile',
@@ -63795,6 +66012,14 @@ export namespace Prisma {
   };
 
   export type UserOrderByRelevanceFieldEnum = (typeof UserOrderByRelevanceFieldEnum)[keyof typeof UserOrderByRelevanceFieldEnum]
+
+
+  export const OverrideLogOrderByRelevanceFieldEnum: {
+    action: 'action',
+    reason: 'reason'
+  };
+
+  export type OverrideLogOrderByRelevanceFieldEnum = (typeof OverrideLogOrderByRelevanceFieldEnum)[keyof typeof OverrideLogOrderByRelevanceFieldEnum]
 
 
   export const SettingOrderByRelevanceFieldEnum: {
@@ -64203,6 +66428,17 @@ export namespace Prisma {
   export type PromotionItemOrderByRelevanceFieldEnum = (typeof PromotionItemOrderByRelevanceFieldEnum)[keyof typeof PromotionItemOrderByRelevanceFieldEnum]
 
 
+  export const RegisteredDeviceOrderByRelevanceFieldEnum: {
+    clientDeviceId: 'clientDeviceId',
+    deviceName: 'deviceName',
+    deviceType: 'deviceType',
+    status: 'status',
+    appVersion: 'appVersion'
+  };
+
+  export type RegisteredDeviceOrderByRelevanceFieldEnum = (typeof RegisteredDeviceOrderByRelevanceFieldEnum)[keyof typeof RegisteredDeviceOrderByRelevanceFieldEnum]
+
+
   /**
    * Field references
    */
@@ -64289,6 +66525,13 @@ export namespace Prisma {
    * Reference to a field of type 'DiscountType'
    */
   export type EnumDiscountTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DiscountType'>
+    
+
+
+  /**
+   * Reference to a field of type 'BigInt'
+   */
+  export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
     
   /**
    * Deep Input Types
@@ -64456,6 +66699,7 @@ export namespace Prisma {
     id?: IntFilter<"User"> | number
     username?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
+    overridePin?: StringNullableFilter<"User"> | string | null
     lastName?: StringNullableFilter<"User"> | string | null
     firstName?: StringNullableFilter<"User"> | string | null
     mobile?: StringNullableFilter<"User"> | string | null
@@ -64467,12 +66711,14 @@ export namespace Prisma {
     version?: IntNullableFilter<"User"> | number | null
     settings?: SettingListRelationFilter
     roles?: RoleListRelationFilter
+    overrideRequests?: OverrideLogListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
     id?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    overridePin?: SortOrderInput | SortOrder
     lastName?: SortOrderInput | SortOrder
     firstName?: SortOrderInput | SortOrder
     mobile?: SortOrderInput | SortOrder
@@ -64484,6 +66730,7 @@ export namespace Prisma {
     version?: SortOrderInput | SortOrder
     settings?: SettingOrderByRelationAggregateInput
     roles?: RoleOrderByRelationAggregateInput
+    overrideRequests?: OverrideLogOrderByRelationAggregateInput
     _relevance?: UserOrderByRelevanceInput
   }
 
@@ -64496,6 +66743,7 @@ export namespace Prisma {
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
     password?: StringFilter<"User"> | string
+    overridePin?: StringNullableFilter<"User"> | string | null
     lastName?: StringNullableFilter<"User"> | string | null
     firstName?: StringNullableFilter<"User"> | string | null
     deleted?: BoolFilter<"User"> | boolean
@@ -64505,12 +66753,14 @@ export namespace Prisma {
     version?: IntNullableFilter<"User"> | number | null
     settings?: SettingListRelationFilter
     roles?: RoleListRelationFilter
+    overrideRequests?: OverrideLogListRelationFilter
   }, "id" | "username" | "mobile" | "email">
 
   export type UserOrderByWithAggregationInput = {
     id?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    overridePin?: SortOrderInput | SortOrder
     lastName?: SortOrderInput | SortOrder
     firstName?: SortOrderInput | SortOrder
     mobile?: SortOrderInput | SortOrder
@@ -64534,6 +66784,7 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"User"> | number
     username?: StringWithAggregatesFilter<"User"> | string
     password?: StringWithAggregatesFilter<"User"> | string
+    overridePin?: StringNullableWithAggregatesFilter<"User"> | string | null
     lastName?: StringNullableWithAggregatesFilter<"User"> | string | null
     firstName?: StringNullableWithAggregatesFilter<"User"> | string | null
     mobile?: StringNullableWithAggregatesFilter<"User"> | string | null
@@ -64543,6 +66794,69 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     version?: IntNullableWithAggregatesFilter<"User"> | number | null
+  }
+
+  export type OverrideLogWhereInput = {
+    AND?: OverrideLogWhereInput | OverrideLogWhereInput[]
+    OR?: OverrideLogWhereInput[]
+    NOT?: OverrideLogWhereInput | OverrideLogWhereInput[]
+    id?: IntFilter<"OverrideLog"> | number
+    userId?: IntFilter<"OverrideLog"> | number
+    approverId?: IntFilter<"OverrideLog"> | number
+    action?: StringFilter<"OverrideLog"> | string
+    reason?: StringNullableFilter<"OverrideLog"> | string | null
+    createdAt?: DateTimeFilter<"OverrideLog"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type OverrideLogOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    approverId?: SortOrder
+    action?: SortOrder
+    reason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    _relevance?: OverrideLogOrderByRelevanceInput
+  }
+
+  export type OverrideLogWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: OverrideLogWhereInput | OverrideLogWhereInput[]
+    OR?: OverrideLogWhereInput[]
+    NOT?: OverrideLogWhereInput | OverrideLogWhereInput[]
+    userId?: IntFilter<"OverrideLog"> | number
+    approverId?: IntFilter<"OverrideLog"> | number
+    action?: StringFilter<"OverrideLog"> | string
+    reason?: StringNullableFilter<"OverrideLog"> | string | null
+    createdAt?: DateTimeFilter<"OverrideLog"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type OverrideLogOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    approverId?: SortOrder
+    action?: SortOrder
+    reason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: OverrideLogCountOrderByAggregateInput
+    _avg?: OverrideLogAvgOrderByAggregateInput
+    _max?: OverrideLogMaxOrderByAggregateInput
+    _min?: OverrideLogMinOrderByAggregateInput
+    _sum?: OverrideLogSumOrderByAggregateInput
+  }
+
+  export type OverrideLogScalarWhereWithAggregatesInput = {
+    AND?: OverrideLogScalarWhereWithAggregatesInput | OverrideLogScalarWhereWithAggregatesInput[]
+    OR?: OverrideLogScalarWhereWithAggregatesInput[]
+    NOT?: OverrideLogScalarWhereWithAggregatesInput | OverrideLogScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"OverrideLog"> | number
+    userId?: IntWithAggregatesFilter<"OverrideLog"> | number
+    approverId?: IntWithAggregatesFilter<"OverrideLog"> | number
+    action?: StringWithAggregatesFilter<"OverrideLog"> | string
+    reason?: StringNullableWithAggregatesFilter<"OverrideLog"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"OverrideLog"> | Date | string
   }
 
   export type SettingWhereInput = {
@@ -69849,6 +72163,92 @@ export namespace Prisma {
     version?: IntNullableWithAggregatesFilter<"PromotionUsage"> | number | null
   }
 
+  export type RegisteredDeviceWhereInput = {
+    AND?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
+    OR?: RegisteredDeviceWhereInput[]
+    NOT?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
+    id?: BigIntFilter<"RegisteredDevice"> | bigint | number
+    clientDeviceId?: StringFilter<"RegisteredDevice"> | string
+    siteId?: IntFilter<"RegisteredDevice"> | number
+    tenantId?: IntFilter<"RegisteredDevice"> | number
+    deviceName?: StringFilter<"RegisteredDevice"> | string
+    deviceType?: StringNullableFilter<"RegisteredDevice"> | string | null
+    status?: StringFilter<"RegisteredDevice"> | string
+    appVersion?: StringNullableFilter<"RegisteredDevice"> | string | null
+    lastSeenAt?: DateTimeNullableFilter<"RegisteredDevice"> | Date | string | null
+    registeredAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
+    updatedAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
+  }
+
+  export type RegisteredDeviceOrderByWithRelationInput = {
+    id?: SortOrder
+    clientDeviceId?: SortOrder
+    siteId?: SortOrder
+    tenantId?: SortOrder
+    deviceName?: SortOrder
+    deviceType?: SortOrderInput | SortOrder
+    status?: SortOrder
+    appVersion?: SortOrderInput | SortOrder
+    lastSeenAt?: SortOrderInput | SortOrder
+    registeredAt?: SortOrder
+    updatedAt?: SortOrder
+    _relevance?: RegisteredDeviceOrderByRelevanceInput
+  }
+
+  export type RegisteredDeviceWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    clientDeviceId?: string
+    tenantId_siteId?: RegisteredDeviceTenantIdSiteIdCompoundUniqueInput
+    AND?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
+    OR?: RegisteredDeviceWhereInput[]
+    NOT?: RegisteredDeviceWhereInput | RegisteredDeviceWhereInput[]
+    siteId?: IntFilter<"RegisteredDevice"> | number
+    tenantId?: IntFilter<"RegisteredDevice"> | number
+    deviceName?: StringFilter<"RegisteredDevice"> | string
+    deviceType?: StringNullableFilter<"RegisteredDevice"> | string | null
+    status?: StringFilter<"RegisteredDevice"> | string
+    appVersion?: StringNullableFilter<"RegisteredDevice"> | string | null
+    lastSeenAt?: DateTimeNullableFilter<"RegisteredDevice"> | Date | string | null
+    registeredAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
+    updatedAt?: DateTimeFilter<"RegisteredDevice"> | Date | string
+  }, "id" | "clientDeviceId" | "tenantId_siteId">
+
+  export type RegisteredDeviceOrderByWithAggregationInput = {
+    id?: SortOrder
+    clientDeviceId?: SortOrder
+    siteId?: SortOrder
+    tenantId?: SortOrder
+    deviceName?: SortOrder
+    deviceType?: SortOrderInput | SortOrder
+    status?: SortOrder
+    appVersion?: SortOrderInput | SortOrder
+    lastSeenAt?: SortOrderInput | SortOrder
+    registeredAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: RegisteredDeviceCountOrderByAggregateInput
+    _avg?: RegisteredDeviceAvgOrderByAggregateInput
+    _max?: RegisteredDeviceMaxOrderByAggregateInput
+    _min?: RegisteredDeviceMinOrderByAggregateInput
+    _sum?: RegisteredDeviceSumOrderByAggregateInput
+  }
+
+  export type RegisteredDeviceScalarWhereWithAggregatesInput = {
+    AND?: RegisteredDeviceScalarWhereWithAggregatesInput | RegisteredDeviceScalarWhereWithAggregatesInput[]
+    OR?: RegisteredDeviceScalarWhereWithAggregatesInput[]
+    NOT?: RegisteredDeviceScalarWhereWithAggregatesInput | RegisteredDeviceScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"RegisteredDevice"> | bigint | number
+    clientDeviceId?: StringWithAggregatesFilter<"RegisteredDevice"> | string
+    siteId?: IntWithAggregatesFilter<"RegisteredDevice"> | number
+    tenantId?: IntWithAggregatesFilter<"RegisteredDevice"> | number
+    deviceName?: StringWithAggregatesFilter<"RegisteredDevice"> | string
+    deviceType?: StringNullableWithAggregatesFilter<"RegisteredDevice"> | string | null
+    status?: StringWithAggregatesFilter<"RegisteredDevice"> | string
+    appVersion?: StringNullableWithAggregatesFilter<"RegisteredDevice"> | string | null
+    lastSeenAt?: DateTimeNullableWithAggregatesFilter<"RegisteredDevice"> | Date | string | null
+    registeredAt?: DateTimeWithAggregatesFilter<"RegisteredDevice"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"RegisteredDevice"> | Date | string
+  }
+
   export type RoleCreateInput = {
     name: string
     category?: string | null
@@ -70014,6 +72414,7 @@ export namespace Prisma {
   export type UserCreateInput = {
     username: string
     password: string
+    overridePin?: string | null
     lastName?: string | null
     firstName?: string | null
     mobile?: string | null
@@ -70025,12 +72426,14 @@ export namespace Prisma {
     version?: number | null
     settings?: SettingCreateNestedManyWithoutUserInput
     roles?: RoleCreateNestedManyWithoutUsersInput
+    overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
     id?: number
     username: string
     password: string
+    overridePin?: string | null
     lastName?: string | null
     firstName?: string | null
     mobile?: string | null
@@ -70042,11 +72445,13 @@ export namespace Prisma {
     version?: number | null
     settings?: SettingUncheckedCreateNestedManyWithoutUserInput
     roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
+    overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70058,12 +72463,14 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     settings?: SettingUpdateManyWithoutUserNestedInput
     roles?: RoleUpdateManyWithoutUsersNestedInput
+    overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70075,12 +72482,14 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     settings?: SettingUncheckedUpdateManyWithoutUserNestedInput
     roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
+    overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
     id?: number
     username: string
     password: string
+    overridePin?: string | null
     lastName?: string | null
     firstName?: string | null
     mobile?: string | null
@@ -70095,6 +72504,7 @@ export namespace Prisma {
   export type UserUpdateManyMutationInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70110,6 +72520,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70119,6 +72530,65 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type OverrideLogCreateInput = {
+    approverId: number
+    action: string
+    reason?: string | null
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutOverrideRequestsInput
+  }
+
+  export type OverrideLogUncheckedCreateInput = {
+    id?: number
+    userId: number
+    approverId: number
+    action: string
+    reason?: string | null
+    createdAt?: Date | string
+  }
+
+  export type OverrideLogUpdateInput = {
+    approverId?: IntFieldUpdateOperationsInput | number
+    action?: StringFieldUpdateOperationsInput | string
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutOverrideRequestsNestedInput
+  }
+
+  export type OverrideLogUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
+    approverId?: IntFieldUpdateOperationsInput | number
+    action?: StringFieldUpdateOperationsInput | string
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OverrideLogCreateManyInput = {
+    id?: number
+    userId: number
+    approverId: number
+    action: string
+    reason?: string | null
+    createdAt?: Date | string
+  }
+
+  export type OverrideLogUpdateManyMutationInput = {
+    approverId?: IntFieldUpdateOperationsInput | number
+    action?: StringFieldUpdateOperationsInput | string
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OverrideLogUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    userId?: IntFieldUpdateOperationsInput | number
+    approverId?: IntFieldUpdateOperationsInput | number
+    action?: StringFieldUpdateOperationsInput | string
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SettingCreateInput = {
@@ -76110,6 +78580,104 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
+  export type RegisteredDeviceCreateInput = {
+    id?: bigint | number
+    clientDeviceId: string
+    siteId: number
+    tenantId: number
+    deviceName: string
+    deviceType?: string | null
+    status?: string
+    appVersion?: string | null
+    lastSeenAt?: Date | string | null
+    registeredAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RegisteredDeviceUncheckedCreateInput = {
+    id?: bigint | number
+    clientDeviceId: string
+    siteId: number
+    tenantId: number
+    deviceName: string
+    deviceType?: string | null
+    status?: string
+    appVersion?: string | null
+    lastSeenAt?: Date | string | null
+    registeredAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RegisteredDeviceUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    clientDeviceId?: StringFieldUpdateOperationsInput | string
+    siteId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    deviceName?: StringFieldUpdateOperationsInput | string
+    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegisteredDeviceUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    clientDeviceId?: StringFieldUpdateOperationsInput | string
+    siteId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    deviceName?: StringFieldUpdateOperationsInput | string
+    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegisteredDeviceCreateManyInput = {
+    id?: bigint | number
+    clientDeviceId: string
+    siteId: number
+    tenantId: number
+    deviceName: string
+    deviceType?: string | null
+    status?: string
+    appVersion?: string | null
+    lastSeenAt?: Date | string | null
+    registeredAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RegisteredDeviceUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    clientDeviceId?: StringFieldUpdateOperationsInput | string
+    siteId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    deviceName?: StringFieldUpdateOperationsInput | string
+    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegisteredDeviceUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    clientDeviceId?: StringFieldUpdateOperationsInput | string
+    siteId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    deviceName?: StringFieldUpdateOperationsInput | string
+    deviceType?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSeenAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registeredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -76414,11 +78982,21 @@ export namespace Prisma {
     none?: RoleWhereInput
   }
 
+  export type OverrideLogListRelationFilter = {
+    every?: OverrideLogWhereInput
+    some?: OverrideLogWhereInput
+    none?: OverrideLogWhereInput
+  }
+
   export type SettingOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type RoleOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type OverrideLogOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -76432,6 +79010,7 @@ export namespace Prisma {
     id?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    overridePin?: SortOrder
     lastName?: SortOrder
     firstName?: SortOrder
     mobile?: SortOrder
@@ -76452,6 +79031,7 @@ export namespace Prisma {
     id?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    overridePin?: SortOrder
     lastName?: SortOrder
     firstName?: SortOrder
     mobile?: SortOrder
@@ -76467,6 +79047,7 @@ export namespace Prisma {
     id?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    overridePin?: SortOrder
     lastName?: SortOrder
     firstName?: SortOrder
     mobile?: SortOrder
@@ -76481,6 +79062,81 @@ export namespace Prisma {
   export type UserSumOrderByAggregateInput = {
     id?: SortOrder
     version?: SortOrder
+  }
+
+  export type DateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type UserScalarRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type OverrideLogOrderByRelevanceInput = {
+    fields: OverrideLogOrderByRelevanceFieldEnum | OverrideLogOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type OverrideLogCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    approverId?: SortOrder
+    action?: SortOrder
+    reason?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type OverrideLogAvgOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    approverId?: SortOrder
+  }
+
+  export type OverrideLogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    approverId?: SortOrder
+    action?: SortOrder
+    reason?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type OverrideLogMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    approverId?: SortOrder
+    action?: SortOrder
+    reason?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type OverrideLogSumOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    approverId?: SortOrder
+  }
+
+  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
   export type EnumSettingTypeFilter<$PrismaModel = never> = {
@@ -77397,17 +80053,6 @@ export namespace Prisma {
     version?: SortOrder
   }
 
-  export type DateTimeFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
-  }
-
   export type SalesItemListRelationFilter = {
     every?: SalesItemWhereInput
     some?: SalesItemWhereInput
@@ -77633,20 +80278,6 @@ export namespace Prisma {
     salesQuotationId?: SortOrder
     version?: SortOrder
     tableId?: SortOrder
-  }
-
-  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
   export type SalesScalarRelationFilter = {
@@ -80918,6 +83549,98 @@ export namespace Prisma {
     version?: SortOrder
   }
 
+  export type BigIntFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntFilter<$PrismaModel> | bigint | number
+  }
+
+  export type RegisteredDeviceOrderByRelevanceInput = {
+    fields: RegisteredDeviceOrderByRelevanceFieldEnum | RegisteredDeviceOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type RegisteredDeviceTenantIdSiteIdCompoundUniqueInput = {
+    tenantId: number
+    siteId: number
+  }
+
+  export type RegisteredDeviceCountOrderByAggregateInput = {
+    id?: SortOrder
+    clientDeviceId?: SortOrder
+    siteId?: SortOrder
+    tenantId?: SortOrder
+    deviceName?: SortOrder
+    deviceType?: SortOrder
+    status?: SortOrder
+    appVersion?: SortOrder
+    lastSeenAt?: SortOrder
+    registeredAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RegisteredDeviceAvgOrderByAggregateInput = {
+    id?: SortOrder
+    siteId?: SortOrder
+    tenantId?: SortOrder
+  }
+
+  export type RegisteredDeviceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    clientDeviceId?: SortOrder
+    siteId?: SortOrder
+    tenantId?: SortOrder
+    deviceName?: SortOrder
+    deviceType?: SortOrder
+    status?: SortOrder
+    appVersion?: SortOrder
+    lastSeenAt?: SortOrder
+    registeredAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RegisteredDeviceMinOrderByAggregateInput = {
+    id?: SortOrder
+    clientDeviceId?: SortOrder
+    siteId?: SortOrder
+    tenantId?: SortOrder
+    deviceName?: SortOrder
+    deviceType?: SortOrder
+    status?: SortOrder
+    appVersion?: SortOrder
+    lastSeenAt?: SortOrder
+    registeredAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RegisteredDeviceSumOrderByAggregateInput = {
+    id?: SortOrder
+    siteId?: SortOrder
+    tenantId?: SortOrder
+  }
+
+  export type BigIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedBigIntFilter<$PrismaModel>
+    _min?: NestedBigIntFilter<$PrismaModel>
+    _max?: NestedBigIntFilter<$PrismaModel>
+  }
+
   export type RolePermissionCreateNestedManyWithoutRoleInput = {
     create?: XOR<RolePermissionCreateWithoutRoleInput, RolePermissionUncheckedCreateWithoutRoleInput> | RolePermissionCreateWithoutRoleInput[] | RolePermissionUncheckedCreateWithoutRoleInput[]
     connectOrCreate?: RolePermissionCreateOrConnectWithoutRoleInput | RolePermissionCreateOrConnectWithoutRoleInput[]
@@ -81057,6 +83780,13 @@ export namespace Prisma {
     connect?: RoleWhereUniqueInput | RoleWhereUniqueInput[]
   }
 
+  export type OverrideLogCreateNestedManyWithoutUserInput = {
+    create?: XOR<OverrideLogCreateWithoutUserInput, OverrideLogUncheckedCreateWithoutUserInput> | OverrideLogCreateWithoutUserInput[] | OverrideLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: OverrideLogCreateOrConnectWithoutUserInput | OverrideLogCreateOrConnectWithoutUserInput[]
+    createMany?: OverrideLogCreateManyUserInputEnvelope
+    connect?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+  }
+
   export type SettingUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<SettingCreateWithoutUserInput, SettingUncheckedCreateWithoutUserInput> | SettingCreateWithoutUserInput[] | SettingUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SettingCreateOrConnectWithoutUserInput | SettingCreateOrConnectWithoutUserInput[]
@@ -81068,6 +83798,13 @@ export namespace Prisma {
     create?: XOR<RoleCreateWithoutUsersInput, RoleUncheckedCreateWithoutUsersInput> | RoleCreateWithoutUsersInput[] | RoleUncheckedCreateWithoutUsersInput[]
     connectOrCreate?: RoleCreateOrConnectWithoutUsersInput | RoleCreateOrConnectWithoutUsersInput[]
     connect?: RoleWhereUniqueInput | RoleWhereUniqueInput[]
+  }
+
+  export type OverrideLogUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<OverrideLogCreateWithoutUserInput, OverrideLogUncheckedCreateWithoutUserInput> | OverrideLogCreateWithoutUserInput[] | OverrideLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: OverrideLogCreateOrConnectWithoutUserInput | OverrideLogCreateOrConnectWithoutUserInput[]
+    createMany?: OverrideLogCreateManyUserInputEnvelope
+    connect?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
   }
 
   export type SettingUpdateManyWithoutUserNestedInput = {
@@ -81097,6 +83834,20 @@ export namespace Prisma {
     deleteMany?: RoleScalarWhereInput | RoleScalarWhereInput[]
   }
 
+  export type OverrideLogUpdateManyWithoutUserNestedInput = {
+    create?: XOR<OverrideLogCreateWithoutUserInput, OverrideLogUncheckedCreateWithoutUserInput> | OverrideLogCreateWithoutUserInput[] | OverrideLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: OverrideLogCreateOrConnectWithoutUserInput | OverrideLogCreateOrConnectWithoutUserInput[]
+    upsert?: OverrideLogUpsertWithWhereUniqueWithoutUserInput | OverrideLogUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: OverrideLogCreateManyUserInputEnvelope
+    set?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    disconnect?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    delete?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    connect?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    update?: OverrideLogUpdateWithWhereUniqueWithoutUserInput | OverrideLogUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: OverrideLogUpdateManyWithWhereWithoutUserInput | OverrideLogUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: OverrideLogScalarWhereInput | OverrideLogScalarWhereInput[]
+  }
+
   export type SettingUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<SettingCreateWithoutUserInput, SettingUncheckedCreateWithoutUserInput> | SettingCreateWithoutUserInput[] | SettingUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SettingCreateOrConnectWithoutUserInput | SettingCreateOrConnectWithoutUserInput[]
@@ -81122,6 +83873,38 @@ export namespace Prisma {
     update?: RoleUpdateWithWhereUniqueWithoutUsersInput | RoleUpdateWithWhereUniqueWithoutUsersInput[]
     updateMany?: RoleUpdateManyWithWhereWithoutUsersInput | RoleUpdateManyWithWhereWithoutUsersInput[]
     deleteMany?: RoleScalarWhereInput | RoleScalarWhereInput[]
+  }
+
+  export type OverrideLogUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<OverrideLogCreateWithoutUserInput, OverrideLogUncheckedCreateWithoutUserInput> | OverrideLogCreateWithoutUserInput[] | OverrideLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: OverrideLogCreateOrConnectWithoutUserInput | OverrideLogCreateOrConnectWithoutUserInput[]
+    upsert?: OverrideLogUpsertWithWhereUniqueWithoutUserInput | OverrideLogUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: OverrideLogCreateManyUserInputEnvelope
+    set?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    disconnect?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    delete?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    connect?: OverrideLogWhereUniqueInput | OverrideLogWhereUniqueInput[]
+    update?: OverrideLogUpdateWithWhereUniqueWithoutUserInput | OverrideLogUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: OverrideLogUpdateManyWithWhereWithoutUserInput | OverrideLogUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: OverrideLogScalarWhereInput | OverrideLogScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutOverrideRequestsInput = {
+    create?: XOR<UserCreateWithoutOverrideRequestsInput, UserUncheckedCreateWithoutOverrideRequestsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOverrideRequestsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type DateTimeFieldUpdateOperationsInput = {
+    set?: Date | string
+  }
+
+  export type UserUpdateOneRequiredWithoutOverrideRequestsNestedInput = {
+    create?: XOR<UserCreateWithoutOverrideRequestsInput, UserUncheckedCreateWithoutOverrideRequestsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutOverrideRequestsInput
+    upsert?: UserUpsertWithoutOverrideRequestsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutOverrideRequestsInput, UserUpdateWithoutOverrideRequestsInput>, UserUncheckedUpdateWithoutOverrideRequestsInput>
   }
 
   export type UserCreateNestedOneWithoutSettingsInput = {
@@ -82394,10 +85177,6 @@ export namespace Prisma {
     connectOrCreate?: RegisterLogCreateOrConnectWithoutSalesInput | RegisterLogCreateOrConnectWithoutSalesInput[]
     createMany?: RegisterLogCreateManySalesInputEnvelope
     connect?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
-  }
-
-  export type DateTimeFieldUpdateOperationsInput = {
-    set?: Date | string
   }
 
   export type SalesItemUpdateManyWithoutSalesNestedInput = {
@@ -84486,6 +87265,14 @@ export namespace Prisma {
     update?: XOR<XOR<CustomerUpdateToOneWithWhereWithoutPromotionUsageInput, CustomerUpdateWithoutPromotionUsageInput>, CustomerUncheckedUpdateWithoutPromotionUsageInput>
   }
 
+  export type BigIntFieldUpdateOperationsInput = {
+    set?: bigint | number
+    increment?: bigint | number
+    decrement?: bigint | number
+    multiply?: bigint | number
+    divide?: bigint | number
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -84666,6 +87453,31 @@ export namespace Prisma {
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
+  export type NestedDateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
   export type NestedEnumSettingTypeFilter<$PrismaModel = never> = {
     equals?: $Enums.SettingType | EnumSettingTypeFieldRefInput<$PrismaModel>
     in?: $Enums.SettingType[]
@@ -84737,31 +87549,6 @@ export namespace Prisma {
     _sum?: NestedFloatNullableFilter<$PrismaModel>
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
-  }
-
-  export type NestedDateTimeFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
-  }
-
-  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
   export type NestedEnumOrderStatusNullableFilter<$PrismaModel = never> = {
@@ -84892,6 +87679,33 @@ export namespace Prisma {
     _max?: NestedEnumDiscountTypeFilter<$PrismaModel>
   }
 
+  export type NestedBigIntFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntFilter<$PrismaModel> | bigint | number
+  }
+
+  export type NestedBigIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedBigIntFilter<$PrismaModel>
+    _min?: NestedBigIntFilter<$PrismaModel>
+    _max?: NestedBigIntFilter<$PrismaModel>
+  }
+
   export type RolePermissionCreateWithoutRoleInput = {
     permissionId: number
     createdAt?: Date | string | null
@@ -84924,6 +87738,7 @@ export namespace Prisma {
   export type UserCreateWithoutRolesInput = {
     username: string
     password: string
+    overridePin?: string | null
     lastName?: string | null
     firstName?: string | null
     mobile?: string | null
@@ -84934,12 +87749,14 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     settings?: SettingCreateNestedManyWithoutUserInput
+    overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRolesInput = {
     id?: number
     username: string
     password: string
+    overridePin?: string | null
     lastName?: string | null
     firstName?: string | null
     mobile?: string | null
@@ -84950,6 +87767,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     settings?: SettingUncheckedCreateNestedManyWithoutUserInput
+    overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRolesInput = {
@@ -85010,6 +87828,7 @@ export namespace Prisma {
     id?: IntFilter<"User"> | number
     username?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
+    overridePin?: StringNullableFilter<"User"> | string | null
     lastName?: StringNullableFilter<"User"> | string | null
     firstName?: StringNullableFilter<"User"> | string | null
     mobile?: StringNullableFilter<"User"> | string | null
@@ -85154,6 +87973,31 @@ export namespace Prisma {
     create: XOR<RoleCreateWithoutUsersInput, RoleUncheckedCreateWithoutUsersInput>
   }
 
+  export type OverrideLogCreateWithoutUserInput = {
+    approverId: number
+    action: string
+    reason?: string | null
+    createdAt?: Date | string
+  }
+
+  export type OverrideLogUncheckedCreateWithoutUserInput = {
+    id?: number
+    approverId: number
+    action: string
+    reason?: string | null
+    createdAt?: Date | string
+  }
+
+  export type OverrideLogCreateOrConnectWithoutUserInput = {
+    where: OverrideLogWhereUniqueInput
+    create: XOR<OverrideLogCreateWithoutUserInput, OverrideLogUncheckedCreateWithoutUserInput>
+  }
+
+  export type OverrideLogCreateManyUserInputEnvelope = {
+    data: OverrideLogCreateManyUserInput | OverrideLogCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type SettingUpsertWithWhereUniqueWithoutUserInput = {
     where: SettingWhereUniqueInput
     update: XOR<SettingUpdateWithoutUserInput, SettingUncheckedUpdateWithoutUserInput>
@@ -85219,9 +88063,124 @@ export namespace Prisma {
     version?: IntNullableFilter<"Role"> | number | null
   }
 
+  export type OverrideLogUpsertWithWhereUniqueWithoutUserInput = {
+    where: OverrideLogWhereUniqueInput
+    update: XOR<OverrideLogUpdateWithoutUserInput, OverrideLogUncheckedUpdateWithoutUserInput>
+    create: XOR<OverrideLogCreateWithoutUserInput, OverrideLogUncheckedCreateWithoutUserInput>
+  }
+
+  export type OverrideLogUpdateWithWhereUniqueWithoutUserInput = {
+    where: OverrideLogWhereUniqueInput
+    data: XOR<OverrideLogUpdateWithoutUserInput, OverrideLogUncheckedUpdateWithoutUserInput>
+  }
+
+  export type OverrideLogUpdateManyWithWhereWithoutUserInput = {
+    where: OverrideLogScalarWhereInput
+    data: XOR<OverrideLogUpdateManyMutationInput, OverrideLogUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type OverrideLogScalarWhereInput = {
+    AND?: OverrideLogScalarWhereInput | OverrideLogScalarWhereInput[]
+    OR?: OverrideLogScalarWhereInput[]
+    NOT?: OverrideLogScalarWhereInput | OverrideLogScalarWhereInput[]
+    id?: IntFilter<"OverrideLog"> | number
+    userId?: IntFilter<"OverrideLog"> | number
+    approverId?: IntFilter<"OverrideLog"> | number
+    action?: StringFilter<"OverrideLog"> | string
+    reason?: StringNullableFilter<"OverrideLog"> | string | null
+    createdAt?: DateTimeFilter<"OverrideLog"> | Date | string
+  }
+
+  export type UserCreateWithoutOverrideRequestsInput = {
+    username: string
+    password: string
+    overridePin?: string | null
+    lastName?: string | null
+    firstName?: string | null
+    mobile?: string | null
+    email?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    settings?: SettingCreateNestedManyWithoutUserInput
+    roles?: RoleCreateNestedManyWithoutUsersInput
+  }
+
+  export type UserUncheckedCreateWithoutOverrideRequestsInput = {
+    id?: number
+    username: string
+    password: string
+    overridePin?: string | null
+    lastName?: string | null
+    firstName?: string | null
+    mobile?: string | null
+    email?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    settings?: SettingUncheckedCreateNestedManyWithoutUserInput
+    roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
+  }
+
+  export type UserCreateOrConnectWithoutOverrideRequestsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutOverrideRequestsInput, UserUncheckedCreateWithoutOverrideRequestsInput>
+  }
+
+  export type UserUpsertWithoutOverrideRequestsInput = {
+    update: XOR<UserUpdateWithoutOverrideRequestsInput, UserUncheckedUpdateWithoutOverrideRequestsInput>
+    create: XOR<UserCreateWithoutOverrideRequestsInput, UserUncheckedCreateWithoutOverrideRequestsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutOverrideRequestsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutOverrideRequestsInput, UserUncheckedUpdateWithoutOverrideRequestsInput>
+  }
+
+  export type UserUpdateWithoutOverrideRequestsInput = {
+    username?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
+    lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    firstName?: NullableStringFieldUpdateOperationsInput | string | null
+    mobile?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    settings?: SettingUpdateManyWithoutUserNestedInput
+    roles?: RoleUpdateManyWithoutUsersNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutOverrideRequestsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    username?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
+    lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    firstName?: NullableStringFieldUpdateOperationsInput | string | null
+    mobile?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    settings?: SettingUncheckedUpdateManyWithoutUserNestedInput
+    roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
+  }
+
   export type UserCreateWithoutSettingsInput = {
     username: string
     password: string
+    overridePin?: string | null
     lastName?: string | null
     firstName?: string | null
     mobile?: string | null
@@ -85232,12 +88191,14 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     roles?: RoleCreateNestedManyWithoutUsersInput
+    overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSettingsInput = {
     id?: number
     username: string
     password: string
+    overridePin?: string | null
     lastName?: string | null
     firstName?: string | null
     mobile?: string | null
@@ -85248,6 +88209,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
+    overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSettingsInput = {
@@ -85325,6 +88287,7 @@ export namespace Prisma {
   export type UserUpdateWithoutSettingsInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -85335,12 +88298,14 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     roles?: RoleUpdateManyWithoutUsersNestedInput
+    overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSettingsInput = {
     id?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -85351,6 +88316,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
+    overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type OutletUpsertWithoutSettingsInput = {
@@ -96712,6 +99678,7 @@ export namespace Prisma {
   export type UserUpdateWithoutRolesInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -96722,12 +99689,14 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     settings?: SettingUpdateManyWithoutUserNestedInput
+    overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRolesInput = {
     id?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -96738,12 +99707,14 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     settings?: SettingUncheckedUpdateManyWithoutUserNestedInput
+    overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutRolesInput = {
     id?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
@@ -96767,6 +99738,14 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+  }
+
+  export type OverrideLogCreateManyUserInput = {
+    id?: number
+    approverId: number
+    action: string
+    reason?: string | null
+    createdAt?: Date | string
   }
 
   export type SettingUpdateWithoutUserInput = {
@@ -96845,6 +99824,29 @@ export namespace Prisma {
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type OverrideLogUpdateWithoutUserInput = {
+    approverId?: IntFieldUpdateOperationsInput | number
+    action?: StringFieldUpdateOperationsInput | string
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OverrideLogUncheckedUpdateWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    approverId?: IntFieldUpdateOperationsInput | number
+    action?: StringFieldUpdateOperationsInput | string
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OverrideLogUncheckedUpdateManyWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    approverId?: IntFieldUpdateOperationsInput | number
+    action?: StringFieldUpdateOperationsInput | string
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ItemCreateManySupplierInput = {

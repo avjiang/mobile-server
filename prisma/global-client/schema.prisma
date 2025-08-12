@@ -41,14 +41,13 @@ model SubscriptionAddOn {
 }
 
 model Tenant {
-  id                Int                  @id @default(autoincrement()) @map("ID")
-  tenantName        String               @map("TENANT_NAME")
-  databaseName      String?              @unique @map("DATABASE_NAME")
-  createdAt         DateTime             @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
-  tenantUsers       TenantUser[]
-  subscription      TenantSubscription[]
-  tenantOutlets     TenantOutlet[]
-  registeredDevices RegisteredDevice[]
+  id            Int                  @id @default(autoincrement()) @map("ID")
+  tenantName    String               @map("TENANT_NAME")
+  databaseName  String?              @unique @map("DATABASE_NAME")
+  createdAt     DateTime             @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
+  tenantUsers   TenantUser[]
+  subscription  TenantSubscription[]
+  tenantOutlets TenantOutlet[]
 
   @@index([tenantName]) // If you often search for tenants by name
   @@index([createdAt]) // For sorting or filtering tenants by creation date
@@ -158,33 +157,6 @@ model RefreshToken {
   @@index([revoked])
   @@index([deleted])
   @@map("REFRESH_TOKEN")
-}
-
-model RegisteredDevice {
-  id             Int       @id @default(autoincrement()) @map("ID")
-  clientDeviceId String    @unique @map("CLIENT_DEVICE_ID") // Globally unique ID from Flutter app (e.g., UUID)
-  siteId         Int       @map("SITE_ID") // Running number site identifier (no @unique here)
-  tenantId       Int       @map("TENANT_ID") // Denormalized from outlet for easier tenant-wide device queries
-  deviceName     String    @map("DEVICE_NAME") // User-friendly name given during registration
-  deviceType     String?   @map("DEVICE_TYPE") // Optional: "pos", "kds", "tablet", "mobile"
-  status         String    @default("active") @map("STATUS") // "active", "inactive", "pending_approval", "revoked"
-  appVersion     String?   @map("APP_VERSION") // Version of the Flutter app
-  lastSeenAt     DateTime? @map("LAST_SEEN_AT") // Updated on API activity
-  registeredAt   DateTime  @default(now()) @map("REGISTERED_AT")
-  updatedAt      DateTime  @updatedAt @map("UPDATED_AT")
-  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade) // Direct relation to Tenant
-
-  @@unique([tenantId, siteId]) // Unique combination within tenant
-  @@index([clientDeviceId])
-  @@index([tenantId])
-  @@map("REGISTERED_DEVICE")
-}
-
-model TenantSiteIdCounter {
-  tenantId      Int @id @map("TENANT_ID")
-  currentSiteId Int @default(1) @map("CURRENT_SITE_ID")
-
-  @@map("TENANT_SITE_ID_COUNTER")
 }
 
 // Permission model to store granular permissions (e.g., "create_order", "view_reports")

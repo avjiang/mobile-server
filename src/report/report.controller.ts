@@ -27,6 +27,46 @@ let generateReport = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+let generateOutletReport = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    const { outletId, startDate, endDate } = req.query;
+
+    if (!outletId || !validator.isNumeric(outletId.toString())) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+
+    // Parse startDate and endDate from query (ISO format)
+    let parsedStartDate: Date | undefined = undefined;
+    let parsedEndDate: Date | undefined = undefined;
+    if (startDate) {
+        const d = new Date(startDate.toString());
+        if (isNaN(d.getTime())) {
+            throw new RequestValidateError('Invalid startDate format');
+        }
+        parsedStartDate = d;
+    }
+    if (endDate) {
+        const d = new Date(endDate.toString());
+        if (isNaN(d.getTime())) {
+            throw new RequestValidateError('Invalid endDate format');
+        }
+        parsedEndDate = d;
+    }
+
+    service.generateOutletReport(
+        req.user.databaseName,
+        parseInt(outletId.toString()),
+        parsedStartDate,
+        parsedEndDate
+    )
+        .then((reportData) => sendResponse(res, reportData))
+        .catch(next)
+}
+
 // routes
 router.get('/generate', generateReport)
+router.get('/generateOutletReport', generateOutletReport)
 export = router

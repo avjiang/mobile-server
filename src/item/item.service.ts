@@ -170,12 +170,12 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                     const createdItem = await tx.item.create({
                         data: {
                             ...itemWithoutId,
-                            cost: 0, // Default cost to 0 if not provided
+                            cost: cost || 0, // Use provided cost or default to 0
                             stockBalance: {
                                 create: {
-                                    outletId: 1,
-                                    availableQuantity: stockQuantity,
-                                    onHandQuantity: stockQuantity,
+                                    outlet: { connect: { id: 1 } },
+                                    availableQuantity: stockQuantity || 0,
+                                    onHandQuantity: stockQuantity || 0,
                                     deleted: false,
                                     reorderThreshold: reorderThreshold || 0,
                                 },
@@ -184,8 +184,8 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                 create: {
                                     previousAvailableQuantity: 0,
                                     previousOnHandQuantity: 0,
-                                    availableQuantityDelta: stockQuantity,
-                                    onHandQuantityDelta: stockQuantity,
+                                    availableQuantityDelta: stockQuantity || 0,
+                                    onHandQuantityDelta: stockQuantity || 0,
                                     documentId: 0,
                                     movementType: "Create Item",
                                     reason: "",

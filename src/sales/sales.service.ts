@@ -655,7 +655,7 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     const totalPriceBeforeTax = new Decimal(item.priceBeforeTax).times(receiptQuantity);
                     const totalSubtotalForQuantity = (new Decimal(item.subtotalAmount).dividedBy(totalQuantity)).times(receiptQuantity);
 
-                    const profit = revenueForQuantity.minus(costForQuantity).minus(totalDiscountForQuantity).minus(totalTaxForQuantity).minus(totalServiceChargeForQuantity);
+                    const profit = revenueForQuantity.minus(costForQuantity).minus(totalDiscountForQuantity).minus(totalServiceChargeForQuantity);
                     totalProfit = totalProfit.plus(profit);
 
                     salesItemData.push({

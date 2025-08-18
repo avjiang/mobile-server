@@ -94,6 +94,7 @@
     "dev": "pm2 start ecosystem.config.js && npm run tunnel",
     "start": "node dist/index.js",
     "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js",
+    "migrate_resolve": "node dist/script/tenant_db_migrate_resolve.js",
     "seed_tenant_items": "ts-node src/script/tenant_db_seed.ts",
     "seed_global": "ts-node src/script/global_schema_seed.ts",
     "generate_prisma": "npx prisma generate && npx prisma generate --schema prisma/global_schema.prisma",

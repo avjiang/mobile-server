@@ -526,6 +526,7 @@ exports.Prisma.DeliveryOrderItemScalarFieldEnum = {
   orderedQuantity: 'orderedQuantity',
   receivedQuantity: 'receivedQuantity',
   unitPrice: 'unitPrice',
+  deliveryFee: 'deliveryFee',
   remark: 'remark',
   version: 'version',
   createdAt: 'createdAt',

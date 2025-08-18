@@ -29928,6 +29928,7 @@ export namespace Prisma {
     orderedQuantity: number | null
     receivedQuantity: number | null
     unitPrice: Decimal | null
+    deliveryFee: Decimal | null
     version: number | null
   }
 
@@ -29938,6 +29939,7 @@ export namespace Prisma {
     orderedQuantity: number | null
     receivedQuantity: number | null
     unitPrice: Decimal | null
+    deliveryFee: Decimal | null
     version: number | null
   }
 
@@ -29948,6 +29950,7 @@ export namespace Prisma {
     orderedQuantity: number | null
     receivedQuantity: number | null
     unitPrice: Decimal | null
+    deliveryFee: Decimal | null
     remark: string | null
     version: number | null
     createdAt: Date | null
@@ -29963,6 +29966,7 @@ export namespace Prisma {
     orderedQuantity: number | null
     receivedQuantity: number | null
     unitPrice: Decimal | null
+    deliveryFee: Decimal | null
     remark: string | null
     version: number | null
     createdAt: Date | null
@@ -29978,6 +29982,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice: number
+    deliveryFee: number
     remark: number
     version: number
     createdAt: number
@@ -29995,6 +30000,7 @@ export namespace Prisma {
     orderedQuantity?: true
     receivedQuantity?: true
     unitPrice?: true
+    deliveryFee?: true
     version?: true
   }
 
@@ -30005,6 +30011,7 @@ export namespace Prisma {
     orderedQuantity?: true
     receivedQuantity?: true
     unitPrice?: true
+    deliveryFee?: true
     version?: true
   }
 
@@ -30015,6 +30022,7 @@ export namespace Prisma {
     orderedQuantity?: true
     receivedQuantity?: true
     unitPrice?: true
+    deliveryFee?: true
     remark?: true
     version?: true
     createdAt?: true
@@ -30030,6 +30038,7 @@ export namespace Prisma {
     orderedQuantity?: true
     receivedQuantity?: true
     unitPrice?: true
+    deliveryFee?: true
     remark?: true
     version?: true
     createdAt?: true
@@ -30045,6 +30054,7 @@ export namespace Prisma {
     orderedQuantity?: true
     receivedQuantity?: true
     unitPrice?: true
+    deliveryFee?: true
     remark?: true
     version?: true
     createdAt?: true
@@ -30147,6 +30157,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice: Decimal | null
+    deliveryFee: Decimal | null
     remark: string | null
     version: number | null
     createdAt: Date | null
@@ -30181,6 +30192,7 @@ export namespace Prisma {
     orderedQuantity?: boolean
     receivedQuantity?: boolean
     unitPrice?: boolean
+    deliveryFee?: boolean
     remark?: boolean
     version?: boolean
     createdAt?: boolean
@@ -30200,6 +30212,7 @@ export namespace Prisma {
     orderedQuantity?: boolean
     receivedQuantity?: boolean
     unitPrice?: boolean
+    deliveryFee?: boolean
     remark?: boolean
     version?: boolean
     createdAt?: boolean
@@ -30208,7 +30221,7 @@ export namespace Prisma {
     deletedAt?: boolean
   }
 
-  export type DeliveryOrderItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "deliveryOrderId" | "itemId" | "orderedQuantity" | "receivedQuantity" | "unitPrice" | "remark" | "version" | "createdAt" | "updatedAt" | "deleted" | "deletedAt", ExtArgs["result"]["deliveryOrderItem"]>
+  export type DeliveryOrderItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "deliveryOrderId" | "itemId" | "orderedQuantity" | "receivedQuantity" | "unitPrice" | "deliveryFee" | "remark" | "version" | "createdAt" | "updatedAt" | "deleted" | "deletedAt", ExtArgs["result"]["deliveryOrderItem"]>
   export type DeliveryOrderItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     deliveryOrder?: boolean | DeliveryOrderDefaultArgs<ExtArgs>
     item?: boolean | ItemDefaultArgs<ExtArgs>
@@ -30227,6 +30240,7 @@ export namespace Prisma {
       orderedQuantity: number
       receivedQuantity: number
       unitPrice: Prisma.Decimal | null
+      deliveryFee: Prisma.Decimal | null
       remark: string | null
       version: number | null
       createdAt: Date | null
@@ -30610,6 +30624,7 @@ export namespace Prisma {
     readonly orderedQuantity: FieldRef<"DeliveryOrderItem", 'Float'>
     readonly receivedQuantity: FieldRef<"DeliveryOrderItem", 'Float'>
     readonly unitPrice: FieldRef<"DeliveryOrderItem", 'Decimal'>
+    readonly deliveryFee: FieldRef<"DeliveryOrderItem", 'Decimal'>
     readonly remark: FieldRef<"DeliveryOrderItem", 'String'>
     readonly version: FieldRef<"DeliveryOrderItem", 'Int'>
     readonly createdAt: FieldRef<"DeliveryOrderItem", 'DateTime'>
@@ -65373,6 +65388,7 @@ export namespace Prisma {
     orderedQuantity: 'orderedQuantity',
     receivedQuantity: 'receivedQuantity',
     unitPrice: 'unitPrice',
+    deliveryFee: 'deliveryFee',
     remark: 'remark',
     version: 'version',
     createdAt: 'createdAt',
@@ -69026,6 +69042,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFilter<"DeliveryOrderItem"> | number
     receivedQuantity?: FloatFilter<"DeliveryOrderItem"> | number
     unitPrice?: DecimalNullableFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: DecimalNullableFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
     remark?: StringNullableFilter<"DeliveryOrderItem"> | string | null
     version?: IntNullableFilter<"DeliveryOrderItem"> | number | null
     createdAt?: DateTimeNullableFilter<"DeliveryOrderItem"> | Date | string | null
@@ -69043,6 +69060,7 @@ export namespace Prisma {
     orderedQuantity?: SortOrder
     receivedQuantity?: SortOrder
     unitPrice?: SortOrderInput | SortOrder
+    deliveryFee?: SortOrderInput | SortOrder
     remark?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
     createdAt?: SortOrderInput | SortOrder
@@ -69064,6 +69082,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFilter<"DeliveryOrderItem"> | number
     receivedQuantity?: FloatFilter<"DeliveryOrderItem"> | number
     unitPrice?: DecimalNullableFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: DecimalNullableFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
     remark?: StringNullableFilter<"DeliveryOrderItem"> | string | null
     version?: IntNullableFilter<"DeliveryOrderItem"> | number | null
     createdAt?: DateTimeNullableFilter<"DeliveryOrderItem"> | Date | string | null
@@ -69081,6 +69100,7 @@ export namespace Prisma {
     orderedQuantity?: SortOrder
     receivedQuantity?: SortOrder
     unitPrice?: SortOrderInput | SortOrder
+    deliveryFee?: SortOrderInput | SortOrder
     remark?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
     createdAt?: SortOrderInput | SortOrder
@@ -69104,6 +69124,7 @@ export namespace Prisma {
     orderedQuantity?: FloatWithAggregatesFilter<"DeliveryOrderItem"> | number
     receivedQuantity?: FloatWithAggregatesFilter<"DeliveryOrderItem"> | number
     unitPrice?: DecimalNullableWithAggregatesFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: DecimalNullableWithAggregatesFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
     remark?: StringNullableWithAggregatesFilter<"DeliveryOrderItem"> | string | null
     version?: IntNullableWithAggregatesFilter<"DeliveryOrderItem"> | number | null
     createdAt?: DateTimeNullableWithAggregatesFilter<"DeliveryOrderItem"> | Date | string | null
@@ -75130,6 +75151,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -75147,6 +75169,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -75159,6 +75182,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75176,6 +75200,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75191,6 +75216,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -75203,6 +75229,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75218,6 +75245,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -81116,6 +81144,7 @@ export namespace Prisma {
     orderedQuantity?: SortOrder
     receivedQuantity?: SortOrder
     unitPrice?: SortOrder
+    deliveryFee?: SortOrder
     remark?: SortOrder
     version?: SortOrder
     createdAt?: SortOrder
@@ -81131,6 +81160,7 @@ export namespace Prisma {
     orderedQuantity?: SortOrder
     receivedQuantity?: SortOrder
     unitPrice?: SortOrder
+    deliveryFee?: SortOrder
     version?: SortOrder
   }
 
@@ -81141,6 +81171,7 @@ export namespace Prisma {
     orderedQuantity?: SortOrder
     receivedQuantity?: SortOrder
     unitPrice?: SortOrder
+    deliveryFee?: SortOrder
     remark?: SortOrder
     version?: SortOrder
     createdAt?: SortOrder
@@ -81156,6 +81187,7 @@ export namespace Prisma {
     orderedQuantity?: SortOrder
     receivedQuantity?: SortOrder
     unitPrice?: SortOrder
+    deliveryFee?: SortOrder
     remark?: SortOrder
     version?: SortOrder
     createdAt?: SortOrder
@@ -81171,6 +81203,7 @@ export namespace Prisma {
     orderedQuantity?: SortOrder
     receivedQuantity?: SortOrder
     unitPrice?: SortOrder
+    deliveryFee?: SortOrder
     version?: SortOrder
   }
 
@@ -90113,6 +90146,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -90128,6 +90162,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -90444,6 +90479,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFilter<"DeliveryOrderItem"> | number
     receivedQuantity?: FloatFilter<"DeliveryOrderItem"> | number
     unitPrice?: DecimalNullableFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: DecimalNullableFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string | null
     remark?: StringNullableFilter<"DeliveryOrderItem"> | string | null
     version?: IntNullableFilter<"DeliveryOrderItem"> | number | null
     createdAt?: DateTimeNullableFilter<"DeliveryOrderItem"> | Date | string | null
@@ -92783,6 +92819,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -92798,6 +92835,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -101175,6 +101213,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -101462,6 +101501,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101477,6 +101517,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101491,6 +101532,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102272,6 +102314,7 @@ export namespace Prisma {
     orderedQuantity: number
     receivedQuantity: number
     unitPrice?: Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: Decimal | DecimalJsLike | number | string | null
     remark?: string | null
     version?: number | null
     createdAt?: Date | string | null
@@ -102284,6 +102327,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102299,6 +102343,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102313,6 +102358,7 @@ export namespace Prisma {
     orderedQuantity?: FloatFieldUpdateOperationsInput | number
     receivedQuantity?: FloatFieldUpdateOperationsInput | number
     unitPrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryFee?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     remark?: NullableStringFieldUpdateOperationsInput | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

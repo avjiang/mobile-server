@@ -7,6 +7,7 @@ interface DeliveryOrderItemInput {
     orderedQuantity: number;
     receivedQuantity: number;
     unitPrice?: PrismaDecimal;
+    deliveryFee?: PrismaDecimal;
     remark?: string;
 }
 

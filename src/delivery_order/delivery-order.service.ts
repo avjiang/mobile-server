@@ -146,6 +146,7 @@ let getById = async (id: number, databaseName: string) => {
                         orderedQuantity: true,
                         receivedQuantity: true,
                         unitPrice: true,
+                        deliveryFee: true,
                         remark: true,
                         createdAt: true,
                         updatedAt: true,
@@ -435,7 +436,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
 
         // Use single transaction for all creations
         const result = await tenantPrisma.$transaction(async (tx) => {
-            const createdDeliveryOrders = [];
+            const createdDeliveryOrders: any[] = [];
 
             for (const deliveryOrderData of deliveryOrders) {
                 // Create delivery order
@@ -470,6 +471,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                             orderedQuantity: item.orderedQuantity,
                             receivedQuantity: item.receivedQuantity,
                             unitPrice: item.unitPrice,
+                            deliveryFee: item.deliveryFee || 0, // Handle optional delivery fee
                             remark: item.remark || null,
                         })),
                     });
@@ -496,7 +498,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
             return createdDeliveryOrders;
         });
 
-        return result;
+        return result as DeliveryOrder[];
     }
     catch (error) {
         throw error
@@ -534,6 +536,10 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             // Use Decimal.add() for proper arithmetic
             const newAvailableQuantity = previousAvailableQuantity.add(quantityDelta);
             const newOnHandQuantity = previousOnHandQuantity.add(quantityDelta);
+
+            const deliveryFee = new Decimal(item.deliveryFee || 0);
+            const unitPrice = new Decimal(item.unitPrice || 0);
+            const subtotalCost = unitPrice.plus(deliveryFee);
 
             // Fix stock balance operation to match the actual unique constraint
             stockOperations.push({
@@ -582,7 +588,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
                 quantity: quantityDelta,
-                cost: new Decimal(item.unitPrice || 0),
+                cost: subtotalCost,
                 receiptDate: new Date()
             });
         }
@@ -730,6 +736,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                             orderedQuantity: item.orderedQuantity,
                             receivedQuantity: item.receivedQuantity,
                             unitPrice: item.unitPrice,
+                            deliveryFee: item.deliveryFee || 0, // Handle optional delivery fee
                             remark: item.remark || null,
                             updatedAt: new Date()
                         }))

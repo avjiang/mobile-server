@@ -162,8 +162,6 @@ model Setting {
   tenantId  Int?        @map("TENANT_ID") // Nullable, references Tenant in global DB
   userId    Int?        @map("USER_ID") // Nullable for user-specific settings
   outletId  Int?        @map("OUTLET_ID") // Nullable for outlet-specific settings
-  user      User?       @relation(fields: [userId], references: [id])
-  outlet    Outlet?     @relation(fields: [outletId], references: [id])
   key       String      @map("KEY") // e.g., "preferred_language"
   value     String      @map("VALUE") // Stores value as string
   type      SettingType @map("TYPE") // e.g., INT, STRING, BOOLEAN, JSON
@@ -172,6 +170,8 @@ model Setting {
   createdAt DateTime?   @default(now()) @map("CREATED_AT")
   updatedAt DateTime?   @updatedAt @map("UPDATED_AT")
   version   Int?        @default(1) @map("VERSION")
+  user      User?       @relation(fields: [userId], references: [id])
+  outlet    Outlet?     @relation(fields: [outletId], references: [id])
 
   @@unique([tenantId, userId, outletId, key]) // Ensure uniqueness within scope
   @@index([key]) // Index for faster lookups
@@ -631,6 +631,7 @@ model DeliveryOrderItem {
   orderedQuantity  Float         @map("ORDERED_QUANTITY")
   receivedQuantity Float         @map("RECEIVED_QUANTITY")
   unitPrice        Decimal?      @default(0) @map("UNIT_PRICE") @db.Decimal(15, 4)
+  deliveryFee      Decimal?      @default(0) @map("DELIVERY_FEE") @db.Decimal(15, 4)
   remark           String?       @default("") @map("REMARK")
   version          Int?          @default(1) @map("VERSION")
   createdAt        DateTime?     @default(now()) @map("CREATED_AT")

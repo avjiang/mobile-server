@@ -91,8 +91,9 @@ export async function updateAllTenantDatabases(): Promise<void> {
     const tenantUrl = process.env.TENANT_DATABASE_URL!.replace('{tenant_db_name}', customer.databaseName);
     console.log(`Applying migrations to ${customer.databaseName}...`);
     try {
+      const command = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy`;
       // const command = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy --schema prisma/schema.prisma`;
-      const command = `TENANT_DATABASE_URL="${tenantUrl}" npx prisma db push --schema prisma/schema.prisma --accept-data-loss`;
+      // const command = `TENANT_DATABASE_URL="${tenantUrl}" npx prisma db push --schema prisma/schema.prisma --accept-data-loss`;
       await execAsync(command);
       console.log(`Successfully updated ${customer.databaseName}`);
     } catch (error) {

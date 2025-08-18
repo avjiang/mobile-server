@@ -1,5 +1,5 @@
 import { prisma } from "@globalPrisma";
-import { updateAllTenantDatabases, disconnectAllPrismaClients, prismaMigrateResolve } from "../db";
+import { disconnectAllPrismaClients, prismaMigrateResolve } from "../db";
 
 async function runSchemaMigrateResolve() {
     try {

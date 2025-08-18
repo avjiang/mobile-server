@@ -112,16 +112,19 @@ export async function prismaMigrateResolve(): Promise<void> {
       console.warn(`Skipping tenant with ID ${customer.id}: database name is missing or null`);
       continue;
     }
-    const tenantUrl = process.env.TENANT_DATABASE_URL!.replace('{tenant_db_name}', customer.databaseName);
+    const tenantUrl = process.env.TENANT_DATABASE_URL!.replace("{tenant_db_name}", customer.databaseName);
     console.log(`Applying migrate resolve to ${customer.databaseName}...`);
     try {
-      const command = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate resolve --applied 0_init`;
+      const resolveCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate resolve --applied 0_init`;
+      await execAsync(resolveCommand);
 
-      await execAsync(command);
-      console.log(`Successfully migrate resolved ${customer.databaseName}`);
+      const deployCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy`;
+      await execAsync(deployCommand);
+
+      console.log(`✅ Successfully migrated ${customer.databaseName}`);
     } catch (error) {
-      console.error(`Failed to migrate resolve ${customer.databaseName}: ${(error as Error).message}`);
+      console.error(`❌ Failed on ${customer.databaseName}: ${(error as Error).message}`);
     }
   }
-  console.log('All tenant databases migrate resolved.');
+  console.log("All tenant databases migration resolved & deployed.");
 }

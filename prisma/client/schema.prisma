@@ -389,6 +389,7 @@ model Sales {
   discountAmount          Decimal       @default(0) @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
   profitAmount            Decimal       @map("PROFIT_AMOUNT") @db.Decimal(15, 4)
   serviceChargeAmount     Decimal       @default(0) @map("SERVICE_CHARGE_AMOUNT") @db.Decimal(15, 4)
+  isTaxInclusive          Boolean       @default(false) @map("IS_TAX_INCLUSIVE")
   taxAmount               Decimal       @default(0) @map("TAX_AMOUNT") @db.Decimal(15, 4)
   roundingAmount          Decimal       @default(0) @map("ROUNDING_AMOUNT") @db.Decimal(15, 4)
   subtotalAmount          Decimal       @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
@@ -534,6 +535,7 @@ model Invoice {
   supplierId       Int?            @map("SUPPLIER_ID")
   outletId         Int             @map("OUTLET_ID")
   subtotalAmount   Decimal         @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
+  isTaxInclusive   Boolean         @default(false) @map("IS_TAX_INCLUSIVE")
   taxAmount        Decimal         @map("TAX_AMOUNT") @db.Decimal(15, 4)
   sessionId        Int?            @map("SESSION_ID") // Optional for backwards compatibility
   discountType     String?         @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
@@ -656,6 +658,7 @@ model PurchaseOrder {
   discountType        String?             @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
   discountAmount      Decimal?            @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
   serviceChargeAmount Decimal?            @map("SERVICE_CHARGE_AMOUNT") @db.Decimal(15, 4)
+  isTaxInclusive      Boolean             @default(false) @map("IS_TAX_INCLUSIVE")
   taxAmount           Decimal?            @map("TAX_AMOUNT") @db.Decimal(15, 4)
   roundingAmount      Decimal?            @map("ROUNDING_AMOUNT") @db.Decimal(15, 4)
   subtotalAmount      Decimal?            @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)

@@ -64,7 +64,7 @@ export async function initializeTenantDatabase(tenantDbName: string) {
   const tenantUrl = process.env.TENANT_DATABASE_URL!.replace('{tenant_db_name}', tenantDbName);
 
   await globalPrisma.$executeRawUnsafe(`CREATE DATABASE IF NOT EXISTS \`${tenantDbName}\``);
-  await execAsync(`TENANT_DATABASE_URL="${tenantUrl}" npx prisma db push --schema prisma/schema.prisma`);
+  await execAsync(`TENANT_DATABASE_URL="${tenantUrl}" npx prisma migrate deploy --schema prisma/schema.prisma`);
   console.log(`Created new tenant database: ${tenantDbName}`)
 }
 
@@ -93,7 +93,6 @@ export async function updateAllTenantDatabases(): Promise<void> {
     try {
       const command = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy`;
       // const command = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy --schema prisma/schema.prisma`;
-      // const command = `TENANT_DATABASE_URL="${tenantUrl}" npx prisma db push --schema prisma/schema.prisma --accept-data-loss`;
       await execAsync(command);
       console.log(`Successfully updated ${customer.databaseName}`);
     } catch (error) {
@@ -115,7 +114,7 @@ export async function prismaMigrateResolve(): Promise<void> {
     const tenantUrl = process.env.TENANT_DATABASE_URL!.replace("{tenant_db_name}", customer.databaseName);
     console.log(`Applying migrate resolve to ${customer.databaseName}...`);
     try {
-      const resolveCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate resolve --applied 20250819005650_baseline_existing_schema`;
+      const resolveCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate resolve --applied 20250819013205_baseline_existing_schema`;
       await execAsync(resolveCommand);
 
       const deployCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy`;

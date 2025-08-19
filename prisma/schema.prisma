@@ -409,6 +409,7 @@ model Sales {
   version                 Int?          @default(1) @map("VERSION")
   tableId                 Int?          @map("TABLE_ID")
   orderStatus             String?       @map("ORDER_STATUS")
+  isTaxInclusive          Boolean?      @default(false) @map("IS_TAX_INCLUSIVE")
   salesItems              SalesItem[]
   payments                Payment[]
   registerLogs            RegisterLog[]
@@ -551,6 +552,7 @@ model Invoice {
   createdAt        DateTime?       @default(now()) @map("CREATED_AT")
   updatedAt        DateTime?       @updatedAt @map("UPDATED_AT")
   version          Int?            @default(1) @map("VERSION")
+  isTaxInclusive   Boolean?        @default(false) @map("IS_TAX_INCLUSIVE")
   session          Session?        @relation(fields: [sessionId], references: [id])
   purchaseOrder    PurchaseOrder?  @relation(fields: [purchaseOrderId], references: [id])
   supplier         Supplier?       @relation(fields: [supplierId], references: [id])
@@ -669,6 +671,7 @@ model PurchaseOrder {
   createdAt           DateTime?           @default(now()) @map("CREATED_AT")
   updatedAt           DateTime?           @updatedAt @map("UPDATED_AT")
   version             Int?                @default(1) @map("VERSION")
+  isTaxInclusive      Boolean?            @default(false) @map("IS_TAX_INCLUSIVE")
   session             Session?            @relation(fields: [sessionId], references: [id])
   supplier            Supplier            @relation(fields: [supplierId], references: [id])
   purchaseOrderItems  PurchaseOrderItem[]

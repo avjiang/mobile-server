@@ -21,7 +21,7 @@ model SubscriptionPlan {
     subscription    TenantSubscription[]
 
     @@index([price]) // If querying for plans within price ranges
-    @@map("SUBSCRIPTION_PLAN")
+    @@map("subscription_plan")
 }
 
 model SubscriptionAddOn {
@@ -37,7 +37,7 @@ model SubscriptionAddOn {
     @@index([name]) // If frequently searching by add-on name
     @@index([addOnType]) // If filtering by add-on type
     @@index([scope]) // If filtering by scope
-    @@map("SUBSCRIPTION_ADD_ON")
+    @@map("subscription_add_on")
 }
 
 model Tenant {
@@ -51,7 +51,7 @@ model Tenant {
 
     @@index([tenantName]) // If you often search for tenants by name
     @@index([createdAt]) // For sorting or filtering tenants by creation date
-    @@map("TENANT")
+    @@map("tenant")
 }
 
 model TenantSubscription {
@@ -76,7 +76,7 @@ model TenantSubscription {
     @@index([subscriptionValidUntil])
     @@index([tenantId, status]) // Composite for finding subscriptions of a tenant by status
     @@index([outletId, status]) // Composite for finding subscriptions of an outlet by status
-    @@map("TENANT_SUBSCRIPTION")
+    @@map("tenant_subscription")
 }
 
 model TenantSubscriptionAddOn {
@@ -88,7 +88,7 @@ model TenantSubscriptionAddOn {
     addOn                SubscriptionAddOn  @relation(fields: [addOnId], references: [id])
 
     @@unique([tenantSubscriptionId, addOnId])
-    @@map("TENANT_SUBSCRIPTION_ADD_ON")
+    @@map("tenant_subscription_add_on")
 }
 
 model TenantOutlet {
@@ -104,7 +104,7 @@ model TenantOutlet {
     @@index([outletName])
     @@index([isActive])
     @@index([tenantId, isActive])
-    @@map("TENANT_OUTLET")
+    @@map("tenant_outlet")
 }
 
 model Discount {
@@ -123,7 +123,7 @@ model Discount {
     @@index([discountType])
     @@index([startDate, endDate]) // For finding active discounts in a date range
     @@index([appliesTo])
-    @@map("DISCOUNT")
+    @@map("discount")
 }
 
 model TenantUser {
@@ -139,7 +139,7 @@ model TenantUser {
     @@index([isDeleted])
     @@index([tenantId, role]) // For finding users of a certain role in a tenant
     @@index([tenantId, isDeleted])
-    @@map("TENANT_USER")
+    @@map("tenant_user")
 }
 
 model RefreshToken {
@@ -156,7 +156,7 @@ model RefreshToken {
     @@index([expired])
     @@index([revoked])
     @@index([deleted])
-    @@map("REFRESH_TOKEN")
+    @@map("refresh_token")
 }
 
 // Permission model to store granular permissions (e.g., "create_order", "view_reports")
@@ -172,5 +172,5 @@ model Permission {
     deletedAt    DateTime? @map("DELETED_AT")
     version      Int?      @default(1) @map("VERSION")
 
-    @@map("PERMISSION")
+    @@map("permission")
 }

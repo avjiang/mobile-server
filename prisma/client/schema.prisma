@@ -61,7 +61,7 @@ enum PromotionType {
   GENERIC // Buy X Get Y, Stock clearance, etc.
   CUSTOMER // Customer-specific promotions
 
-  @@map("PROMOTION_TYPE")
+  @@map("promotion_type")
 }
 
 // Promotion Discount Types
@@ -71,7 +71,7 @@ enum DiscountType {
   BUY_X_GET_Y // Buy X items, get Y items free
   BUY_X_GET_Y_DISCOUNT // Buy X items, get Y items at discount
 
-  @@map("DISCOUNT_TYPE")
+  @@map("discount_type")
 }
 
 // Promotion Status
@@ -81,7 +81,7 @@ enum PromotionStatus {
   EXPIRED
   SCHEDULED
 
-  @@map("PROMOTION_STATUS")
+  @@map("promotion_status")
 }
 
 // Promotion Combination Rules (simple version)
@@ -89,7 +89,7 @@ enum CombinationRule {
   STACKABLE // Can be combined with other promotions
   EXCLUSIVE // Cannot be combined with any other promotion
 
-  @@map("COMBINATION_RULE")
+  @@map("combination_rule")
 }
 
 // Role model to store different roles (e.g., Admin, Cashier, Manager)
@@ -98,15 +98,15 @@ model Role {
   name        String           @unique @map("NAME") // e.g., "Admin", "Cashier"
   category    String?          @map("CATEGORY") // e.g., "Cashier", "Admin"
   description String?          @map("DESCRIPTION")
-  permission  RolePermission[] @relation("ROLE_PERMISSIONS") // Explicit relation to RolePermission
-  users       User[]           @relation("USER_ROLES") // Many-to-many with users
   createdAt   DateTime?        @default(now()) @map("CREATED_AT")
   updatedAt   DateTime?        @updatedAt @map("UPDATED_AT")
   deleted     Boolean          @default(false) @map("IS_DELETED")
   deletedAt   DateTime?        @map("DELETED_AT")
   version     Int?             @default(1) @map("VERSION")
+  permission  RolePermission[] @relation("ROLE_PERMISSIONS") // Explicit relation to RolePermission
+  users       User[]           @relation("user_roles") // Many-to-many with users
 
-  @@map("ROLE")
+  @@map("role")
 }
 
 model RolePermission {
@@ -121,7 +121,7 @@ model RolePermission {
   version      Int?      @default(1) @map("VERSION")
 
   @@unique([roleId, permissionId])
-  @@map("ROLE_PERMISSION")
+  @@map("role_permission")
 }
 
 model User {
@@ -139,10 +139,10 @@ model User {
   updatedAt        DateTime?     @updatedAt @map("UPDATED_AT")
   version          Int?          @default(1) @map("VERSION")
   settings         Setting[] // Existing relation to Setting
-  roles            Role[]        @relation("USER_ROLES") // Many-to-many with roles
+  roles            Role[]        @relation("user_roles") // Many-to-many with roles
   overrideRequests OverrideLog[] @relation("OverrideRequests")
 
-  @@map("USER")
+  @@map("user")
 }
 
 model OverrideLog {
@@ -154,7 +154,7 @@ model OverrideLog {
   createdAt  DateTime @default(now()) @map("CREATED_AT")
   user       User     @relation("OverrideRequests", fields: [userId], references: [id])
 
-  @@map("OVERRIDE_LOG")
+  @@map("override_log")
 }
 
 model Setting {
@@ -175,7 +175,7 @@ model Setting {
 
   @@unique([tenantId, userId, outletId, key]) // Ensure uniqueness within scope
   @@index([key]) // Index for faster lookups
-  @@map("SETTING")
+  @@map("setting")
 }
 
 model Referral {
@@ -187,7 +187,7 @@ model Referral {
   updatedAt  DateTime? @updatedAt @map("UPDATED_AT")
   version    Int?      @default(1) @map("VERSION")
 
-  @@map("REFERRAL")
+  @@map("referral")
 }
 
 model Supplier {
@@ -215,7 +215,7 @@ model Supplier {
   invoices                Invoice[]
 
   @@index([companyName])
-  @@map("SUPPLIER")
+  @@map("supplier")
 }
 
 // Updated Customer model with promotion relations
@@ -251,7 +251,7 @@ model Customer {
   waitlists      Waitlist[]
   splitBills     SplitBill[]
 
-  @@map("CUSTOMER")
+  @@map("customer")
 }
 
 model Company {
@@ -271,7 +271,7 @@ model Company {
   updatedAt          DateTime? @updatedAt @map("UPDATED_AT")
   version            Int?      @default(1) @map("VERSION")
 
-  @@map("COMPANY")
+  @@map("company")
 }
 
 model Outlet {
@@ -300,7 +300,7 @@ model Outlet {
   reservations   Reservation[]
   waitlists      Waitlist[]
 
-  @@map("OUTLET")
+  @@map("outlet")
 }
 
 model Item {
@@ -347,7 +347,7 @@ model Item {
   @@index([categoryId])
   @@index([updatedAt])
   @@index([supplierId])
-  @@map("ITEM")
+  @@map("item")
 }
 
 model Category {
@@ -363,7 +363,7 @@ model Category {
   version     Int?      @default(1) @map("VERSION")
   items       Item[]
 
-  @@map("ITEM_CATEGORY")
+  @@map("item_category")
 }
 
 model Sales {
@@ -418,7 +418,7 @@ model Sales {
   @@index([businessDate])
   @@index([outletId])
   @@index([sessionId, completedSessionId])
-  @@map("SALES")
+  @@map("sales")
 }
 
 model SalesItem {
@@ -456,7 +456,7 @@ model SalesItem {
   @@index([itemId])
   @@index([quantity])
   @@index([profit])
-  @@map("SALES_ITEM")
+  @@map("sales_item")
 }
 
 model SalesItemModifier {
@@ -479,7 +479,7 @@ model SalesItemModifier {
   @@index([salesItemId])
   @@index([menuItemModifierId])
   @@index([itemId])
-  @@map("SALES_ITEM_MODIFIER")
+  @@map("sales_item_modifier")
 }
 
 model SalesQuotation {
@@ -508,7 +508,7 @@ model SalesQuotation {
   version             Int?                 @default(1) @map("VERSION")
   salesQuotationItems SalesQuotationItem[]
 
-  @@map("SALES_QUOTATION")
+  @@map("sales_quotation")
 }
 
 model SalesQuotationItem {
@@ -523,7 +523,7 @@ model SalesQuotationItem {
   version          Int?           @default(1) @map("VERSION")
   salesQuotation   SalesQuotation @relation(fields: [salesQuotationId], references: [id])
 
-  @@map("SALES_QUOTATION_ITEM")
+  @@map("sales_quotation_item")
 }
 
 model Invoice {
@@ -561,7 +561,7 @@ model Invoice {
   @@index([supplierId])
   @@index([outletId])
   @@index([createdAt, updatedAt, deletedAt])
-  @@map("INVOICE")
+  @@map("invoice")
 }
 
 model InvoiceItem {
@@ -585,7 +585,7 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@index([itemId])
-  @@map("INVOICE_ITEM")
+  @@map("invoice_item")
 }
 
 model DeliveryOrder {
@@ -621,7 +621,7 @@ model DeliveryOrder {
   @@index([purchaseOrderId])
   @@index([invoiceId, supplierId])
   @@index([createdAt, updatedAt, deletedAt])
-  @@map("DELIVERY_ORDER")
+  @@map("delivery_order")
 }
 
 model DeliveryOrderItem {
@@ -643,7 +643,7 @@ model DeliveryOrderItem {
 
   @@index([deliveryOrderId])
   @@index([itemId])
-  @@map("DELIVERY_ORDER_ITEM")
+  @@map("delivery_order_item")
 }
 
 model PurchaseOrder {
@@ -678,7 +678,7 @@ model PurchaseOrder {
   @@index([supplierId])
   @@index([outletId])
   @@index([createdAt, updatedAt, deletedAt])
-  @@map("PURCHASE_ORDER")
+  @@map("purchase_order")
 }
 
 model PurchaseOrderItem {
@@ -702,7 +702,7 @@ model PurchaseOrderItem {
 
   @@index([purchaseOrderId])
   @@index([itemId])
-  @@map("PURCHASE_ORDER_ITEM")
+  @@map("purchase_order_item")
 }
 
 model Payment {
@@ -731,7 +731,7 @@ model Payment {
 
   @@index([method])
   @@index([businessDate])
-  @@map("PAYMENT")
+  @@map("payment")
 }
 
 model RegisterLog {
@@ -752,7 +752,7 @@ model RegisterLog {
   version        Int?      @default(1) @map("VERSION")
   sales          Sales     @relation(fields: [salesId], references: [id])
 
-  @@map("REGISTER_LOG")
+  @@map("register_log")
 }
 
 model CardInfo {
@@ -772,7 +772,7 @@ model CardInfo {
   version     Int?      @default(1) @map("VERSION")
   payment     Payment   @relation(fields: [paymentId], references: [id])
 
-  @@map("CARD_INFO")
+  @@map("card_info")
 }
 
 model Session {
@@ -795,7 +795,7 @@ model Session {
   deliveryOrders  DeliveryOrder[]
   invoices        Invoice[]
 
-  @@map("SESSION")
+  @@map("session")
 }
 
 model Declaration {
@@ -812,7 +812,7 @@ model Declaration {
   sessionID          Int       @map("SESSION_ID")
   session            Session   @relation(fields: [sessionID], references: [id])
 
-  @@map("DECLARATION")
+  @@map("declaration")
 }
 
 model StockBalance {
@@ -832,7 +832,7 @@ model StockBalance {
   outlet            Outlet    @relation(fields: [outletId], references: [id])
 
   @@unique([itemId, outletId, reorderThreshold, deleted, availableQuantity])
-  @@map("STOCK_BALANCE")
+  @@map("stock_balance")
 }
 
 model StockReceipt {
@@ -850,7 +850,7 @@ model StockReceipt {
   item        Item      @relation(fields: [itemId], references: [id])
   outlet      Outlet    @relation(fields: [outletId], references: [id])
 
-  @@map("STOCK_RECEIPT")
+  @@map("stock_receipt")
 }
 
 model StockReceiptArchive {
@@ -868,7 +868,7 @@ model StockReceiptArchive {
 
   @@index([itemId, receiptDate])
   @@index([outletId])
-  @@map("STOCK_RECEIPT_ARCHIVE")
+  @@map("stock_receipt_archive")
 }
 
 model StockMovement {
@@ -895,7 +895,7 @@ model StockMovement {
   @@index([outletId])
   @@index([movementType])
   @@index([deleted])
-  @@map("STOCK_MOVEMENT")
+  @@map("stock_movement")
 }
 
 model StockMovementArchive {
@@ -922,7 +922,7 @@ model StockMovementArchive {
   @@index([itemId, createdAt])
   @@index([outletId])
   @@index([movementType])
-  @@map("STOCK_MOVEMENT_ARCHIVE")
+  @@map("stock_movement_archive")
 }
 
 model StockSnapshot {
@@ -941,7 +941,7 @@ model StockSnapshot {
 
   @@index([itemId, createdAt])
   @@index([outletId])
-  @@map("STOCK_SNAPSHOT")
+  @@map("stock_snapshot")
 }
 
 model MenuProfileOutlet {
@@ -954,7 +954,7 @@ model MenuProfileOutlet {
   updatedAt     DateTime? @updatedAt @map("UPDATED_AT")
   version       Int?      @default(1) @map("VERSION")
 
-  @@map("MENU_PROFILE_OUTLET")
+  @@map("menu_profile_outlet")
 }
 
 model MenuProfile {
@@ -979,7 +979,7 @@ model MenuProfile {
   version        Int?           @default(1) @map("VERSION")
   menuCategories MenuCategory[]
 
-  @@map("MENU_PROFILE")
+  @@map("menu_profile")
 }
 
 model MenuCategory {
@@ -995,7 +995,7 @@ model MenuCategory {
   menuProfile   MenuProfile @relation(fields: [menuProfileID], references: [id])
   menuItems     MenuItem[]
 
-  @@map("MENU_CATEGORY")
+  @@map("menu_category")
 }
 
 model MenuItem {
@@ -1016,7 +1016,7 @@ model MenuItem {
   menuItemModifierGroups MenuItemModifierGroup[]
   recipes                Recipe[]
 
-  @@map("MENU_ITEM")
+  @@map("menu_item")
 }
 
 model MenuItemModifierGroup {
@@ -1035,7 +1035,7 @@ model MenuItemModifierGroup {
   freeModifierLimit Int?               @map("FREE_MODIFIER_LIMIT") // e.g., first 2 modifiers free
   menuItemModifiers MenuItemModifier[]
 
-  @@map("MENU_ITEM_MODIFIER_GROUP")
+  @@map("menu_item_modifier_group")
 }
 
 model MenuItemModifier {
@@ -1057,7 +1057,7 @@ model MenuItemModifier {
   salesItemModifiers      SalesItemModifier[]
   recipes                 Recipe[]
 
-  @@map("MENU_ITEM_MODIFIER")
+  @@map("menu_item_modifier")
 }
 
 model Table {
@@ -1076,7 +1076,7 @@ model Table {
   sales        Sales[]
   reservations Reservation[]
 
-  @@map("TABLE")
+  @@map("table")
 }
 
 model Recipe {
@@ -1096,7 +1096,7 @@ model Recipe {
   menuItem           MenuItem          @relation(fields: [menuItemId], references: [id])
   item               Item              @relation(fields: [itemId], references: [id])
 
-  @@map("RECIPE")
+  @@map("recipe")
 }
 
 model Station {
@@ -1111,7 +1111,7 @@ model Station {
   outlet       Outlet         @relation(fields: [outletId], references: [id])
   orderRouting OrderRouting[]
 
-  @@map("STATION")
+  @@map("station")
 }
 
 model Reservation {
@@ -1131,7 +1131,7 @@ model Reservation {
   customer   Customer? @relation(fields: [customerId], references: [id])
   table      Table?    @relation(fields: [tableId], references: [id])
 
-  @@map("RESERVATION")
+  @@map("reservation")
 }
 
 model OrderRouting {
@@ -1149,7 +1149,7 @@ model OrderRouting {
   salesItem   SalesItem @relation(fields: [salesItemId], references: [id])
   station     Station   @relation(fields: [stationId], references: [id])
 
-  @@map("ORDER_ROUTING")
+  @@map("order_routing")
 }
 
 model Waitlist {
@@ -1167,7 +1167,7 @@ model Waitlist {
   outlet     Outlet    @relation(fields: [outletId], references: [id])
   customer   Customer? @relation(fields: [customerId], references: [id])
 
-  @@map("WAITLIST")
+  @@map("waitlist")
 }
 
 model SplitBill {
@@ -1184,7 +1184,7 @@ model SplitBill {
   payment    Payment?  @relation(fields: [paymentId], references: [id])
   customer   Customer? @relation(fields: [customerId], references: [id])
 
-  @@map("SPLIT_BILL")
+  @@map("split_bill")
 }
 
 // Main Promotion Model (Simplified)
@@ -1240,7 +1240,7 @@ model Promotion {
   customers    PromotionCustomer[]
   usageHistory PromotionUsage[]
 
-  @@map("PROMOTION")
+  @@map("promotion")
 }
 
 // Items included in the promotion
@@ -1262,7 +1262,7 @@ model PromotionItem {
 
   promotion Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
 
-  @@map("PROMOTION_ITEM")
+  @@map("promotion_item")
 }
 
 // Customer-specific promotion assignments
@@ -1284,7 +1284,7 @@ model PromotionCustomer {
   customer  Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@unique([promotionId, customerId])
-  @@map("PROMOTION_CUSTOMER")
+  @@map("promotion_customer")
 }
 
 // Track promotion usage history
@@ -1301,7 +1301,7 @@ model PromotionUsage {
   promotion Promotion @relation(fields: [promotionId], references: [id])
   customer  Customer? @relation(fields: [customerId], references: [id])
 
-  @@map("PROMOTION_USAGE")
+  @@map("promotion_usage")
 }
 
 model RegisteredDevice {
@@ -1320,5 +1320,5 @@ model RegisteredDevice {
   @@unique([tenantId, siteId]) // Unique combination within tenant
   @@index([clientDeviceId])
   @@index([tenantId])
-  @@map("REGISTERED_DEVICE")
+  @@map("registered_device")
 }

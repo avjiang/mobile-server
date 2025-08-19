@@ -115,7 +115,7 @@ export async function prismaMigrateResolve(): Promise<void> {
     const tenantUrl = process.env.TENANT_DATABASE_URL!.replace("{tenant_db_name}", customer.databaseName);
     console.log(`Applying migrate resolve to ${customer.databaseName}...`);
     try {
-      const resolveCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate resolve --applied 0_init`;
+      const resolveCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate resolve --applied 20250819005650_baseline_existing_schema`;
       await execAsync(resolveCommand);
 
       const deployCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy`;

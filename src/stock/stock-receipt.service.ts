@@ -1,4 +1,4 @@
-import { PrismaClient, StockReceipt } from "../../prisma/client"
+import { PrismaClient, StockReceipt } from "prisma/client"
 import { getTenantPrisma } from '../db';
 
 let getItemStockReceipt = async (databaseName: string, itemId: number, outletId?: number) => {

@@ -1,6 +1,3 @@
-import { Decimal } from "../../prisma/client/runtime/library";
-import { Expose, Transform } from "class-transformer";
-
 export interface OutletDetailsResponse {
     outletId: number;
     outletName: string;

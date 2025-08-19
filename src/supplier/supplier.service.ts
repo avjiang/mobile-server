@@ -1,7 +1,5 @@
-import { PrismaClient, Supplier } from "../../prisma/client"
+import { PrismaClient, Supplier } from "prisma/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
-import { plainToInstance } from "class-transformer"
-import { SupplierDto } from "./supplier.response"
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
 

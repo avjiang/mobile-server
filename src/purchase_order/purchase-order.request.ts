@@ -1,5 +1,5 @@
-import { PurchaseOrder, StockBalance } from "../../prisma/client"
-import { Decimal as PrismaDecimal } from "../../prisma/client/runtime/library";
+import { PurchaseOrder, StockBalance } from "prisma/client"
+import { Decimal as PrismaDecimal } from "prisma/client/runtime/library";
 
 interface PurchaseOrderItemInput {
     id?: number; // Add id for updates

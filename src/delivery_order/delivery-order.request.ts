@@ -1,4 +1,4 @@
-import { Decimal as PrismaDecimal } from "@prisma/tenant-prisma/runtime/library";
+import { Decimal as PrismaDecimal } from "../../prisma/client/generated/client/runtime/library";
 
 interface DeliveryOrderItemInput {
     id?: number; // Add id for updates

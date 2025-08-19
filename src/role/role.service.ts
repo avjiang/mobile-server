@@ -1,4 +1,4 @@
-import { PrismaClient, Category } from "@prisma/tenant-prisma"
+import { PrismaClient, Category } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { CreateRoleRequestBody } from "./role.request";

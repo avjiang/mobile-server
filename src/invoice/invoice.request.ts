@@ -1,4 +1,4 @@
-import { Invoice, StockBalance } from "@prisma/tenant-prisma"
+import { Invoice, StockBalance } from "../../prisma/client/generated/client"
 
 interface InvoiceItemInput {
     id?: number; // Add id for updates

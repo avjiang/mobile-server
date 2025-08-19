@@ -81,7 +81,7 @@
     "sqlstring": "^2.3.1",
     "statuses": "^2.0.1",
     "string_decoder": "^1.1.1",
-    "toidentifier": "^1.0.1",
+    "toidentifier": "^1.0.1", 
     "type-is": "^1.6.18",
     "unpipe": "^1.0.0",
     "util-deprecate": "^1.0.2",
@@ -91,7 +91,6 @@
   },
    "scripts": {
     "build": "tsc",
-    "postinstall": "npm run generate_prisma",
     "dev": "pm2 start ecosystem.config.js && npm run tunnel",
     "start": "node dist/index.js",
     "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js",

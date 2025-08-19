@@ -1,4 +1,4 @@
-import { Customer } from "@prisma/tenant-prisma"
+import { Customer } from "../../prisma/client/generated/client"
 
 export interface CreateCustomersRequestBody {
     customers: Customer[]

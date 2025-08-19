@@ -1,4 +1,4 @@
-import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "@prisma/global-prisma";
+import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../prisma/global-client/generated/global";
 
 export interface CreateTenantRequest {
     tenant: {

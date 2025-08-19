@@ -1,4 +1,4 @@
-import { PrismaClient, Category, Outlet } from "@prisma/tenant-prisma"
+import { PrismaClient, Category, Outlet } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 

@@ -1,4 +1,4 @@
-import { MenuCategory, MenuItem, MenuItemModifierGroup, MenuProfile, PrismaClient } from "@prisma/tenant-prisma"
+import { MenuCategory, MenuItem, MenuItemModifierGroup, MenuProfile, PrismaClient } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { CreateMenuProfileRequestBody, MenuProfileRequestBody } from "./menu.request"
 

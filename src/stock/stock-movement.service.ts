@@ -1,4 +1,4 @@
-import { PrismaClient, StockMovement } from "@prisma/tenant-prisma"
+import { PrismaClient, StockMovement } from "../../prisma/client/generated/client"
 import { getTenantPrisma } from '../db';
 
 let getAllStockCheck = async (databaseName: string) => {

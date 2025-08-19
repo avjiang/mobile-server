@@ -1,4 +1,4 @@
-import { StockBalance } from "@prisma/tenant-prisma"
+import { StockBalance } from "../../prisma/client/generated/client"
 
 export interface CreateStocksRequestBody {
     stocks: StockBalance[]

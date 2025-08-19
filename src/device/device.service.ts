@@ -1,4 +1,4 @@
-import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "@prisma/global-prisma";
+import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../prisma/global-client/generated/global";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { RegisterDeviceRequest } from "./device.request";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');

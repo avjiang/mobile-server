@@ -1,5 +1,5 @@
 import { Expose, Transform } from "class-transformer";
-import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, TenantSubscription } from "@prisma/global-prisma";
+import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, TenantSubscription } from "../../prisma/global-client/generated/global";
 
 type TenantUserWithoutPassword = Omit<TenantUser, 'password'>;
 

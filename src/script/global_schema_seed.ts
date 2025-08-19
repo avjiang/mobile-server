@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/global-prisma";
+import { PrismaClient } from "../../prisma/global-client/generated/global";
 import bcrypt from "bcryptjs"
 import { getTenantPrisma, initializeTenantDatabase } from '../db';
 

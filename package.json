@@ -89,7 +89,7 @@
     "validator": "^13.11.0",
     "vary": "^1.1.2"
   },
-  "scripts": {
+   "scripts": {
     "build": "tsc",
     "dev": "pm2 start ecosystem.config.js && npm run tunnel",
     "start": "node dist/index.js",
@@ -97,7 +97,7 @@
     "migrate_global_db": "npx prisma migrate deploy --schema=prisma/global-client/schema.prisma",
     "seed_tenant_items": "ts-node src/script/tenant_db_seed.ts",
     "seed_global": "ts-node src/script/global_schema_seed.ts",
-    "generate_prisma": "npx prisma generate && npx prisma generate --schema=prisma/global-client/schema.prisma",
+    "generate_prisma": "npx prisma generate --schema=prisma/client/schema.prisma && npx prisma generate --schema=prisma/global-client/schema.prisma",
     "tunnel": "ngrok http --scheme=http --url=above-frog-capital.ngrok-free.app 8080",
     "delete_all_db": "ts-node src/script/delete_all_db.ts",
     "init": "npm run delete_all_db && npx prisma migrate deploy --schema=prisma/global-client/schema.prisma && npm run seed_global && npm run seed_tenant_items"

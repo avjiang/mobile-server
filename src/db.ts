@@ -100,29 +100,3 @@ export async function updateAllTenantDatabases(): Promise<void> {
   }
   console.log('All tenant databases updated.');
 }
-
-export async function prismaMigrateResolve(): Promise<void> {
-  const globalPrisma = getGlobalPrisma();
-  const customers = await globalPrisma.tenant.findMany();
-
-  for (const customer of customers) {
-    if (!customer.databaseName) {
-      console.warn(`Skipping tenant with ID ${customer.id}: database name is missing or null`);
-      continue;
-    }
-    const tenantUrl = process.env.TENANT_DATABASE_URL!.replace("{tenant_db_name}", customer.databaseName);
-    console.log(`Applying migrate resolve to ${customer.databaseName}...`);
-    try {
-      const resolveCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate resolve --applied 20250819013205_baseline_existing_schema`;
-      await execAsync(resolveCommand);
-
-      const deployCommand = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy`;
-      await execAsync(deployCommand);
-
-      console.log(`✅ Successfully migrated ${customer.databaseName}`);
-    } catch (error) {
-      console.error(`❌ Failed on ${customer.databaseName}: ${(error as Error).message}`);
-    }
-  }
-  console.log("All tenant databases migration resolved & deployed.");
-}

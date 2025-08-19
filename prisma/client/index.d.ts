@@ -20066,7 +20066,6 @@ export namespace Prisma {
     discountAmount: Decimal | null
     profitAmount: Decimal | null
     serviceChargeAmount: Decimal | null
-    isTaxInclusive: boolean | null
     taxAmount: Decimal | null
     roundingAmount: Decimal | null
     subtotalAmount: Decimal | null
@@ -20087,6 +20086,7 @@ export namespace Prisma {
     version: number | null
     tableId: number | null
     orderStatus: string | null
+    isTaxInclusive: boolean | null
   }
 
   export type SalesMaxAggregateOutputType = {
@@ -20112,7 +20112,6 @@ export namespace Prisma {
     discountAmount: Decimal | null
     profitAmount: Decimal | null
     serviceChargeAmount: Decimal | null
-    isTaxInclusive: boolean | null
     taxAmount: Decimal | null
     roundingAmount: Decimal | null
     subtotalAmount: Decimal | null
@@ -20133,6 +20132,7 @@ export namespace Prisma {
     version: number | null
     tableId: number | null
     orderStatus: string | null
+    isTaxInclusive: boolean | null
   }
 
   export type SalesCountAggregateOutputType = {
@@ -20158,7 +20158,6 @@ export namespace Prisma {
     discountAmount: number
     profitAmount: number
     serviceChargeAmount: number
-    isTaxInclusive: number
     taxAmount: number
     roundingAmount: number
     subtotalAmount: number
@@ -20179,6 +20178,7 @@ export namespace Prisma {
     version: number
     tableId: number
     orderStatus: number
+    isTaxInclusive: number
     _all: number
   }
 
@@ -20252,7 +20252,6 @@ export namespace Prisma {
     discountAmount?: true
     profitAmount?: true
     serviceChargeAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     roundingAmount?: true
     subtotalAmount?: true
@@ -20273,6 +20272,7 @@ export namespace Prisma {
     version?: true
     tableId?: true
     orderStatus?: true
+    isTaxInclusive?: true
   }
 
   export type SalesMaxAggregateInputType = {
@@ -20298,7 +20298,6 @@ export namespace Prisma {
     discountAmount?: true
     profitAmount?: true
     serviceChargeAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     roundingAmount?: true
     subtotalAmount?: true
@@ -20319,6 +20318,7 @@ export namespace Prisma {
     version?: true
     tableId?: true
     orderStatus?: true
+    isTaxInclusive?: true
   }
 
   export type SalesCountAggregateInputType = {
@@ -20344,7 +20344,6 @@ export namespace Prisma {
     discountAmount?: true
     profitAmount?: true
     serviceChargeAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     roundingAmount?: true
     subtotalAmount?: true
@@ -20365,6 +20364,7 @@ export namespace Prisma {
     version?: true
     tableId?: true
     orderStatus?: true
+    isTaxInclusive?: true
     _all?: true
   }
 
@@ -20477,7 +20477,6 @@ export namespace Prisma {
     discountAmount: Decimal
     profitAmount: Decimal
     serviceChargeAmount: Decimal
-    isTaxInclusive: boolean
     taxAmount: Decimal
     roundingAmount: Decimal
     subtotalAmount: Decimal
@@ -20498,6 +20497,7 @@ export namespace Prisma {
     version: number | null
     tableId: number | null
     orderStatus: string | null
+    isTaxInclusive: boolean | null
     _count: SalesCountAggregateOutputType | null
     _avg: SalesAvgAggregateOutputType | null
     _sum: SalesSumAggregateOutputType | null
@@ -20542,7 +20542,6 @@ export namespace Prisma {
     discountAmount?: boolean
     profitAmount?: boolean
     serviceChargeAmount?: boolean
-    isTaxInclusive?: boolean
     taxAmount?: boolean
     roundingAmount?: boolean
     subtotalAmount?: boolean
@@ -20563,6 +20562,7 @@ export namespace Prisma {
     version?: boolean
     tableId?: boolean
     orderStatus?: boolean
+    isTaxInclusive?: boolean
     salesItems?: boolean | Sales$salesItemsArgs<ExtArgs>
     payments?: boolean | Sales$paymentsArgs<ExtArgs>
     registerLogs?: boolean | Sales$registerLogsArgs<ExtArgs>
@@ -20596,7 +20596,6 @@ export namespace Prisma {
     discountAmount?: boolean
     profitAmount?: boolean
     serviceChargeAmount?: boolean
-    isTaxInclusive?: boolean
     taxAmount?: boolean
     roundingAmount?: boolean
     subtotalAmount?: boolean
@@ -20617,9 +20616,10 @@ export namespace Prisma {
     version?: boolean
     tableId?: boolean
     orderStatus?: boolean
+    isTaxInclusive?: boolean
   }
 
-  export type SalesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "outletId" | "businessDate" | "salesType" | "customerName" | "customerId" | "phoneNumber" | "billStreet" | "billCity" | "billState" | "billPostalCode" | "billCountry" | "shipStreet" | "shipCity" | "shipState" | "shipPostalCode" | "shipCountry" | "totalItemDiscountAmount" | "discountPercentage" | "discountAmount" | "profitAmount" | "serviceChargeAmount" | "isTaxInclusive" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "paidAmount" | "changeAmount" | "status" | "remark" | "completedSessionId" | "sessionId" | "eodId" | "salesQuotationId" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "tableId" | "orderStatus", ExtArgs["result"]["sales"]>
+  export type SalesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "outletId" | "businessDate" | "salesType" | "customerName" | "customerId" | "phoneNumber" | "billStreet" | "billCity" | "billState" | "billPostalCode" | "billCountry" | "shipStreet" | "shipCity" | "shipState" | "shipPostalCode" | "shipCountry" | "totalItemDiscountAmount" | "discountPercentage" | "discountAmount" | "profitAmount" | "serviceChargeAmount" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "paidAmount" | "changeAmount" | "status" | "remark" | "completedSessionId" | "sessionId" | "eodId" | "salesQuotationId" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "tableId" | "orderStatus" | "isTaxInclusive", ExtArgs["result"]["sales"]>
   export type SalesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     salesItems?: boolean | Sales$salesItemsArgs<ExtArgs>
     payments?: boolean | Sales$paymentsArgs<ExtArgs>
@@ -20661,7 +20661,6 @@ export namespace Prisma {
       discountAmount: Prisma.Decimal
       profitAmount: Prisma.Decimal
       serviceChargeAmount: Prisma.Decimal
-      isTaxInclusive: boolean
       taxAmount: Prisma.Decimal
       roundingAmount: Prisma.Decimal
       subtotalAmount: Prisma.Decimal
@@ -20682,6 +20681,7 @@ export namespace Prisma {
       version: number | null
       tableId: number | null
       orderStatus: string | null
+      isTaxInclusive: boolean | null
     }, ExtArgs["result"]["sales"]>
     composites: {}
   }
@@ -21078,7 +21078,6 @@ export namespace Prisma {
     readonly discountAmount: FieldRef<"Sales", 'Decimal'>
     readonly profitAmount: FieldRef<"Sales", 'Decimal'>
     readonly serviceChargeAmount: FieldRef<"Sales", 'Decimal'>
-    readonly isTaxInclusive: FieldRef<"Sales", 'Boolean'>
     readonly taxAmount: FieldRef<"Sales", 'Decimal'>
     readonly roundingAmount: FieldRef<"Sales", 'Decimal'>
     readonly subtotalAmount: FieldRef<"Sales", 'Decimal'>
@@ -21099,6 +21098,7 @@ export namespace Prisma {
     readonly version: FieldRef<"Sales", 'Int'>
     readonly tableId: FieldRef<"Sales", 'Int'>
     readonly orderStatus: FieldRef<"Sales", 'String'>
+    readonly isTaxInclusive: FieldRef<"Sales", 'Boolean'>
   }
     
 
@@ -26253,7 +26253,6 @@ export namespace Prisma {
     supplierId: number | null
     outletId: number | null
     subtotalAmount: Decimal | null
-    isTaxInclusive: boolean | null
     taxAmount: Decimal | null
     sessionId: number | null
     discountType: string | null
@@ -26271,6 +26270,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     version: number | null
+    isTaxInclusive: boolean | null
   }
 
   export type InvoiceMaxAggregateOutputType = {
@@ -26281,7 +26281,6 @@ export namespace Prisma {
     supplierId: number | null
     outletId: number | null
     subtotalAmount: Decimal | null
-    isTaxInclusive: boolean | null
     taxAmount: Decimal | null
     sessionId: number | null
     discountType: string | null
@@ -26299,6 +26298,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     version: number | null
+    isTaxInclusive: boolean | null
   }
 
   export type InvoiceCountAggregateOutputType = {
@@ -26309,7 +26309,6 @@ export namespace Prisma {
     supplierId: number
     outletId: number
     subtotalAmount: number
-    isTaxInclusive: number
     taxAmount: number
     sessionId: number
     discountType: number
@@ -26327,6 +26326,7 @@ export namespace Prisma {
     createdAt: number
     updatedAt: number
     version: number
+    isTaxInclusive: number
     _all: number
   }
 
@@ -26365,7 +26365,6 @@ export namespace Prisma {
     supplierId?: true
     outletId?: true
     subtotalAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     sessionId?: true
     discountType?: true
@@ -26383,6 +26382,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     version?: true
+    isTaxInclusive?: true
   }
 
   export type InvoiceMaxAggregateInputType = {
@@ -26393,7 +26393,6 @@ export namespace Prisma {
     supplierId?: true
     outletId?: true
     subtotalAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     sessionId?: true
     discountType?: true
@@ -26411,6 +26410,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     version?: true
+    isTaxInclusive?: true
   }
 
   export type InvoiceCountAggregateInputType = {
@@ -26421,7 +26421,6 @@ export namespace Prisma {
     supplierId?: true
     outletId?: true
     subtotalAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     sessionId?: true
     discountType?: true
@@ -26439,6 +26438,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     version?: true
+    isTaxInclusive?: true
     _all?: true
   }
 
@@ -26536,7 +26536,6 @@ export namespace Prisma {
     supplierId: number | null
     outletId: number
     subtotalAmount: Decimal
-    isTaxInclusive: boolean
     taxAmount: Decimal
     sessionId: number | null
     discountType: string | null
@@ -26554,6 +26553,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     version: number | null
+    isTaxInclusive: boolean | null
     _count: InvoiceCountAggregateOutputType | null
     _avg: InvoiceAvgAggregateOutputType | null
     _sum: InvoiceSumAggregateOutputType | null
@@ -26583,7 +26583,6 @@ export namespace Prisma {
     supplierId?: boolean
     outletId?: boolean
     subtotalAmount?: boolean
-    isTaxInclusive?: boolean
     taxAmount?: boolean
     sessionId?: boolean
     discountType?: boolean
@@ -26601,6 +26600,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    isTaxInclusive?: boolean
     session?: boolean | Invoice$sessionArgs<ExtArgs>
     purchaseOrder?: boolean | Invoice$purchaseOrderArgs<ExtArgs>
     supplier?: boolean | Invoice$supplierArgs<ExtArgs>
@@ -26619,7 +26619,6 @@ export namespace Prisma {
     supplierId?: boolean
     outletId?: boolean
     subtotalAmount?: boolean
-    isTaxInclusive?: boolean
     taxAmount?: boolean
     sessionId?: boolean
     discountType?: boolean
@@ -26637,9 +26636,10 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    isTaxInclusive?: boolean
   }
 
-  export type InvoiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "invoiceNumber" | "taxInvoiceNumber" | "purchaseOrderId" | "supplierId" | "outletId" | "subtotalAmount" | "isTaxInclusive" | "taxAmount" | "sessionId" | "discountType" | "discountAmount" | "totalAmount" | "currency" | "status" | "invoiceDate" | "paymentDate" | "dueDate" | "remark" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["invoice"]>
+  export type InvoiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "invoiceNumber" | "taxInvoiceNumber" | "purchaseOrderId" | "supplierId" | "outletId" | "subtotalAmount" | "taxAmount" | "sessionId" | "discountType" | "discountAmount" | "totalAmount" | "currency" | "status" | "invoiceDate" | "paymentDate" | "dueDate" | "remark" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "isTaxInclusive", ExtArgs["result"]["invoice"]>
   export type InvoiceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | Invoice$sessionArgs<ExtArgs>
     purchaseOrder?: boolean | Invoice$purchaseOrderArgs<ExtArgs>
@@ -26666,7 +26666,6 @@ export namespace Prisma {
       supplierId: number | null
       outletId: number
       subtotalAmount: Prisma.Decimal
-      isTaxInclusive: boolean
       taxAmount: Prisma.Decimal
       sessionId: number | null
       discountType: string | null
@@ -26684,6 +26683,7 @@ export namespace Prisma {
       createdAt: Date | null
       updatedAt: Date | null
       version: number | null
+      isTaxInclusive: boolean | null
     }, ExtArgs["result"]["invoice"]>
     composites: {}
   }
@@ -27065,7 +27065,6 @@ export namespace Prisma {
     readonly supplierId: FieldRef<"Invoice", 'Int'>
     readonly outletId: FieldRef<"Invoice", 'Int'>
     readonly subtotalAmount: FieldRef<"Invoice", 'Decimal'>
-    readonly isTaxInclusive: FieldRef<"Invoice", 'Boolean'>
     readonly taxAmount: FieldRef<"Invoice", 'Decimal'>
     readonly sessionId: FieldRef<"Invoice", 'Int'>
     readonly discountType: FieldRef<"Invoice", 'String'>
@@ -27083,6 +27082,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"Invoice", 'DateTime'>
     readonly updatedAt: FieldRef<"Invoice", 'DateTime'>
     readonly version: FieldRef<"Invoice", 'Int'>
+    readonly isTaxInclusive: FieldRef<"Invoice", 'Boolean'>
   }
     
 
@@ -31064,7 +31064,6 @@ export namespace Prisma {
     discountType: string | null
     discountAmount: Decimal | null
     serviceChargeAmount: Decimal | null
-    isTaxInclusive: boolean | null
     taxAmount: Decimal | null
     roundingAmount: Decimal | null
     subtotalAmount: Decimal | null
@@ -31078,6 +31077,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     version: number | null
+    isTaxInclusive: boolean | null
   }
 
   export type PurchaseOrderMaxAggregateOutputType = {
@@ -31090,7 +31090,6 @@ export namespace Prisma {
     discountType: string | null
     discountAmount: Decimal | null
     serviceChargeAmount: Decimal | null
-    isTaxInclusive: boolean | null
     taxAmount: Decimal | null
     roundingAmount: Decimal | null
     subtotalAmount: Decimal | null
@@ -31104,6 +31103,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     version: number | null
+    isTaxInclusive: boolean | null
   }
 
   export type PurchaseOrderCountAggregateOutputType = {
@@ -31116,7 +31116,6 @@ export namespace Prisma {
     discountType: number
     discountAmount: number
     serviceChargeAmount: number
-    isTaxInclusive: number
     taxAmount: number
     roundingAmount: number
     subtotalAmount: number
@@ -31130,6 +31129,7 @@ export namespace Prisma {
     createdAt: number
     updatedAt: number
     version: number
+    isTaxInclusive: number
     _all: number
   }
 
@@ -31172,7 +31172,6 @@ export namespace Prisma {
     discountType?: true
     discountAmount?: true
     serviceChargeAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     roundingAmount?: true
     subtotalAmount?: true
@@ -31186,6 +31185,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     version?: true
+    isTaxInclusive?: true
   }
 
   export type PurchaseOrderMaxAggregateInputType = {
@@ -31198,7 +31198,6 @@ export namespace Prisma {
     discountType?: true
     discountAmount?: true
     serviceChargeAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     roundingAmount?: true
     subtotalAmount?: true
@@ -31212,6 +31211,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     version?: true
+    isTaxInclusive?: true
   }
 
   export type PurchaseOrderCountAggregateInputType = {
@@ -31224,7 +31224,6 @@ export namespace Prisma {
     discountType?: true
     discountAmount?: true
     serviceChargeAmount?: true
-    isTaxInclusive?: true
     taxAmount?: true
     roundingAmount?: true
     subtotalAmount?: true
@@ -31238,6 +31237,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     version?: true
+    isTaxInclusive?: true
     _all?: true
   }
 
@@ -31337,7 +31337,6 @@ export namespace Prisma {
     discountType: string | null
     discountAmount: Decimal | null
     serviceChargeAmount: Decimal | null
-    isTaxInclusive: boolean
     taxAmount: Decimal | null
     roundingAmount: Decimal | null
     subtotalAmount: Decimal | null
@@ -31351,6 +31350,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     version: number | null
+    isTaxInclusive: boolean | null
     _count: PurchaseOrderCountAggregateOutputType | null
     _avg: PurchaseOrderAvgAggregateOutputType | null
     _sum: PurchaseOrderSumAggregateOutputType | null
@@ -31382,7 +31382,6 @@ export namespace Prisma {
     discountType?: boolean
     discountAmount?: boolean
     serviceChargeAmount?: boolean
-    isTaxInclusive?: boolean
     taxAmount?: boolean
     roundingAmount?: boolean
     subtotalAmount?: boolean
@@ -31396,6 +31395,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    isTaxInclusive?: boolean
     session?: boolean | PurchaseOrder$sessionArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
     purchaseOrderItems?: boolean | PurchaseOrder$purchaseOrderItemsArgs<ExtArgs>
@@ -31416,7 +31416,6 @@ export namespace Prisma {
     discountType?: boolean
     discountAmount?: boolean
     serviceChargeAmount?: boolean
-    isTaxInclusive?: boolean
     taxAmount?: boolean
     roundingAmount?: boolean
     subtotalAmount?: boolean
@@ -31430,9 +31429,10 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    isTaxInclusive?: boolean
   }
 
-  export type PurchaseOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "purchaseOrderNumber" | "outletId" | "supplierId" | "purchaseOrderDate" | "sessionId" | "discountType" | "discountAmount" | "serviceChargeAmount" | "isTaxInclusive" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "status" | "remark" | "currency" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["purchaseOrder"]>
+  export type PurchaseOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "purchaseOrderNumber" | "outletId" | "supplierId" | "purchaseOrderDate" | "sessionId" | "discountType" | "discountAmount" | "serviceChargeAmount" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "status" | "remark" | "currency" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "isTaxInclusive", ExtArgs["result"]["purchaseOrder"]>
   export type PurchaseOrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | PurchaseOrder$sessionArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
@@ -31461,7 +31461,6 @@ export namespace Prisma {
       discountType: string | null
       discountAmount: Prisma.Decimal | null
       serviceChargeAmount: Prisma.Decimal | null
-      isTaxInclusive: boolean
       taxAmount: Prisma.Decimal | null
       roundingAmount: Prisma.Decimal | null
       subtotalAmount: Prisma.Decimal | null
@@ -31475,6 +31474,7 @@ export namespace Prisma {
       createdAt: Date | null
       updatedAt: Date | null
       version: number | null
+      isTaxInclusive: boolean | null
     }, ExtArgs["result"]["purchaseOrder"]>
     composites: {}
   }
@@ -31858,7 +31858,6 @@ export namespace Prisma {
     readonly discountType: FieldRef<"PurchaseOrder", 'String'>
     readonly discountAmount: FieldRef<"PurchaseOrder", 'Decimal'>
     readonly serviceChargeAmount: FieldRef<"PurchaseOrder", 'Decimal'>
-    readonly isTaxInclusive: FieldRef<"PurchaseOrder", 'Boolean'>
     readonly taxAmount: FieldRef<"PurchaseOrder", 'Decimal'>
     readonly roundingAmount: FieldRef<"PurchaseOrder", 'Decimal'>
     readonly subtotalAmount: FieldRef<"PurchaseOrder", 'Decimal'>
@@ -31872,6 +31871,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"PurchaseOrder", 'DateTime'>
     readonly updatedAt: FieldRef<"PurchaseOrder", 'DateTime'>
     readonly version: FieldRef<"PurchaseOrder", 'Int'>
+    readonly isTaxInclusive: FieldRef<"PurchaseOrder", 'Boolean'>
   }
     
 
@@ -65215,7 +65215,6 @@ export namespace Prisma {
     discountAmount: 'discountAmount',
     profitAmount: 'profitAmount',
     serviceChargeAmount: 'serviceChargeAmount',
-    isTaxInclusive: 'isTaxInclusive',
     taxAmount: 'taxAmount',
     roundingAmount: 'roundingAmount',
     subtotalAmount: 'subtotalAmount',
@@ -65235,7 +65234,8 @@ export namespace Prisma {
     updatedAt: 'updatedAt',
     version: 'version',
     tableId: 'tableId',
-    orderStatus: 'orderStatus'
+    orderStatus: 'orderStatus',
+    isTaxInclusive: 'isTaxInclusive'
   };
 
   export type SalesScalarFieldEnum = (typeof SalesScalarFieldEnum)[keyof typeof SalesScalarFieldEnum]
@@ -65344,7 +65344,6 @@ export namespace Prisma {
     supplierId: 'supplierId',
     outletId: 'outletId',
     subtotalAmount: 'subtotalAmount',
-    isTaxInclusive: 'isTaxInclusive',
     taxAmount: 'taxAmount',
     sessionId: 'sessionId',
     discountType: 'discountType',
@@ -65361,7 +65360,8 @@ export namespace Prisma {
     deletedAt: 'deletedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
-    version: 'version'
+    version: 'version',
+    isTaxInclusive: 'isTaxInclusive'
   };
 
   export type InvoiceScalarFieldEnum = (typeof InvoiceScalarFieldEnum)[keyof typeof InvoiceScalarFieldEnum]
@@ -65445,7 +65445,6 @@ export namespace Prisma {
     discountType: 'discountType',
     discountAmount: 'discountAmount',
     serviceChargeAmount: 'serviceChargeAmount',
-    isTaxInclusive: 'isTaxInclusive',
     taxAmount: 'taxAmount',
     roundingAmount: 'roundingAmount',
     subtotalAmount: 'subtotalAmount',
@@ -65458,7 +65457,8 @@ export namespace Prisma {
     deletedAt: 'deletedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
-    version: 'version'
+    version: 'version',
+    isTaxInclusive: 'isTaxInclusive'
   };
 
   export type PurchaseOrderScalarFieldEnum = (typeof PurchaseOrderScalarFieldEnum)[keyof typeof PurchaseOrderScalarFieldEnum]
@@ -67915,7 +67915,6 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFilter<"Sales"> | boolean
     taxAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
@@ -67936,6 +67935,7 @@ export namespace Prisma {
     version?: IntNullableFilter<"Sales"> | number | null
     tableId?: IntNullableFilter<"Sales"> | number | null
     orderStatus?: StringNullableFilter<"Sales"> | string | null
+    isTaxInclusive?: BoolNullableFilter<"Sales"> | boolean | null
     salesItems?: SalesItemListRelationFilter
     payments?: PaymentListRelationFilter
     registerLogs?: RegisterLogListRelationFilter
@@ -67966,7 +67966,6 @@ export namespace Prisma {
     discountAmount?: SortOrder
     profitAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -67987,6 +67986,7 @@ export namespace Prisma {
     version?: SortOrderInput | SortOrder
     tableId?: SortOrderInput | SortOrder
     orderStatus?: SortOrderInput | SortOrder
+    isTaxInclusive?: SortOrderInput | SortOrder
     salesItems?: SalesItemOrderByRelationAggregateInput
     payments?: PaymentOrderByRelationAggregateInput
     registerLogs?: RegisterLogOrderByRelationAggregateInput
@@ -68021,7 +68021,6 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFilter<"Sales"> | boolean
     taxAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
@@ -68042,6 +68041,7 @@ export namespace Prisma {
     version?: IntNullableFilter<"Sales"> | number | null
     tableId?: IntNullableFilter<"Sales"> | number | null
     orderStatus?: StringNullableFilter<"Sales"> | string | null
+    isTaxInclusive?: BoolNullableFilter<"Sales"> | boolean | null
     salesItems?: SalesItemListRelationFilter
     payments?: PaymentListRelationFilter
     registerLogs?: RegisterLogListRelationFilter
@@ -68072,7 +68072,6 @@ export namespace Prisma {
     discountAmount?: SortOrder
     profitAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -68093,6 +68092,7 @@ export namespace Prisma {
     version?: SortOrderInput | SortOrder
     tableId?: SortOrderInput | SortOrder
     orderStatus?: SortOrderInput | SortOrder
+    isTaxInclusive?: SortOrderInput | SortOrder
     _count?: SalesCountOrderByAggregateInput
     _avg?: SalesAvgOrderByAggregateInput
     _max?: SalesMaxOrderByAggregateInput
@@ -68126,7 +68126,6 @@ export namespace Prisma {
     discountAmount?: DecimalWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolWithAggregatesFilter<"Sales"> | boolean
     taxAmount?: DecimalWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string
@@ -68147,6 +68146,7 @@ export namespace Prisma {
     version?: IntNullableWithAggregatesFilter<"Sales"> | number | null
     tableId?: IntNullableWithAggregatesFilter<"Sales"> | number | null
     orderStatus?: StringNullableWithAggregatesFilter<"Sales"> | string | null
+    isTaxInclusive?: BoolNullableWithAggregatesFilter<"Sales"> | boolean | null
   }
 
   export type SalesItemWhereInput = {
@@ -68656,7 +68656,6 @@ export namespace Prisma {
     supplierId?: IntNullableFilter<"Invoice"> | number | null
     outletId?: IntFilter<"Invoice"> | number
     subtotalAmount?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFilter<"Invoice"> | boolean
     taxAmount?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     sessionId?: IntNullableFilter<"Invoice"> | number | null
     discountType?: StringNullableFilter<"Invoice"> | string | null
@@ -68674,6 +68673,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     version?: IntNullableFilter<"Invoice"> | number | null
+    isTaxInclusive?: BoolNullableFilter<"Invoice"> | boolean | null
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     purchaseOrder?: XOR<PurchaseOrderNullableScalarRelationFilter, PurchaseOrderWhereInput> | null
     supplier?: XOR<SupplierNullableScalarRelationFilter, SupplierWhereInput> | null
@@ -68689,7 +68689,6 @@ export namespace Prisma {
     supplierId?: SortOrderInput | SortOrder
     outletId?: SortOrder
     subtotalAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     sessionId?: SortOrderInput | SortOrder
     discountType?: SortOrderInput | SortOrder
@@ -68707,6 +68706,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    isTaxInclusive?: SortOrderInput | SortOrder
     session?: SessionOrderByWithRelationInput
     purchaseOrder?: PurchaseOrderOrderByWithRelationInput
     supplier?: SupplierOrderByWithRelationInput
@@ -68726,7 +68726,6 @@ export namespace Prisma {
     supplierId?: IntNullableFilter<"Invoice"> | number | null
     outletId?: IntFilter<"Invoice"> | number
     subtotalAmount?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFilter<"Invoice"> | boolean
     taxAmount?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     sessionId?: IntNullableFilter<"Invoice"> | number | null
     discountType?: StringNullableFilter<"Invoice"> | string | null
@@ -68744,6 +68743,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     version?: IntNullableFilter<"Invoice"> | number | null
+    isTaxInclusive?: BoolNullableFilter<"Invoice"> | boolean | null
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     purchaseOrder?: XOR<PurchaseOrderNullableScalarRelationFilter, PurchaseOrderWhereInput> | null
     supplier?: XOR<SupplierNullableScalarRelationFilter, SupplierWhereInput> | null
@@ -68759,7 +68759,6 @@ export namespace Prisma {
     supplierId?: SortOrderInput | SortOrder
     outletId?: SortOrder
     subtotalAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     sessionId?: SortOrderInput | SortOrder
     discountType?: SortOrderInput | SortOrder
@@ -68777,6 +68776,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    isTaxInclusive?: SortOrderInput | SortOrder
     _count?: InvoiceCountOrderByAggregateInput
     _avg?: InvoiceAvgOrderByAggregateInput
     _max?: InvoiceMaxOrderByAggregateInput
@@ -68795,7 +68795,6 @@ export namespace Prisma {
     supplierId?: IntNullableWithAggregatesFilter<"Invoice"> | number | null
     outletId?: IntWithAggregatesFilter<"Invoice"> | number
     subtotalAmount?: DecimalWithAggregatesFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolWithAggregatesFilter<"Invoice"> | boolean
     taxAmount?: DecimalWithAggregatesFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     sessionId?: IntNullableWithAggregatesFilter<"Invoice"> | number | null
     discountType?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
@@ -68813,6 +68812,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"Invoice"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"Invoice"> | Date | string | null
     version?: IntNullableWithAggregatesFilter<"Invoice"> | number | null
+    isTaxInclusive?: BoolNullableWithAggregatesFilter<"Invoice"> | boolean | null
   }
 
   export type InvoiceItemWhereInput = {
@@ -69192,7 +69192,6 @@ export namespace Prisma {
     discountType?: StringNullableFilter<"PurchaseOrder"> | string | null
     discountAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFilter<"PurchaseOrder"> | boolean
     taxAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
@@ -69206,6 +69205,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     version?: IntNullableFilter<"PurchaseOrder"> | number | null
+    isTaxInclusive?: BoolNullableFilter<"PurchaseOrder"> | boolean | null
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
     purchaseOrderItems?: PurchaseOrderItemListRelationFilter
@@ -69223,7 +69223,6 @@ export namespace Prisma {
     discountType?: SortOrderInput | SortOrder
     discountAmount?: SortOrderInput | SortOrder
     serviceChargeAmount?: SortOrderInput | SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrderInput | SortOrder
     roundingAmount?: SortOrderInput | SortOrder
     subtotalAmount?: SortOrderInput | SortOrder
@@ -69237,6 +69236,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    isTaxInclusive?: SortOrderInput | SortOrder
     session?: SessionOrderByWithRelationInput
     supplier?: SupplierOrderByWithRelationInput
     purchaseOrderItems?: PurchaseOrderItemOrderByRelationAggregateInput
@@ -69258,7 +69258,6 @@ export namespace Prisma {
     discountType?: StringNullableFilter<"PurchaseOrder"> | string | null
     discountAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFilter<"PurchaseOrder"> | boolean
     taxAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
@@ -69272,6 +69271,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     version?: IntNullableFilter<"PurchaseOrder"> | number | null
+    isTaxInclusive?: BoolNullableFilter<"PurchaseOrder"> | boolean | null
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
     purchaseOrderItems?: PurchaseOrderItemListRelationFilter
@@ -69289,7 +69289,6 @@ export namespace Prisma {
     discountType?: SortOrderInput | SortOrder
     discountAmount?: SortOrderInput | SortOrder
     serviceChargeAmount?: SortOrderInput | SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrderInput | SortOrder
     roundingAmount?: SortOrderInput | SortOrder
     subtotalAmount?: SortOrderInput | SortOrder
@@ -69303,6 +69302,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    isTaxInclusive?: SortOrderInput | SortOrder
     _count?: PurchaseOrderCountOrderByAggregateInput
     _avg?: PurchaseOrderAvgOrderByAggregateInput
     _max?: PurchaseOrderMaxOrderByAggregateInput
@@ -69323,7 +69323,6 @@ export namespace Prisma {
     discountType?: StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
     discountAmount?: DecimalNullableWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: DecimalNullableWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolWithAggregatesFilter<"PurchaseOrder"> | boolean
     taxAmount?: DecimalNullableWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: DecimalNullableWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: DecimalNullableWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
@@ -69337,6 +69336,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"PurchaseOrder"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"PurchaseOrder"> | Date | string | null
     version?: IntNullableWithAggregatesFilter<"PurchaseOrder"> | number | null
+    isTaxInclusive?: BoolNullableWithAggregatesFilter<"PurchaseOrder"> | boolean | null
   }
 
   export type PurchaseOrderItemWhereInput = {
@@ -73835,7 +73835,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -73855,6 +73854,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -73885,7 +73885,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -73906,6 +73905,7 @@ export namespace Prisma {
     version?: number | null
     tableId?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
@@ -73932,7 +73932,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -73952,6 +73951,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -73982,7 +73982,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -74003,6 +74002,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     tableId?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
@@ -74031,7 +74031,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -74052,6 +74051,7 @@ export namespace Prisma {
     version?: number | null
     tableId?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
   }
 
   export type SalesUpdateManyMutationInput = {
@@ -74075,7 +74075,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -74095,6 +74094,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type SalesUncheckedUpdateManyInput = {
@@ -74120,7 +74120,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -74141,6 +74140,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     tableId?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type SalesItemCreateInput = {
@@ -74725,7 +74725,6 @@ export namespace Prisma {
     taxInvoiceNumber: string
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -74742,6 +74741,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -74757,7 +74757,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -74775,6 +74774,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     invoiceItems?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutInvoiceInput
   }
@@ -74784,7 +74784,6 @@ export namespace Prisma {
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -74801,6 +74800,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -74816,7 +74816,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -74834,6 +74833,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     invoiceItems?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutInvoiceNestedInput
   }
@@ -74846,7 +74846,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -74864,6 +74863,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
   }
 
   export type InvoiceUpdateManyMutationInput = {
@@ -74871,7 +74871,6 @@ export namespace Prisma {
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -74888,6 +74887,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type InvoiceUncheckedUpdateManyInput = {
@@ -74898,7 +74898,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -74916,6 +74915,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type InvoiceItemCreateInput = {
@@ -75326,7 +75326,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -75340,6 +75339,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
@@ -75357,7 +75357,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -75371,6 +75370,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutPurchaseOrderInput
     invoices?: InvoiceUncheckedCreateNestedManyWithoutPurchaseOrderInput
@@ -75383,7 +75383,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -75397,6 +75396,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
@@ -75414,7 +75414,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -75428,6 +75427,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     invoices?: InvoiceUncheckedUpdateManyWithoutPurchaseOrderNestedInput
@@ -75443,7 +75443,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -75457,6 +75456,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
   }
 
   export type PurchaseOrderUpdateManyMutationInput = {
@@ -75466,7 +75466,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -75480,6 +75479,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type PurchaseOrderUncheckedUpdateManyInput = {
@@ -75492,7 +75492,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -75506,6 +75505,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type PurchaseOrderItemCreateInput = {
@@ -80222,7 +80222,6 @@ export namespace Prisma {
     discountAmount?: SortOrder
     profitAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -80243,6 +80242,7 @@ export namespace Prisma {
     version?: SortOrder
     tableId?: SortOrder
     orderStatus?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type SalesAvgOrderByAggregateInput = {
@@ -80291,7 +80291,6 @@ export namespace Prisma {
     discountAmount?: SortOrder
     profitAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -80312,6 +80311,7 @@ export namespace Prisma {
     version?: SortOrder
     tableId?: SortOrder
     orderStatus?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type SalesMinOrderByAggregateInput = {
@@ -80337,7 +80337,6 @@ export namespace Prisma {
     discountAmount?: SortOrder
     profitAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -80358,6 +80357,7 @@ export namespace Prisma {
     version?: SortOrder
     tableId?: SortOrder
     orderStatus?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type SalesSumOrderByAggregateInput = {
@@ -80862,7 +80862,6 @@ export namespace Prisma {
     supplierId?: SortOrder
     outletId?: SortOrder
     subtotalAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     sessionId?: SortOrder
     discountType?: SortOrder
@@ -80880,6 +80879,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     version?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type InvoiceAvgOrderByAggregateInput = {
@@ -80903,7 +80903,6 @@ export namespace Prisma {
     supplierId?: SortOrder
     outletId?: SortOrder
     subtotalAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     sessionId?: SortOrder
     discountType?: SortOrder
@@ -80921,6 +80920,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     version?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type InvoiceMinOrderByAggregateInput = {
@@ -80931,7 +80931,6 @@ export namespace Prisma {
     supplierId?: SortOrder
     outletId?: SortOrder
     subtotalAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     sessionId?: SortOrder
     discountType?: SortOrder
@@ -80949,6 +80948,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     version?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type InvoiceSumOrderByAggregateInput = {
@@ -81317,7 +81317,6 @@ export namespace Prisma {
     discountType?: SortOrder
     discountAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -81331,6 +81330,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     version?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type PurchaseOrderAvgOrderByAggregateInput = {
@@ -81357,7 +81357,6 @@ export namespace Prisma {
     discountType?: SortOrder
     discountAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -81371,6 +81370,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     version?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type PurchaseOrderMinOrderByAggregateInput = {
@@ -81383,7 +81383,6 @@ export namespace Prisma {
     discountType?: SortOrder
     discountAmount?: SortOrder
     serviceChargeAmount?: SortOrder
-    isTaxInclusive?: SortOrder
     taxAmount?: SortOrder
     roundingAmount?: SortOrder
     subtotalAmount?: SortOrder
@@ -81397,6 +81396,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     version?: SortOrder
+    isTaxInclusive?: SortOrder
   }
 
   export type PurchaseOrderSumOrderByAggregateInput = {
@@ -88585,7 +88585,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -88599,6 +88598,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutPurchaseOrderInput
@@ -88614,7 +88614,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -88628,6 +88627,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutPurchaseOrderInput
     invoices?: InvoiceUncheckedCreateNestedManyWithoutPurchaseOrderInput
@@ -88648,7 +88648,6 @@ export namespace Prisma {
     taxInvoiceNumber: string
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -88665,6 +88664,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     invoiceItems?: InvoiceItemCreateNestedManyWithoutInvoiceInput
@@ -88678,7 +88678,6 @@ export namespace Prisma {
     purchaseOrderId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -88696,6 +88695,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     invoiceItems?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutInvoiceInput
   }
@@ -88788,7 +88788,6 @@ export namespace Prisma {
     discountType?: StringNullableFilter<"PurchaseOrder"> | string | null
     discountAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFilter<"PurchaseOrder"> | boolean
     taxAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: DecimalNullableFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string | null
@@ -88802,6 +88801,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     version?: IntNullableFilter<"PurchaseOrder"> | number | null
+    isTaxInclusive?: BoolNullableFilter<"PurchaseOrder"> | boolean | null
   }
 
   export type InvoiceUpsertWithWhereUniqueWithoutSupplierInput = {
@@ -88831,7 +88831,6 @@ export namespace Prisma {
     supplierId?: IntNullableFilter<"Invoice"> | number | null
     outletId?: IntFilter<"Invoice"> | number
     subtotalAmount?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFilter<"Invoice"> | boolean
     taxAmount?: DecimalFilter<"Invoice"> | Decimal | DecimalJsLike | number | string
     sessionId?: IntNullableFilter<"Invoice"> | number | null
     discountType?: StringNullableFilter<"Invoice"> | string | null
@@ -88849,6 +88848,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     version?: IntNullableFilter<"Invoice"> | number | null
+    isTaxInclusive?: BoolNullableFilter<"Invoice"> | boolean | null
   }
 
   export type SalesCreateWithoutCustomerInput = {
@@ -88872,7 +88872,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -88892,6 +88891,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -88920,7 +88920,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -88941,6 +88940,7 @@ export namespace Prisma {
     version?: number | null
     tableId?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
@@ -89161,7 +89161,6 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFilter<"Sales"> | boolean
     taxAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFilter<"Sales"> | Decimal | DecimalJsLike | number | string
@@ -89182,6 +89181,7 @@ export namespace Prisma {
     version?: IntNullableFilter<"Sales"> | number | null
     tableId?: IntNullableFilter<"Sales"> | number | null
     orderStatus?: StringNullableFilter<"Sales"> | string | null
+    isTaxInclusive?: BoolNullableFilter<"Sales"> | boolean | null
   }
 
   export type PromotionCustomerUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -91244,7 +91244,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -91264,6 +91263,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -91293,7 +91293,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -91314,6 +91313,7 @@ export namespace Prisma {
     version?: number | null
     tableId?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
   }
@@ -91429,7 +91429,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -91449,6 +91448,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -91478,7 +91478,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -91499,6 +91498,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     tableId?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
   }
@@ -92022,7 +92022,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -92036,6 +92035,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
@@ -92052,7 +92052,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -92066,6 +92065,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutPurchaseOrderInput
   }
@@ -92297,7 +92297,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -92311,6 +92310,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
@@ -92327,7 +92327,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -92341,6 +92340,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutPurchaseOrderNestedInput
   }
@@ -92468,7 +92468,6 @@ export namespace Prisma {
     taxInvoiceNumber: string
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -92485,6 +92484,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -92499,7 +92499,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -92517,6 +92516,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutInvoiceInput
   }
 
@@ -92619,7 +92619,6 @@ export namespace Prisma {
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -92636,6 +92635,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -92650,7 +92650,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -92668,6 +92667,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
@@ -92806,7 +92806,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -92820,6 +92819,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
@@ -92836,7 +92836,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -92850,6 +92849,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
     invoices?: InvoiceUncheckedCreateNestedManyWithoutPurchaseOrderInput
   }
@@ -92864,7 +92864,6 @@ export namespace Prisma {
     taxInvoiceNumber: string
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -92881,6 +92880,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -92895,7 +92895,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -92913,6 +92912,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     invoiceItems?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
   }
 
@@ -93028,7 +93028,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -93042,6 +93041,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
@@ -93058,7 +93058,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -93072,6 +93071,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     invoices?: InvoiceUncheckedUpdateManyWithoutPurchaseOrderNestedInput
   }
@@ -93092,7 +93092,6 @@ export namespace Prisma {
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -93109,6 +93108,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -93123,7 +93123,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -93141,6 +93140,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     invoiceItems?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
   }
 
@@ -93639,7 +93639,6 @@ export namespace Prisma {
     taxInvoiceNumber: string
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -93656,6 +93655,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
     invoiceItems?: InvoiceItemCreateNestedManyWithoutInvoiceInput
@@ -93669,7 +93669,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -93687,6 +93686,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     invoiceItems?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutInvoiceInput
   }
@@ -93864,7 +93864,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -93878,6 +93877,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutPurchaseOrderInput
@@ -93894,7 +93894,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -93908,6 +93907,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutPurchaseOrderInput
     invoices?: InvoiceUncheckedCreateNestedManyWithoutPurchaseOrderInput
   }
@@ -94013,7 +94013,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -94027,6 +94026,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutPurchaseOrderNestedInput
@@ -94043,7 +94043,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -94057,6 +94056,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     invoices?: InvoiceUncheckedUpdateManyWithoutPurchaseOrderNestedInput
   }
@@ -94207,7 +94207,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -94227,6 +94226,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -94256,7 +94256,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -94277,6 +94276,7 @@ export namespace Prisma {
     version?: number | null
     tableId?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
   }
@@ -94387,7 +94387,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -94407,6 +94406,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -94436,7 +94436,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -94457,6 +94456,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     tableId?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
   }
@@ -94498,7 +94498,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -94518,6 +94517,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -94547,7 +94547,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -94568,6 +94567,7 @@ export namespace Prisma {
     version?: number | null
     tableId?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
   }
@@ -94609,7 +94609,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -94629,6 +94628,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -94658,7 +94658,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -94679,6 +94678,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     tableId?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
   }
@@ -94831,7 +94831,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -94845,6 +94844,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutPurchaseOrderInput
@@ -94860,7 +94860,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -94874,6 +94873,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutPurchaseOrderInput
     invoices?: InvoiceUncheckedCreateNestedManyWithoutPurchaseOrderInput
@@ -94953,7 +94953,6 @@ export namespace Prisma {
     taxInvoiceNumber: string
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -94970,6 +94969,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
     invoiceItems?: InvoiceItemCreateNestedManyWithoutInvoiceInput
@@ -94984,7 +94984,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -95001,6 +95000,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
     invoiceItems?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutInvoiceInput
   }
@@ -97164,7 +97164,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -97184,6 +97183,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -97213,7 +97213,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -97233,6 +97232,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
@@ -100055,7 +100055,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -100069,6 +100068,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
   }
 
   export type InvoiceCreateManySupplierInput = {
@@ -100078,7 +100078,6 @@ export namespace Prisma {
     purchaseOrderId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -100096,6 +100095,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
   }
 
   export type ItemUpdateWithoutSupplierInput = {
@@ -100207,7 +100207,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -100221,6 +100220,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutPurchaseOrderNestedInput
@@ -100236,7 +100236,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -100250,6 +100249,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     invoices?: InvoiceUncheckedUpdateManyWithoutPurchaseOrderNestedInput
@@ -100264,7 +100264,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -100278,6 +100277,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type InvoiceUpdateWithoutSupplierInput = {
@@ -100285,7 +100285,6 @@ export namespace Prisma {
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -100302,6 +100301,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     invoiceItems?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
@@ -100315,7 +100315,6 @@ export namespace Prisma {
     purchaseOrderId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -100333,6 +100332,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     invoiceItems?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutInvoiceNestedInput
   }
@@ -100344,7 +100344,6 @@ export namespace Prisma {
     purchaseOrderId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -100362,6 +100361,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type SalesCreateManyCustomerInput = {
@@ -100386,7 +100386,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -100407,6 +100406,7 @@ export namespace Prisma {
     version?: number | null
     tableId?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
   }
 
   export type PromotionCustomerCreateManyCustomerInput = {
@@ -100489,7 +100489,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -100509,6 +100508,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -100537,7 +100537,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -100558,6 +100557,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     tableId?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
@@ -100585,7 +100585,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -100606,6 +100605,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     tableId?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type PromotionCustomerUpdateWithoutCustomerInput = {
@@ -102557,7 +102557,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     sessionId?: number | null
     discountType?: string | null
@@ -102575,6 +102574,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
   }
 
   export type PurchaseOrderItemUpdateWithoutPurchaseOrderInput = {
@@ -102705,7 +102705,6 @@ export namespace Prisma {
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -102722,6 +102721,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
     invoiceItems?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
@@ -102735,7 +102735,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -102753,6 +102752,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     invoiceItems?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutInvoiceNestedInput
   }
@@ -102764,7 +102764,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sessionId?: NullableIntFieldUpdateOperationsInput | number | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -102782,6 +102781,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type CardInfoCreateManyPaymentInput = {
@@ -102916,7 +102916,6 @@ export namespace Prisma {
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string | null
     roundingAmount?: Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: Decimal | DecimalJsLike | number | string | null
@@ -102930,6 +102929,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
   }
 
   export type DeliveryOrderCreateManySessionInput = {
@@ -102964,7 +102964,6 @@ export namespace Prisma {
     supplierId?: number | null
     outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
     discountAmount: Decimal | DecimalJsLike | number | string
@@ -102981,6 +102980,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    isTaxInclusive?: boolean | null
   }
 
   export type DeclarationUpdateWithoutSessionInput = {
@@ -103028,7 +103028,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -103042,6 +103041,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutPurchaseOrderNestedInput
@@ -103057,7 +103057,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -103071,6 +103070,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutPurchaseOrderNestedInput
     invoices?: InvoiceUncheckedUpdateManyWithoutPurchaseOrderNestedInput
@@ -103085,7 +103085,6 @@ export namespace Prisma {
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -103099,6 +103098,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type DeliveryOrderUpdateWithoutSessionInput = {
@@ -103179,7 +103179,6 @@ export namespace Prisma {
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -103196,6 +103195,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
     invoiceItems?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
@@ -103210,7 +103210,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -103227,6 +103226,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     invoiceItems?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutInvoiceNestedInput
   }
@@ -103239,7 +103239,6 @@ export namespace Prisma {
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -103256,6 +103255,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type MenuCategoryCreateManyMenuProfileInput = {
@@ -103682,7 +103682,6 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     profitAmount: Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: boolean
     taxAmount?: Decimal | DecimalJsLike | number | string
     roundingAmount?: Decimal | DecimalJsLike | number | string
     subtotalAmount: Decimal | DecimalJsLike | number | string
@@ -103702,6 +103701,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     orderStatus?: string | null
+    isTaxInclusive?: boolean | null
   }
 
   export type ReservationCreateManyTableInput = {
@@ -103739,7 +103739,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -103759,6 +103758,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -103788,7 +103788,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -103808,6 +103807,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
@@ -103836,7 +103836,6 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    isTaxInclusive?: BoolFieldUpdateOperationsInput | boolean
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -103856,6 +103855,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
   }
 
   export type ReservationUpdateWithoutTableInput = {

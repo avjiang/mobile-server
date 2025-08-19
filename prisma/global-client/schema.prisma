@@ -44,6 +44,7 @@ model Tenant {
   id            Int                  @id @default(autoincrement()) @map("ID")
   tenantName    String               @map("TENANT_NAME")
   databaseName  String?              @unique @map("DATABASE_NAME")
+  phoneNumber   String?              @map("PHONE_NUMBER")
   createdAt     DateTime             @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
   tenantUsers   TenantUser[]
   subscription  TenantSubscription[]

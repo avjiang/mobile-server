@@ -145,6 +145,7 @@ exports.Prisma.TenantScalarFieldEnum = {
   id: 'id',
   tenantName: 'tenantName',
   databaseName: 'databaseName',
+  phoneNumber: 'phoneNumber',
   createdAt: 'createdAt'
 };
 
@@ -247,7 +248,8 @@ exports.Prisma.SubscriptionAddOnOrderByRelevanceFieldEnum = {
 
 exports.Prisma.TenantOrderByRelevanceFieldEnum = {
   tenantName: 'tenantName',
-  databaseName: 'databaseName'
+  databaseName: 'databaseName',
+  phoneNumber: 'phoneNumber'
 };
 
 exports.Prisma.TenantSubscriptionOrderByRelevanceFieldEnum = {

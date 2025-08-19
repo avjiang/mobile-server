@@ -344,7 +344,6 @@ exports.Prisma.SalesScalarFieldEnum = {
   discountAmount: 'discountAmount',
   profitAmount: 'profitAmount',
   serviceChargeAmount: 'serviceChargeAmount',
-  isTaxInclusive: 'isTaxInclusive',
   taxAmount: 'taxAmount',
   roundingAmount: 'roundingAmount',
   subtotalAmount: 'subtotalAmount',
@@ -364,7 +363,8 @@ exports.Prisma.SalesScalarFieldEnum = {
   updatedAt: 'updatedAt',
   version: 'version',
   tableId: 'tableId',
-  orderStatus: 'orderStatus'
+  orderStatus: 'orderStatus',
+  isTaxInclusive: 'isTaxInclusive'
 };
 
 exports.Prisma.SalesItemScalarFieldEnum = {
@@ -458,7 +458,6 @@ exports.Prisma.InvoiceScalarFieldEnum = {
   supplierId: 'supplierId',
   outletId: 'outletId',
   subtotalAmount: 'subtotalAmount',
-  isTaxInclusive: 'isTaxInclusive',
   taxAmount: 'taxAmount',
   sessionId: 'sessionId',
   discountType: 'discountType',
@@ -475,7 +474,8 @@ exports.Prisma.InvoiceScalarFieldEnum = {
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  version: 'version'
+  version: 'version',
+  isTaxInclusive: 'isTaxInclusive'
 };
 
 exports.Prisma.InvoiceItemScalarFieldEnum = {
@@ -547,7 +547,6 @@ exports.Prisma.PurchaseOrderScalarFieldEnum = {
   discountType: 'discountType',
   discountAmount: 'discountAmount',
   serviceChargeAmount: 'serviceChargeAmount',
-  isTaxInclusive: 'isTaxInclusive',
   taxAmount: 'taxAmount',
   roundingAmount: 'roundingAmount',
   subtotalAmount: 'subtotalAmount',
@@ -560,7 +559,8 @@ exports.Prisma.PurchaseOrderScalarFieldEnum = {
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  version: 'version'
+  version: 'version',
+  isTaxInclusive: 'isTaxInclusive'
 };
 
 exports.Prisma.PurchaseOrderItemScalarFieldEnum = {

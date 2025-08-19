@@ -3892,6 +3892,7 @@ export namespace Prisma {
     id: number | null
     tenantName: string | null
     databaseName: string | null
+    phoneNumber: string | null
     createdAt: Date | null
   }
 
@@ -3899,6 +3900,7 @@ export namespace Prisma {
     id: number | null
     tenantName: string | null
     databaseName: string | null
+    phoneNumber: string | null
     createdAt: Date | null
   }
 
@@ -3906,6 +3908,7 @@ export namespace Prisma {
     id: number
     tenantName: number
     databaseName: number
+    phoneNumber: number
     createdAt: number
     _all: number
   }
@@ -3923,6 +3926,7 @@ export namespace Prisma {
     id?: true
     tenantName?: true
     databaseName?: true
+    phoneNumber?: true
     createdAt?: true
   }
 
@@ -3930,6 +3934,7 @@ export namespace Prisma {
     id?: true
     tenantName?: true
     databaseName?: true
+    phoneNumber?: true
     createdAt?: true
   }
 
@@ -3937,6 +3942,7 @@ export namespace Prisma {
     id?: true
     tenantName?: true
     databaseName?: true
+    phoneNumber?: true
     createdAt?: true
     _all?: true
   }
@@ -4031,6 +4037,7 @@ export namespace Prisma {
     id: number
     tenantName: string
     databaseName: string | null
+    phoneNumber: string | null
     createdAt: Date
     _count: TenantCountAggregateOutputType | null
     _avg: TenantAvgAggregateOutputType | null
@@ -4057,6 +4064,7 @@ export namespace Prisma {
     id?: boolean
     tenantName?: boolean
     databaseName?: boolean
+    phoneNumber?: boolean
     createdAt?: boolean
     tenantUsers?: boolean | Tenant$tenantUsersArgs<ExtArgs>
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
@@ -4070,10 +4078,11 @@ export namespace Prisma {
     id?: boolean
     tenantName?: boolean
     databaseName?: boolean
+    phoneNumber?: boolean
     createdAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantName" | "databaseName" | "createdAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantName" | "databaseName" | "phoneNumber" | "createdAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenantUsers?: boolean | Tenant$tenantUsersArgs<ExtArgs>
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
@@ -4092,6 +4101,7 @@ export namespace Prisma {
       id: number
       tenantName: string
       databaseName: string | null
+      phoneNumber: string | null
       createdAt: Date
     }, ExtArgs["result"]["tenant"]>
     composites: {}
@@ -4468,6 +4478,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Tenant", 'Int'>
     readonly tenantName: FieldRef<"Tenant", 'String'>
     readonly databaseName: FieldRef<"Tenant", 'String'>
+    readonly phoneNumber: FieldRef<"Tenant", 'String'>
     readonly createdAt: FieldRef<"Tenant", 'DateTime'>
   }
     
@@ -11984,6 +11995,7 @@ export namespace Prisma {
     id: 'id',
     tenantName: 'tenantName',
     databaseName: 'databaseName',
+    phoneNumber: 'phoneNumber',
     createdAt: 'createdAt'
   };
 
@@ -12122,7 +12134,8 @@ export namespace Prisma {
 
   export const TenantOrderByRelevanceFieldEnum: {
     tenantName: 'tenantName',
-    databaseName: 'databaseName'
+    databaseName: 'databaseName',
+    phoneNumber: 'phoneNumber'
   };
 
   export type TenantOrderByRelevanceFieldEnum = (typeof TenantOrderByRelevanceFieldEnum)[keyof typeof TenantOrderByRelevanceFieldEnum]
@@ -12370,6 +12383,7 @@ export namespace Prisma {
     id?: IntFilter<"Tenant"> | number
     tenantName?: StringFilter<"Tenant"> | string
     databaseName?: StringNullableFilter<"Tenant"> | string | null
+    phoneNumber?: StringNullableFilter<"Tenant"> | string | null
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     tenantUsers?: TenantUserListRelationFilter
     subscription?: TenantSubscriptionListRelationFilter
@@ -12380,6 +12394,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantName?: SortOrder
     databaseName?: SortOrderInput | SortOrder
+    phoneNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenantUsers?: TenantUserOrderByRelationAggregateInput
     subscription?: TenantSubscriptionOrderByRelationAggregateInput
@@ -12394,6 +12409,7 @@ export namespace Prisma {
     OR?: TenantWhereInput[]
     NOT?: TenantWhereInput | TenantWhereInput[]
     tenantName?: StringFilter<"Tenant"> | string
+    phoneNumber?: StringNullableFilter<"Tenant"> | string | null
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     tenantUsers?: TenantUserListRelationFilter
     subscription?: TenantSubscriptionListRelationFilter
@@ -12404,6 +12420,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantName?: SortOrder
     databaseName?: SortOrderInput | SortOrder
+    phoneNumber?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: TenantCountOrderByAggregateInput
     _avg?: TenantAvgOrderByAggregateInput
@@ -12419,6 +12436,7 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"Tenant"> | number
     tenantName?: StringWithAggregatesFilter<"Tenant"> | string
     databaseName?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
+    phoneNumber?: StringNullableWithAggregatesFilter<"Tenant"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
   }
 
@@ -13082,6 +13100,7 @@ export namespace Prisma {
   export type TenantCreateInput = {
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
@@ -13092,6 +13111,7 @@ export namespace Prisma {
     id?: number
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
@@ -13101,6 +13121,7 @@ export namespace Prisma {
   export type TenantUpdateInput = {
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
@@ -13111,6 +13132,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
@@ -13121,12 +13143,14 @@ export namespace Prisma {
     id?: number
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
   }
 
   export type TenantUpdateManyMutationInput = {
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -13134,6 +13158,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -13954,6 +13979,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantName?: SortOrder
     databaseName?: SortOrder
+    phoneNumber?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -13965,6 +13991,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantName?: SortOrder
     databaseName?: SortOrder
+    phoneNumber?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -13972,6 +13999,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantName?: SortOrder
     databaseName?: SortOrder
+    phoneNumber?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -15454,6 +15482,7 @@ export namespace Prisma {
   export type TenantCreateWithoutSubscriptionInput = {
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
@@ -15463,6 +15492,7 @@ export namespace Prisma {
     id?: number
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
@@ -15596,6 +15626,7 @@ export namespace Prisma {
   export type TenantUpdateWithoutSubscriptionInput = {
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
@@ -15605,6 +15636,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
@@ -15781,6 +15813,7 @@ export namespace Prisma {
   export type TenantCreateWithoutTenantOutletsInput = {
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
@@ -15790,6 +15823,7 @@ export namespace Prisma {
     id?: number
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
@@ -15849,6 +15883,7 @@ export namespace Prisma {
   export type TenantUpdateWithoutTenantOutletsInput = {
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
@@ -15858,6 +15893,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
@@ -15933,6 +15969,7 @@ export namespace Prisma {
   export type TenantCreateWithoutTenantUsersInput = {
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
@@ -15942,6 +15979,7 @@ export namespace Prisma {
     id?: number
     tenantName: string
     databaseName?: string | null
+    phoneNumber?: string | null
     createdAt?: Date | string
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
@@ -15966,6 +16004,7 @@ export namespace Prisma {
   export type TenantUpdateWithoutTenantUsersInput = {
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
@@ -15975,6 +16014,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantName?: StringFieldUpdateOperationsInput | string
     databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput

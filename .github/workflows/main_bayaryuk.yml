@@ -102,7 +102,7 @@ jobs:
         # excluding node_modules to let Azure install them on the server.
         run: |
           npm prune --production
-          zip -r release.zip . -x "node_modules/*" ".git/*"
+          zip -r release.zip . -x "node_modules/*" ".git/*" "!node_modules/@tenant-prisma/**" "!node_modules/@global-prisma/**"
 
       - name: Login to Azure
         uses: azure/login@v2

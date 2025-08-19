@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../prisma/global-client";
+import { PrismaClient } from "@prisma/global-prisma";
 import { getGlobalPrisma, getTenantPrisma } from '../db';
 import { SyncRequest } from "../item/item.request";
 

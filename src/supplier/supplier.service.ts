@@ -1,4 +1,4 @@
-import { PrismaClient, Supplier } from "@tenant-prisma"
+import { PrismaClient, Supplier } from "@prisma/tenant-prisma"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";

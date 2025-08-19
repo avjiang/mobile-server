@@ -1,5 +1,5 @@
 import { SyncRequest } from "src/item/item.request";
-import { PrismaClient, Category } from "@tenant-prisma"
+import { PrismaClient, Category } from "@prisma/tenant-prisma"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { get } from "http";

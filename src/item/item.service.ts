@@ -1,4 +1,4 @@
-import { PrismaClient, Item, Prisma } from "@tenant-prisma"
+import { PrismaClient, Item, Prisma } from "@prisma/tenant-prisma"
 import { Decimal } from 'decimal.js';
 import { NotFoundError } from "../api-helpers/error"
 import salesService from "../sales/sales.service"

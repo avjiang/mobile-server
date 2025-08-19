@@ -1,4 +1,4 @@
-import { PrismaClient, Supplier } from "@tenant-prisma"
+import { PrismaClient, Supplier } from "@prisma/tenant-prisma"
 import { Decimal } from 'decimal.js';
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { plainToInstance } from "class-transformer"

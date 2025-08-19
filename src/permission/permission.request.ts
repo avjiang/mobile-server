@@ -1,1 +1,1 @@
-import { Category } from "@tenant-prisma"
+import { Category } from "@prisma/tenant-prisma"

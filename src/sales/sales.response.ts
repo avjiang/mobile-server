@@ -1,4 +1,4 @@
-import { Sales, SalesItem } from "@tenant-prisma"
+import { Sales, SalesItem } from "@prisma/tenant-prisma"
 import { Expose } from "class-transformer"
 import { Decimal } from 'decimal.js';
 

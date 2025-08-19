@@ -4,7 +4,7 @@ import service from "./menu.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
-import { MenuProfile } from "@tenant-prisma"
+import { MenuProfile } from "@prisma/tenant-prisma"
 import { CreateMenuProfileRequestBody } from "./menu.request"
 
 const router = express.Router()

@@ -1,5 +1,5 @@
 import { plainToInstance } from "class-transformer";
-import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../prisma/global-client";
+import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "@prisma/global-prisma";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { CreateTenantRequest } from "./admin.request";
 import bcrypt from "bcryptjs"

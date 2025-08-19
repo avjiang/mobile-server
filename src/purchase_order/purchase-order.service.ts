@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, StockBalance, StockMovement, PurchaseOrder } from "@tenant-prisma"
+import { Prisma, PrismaClient, StockBalance, StockMovement, PurchaseOrder } from "@prisma/tenant-prisma"
 import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import Decimal from "decimal.js";

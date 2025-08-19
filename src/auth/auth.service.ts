@@ -7,7 +7,7 @@ import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } fr
 import { TokenResponseBody } from "./auth.response"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
-import { User } from "prisma/client"
+import { User } from "@tenant-prisma"
 const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()

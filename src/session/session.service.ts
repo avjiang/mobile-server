@@ -1,4 +1,4 @@
-import { Declaration, PrismaClient } from "prisma/client"
+import { Declaration, PrismaClient } from "@tenant-prisma"
 import { NotFoundError } from "../api-helpers/error"
 import { CloseSessionRequest, OpenSessionRequest } from "./session.request"
 import { getTenantPrisma } from '../db';

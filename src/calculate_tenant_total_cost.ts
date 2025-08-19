@@ -1,5 +1,5 @@
 // import { Request, Response } from 'express';
-// import { PrismaClient } from 'prisma/client';
+// import { PrismaClient } from '@tenant-prisma';
 // import { StatusCodes } from 'http-status-codes';
 
 // // Global Prisma client for TENANT schema

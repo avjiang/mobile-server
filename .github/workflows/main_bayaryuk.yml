@@ -89,7 +89,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: npm run generate_prisma
+        run: npm run generate_prisma 
 
       - name: Build TypeScript
         run: npm run build # Assumes you have a "build" script in your package.json

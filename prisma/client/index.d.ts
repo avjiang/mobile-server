@@ -280,7 +280,7 @@ export type RegisteredDevice = $Result.DefaultSelection<Prisma.$RegisteredDevice
 export namespace $Enums {
   export const SettingType: {
   INT: 'INT',
-  STRING: 'STRING',
+  STRINGw: 'STRINGw',
   BOOLEAN: 'BOOLEAN',
   JSON: 'JSON'
 };

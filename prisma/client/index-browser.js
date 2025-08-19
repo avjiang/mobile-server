@@ -1372,7 +1372,7 @@ exports.Prisma.RegisteredDeviceOrderByRelevanceFieldEnum = {
 };
 exports.SettingType = exports.$Enums.SettingType = {
   INT: 'INT',
-  STRING: 'STRING',
+  STRINGw: 'STRINGw',
   BOOLEAN: 'BOOLEAN',
   JSON: 'JSON'
 };

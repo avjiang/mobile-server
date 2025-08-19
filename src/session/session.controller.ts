@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from "express"
 import { sendResponse } from "../api-helpers/network"
 import service from "./session.service"
-import { Declaration, Session } from "prisma/client"
+import { Declaration, Session } from "@tenant-prisma"
 import validator from "validator"
 import { RequestValidateError } from "../api-helpers/error"
 import { CloseSessionRequest, OpenSessionRequest } from "./session.request"

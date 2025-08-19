@@ -1,4 +1,4 @@
-import { User } from "prisma/client"
+import { User } from "@tenant-prisma"
 
 export interface AssignRoleRequestBody {
     id?: number;

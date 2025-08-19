@@ -1,4 +1,4 @@
-import { Category } from "prisma/client"
+import { Category } from "@tenant-prisma"
 
 export interface CreateCategoryRequestBody {
     categories: Category[]

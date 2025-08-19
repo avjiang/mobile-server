@@ -1,4 +1,4 @@
-import { MenuCategory, MenuItem, MenuItemModifier, MenuItemModifierGroup, MenuProfile } from "prisma/client";
+import { MenuCategory, MenuItem, MenuItemModifier, MenuItemModifierGroup, MenuProfile } from "@tenant-prisma";
 
 export interface CreateMenuProfileRequestBody {
     menuProfile: MenuProfileRequestBody

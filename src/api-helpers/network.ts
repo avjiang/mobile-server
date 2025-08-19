@@ -1,6 +1,6 @@
 import { Response } from "express";
 import NetworkResponse from "./network-response";
-import { Decimal } from "prisma/client/runtime/library";
+import { Decimal } from "@tenant-prisma/runtime/library";
 import { ResponseError } from "./error";
 
 let convertDecimalsToNumbers = (value: any): any => {

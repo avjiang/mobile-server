@@ -1,4 +1,4 @@
-import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "prisma/client"
+import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "@tenant-prisma"
 import { Decimal } from 'decimal.js';
 import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"

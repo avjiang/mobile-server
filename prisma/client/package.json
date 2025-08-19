@@ -1,10 +1,10 @@
 {
-  "name": "prisma-client-4c2e06073ed2677d653c47a4ec0536394cbaee8fd344ec41ab23614518a53ee0",
+  "name": "prisma-client-ae86c107e3c2f02da8f46c5d73171df1ae27902eb83c7b0c952dfd61539b5b7a",
   "main": "index.js",
   "types": "index.d.ts",
   "browser": "index-browser.js",
   "exports": {
-    "prisma/client": {
+    "./client": {
       "require": {
         "node": "./index.js",
         "edge-light": "./wasm.js",

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import NetworkResponse from "../api-helpers/network-response";
 import { BaseError, ResponseError, AuthenticationError, VersionMismatchError } from "../api-helpers/error";
-import { Prisma } from "prisma/client";
+import { Prisma } from "@tenant-prisma";
 import { sendErrorResponse } from "../api-helpers/network";
 
 export default (error: Error, req: Request, res: Response, next: NextFunction) => {

@@ -1,4 +1,4 @@
-import { PrismaClient as TenantPrismaClient } from "../prisma/client";
+import { PrismaClient as TenantPrismaClient } from "@tenant-prisma";
 import { PrismaClient as GlobalPrismaClient } from "../prisma/global-client";
 import dotenv from 'dotenv';
 import { exec } from 'child_process';

@@ -83,6 +83,16 @@ export async function updateAllTenantDatabases(): Promise<void> {
   const globalPrisma = getGlobalPrisma();
   const customers = await globalPrisma.tenant.findMany();
 
+  const globalUrl = process.env.GLOBAL_DB_URL!;
+  console.log(`Applying migrations to global database...`);
+  try {
+    const command = `TENANT_DATABASE_URL=${globalUrl} npx prisma migrate deploy --schema=prisma/global-client/schema.prisma`;
+    await execAsync(command);
+    console.log(`Successfully updated global database`);
+  } catch (error) {
+    console.error(`Failed to update global database: ${(error as Error).message}`);
+  }
+
   for (const customer of customers) {
     if (!customer.databaseName) {
       console.warn(`Skipping tenant with ID ${customer.id}: database name is missing or null`);

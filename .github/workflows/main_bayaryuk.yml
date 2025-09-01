@@ -94,6 +94,9 @@ jobs:
       - name: Build TypeScript
         run: npm run build # Assumes you have a "build" script in your package.json
 
+      - name: Migrate Database Prisma
+        run: npm run upgrade_tenant_db
+        
       - name: Create app_offline.htm to stop the app
         run: echo "Site is updating..." > app_offline.htm
 

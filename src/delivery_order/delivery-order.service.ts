@@ -207,6 +207,7 @@ let getById = async (id: number, databaseName: string) => {
                         discountAmount: true,
                         serviceChargeAmount: true,
                         taxAmount: true,
+                        isTaxInclusive: true,
                         roundingAmount: true,
                         subtotalAmount: true,
                         totalAmount: true,
@@ -657,6 +658,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
     for (const item of items) {
         if (item.receivedQuantity > 0) {
             const currentBalance = stockBalanceMap.get(item.itemId);
+
             // Convert to Decimal objects for proper arithmetic
             const previousAvailableQuantity = new Decimal(currentBalance?.availableQuantity || 0);
             const previousOnHandQuantity = new Decimal(currentBalance?.onHandQuantity || 0);
@@ -666,9 +668,10 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             const newAvailableQuantity = previousAvailableQuantity.add(quantityDelta);
             const newOnHandQuantity = previousOnHandQuantity.add(quantityDelta);
 
+            // Calculate per-unit cost: unitPrice + (deliveryFee / quantity)
             const deliveryFee = new Decimal(item.deliveryFee || 0);
             const unitPrice = new Decimal(item.unitPrice || 0);
-            const subtotalCost = unitPrice.plus(deliveryFee);
+            const perUnitCost = unitPrice.plus(deliveryFee.div(quantityDelta));
 
             // Fix stock balance operation to match the actual unique constraint
             stockOperations.push({
@@ -712,12 +715,12 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 performedBy: performedBy || 'SYSTEM'
             });
 
-            // Prepare receipt operation with cost from delivery order item
+            // Prepare receipt operation with per-unit cost
             receiptOperations.push({
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
                 quantity: quantityDelta,
-                cost: subtotalCost,
+                cost: perUnitCost,  // Updated to per-unit cost
                 receiptDate: new Date()
             });
         }

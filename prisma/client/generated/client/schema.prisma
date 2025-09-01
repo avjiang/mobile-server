@@ -528,40 +528,43 @@ model SalesQuotationItem {
 }
 
 model Invoice {
-  id               Int             @id @default(autoincrement()) @map("ID")
-  invoiceNumber    String          @unique @map("INVOICE_NUMBER")
-  taxInvoiceNumber String          @map("TAX_INVOICE_NUMBER")
-  purchaseOrderId  Int?            @map("PURCHASE_ORDER_ID")
-  supplierId       Int?            @map("SUPPLIER_ID")
-  outletId         Int             @map("OUTLET_ID")
-  subtotalAmount   Decimal         @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
-  taxAmount        Decimal         @map("TAX_AMOUNT") @db.Decimal(15, 4)
-  sessionId        Int?            @map("SESSION_ID") // Optional for backwards compatibility
-  discountType     String?         @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
-  discountAmount   Decimal         @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
-  totalAmount      Decimal         @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
-  currency         String          @map("CURRENCY")
-  status           String          @map("STATUS")
-  invoiceDate      DateTime?       @map("INVOICE_DATE")
-  paymentDate      DateTime?       @map("PAYMENT_DATE")
-  dueDate          DateTime?       @map("DUE_DATE")
-  remark           String?         @default("") @map("REMARK")
-  performedBy      String?         @default("") @map("PERFORMED_BY")
-  deleted          Boolean         @default(false) @map("IS_DELETED")
-  deletedAt        DateTime?       @map("DELETED_AT")
-  createdAt        DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt        DateTime?       @updatedAt @map("UPDATED_AT")
-  version          Int?            @default(1) @map("VERSION")
-  isTaxInclusive   Boolean?        @default(false) @map("IS_TAX_INCLUSIVE")
-  session          Session?        @relation(fields: [sessionId], references: [id])
-  purchaseOrder    PurchaseOrder?  @relation(fields: [purchaseOrderId], references: [id])
-  supplier         Supplier?       @relation(fields: [supplierId], references: [id])
-  invoiceItems     InvoiceItem[]
-  deliveryOrders   DeliveryOrder[] // One-to-many relation with DeliveryOrder
+  id                  Int                @id @default(autoincrement()) @map("ID")
+  invoiceNumber       String             @unique @map("INVOICE_NUMBER")
+  taxInvoiceNumber    String             @map("TAX_INVOICE_NUMBER")
+  purchaseOrderId     Int?               @map("PURCHASE_ORDER_ID")
+  invoiceSettlementId Int?               @map("INVOICE_SETTLEMENT_ID")
+  supplierId          Int?               @map("SUPPLIER_ID")
+  outletId            Int                @map("OUTLET_ID")
+  subtotalAmount      Decimal            @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
+  taxAmount           Decimal            @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  sessionId           Int?               @map("SESSION_ID") // Optional for backwards compatibility
+  discountType        String?            @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
+  discountAmount      Decimal            @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  totalAmount         Decimal            @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
+  currency            String             @map("CURRENCY")
+  status              String             @map("STATUS")
+  invoiceDate         DateTime?          @map("INVOICE_DATE")
+  paymentDate         DateTime?          @map("PAYMENT_DATE")
+  dueDate             DateTime?          @map("DUE_DATE")
+  remark              String?            @default("") @map("REMARK")
+  performedBy         String?            @default("") @map("PERFORMED_BY")
+  deleted             Boolean            @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?          @map("DELETED_AT")
+  createdAt           DateTime?          @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?          @updatedAt @map("UPDATED_AT")
+  version             Int?               @default(1) @map("VERSION")
+  isTaxInclusive      Boolean?           @default(false) @map("IS_TAX_INCLUSIVE")
+  session             Session?           @relation(fields: [sessionId], references: [id])
+  purchaseOrder       PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id])
+  supplier            Supplier?          @relation(fields: [supplierId], references: [id])
+  invoiceItems        InvoiceItem[]
+  deliveryOrders      DeliveryOrder[] // One-to-many relation with DeliveryOrder
+  invoiceSettlement   InvoiceSettlement? @relation(fields: [invoiceSettlementId], references: [id])
 
   @@index([purchaseOrderId])
   @@index([supplierId])
   @@index([outletId])
+  @@index([invoiceSettlementId])
   @@index([createdAt, updatedAt, deletedAt])
   @@map("invoice")
 }
@@ -588,6 +591,37 @@ model InvoiceItem {
   @@index([invoiceId])
   @@index([itemId])
   @@map("invoice_item")
+}
+
+model InvoiceSettlement {
+  id                 Int       @id @default(autoincrement()) @map("ID")
+  settlementNumber   String    @unique @map("SETTLEMENT_NUMBER")
+  settlementDate     DateTime  @map("SETTLEMENT_DATE")
+  settlementType     String    @map("SETTLEMENT_TYPE")
+  paymentMethod      String?   @map("PAYMENT_METHOD")
+  settlementAmount   Decimal   @map("SETTLEMENT_AMOUNT") @db.Decimal(15, 4)
+  currency           String    @map("CURRENCY")
+  exchangeRate       Decimal?  @default(1) @map("EXCHANGE_RATE") @db.Decimal(15, 8)
+  reference          String?   @map("REFERENCE")
+  remark             String?   @default("") @map("REMARK")
+  status             String    @default("COMPLETED") @map("STATUS")
+  performedBy        String?   @default("") @map("PERFORMED_BY")
+  totalRebateAmount  Decimal   @default(0) @map("TOTAL_REBATE_AMOUNT") @db.Decimal(15, 4) // Total rebate given in this settlement
+  rebateReason       String?   @map("REBATE_REASON") // Reason for rebate (e.g., "EARLY_PAYMENT", "BULK_DISCOUNT", "PRICE_ADJUSTMENT")
+  totalInvoiceCount  Int       @default(0) @map("TOTAL_INVOICE_COUNT")
+  totalInvoiceAmount Decimal   @default(0) @map("TOTAL_INVOICE_AMOUNT") @db.Decimal(15, 4)
+  deleted            Boolean   @default(false) @map("IS_DELETED")
+  deletedAt          DateTime? @map("DELETED_AT")
+  createdAt          DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime? @updatedAt @map("UPDATED_AT")
+  version            Int?      @default(1) @map("VERSION")
+  invoices           Invoice[]
+
+  @@index([settlementDate])
+  @@index([settlementType])
+  @@index([status])
+  @@index([createdAt, updatedAt, deletedAt])
+  @@map("invoice_settlement")
 }
 
 model DeliveryOrder {

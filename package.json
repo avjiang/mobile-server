@@ -91,7 +91,7 @@
   },
    "scripts": {
     "build": "tsc",
-    "dev": "pm2 start ecosystem.config.js && npm run tunnel",
+    "dev": "pm2 start ecosystem.config.js",
     "start": "node dist/index.js",
     "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js",
     "migrate_global_db": "npx prisma migrate deploy --schema=prisma/global-client/schema.prisma",

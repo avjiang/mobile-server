@@ -129,9 +129,27 @@ let update = (req: NetworkRequest<InvoiceInput>, res: Response, next: NextFuncti
         .catch(next)
 }
 
+const getCompleted = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { outletId } = req.query;
+
+    // Validate outletId
+    if (!outletId || !validator.isNumeric(outletId as string)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+    const parsedOutletId = parseInt(outletId as string);
+    service
+        .getCompleted(req.user.databaseName, parsedOutletId)
+        .then(({ invoices, total }) => sendResponse(res, { data: invoices, total }))
+        .catch(next);
+}
+
 //routes
 router.get("/sync", getAll)
 router.get('/dateRange', getAllByDateRange)
+router.get('/getAllCompleted', getCompleted)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)

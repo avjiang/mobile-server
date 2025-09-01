@@ -455,6 +455,7 @@ exports.Prisma.InvoiceScalarFieldEnum = {
   invoiceNumber: 'invoiceNumber',
   taxInvoiceNumber: 'taxInvoiceNumber',
   purchaseOrderId: 'purchaseOrderId',
+  invoiceSettlementId: 'invoiceSettlementId',
   supplierId: 'supplierId',
   outletId: 'outletId',
   subtotalAmount: 'subtotalAmount',
@@ -493,6 +494,30 @@ exports.Prisma.InvoiceItemScalarFieldEnum = {
   updatedAt: 'updatedAt',
   deleted: 'deleted',
   deletedAt: 'deletedAt',
+  version: 'version'
+};
+
+exports.Prisma.InvoiceSettlementScalarFieldEnum = {
+  id: 'id',
+  settlementNumber: 'settlementNumber',
+  settlementDate: 'settlementDate',
+  settlementType: 'settlementType',
+  paymentMethod: 'paymentMethod',
+  settlementAmount: 'settlementAmount',
+  currency: 'currency',
+  exchangeRate: 'exchangeRate',
+  reference: 'reference',
+  remark: 'remark',
+  status: 'status',
+  performedBy: 'performedBy',
+  totalRebateAmount: 'totalRebateAmount',
+  rebateReason: 'rebateReason',
+  totalInvoiceCount: 'totalInvoiceCount',
+  totalInvoiceAmount: 'totalInvoiceAmount',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
   version: 'version'
 };
 
@@ -1216,6 +1241,18 @@ exports.Prisma.InvoiceItemOrderByRelevanceFieldEnum = {
   remark: 'remark'
 };
 
+exports.Prisma.InvoiceSettlementOrderByRelevanceFieldEnum = {
+  settlementNumber: 'settlementNumber',
+  settlementType: 'settlementType',
+  paymentMethod: 'paymentMethod',
+  currency: 'currency',
+  reference: 'reference',
+  remark: 'remark',
+  status: 'status',
+  performedBy: 'performedBy',
+  rebateReason: 'rebateReason'
+};
+
 exports.Prisma.DeliveryOrderOrderByRelevanceFieldEnum = {
   trackingNumber: 'trackingNumber',
   deliveryStreet: 'deliveryStreet',
@@ -1431,6 +1468,7 @@ exports.Prisma.ModelName = {
   SalesQuotationItem: 'SalesQuotationItem',
   Invoice: 'Invoice',
   InvoiceItem: 'InvoiceItem',
+  InvoiceSettlement: 'InvoiceSettlement',
   DeliveryOrder: 'DeliveryOrder',
   DeliveryOrderItem: 'DeliveryOrderItem',
   PurchaseOrder: 'PurchaseOrder',

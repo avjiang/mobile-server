@@ -27,6 +27,7 @@ export interface InvoiceInput {
     discountAmount: number;
     totalAmount: number;
     currency?: string;
+    isTaxInclusive?: boolean;
     status: string;
     invoiceDate?: Date;
     paymentDate?: Date;

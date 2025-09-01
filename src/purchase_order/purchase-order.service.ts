@@ -68,7 +68,17 @@ let getAll = async (
                             OR: [
                                 { createdAt: { gte: lastSync } },
                                 { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
+                                { deletedAt: { gte: lastSync } },
+                                // Include invoices with modified settlements
+                                {
+                                    invoiceSettlement: {
+                                        OR: [
+                                            { createdAt: { gte: lastSync } },
+                                            { updatedAt: { gte: lastSync } },
+                                            { deletedAt: { gte: lastSync } }
+                                        ]
+                                    }
+                                }
                             ]
                         }
                     }
@@ -121,15 +131,25 @@ let getAll = async (
             }
         });
 
-        // Count invoices for each purchase order
-        const invoiceCounts = await tenantPrisma.invoice.groupBy({
-            by: ['purchaseOrderId'],
+        // Count invoices for each purchase order and include settlement info
+        const invoiceData = await tenantPrisma.invoice.findMany({
             where: {
                 purchaseOrderId: { in: purchaseOrderIds },
                 deleted: false
             },
-            _count: {
-                id: true
+            select: {
+                id: true,
+                purchaseOrderId: true,
+                invoiceSettlementId: true,
+                invoiceSettlement: {
+                    select: {
+                        id: true,
+                        settlementNumber: true,
+                        settlementDate: true,
+                        status: true,
+                        settlementAmount: true
+                    }
+                }
             }
         });
 
@@ -139,21 +159,45 @@ let getAll = async (
             deliveryOrderCountMap.set(doc.purchaseOrderId, doc._count.id);
         });
 
+        // Process invoice data to create count and settlement maps
         const invoiceCountMap = new Map();
-        invoiceCounts.forEach(ic => {
-            invoiceCountMap.set(ic.purchaseOrderId, ic._count.id);
+        const settlementInfoMap = new Map();
+
+        purchaseOrderIds.forEach(poId => {
+            const poInvoices = invoiceData.filter(inv => inv.purchaseOrderId === poId);
+
+            // Count invoices
+            invoiceCountMap.set(poId, poInvoices.length);
+
+            // Count settled invoices and unique settlements
+            const settledInvoices = poInvoices.filter(inv => inv.invoiceSettlement);
+            const uniqueSettlements = new Set(
+                settledInvoices
+                    .map(inv => inv.invoiceSettlement?.id)
+                    .filter(id => id !== undefined)
+            );
+
+            settlementInfoMap.set(poId, {
+                settledInvoiceCount: settledInvoices.length,
+                uniqueSettlementCount: uniqueSettlements.size
+            });
         });
 
-        // Enrich purchase orders with counts
+        // Enrich purchase orders with counts and settlement info
         const enrichedPurchaseOrders = purchaseOrders.map(po => {
             const deliveryOrderCount = deliveryOrderCountMap.get(po.id) || 0;
             const invoiceCount = invoiceCountMap.get(po.id) || 0;
+            const settlementInfo = settlementInfoMap.get(po.id) || {
+                settledInvoiceCount: 0,
+                uniqueSettlementCount: 0
+            };
 
             return {
                 ...po,
                 itemCount: po._count.purchaseOrderItems,
                 deliveryOrderCount,
                 invoiceCount,
+                settledInvoiceCount: settlementInfo.uniqueSettlementCount,
                 _count: undefined // Remove the _count field from response
             };
         });
@@ -278,15 +322,25 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             }
         });
 
-        // Count invoices for each purchase order
-        const invoiceCounts = await tenantPrisma.invoice.groupBy({
-            by: ['purchaseOrderId'],
+        // Count invoices for each purchase order and include settlement info
+        const invoiceData = await tenantPrisma.invoice.findMany({
             where: {
                 purchaseOrderId: { in: purchaseOrderIds },
                 deleted: false
             },
-            _count: {
-                id: true
+            select: {
+                id: true,
+                purchaseOrderId: true,
+                invoiceSettlementId: true,
+                invoiceSettlement: {
+                    select: {
+                        id: true,
+                        settlementNumber: true,
+                        settlementDate: true,
+                        status: true,
+                        settlementAmount: true
+                    }
+                }
             }
         });
 
@@ -296,21 +350,45 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             deliveryOrderCountMap.set(doc.purchaseOrderId, doc._count.id);
         });
 
+        // Process invoice data to create count and settlement maps
         const invoiceCountMap = new Map();
-        invoiceCounts.forEach(ic => {
-            invoiceCountMap.set(ic.purchaseOrderId, ic._count.id);
+        const settlementInfoMap = new Map();
+
+        purchaseOrderIds.forEach(poId => {
+            const poInvoices = invoiceData.filter(inv => inv.purchaseOrderId === poId);
+
+            // Count invoices
+            invoiceCountMap.set(poId, poInvoices.length);
+
+            // Count settled invoices and unique settlements
+            const settledInvoices = poInvoices.filter(inv => inv.invoiceSettlement);
+            const uniqueSettlements = new Set(
+                settledInvoices
+                    .map(inv => inv.invoiceSettlement?.id)
+                    .filter(id => id !== undefined)
+            );
+
+            settlementInfoMap.set(poId, {
+                settledInvoiceCount: settledInvoices.length,
+                uniqueSettlementCount: uniqueSettlements.size
+            });
         });
 
-        // Enrich purchase orders with counts
+        // Enrich purchase orders with counts and settlement info
         const enrichedPurchaseOrders = purchaseOrders.map(po => {
             const deliveryOrderCount = deliveryOrderCountMap.get(po.id) || 0;
             const invoiceCount = invoiceCountMap.get(po.id) || 0;
+            const settlementInfo = settlementInfoMap.get(po.id) || {
+                settledInvoiceCount: 0,
+                uniqueSettlementCount: 0
+            };
 
             return {
                 ...po,
                 itemCount: po._count.purchaseOrderItems,
                 deliveryOrderCount,
                 invoiceCount,
+                settledInvoiceCount: settlementInfo.uniqueSettlementCount,
                 _count: undefined // Remove the _count field from response
             };
         });
@@ -361,7 +439,8 @@ let getById = async (id: number, databaseName: string) => {
                             where: {
                                 deleted: false
                             }
-                        }
+                        },
+                        invoiceSettlement: true
                     }
                 }
             }
@@ -371,12 +450,57 @@ let getById = async (id: number, databaseName: string) => {
             throw new NotFoundError("Purchase Order");
         }
 
-        // Return purchase order with counts added to align with getAll response
+        // Extract and deduplicate invoice settlements
+        const settlementMap = new Map();
+        purchaseOrder.invoices.forEach(invoice => {
+            if (invoice.invoiceSettlement) {
+                settlementMap.set(invoice.invoiceSettlement.id, invoice.invoiceSettlement);
+            }
+        });
+        const invoiceSettlements = Array.from(settlementMap.values());
+
+        // For each settlement, get all linked invoices with minimal info
+        const enhancedSettlements = await Promise.all(
+            invoiceSettlements.map(async (settlement) => {
+                const invoices = await tenantPrisma.invoice.findMany({
+                    where: {
+                        invoiceSettlementId: settlement.id,
+                        deleted: false
+                    },
+                    select: {
+                        invoiceNumber: true,
+                        subtotalAmount: true,
+                        totalAmount: true,
+                        status: true,
+                        taxInvoiceNumber: true,
+                    }
+                });
+
+                return {
+                    ...settlement,
+                    invoices
+                };
+            })
+        );
+
+        // Count settled invoices
+        const invoiceSettlementCount = purchaseOrder.invoices.filter(invoice => invoice.invoiceSettlement).length;
+
+        // Remove invoiceSettlement from invoices
+        const invoicesWithoutSettlement = purchaseOrder.invoices.map(invoice => {
+            const { invoiceSettlement, ...invoiceWithoutSettlement } = invoice;
+            return invoiceWithoutSettlement;
+        });
+
+        // Return purchase order with counts and restructured data
         return {
             ...purchaseOrder,
+            invoices: invoicesWithoutSettlement,
+            invoiceSettlements: enhancedSettlements,
             itemCount: purchaseOrder.purchaseOrderItems.length,
             deliveryOrderCount: purchaseOrder.deliveryOrders.length,
-            invoiceCount: purchaseOrder.invoices.length
+            invoiceCount: purchaseOrder.invoices.length,
+            invoiceSettlementCount
         };
     }
     catch (error) {
@@ -388,7 +512,6 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { purchaseOrders } = requestBody;
-
         if (!purchaseOrders || !Array.isArray(purchaseOrders)) {
             throw new RequestValidateError('purchaseOrders must be a non-empty array');
         }
@@ -476,7 +599,8 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         status: purchaseOrderData.status || 'CONFIRMED',
                         remark: purchaseOrderData.remark,
                         currency: purchaseOrderData.currency || 'IDR',
-                        performedBy: purchaseOrderData.performedBy
+                        performedBy: purchaseOrderData.performedBy,
+                        isTaxInclusive: purchaseOrderData.isTaxInclusive !== undefined ? purchaseOrderData.isTaxInclusive : true,
                     },
                     include: {
                         purchaseOrderItems: {
@@ -731,6 +855,7 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                     remark: updateData.remark,
                     currency: updateData.currency,
                     performedBy: updateData.performedBy,
+                    isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
                     version: { increment: 1 }
                 }
             });

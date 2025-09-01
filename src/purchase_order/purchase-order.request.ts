@@ -25,6 +25,7 @@ export interface PurchaseOrderInput {
     serviceChargeAmount?: PrismaDecimal;
     taxAmount?: PrismaDecimal;
     roundingAmount?: PrismaDecimal;
+    isTaxInclusive?: boolean;
     subtotalAmount: PrismaDecimal;
     totalAmount: PrismaDecimal;
     status?: string;

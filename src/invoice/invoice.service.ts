@@ -92,6 +92,24 @@ let getAll = async (
             }
         });
 
+        // Batch fetch invoice settlements for each invoice
+        const invoiceSettlements = await tenantPrisma.invoiceSettlement.findMany({
+            where: {
+                id: { in: invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number') },
+                deleted: false
+            },
+            select: {
+                id: true,
+                settlementNumber: true,
+                settlementDate: true,
+                settlementType: true,
+                paymentMethod: true,
+                settlementAmount: true,
+                currency: true,
+                status: true
+            }
+        });
+
         // Create lookup maps for O(1) access
         const purchaseOrderMap = new Map();
         purchaseOrders.forEach(po => {
@@ -107,10 +125,17 @@ let getAll = async (
             deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
+        // Create lookup map for invoice settlements
+        const invoiceSettlementMap = new Map();
+        invoiceSettlements.forEach(settlement => {
+            invoiceSettlementMap.set(settlement.id, settlement);
+        });
+
         // Enrich invoices with purchase order and delivery order info
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
             const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
+            const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
 
             return {
                 ...inv,
@@ -123,6 +148,16 @@ let getAll = async (
                     deliveryDate: do_.deliveryDate,
                     trackingNumber: do_.trackingNumber
                 })),
+                invoiceSettlement: invoiceSettlement ? {
+                    id: invoiceSettlement.id,
+                    settlementNumber: invoiceSettlement.settlementNumber,
+                    settlementDate: invoiceSettlement.settlementDate,
+                    settlementType: invoiceSettlement.settlementType,
+                    paymentMethod: invoiceSettlement.paymentMethod,
+                    settlementAmount: invoiceSettlement.settlementAmount,
+                    currency: invoiceSettlement.currency,
+                    status: invoiceSettlement.status
+                } : null,
                 _count: undefined // Remove the _count field from response
             };
         });
@@ -186,6 +221,29 @@ let getById = async (id: number, databaseName: string) => {
                             }
                         }
                     }
+                },
+                invoiceSettlement: {
+                    where: {
+                        deleted: false
+                    },
+                    select: {
+                        id: true,
+                        settlementNumber: true,
+                        settlementDate: true,
+                        settlementType: true,
+                        paymentMethod: true,
+                        settlementAmount: true,
+                        currency: true,
+                        exchangeRate: true,
+                        reference: true,
+                        remark: true,
+                        status: true,
+                        performedBy: true,
+                        totalRebateAmount: true,
+                        rebateReason: true,
+                        totalInvoiceCount: true,
+                        totalInvoiceAmount: true
+                    }
                 }
             }
         });
@@ -194,8 +252,32 @@ let getById = async (id: number, databaseName: string) => {
             throw new NotFoundError("Invoice");
         }
 
+        // If invoice has settlement, get all linked invoices with minimal info
+        let enhancedInvoiceSettlement = null;
+        if (invoice.invoiceSettlement) {
+            const invoices = await tenantPrisma.invoice.findMany({
+                where: {
+                    invoiceSettlementId: invoice.invoiceSettlement.id,
+                    deleted: false
+                },
+                select: {
+                    invoiceNumber: true,
+                    subtotalAmount: true,
+                    totalAmount: true,
+                    status: true,
+                    taxInvoiceNumber: true
+                }
+            });
+
+            enhancedInvoiceSettlement = {
+                ...invoice.invoiceSettlement,
+                invoices
+            };
+        }
+
         return {
-            ...invoice
+            ...invoice,
+            invoiceSettlement: enhancedInvoiceSettlement
         };
     }
     catch (error) {
@@ -291,6 +373,24 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             }
         });
 
+        // Batch fetch invoice settlements for each invoice
+        const invoiceSettlements = await tenantPrisma.invoiceSettlement.findMany({
+            where: {
+                id: { in: invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number') },
+                deleted: false
+            },
+            select: {
+                id: true,
+                settlementNumber: true,
+                settlementDate: true,
+                settlementType: true,
+                paymentMethod: true,
+                settlementAmount: true,
+                currency: true,
+                status: true
+            }
+        });
+
         // Create lookup maps for O(1) access
         const purchaseOrderMap = new Map();
         purchaseOrders.forEach(po => {
@@ -306,10 +406,17 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
+        // Create lookup map for invoice settlements
+        const invoiceSettlementMap = new Map();
+        invoiceSettlements.forEach(settlement => {
+            invoiceSettlementMap.set(settlement.id, settlement);
+        });
+
         // Enrich invoices with purchase order and delivery order info
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
             const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
+            const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
 
             return {
                 ...inv,
@@ -322,6 +429,16 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                     deliveryDate: do_.deliveryDate,
                     trackingNumber: do_.trackingNumber
                 })),
+                invoiceSettlement: invoiceSettlement ? {
+                    id: invoiceSettlement.id,
+                    settlementNumber: invoiceSettlement.settlementNumber,
+                    settlementDate: invoiceSettlement.settlementDate,
+                    settlementType: invoiceSettlement.settlementType,
+                    paymentMethod: invoiceSettlement.paymentMethod,
+                    settlementAmount: invoiceSettlement.settlementAmount,
+                    currency: invoiceSettlement.currency,
+                    status: invoiceSettlement.status
+                } : null,
                 _count: undefined
             };
         });
@@ -333,6 +450,146 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
         };
     }
     catch (error) {
+        throw error;
+    }
+}
+
+let getCompleted = async (
+    databaseName: string,
+    outletId: number
+): Promise<{ invoices: any[]; total: number }> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    try {
+        // Build query conditions for completed invoices only
+        const where = {
+            outletId: outletId,
+            status: 'Completed',
+            deleted: false
+        };
+
+        // Count total matching records
+        const total = await tenantPrisma.invoice.count({ where });
+
+        // Fetch all completed invoices
+        const invoices = await tenantPrisma.invoice.findMany({
+            where,
+            include: {
+                _count: {
+                    select: {
+                        invoiceItems: {
+                            where: { deleted: false }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Batch fetch delivery orders for all invoices (if needed for additional data)
+        const invoiceIds = invoices.map(inv => inv.id);
+
+        // Batch fetch purchase order for each invoice
+        const purchaseOrders = await tenantPrisma.purchaseOrder.findMany({
+            where: {
+                id: { in: invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number') },
+                deleted: false
+            },
+            select: {
+                id: true,
+                purchaseOrderNumber: true,
+                purchaseOrderDate: true
+            }
+        });
+
+        // Batch fetch delivery orders for each invoice
+        const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
+            where: {
+                invoiceId: { in: invoiceIds },
+                deleted: false
+            },
+            select: {
+                id: true,
+                invoiceId: true,
+                deliveryDate: true,
+                trackingNumber: true
+            }
+        });
+
+        // Batch fetch invoice settlements for each invoice
+        const invoiceSettlements = await tenantPrisma.invoiceSettlement.findMany({
+            where: {
+                id: { in: invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number') },
+                deleted: false
+            },
+            select: {
+                id: true,
+                settlementNumber: true,
+                settlementDate: true,
+                settlementType: true,
+                paymentMethod: true,
+                settlementAmount: true,
+                currency: true,
+                status: true
+            }
+        });
+
+        // Create lookup maps for O(1) access
+        const purchaseOrderMap = new Map();
+        purchaseOrders.forEach(po => {
+            purchaseOrderMap.set(po.id, po);
+        });
+
+        // Create lookup map for delivery orders grouped by invoice ID
+        const deliveryOrderMap = new Map<number, any[]>();
+        deliveryOrders.forEach(do_ => {
+            if (!deliveryOrderMap.has(do_.invoiceId!)) {
+                deliveryOrderMap.set(do_.invoiceId!, []);
+            }
+            deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
+        });
+
+        // Create lookup map for invoice settlements
+        const invoiceSettlementMap = new Map();
+        invoiceSettlements.forEach(settlement => {
+            invoiceSettlementMap.set(settlement.id, settlement);
+        });
+
+        // Enrich invoices with purchase order and delivery order info
+        const enrichedInvoices = invoices.map(inv => {
+            const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
+            const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
+            const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
+
+            return {
+                ...inv,
+                itemCount: inv._count.invoiceItems,
+                deliveryOrderCount: relatedDeliveryOrders.length,
+                purchaseOrderNumber: purchaseOrder?.purchaseOrderNumber || null,
+                purchaseOrderDate: purchaseOrder?.purchaseOrderDate || null,
+                deliveryOrders: relatedDeliveryOrders.map(do_ => ({
+                    id: do_.id,
+                    deliveryDate: do_.deliveryDate,
+                    trackingNumber: do_.trackingNumber
+                })),
+                invoiceSettlement: invoiceSettlement ? {
+                    id: invoiceSettlement.id,
+                    settlementNumber: invoiceSettlement.settlementNumber,
+                    settlementDate: invoiceSettlement.settlementDate,
+                    settlementType: invoiceSettlement.settlementType,
+                    paymentMethod: invoiceSettlement.paymentMethod,
+                    settlementAmount: invoiceSettlement.settlementAmount,
+                    currency: invoiceSettlement.currency,
+                    status: invoiceSettlement.status
+                } : null,
+                _count: undefined // Remove the _count field from response
+            };
+        });
+
+        return {
+            invoices: enrichedInvoices,
+            total
+        };
+    } catch (error) {
         throw error;
     }
 }
@@ -444,9 +701,9 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
 
             for (const invoiceData of invoices) {
                 // Determine invoice status based on taxInvoiceNumber
-                const invoiceStatus = (invoiceData.taxInvoiceNumber && invoiceData.taxInvoiceNumber.trim() !== '')
-                    ? 'Completed'
-                    : 'Incomplete';
+                // const invoiceStatus = (invoiceData.taxInvoiceNumber && invoiceData.taxInvoiceNumber.trim() !== '')
+                //     ? 'Completed'
+                //     : 'Incomplete';
 
                 const newInvoice = await tx.invoice.create({
                     data: {
@@ -462,12 +719,13 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         discountType: invoiceData.discountType || '',
                         totalAmount: invoiceData.totalAmount,
                         currency: invoiceData.currency || 'IDR',
-                        status: invoiceStatus,
+                        status: "Completed",
                         invoiceDate: invoiceData.invoiceDate,
                         paymentDate: invoiceData.paymentDate,
                         dueDate: invoiceData.dueDate,
                         remark: invoiceData.remark,
-                        performedBy: invoiceData.performedBy
+                        performedBy: invoiceData.performedBy,
+                        isTaxInclusive: invoiceData.isTaxInclusive !== undefined ? invoiceData.isTaxInclusive : true,
                     },
                     include: {
                         invoiceItems: {
@@ -656,7 +914,7 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
         }
 
         // Determine invoice status based on taxInvoiceNumber
-        const invoiceStatus = updateData.taxInvoiceNumber && updateData.taxInvoiceNumber.trim() !== '' ? 'Completed' : 'Incomplete';
+        // const invoiceStatus = updateData.taxInvoiceNumber && updateData.taxInvoiceNumber.trim() !== '' ? 'Completed' : 'Incomplete';
 
         // Use transaction for all updates
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -675,12 +933,13 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                     discountType: updateData.discountType,
                     totalAmount: updateData.totalAmount,
                     currency: updateData.currency || 'IDR',
-                    status: updateData.status || invoiceStatus,
+                    status: "Completed",
                     invoiceDate: updateData.invoiceDate,
                     paymentDate: updateData.paymentDate,
                     dueDate: updateData.dueDate,
                     remark: updateData.remark,
                     performedBy: updateData.performedBy,
+                    isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
                     version: { increment: 1 }
                 }
             });
@@ -778,4 +1037,4 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
     }
 }
 
-export = { getAll, getById, getByDateRange, createMany, update };
+export = { getAll, getById, getByDateRange, getCompleted, createMany, update };

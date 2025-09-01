@@ -47,6 +47,40 @@ let getAll = async (
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
                 { deletedAt: { gte: lastSync } },
+                // Delivery order has delivery order items that were modified
+                {
+                    deliveryOrderItems: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Delivery order has invoice that was modified
+                {
+                    invoice: {
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
+                        ]
+                    }
+                },
+                // Delivery order has invoice settlement that was modified
+                {
+                    invoice: {
+                        invoiceSettlement: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                }
             ],
         };
 
@@ -97,7 +131,15 @@ let getAll = async (
                         select: {
                             id: true,
                             invoiceNumber: true,
-                            invoiceDate: true
+                            invoiceDate: true,
+                            invoiceSettlement: {
+                                select: {
+                                    id: true,
+                                    settlementNumber: true,
+                                    settlementDate: true
+                                },
+                                where: { deleted: false }
+                            }
                         },
                         where: { deleted: false }
                     }
@@ -114,6 +156,9 @@ let getAll = async (
             purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
             invoiceNumber: do_.invoice?.invoiceNumber || null,
             invoiceDate: do_.invoice?.invoiceDate || null,
+            invoiceSettlementId: do_.invoice?.invoiceSettlement?.id || null,
+            invoiceSettlementNumber: do_.invoice?.invoiceSettlement?.settlementNumber || null,
+            invoiceSettlementDate: do_.invoice?.invoiceSettlement?.settlementDate || null,
             _count: undefined,
             purchaseOrder: undefined,
             invoice: undefined
@@ -216,7 +261,6 @@ let getById = async (id: number, databaseName: string) => {
                                 taxAmount: true,
                                 unitPrice: true,
                                 subtotal: true,
-
                             }
                         }
                     }
@@ -227,7 +271,69 @@ let getById = async (id: number, databaseName: string) => {
         if (!deliveryOrder) {
             throw new NotFoundError("Delivery Order");
         }
-        return deliveryOrder;
+
+        // Get invoiceSettlement with linked invoices if invoice exists
+        let invoiceSettlement = null;
+        if (deliveryOrder.invoice?.id) {
+            const invoice = await tenantPrisma.invoice.findUnique({
+                where: { id: deliveryOrder.invoice.id },
+                select: {
+                    invoiceSettlement: {
+                        where: { deleted: false },
+                        select: {
+                            id: true,
+                            settlementNumber: true,
+                            settlementDate: true,
+                            settlementType: true,
+                            paymentMethod: true,
+                            settlementAmount: true,
+                            currency: true,
+                            exchangeRate: true,
+                            reference: true,
+                            remark: true,
+                            status: true,
+                            performedBy: true,
+                            totalRebateAmount: true,
+                            rebateReason: true,
+                            totalInvoiceCount: true,
+                            totalInvoiceAmount: true,
+                            createdAt: true,
+                            updatedAt: true
+                        }
+                    }
+                }
+            });
+
+            // If invoice settlement exists, get all linked invoices with minimal info
+            if (invoice?.invoiceSettlement) {
+                const invoices = await tenantPrisma.invoice.findMany({
+                    where: {
+                        invoiceSettlementId: invoice.invoiceSettlement.id,
+                        deleted: false
+                    },
+                    select: {
+                        invoiceNumber: true,
+                        subtotalAmount: true,
+                        totalAmount: true,
+                        status: true,
+                        taxInvoiceNumber: true
+                    }
+                });
+
+                invoiceSettlement = {
+                    ...invoice.invoiceSettlement,
+                    invoices
+                };
+            }
+        }
+
+        // Transform the response to include enhanced invoiceSettlement
+        const transformedResult = {
+            ...deliveryOrder,
+            invoiceSettlement
+        };
+
+        return transformedResult;
     }
     catch (error) {
         throw error;
@@ -285,12 +391,24 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 },
                 // Delivery order has invoice that was modified
                 {
-                    invoice: { // Update to singular relationship
+                    invoice: {
                         OR: [
                             { createdAt: { gte: lastSync } },
                             { updatedAt: { gte: lastSync } },
                             { deletedAt: { gte: lastSync } }
                         ]
+                    }
+                },
+                // Delivery order has invoice settlement that was modified
+                {
+                    invoice: {
+                        invoiceSettlement: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
                     }
                 }
             ],
@@ -344,7 +462,15 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                     select: {
                         id: true,
                         invoiceNumber: true,
-                        invoiceDate: true
+                        invoiceDate: true,
+                        invoiceSettlement: {
+                            select: {
+                                id: true,
+                                settlementNumber: true,
+                                settlementDate: true
+                            },
+                            where: { deleted: false }
+                        }
                     },
                     where: { deleted: false }
                 }
@@ -360,6 +486,9 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
             invoiceNumber: do_.invoice?.invoiceNumber || null,
             invoiceDate: do_.invoice?.invoiceDate || null,
+            invoiceSettlementId: do_.invoice?.invoiceSettlement?.id || null,
+            invoiceSettlementNumber: do_.invoice?.invoiceSettlement?.settlementNumber || null,
+            invoiceSettlementDate: do_.invoice?.invoiceSettlement?.settlementDate || null,
             _count: undefined,
             purchaseOrder: undefined,
             invoice: undefined

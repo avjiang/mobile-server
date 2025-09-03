@@ -1,5 +1,6 @@
 import { PrismaClient, StockReceipt } from "../../../prisma/client/generated/client"
 import { getTenantPrisma } from '../../db';
+import { StockReceiptInput, StockReceiptsRequestBody } from "./stock-receipt.request";
 
 let getItemStockReceipt = async (databaseName: string, itemId: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
@@ -30,37 +31,30 @@ let getItemStockReceipt = async (databaseName: string, itemId: number, outletId?
     }
 }
 
-interface StockReceiptInput {
-    id: number;
-    itemId?: number;
-    outletId?: number;
-    quantity?: number;
-    cost?: number;
-    receiptDate?: Date;
-    version?: number;
-}
-
-let updateStockReceipt = async (databaseName: string, stockReceiptData: StockReceiptInput) => {
+let updateStockReceipts = async (databaseName: string, requestBody: StockReceiptsRequestBody) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // Extract id, version, and other fields from the stockReceipt object
-        const { id, version, ...updateData } = stockReceiptData;
+        const updatePromises = requestBody.stockReceipts.map(async (stockReceiptData) => {
+            const { id, version, ...updateData } = stockReceiptData;
 
-        const updatedStockReceipt = await tenantPrisma.stockReceipt.update({
-            where: {
-                id: id
-            },
-            data: {
-                ...updateData,
-                updatedAt: new Date(),
-            }
+            return await tenantPrisma.stockReceipt.update({
+                where: {
+                    id: id
+                },
+                data: {
+                    ...updateData,
+                    updatedAt: new Date(),
+                    version: { increment: 1 },
+                }
+            });
         });
 
-        return updatedStockReceipt;
+        const updatedStockReceipts = await Promise.all(updatePromises);
+        return updatedStockReceipts;
     }
     catch (error) {
         throw error;
     }
 }
 
-export = { getItemStockReceipt, updateStockReceipt }
+export = { getItemStockReceipt, updateStockReceipts }

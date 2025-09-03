@@ -7,3 +7,7 @@ export interface StockReceiptInput {
     receiptDate?: Date;
     version?: number;
 }
+
+export interface StockReceiptsRequestBody {
+    stockReceipts: StockReceiptInput[]
+}

@@ -6,7 +6,7 @@ import NetworkRequest from "../../api-helpers/network-request"
 import { RequestValidateError } from "../../api-helpers/error"
 import { sendResponse } from "../../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
-import { StockReceiptInput } from "./stock-receipt.request"
+import { StockReceiptsRequestBody } from "./stock-receipt.request"
 
 const router = express.Router()
 
@@ -26,22 +26,27 @@ let getItemStockReceipt = (req: AuthRequest, res: Response, next: NextFunction) 
         .catch(next)
 }
 
-let updateStockReceipt = (req: NetworkRequest<StockReceiptInput>, res: Response, next: NextFunction) => {
+let updateStockReceipt = (req: NetworkRequest<StockReceiptsRequestBody>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    const stockReceipt = req.body
-    if (!stockReceipt) {
-        throw new RequestValidateError('Update failed: data missing')
+    const requestBody = req.body
+    if (!requestBody || !requestBody.stockReceipts || requestBody.stockReceipts.length === 0) {
+        throw new RequestValidateError('Update failed: stock receipts data missing')
     }
-    if (!stockReceipt.id) {
-        throw new RequestValidateError('Update failed: [id] not found')
-    }
-    service.updateStockReceipt(req.user.databaseName, stockReceipt)
-        .then((updatedStockReceipt: StockReceipt) => sendResponse(res, updatedStockReceipt))
+    
+    // Validate all stock receipts have IDs
+    requestBody.stockReceipts.forEach(stockReceipt => {
+        if (!stockReceipt.id) {
+            throw new RequestValidateError('Update failed: [id] not found in one of the stock receipts')
+        }
+    })
+    
+    service.updateStockReceipts(req.user.databaseName, requestBody)
+        .then((updatedStockReceipts: StockReceipt[]) => sendResponse(res, updatedStockReceipts))
         .catch(next)
 }
 

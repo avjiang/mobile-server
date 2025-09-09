@@ -651,6 +651,7 @@ model DeliveryOrder {
   purchaseOrder      PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
   invoice            Invoice?            @relation(fields: [invoiceId], references: [id]) // One-to-many relation
   deliveryOrderItems DeliveryOrderItem[]
+  stockReceipts      StockReceipt[] // One-to-many relation with StockReceipt
 
   @@index([outletId])
   @@index([customerId])
@@ -873,20 +874,23 @@ model StockBalance {
 }
 
 model StockReceipt {
-  id          Int       @id @default(autoincrement()) @map("ID")
-  itemId      Int       @map("ITEM_ID")
-  outletId    Int       @map("OUTLET_ID")
-  quantity    Decimal   @map("QUANTITY") @db.Decimal(15, 4)
-  cost        Decimal   @map("COST") @db.Decimal(15, 4) // Cost at the time of this receipt
-  receiptDate DateTime  @default(now()) @map("RECEIPT_DATE")
-  createdAt   DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt   DateTime? @updatedAt @map("UPDATED_AT")
-  deleted     Boolean   @default(false) @map("IS_DELETED")
-  deletedAt   DateTime? @map("DELETED_AT")
-  version     Int?      @default(1) @map("VERSION")
-  item        Item      @relation(fields: [itemId], references: [id])
-  outlet      Outlet    @relation(fields: [outletId], references: [id])
+  id              Int            @id @default(autoincrement()) @map("ID")
+  itemId          Int            @map("ITEM_ID")
+  outletId        Int            @map("OUTLET_ID")
+  deliveryOrderId Int?           @map("DELIVERY_ORDER_ID") // Optional foreign key to DeliveryOrder
+  quantity        Decimal        @map("QUANTITY") @db.Decimal(15, 4)
+  cost            Decimal        @map("COST") @db.Decimal(15, 4) // Cost at the time of this receipt
+  receiptDate     DateTime       @default(now()) @map("RECEIPT_DATE")
+  createdAt       DateTime?      @default(now()) @map("CREATED_AT")
+  updatedAt       DateTime?      @updatedAt @map("UPDATED_AT")
+  deleted         Boolean        @default(false) @map("IS_DELETED")
+  deletedAt       DateTime?      @map("DELETED_AT")
+  version         Int?           @default(1) @map("VERSION")
+  item            Item           @relation(fields: [itemId], references: [id])
+  outlet          Outlet         @relation(fields: [outletId], references: [id])
+  deliveryOrder   DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id])
 
+  @@index([deliveryOrderId])
   @@map("stock_receipt")
 }
 

@@ -129,10 +129,45 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
         .catch(next)
 }
 
+let deleteDeliveryOrder = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    const deliveryOrderId: number = parseInt(req.params.id)
+    service.deleteDeliveryOrder(deliveryOrderId, req.user.databaseName)
+        .then((message: string) => sendResponse(res, { message }))
+        .catch(next)
+}
+
+const getUnInvoicedDeliveryOrders = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    // Get outletId from URL params
+    const { outletId } = req.params;
+
+    // Validate outletId from params
+    if (!outletId || !validator.isNumeric(outletId)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+    const outletIdNum = parseInt(outletId);
+
+    service
+        .getUnInvoicedDeliveryOrders(req.user.databaseName, outletIdNum)
+        .then(({ deliveryOrders }) => sendResponse(res, { data: deliveryOrders }))
+        .catch(next);
+}
+
 //routes
 router.get("/sync", getAll)
 router.get('/dateRange', getAllByDateRange)
+router.get('/uninvoiced/:outletId', getUnInvoicedDeliveryOrders)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)
+router.delete('/:id', deleteDeliveryOrder)
 export = router

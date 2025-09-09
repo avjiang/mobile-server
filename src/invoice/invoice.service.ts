@@ -5,6 +5,7 @@ import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request";
+import { Decimal } from 'decimal.js';
 
 class RequestValidateError extends Error {
     constructor(message: string) {
@@ -12,6 +13,100 @@ class RequestValidateError extends Error {
         this.name = 'RequestValidateError';
     }
 }
+
+
+
+/**
+ * Updates stock receipt costs based on discounted invoice items and delivery fees
+ */
+const updateStockReceiptCosts = async (
+    tx: Prisma.TransactionClient,
+    invoiceId: number,
+    deliveryOrderIds: number[],
+    invoiceItems: any[]
+): Promise<void> => {
+    try {
+        // Get delivery order items with their details
+        const deliveryOrderItems = await tx.deliveryOrderItem.findMany({
+            where: {
+                deliveryOrderId: { in: deliveryOrderIds },
+                deleted: false
+            },
+            select: {
+                id: true,
+                itemId: true,
+                receivedQuantity: true,
+                unitPrice: true,
+                deliveryFee: true,
+                deliveryOrderId: true
+            }
+        });
+
+        // Get stock receipts related to these delivery orders
+        const stockReceipts = await tx.stockReceipt.findMany({
+            where: {
+                deliveryOrderId: { in: deliveryOrderIds },
+                deleted: false
+            },
+            select: {
+                id: true,
+                itemId: true,
+                deliveryOrderId: true,
+                quantity: true,
+                cost: true
+            }
+        });
+
+        // Create maps for quick lookup
+        const invoiceItemsMap = new Map();
+        invoiceItems.forEach(item => {
+            invoiceItemsMap.set(item.itemId, item);
+        });
+
+        const deliveryOrderItemsMap = new Map();
+        deliveryOrderItems.forEach(item => {
+            deliveryOrderItemsMap.set(`${item.itemId}_${item.deliveryOrderId}`, item);
+        });
+
+        // Update stock receipt costs
+        for (const stockReceipt of stockReceipts) {
+            const invoiceItem = invoiceItemsMap.get(stockReceipt.itemId);
+            const deliveryOrderItem = deliveryOrderItemsMap.get(`${stockReceipt.itemId}_${stockReceipt.deliveryOrderId}`);
+
+            if (invoiceItem && deliveryOrderItem && invoiceItem.discountAmount && invoiceItem.discountAmount > 0) {
+                // Calculate discounted unit price using Decimal for precision
+                const originalUnitPrice = new Decimal(invoiceItem.unitPrice);
+                const discountAmount = new Decimal(invoiceItem.discountAmount);
+                const quantity = new Decimal(invoiceItem.quantity);
+
+                // Calculate discount per unit
+                const discountPerUnit = discountAmount.div(quantity);
+                const discountedUnitPrice = originalUnitPrice.sub(discountPerUnit);
+
+                // Calculate delivery fee per unit
+                const deliveryFee = new Decimal(deliveryOrderItem.deliveryFee || 0);
+                const deliveryOrderQuantity = new Decimal(deliveryOrderItem.receivedQuantity);
+                const deliveryFeePerUnit = deliveryOrderQuantity.gt(0) ? deliveryFee.div(deliveryOrderQuantity) : new Decimal(0);
+
+                // Calculate new cost: discounted unit price + delivery fee per unit
+                const newCost = discountedUnitPrice.add(deliveryFeePerUnit);
+
+                // Update stock receipt cost
+                await tx.stockReceipt.update({
+                    where: { id: stockReceipt.id },
+                    data: {
+                        cost: newCost.toNumber(),
+                        updatedAt: new Date(),
+                        version: { increment: 1 }
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error updating stock receipt costs:', error);
+        throw error;
+    }
+};
 
 let getAll = async (
     databaseName: string,
@@ -778,6 +873,16 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         })),
                     });
 
+                    // Check if any invoice item has discount
+                    const hasDiscountedItems = invoiceData.invoiceItems.some(item =>
+                        (item.discountAmount && item.discountAmount > 0)
+                    );
+
+                    // Update stock receipt costs if there are discounted items and delivery orders are linked
+                    if (hasDiscountedItems && invoiceData.deliveryOrderIds && invoiceData.deliveryOrderIds.length > 0) {
+                        await updateStockReceiptCosts(tx, newInvoice.id, invoiceData.deliveryOrderIds, invoiceData.invoiceItems);
+                    }
+
                     // Fetch the created items to include in response
                     const invoiceItems = await tx.invoiceItem.findMany({
                         where: { invoiceId: newInvoice.id },
@@ -994,6 +1099,15 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                             remark: item.remark || null
                         }))
                     });
+
+                    // Check if any invoice item has discount and update stock receipt costs accordingly
+                    const hasDiscountedItems = updateData.invoiceItems.some(item =>
+                        (item.discountAmount && item.discountAmount > 0)
+                    );
+
+                    if (hasDiscountedItems && updateData.deliveryOrderIds && updateData.deliveryOrderIds.length > 0) {
+                        await updateStockReceiptCosts(tx, id, updateData.deliveryOrderIds, updateData.invoiceItems);
+                    }
                 }
             }
 
@@ -1037,4 +1151,77 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
     }
 }
 
-export = { getAll, getById, getByDateRange, getCompleted, createMany, update };
+let deleteInvoice = async (id: number, databaseName: string): Promise<string> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        if (!id) {
+            throw new RequestValidateError('Invoice ID is required');
+        }
+
+        // Check if invoice exists and is not already deleted
+        const existingInvoice = await tenantPrisma.invoice.findUnique({
+            where: {
+                id: id,
+                deleted: false
+            },
+            include: {
+                invoiceSettlement: {
+                    where: { deleted: false }
+                }
+            }
+        });
+
+        if (!existingInvoice) {
+            throw new NotFoundError("Invoice");
+        }
+
+        // Check if invoice has related invoice settlement
+        if (existingInvoice.invoiceSettlement) {
+            throw new RequestValidateError('Cannot delete invoice with existing settlement');
+        }
+
+        // Use transaction to ensure data consistency
+        await tenantPrisma.$transaction(async (tx) => {
+            // Soft delete all invoice items first
+            await tx.invoiceItem.updateMany({
+                where: {
+                    invoiceId: id,
+                    deleted: false
+                },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                    version: { increment: 1 }
+                }
+            });
+
+            // Unlink delivery orders from this invoice
+            await tx.deliveryOrder.updateMany({
+                where: {
+                    invoiceId: id,
+                    deleted: false
+                },
+                data: {
+                    invoiceId: null
+                }
+            });
+
+            // Soft delete the invoice
+            await tx.invoice.update({
+                where: { id: id },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                    version: { increment: 1 }
+                }
+            });
+        });
+
+        return `Invoice with ID ${id} has been successfully deleted.`;
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+export = { getAll, getById, getByDateRange, getCompleted, createMany, update, deleteInvoice };

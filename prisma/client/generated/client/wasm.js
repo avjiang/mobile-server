@@ -713,6 +713,7 @@ exports.Prisma.StockReceiptScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   outletId: 'outletId',
+  deliveryOrderId: 'deliveryOrderId',
   quantity: 'quantity',
   cost: 'cost',
   receiptDate: 'receiptDate',

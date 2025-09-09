@@ -719,8 +719,9 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             receiptOperations.push({
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
+                deliveryOrderId: deliveryOrder.id,
                 quantity: quantityDelta,
-                cost: perUnitCost,  // Updated to per-unit cost
+                cost: perUnitCost,
                 receiptDate: new Date()
             });
         }
@@ -888,8 +889,27 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                         select: {
                             id: true,
                             purchaseOrderNumber: true,
+                            outletId: true,
                             supplierId: true,
-                            deleted: true
+                            deleted: true,
+                            deletedAt: true,
+                            createdAt: true,
+                            updatedAt: true,
+                            version: true,
+                            isTaxInclusive: true,
+                            purchaseOrderItems: {
+                                where: { deleted: false },
+                                include: {
+                                    item: {
+                                        select: {
+                                            id: true,
+                                            itemName: true,
+                                            itemCode: true,
+                                            unitOfMeasure: true
+                                        }
+                                    }
+                                }
+                            }
                         }
                     },
                     deliveryOrderItems: {
@@ -990,4 +1010,173 @@ const checkAndUpdatePurchaseOrderStatus = async (tx: Prisma.TransactionClient, p
     await checkAndUpdatePurchaseOrderStatusWithPartialDelivery(tx, purchaseOrderId);
 };
 
-export = { getAll, getById, getByDateRange, createMany, update };
+let deleteDeliveryOrder = async (id: number, databaseName: string): Promise<string> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        // Check if delivery order exists and is not already deleted
+        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
+            where: { id: id, deleted: false }
+        });
+
+        if (!existingDeliveryOrder) {
+            throw new NotFoundError("Delivery Order");
+        }
+
+        // Use transaction to ensure both delivery order and its items are soft deleted
+        await tenantPrisma.$transaction(async (tx) => {
+            // Soft delete delivery order items first
+            await tx.deliveryOrderItem.updateMany({
+                where: {
+                    deliveryOrderId: id,
+                    deleted: false
+                },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date()
+                }
+            });
+
+            // Soft delete the delivery order
+            await tx.deliveryOrder.update({
+                where: { id: id },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                    version: { increment: 1 }
+                }
+            });
+        });
+
+        return `Delivery order with ID ${id} has been successfully deleted.`;
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+let getUnInvoicedDeliveryOrders = async (
+    databaseName: string,
+    outletId: number
+): Promise<{ deliveryOrders: any[]; }> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    try {
+        const where = {
+            outletId: outletId,
+            invoiceId: null, // Only delivery orders without invoices
+            deleted: false
+        };
+
+        // Execute count and fetch in parallel for better performance
+        const [total, deliveryOrders] = await Promise.all([
+            tenantPrisma.deliveryOrder.count({ where }),
+            tenantPrisma.deliveryOrder.findMany({
+                where,
+                select: {
+                    id: true,
+                    outletId: true,
+                    customerId: true,
+                    purchaseOrderId: true,
+                    invoiceId: true,
+                    supplierId: true,
+                    deliveryDate: true,
+                    deliveryStreet: true,
+                    deliveryCity: true,
+                    deliveryState: true,
+                    deliveryPostalCode: true,
+                    deliveryCountry: true,
+                    trackingNumber: true,
+                    status: true,
+                    remark: true,
+                    performedBy: true,
+                    version: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    deletedAt: true,
+                    _count: {
+                        select: {
+                            deliveryOrderItems: {
+                                where: { deleted: false }
+                            }
+                        }
+                    },
+                    deliveryOrderItems: {
+                        where: { deleted: false },
+                        select: {
+                            id: true,
+                            itemId: true,
+                            orderedQuantity: true,
+                            receivedQuantity: true,
+                            unitPrice: true,
+                            deliveryFee: true,
+                            remark: true,
+                            createdAt: true,
+                            updatedAt: true,
+                        }
+                    },
+                    purchaseOrder: {
+                        select: {
+                            id: true,
+                            purchaseOrderNumber: true,
+                            outletId: true,
+                            supplierId: true,
+                            purchaseOrderDate: true,
+                            sessionId: true,
+                            discountType: true,
+                            discountAmount: true,
+                            serviceChargeAmount: true,
+                            taxAmount: true,
+                            roundingAmount: true,
+                            subtotalAmount: true,
+                            totalAmount: true,
+                            status: true,
+                            remark: true,
+                            currency: true,
+                            performedBy: true,
+                            deleted: true,
+                            deletedAt: true,
+                            createdAt: true,
+                            updatedAt: true,
+                            version: true,
+                            isTaxInclusive: true,
+                            purchaseOrderItems: {
+                                where: { deleted: false },
+                                select: {
+                                    id: true,
+                                    itemId: true,
+                                    quantity: true,
+                                    taxAmount: true,
+                                    discountType: true,
+                                    discountAmount: true,
+                                    unitPrice: true,
+                                    subtotal: true,
+                                    remark: true,
+                                    createdAt: true,
+                                    updatedAt: true
+                                }
+                            }
+                        },
+                        where: { deleted: false }
+                    }
+                }
+            })
+        ]);
+
+        // Transform response
+        const enrichedDeliveryOrders = deliveryOrders.map(do_ => ({
+            ...do_,
+            itemCount: do_._count.deliveryOrderItems,
+            purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
+            purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
+            _count: undefined,
+        }));
+
+        return {
+            deliveryOrders: enrichedDeliveryOrders,
+        };
+    } catch (error) {
+        throw error;
+    }
+};
+
+export = { getAll, getById, getByDateRange, createMany, update, deleteDeliveryOrder, getUnInvoicedDeliveryOrders };

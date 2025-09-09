@@ -924,4 +924,69 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
     }
 }
 
-export = { getAll, getByDateRange, getById, createMany, cancel, update };
+let deletePurchaseOrder = async (id: number, databaseName: string): Promise<string> => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        if (!id) {
+            throw new RequestValidateError('Purchase order ID is required');
+        }
+
+        // Check if purchase order exists and is not already deleted
+        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findUnique({
+            where: {
+                id: id,
+                deleted: false
+            },
+            include: {
+                deliveryOrders: {
+                    where: { deleted: false }
+                },
+                invoices: {
+                    where: { deleted: false }
+                }
+            }
+        });
+
+        if (!existingPurchaseOrder) {
+            throw new NotFoundError("Purchase Order");
+        }
+
+        // Check if purchase order has related delivery orders or invoices
+        if (existingPurchaseOrder.deliveryOrders.length > 0 || existingPurchaseOrder.invoices.length > 0) {
+            throw new RequestValidateError('Cannot delete purchase order with existing delivery orders or invoices');
+        }
+
+        // Use transaction to ensure data consistency
+        await tenantPrisma.$transaction(async (tx) => {
+            // Soft delete all purchase order items first
+            await tx.purchaseOrderItem.updateMany({
+                where: {
+                    purchaseOrderId: id,
+                    deleted: false
+                },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                    version: { increment: 1 }
+                }
+            });
+
+            // Soft delete the purchase order
+            await tx.purchaseOrder.update({
+                where: { id: id },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                    version: { increment: 1 }
+                }
+            });
+        });
+
+        return `Purchase order with ID ${id} has been successfully deleted.`;
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+export = { getAll, getByDateRange, getById, createMany, cancel, update, deletePurchaseOrder };

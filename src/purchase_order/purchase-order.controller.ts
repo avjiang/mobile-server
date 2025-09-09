@@ -148,6 +148,19 @@ let update = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: Next
         .catch(next)
 }
 
+let deletePurchaseOrder = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    const purchaseOrderId: number = parseInt(req.params.id)
+    service.deletePurchaseOrder(purchaseOrderId, req.user.databaseName)
+        .then((message: string) => sendResponse(res, { message }))
+        .catch(next)
+}
+
 //routes
 router.get("/sync", getAll)
 router.get('/dateRange', getAllByDateRange)
@@ -155,4 +168,5 @@ router.get('/:id', getById)
 router.post('/cancel', cancel)
 router.post('/create', createMany)
 router.put('/update', update)
+router.delete('/:id', deletePurchaseOrder)
 export = router

@@ -146,6 +146,19 @@ const getCompleted = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next);
 }
 
+let deleteInvoice = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    const invoiceId: number = parseInt(req.params.id)
+    service.deleteInvoice(invoiceId, req.user.databaseName)
+        .then((message: string) => sendResponse(res, { message }))
+        .catch(next)
+}
+
 //routes
 router.get("/sync", getAll)
 router.get('/dateRange', getAllByDateRange)
@@ -153,4 +166,5 @@ router.get('/getAllCompleted', getCompleted)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)
+router.delete('/:id', deleteInvoice)
 export = router

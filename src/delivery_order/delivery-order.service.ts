@@ -62,23 +62,31 @@ let getAll = async (
                 // Delivery order has invoice that was modified
                 {
                     invoice: {
-                        OR: [
-                            { createdAt: { gte: lastSync } },
-                            { updatedAt: { gte: lastSync } },
-                            { deletedAt: { gte: lastSync } }
+                        AND: [
+                            {
+                                OR: [
+                                    { createdAt: { gte: lastSync } },
+                                    { updatedAt: { gte: lastSync } },
+                                    { deletedAt: { gte: lastSync } }
+                                ]
+                            }
                         ]
                     }
                 },
                 // Delivery order has invoice settlement that was modified
                 {
                     invoice: {
-                        invoiceSettlement: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
+                        AND: [
+                            {
+                                invoiceSettlement: {
+                                    OR: [
+                                        { createdAt: { gte: lastSync } },
+                                        { updatedAt: { gte: lastSync } },
+                                        { deletedAt: { gte: lastSync } }
+                                    ]
+                                }
+                            }
+                        ]
                     }
                 }
             ],
@@ -141,7 +149,10 @@ let getAll = async (
                                 where: { deleted: false }
                             }
                         },
-                        where: { deleted: false }
+                        where: {
+                            deleted: false,
+                            status: { not: 'CANCELLED' }
+                        }
                     }
                 }
             })
@@ -229,7 +240,10 @@ let getById = async (id: number, databaseName: string) => {
                     }
                 },
                 invoice: {
-                    where: { deleted: false },
+                    where: {
+                        deleted: false,
+                        status: { not: 'CANCELLED' }
+                    },
                     select: {
                         id: true,
                         invoiceNumber: true,
@@ -390,26 +404,34 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                         }
                     }
                 },
-                // Delivery order has invoice that was modified
+                // Delivery order has invoice that was modifiedcf
                 {
                     invoice: {
-                        OR: [
-                            { createdAt: { gte: lastSync } },
-                            { updatedAt: { gte: lastSync } },
-                            { deletedAt: { gte: lastSync } }
+                        AND: [
+                            {
+                                OR: [
+                                    { createdAt: { gte: lastSync } },
+                                    { updatedAt: { gte: lastSync } },
+                                    { deletedAt: { gte: lastSync } }
+                                ]
+                            }
                         ]
                     }
                 },
                 // Delivery order has invoice settlement that was modified
                 {
                     invoice: {
-                        invoiceSettlement: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
+                        AND: [
+                            {
+                                invoiceSettlement: {
+                                    OR: [
+                                        { createdAt: { gte: lastSync } },
+                                        { updatedAt: { gte: lastSync } },
+                                        { deletedAt: { gte: lastSync } }
+                                    ]
+                                }
+                            }
+                        ]
                     }
                 }
             ],
@@ -473,7 +495,10 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                             where: { deleted: false }
                         }
                     },
-                    where: { deleted: false }
+                    where: {
+                        deleted: false,
+                        status: { not: 'CANCELLED' }
+                    }
                 }
             }
         });
@@ -584,7 +609,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         deliveryPostalCode: deliveryOrderData.deliveryPostalCode,
                         deliveryCountry: deliveryOrderData.deliveryCountry,
                         trackingNumber: deliveryOrderData.trackingNumber,
-                        status: deliveryOrderData.status || 'PENDING',
+                        status: deliveryOrderData.status || 'Pending',
                         remark: deliveryOrderData.remark,
                         performedBy: deliveryOrderData.performedBy
                     }
@@ -708,7 +733,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 previousOnHandQuantity: previousOnHandQuantity,
                 availableQuantityDelta: quantityDelta,
                 onHandQuantityDelta: quantityDelta,
-                movementType: 'DELIVERY_RECEIPT',
+                movementType: 'Delivery Receipt',
                 documentId: deliveryOrder.id,
                 reason: `Stock received from delivery order #${deliveryOrder.id}`,
                 remark: item.remark || '',
@@ -739,6 +764,109 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
     ]);
 };
 
+// Helper function to reverse stock operations when delivery order is cancelled
+const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string) => {
+    const stockOperations = [];
+    const movementOperations = [];
+
+    // Get all current stock balances in one query
+    const currentStockBalances = await tx.stockBalance.findMany({
+        where: {
+            itemId: { in: items.map(item => item.itemId) },
+            outletId: deliveryOrder.outletId,
+            deleted: false
+        }
+    });
+
+    const stockBalanceMap = new Map();
+    currentStockBalances.forEach((balance: any) => {
+        stockBalanceMap.set(balance.itemId, balance);
+    });
+
+    for (const item of items) {
+        if (item.receivedQuantity > 0) {
+            const currentBalance = stockBalanceMap.get(item.itemId);
+
+            if (currentBalance) {
+                // Convert to Decimal objects for proper arithmetic
+                const previousAvailableQuantity = new Decimal(currentBalance.availableQuantity);
+                const previousOnHandQuantity = new Decimal(currentBalance.onHandQuantity);
+                const quantityDelta = new Decimal(item.receivedQuantity);
+
+                // Subtract the previously received quantities
+                const newAvailableQuantity = previousAvailableQuantity.sub(quantityDelta);
+                const newOnHandQuantity = previousOnHandQuantity.sub(quantityDelta);
+
+                // Ensure quantities don't go negative
+                const finalAvailableQuantity = newAvailableQuantity.lt(0) ? new Decimal(0) : newAvailableQuantity;
+                const finalOnHandQuantity = newOnHandQuantity.lt(0) ? new Decimal(0) : newOnHandQuantity;
+
+                // Update stock balance
+                stockOperations.push({
+                    where: {
+                        itemId_outletId_reorderThreshold_deleted_availableQuantity: {
+                            itemId: item.itemId,
+                            outletId: deliveryOrder.outletId,
+                            reorderThreshold: currentBalance.reorderThreshold,
+                            deleted: false,
+                            availableQuantity: previousAvailableQuantity
+                        }
+                    },
+                    update: {
+                        availableQuantity: finalAvailableQuantity,
+                        onHandQuantity: finalOnHandQuantity,
+                        updatedAt: new Date()
+                    },
+                    create: {
+                        itemId: item.itemId,
+                        outletId: deliveryOrder.outletId,
+                        availableQuantity: new Decimal(0),
+                        onHandQuantity: new Decimal(0),
+                        reorderThreshold: null
+                    }
+                });
+
+                // Create negative movement to reverse the original receipt
+                movementOperations.push({
+                    itemId: item.itemId,
+                    outletId: deliveryOrder.outletId,
+                    previousAvailableQuantity: previousAvailableQuantity,
+                    previousOnHandQuantity: previousOnHandQuantity,
+                    availableQuantityDelta: quantityDelta.neg(), // Negative delta for reversal
+                    onHandQuantityDelta: quantityDelta.neg(), // Negative delta for reversal
+                    movementType: 'Delivery Cancellation',
+                    documentId: deliveryOrder.id,
+                    reason: `Stock adjustment for cancelled delivery order #${deliveryOrder.id}`,
+                    remark: item.remark || 'Delivery order cancelled',
+                    performedBy: performedBy || 'SYSTEM'
+                });
+            }
+        }
+    }
+
+    // Execute stock balance upserts sequentially to avoid unique constraint conflicts
+    for (const stockOp of stockOperations) {
+        await tx.stockBalance.upsert(stockOp);
+    }
+
+    // Execute movements in batch
+    if (movementOperations.length > 0) {
+        await tx.stockMovement.createMany({ data: movementOperations });
+    }
+
+    // Soft delete existing stock receipts for this delivery order
+    await tx.stockReceipt.updateMany({
+        where: {
+            deliveryOrderId: deliveryOrder.id,
+            deleted: false
+        },
+        data: {
+            deleted: true,
+            deletedAt: new Date()
+        }
+    });
+};
+
 let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -748,7 +876,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             throw new RequestValidateError('Delivery order ID is required');
         }
 
-        // Single query to get existing delivery order
+        // Enhanced query to get existing delivery order with more data upfront
         const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
             where: { id: id, deleted: false },
             select: {
@@ -756,10 +884,18 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                 outletId: true,
                 customerId: true,
                 purchaseOrderId: true,
+                status: true,
                 version: true,
                 deliveryOrderItems: {
                     where: { deleted: false },
-                    select: { id: true }
+                    select: {
+                        id: true,
+                        itemId: true,
+                        receivedQuantity: true,
+                        unitPrice: true,
+                        deliveryFee: true,
+                        remark: true
+                    }
                 }
             }
         });
@@ -768,50 +904,104 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             throw new NotFoundError("Delivery Order");
         }
 
-        // Batch validation queries in parallel
+        // Early return if no changes needed
+        const hasChanges = Object.keys(updateData).some(key => {
+            if (key === 'deliveryOrderItems') return true; // Always check items
+            return updateData[key as keyof typeof updateData] !== undefined;
+        });
+
+        if (!hasChanges) {
+            // Return existing data without unnecessary queries
+            return await tenantPrisma.deliveryOrder.findUnique({
+                where: { id: id },
+                include: {
+                    purchaseOrder: {
+                        select: {
+                            id: true,
+                            purchaseOrderNumber: true,
+                            outletId: true,
+                            supplierId: true,
+                            deleted: true,
+                            deletedAt: true,
+                            createdAt: true,
+                            updatedAt: true,
+                            version: true,
+                            isTaxInclusive: true,
+                            purchaseOrderItems: {
+                                where: { deleted: false },
+                                include: {
+                                    item: {
+                                        select: {
+                                            id: true,
+                                            itemName: true,
+                                            itemCode: true,
+                                            unitOfMeasure: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    deliveryOrderItems: {
+                        where: { deleted: false },
+                        include: {
+                            item: {
+                                select: {
+                                    id: true,
+                                    itemName: true,
+                                    itemCode: true,
+                                    unitOfMeasure: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Optimized validation with early filtering and batching
         const validationPromises = [];
+        const validationData = {
+            outlet: updateData.outletId && updateData.outletId !== existingDeliveryOrder.outletId ? updateData.outletId : null,
+            customer: updateData.customerId && updateData.customerId !== existingDeliveryOrder.customerId ? updateData.customerId : null,
+            purchaseOrder: updateData.purchaseOrderId && updateData.purchaseOrderId !== existingDeliveryOrder.purchaseOrderId ? updateData.purchaseOrderId : null,
+            items: updateData.deliveryOrderItems && Array.isArray(updateData.deliveryOrderItems) ?
+                [...new Set(updateData.deliveryOrderItems.map(item => item.itemId).filter(Boolean))] : null
+        };
 
-        if (updateData.outletId && updateData.outletId !== existingDeliveryOrder.outletId) {
+        // Batch all foreign key validations in a single query each
+        if (validationData.outlet) {
             validationPromises.push(
-                tenantPrisma.outlet.findFirst({
-                    where: { id: updateData.outletId, deleted: false },
-                    select: { id: true }
-                }).then(outlet => ({ type: 'outlet', exists: !!outlet, id: updateData.outletId }))
+                tenantPrisma.outlet.count({ where: { id: validationData.outlet, deleted: false } })
+                    .then(count => ({ type: 'outlet', exists: count > 0, id: validationData.outlet }))
             );
         }
 
-        if (updateData.customerId && updateData.customerId !== existingDeliveryOrder.customerId) {
+        if (validationData.customer) {
             validationPromises.push(
-                tenantPrisma.customer.findFirst({
-                    where: { id: updateData.customerId, deleted: false },
-                    select: { id: true }
-                }).then(customer => ({ type: 'customer', exists: !!customer, id: updateData.customerId }))
+                tenantPrisma.customer.count({ where: { id: validationData.customer, deleted: false } })
+                    .then(count => ({ type: 'customer', exists: count > 0, id: validationData.customer }))
             );
         }
 
-        if (updateData.purchaseOrderId && updateData.purchaseOrderId !== existingDeliveryOrder.purchaseOrderId) {
+        if (validationData.purchaseOrder) {
             validationPromises.push(
-                tenantPrisma.purchaseOrder.findFirst({
-                    where: { id: updateData.purchaseOrderId, deleted: false },
-                    select: { id: true }
-                }).then(purchaseOrder => ({ type: 'purchaseOrder', exists: !!purchaseOrder, id: updateData.purchaseOrderId }))
+                tenantPrisma.purchaseOrder.count({ where: { id: validationData.purchaseOrder, deleted: false } })
+                    .then(count => ({ type: 'purchaseOrder', exists: count > 0, id: validationData.purchaseOrder }))
             );
         }
 
-        if (updateData.deliveryOrderItems && Array.isArray(updateData.deliveryOrderItems)) {
-            const itemIds = [...new Set(updateData.deliveryOrderItems.map(item => item.itemId).filter(Boolean))];
-            if (itemIds.length > 0) {
-                validationPromises.push(
-                    tenantPrisma.item.findMany({
-                        where: { id: { in: itemIds }, deleted: false },
-                        select: { id: true }
-                    }).then(items => ({
-                        type: 'items',
-                        existing: items.map(item => item.id),
-                        requested: itemIds
-                    }))
-                );
-            }
+        if (validationData.items && validationData.items.length > 0) {
+            validationPromises.push(
+                tenantPrisma.item.findMany({
+                    where: { id: { in: validationData.items }, deleted: false },
+                    select: { id: true }
+                }).then(items => ({
+                    type: 'items',
+                    existing: items.map(item => item.id),
+                    requested: validationData.items
+                }))
+            );
         }
 
         // Execute validations in parallel
@@ -821,7 +1011,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             for (const result of validationResults) {
                 if (result.type === 'items' && 'existing' in result && 'requested' in result) {
                     const existingItemIds = new Set<number>(result.existing);
-                    const missingItemIds = result.requested.filter((id: number) => !existingItemIds.has(id));
+                    const missingItemIds = result.requested ? result.requested.filter((id: number) => !existingItemIds.has(id)) : [];
                     if (missingItemIds.length > 0) {
                         throw new RequestValidateError(`Items with IDs ${missingItemIds.join(', ')} do not exist`);
                     }
@@ -833,55 +1023,93 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
 
         // Use transaction for consistency
         const result = await tenantPrisma.$transaction(async (tx) => {
+            const isBeingCancelled = updateData.status === 'CANCELLED';
+            const wasAlreadyCancelled = existingDeliveryOrder.status === 'CANCELLED';
+
+            // Only reverse stock if changing TO cancelled (not if already cancelled)
+            const shouldReverseStock = isBeingCancelled && !wasAlreadyCancelled;
+
+            // Prepare update data - only include defined fields
+            const updateFields: any = {
+                version: { increment: 1 }
+            };
+
+            // Only update fields that are actually provided
+            if (updateData.outletId !== undefined) updateFields.outletId = updateData.outletId;
+            if (updateData.customerId !== undefined) updateFields.customerId = updateData.customerId;
+            if (updateData.purchaseOrderId !== undefined) updateFields.purchaseOrderId = updateData.purchaseOrderId;
+            if (updateData.deliveryDate !== undefined) updateFields.deliveryDate = updateData.deliveryDate;
+            if (updateData.deliveryStreet !== undefined) updateFields.deliveryStreet = updateData.deliveryStreet;
+            if (updateData.deliveryCity !== undefined) updateFields.deliveryCity = updateData.deliveryCity;
+            if (updateData.deliveryState !== undefined) updateFields.deliveryState = updateData.deliveryState;
+            if (updateData.deliveryPostalCode !== undefined) updateFields.deliveryPostalCode = updateData.deliveryPostalCode;
+            if (updateData.deliveryCountry !== undefined) updateFields.deliveryCountry = updateData.deliveryCountry;
+            if (updateData.trackingNumber !== undefined) updateFields.trackingNumber = updateData.trackingNumber;
+            if (updateData.status !== undefined) updateFields.status = updateData.status;
+            if (updateData.remark !== undefined) updateFields.remark = updateData.remark;
+            if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;
+
             // Update delivery order
             const updatedDeliveryOrder = await tx.deliveryOrder.update({
                 where: { id: id },
-                data: {
-                    outletId: updateData.outletId,
-                    customerId: updateData.customerId,
-                    purchaseOrderId: updateData.purchaseOrderId,
-                    deliveryDate: updateData.deliveryDate,
-                    deliveryStreet: updateData.deliveryStreet,
-                    deliveryCity: updateData.deliveryCity,
-                    deliveryState: updateData.deliveryState,
-                    deliveryPostalCode: updateData.deliveryPostalCode,
-                    deliveryCountry: updateData.deliveryCountry,
-                    trackingNumber: updateData.trackingNumber,
-                    status: updateData.status,
-                    remark: updateData.remark,
-                    performedBy: updateData.performedBy,
-                    version: { increment: 1 }
-                }
+                data: updateFields
             });
 
-            // Handle delivery order items efficiently
+            // Handle stock reversal if delivery order is being cancelled
+            if (shouldReverseStock && existingDeliveryOrder.deliveryOrderItems.length > 0) {
+                await reverseStockOperationsForCancellation(
+                    tx,
+                    existingDeliveryOrder.deliveryOrderItems,
+                    updatedDeliveryOrder,
+                    updateData.performedBy || "SYSTEM"
+                );
+            }
+
+            // Handle delivery order items more efficiently
             if (updateData.deliveryOrderItems && Array.isArray(updateData.deliveryOrderItems)) {
-                // Use deleteMany for better performance
-                await tx.deliveryOrderItem.deleteMany({
-                    where: { deliveryOrderId: id, deleted: false }
-                });
+                // Compare existing vs new items to minimize operations
+                const existingItemIds = new Set(existingDeliveryOrder.deliveryOrderItems.map(item => item.itemId));
+                const newItemIds = new Set(updateData.deliveryOrderItems.map(item => item.itemId));
 
-                if (updateData.deliveryOrderItems.length > 0) {
-                    await tx.deliveryOrderItem.createMany({
-                        data: updateData.deliveryOrderItems.map(item => ({
-                            deliveryOrderId: id,
-                            itemId: item.itemId,
-                            orderedQuantity: item.orderedQuantity,
-                            receivedQuantity: item.receivedQuantity,
-                            unitPrice: item.unitPrice,
-                            deliveryFee: item.deliveryFee || 0, // Handle optional delivery fee
-                            remark: item.remark || null,
-                            updatedAt: new Date()
-                        }))
+                const hasItemChanges = existingItemIds.size !== newItemIds.size ||
+                    [...existingItemIds].some(id => !newItemIds.has(id)) ||
+                    [...newItemIds].some(id => !existingItemIds.has(id));
+
+                if (hasItemChanges) {
+                    // Use deleteMany for better performance
+                    await tx.deliveryOrderItem.deleteMany({
+                        where: { deliveryOrderId: id, deleted: false }
                     });
-                }
 
-                if (updatedDeliveryOrder.purchaseOrderId) {
-                    await checkAndUpdatePurchaseOrderStatus(tx, updatedDeliveryOrder.purchaseOrderId);
+                    if (updateData.deliveryOrderItems.length > 0) {
+                        await tx.deliveryOrderItem.createMany({
+                            data: updateData.deliveryOrderItems.map(item => ({
+                                deliveryOrderId: id,
+                                itemId: item.itemId,
+                                orderedQuantity: item.orderedQuantity,
+                                receivedQuantity: item.receivedQuantity,
+                                unitPrice: item.unitPrice,
+                                deliveryFee: item.deliveryFee || 0,
+                                remark: item.remark || null,
+                                updatedAt: new Date()
+                            }))
+                        });
+
+                        // Update stock balances for new items (only if not cancelled)
+                        if (!isBeingCancelled) {
+                            await updateStockBalancesAndMovements(tx, updateData.deliveryOrderItems, updatedDeliveryOrder, updateData.performedBy || "SYSTEM");
+                        }
+                    }
                 }
             }
 
-            // Single optimized query for final result
+            // Update purchase order status only if purchase order changed or status changed
+            const purchaseOrderToUpdate = updatedDeliveryOrder.purchaseOrderId || existingDeliveryOrder.purchaseOrderId;
+            if (purchaseOrderToUpdate && (updateData.status !== undefined || updateData.deliveryOrderItems !== undefined)) {
+                await checkAndUpdatePurchaseOrderStatusWithCancellation(tx, purchaseOrderToUpdate);
+            }
+
+            // Optimized final result query - only fetch what's needed
             return await tx.deliveryOrder.findUnique({
                 where: { id: id },
                 include: {
@@ -1005,9 +1233,84 @@ const checkAndUpdatePurchaseOrderStatusWithPartialDelivery = async (tx: Prisma.T
     });
 };
 
+// Enhanced version that excludes cancelled delivery orders from calculation
+const checkAndUpdatePurchaseOrderStatusWithCancellation = async (tx: Prisma.TransactionClient, purchaseOrderId: number) => {
+    // Use a single query with aggregation for better performance
+    const [orderData, deliveryData] = await Promise.all([
+        tx.purchaseOrderItem.groupBy({
+            by: ['itemId'],
+            where: { purchaseOrderId: purchaseOrderId, deleted: false },
+            _sum: { quantity: true }
+        }),
+        tx.deliveryOrderItem.groupBy({
+            by: ['itemId'],
+            where: {
+                deliveryOrder: {
+                    purchaseOrderId: purchaseOrderId,
+                    deleted: false,
+                    status: { not: 'CANCELLED' } // Exclude cancelled delivery orders
+                },
+                deleted: false
+            },
+            _sum: { receivedQuantity: true }
+        })
+    ]);
+
+    // Create maps for O(1) lookup - ensure all values are Decimal instances
+    const orderedMap = new Map(
+        orderData.map(item => [
+            item.itemId,
+            new Decimal(item._sum.quantity || 0)
+        ])
+    );
+
+    const receivedMap = new Map(
+        deliveryData.map(item => [
+            item.itemId,
+            new Decimal(item._sum.receivedQuantity || 0)
+        ])
+    );
+
+    if (orderedMap.size === 0) return; // No items to check
+
+    let hasAnyDelivery = false;
+    let allItemsFullyDelivered = true;
+
+    // Check delivery status for each item
+    for (const [itemId, orderedQty] of orderedMap) {
+        const receivedQty = receivedMap.get(itemId) || new Decimal(0);
+
+        // Compare with Decimal zero instead of primitive 0
+        if (receivedQty.gt(new Decimal(0))) {
+            hasAnyDelivery = true;
+        }
+
+        // Compare Decimal objects directly
+        if (receivedQty.lt(orderedQty)) {
+            allItemsFullyDelivered = false;
+        }
+    }
+
+    // Determine and update status based on non-cancelled deliveries only
+    let newStatus: string;
+    if (allItemsFullyDelivered && hasAnyDelivery) {
+        newStatus = 'DELIVERED';
+    } else if (hasAnyDelivery) {
+        newStatus = 'PARTIALLY DELIVERED';
+    } else {
+        // No valid deliveries (all cancelled or none), reset to original status
+        newStatus = 'CONFIRMED'; // or 'APPROVED' depending on business logic
+    }
+
+    await tx.purchaseOrder.update({
+        where: { id: purchaseOrderId },
+        data: { status: newStatus, version: { increment: 1 } }
+    });
+};
+
 // Update the existing function to use the new logic
 const checkAndUpdatePurchaseOrderStatus = async (tx: Prisma.TransactionClient, purchaseOrderId: number) => {
-    await checkAndUpdatePurchaseOrderStatusWithPartialDelivery(tx, purchaseOrderId);
+    await checkAndUpdatePurchaseOrderStatusWithCancellation(tx, purchaseOrderId);
 };
 
 let deleteDeliveryOrder = async (id: number, databaseName: string): Promise<string> => {

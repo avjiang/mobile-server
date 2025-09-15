@@ -108,6 +108,92 @@ const updateStockReceiptCosts = async (
     }
 };
 
+/**
+ * Reverts stock receipt costs to original values when invoice is cancelled
+ */
+const revertStockReceiptCosts = async (
+    tx: Prisma.TransactionClient,
+    invoiceId: number,
+    deliveryOrderIds: number[],
+    invoiceItems: any[]
+): Promise<void> => {
+    try {
+        // Get delivery order items with their details
+        const deliveryOrderItems = await tx.deliveryOrderItem.findMany({
+            where: {
+                deliveryOrderId: { in: deliveryOrderIds },
+                deleted: false
+            },
+            select: {
+                id: true,
+                itemId: true,
+                receivedQuantity: true,
+                unitPrice: true,
+                deliveryFee: true,
+                deliveryOrderId: true
+            }
+        });
+
+        // Get stock receipts related to these delivery orders
+        const stockReceipts = await tx.stockReceipt.findMany({
+            where: {
+                deliveryOrderId: { in: deliveryOrderIds },
+                deleted: false
+            },
+            select: {
+                id: true,
+                itemId: true,
+                deliveryOrderId: true,
+                quantity: true,
+                cost: true
+            }
+        });
+
+        // Create maps for quick lookup
+        const invoiceItemsMap = new Map();
+        invoiceItems.forEach(item => {
+            invoiceItemsMap.set(item.itemId, item);
+        });
+
+        const deliveryOrderItemsMap = new Map();
+        deliveryOrderItems.forEach(item => {
+            deliveryOrderItemsMap.set(`${item.itemId}_${item.deliveryOrderId}`, item);
+        });
+
+        // Revert stock receipt costs to original values
+        for (const stockReceipt of stockReceipts) {
+            const invoiceItem = invoiceItemsMap.get(stockReceipt.itemId);
+            const deliveryOrderItem = deliveryOrderItemsMap.get(`${stockReceipt.itemId}_${stockReceipt.deliveryOrderId}`);
+
+            if (invoiceItem && deliveryOrderItem && invoiceItem.discountAmount && invoiceItem.discountAmount > 0) {
+                // Calculate original cost using delivery order item's unit price + delivery fee per unit
+                const originalUnitPrice = new Decimal(deliveryOrderItem.unitPrice);
+
+                // Calculate delivery fee per unit
+                const deliveryFee = new Decimal(deliveryOrderItem.deliveryFee || 0);
+                const deliveryOrderQuantity = new Decimal(deliveryOrderItem.receivedQuantity);
+                const deliveryFeePerUnit = deliveryOrderQuantity.gt(0) ? deliveryFee.div(deliveryOrderQuantity) : new Decimal(0);
+
+                // Calculate original cost: original unit price + delivery fee per unit
+                const originalCost = originalUnitPrice.add(deliveryFeePerUnit);
+
+                // Update stock receipt cost back to original
+                await tx.stockReceipt.update({
+                    where: { id: stockReceipt.id },
+                    data: {
+                        cost: originalCost.toNumber(),
+                        updatedAt: new Date(),
+                        version: { increment: 1 }
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error reverting stock receipt costs:', error);
+        throw error;
+    }
+};
+
 let getAll = async (
     databaseName: string,
     syncRequest: SyncRequest
@@ -772,13 +858,21 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             }
         }
 
-        // Batch validate all delivery orders exist
+        // Batch validate all delivery orders exist and are available for linking
         if (deliveryOrderIds.length > 0) {
             const existingDeliveryOrders = await tenantPrisma.deliveryOrder.findMany({
                 where: {
                     id: { in: deliveryOrderIds },
                     deleted: false,
-                    invoiceId: null // Ensure delivery orders are not already linked to another invoice
+                    OR: [
+                        { invoiceId: null }, // Unlinked delivery orders
+                        {
+                            invoice: {
+                                status: 'CANCELLED', // Or linked to cancelled invoices
+                                deleted: false
+                            }
+                        }
+                    ]
                 },
                 select: { id: true }
             });
@@ -786,7 +880,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const missingDeliveryOrderIds = deliveryOrderIds.filter((id) => !existingDeliveryOrderIds.has(id));
 
             if (missingDeliveryOrderIds.length > 0) {
-                throw new RequestValidateError(`Delivery orders with IDs ${missingDeliveryOrderIds.join(', ')} do not exist or are already linked to another invoice`);
+                throw new RequestValidateError(`Delivery orders with IDs ${missingDeliveryOrderIds.join(', ')} do not exist or are already linked to an active invoice`);
             }
         }
 
@@ -1018,11 +1112,20 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
             throw new RequestValidateError(validationErrors.join('; '));
         }
 
-        // Determine invoice status based on taxInvoiceNumber
-        // const invoiceStatus = updateData.taxInvoiceNumber && updateData.taxInvoiceNumber.trim() !== '' ? 'Completed' : 'Incomplete';
-
         // Use transaction for all updates
         const result = await tenantPrisma.$transaction(async (tx) => {
+            // Get existing invoice data for comparison (needed for cost reversion)
+            const existingInvoiceData = await tx.invoice.findUnique({
+                where: { id: id },
+                include: {
+                    invoiceItems: { where: { deleted: false } },
+                    deliveryOrders: {
+                        where: { deleted: false },
+                        select: { id: true }
+                    }
+                }
+            });
+
             // Update main invoice
             const updatedInvoice = await tx.invoice.update({
                 where: { id: id },
@@ -1038,7 +1141,7 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                     discountType: updateData.discountType,
                     totalAmount: updateData.totalAmount,
                     currency: updateData.currency || 'IDR',
-                    status: "Completed",
+                    status: updateData.status,
                     invoiceDate: updateData.invoiceDate,
                     paymentDate: updateData.paymentDate,
                     dueDate: updateData.dueDate,
@@ -1049,63 +1152,129 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                 }
             });
 
-            // Handle delivery order associations only if deliveryOrderIds is explicitly provided
-            if (updateData.deliveryOrderIds !== undefined) {
-                // First, get currently linked delivery orders for this invoice
-                const currentDeliveryOrders = await tx.deliveryOrder.findMany({
-                    where: { invoiceId: id, deleted: false },
-                    select: { id: true }
-                });
+            // Handle stock receipt cost reversion if status is being changed to cancelled
+            if (updateData.status === 'CANCELLED' && existingInvoiceData) {
+                const existingDeliveryOrderIds = existingInvoiceData.deliveryOrders.map(do_ => do_.id);
+                const existingInvoiceItems = existingInvoiceData.invoiceItems;
 
-                // Unlink only the currently linked delivery orders
-                if (currentDeliveryOrders.length > 0) {
-                    await tx.deliveryOrder.updateMany({
-                        where: {
-                            id: { in: currentDeliveryOrders.map(do_ => do_.id) },
-                            deleted: false
-                        },
-                        data: { invoiceId: null }
-                    });
-                }
+                // Check if any existing invoice item has discount
+                const hasDiscountedItems = existingInvoiceItems.some(item =>
+                    item.discountAmount && (typeof item.discountAmount === 'number' ?
+                        item.discountAmount > 0 :
+                        new Decimal(item.discountAmount).gt(0))
+                );
 
-                // Link new delivery orders
-                if (updateData.deliveryOrderIds.length > 0) {
-                    await tx.deliveryOrder.updateMany({
-                        where: { id: { in: updateData.deliveryOrderIds }, deleted: false },
-                        data: { invoiceId: id }
-                    });
+                // Revert stock receipt costs if there are discounted items and delivery orders
+                if (hasDiscountedItems && existingDeliveryOrderIds.length > 0) {
+                    await revertStockReceiptCosts(tx, id, existingDeliveryOrderIds, existingInvoiceItems);
                 }
             }
 
             // Handle invoice items
             if (updateData.invoiceItems !== undefined) {
-                // Delete existing items
-                await tx.invoiceItem.deleteMany({
-                    where: { invoiceId: id }
+                // Get existing invoice items
+                const existingItems = await tx.invoiceItem.findMany({
+                    where: {
+                        invoiceId: id,
+                        deleted: false
+                    }
                 });
 
-                // Create new items
-                if (updateData.invoiceItems.length > 0) {
-                    await tx.invoiceItem.createMany({
-                        data: updateData.invoiceItems.map(item => ({
-                            invoiceId: id,
-                            itemId: item.itemId,
-                            quantity: item.quantity,
-                            discountType: item.discountType || '',
-                            discountAmount: item.discountAmount || 0,
-                            unitPrice: item.unitPrice,
-                            taxAmount: item.taxAmount || 0,
-                            subtotal: item.subtotal,
-                            remark: item.remark || null
-                        }))
+                // Special handling for cancelled invoices - soft delete all existing items
+                if (updateData.status === 'CANCELLED') {
+                    // Soft delete all existing items for cancelled invoices
+                    if (existingItems.length > 0) {
+                        await tx.invoiceItem.updateMany({
+                            where: {
+                                id: { in: existingItems.map(item => item.id) }
+                            },
+                            data: {
+                                deleted: true,
+                                deletedAt: new Date(),
+                                version: { increment: 1 }
+                            }
+                        });
+                    }
+                } else {
+                    // Normal invoice item update logic for non-cancelled invoices
+                    // Create maps for comparison
+                    const existingItemsMap = new Map();
+                    existingItems.forEach(item => {
+                        existingItemsMap.set(item.itemId, item);
                     });
 
+                    const newItemsMap = new Map();
+                    updateData.invoiceItems.forEach(item => {
+                        newItemsMap.set(item.itemId, item);
+                    });
+
+                    // Items to soft delete (exist in DB but not in update request)
+                    const itemsToDelete = existingItems.filter(item => !newItemsMap.has(item.itemId));
+
+                    // Items to update (exist in both)
+                    const itemsToUpdate = updateData.invoiceItems.filter(item => existingItemsMap.has(item.itemId));
+
+                    // Items to create (new items not in DB)
+                    const itemsToCreate = updateData.invoiceItems.filter(item => !existingItemsMap.has(item.itemId));
+
+                    // Soft delete items that are no longer needed
+                    if (itemsToDelete.length > 0) {
+                        await tx.invoiceItem.updateMany({
+                            where: {
+                                id: { in: itemsToDelete.map(item => item.id) }
+                            },
+                            data: {
+                                deleted: true,
+                                deletedAt: new Date(),
+                                version: { increment: 1 }
+                            }
+                        });
+                    }
+
+                    // Update existing items
+                    for (const item of itemsToUpdate) {
+                        const existingItem = existingItemsMap.get(item.itemId);
+                        await tx.invoiceItem.update({
+                            where: { id: existingItem.id },
+                            data: {
+                                quantity: item.quantity,
+                                discountType: item.discountType || '',
+                                discountAmount: item.discountAmount || 0,
+                                unitPrice: item.unitPrice,
+                                taxAmount: item.taxAmount || 0,
+                                subtotal: item.subtotal,
+                                remark: item.remark || null,
+                                version: { increment: 1 }
+                            }
+                        });
+                    }
+
+                    // Create new items
+                    if (itemsToCreate.length > 0) {
+                        await tx.invoiceItem.createMany({
+                            data: itemsToCreate.map(item => ({
+                                invoiceId: id,
+                                itemId: item.itemId,
+                                quantity: item.quantity,
+                                discountType: item.discountType || '',
+                                discountAmount: item.discountAmount || 0,
+                                unitPrice: item.unitPrice,
+                                taxAmount: item.taxAmount || 0,
+                                subtotal: item.subtotal,
+                                remark: item.remark || null
+                            }))
+                        });
+                    }
+
                     // Check if any invoice item has discount and update stock receipt costs accordingly
+                    // Only apply discount if status is not cancelled
                     const hasDiscountedItems = updateData.invoiceItems.some(item =>
                         (item.discountAmount && item.discountAmount > 0)
                     );
 
-                    if (hasDiscountedItems && updateData.deliveryOrderIds && updateData.deliveryOrderIds.length > 0) {
+                    if (hasDiscountedItems &&
+                        updateData.deliveryOrderIds &&
+                        updateData.deliveryOrderIds.length > 0) {
                         await updateStockReceiptCosts(tx, id, updateData.deliveryOrderIds, updateData.invoiceItems);
                     }
                 }

@@ -43,7 +43,6 @@ let getAll = async (
         // Build query conditions - include purchase orders that have changed OR have related entities that changed
         const where = {
             outletId: parsedOutletId,
-            deleted: false,
             OR: [
                 // Purchase order itself was modified
                 { createdAt: { gte: lastSync } },
@@ -243,7 +242,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            deleted: false,
             OR: [
                 // Purchase order itself was modified
                 { createdAt: { gte: lastSync } },
@@ -585,6 +583,7 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                 const newPurchaseOrder = await tx.purchaseOrder.create({
                     data: {
                         purchaseOrderNumber: purchaseOrderData.purchaseOrderNumber,
+                        quotationId: purchaseOrderData.quotationId || null,
                         outletId: purchaseOrderData.outletId,
                         supplierId: purchaseOrderData.supplierId,
                         sessionId: purchaseOrderData.sessionId || null,
@@ -841,6 +840,7 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                 where: { id: id },
                 data: {
                     purchaseOrderNumber: updateData.purchaseOrderNumber,
+                    quotationId: updateData.quotationId || null,
                     outletId: updateData.outletId,
                     supplierId: updateData.supplierId,
                     purchaseOrderDate: updateData.purchaseOrderDate,

@@ -211,6 +211,7 @@ model Supplier {
   updatedAt               DateTime?       @updatedAt @map("UPDATED_AT")
   version                 Int?            @default(1) @map("VERSION")
   items                   Item[]
+  quotations              Quotation[]
   purchaseOrders          PurchaseOrder[]
   invoices                Invoice[]
 
@@ -338,6 +339,7 @@ model Item {
   stockSnapshots     StockSnapshot[]
   stockReceipts      StockReceipt[]
   recipes            Recipe[]
+  quotationItems     QuotationItem[]
   purchaseOrderItems PurchaseOrderItem[]
   deliveryOrderItems DeliveryOrderItem[]
   invoiceItems       InvoiceItem[]
@@ -481,50 +483,6 @@ model SalesItemModifier {
   @@index([menuItemModifierId])
   @@index([itemId])
   @@map("sales_item_modifier")
-}
-
-model SalesQuotation {
-  id                  Int                  @id @default(autoincrement()) @map("ID")
-  outletId            Int                  @map("OUTLET_ID")
-  customerId          Int?                 @map("CUSTOMER_ID")
-  customerStreet      String?              @map("CUSTOMER_STREET")
-  customerCity        String?              @map("CUSTOMER_CITY")
-  customerState       String?              @map("CUSTOMER_STATE")
-  customerPostalCode  String?              @map("CUSTOMER_POSTAL_CODE")
-  customerCountry     String?              @map("CUSTOMER_COUNTRY")
-  discountPercentage  Decimal              @default(0) @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
-  discountAmount      Decimal              @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
-  serviceChargeAmount Decimal              @map("SERVICE_CHARGE_AMOUNT") @db.Decimal(15, 4)
-  taxAmount           Decimal              @map("TAX_AMOUNT") @db.Decimal(15, 4)
-  roundingAmount      Decimal              @map("ROUNDING_AMOUNT") @db.Decimal(15, 4)
-  subtotalAmount      Decimal              @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
-  totalAmount         Decimal              @map("TOTAL_AMOUNT")
-  status              String               @map("STATUS")
-  remark              String?              @map("REMARK")
-  performedBy         String?              @default("") @map("PERFORMED_BY")
-  deleted             Boolean              @default(false) @map("IS_DELETED")
-  deletedAt           DateTime?            @map("DELETED_AT")
-  createdAt           DateTime?            @default(now()) @map("CREATED_AT")
-  updatedAt           DateTime?            @updatedAt @map("UPDATED_AT")
-  version             Int?                 @default(1) @map("VERSION")
-  salesQuotationItems SalesQuotationItem[]
-
-  @@map("sales_quotation")
-}
-
-model SalesQuotationItem {
-  id               Int            @id @default(autoincrement()) @map("ID")
-  salesQuotationId Int            @map("SALES_QUOTATION_ID")
-  itemId           Int            @map("ITEM_ID")
-  quantity         Decimal        @map("QUANTITY") @db.Decimal(15, 4)
-  remark           String?        @map("REMARK")
-  deleted          Boolean        @default(false) @map("IS_DELETED")
-  createdAt        DateTime?      @default(now()) @map("CREATED_AT")
-  updatedAt        DateTime?      @updatedAt @map("UPDATED_AT")
-  version          Int?           @default(1) @map("VERSION")
-  salesQuotation   SalesQuotation @relation(fields: [salesQuotationId], references: [id])
-
-  @@map("sales_quotation_item")
 }
 
 model Invoice {
@@ -683,6 +641,72 @@ model DeliveryOrderItem {
   @@map("delivery_order_item")
 }
 
+model Quotation {
+  id                  Int             @id @default(autoincrement()) @map("ID")
+  quotationNumber     String          @unique @map("QUOTATION_NUMBER")
+  outletId            Int             @map("OUTLET_ID")
+  supplierId          Int             @map("SUPPLIER_ID")
+  quotationDate       DateTime?       @map("QUOTATION_DATE")
+  validUntilDate      DateTime?       @map("VALID_UNTIL_DATE")
+  sessionId           Int?            @map("SESSION_ID") // Optional for backwards compatibility
+  discountType        String?         @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
+  discountAmount      Decimal?        @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  serviceChargeAmount Decimal?        @map("SERVICE_CHARGE_AMOUNT") @db.Decimal(15, 4)
+  taxAmount           Decimal?        @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  roundingAmount      Decimal?        @map("ROUNDING_AMOUNT") @db.Decimal(15, 4)
+  subtotalAmount      Decimal?        @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
+  totalAmount         Decimal?        @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
+  status              String?         @map("STATUS")
+  remark              String?         @map("REMARK")
+  currency            String          @default("IDR") @map("CURRENCY")
+  performedBy         String?         @default("") @map("PERFORMED_BY")
+  convertedToPOAt     DateTime?       @map("CONVERTED_TO_PO_AT") // When converted to Purchase Order
+  convertedPOId       Int?            @map("CONVERTED_PO_ID") // Reference to created Purchase Order
+  deleted             Boolean         @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?       @map("DELETED_AT")
+  createdAt           DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?       @updatedAt @map("UPDATED_AT")
+  version             Int?            @default(1) @map("VERSION")
+  isTaxInclusive      Boolean?        @default(false) @map("IS_TAX_INCLUSIVE")
+  session             Session?        @relation(fields: [sessionId], references: [id])
+  supplier            Supplier        @relation(fields: [supplierId], references: [id])
+  quotationItems      QuotationItem[]
+  purchaseOrders      PurchaseOrder[]
+
+  @@index([supplierId])
+  @@index([outletId])
+  @@index([status])
+  @@index([quotationDate])
+  @@index([createdAt, updatedAt, deletedAt])
+  @@map("quotation")
+}
+
+model QuotationItem {
+  id             Int       @id @default(autoincrement()) @map("ID")
+  quotationId    Int       @map("QUOTATION_ID")
+  itemId         Int       @map("ITEM_ID")
+  quantity       Decimal   @map("QUANTITY") @db.Decimal(15, 4)
+  unitPrice      Decimal   @map("UNIT_PRICE") @db.Decimal(15, 4)
+  taxAmount      Decimal?  @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  discountType   String?   @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
+  discountAmount Decimal?  @default(0) @map("DISCOUNT_AMOUNT")
+  subtotal       Decimal   @map("SUBTOTAL") @db.Decimal(15, 4)
+  remark         String?   @default("") @map("REMARK")
+  leadTime       Int?      @map("LEAD_TIME") // Lead time in days
+  isAccepted     Boolean?  @map("IS_ACCEPTED") // Whether this item was accepted
+  version        Int?      @default(1) @map("VERSION")
+  createdAt      DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt      DateTime? @updatedAt @map("UPDATED_AT")
+  deleted        Boolean   @default(false) @map("IS_DELETED")
+  deletedAt      DateTime? @map("DELETED_AT")
+  quotation      Quotation @relation(fields: [quotationId], references: [id])
+  item           Item      @relation(fields: [itemId], references: [id])
+
+  @@index([quotationId])
+  @@index([itemId])
+  @@map("quotation_item")
+}
+
 model PurchaseOrder {
   id                  Int                 @id @default(autoincrement()) @map("ID")
   purchaseOrderNumber String              @unique @map("PURCHASE_ORDER_NUMBER")
@@ -707,6 +731,8 @@ model PurchaseOrder {
   updatedAt           DateTime?           @updatedAt @map("UPDATED_AT")
   version             Int?                @default(1) @map("VERSION")
   isTaxInclusive      Boolean?            @default(false) @map("IS_TAX_INCLUSIVE")
+  quotationId         Int?                @map("QUOTATION_ID") // Reference to source quotation
+  quotation           Quotation?          @relation(fields: [quotationId], references: [id])
   session             Session?            @relation(fields: [sessionId], references: [id])
   supplier            Supplier            @relation(fields: [supplierId], references: [id])
   purchaseOrderItems  PurchaseOrderItem[]
@@ -829,6 +855,7 @@ model Session {
   updatedAt       DateTime?       @updatedAt @map("UPDATED_AT")
   version         Int?            @default(1) @map("VERSION")
   declarations    Declaration[]
+  quotations      Quotation[]
   purchaseOrders  PurchaseOrder[]
   deliveryOrders  DeliveryOrder[]
   invoices        Invoice[]

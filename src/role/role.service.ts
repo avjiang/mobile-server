@@ -69,6 +69,7 @@ let getAll = async (
                     select: {
                         id: true,
                         email: true,
+                        username: true,
                         firstName: true,
                         lastName: true,
                         createdAt: true,

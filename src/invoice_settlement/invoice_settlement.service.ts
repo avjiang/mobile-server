@@ -69,7 +69,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            deleted: false,
             OR: [
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
@@ -215,7 +214,6 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
 
         // Build base where conditions
         let where: any = {
-            deleted: false,
             OR: [
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },

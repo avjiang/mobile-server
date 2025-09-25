@@ -42,7 +42,6 @@ let getAll = async (
 
         const where = {
             outletId: parsedOutletId,
-            deleted: false,
             OR: [
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
@@ -386,7 +385,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            deleted: false,
             OR: [
                 // Delivery order itself was modified
                 { createdAt: { gte: lastSync } },
@@ -404,7 +402,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                         }
                     }
                 },
-                // Delivery order has invoice that was modifiedcf
+                // Delivery order has invoice that was modified
                 {
                     invoice: {
                         AND: [

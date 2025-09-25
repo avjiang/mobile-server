@@ -412,44 +412,6 @@ exports.Prisma.SalesItemModifierScalarFieldEnum = {
   version: 'version'
 };
 
-exports.Prisma.SalesQuotationScalarFieldEnum = {
-  id: 'id',
-  outletId: 'outletId',
-  customerId: 'customerId',
-  customerStreet: 'customerStreet',
-  customerCity: 'customerCity',
-  customerState: 'customerState',
-  customerPostalCode: 'customerPostalCode',
-  customerCountry: 'customerCountry',
-  discountPercentage: 'discountPercentage',
-  discountAmount: 'discountAmount',
-  serviceChargeAmount: 'serviceChargeAmount',
-  taxAmount: 'taxAmount',
-  roundingAmount: 'roundingAmount',
-  subtotalAmount: 'subtotalAmount',
-  totalAmount: 'totalAmount',
-  status: 'status',
-  remark: 'remark',
-  performedBy: 'performedBy',
-  deleted: 'deleted',
-  deletedAt: 'deletedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  version: 'version'
-};
-
-exports.Prisma.SalesQuotationItemScalarFieldEnum = {
-  id: 'id',
-  salesQuotationId: 'salesQuotationId',
-  itemId: 'itemId',
-  quantity: 'quantity',
-  remark: 'remark',
-  deleted: 'deleted',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  version: 'version'
-};
-
 exports.Prisma.InvoiceScalarFieldEnum = {
   id: 'id',
   invoiceNumber: 'invoiceNumber',
@@ -562,6 +524,55 @@ exports.Prisma.DeliveryOrderItemScalarFieldEnum = {
   deletedAt: 'deletedAt'
 };
 
+exports.Prisma.QuotationScalarFieldEnum = {
+  id: 'id',
+  quotationNumber: 'quotationNumber',
+  outletId: 'outletId',
+  supplierId: 'supplierId',
+  quotationDate: 'quotationDate',
+  validUntilDate: 'validUntilDate',
+  sessionId: 'sessionId',
+  discountType: 'discountType',
+  discountAmount: 'discountAmount',
+  serviceChargeAmount: 'serviceChargeAmount',
+  taxAmount: 'taxAmount',
+  roundingAmount: 'roundingAmount',
+  subtotalAmount: 'subtotalAmount',
+  totalAmount: 'totalAmount',
+  status: 'status',
+  remark: 'remark',
+  currency: 'currency',
+  performedBy: 'performedBy',
+  convertedToPOAt: 'convertedToPOAt',
+  convertedPOId: 'convertedPOId',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version',
+  isTaxInclusive: 'isTaxInclusive'
+};
+
+exports.Prisma.QuotationItemScalarFieldEnum = {
+  id: 'id',
+  quotationId: 'quotationId',
+  itemId: 'itemId',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  taxAmount: 'taxAmount',
+  discountType: 'discountType',
+  discountAmount: 'discountAmount',
+  subtotal: 'subtotal',
+  remark: 'remark',
+  leadTime: 'leadTime',
+  isAccepted: 'isAccepted',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt'
+};
+
 exports.Prisma.PurchaseOrderScalarFieldEnum = {
   id: 'id',
   purchaseOrderNumber: 'purchaseOrderNumber',
@@ -585,7 +596,8 @@ exports.Prisma.PurchaseOrderScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   version: 'version',
-  isTaxInclusive: 'isTaxInclusive'
+  isTaxInclusive: 'isTaxInclusive',
+  quotationId: 'quotationId'
 };
 
 exports.Prisma.PurchaseOrderItemScalarFieldEnum = {
@@ -1212,21 +1224,6 @@ exports.Prisma.SalesItemModifierOrderByRelevanceFieldEnum = {
   modifierName: 'modifierName'
 };
 
-exports.Prisma.SalesQuotationOrderByRelevanceFieldEnum = {
-  customerStreet: 'customerStreet',
-  customerCity: 'customerCity',
-  customerState: 'customerState',
-  customerPostalCode: 'customerPostalCode',
-  customerCountry: 'customerCountry',
-  status: 'status',
-  remark: 'remark',
-  performedBy: 'performedBy'
-};
-
-exports.Prisma.SalesQuotationItemOrderByRelevanceFieldEnum = {
-  remark: 'remark'
-};
-
 exports.Prisma.InvoiceOrderByRelevanceFieldEnum = {
   invoiceNumber: 'invoiceNumber',
   taxInvoiceNumber: 'taxInvoiceNumber',
@@ -1267,6 +1264,20 @@ exports.Prisma.DeliveryOrderOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.DeliveryOrderItemOrderByRelevanceFieldEnum = {
+  remark: 'remark'
+};
+
+exports.Prisma.QuotationOrderByRelevanceFieldEnum = {
+  quotationNumber: 'quotationNumber',
+  discountType: 'discountType',
+  status: 'status',
+  remark: 'remark',
+  currency: 'currency',
+  performedBy: 'performedBy'
+};
+
+exports.Prisma.QuotationItemOrderByRelevanceFieldEnum = {
+  discountType: 'discountType',
   remark: 'remark'
 };
 
@@ -1465,13 +1476,13 @@ exports.Prisma.ModelName = {
   Sales: 'Sales',
   SalesItem: 'SalesItem',
   SalesItemModifier: 'SalesItemModifier',
-  SalesQuotation: 'SalesQuotation',
-  SalesQuotationItem: 'SalesQuotationItem',
   Invoice: 'Invoice',
   InvoiceItem: 'InvoiceItem',
   InvoiceSettlement: 'InvoiceSettlement',
   DeliveryOrder: 'DeliveryOrder',
   DeliveryOrderItem: 'DeliveryOrderItem',
+  Quotation: 'Quotation',
+  QuotationItem: 'QuotationItem',
   PurchaseOrder: 'PurchaseOrder',
   PurchaseOrderItem: 'PurchaseOrderItem',
   Payment: 'Payment',

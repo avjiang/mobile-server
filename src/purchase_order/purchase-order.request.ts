@@ -16,6 +16,7 @@ interface PurchaseOrderItemInput {
 export interface PurchaseOrderInput {
     id?: number; // Optional for creation, required for updates
     purchaseOrderNumber: string;
+    quotationId?: number; // Optional field
     outletId: number;
     supplierId: number;
     sessionId?: number; // Optional for backwards compatibility

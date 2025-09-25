@@ -15,15 +15,26 @@ let getAll = async (
     const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
 
     try {
-        // Parse last sync timestamp or use a default (e.g., epoch start)
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
+        // Parse last sync timestamp with optimization for null/first sync
+        let lastSync: Date;
+
+        if (lastSyncTimestamp && lastSyncTimestamp !== 'null') {
+            lastSync = new Date(lastSyncTimestamp);
+        } else {
+            // Option 1: Limit to recent data (e.g., last 30 days) for first sync
+            // const daysBack = 30;
+            // lastSync = new Date();
+            // lastSync.setDate(lastSync.getDate() - daysBack);
+
+            // Option 2: Or use current business date only
+            lastSync = new Date();
+            lastSync.setHours(0, 0, 0, 0); // Start of today
+        }
 
         // Build query conditions - add deleted filter
         const where = lastVersion
-            ? { version: { gt: lastVersion }, deleted: false }
+            ? { version: { gt: lastVersion } }
             : {
-                deleted: false,
                 OR: [
                     { createdAt: { gte: lastSync } },
                     { updatedAt: { gte: lastSync } },
@@ -248,28 +259,37 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Extract id, version, and relation fields from the item object
-        const { id, version, categoryId, supplierId, reorderThreshold, ...updateData } = item;
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, ...updateData } = item;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
+            // Prepare the item update data
+            const itemUpdateData: any = {
+                ...updateData,
+                ...(categoryId && {
+                    category: {
+                        connect: { id: categoryId }
+                    }
+                }),
+                ...(supplierId && {
+                    supplier: {
+                        connect: { id: supplierId }
+                    }
+                }),
+                updatedAt: new Date(),
+            };
+
+            // If item is being soft-deleted, add deletion fields
+            if (deleted === true) {
+                itemUpdateData.deleted = true;
+                itemUpdateData.deletedAt = new Date();
+            }
+
             // Update the item
             const itemUpdate = await tx.item.update({
                 where: {
                     id: id
                 },
-                data: {
-                    ...updateData,
-                    ...(categoryId && {
-                        category: {
-                            connect: { id: categoryId }
-                        }
-                    }),
-                    ...(supplierId && {
-                        supplier: {
-                            connect: { id: supplierId }
-                        }
-                    }),
-                    updatedAt: new Date(),
-                }
+                data: itemUpdateData
             });
 
             // Update reorderThreshold in StockBalance if provided
@@ -282,6 +302,36 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                     data: {
                         reorderThreshold: reorderThreshold,
                         updatedAt: new Date()
+                    }
+                });
+            }
+
+            // If item is being soft-deleted, also soft-delete related records
+            if (deleted === true) {
+                const deletionDate = new Date();
+
+                // Soft-delete all related StockBalance records
+                await tx.stockBalance.updateMany({
+                    where: {
+                        itemId: id,
+                        deleted: false
+                    },
+                    data: {
+                        deleted: true,
+                        deletedAt: deletionDate,
+                        updatedAt: deletionDate
+                    }
+                });
+
+                // Soft-delete all related StockMovement records
+                await tx.stockMovement.updateMany({
+                    where: {
+                        itemId: id,
+                        deleted: false
+                    },
+                    data: {
+                        deleted: true,
+                        updatedAt: deletionDate
                     }
                 });
             }

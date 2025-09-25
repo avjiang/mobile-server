@@ -35,7 +35,6 @@ let getAllStock = async (
                     { updatedAt: { gte: lastSync } },
                     { deletedAt: { gte: lastSync } },
                 ],
-                deleted: false
             };
 
         // Count total matching records

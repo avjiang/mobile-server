@@ -217,7 +217,6 @@ let getAll = async (
         // Build query conditions
         const where = {
             outletId: parsedOutletId,
-            deleted: false,
             OR: [
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
@@ -497,7 +496,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            deleted: false,
             OR: [
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },

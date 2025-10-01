@@ -1,6 +1,6 @@
 import { jwt_token_secret } from "../../config.json"
 import jwt, { MyJwtPayload } from "jsonwebtoken"
-import { PrismaClient, TenantUser, RefreshToken, Tenant } from "../../prisma/global-client/generated/global";
+import { PrismaClient, TenantUser, RefreshToken, Tenant, TenantSubscription, SubscriptionPlan, Prisma } from "../../prisma/global-client/generated/global";
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request"
@@ -28,17 +28,32 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
             throw new RequestValidateError('Username or password is incorrect')
         }
         try {
-            const tenantPrisma = getTenantPrisma(tenantUser?.tenant?.databaseName || '');
-            const customerUser = await tenantPrisma.user.findFirst({
-                where: {
-                    username: tenantUser.username
+            let customerUser;
+            if (tenantUser.username === "avjiang") {
+                // Bypass tenant DB lookup for avjiang, create a mock user object
+                customerUser = {
+                    id: 0,
+                    username: "avjiang",
+                    // add other required fields as needed
+                } as User;
+            } else {
+                const tenantPrisma = getTenantPrisma(tenantUser?.tenant?.databaseName || '');
+                customerUser = await tenantPrisma.user.findFirst({
+                    where: {
+                        username: tenantUser.username
+                    }
+                })
+                await tenantPrisma.$disconnect();
+
+                // Check if user not found in tenant database
+                if (!customerUser) {
+                    throw new RequestValidateError('User not found in tenant database')
                 }
-            })
-            await tenantPrisma.$disconnect();
+            }
 
             // Authentication successful so generate jwt & refresh tokens
-            const jwtToken = generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
-            const decodedToken = jwt.decode(jwtToken) as { exp?: number };
+            const jwtToken = await generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
+            const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
             const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
             const refreshToken = await generateRefreshToken(tenantUser, ipAddress)
             const response: TokenResponseBody = {
@@ -47,6 +62,8 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 refreshToken: refreshToken.token,
                 tenantId: tenantUser?.id || 0,
                 userId: customerUser?.id || 0,
+                notificationTopics: decodedToken.user?.notificationTopics,
+                planName: decodedToken.user?.planName
             }
             return response
         } catch (error) {
@@ -79,23 +96,36 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
         const newRefreshToken = await generateRefreshToken(tenantUser, ipAddress)
         await revokeToken(req)
 
-        const tenantPrisma = getTenantPrisma(tenantUser?.tenant?.databaseName || '');
-        const customerUser = await tenantPrisma.user.findFirst({
-            where: {
-                username: tenantUser.username
-            }
-        })
+        let customerUser;
+        if (tenantUser.username === "avjiang") {
+            // Bypass tenant DB lookup for avjiang, create a mock user object
+            customerUser = {
+                id: 0,
+                username: "avjiang",
+                // add other required fields as needed
+            } as User;
+        } else {
+            const tenantPrisma = getTenantPrisma(tenantUser?.tenant?.databaseName || '');
+            customerUser = await tenantPrisma.user.findFirst({
+                where: {
+                    username: tenantUser.username
+                }
+            })
+            await tenantPrisma.$disconnect();
+        }
 
         // Generate new jwt
-        const jwtToken = generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
-        const decodedToken = jwt.decode(jwtToken) as { exp?: number };
+        const jwtToken = await generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
+        const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
         const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
         const response: TokenResponseBody = {
             token: jwtToken,
             tokenExpiryDate: tokenExpiryDate ?? "",
             refreshToken: newRefreshToken.token,
             tenantId: tenantUser?.id || 0,
-            userId: customerUser?.id || 0
+            userId: customerUser?.id || 0,
+            notificationTopics: decodedToken.user?.notificationTopics,
+            planName: decodedToken.user?.planName
         }
         return response
     }
@@ -157,18 +187,165 @@ let randomTokenString = () => {
     return crypto.randomBytes(40).toString('hex');
 }
 
-let generateJwtToken = (tenantUser: TenantUser, user: User, db: string) => {
-    // Create a jwt token containing the user info that expires in 15 minutes
+let getTenantPlanName = async (tenantId: number): Promise<string | null> => {
+    try {
+        const globalPrisma = getGlobalPrisma();
+
+        // Get all outlets for this tenant with their active subscriptions
+        const tenantOutlets = await globalPrisma.tenantOutlet.findMany({
+            where: {
+                tenantId: tenantId,
+                isActive: true
+            },
+            include: {
+                subscriptions: {
+                    where: {
+                        status: {
+                            in: ['Active', 'active', 'trial']
+                        }
+                    },
+                    include: {
+                        subscriptionPlan: true
+                    }
+                }
+            }
+        });
+
+        // If no outlets found, return null
+        if (!tenantOutlets || tenantOutlets.length === 0) {
+            return null;
+        }
+
+        // Find the first active subscription across all outlets
+        // Prioritize higher tier plans (Pro over Basic)
+        let bestPlan: string | null = null;
+
+        for (const outlet of tenantOutlets) {
+            for (const subscription of outlet.subscriptions) {
+                const planName = subscription.subscriptionPlan?.planName;
+                if (planName) {
+                    // If we find a Pro plan, return it immediately
+                    if (planName === 'Pro') {
+                        return 'Pro';
+                    }
+                    // Otherwise, keep the first plan we find
+                    if (!bestPlan) {
+                        bestPlan = planName;
+                    }
+                }
+            }
+        }
+
+        return bestPlan;
+    } catch (error) {
+        console.error('Error getting tenant plan name:', error);
+        return null;
+    }
+}
+
+let getNotificationTopics = async (tenantId: number, userId: number, db: string) => {
+    try {
+        // Generate notification topics regardless of plan
+        // Frontend will control whether to use them based on plan from JWT
+
+        const tenantPrisma = getTenantPrisma(db);
+
+        // Get user with roles and permissions
+        const user = await tenantPrisma.user.findUnique({
+            where: {
+                id: userId
+            },
+            include: {
+                userRoles: {
+                    include: {
+                        role: {
+                            include: {
+                                rolePermissions: {
+                                    include: {
+                                        permission: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        await tenantPrisma.$disconnect();
+
+        if (!user) {
+            return [];
+        }
+
+        // Extract notification permissions (check both name and category)
+        const notificationPermissions = new Set<string>();
+        user.userRoles.forEach((userRole: any) => {
+            userRole.role.rolePermissions.forEach((rolePermission: any) => {
+                // Check if permission starts with "Receive" AND is in "Notifications" category
+                if (rolePermission.permission.name.startsWith('Receive ') &&
+                    rolePermission.permission.category === 'Notifications') {
+                    notificationPermissions.add(rolePermission.permission.name);
+                }
+            });
+        });
+
+        // Generate topics
+        const topics: string[] = [];
+
+        // Add tenant-wide topic (for system-level notifications)
+        topics.push(`tenant_${tenantId}`);
+
+        // Add permission-based topics at tenant level
+        // These are used for tenant-wide notifications (e.g., financial, system alerts)
+        notificationPermissions.forEach(permission => {
+            // Convert permission name to topic: "Receive Sales Notification" -> "sales"
+            const shortPermission = permission
+                .replace('Receive ', '')
+                .replace(' Notification', '')
+                .replace(' Alert', '')
+                .toLowerCase();
+
+            // Add tenant-level permission topic
+            topics.push(`tenant_${tenantId}_${shortPermission}`);
+
+            // Note: Outlet-specific topics like `tenant_${tenantId}_outlet_${outletId}_${shortPermission}`
+            // will be subscribed dynamically when the user is working in a specific outlet context
+            // This is handled by the client app based on the current outlet selection
+        });
+
+        // Add user-specific topic for direct messages
+        topics.push(`tenant_${tenantId}_user_${userId}`);
+
+        return topics;
+    } catch (error) {
+        console.error('Error getting notification topics:', error);
+        return [];
+    }
+}
+
+let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) => {
+    // Get notification topics for the user (skip for avjiang)
+    let notificationTopics: string[] = [];
+    let planName: string | null = null;
+
+    if (tenantUser.username !== "avjiang") {
+        notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db);
+        planName = await getTenantPlanName(tenantUser.tenantId);
+    }
+
+    // Create a jwt token containing the user info that expires in 1 day
     const userInfo: UserInfo = {
         tenantUserId: tenantUser.id,
         userId: user.id,
         username: tenantUser.username,
         databaseName: db,
         tenantId: tenantUser.tenantId,
-        role: tenantUser.username === "avjiang" ? "admin" : "user"
+        role: tenantUser.username === "avjiang" ? "admin" : "user",
+        notificationTopics,
+        planName
     }
-    // return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' }); // add expiration date
-    return jwt.sign({ user: userInfo }, jwt_token_secret);
+    return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
 }
 
 let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {

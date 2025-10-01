@@ -124,23 +124,42 @@ model RolePermission {
   @@map("role_permission")
 }
 
+model NotificationPreference {
+  id                     Int      @id @default(autoincrement()) @map("ID")
+  userId                 Int      @unique @map("USER_ID")
+  salesNotifications     Boolean  @default(true) @map("SALES_NOTIFICATIONS")
+  inventoryAlerts        Boolean  @default(true) @map("INVENTORY_ALERTS")
+  orderUpdates           Boolean  @default(true) @map("ORDER_UPDATES")
+  systemAlerts           Boolean  @default(true) @map("SYSTEM_ALERTS")
+  financialNotifications Boolean  @default(true) @map("FINANCIAL_NOTIFICATIONS")
+  staffNotifications     Boolean  @default(true) @map("STAFF_NOTIFICATIONS")
+  quietHoursStart        String?  @map("QUIET_HOURS_START") // "22:00"
+  quietHoursEnd          String?  @map("QUIET_HOURS_END") // "07:00"
+  createdAt              DateTime @default(now()) @map("CREATED_AT")
+  updatedAt              DateTime @updatedAt @map("UPDATED_AT")
+  user                   User     @relation(fields: [userId], references: [id])
+
+  @@map("notification_preference")
+}
+
 model User {
-  id               Int           @id @default(autoincrement()) @map("ID")
-  username         String        @unique @map("USERNAME")
-  password         String        @map("PASSWORD")
-  overridePin      String?       @map("OVERRIDE_PIN") // Hashed PIN for overrides
-  lastName         String?       @map("LAST_NAME")
-  firstName        String?       @map("FIRST_NAME")
-  mobile           String?       @map("MOBILE")
-  email            String?       @map("EMAIL")
-  deleted          Boolean       @default(false) @map("IS_DELETED")
-  deletedAt        DateTime?     @map("DELETED_AT")
-  createdAt        DateTime?     @default(now()) @map("CREATED_AT")
-  updatedAt        DateTime?     @updatedAt @map("UPDATED_AT")
-  version          Int?          @default(1) @map("VERSION")
-  settings         Setting[] // Existing relation to Setting
-  roles            Role[]        @relation("user_roles") // Many-to-many with roles
-  overrideRequests OverrideLog[] @relation("OverrideRequests")
+  id                     Int                     @id @default(autoincrement()) @map("ID")
+  username               String                  @unique @map("USERNAME")
+  password               String                  @map("PASSWORD")
+  overridePin            String?                 @map("OVERRIDE_PIN") // Hashed PIN for overrides
+  lastName               String?                 @map("LAST_NAME")
+  firstName              String?                 @map("FIRST_NAME")
+  mobile                 String?                 @map("MOBILE")
+  email                  String?                 @map("EMAIL")
+  deleted                Boolean                 @default(false) @map("IS_DELETED")
+  deletedAt              DateTime?               @map("DELETED_AT")
+  createdAt              DateTime?               @default(now()) @map("CREATED_AT")
+  updatedAt              DateTime?               @updatedAt @map("UPDATED_AT")
+  version                Int?                    @default(1) @map("VERSION")
+  settings               Setting[] // Existing relation to Setting
+  roles                  Role[]                  @relation("user_roles") // Many-to-many with roles
+  overrideRequests       OverrideLog[]           @relation("OverrideRequests")
+  notificationPreference NotificationPreference?
 
   @@map("user")
 }

@@ -90,7 +90,37 @@ async function seedPermissions(tenantPrisma: any) {
             name: "Manage Access Control",
             description: "Create and process access control data",
             category: "Function Management"
-        }
+        },
+        {
+            name: "Receive Sales Notification",
+            category: "Notifications",
+            description: "Receive notifications about sales and transactions"
+        },
+        {
+            name: "Receive Inventory Notification",
+            category: "Notifications",
+            description: "Receive notifications about inventory and stock levels"
+        },
+        {
+            name: "Receive Order Notification",
+            category: "Notifications",
+            description: "Receive notifications about order status changes"
+        },
+        {
+            name: "Receive Financial Notification",
+            category: "Notifications",
+            description: "Receive notifications about payments and financial matters"
+        },
+        {
+            name: "Receive Staff Notification",
+            category: "Notifications",
+            description: "Receive notifications about staff and scheduling"
+        },
+        {
+            name: "Receive System Notification",
+            category: "Notifications",
+            description: "Receive system alerts and important updates"
+        },
     ];
 
     const createdPermissions = [];

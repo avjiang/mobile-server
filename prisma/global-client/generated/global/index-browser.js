@@ -128,6 +128,7 @@ exports.Prisma.SubscriptionPlanScalarFieldEnum = {
   maxTransactions: 'maxTransactions',
   maxProducts: 'maxProducts',
   maxUsers: 'maxUsers',
+  maxDevices: 'maxDevices',
   description: 'description'
 };
 
@@ -223,6 +224,38 @@ exports.Prisma.PermissionScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.PushyDeviceScalarFieldEnum = {
+  id: 'id',
+  tenantUserId: 'tenantUserId',
+  deviceToken: 'deviceToken',
+  platform: 'platform',
+  deviceName: 'deviceName',
+  appVersion: 'appVersion',
+  isActive: 'isActive',
+  lastActiveAt: 'lastActiveAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PushySubscriptionScalarFieldEnum = {
+  id: 'id',
+  deviceId: 'deviceId',
+  topic: 'topic',
+  subscribedAt: 'subscribedAt'
+};
+
+exports.Prisma.PushyDeviceAllocationScalarFieldEnum = {
+  id: 'id',
+  deviceId: 'deviceId',
+  tenantId: 'tenantId',
+  subscriptionId: 'subscriptionId',
+  addOnId: 'addOnId',
+  allocationType: 'allocationType',
+  activatedAt: 'activatedAt',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -285,6 +318,21 @@ exports.Prisma.PermissionOrderByRelevanceFieldEnum = {
   allowedRoles: 'allowedRoles'
 };
 
+exports.Prisma.PushyDeviceOrderByRelevanceFieldEnum = {
+  deviceToken: 'deviceToken',
+  platform: 'platform',
+  deviceName: 'deviceName',
+  appVersion: 'appVersion'
+};
+
+exports.Prisma.PushySubscriptionOrderByRelevanceFieldEnum = {
+  topic: 'topic'
+};
+
+exports.Prisma.PushyDeviceAllocationOrderByRelevanceFieldEnum = {
+  allocationType: 'allocationType'
+};
+
 
 exports.Prisma.ModelName = {
   SubscriptionPlan: 'SubscriptionPlan',
@@ -296,7 +344,10 @@ exports.Prisma.ModelName = {
   Discount: 'Discount',
   TenantUser: 'TenantUser',
   RefreshToken: 'RefreshToken',
-  Permission: 'Permission'
+  Permission: 'Permission',
+  PushyDevice: 'PushyDevice',
+  PushySubscription: 'PushySubscription',
+  PushyDeviceAllocation: 'PushyDeviceAllocation'
 };
 
 /**

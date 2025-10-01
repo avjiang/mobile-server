@@ -527,55 +527,84 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
         createdTenantDbUserId = createdUser.id;
 
         // --- Begin: Subscription add-on logic for user overage ---
-        // Find active/trial subscription and plan
-        const activeSub = await prisma.tenantSubscription.findFirst({
-            where: { tenantId, status: { in: ['active', 'trial'] } },
-            include: { subscriptionPlan: true },
-            orderBy: { id: 'asc' },
+        // HYBRID MODEL: User limits are calculated as sum of all outlet subscriptions
+        // This matches the device limit logic - each outlet contributes to the total pool
+        // Get all active outlets for this tenant with their subscriptions
+        const tenantOutlets = await prisma.tenantOutlet.findMany({
+            where: {
+                tenantId,
+                isActive: true
+            },
+            include: {
+                subscriptions: {
+                    where: {
+                        status: {
+                            in: ['Active', 'active', 'trial']
+                        }
+                    },
+                    include: {
+                        subscriptionPlan: true
+                    }
+                }
+            }
         });
 
-        if (activeSub?.subscriptionPlan) {
-            const includedMax = activeSub.subscriptionPlan.maxUsers; // nullable
-            if (includedMax !== null && includedMax !== undefined) {
-                // Count current active (non-deleted) users in global DB
-                const currentUserCount = await prisma.tenantUser.count({
-                    where: { tenantId, isDeleted: false },
+        // Calculate total user limit across all outlet subscriptions
+        let totalMaxUsers = 0;
+        let primarySubscription = null;
+
+        for (const outlet of tenantOutlets) {
+            for (const subscription of outlet.subscriptions) {
+                const maxUsers = subscription.subscriptionPlan?.maxUsers;
+                if (maxUsers !== null && maxUsers !== undefined) {
+                    totalMaxUsers += maxUsers;
+                    // Keep track of first subscription for add-on attachment
+                    if (!primarySubscription) {
+                        primarySubscription = subscription;
+                    }
+                }
+            }
+        }
+
+        if (primarySubscription && totalMaxUsers > 0) {
+            // Count current active (non-deleted) users in global DB
+            const currentUserCount = await prisma.tenantUser.count({
+                where: { tenantId, isDeleted: false },
+            });
+
+            // Required add-on quantity equals overage beyond total allowed
+            const overage = Math.max(0, currentUserCount - totalMaxUsers);
+
+            if (overage > 0) {
+                const addOnId = 1; // Add-on for extra user
+                // Attach add-on to the primary subscription
+                const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
+                    where: {
+                        tenantSubscriptionId_addOnId: {
+                            tenantSubscriptionId: primarySubscription.id,
+                            addOnId,
+                        }
+                    }
                 });
 
-                // Required add-on quantity equals overage
-                const overage = Math.max(0, currentUserCount - includedMax);
-
-                if (overage > 0) {
-                    const addOnId = 1; // Add-on for extra user
-                    // Ensure composite unique key upsert behavior
-                    const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
-                        where: {
-                            tenantSubscriptionId_addOnId: {
-                                tenantSubscriptionId: activeSub.id,
-                                addOnId,
-                            }
+                if (!existingAddOn) {
+                    await prisma.tenantSubscriptionAddOn.create({
+                        data: {
+                            tenantSubscriptionId: primarySubscription.id,
+                            addOnId,
+                            quantity: overage,
                         }
                     });
-
-                    if (!existingAddOn) {
-                        await prisma.tenantSubscriptionAddOn.create({
-                            data: {
-                                tenantSubscriptionId: activeSub.id,
+                } else if (existingAddOn.quantity < overage) {
+                    await prisma.tenantSubscriptionAddOn.update({
+                        where: {
+                            tenantSubscriptionId_addOnId: {
+                                tenantSubscriptionId: primarySubscription.id,
                                 addOnId,
-                                quantity: overage,
                             }
-                        });
-                    } else if (existingAddOn.quantity < overage) {
-                        await prisma.tenantSubscriptionAddOn.update({
-                            where: {
-                                tenantSubscriptionId_addOnId: {
-                                    tenantSubscriptionId: activeSub.id,
-                                    addOnId,
-                                }
-                            },
-                            data: { quantity: overage }
-                        });
-                    }
+                        },
+                        data: { quantity: overage }
+                    });
                 }
             }
         }

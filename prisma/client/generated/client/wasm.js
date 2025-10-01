@@ -143,6 +143,21 @@ exports.Prisma.RolePermissionScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.NotificationPreferenceScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  salesNotifications: 'salesNotifications',
+  inventoryAlerts: 'inventoryAlerts',
+  orderUpdates: 'orderUpdates',
+  systemAlerts: 'systemAlerts',
+  financialNotifications: 'financialNotifications',
+  staffNotifications: 'staffNotifications',
+  quietHoursStart: 'quietHoursStart',
+  quietHoursEnd: 'quietHoursEnd',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   username: 'username',
@@ -1091,6 +1106,11 @@ exports.Prisma.RoleOrderByRelevanceFieldEnum = {
   description: 'description'
 };
 
+exports.Prisma.NotificationPreferenceOrderByRelevanceFieldEnum = {
+  quietHoursStart: 'quietHoursStart',
+  quietHoursEnd: 'quietHoursEnd'
+};
+
 exports.Prisma.UserOrderByRelevanceFieldEnum = {
   username: 'username',
   password: 'password',
@@ -1463,6 +1483,7 @@ exports.DiscountType = exports.$Enums.DiscountType = {
 exports.Prisma.ModelName = {
   Role: 'Role',
   RolePermission: 'RolePermission',
+  NotificationPreference: 'NotificationPreference',
   User: 'User',
   OverrideLog: 'OverrideLog',
   Setting: 'Setting',

@@ -3,14 +3,7 @@ import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { UpdateUserRequestBody } from "./user.request";
-
-// Database Index Recommendations:
-// CREATE INDEX idx_user_version ON User(version);
-// CREATE INDEX idx_user_timestamps ON User(createdAt, updatedAt, deletedAt);
-// CREATE INDEX idx_user_deleted ON User(deleted);
-// CREATE INDEX idx_user_username ON User(username) WHERE deleted = false;
-// CREATE INDEX idx_user_email ON User(email) WHERE deleted = false;
-// CREATE INDEX idx_role_deleted ON Role(deleted);
+import NotificationService from '../pushy/notification.service';
 
 let getAll = async (
     databaseName: string,

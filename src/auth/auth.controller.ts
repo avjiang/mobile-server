@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import authService from "./auth.v2.service";
+import authService from "./auth.service";
 import authorizeMiddleware, { UserInfo } from "../middleware/authorize-middleware";
 import NetworkRequest from "../api-helpers/network-request";
 import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } from "./auth.request";

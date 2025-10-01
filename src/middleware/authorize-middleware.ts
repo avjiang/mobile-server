@@ -16,7 +16,9 @@ export interface UserInfo {
     username: string,
     databaseName: string,
     tenantId: number,
-    role: string
+    role: string,
+    notificationTopics?: string[],
+    planName?: string | null
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {

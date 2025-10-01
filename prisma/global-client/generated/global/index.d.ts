@@ -63,6 +63,21 @@ export type RefreshToken = $Result.DefaultSelection<Prisma.$RefreshTokenPayload>
  * 
  */
 export type Permission = $Result.DefaultSelection<Prisma.$PermissionPayload>
+/**
+ * Model PushyDevice
+ * 
+ */
+export type PushyDevice = $Result.DefaultSelection<Prisma.$PushyDevicePayload>
+/**
+ * Model PushySubscription
+ * 
+ */
+export type PushySubscription = $Result.DefaultSelection<Prisma.$PushySubscriptionPayload>
+/**
+ * Model PushyDeviceAllocation
+ * 
+ */
+export type PushyDeviceAllocation = $Result.DefaultSelection<Prisma.$PushyDeviceAllocationPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -288,6 +303,36 @@ export class PrismaClient<
     * ```
     */
   get permission(): Prisma.PermissionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.pushyDevice`: Exposes CRUD operations for the **PushyDevice** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PushyDevices
+    * const pushyDevices = await prisma.pushyDevice.findMany()
+    * ```
+    */
+  get pushyDevice(): Prisma.PushyDeviceDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.pushySubscription`: Exposes CRUD operations for the **PushySubscription** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PushySubscriptions
+    * const pushySubscriptions = await prisma.pushySubscription.findMany()
+    * ```
+    */
+  get pushySubscription(): Prisma.PushySubscriptionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.pushyDeviceAllocation`: Exposes CRUD operations for the **PushyDeviceAllocation** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PushyDeviceAllocations
+    * const pushyDeviceAllocations = await prisma.pushyDeviceAllocation.findMany()
+    * ```
+    */
+  get pushyDeviceAllocation(): Prisma.PushyDeviceAllocationDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -737,7 +782,10 @@ export namespace Prisma {
     Discount: 'Discount',
     TenantUser: 'TenantUser',
     RefreshToken: 'RefreshToken',
-    Permission: 'Permission'
+    Permission: 'Permission',
+    PushyDevice: 'PushyDevice',
+    PushySubscription: 'PushySubscription',
+    PushyDeviceAllocation: 'PushyDeviceAllocation'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -756,7 +804,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission"
+      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1420,6 +1468,204 @@ export namespace Prisma {
           }
         }
       }
+      PushyDevice: {
+        payload: Prisma.$PushyDevicePayload<ExtArgs>
+        fields: Prisma.PushyDeviceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PushyDeviceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PushyDeviceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload>
+          }
+          findFirst: {
+            args: Prisma.PushyDeviceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PushyDeviceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload>
+          }
+          findMany: {
+            args: Prisma.PushyDeviceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload>[]
+          }
+          create: {
+            args: Prisma.PushyDeviceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload>
+          }
+          createMany: {
+            args: Prisma.PushyDeviceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PushyDeviceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload>
+          }
+          update: {
+            args: Prisma.PushyDeviceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload>
+          }
+          deleteMany: {
+            args: Prisma.PushyDeviceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PushyDeviceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PushyDeviceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDevicePayload>
+          }
+          aggregate: {
+            args: Prisma.PushyDeviceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePushyDevice>
+          }
+          groupBy: {
+            args: Prisma.PushyDeviceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PushyDeviceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PushyDeviceCountArgs<ExtArgs>
+            result: $Utils.Optional<PushyDeviceCountAggregateOutputType> | number
+          }
+        }
+      }
+      PushySubscription: {
+        payload: Prisma.$PushySubscriptionPayload<ExtArgs>
+        fields: Prisma.PushySubscriptionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PushySubscriptionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PushySubscriptionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload>
+          }
+          findFirst: {
+            args: Prisma.PushySubscriptionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PushySubscriptionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload>
+          }
+          findMany: {
+            args: Prisma.PushySubscriptionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload>[]
+          }
+          create: {
+            args: Prisma.PushySubscriptionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload>
+          }
+          createMany: {
+            args: Prisma.PushySubscriptionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PushySubscriptionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload>
+          }
+          update: {
+            args: Prisma.PushySubscriptionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload>
+          }
+          deleteMany: {
+            args: Prisma.PushySubscriptionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PushySubscriptionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PushySubscriptionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushySubscriptionPayload>
+          }
+          aggregate: {
+            args: Prisma.PushySubscriptionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePushySubscription>
+          }
+          groupBy: {
+            args: Prisma.PushySubscriptionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PushySubscriptionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PushySubscriptionCountArgs<ExtArgs>
+            result: $Utils.Optional<PushySubscriptionCountAggregateOutputType> | number
+          }
+        }
+      }
+      PushyDeviceAllocation: {
+        payload: Prisma.$PushyDeviceAllocationPayload<ExtArgs>
+        fields: Prisma.PushyDeviceAllocationFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PushyDeviceAllocationFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PushyDeviceAllocationFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload>
+          }
+          findFirst: {
+            args: Prisma.PushyDeviceAllocationFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PushyDeviceAllocationFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload>
+          }
+          findMany: {
+            args: Prisma.PushyDeviceAllocationFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload>[]
+          }
+          create: {
+            args: Prisma.PushyDeviceAllocationCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload>
+          }
+          createMany: {
+            args: Prisma.PushyDeviceAllocationCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PushyDeviceAllocationDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload>
+          }
+          update: {
+            args: Prisma.PushyDeviceAllocationUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload>
+          }
+          deleteMany: {
+            args: Prisma.PushyDeviceAllocationDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PushyDeviceAllocationUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PushyDeviceAllocationUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PushyDeviceAllocationPayload>
+          }
+          aggregate: {
+            args: Prisma.PushyDeviceAllocationAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePushyDeviceAllocation>
+          }
+          groupBy: {
+            args: Prisma.PushyDeviceAllocationGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PushyDeviceAllocationGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PushyDeviceAllocationCountArgs<ExtArgs>
+            result: $Utils.Optional<PushyDeviceAllocationCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1514,6 +1760,9 @@ export namespace Prisma {
     tenantUser?: TenantUserOmit
     refreshToken?: RefreshTokenOmit
     permission?: PermissionOmit
+    pushyDevice?: PushyDeviceOmit
+    pushySubscription?: PushySubscriptionOmit
+    pushyDeviceAllocation?: PushyDeviceAllocationOmit
   }
 
   /* Types for Logging */
@@ -1673,12 +1922,14 @@ export namespace Prisma {
     tenantUsers: number
     subscription: number
     tenantOutlets: number
+    deviceAllocations: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenantUsers?: boolean | TenantCountOutputTypeCountTenantUsersArgs
     subscription?: boolean | TenantCountOutputTypeCountSubscriptionArgs
     tenantOutlets?: boolean | TenantCountOutputTypeCountTenantOutletsArgs
+    deviceAllocations?: boolean | TenantCountOutputTypeCountDeviceAllocationsArgs
   }
 
   // Custom InputTypes
@@ -1713,6 +1964,13 @@ export namespace Prisma {
     where?: TenantOutletWhereInput
   }
 
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountDeviceAllocationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PushyDeviceAllocationWhereInput
+  }
+
 
   /**
    * Count Type TenantSubscriptionCountOutputType
@@ -1720,10 +1978,12 @@ export namespace Prisma {
 
   export type TenantSubscriptionCountOutputType = {
     subscriptionAddOn: number
+    deviceAllocations: number
   }
 
   export type TenantSubscriptionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subscriptionAddOn?: boolean | TenantSubscriptionCountOutputTypeCountSubscriptionAddOnArgs
+    deviceAllocations?: boolean | TenantSubscriptionCountOutputTypeCountDeviceAllocationsArgs
   }
 
   // Custom InputTypes
@@ -1742,6 +2002,13 @@ export namespace Prisma {
    */
   export type TenantSubscriptionCountOutputTypeCountSubscriptionAddOnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TenantSubscriptionAddOnWhereInput
+  }
+
+  /**
+   * TenantSubscriptionCountOutputType without action
+   */
+  export type TenantSubscriptionCountOutputTypeCountDeviceAllocationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PushyDeviceAllocationWhereInput
   }
 
 
@@ -1808,6 +2075,68 @@ export namespace Prisma {
 
 
   /**
+   * Count Type TenantUserCountOutputType
+   */
+
+  export type TenantUserCountOutputType = {
+    pushyDevices: number
+  }
+
+  export type TenantUserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    pushyDevices?: boolean | TenantUserCountOutputTypeCountPushyDevicesArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * TenantUserCountOutputType without action
+   */
+  export type TenantUserCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantUserCountOutputType
+     */
+    select?: TenantUserCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * TenantUserCountOutputType without action
+   */
+  export type TenantUserCountOutputTypeCountPushyDevicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PushyDeviceWhereInput
+  }
+
+
+  /**
+   * Count Type PushyDeviceCountOutputType
+   */
+
+  export type PushyDeviceCountOutputType = {
+    subscriptions: number
+  }
+
+  export type PushyDeviceCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    subscriptions?: boolean | PushyDeviceCountOutputTypeCountSubscriptionsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * PushyDeviceCountOutputType without action
+   */
+  export type PushyDeviceCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceCountOutputType
+     */
+    select?: PushyDeviceCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * PushyDeviceCountOutputType without action
+   */
+  export type PushyDeviceCountOutputTypeCountSubscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PushySubscriptionWhereInput
+  }
+
+
+  /**
    * Models
    */
 
@@ -1829,6 +2158,7 @@ export namespace Prisma {
     maxTransactions: number | null
     maxProducts: number | null
     maxUsers: number | null
+    maxDevices: number | null
   }
 
   export type SubscriptionPlanSumAggregateOutputType = {
@@ -1837,6 +2167,7 @@ export namespace Prisma {
     maxTransactions: number | null
     maxProducts: number | null
     maxUsers: number | null
+    maxDevices: number | null
   }
 
   export type SubscriptionPlanMinAggregateOutputType = {
@@ -1847,6 +2178,7 @@ export namespace Prisma {
     maxTransactions: number | null
     maxProducts: number | null
     maxUsers: number | null
+    maxDevices: number | null
     description: string | null
   }
 
@@ -1858,6 +2190,7 @@ export namespace Prisma {
     maxTransactions: number | null
     maxProducts: number | null
     maxUsers: number | null
+    maxDevices: number | null
     description: string | null
   }
 
@@ -1869,6 +2202,7 @@ export namespace Prisma {
     maxTransactions: number
     maxProducts: number
     maxUsers: number
+    maxDevices: number
     description: number
     _all: number
   }
@@ -1880,6 +2214,7 @@ export namespace Prisma {
     maxTransactions?: true
     maxProducts?: true
     maxUsers?: true
+    maxDevices?: true
   }
 
   export type SubscriptionPlanSumAggregateInputType = {
@@ -1888,6 +2223,7 @@ export namespace Prisma {
     maxTransactions?: true
     maxProducts?: true
     maxUsers?: true
+    maxDevices?: true
   }
 
   export type SubscriptionPlanMinAggregateInputType = {
@@ -1898,6 +2234,7 @@ export namespace Prisma {
     maxTransactions?: true
     maxProducts?: true
     maxUsers?: true
+    maxDevices?: true
     description?: true
   }
 
@@ -1909,6 +2246,7 @@ export namespace Prisma {
     maxTransactions?: true
     maxProducts?: true
     maxUsers?: true
+    maxDevices?: true
     description?: true
   }
 
@@ -1920,6 +2258,7 @@ export namespace Prisma {
     maxTransactions?: true
     maxProducts?: true
     maxUsers?: true
+    maxDevices?: true
     description?: true
     _all?: true
   }
@@ -2018,6 +2357,7 @@ export namespace Prisma {
     maxTransactions: number | null
     maxProducts: number | null
     maxUsers: number | null
+    maxDevices: number | null
     description: string | null
     _count: SubscriptionPlanCountAggregateOutputType | null
     _avg: SubscriptionPlanAvgAggregateOutputType | null
@@ -2048,6 +2388,7 @@ export namespace Prisma {
     maxTransactions?: boolean
     maxProducts?: boolean
     maxUsers?: boolean
+    maxDevices?: boolean
     description?: boolean
     subscription?: boolean | SubscriptionPlan$subscriptionArgs<ExtArgs>
     _count?: boolean | SubscriptionPlanCountOutputTypeDefaultArgs<ExtArgs>
@@ -2063,10 +2404,11 @@ export namespace Prisma {
     maxTransactions?: boolean
     maxProducts?: boolean
     maxUsers?: boolean
+    maxDevices?: boolean
     description?: boolean
   }
 
-  export type SubscriptionPlanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "planName" | "planType" | "price" | "maxTransactions" | "maxProducts" | "maxUsers" | "description", ExtArgs["result"]["subscriptionPlan"]>
+  export type SubscriptionPlanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "planName" | "planType" | "price" | "maxTransactions" | "maxProducts" | "maxUsers" | "maxDevices" | "description", ExtArgs["result"]["subscriptionPlan"]>
   export type SubscriptionPlanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subscription?: boolean | SubscriptionPlan$subscriptionArgs<ExtArgs>
     _count?: boolean | SubscriptionPlanCountOutputTypeDefaultArgs<ExtArgs>
@@ -2085,6 +2427,7 @@ export namespace Prisma {
       maxTransactions: number | null
       maxProducts: number | null
       maxUsers: number | null
+      maxDevices: number | null
       description: string | null
     }, ExtArgs["result"]["subscriptionPlan"]>
     composites: {}
@@ -2463,6 +2806,7 @@ export namespace Prisma {
     readonly maxTransactions: FieldRef<"SubscriptionPlan", 'Int'>
     readonly maxProducts: FieldRef<"SubscriptionPlan", 'Int'>
     readonly maxUsers: FieldRef<"SubscriptionPlan", 'Int'>
+    readonly maxDevices: FieldRef<"SubscriptionPlan", 'Int'>
     readonly description: FieldRef<"SubscriptionPlan", 'String'>
   }
     
@@ -4069,6 +4413,7 @@ export namespace Prisma {
     tenantUsers?: boolean | Tenant$tenantUsersArgs<ExtArgs>
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
+    deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4087,6 +4432,7 @@ export namespace Prisma {
     tenantUsers?: boolean | Tenant$tenantUsersArgs<ExtArgs>
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
+    deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4096,6 +4442,7 @@ export namespace Prisma {
       tenantUsers: Prisma.$TenantUserPayload<ExtArgs>[]
       subscription: Prisma.$TenantSubscriptionPayload<ExtArgs>[]
       tenantOutlets: Prisma.$TenantOutletPayload<ExtArgs>[]
+      deviceAllocations: Prisma.$PushyDeviceAllocationPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -4446,6 +4793,7 @@ export namespace Prisma {
     tenantUsers<T extends Tenant$tenantUsersArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$tenantUsersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantUserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     subscription<T extends Tenant$subscriptionArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$subscriptionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     tenantOutlets<T extends Tenant$tenantOutletsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$tenantOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    deviceAllocations<T extends Tenant$deviceAllocationsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$deviceAllocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4895,6 +5243,30 @@ export namespace Prisma {
   }
 
   /**
+   * Tenant.deviceAllocations
+   */
+  export type Tenant$deviceAllocationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    where?: PushyDeviceAllocationWhereInput
+    orderBy?: PushyDeviceAllocationOrderByWithRelationInput | PushyDeviceAllocationOrderByWithRelationInput[]
+    cursor?: PushyDeviceAllocationWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PushyDeviceAllocationScalarFieldEnum | PushyDeviceAllocationScalarFieldEnum[]
+  }
+
+  /**
    * Tenant without action
    */
   export type TenantDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5172,6 +5544,7 @@ export namespace Prisma {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     subscriptionPlan?: boolean | SubscriptionPlanDefaultArgs<ExtArgs>
     subscriptionAddOn?: boolean | TenantSubscription$subscriptionAddOnArgs<ExtArgs>
+    deviceAllocations?: boolean | TenantSubscription$deviceAllocationsArgs<ExtArgs>
     _count?: boolean | TenantSubscriptionCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenantSubscription"]>
 
@@ -5197,6 +5570,7 @@ export namespace Prisma {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     subscriptionPlan?: boolean | SubscriptionPlanDefaultArgs<ExtArgs>
     subscriptionAddOn?: boolean | TenantSubscription$subscriptionAddOnArgs<ExtArgs>
+    deviceAllocations?: boolean | TenantSubscription$deviceAllocationsArgs<ExtArgs>
     _count?: boolean | TenantSubscriptionCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -5208,6 +5582,7 @@ export namespace Prisma {
       tenant: Prisma.$TenantPayload<ExtArgs>
       subscriptionPlan: Prisma.$SubscriptionPlanPayload<ExtArgs>
       subscriptionAddOn: Prisma.$TenantSubscriptionAddOnPayload<ExtArgs>[]
+      deviceAllocations: Prisma.$PushyDeviceAllocationPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -5565,6 +5940,7 @@ export namespace Prisma {
     tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     subscriptionPlan<T extends SubscriptionPlanDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SubscriptionPlanDefaultArgs<ExtArgs>>): Prisma__SubscriptionPlanClient<$Result.GetResult<Prisma.$SubscriptionPlanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     subscriptionAddOn<T extends TenantSubscription$subscriptionAddOnArgs<ExtArgs> = {}>(args?: Subset<T, TenantSubscription$subscriptionAddOnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSubscriptionAddOnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    deviceAllocations<T extends TenantSubscription$deviceAllocationsArgs<ExtArgs> = {}>(args?: Subset<T, TenantSubscription$deviceAllocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5987,6 +6363,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: TenantSubscriptionAddOnScalarFieldEnum | TenantSubscriptionAddOnScalarFieldEnum[]
+  }
+
+  /**
+   * TenantSubscription.deviceAllocations
+   */
+  export type TenantSubscription$deviceAllocationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    where?: PushyDeviceAllocationWhereInput
+    orderBy?: PushyDeviceAllocationOrderByWithRelationInput | PushyDeviceAllocationOrderByWithRelationInput[]
+    cursor?: PushyDeviceAllocationWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PushyDeviceAllocationScalarFieldEnum | PushyDeviceAllocationScalarFieldEnum[]
   }
 
   /**
@@ -9236,6 +9636,8 @@ export namespace Prisma {
     role?: boolean
     isDeleted?: boolean
     tenant?: boolean | TenantUser$tenantArgs<ExtArgs>
+    pushyDevices?: boolean | TenantUser$pushyDevicesArgs<ExtArgs>
+    _count?: boolean | TenantUserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenantUser"]>
 
 
@@ -9252,12 +9654,15 @@ export namespace Prisma {
   export type TenantUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "username" | "password" | "tenantId" | "role" | "isDeleted", ExtArgs["result"]["tenantUser"]>
   export type TenantUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantUser$tenantArgs<ExtArgs>
+    pushyDevices?: boolean | TenantUser$pushyDevicesArgs<ExtArgs>
+    _count?: boolean | TenantUserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
   export type $TenantUserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "TenantUser"
     objects: {
       tenant: Prisma.$TenantPayload<ExtArgs> | null
+      pushyDevices: Prisma.$PushyDevicePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -9607,6 +10012,7 @@ export namespace Prisma {
   export interface Prisma__TenantUserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     tenant<T extends TenantUser$tenantArgs<ExtArgs> = {}>(args?: Subset<T, TenantUser$tenantArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    pushyDevices<T extends TenantUser$pushyDevicesArgs<ExtArgs> = {}>(args?: Subset<T, TenantUser$pushyDevicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -10001,6 +10407,30 @@ export namespace Prisma {
      */
     include?: TenantInclude<ExtArgs> | null
     where?: TenantWhereInput
+  }
+
+  /**
+   * TenantUser.pushyDevices
+   */
+  export type TenantUser$pushyDevicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    where?: PushyDeviceWhereInput
+    orderBy?: PushyDeviceOrderByWithRelationInput | PushyDeviceOrderByWithRelationInput[]
+    cursor?: PushyDeviceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PushyDeviceScalarFieldEnum | PushyDeviceScalarFieldEnum[]
   }
 
   /**
@@ -11951,6 +12381,3087 @@ export namespace Prisma {
 
 
   /**
+   * Model PushyDevice
+   */
+
+  export type AggregatePushyDevice = {
+    _count: PushyDeviceCountAggregateOutputType | null
+    _avg: PushyDeviceAvgAggregateOutputType | null
+    _sum: PushyDeviceSumAggregateOutputType | null
+    _min: PushyDeviceMinAggregateOutputType | null
+    _max: PushyDeviceMaxAggregateOutputType | null
+  }
+
+  export type PushyDeviceAvgAggregateOutputType = {
+    id: number | null
+    tenantUserId: number | null
+  }
+
+  export type PushyDeviceSumAggregateOutputType = {
+    id: number | null
+    tenantUserId: number | null
+  }
+
+  export type PushyDeviceMinAggregateOutputType = {
+    id: number | null
+    tenantUserId: number | null
+    deviceToken: string | null
+    platform: string | null
+    deviceName: string | null
+    appVersion: string | null
+    isActive: boolean | null
+    lastActiveAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PushyDeviceMaxAggregateOutputType = {
+    id: number | null
+    tenantUserId: number | null
+    deviceToken: string | null
+    platform: string | null
+    deviceName: string | null
+    appVersion: string | null
+    isActive: boolean | null
+    lastActiveAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PushyDeviceCountAggregateOutputType = {
+    id: number
+    tenantUserId: number
+    deviceToken: number
+    platform: number
+    deviceName: number
+    appVersion: number
+    isActive: number
+    lastActiveAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PushyDeviceAvgAggregateInputType = {
+    id?: true
+    tenantUserId?: true
+  }
+
+  export type PushyDeviceSumAggregateInputType = {
+    id?: true
+    tenantUserId?: true
+  }
+
+  export type PushyDeviceMinAggregateInputType = {
+    id?: true
+    tenantUserId?: true
+    deviceToken?: true
+    platform?: true
+    deviceName?: true
+    appVersion?: true
+    isActive?: true
+    lastActiveAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PushyDeviceMaxAggregateInputType = {
+    id?: true
+    tenantUserId?: true
+    deviceToken?: true
+    platform?: true
+    deviceName?: true
+    appVersion?: true
+    isActive?: true
+    lastActiveAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PushyDeviceCountAggregateInputType = {
+    id?: true
+    tenantUserId?: true
+    deviceToken?: true
+    platform?: true
+    deviceName?: true
+    appVersion?: true
+    isActive?: true
+    lastActiveAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PushyDeviceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PushyDevice to aggregate.
+     */
+    where?: PushyDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDevices to fetch.
+     */
+    orderBy?: PushyDeviceOrderByWithRelationInput | PushyDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PushyDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDevices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PushyDevices
+    **/
+    _count?: true | PushyDeviceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PushyDeviceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PushyDeviceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PushyDeviceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PushyDeviceMaxAggregateInputType
+  }
+
+  export type GetPushyDeviceAggregateType<T extends PushyDeviceAggregateArgs> = {
+        [P in keyof T & keyof AggregatePushyDevice]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePushyDevice[P]>
+      : GetScalarType<T[P], AggregatePushyDevice[P]>
+  }
+
+
+
+
+  export type PushyDeviceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PushyDeviceWhereInput
+    orderBy?: PushyDeviceOrderByWithAggregationInput | PushyDeviceOrderByWithAggregationInput[]
+    by: PushyDeviceScalarFieldEnum[] | PushyDeviceScalarFieldEnum
+    having?: PushyDeviceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PushyDeviceCountAggregateInputType | true
+    _avg?: PushyDeviceAvgAggregateInputType
+    _sum?: PushyDeviceSumAggregateInputType
+    _min?: PushyDeviceMinAggregateInputType
+    _max?: PushyDeviceMaxAggregateInputType
+  }
+
+  export type PushyDeviceGroupByOutputType = {
+    id: number
+    tenantUserId: number
+    deviceToken: string
+    platform: string
+    deviceName: string | null
+    appVersion: string | null
+    isActive: boolean
+    lastActiveAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: PushyDeviceCountAggregateOutputType | null
+    _avg: PushyDeviceAvgAggregateOutputType | null
+    _sum: PushyDeviceSumAggregateOutputType | null
+    _min: PushyDeviceMinAggregateOutputType | null
+    _max: PushyDeviceMaxAggregateOutputType | null
+  }
+
+  type GetPushyDeviceGroupByPayload<T extends PushyDeviceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PushyDeviceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PushyDeviceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PushyDeviceGroupByOutputType[P]>
+            : GetScalarType<T[P], PushyDeviceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PushyDeviceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantUserId?: boolean
+    deviceToken?: boolean
+    platform?: boolean
+    deviceName?: boolean
+    appVersion?: boolean
+    isActive?: boolean
+    lastActiveAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    tenantUser?: boolean | TenantUserDefaultArgs<ExtArgs>
+    subscriptions?: boolean | PushyDevice$subscriptionsArgs<ExtArgs>
+    allocation?: boolean | PushyDevice$allocationArgs<ExtArgs>
+    _count?: boolean | PushyDeviceCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["pushyDevice"]>
+
+
+
+  export type PushyDeviceSelectScalar = {
+    id?: boolean
+    tenantUserId?: boolean
+    deviceToken?: boolean
+    platform?: boolean
+    deviceName?: boolean
+    appVersion?: boolean
+    isActive?: boolean
+    lastActiveAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PushyDeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantUserId" | "deviceToken" | "platform" | "deviceName" | "appVersion" | "isActive" | "lastActiveAt" | "createdAt" | "updatedAt", ExtArgs["result"]["pushyDevice"]>
+  export type PushyDeviceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenantUser?: boolean | TenantUserDefaultArgs<ExtArgs>
+    subscriptions?: boolean | PushyDevice$subscriptionsArgs<ExtArgs>
+    allocation?: boolean | PushyDevice$allocationArgs<ExtArgs>
+    _count?: boolean | PushyDeviceCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $PushyDevicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PushyDevice"
+    objects: {
+      tenantUser: Prisma.$TenantUserPayload<ExtArgs>
+      subscriptions: Prisma.$PushySubscriptionPayload<ExtArgs>[]
+      allocation: Prisma.$PushyDeviceAllocationPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      tenantUserId: number
+      deviceToken: string
+      platform: string
+      deviceName: string | null
+      appVersion: string | null
+      isActive: boolean
+      lastActiveAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["pushyDevice"]>
+    composites: {}
+  }
+
+  type PushyDeviceGetPayload<S extends boolean | null | undefined | PushyDeviceDefaultArgs> = $Result.GetResult<Prisma.$PushyDevicePayload, S>
+
+  type PushyDeviceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PushyDeviceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PushyDeviceCountAggregateInputType | true
+    }
+
+  export interface PushyDeviceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PushyDevice'], meta: { name: 'PushyDevice' } }
+    /**
+     * Find zero or one PushyDevice that matches the filter.
+     * @param {PushyDeviceFindUniqueArgs} args - Arguments to find a PushyDevice
+     * @example
+     * // Get one PushyDevice
+     * const pushyDevice = await prisma.pushyDevice.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PushyDeviceFindUniqueArgs>(args: SelectSubset<T, PushyDeviceFindUniqueArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PushyDevice that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PushyDeviceFindUniqueOrThrowArgs} args - Arguments to find a PushyDevice
+     * @example
+     * // Get one PushyDevice
+     * const pushyDevice = await prisma.pushyDevice.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PushyDeviceFindUniqueOrThrowArgs>(args: SelectSubset<T, PushyDeviceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PushyDevice that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceFindFirstArgs} args - Arguments to find a PushyDevice
+     * @example
+     * // Get one PushyDevice
+     * const pushyDevice = await prisma.pushyDevice.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PushyDeviceFindFirstArgs>(args?: SelectSubset<T, PushyDeviceFindFirstArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PushyDevice that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceFindFirstOrThrowArgs} args - Arguments to find a PushyDevice
+     * @example
+     * // Get one PushyDevice
+     * const pushyDevice = await prisma.pushyDevice.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PushyDeviceFindFirstOrThrowArgs>(args?: SelectSubset<T, PushyDeviceFindFirstOrThrowArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PushyDevices that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PushyDevices
+     * const pushyDevices = await prisma.pushyDevice.findMany()
+     * 
+     * // Get first 10 PushyDevices
+     * const pushyDevices = await prisma.pushyDevice.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const pushyDeviceWithIdOnly = await prisma.pushyDevice.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PushyDeviceFindManyArgs>(args?: SelectSubset<T, PushyDeviceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PushyDevice.
+     * @param {PushyDeviceCreateArgs} args - Arguments to create a PushyDevice.
+     * @example
+     * // Create one PushyDevice
+     * const PushyDevice = await prisma.pushyDevice.create({
+     *   data: {
+     *     // ... data to create a PushyDevice
+     *   }
+     * })
+     * 
+     */
+    create<T extends PushyDeviceCreateArgs>(args: SelectSubset<T, PushyDeviceCreateArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PushyDevices.
+     * @param {PushyDeviceCreateManyArgs} args - Arguments to create many PushyDevices.
+     * @example
+     * // Create many PushyDevices
+     * const pushyDevice = await prisma.pushyDevice.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PushyDeviceCreateManyArgs>(args?: SelectSubset<T, PushyDeviceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PushyDevice.
+     * @param {PushyDeviceDeleteArgs} args - Arguments to delete one PushyDevice.
+     * @example
+     * // Delete one PushyDevice
+     * const PushyDevice = await prisma.pushyDevice.delete({
+     *   where: {
+     *     // ... filter to delete one PushyDevice
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PushyDeviceDeleteArgs>(args: SelectSubset<T, PushyDeviceDeleteArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PushyDevice.
+     * @param {PushyDeviceUpdateArgs} args - Arguments to update one PushyDevice.
+     * @example
+     * // Update one PushyDevice
+     * const pushyDevice = await prisma.pushyDevice.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PushyDeviceUpdateArgs>(args: SelectSubset<T, PushyDeviceUpdateArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PushyDevices.
+     * @param {PushyDeviceDeleteManyArgs} args - Arguments to filter PushyDevices to delete.
+     * @example
+     * // Delete a few PushyDevices
+     * const { count } = await prisma.pushyDevice.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PushyDeviceDeleteManyArgs>(args?: SelectSubset<T, PushyDeviceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PushyDevices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PushyDevices
+     * const pushyDevice = await prisma.pushyDevice.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PushyDeviceUpdateManyArgs>(args: SelectSubset<T, PushyDeviceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PushyDevice.
+     * @param {PushyDeviceUpsertArgs} args - Arguments to update or create a PushyDevice.
+     * @example
+     * // Update or create a PushyDevice
+     * const pushyDevice = await prisma.pushyDevice.upsert({
+     *   create: {
+     *     // ... data to create a PushyDevice
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PushyDevice we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PushyDeviceUpsertArgs>(args: SelectSubset<T, PushyDeviceUpsertArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PushyDevices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceCountArgs} args - Arguments to filter PushyDevices to count.
+     * @example
+     * // Count the number of PushyDevices
+     * const count = await prisma.pushyDevice.count({
+     *   where: {
+     *     // ... the filter for the PushyDevices we want to count
+     *   }
+     * })
+    **/
+    count<T extends PushyDeviceCountArgs>(
+      args?: Subset<T, PushyDeviceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PushyDeviceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PushyDevice.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PushyDeviceAggregateArgs>(args: Subset<T, PushyDeviceAggregateArgs>): Prisma.PrismaPromise<GetPushyDeviceAggregateType<T>>
+
+    /**
+     * Group by PushyDevice.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PushyDeviceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PushyDeviceGroupByArgs['orderBy'] }
+        : { orderBy?: PushyDeviceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PushyDeviceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPushyDeviceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PushyDevice model
+   */
+  readonly fields: PushyDeviceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PushyDevice.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PushyDeviceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenantUser<T extends TenantUserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantUserDefaultArgs<ExtArgs>>): Prisma__TenantUserClient<$Result.GetResult<Prisma.$TenantUserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    subscriptions<T extends PushyDevice$subscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, PushyDevice$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    allocation<T extends PushyDevice$allocationArgs<ExtArgs> = {}>(args?: Subset<T, PushyDevice$allocationArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PushyDevice model
+   */
+  interface PushyDeviceFieldRefs {
+    readonly id: FieldRef<"PushyDevice", 'Int'>
+    readonly tenantUserId: FieldRef<"PushyDevice", 'Int'>
+    readonly deviceToken: FieldRef<"PushyDevice", 'String'>
+    readonly platform: FieldRef<"PushyDevice", 'String'>
+    readonly deviceName: FieldRef<"PushyDevice", 'String'>
+    readonly appVersion: FieldRef<"PushyDevice", 'String'>
+    readonly isActive: FieldRef<"PushyDevice", 'Boolean'>
+    readonly lastActiveAt: FieldRef<"PushyDevice", 'DateTime'>
+    readonly createdAt: FieldRef<"PushyDevice", 'DateTime'>
+    readonly updatedAt: FieldRef<"PushyDevice", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PushyDevice findUnique
+   */
+  export type PushyDeviceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDevice to fetch.
+     */
+    where: PushyDeviceWhereUniqueInput
+  }
+
+  /**
+   * PushyDevice findUniqueOrThrow
+   */
+  export type PushyDeviceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDevice to fetch.
+     */
+    where: PushyDeviceWhereUniqueInput
+  }
+
+  /**
+   * PushyDevice findFirst
+   */
+  export type PushyDeviceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDevice to fetch.
+     */
+    where?: PushyDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDevices to fetch.
+     */
+    orderBy?: PushyDeviceOrderByWithRelationInput | PushyDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PushyDevices.
+     */
+    cursor?: PushyDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDevices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PushyDevices.
+     */
+    distinct?: PushyDeviceScalarFieldEnum | PushyDeviceScalarFieldEnum[]
+  }
+
+  /**
+   * PushyDevice findFirstOrThrow
+   */
+  export type PushyDeviceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDevice to fetch.
+     */
+    where?: PushyDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDevices to fetch.
+     */
+    orderBy?: PushyDeviceOrderByWithRelationInput | PushyDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PushyDevices.
+     */
+    cursor?: PushyDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDevices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PushyDevices.
+     */
+    distinct?: PushyDeviceScalarFieldEnum | PushyDeviceScalarFieldEnum[]
+  }
+
+  /**
+   * PushyDevice findMany
+   */
+  export type PushyDeviceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDevices to fetch.
+     */
+    where?: PushyDeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDevices to fetch.
+     */
+    orderBy?: PushyDeviceOrderByWithRelationInput | PushyDeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PushyDevices.
+     */
+    cursor?: PushyDeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDevices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDevices.
+     */
+    skip?: number
+    distinct?: PushyDeviceScalarFieldEnum | PushyDeviceScalarFieldEnum[]
+  }
+
+  /**
+   * PushyDevice create
+   */
+  export type PushyDeviceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PushyDevice.
+     */
+    data: XOR<PushyDeviceCreateInput, PushyDeviceUncheckedCreateInput>
+  }
+
+  /**
+   * PushyDevice createMany
+   */
+  export type PushyDeviceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PushyDevices.
+     */
+    data: PushyDeviceCreateManyInput | PushyDeviceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PushyDevice update
+   */
+  export type PushyDeviceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PushyDevice.
+     */
+    data: XOR<PushyDeviceUpdateInput, PushyDeviceUncheckedUpdateInput>
+    /**
+     * Choose, which PushyDevice to update.
+     */
+    where: PushyDeviceWhereUniqueInput
+  }
+
+  /**
+   * PushyDevice updateMany
+   */
+  export type PushyDeviceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PushyDevices.
+     */
+    data: XOR<PushyDeviceUpdateManyMutationInput, PushyDeviceUncheckedUpdateManyInput>
+    /**
+     * Filter which PushyDevices to update
+     */
+    where?: PushyDeviceWhereInput
+    /**
+     * Limit how many PushyDevices to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PushyDevice upsert
+   */
+  export type PushyDeviceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PushyDevice to update in case it exists.
+     */
+    where: PushyDeviceWhereUniqueInput
+    /**
+     * In case the PushyDevice found by the `where` argument doesn't exist, create a new PushyDevice with this data.
+     */
+    create: XOR<PushyDeviceCreateInput, PushyDeviceUncheckedCreateInput>
+    /**
+     * In case the PushyDevice was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PushyDeviceUpdateInput, PushyDeviceUncheckedUpdateInput>
+  }
+
+  /**
+   * PushyDevice delete
+   */
+  export type PushyDeviceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+    /**
+     * Filter which PushyDevice to delete.
+     */
+    where: PushyDeviceWhereUniqueInput
+  }
+
+  /**
+   * PushyDevice deleteMany
+   */
+  export type PushyDeviceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PushyDevices to delete
+     */
+    where?: PushyDeviceWhereInput
+    /**
+     * Limit how many PushyDevices to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PushyDevice.subscriptions
+   */
+  export type PushyDevice$subscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    where?: PushySubscriptionWhereInput
+    orderBy?: PushySubscriptionOrderByWithRelationInput | PushySubscriptionOrderByWithRelationInput[]
+    cursor?: PushySubscriptionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PushySubscriptionScalarFieldEnum | PushySubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * PushyDevice.allocation
+   */
+  export type PushyDevice$allocationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    where?: PushyDeviceAllocationWhereInput
+  }
+
+  /**
+   * PushyDevice without action
+   */
+  export type PushyDeviceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDevice
+     */
+    select?: PushyDeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDevice
+     */
+    omit?: PushyDeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PushySubscription
+   */
+
+  export type AggregatePushySubscription = {
+    _count: PushySubscriptionCountAggregateOutputType | null
+    _avg: PushySubscriptionAvgAggregateOutputType | null
+    _sum: PushySubscriptionSumAggregateOutputType | null
+    _min: PushySubscriptionMinAggregateOutputType | null
+    _max: PushySubscriptionMaxAggregateOutputType | null
+  }
+
+  export type PushySubscriptionAvgAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+  }
+
+  export type PushySubscriptionSumAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+  }
+
+  export type PushySubscriptionMinAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+    topic: string | null
+    subscribedAt: Date | null
+  }
+
+  export type PushySubscriptionMaxAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+    topic: string | null
+    subscribedAt: Date | null
+  }
+
+  export type PushySubscriptionCountAggregateOutputType = {
+    id: number
+    deviceId: number
+    topic: number
+    subscribedAt: number
+    _all: number
+  }
+
+
+  export type PushySubscriptionAvgAggregateInputType = {
+    id?: true
+    deviceId?: true
+  }
+
+  export type PushySubscriptionSumAggregateInputType = {
+    id?: true
+    deviceId?: true
+  }
+
+  export type PushySubscriptionMinAggregateInputType = {
+    id?: true
+    deviceId?: true
+    topic?: true
+    subscribedAt?: true
+  }
+
+  export type PushySubscriptionMaxAggregateInputType = {
+    id?: true
+    deviceId?: true
+    topic?: true
+    subscribedAt?: true
+  }
+
+  export type PushySubscriptionCountAggregateInputType = {
+    id?: true
+    deviceId?: true
+    topic?: true
+    subscribedAt?: true
+    _all?: true
+  }
+
+  export type PushySubscriptionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PushySubscription to aggregate.
+     */
+    where?: PushySubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushySubscriptions to fetch.
+     */
+    orderBy?: PushySubscriptionOrderByWithRelationInput | PushySubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PushySubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushySubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushySubscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PushySubscriptions
+    **/
+    _count?: true | PushySubscriptionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PushySubscriptionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PushySubscriptionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PushySubscriptionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PushySubscriptionMaxAggregateInputType
+  }
+
+  export type GetPushySubscriptionAggregateType<T extends PushySubscriptionAggregateArgs> = {
+        [P in keyof T & keyof AggregatePushySubscription]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePushySubscription[P]>
+      : GetScalarType<T[P], AggregatePushySubscription[P]>
+  }
+
+
+
+
+  export type PushySubscriptionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PushySubscriptionWhereInput
+    orderBy?: PushySubscriptionOrderByWithAggregationInput | PushySubscriptionOrderByWithAggregationInput[]
+    by: PushySubscriptionScalarFieldEnum[] | PushySubscriptionScalarFieldEnum
+    having?: PushySubscriptionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PushySubscriptionCountAggregateInputType | true
+    _avg?: PushySubscriptionAvgAggregateInputType
+    _sum?: PushySubscriptionSumAggregateInputType
+    _min?: PushySubscriptionMinAggregateInputType
+    _max?: PushySubscriptionMaxAggregateInputType
+  }
+
+  export type PushySubscriptionGroupByOutputType = {
+    id: number
+    deviceId: number
+    topic: string
+    subscribedAt: Date
+    _count: PushySubscriptionCountAggregateOutputType | null
+    _avg: PushySubscriptionAvgAggregateOutputType | null
+    _sum: PushySubscriptionSumAggregateOutputType | null
+    _min: PushySubscriptionMinAggregateOutputType | null
+    _max: PushySubscriptionMaxAggregateOutputType | null
+  }
+
+  type GetPushySubscriptionGroupByPayload<T extends PushySubscriptionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PushySubscriptionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PushySubscriptionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PushySubscriptionGroupByOutputType[P]>
+            : GetScalarType<T[P], PushySubscriptionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PushySubscriptionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    deviceId?: boolean
+    topic?: boolean
+    subscribedAt?: boolean
+    device?: boolean | PushyDeviceDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["pushySubscription"]>
+
+
+
+  export type PushySubscriptionSelectScalar = {
+    id?: boolean
+    deviceId?: boolean
+    topic?: boolean
+    subscribedAt?: boolean
+  }
+
+  export type PushySubscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "deviceId" | "topic" | "subscribedAt", ExtArgs["result"]["pushySubscription"]>
+  export type PushySubscriptionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    device?: boolean | PushyDeviceDefaultArgs<ExtArgs>
+  }
+
+  export type $PushySubscriptionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PushySubscription"
+    objects: {
+      device: Prisma.$PushyDevicePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      deviceId: number
+      topic: string
+      subscribedAt: Date
+    }, ExtArgs["result"]["pushySubscription"]>
+    composites: {}
+  }
+
+  type PushySubscriptionGetPayload<S extends boolean | null | undefined | PushySubscriptionDefaultArgs> = $Result.GetResult<Prisma.$PushySubscriptionPayload, S>
+
+  type PushySubscriptionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PushySubscriptionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PushySubscriptionCountAggregateInputType | true
+    }
+
+  export interface PushySubscriptionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PushySubscription'], meta: { name: 'PushySubscription' } }
+    /**
+     * Find zero or one PushySubscription that matches the filter.
+     * @param {PushySubscriptionFindUniqueArgs} args - Arguments to find a PushySubscription
+     * @example
+     * // Get one PushySubscription
+     * const pushySubscription = await prisma.pushySubscription.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PushySubscriptionFindUniqueArgs>(args: SelectSubset<T, PushySubscriptionFindUniqueArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PushySubscription that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PushySubscriptionFindUniqueOrThrowArgs} args - Arguments to find a PushySubscription
+     * @example
+     * // Get one PushySubscription
+     * const pushySubscription = await prisma.pushySubscription.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PushySubscriptionFindUniqueOrThrowArgs>(args: SelectSubset<T, PushySubscriptionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PushySubscription that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushySubscriptionFindFirstArgs} args - Arguments to find a PushySubscription
+     * @example
+     * // Get one PushySubscription
+     * const pushySubscription = await prisma.pushySubscription.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PushySubscriptionFindFirstArgs>(args?: SelectSubset<T, PushySubscriptionFindFirstArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PushySubscription that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushySubscriptionFindFirstOrThrowArgs} args - Arguments to find a PushySubscription
+     * @example
+     * // Get one PushySubscription
+     * const pushySubscription = await prisma.pushySubscription.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PushySubscriptionFindFirstOrThrowArgs>(args?: SelectSubset<T, PushySubscriptionFindFirstOrThrowArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PushySubscriptions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushySubscriptionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PushySubscriptions
+     * const pushySubscriptions = await prisma.pushySubscription.findMany()
+     * 
+     * // Get first 10 PushySubscriptions
+     * const pushySubscriptions = await prisma.pushySubscription.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const pushySubscriptionWithIdOnly = await prisma.pushySubscription.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PushySubscriptionFindManyArgs>(args?: SelectSubset<T, PushySubscriptionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PushySubscription.
+     * @param {PushySubscriptionCreateArgs} args - Arguments to create a PushySubscription.
+     * @example
+     * // Create one PushySubscription
+     * const PushySubscription = await prisma.pushySubscription.create({
+     *   data: {
+     *     // ... data to create a PushySubscription
+     *   }
+     * })
+     * 
+     */
+    create<T extends PushySubscriptionCreateArgs>(args: SelectSubset<T, PushySubscriptionCreateArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PushySubscriptions.
+     * @param {PushySubscriptionCreateManyArgs} args - Arguments to create many PushySubscriptions.
+     * @example
+     * // Create many PushySubscriptions
+     * const pushySubscription = await prisma.pushySubscription.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PushySubscriptionCreateManyArgs>(args?: SelectSubset<T, PushySubscriptionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PushySubscription.
+     * @param {PushySubscriptionDeleteArgs} args - Arguments to delete one PushySubscription.
+     * @example
+     * // Delete one PushySubscription
+     * const PushySubscription = await prisma.pushySubscription.delete({
+     *   where: {
+     *     // ... filter to delete one PushySubscription
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PushySubscriptionDeleteArgs>(args: SelectSubset<T, PushySubscriptionDeleteArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PushySubscription.
+     * @param {PushySubscriptionUpdateArgs} args - Arguments to update one PushySubscription.
+     * @example
+     * // Update one PushySubscription
+     * const pushySubscription = await prisma.pushySubscription.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PushySubscriptionUpdateArgs>(args: SelectSubset<T, PushySubscriptionUpdateArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PushySubscriptions.
+     * @param {PushySubscriptionDeleteManyArgs} args - Arguments to filter PushySubscriptions to delete.
+     * @example
+     * // Delete a few PushySubscriptions
+     * const { count } = await prisma.pushySubscription.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PushySubscriptionDeleteManyArgs>(args?: SelectSubset<T, PushySubscriptionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PushySubscriptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushySubscriptionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PushySubscriptions
+     * const pushySubscription = await prisma.pushySubscription.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PushySubscriptionUpdateManyArgs>(args: SelectSubset<T, PushySubscriptionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PushySubscription.
+     * @param {PushySubscriptionUpsertArgs} args - Arguments to update or create a PushySubscription.
+     * @example
+     * // Update or create a PushySubscription
+     * const pushySubscription = await prisma.pushySubscription.upsert({
+     *   create: {
+     *     // ... data to create a PushySubscription
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PushySubscription we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PushySubscriptionUpsertArgs>(args: SelectSubset<T, PushySubscriptionUpsertArgs<ExtArgs>>): Prisma__PushySubscriptionClient<$Result.GetResult<Prisma.$PushySubscriptionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PushySubscriptions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushySubscriptionCountArgs} args - Arguments to filter PushySubscriptions to count.
+     * @example
+     * // Count the number of PushySubscriptions
+     * const count = await prisma.pushySubscription.count({
+     *   where: {
+     *     // ... the filter for the PushySubscriptions we want to count
+     *   }
+     * })
+    **/
+    count<T extends PushySubscriptionCountArgs>(
+      args?: Subset<T, PushySubscriptionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PushySubscriptionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PushySubscription.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushySubscriptionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PushySubscriptionAggregateArgs>(args: Subset<T, PushySubscriptionAggregateArgs>): Prisma.PrismaPromise<GetPushySubscriptionAggregateType<T>>
+
+    /**
+     * Group by PushySubscription.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushySubscriptionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PushySubscriptionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PushySubscriptionGroupByArgs['orderBy'] }
+        : { orderBy?: PushySubscriptionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PushySubscriptionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPushySubscriptionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PushySubscription model
+   */
+  readonly fields: PushySubscriptionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PushySubscription.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PushySubscriptionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    device<T extends PushyDeviceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PushyDeviceDefaultArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PushySubscription model
+   */
+  interface PushySubscriptionFieldRefs {
+    readonly id: FieldRef<"PushySubscription", 'Int'>
+    readonly deviceId: FieldRef<"PushySubscription", 'Int'>
+    readonly topic: FieldRef<"PushySubscription", 'String'>
+    readonly subscribedAt: FieldRef<"PushySubscription", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PushySubscription findUnique
+   */
+  export type PushySubscriptionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PushySubscription to fetch.
+     */
+    where: PushySubscriptionWhereUniqueInput
+  }
+
+  /**
+   * PushySubscription findUniqueOrThrow
+   */
+  export type PushySubscriptionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PushySubscription to fetch.
+     */
+    where: PushySubscriptionWhereUniqueInput
+  }
+
+  /**
+   * PushySubscription findFirst
+   */
+  export type PushySubscriptionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PushySubscription to fetch.
+     */
+    where?: PushySubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushySubscriptions to fetch.
+     */
+    orderBy?: PushySubscriptionOrderByWithRelationInput | PushySubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PushySubscriptions.
+     */
+    cursor?: PushySubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushySubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushySubscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PushySubscriptions.
+     */
+    distinct?: PushySubscriptionScalarFieldEnum | PushySubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * PushySubscription findFirstOrThrow
+   */
+  export type PushySubscriptionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PushySubscription to fetch.
+     */
+    where?: PushySubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushySubscriptions to fetch.
+     */
+    orderBy?: PushySubscriptionOrderByWithRelationInput | PushySubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PushySubscriptions.
+     */
+    cursor?: PushySubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushySubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushySubscriptions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PushySubscriptions.
+     */
+    distinct?: PushySubscriptionScalarFieldEnum | PushySubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * PushySubscription findMany
+   */
+  export type PushySubscriptionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter, which PushySubscriptions to fetch.
+     */
+    where?: PushySubscriptionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushySubscriptions to fetch.
+     */
+    orderBy?: PushySubscriptionOrderByWithRelationInput | PushySubscriptionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PushySubscriptions.
+     */
+    cursor?: PushySubscriptionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushySubscriptions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushySubscriptions.
+     */
+    skip?: number
+    distinct?: PushySubscriptionScalarFieldEnum | PushySubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * PushySubscription create
+   */
+  export type PushySubscriptionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PushySubscription.
+     */
+    data: XOR<PushySubscriptionCreateInput, PushySubscriptionUncheckedCreateInput>
+  }
+
+  /**
+   * PushySubscription createMany
+   */
+  export type PushySubscriptionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PushySubscriptions.
+     */
+    data: PushySubscriptionCreateManyInput | PushySubscriptionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PushySubscription update
+   */
+  export type PushySubscriptionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PushySubscription.
+     */
+    data: XOR<PushySubscriptionUpdateInput, PushySubscriptionUncheckedUpdateInput>
+    /**
+     * Choose, which PushySubscription to update.
+     */
+    where: PushySubscriptionWhereUniqueInput
+  }
+
+  /**
+   * PushySubscription updateMany
+   */
+  export type PushySubscriptionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PushySubscriptions.
+     */
+    data: XOR<PushySubscriptionUpdateManyMutationInput, PushySubscriptionUncheckedUpdateManyInput>
+    /**
+     * Filter which PushySubscriptions to update
+     */
+    where?: PushySubscriptionWhereInput
+    /**
+     * Limit how many PushySubscriptions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PushySubscription upsert
+   */
+  export type PushySubscriptionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PushySubscription to update in case it exists.
+     */
+    where: PushySubscriptionWhereUniqueInput
+    /**
+     * In case the PushySubscription found by the `where` argument doesn't exist, create a new PushySubscription with this data.
+     */
+    create: XOR<PushySubscriptionCreateInput, PushySubscriptionUncheckedCreateInput>
+    /**
+     * In case the PushySubscription was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PushySubscriptionUpdateInput, PushySubscriptionUncheckedUpdateInput>
+  }
+
+  /**
+   * PushySubscription delete
+   */
+  export type PushySubscriptionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+    /**
+     * Filter which PushySubscription to delete.
+     */
+    where: PushySubscriptionWhereUniqueInput
+  }
+
+  /**
+   * PushySubscription deleteMany
+   */
+  export type PushySubscriptionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PushySubscriptions to delete
+     */
+    where?: PushySubscriptionWhereInput
+    /**
+     * Limit how many PushySubscriptions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PushySubscription without action
+   */
+  export type PushySubscriptionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushySubscription
+     */
+    select?: PushySubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushySubscription
+     */
+    omit?: PushySubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushySubscriptionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PushyDeviceAllocation
+   */
+
+  export type AggregatePushyDeviceAllocation = {
+    _count: PushyDeviceAllocationCountAggregateOutputType | null
+    _avg: PushyDeviceAllocationAvgAggregateOutputType | null
+    _sum: PushyDeviceAllocationSumAggregateOutputType | null
+    _min: PushyDeviceAllocationMinAggregateOutputType | null
+    _max: PushyDeviceAllocationMaxAggregateOutputType | null
+  }
+
+  export type PushyDeviceAllocationAvgAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+    tenantId: number | null
+    subscriptionId: number | null
+    addOnId: number | null
+  }
+
+  export type PushyDeviceAllocationSumAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+    tenantId: number | null
+    subscriptionId: number | null
+    addOnId: number | null
+  }
+
+  export type PushyDeviceAllocationMinAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+    tenantId: number | null
+    subscriptionId: number | null
+    addOnId: number | null
+    allocationType: string | null
+    activatedAt: Date | null
+    expiresAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type PushyDeviceAllocationMaxAggregateOutputType = {
+    id: number | null
+    deviceId: number | null
+    tenantId: number | null
+    subscriptionId: number | null
+    addOnId: number | null
+    allocationType: string | null
+    activatedAt: Date | null
+    expiresAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type PushyDeviceAllocationCountAggregateOutputType = {
+    id: number
+    deviceId: number
+    tenantId: number
+    subscriptionId: number
+    addOnId: number
+    allocationType: number
+    activatedAt: number
+    expiresAt: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type PushyDeviceAllocationAvgAggregateInputType = {
+    id?: true
+    deviceId?: true
+    tenantId?: true
+    subscriptionId?: true
+    addOnId?: true
+  }
+
+  export type PushyDeviceAllocationSumAggregateInputType = {
+    id?: true
+    deviceId?: true
+    tenantId?: true
+    subscriptionId?: true
+    addOnId?: true
+  }
+
+  export type PushyDeviceAllocationMinAggregateInputType = {
+    id?: true
+    deviceId?: true
+    tenantId?: true
+    subscriptionId?: true
+    addOnId?: true
+    allocationType?: true
+    activatedAt?: true
+    expiresAt?: true
+    createdAt?: true
+  }
+
+  export type PushyDeviceAllocationMaxAggregateInputType = {
+    id?: true
+    deviceId?: true
+    tenantId?: true
+    subscriptionId?: true
+    addOnId?: true
+    allocationType?: true
+    activatedAt?: true
+    expiresAt?: true
+    createdAt?: true
+  }
+
+  export type PushyDeviceAllocationCountAggregateInputType = {
+    id?: true
+    deviceId?: true
+    tenantId?: true
+    subscriptionId?: true
+    addOnId?: true
+    allocationType?: true
+    activatedAt?: true
+    expiresAt?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type PushyDeviceAllocationAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PushyDeviceAllocation to aggregate.
+     */
+    where?: PushyDeviceAllocationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDeviceAllocations to fetch.
+     */
+    orderBy?: PushyDeviceAllocationOrderByWithRelationInput | PushyDeviceAllocationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PushyDeviceAllocationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDeviceAllocations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDeviceAllocations.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PushyDeviceAllocations
+    **/
+    _count?: true | PushyDeviceAllocationCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PushyDeviceAllocationAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PushyDeviceAllocationSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PushyDeviceAllocationMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PushyDeviceAllocationMaxAggregateInputType
+  }
+
+  export type GetPushyDeviceAllocationAggregateType<T extends PushyDeviceAllocationAggregateArgs> = {
+        [P in keyof T & keyof AggregatePushyDeviceAllocation]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePushyDeviceAllocation[P]>
+      : GetScalarType<T[P], AggregatePushyDeviceAllocation[P]>
+  }
+
+
+
+
+  export type PushyDeviceAllocationGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PushyDeviceAllocationWhereInput
+    orderBy?: PushyDeviceAllocationOrderByWithAggregationInput | PushyDeviceAllocationOrderByWithAggregationInput[]
+    by: PushyDeviceAllocationScalarFieldEnum[] | PushyDeviceAllocationScalarFieldEnum
+    having?: PushyDeviceAllocationScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PushyDeviceAllocationCountAggregateInputType | true
+    _avg?: PushyDeviceAllocationAvgAggregateInputType
+    _sum?: PushyDeviceAllocationSumAggregateInputType
+    _min?: PushyDeviceAllocationMinAggregateInputType
+    _max?: PushyDeviceAllocationMaxAggregateInputType
+  }
+
+  export type PushyDeviceAllocationGroupByOutputType = {
+    id: number
+    deviceId: number
+    tenantId: number
+    subscriptionId: number | null
+    addOnId: number | null
+    allocationType: string
+    activatedAt: Date
+    expiresAt: Date | null
+    createdAt: Date
+    _count: PushyDeviceAllocationCountAggregateOutputType | null
+    _avg: PushyDeviceAllocationAvgAggregateOutputType | null
+    _sum: PushyDeviceAllocationSumAggregateOutputType | null
+    _min: PushyDeviceAllocationMinAggregateOutputType | null
+    _max: PushyDeviceAllocationMaxAggregateOutputType | null
+  }
+
+  type GetPushyDeviceAllocationGroupByPayload<T extends PushyDeviceAllocationGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PushyDeviceAllocationGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PushyDeviceAllocationGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PushyDeviceAllocationGroupByOutputType[P]>
+            : GetScalarType<T[P], PushyDeviceAllocationGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PushyDeviceAllocationSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    deviceId?: boolean
+    tenantId?: boolean
+    subscriptionId?: boolean
+    addOnId?: boolean
+    allocationType?: boolean
+    activatedAt?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+    device?: boolean | PushyDeviceDefaultArgs<ExtArgs>
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    subscription?: boolean | PushyDeviceAllocation$subscriptionArgs<ExtArgs>
+  }, ExtArgs["result"]["pushyDeviceAllocation"]>
+
+
+
+  export type PushyDeviceAllocationSelectScalar = {
+    id?: boolean
+    deviceId?: boolean
+    tenantId?: boolean
+    subscriptionId?: boolean
+    addOnId?: boolean
+    allocationType?: boolean
+    activatedAt?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+  }
+
+  export type PushyDeviceAllocationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "deviceId" | "tenantId" | "subscriptionId" | "addOnId" | "allocationType" | "activatedAt" | "expiresAt" | "createdAt", ExtArgs["result"]["pushyDeviceAllocation"]>
+  export type PushyDeviceAllocationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    device?: boolean | PushyDeviceDefaultArgs<ExtArgs>
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    subscription?: boolean | PushyDeviceAllocation$subscriptionArgs<ExtArgs>
+  }
+
+  export type $PushyDeviceAllocationPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PushyDeviceAllocation"
+    objects: {
+      device: Prisma.$PushyDevicePayload<ExtArgs>
+      tenant: Prisma.$TenantPayload<ExtArgs>
+      subscription: Prisma.$TenantSubscriptionPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      deviceId: number
+      tenantId: number
+      subscriptionId: number | null
+      addOnId: number | null
+      allocationType: string
+      activatedAt: Date
+      expiresAt: Date | null
+      createdAt: Date
+    }, ExtArgs["result"]["pushyDeviceAllocation"]>
+    composites: {}
+  }
+
+  type PushyDeviceAllocationGetPayload<S extends boolean | null | undefined | PushyDeviceAllocationDefaultArgs> = $Result.GetResult<Prisma.$PushyDeviceAllocationPayload, S>
+
+  type PushyDeviceAllocationCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PushyDeviceAllocationFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PushyDeviceAllocationCountAggregateInputType | true
+    }
+
+  export interface PushyDeviceAllocationDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PushyDeviceAllocation'], meta: { name: 'PushyDeviceAllocation' } }
+    /**
+     * Find zero or one PushyDeviceAllocation that matches the filter.
+     * @param {PushyDeviceAllocationFindUniqueArgs} args - Arguments to find a PushyDeviceAllocation
+     * @example
+     * // Get one PushyDeviceAllocation
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PushyDeviceAllocationFindUniqueArgs>(args: SelectSubset<T, PushyDeviceAllocationFindUniqueArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PushyDeviceAllocation that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PushyDeviceAllocationFindUniqueOrThrowArgs} args - Arguments to find a PushyDeviceAllocation
+     * @example
+     * // Get one PushyDeviceAllocation
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PushyDeviceAllocationFindUniqueOrThrowArgs>(args: SelectSubset<T, PushyDeviceAllocationFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PushyDeviceAllocation that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAllocationFindFirstArgs} args - Arguments to find a PushyDeviceAllocation
+     * @example
+     * // Get one PushyDeviceAllocation
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PushyDeviceAllocationFindFirstArgs>(args?: SelectSubset<T, PushyDeviceAllocationFindFirstArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PushyDeviceAllocation that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAllocationFindFirstOrThrowArgs} args - Arguments to find a PushyDeviceAllocation
+     * @example
+     * // Get one PushyDeviceAllocation
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PushyDeviceAllocationFindFirstOrThrowArgs>(args?: SelectSubset<T, PushyDeviceAllocationFindFirstOrThrowArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PushyDeviceAllocations that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAllocationFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PushyDeviceAllocations
+     * const pushyDeviceAllocations = await prisma.pushyDeviceAllocation.findMany()
+     * 
+     * // Get first 10 PushyDeviceAllocations
+     * const pushyDeviceAllocations = await prisma.pushyDeviceAllocation.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const pushyDeviceAllocationWithIdOnly = await prisma.pushyDeviceAllocation.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PushyDeviceAllocationFindManyArgs>(args?: SelectSubset<T, PushyDeviceAllocationFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PushyDeviceAllocation.
+     * @param {PushyDeviceAllocationCreateArgs} args - Arguments to create a PushyDeviceAllocation.
+     * @example
+     * // Create one PushyDeviceAllocation
+     * const PushyDeviceAllocation = await prisma.pushyDeviceAllocation.create({
+     *   data: {
+     *     // ... data to create a PushyDeviceAllocation
+     *   }
+     * })
+     * 
+     */
+    create<T extends PushyDeviceAllocationCreateArgs>(args: SelectSubset<T, PushyDeviceAllocationCreateArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PushyDeviceAllocations.
+     * @param {PushyDeviceAllocationCreateManyArgs} args - Arguments to create many PushyDeviceAllocations.
+     * @example
+     * // Create many PushyDeviceAllocations
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PushyDeviceAllocationCreateManyArgs>(args?: SelectSubset<T, PushyDeviceAllocationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PushyDeviceAllocation.
+     * @param {PushyDeviceAllocationDeleteArgs} args - Arguments to delete one PushyDeviceAllocation.
+     * @example
+     * // Delete one PushyDeviceAllocation
+     * const PushyDeviceAllocation = await prisma.pushyDeviceAllocation.delete({
+     *   where: {
+     *     // ... filter to delete one PushyDeviceAllocation
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PushyDeviceAllocationDeleteArgs>(args: SelectSubset<T, PushyDeviceAllocationDeleteArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PushyDeviceAllocation.
+     * @param {PushyDeviceAllocationUpdateArgs} args - Arguments to update one PushyDeviceAllocation.
+     * @example
+     * // Update one PushyDeviceAllocation
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PushyDeviceAllocationUpdateArgs>(args: SelectSubset<T, PushyDeviceAllocationUpdateArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PushyDeviceAllocations.
+     * @param {PushyDeviceAllocationDeleteManyArgs} args - Arguments to filter PushyDeviceAllocations to delete.
+     * @example
+     * // Delete a few PushyDeviceAllocations
+     * const { count } = await prisma.pushyDeviceAllocation.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PushyDeviceAllocationDeleteManyArgs>(args?: SelectSubset<T, PushyDeviceAllocationDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PushyDeviceAllocations.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAllocationUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PushyDeviceAllocations
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PushyDeviceAllocationUpdateManyArgs>(args: SelectSubset<T, PushyDeviceAllocationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PushyDeviceAllocation.
+     * @param {PushyDeviceAllocationUpsertArgs} args - Arguments to update or create a PushyDeviceAllocation.
+     * @example
+     * // Update or create a PushyDeviceAllocation
+     * const pushyDeviceAllocation = await prisma.pushyDeviceAllocation.upsert({
+     *   create: {
+     *     // ... data to create a PushyDeviceAllocation
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PushyDeviceAllocation we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PushyDeviceAllocationUpsertArgs>(args: SelectSubset<T, PushyDeviceAllocationUpsertArgs<ExtArgs>>): Prisma__PushyDeviceAllocationClient<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PushyDeviceAllocations.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAllocationCountArgs} args - Arguments to filter PushyDeviceAllocations to count.
+     * @example
+     * // Count the number of PushyDeviceAllocations
+     * const count = await prisma.pushyDeviceAllocation.count({
+     *   where: {
+     *     // ... the filter for the PushyDeviceAllocations we want to count
+     *   }
+     * })
+    **/
+    count<T extends PushyDeviceAllocationCountArgs>(
+      args?: Subset<T, PushyDeviceAllocationCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PushyDeviceAllocationCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PushyDeviceAllocation.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAllocationAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PushyDeviceAllocationAggregateArgs>(args: Subset<T, PushyDeviceAllocationAggregateArgs>): Prisma.PrismaPromise<GetPushyDeviceAllocationAggregateType<T>>
+
+    /**
+     * Group by PushyDeviceAllocation.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PushyDeviceAllocationGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PushyDeviceAllocationGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PushyDeviceAllocationGroupByArgs['orderBy'] }
+        : { orderBy?: PushyDeviceAllocationGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PushyDeviceAllocationGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPushyDeviceAllocationGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PushyDeviceAllocation model
+   */
+  readonly fields: PushyDeviceAllocationFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PushyDeviceAllocation.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PushyDeviceAllocationClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    device<T extends PushyDeviceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PushyDeviceDefaultArgs<ExtArgs>>): Prisma__PushyDeviceClient<$Result.GetResult<Prisma.$PushyDevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    subscription<T extends PushyDeviceAllocation$subscriptionArgs<ExtArgs> = {}>(args?: Subset<T, PushyDeviceAllocation$subscriptionArgs<ExtArgs>>): Prisma__TenantSubscriptionClient<$Result.GetResult<Prisma.$TenantSubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PushyDeviceAllocation model
+   */
+  interface PushyDeviceAllocationFieldRefs {
+    readonly id: FieldRef<"PushyDeviceAllocation", 'Int'>
+    readonly deviceId: FieldRef<"PushyDeviceAllocation", 'Int'>
+    readonly tenantId: FieldRef<"PushyDeviceAllocation", 'Int'>
+    readonly subscriptionId: FieldRef<"PushyDeviceAllocation", 'Int'>
+    readonly addOnId: FieldRef<"PushyDeviceAllocation", 'Int'>
+    readonly allocationType: FieldRef<"PushyDeviceAllocation", 'String'>
+    readonly activatedAt: FieldRef<"PushyDeviceAllocation", 'DateTime'>
+    readonly expiresAt: FieldRef<"PushyDeviceAllocation", 'DateTime'>
+    readonly createdAt: FieldRef<"PushyDeviceAllocation", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PushyDeviceAllocation findUnique
+   */
+  export type PushyDeviceAllocationFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDeviceAllocation to fetch.
+     */
+    where: PushyDeviceAllocationWhereUniqueInput
+  }
+
+  /**
+   * PushyDeviceAllocation findUniqueOrThrow
+   */
+  export type PushyDeviceAllocationFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDeviceAllocation to fetch.
+     */
+    where: PushyDeviceAllocationWhereUniqueInput
+  }
+
+  /**
+   * PushyDeviceAllocation findFirst
+   */
+  export type PushyDeviceAllocationFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDeviceAllocation to fetch.
+     */
+    where?: PushyDeviceAllocationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDeviceAllocations to fetch.
+     */
+    orderBy?: PushyDeviceAllocationOrderByWithRelationInput | PushyDeviceAllocationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PushyDeviceAllocations.
+     */
+    cursor?: PushyDeviceAllocationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDeviceAllocations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDeviceAllocations.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PushyDeviceAllocations.
+     */
+    distinct?: PushyDeviceAllocationScalarFieldEnum | PushyDeviceAllocationScalarFieldEnum[]
+  }
+
+  /**
+   * PushyDeviceAllocation findFirstOrThrow
+   */
+  export type PushyDeviceAllocationFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDeviceAllocation to fetch.
+     */
+    where?: PushyDeviceAllocationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDeviceAllocations to fetch.
+     */
+    orderBy?: PushyDeviceAllocationOrderByWithRelationInput | PushyDeviceAllocationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PushyDeviceAllocations.
+     */
+    cursor?: PushyDeviceAllocationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDeviceAllocations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDeviceAllocations.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PushyDeviceAllocations.
+     */
+    distinct?: PushyDeviceAllocationScalarFieldEnum | PushyDeviceAllocationScalarFieldEnum[]
+  }
+
+  /**
+   * PushyDeviceAllocation findMany
+   */
+  export type PushyDeviceAllocationFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * Filter, which PushyDeviceAllocations to fetch.
+     */
+    where?: PushyDeviceAllocationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PushyDeviceAllocations to fetch.
+     */
+    orderBy?: PushyDeviceAllocationOrderByWithRelationInput | PushyDeviceAllocationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PushyDeviceAllocations.
+     */
+    cursor?: PushyDeviceAllocationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PushyDeviceAllocations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PushyDeviceAllocations.
+     */
+    skip?: number
+    distinct?: PushyDeviceAllocationScalarFieldEnum | PushyDeviceAllocationScalarFieldEnum[]
+  }
+
+  /**
+   * PushyDeviceAllocation create
+   */
+  export type PushyDeviceAllocationCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PushyDeviceAllocation.
+     */
+    data: XOR<PushyDeviceAllocationCreateInput, PushyDeviceAllocationUncheckedCreateInput>
+  }
+
+  /**
+   * PushyDeviceAllocation createMany
+   */
+  export type PushyDeviceAllocationCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PushyDeviceAllocations.
+     */
+    data: PushyDeviceAllocationCreateManyInput | PushyDeviceAllocationCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PushyDeviceAllocation update
+   */
+  export type PushyDeviceAllocationUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PushyDeviceAllocation.
+     */
+    data: XOR<PushyDeviceAllocationUpdateInput, PushyDeviceAllocationUncheckedUpdateInput>
+    /**
+     * Choose, which PushyDeviceAllocation to update.
+     */
+    where: PushyDeviceAllocationWhereUniqueInput
+  }
+
+  /**
+   * PushyDeviceAllocation updateMany
+   */
+  export type PushyDeviceAllocationUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PushyDeviceAllocations.
+     */
+    data: XOR<PushyDeviceAllocationUpdateManyMutationInput, PushyDeviceAllocationUncheckedUpdateManyInput>
+    /**
+     * Filter which PushyDeviceAllocations to update
+     */
+    where?: PushyDeviceAllocationWhereInput
+    /**
+     * Limit how many PushyDeviceAllocations to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PushyDeviceAllocation upsert
+   */
+  export type PushyDeviceAllocationUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PushyDeviceAllocation to update in case it exists.
+     */
+    where: PushyDeviceAllocationWhereUniqueInput
+    /**
+     * In case the PushyDeviceAllocation found by the `where` argument doesn't exist, create a new PushyDeviceAllocation with this data.
+     */
+    create: XOR<PushyDeviceAllocationCreateInput, PushyDeviceAllocationUncheckedCreateInput>
+    /**
+     * In case the PushyDeviceAllocation was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PushyDeviceAllocationUpdateInput, PushyDeviceAllocationUncheckedUpdateInput>
+  }
+
+  /**
+   * PushyDeviceAllocation delete
+   */
+  export type PushyDeviceAllocationDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+    /**
+     * Filter which PushyDeviceAllocation to delete.
+     */
+    where: PushyDeviceAllocationWhereUniqueInput
+  }
+
+  /**
+   * PushyDeviceAllocation deleteMany
+   */
+  export type PushyDeviceAllocationDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PushyDeviceAllocations to delete
+     */
+    where?: PushyDeviceAllocationWhereInput
+    /**
+     * Limit how many PushyDeviceAllocations to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PushyDeviceAllocation.subscription
+   */
+  export type PushyDeviceAllocation$subscriptionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantSubscription
+     */
+    select?: TenantSubscriptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantSubscription
+     */
+    omit?: TenantSubscriptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantSubscriptionInclude<ExtArgs> | null
+    where?: TenantSubscriptionWhereInput
+  }
+
+  /**
+   * PushyDeviceAllocation without action
+   */
+  export type PushyDeviceAllocationDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PushyDeviceAllocation
+     */
+    select?: PushyDeviceAllocationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PushyDeviceAllocation
+     */
+    omit?: PushyDeviceAllocationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PushyDeviceAllocationInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -11972,6 +15483,7 @@ export namespace Prisma {
     maxTransactions: 'maxTransactions',
     maxProducts: 'maxProducts',
     maxUsers: 'maxUsers',
+    maxDevices: 'maxDevices',
     description: 'description'
   };
 
@@ -12097,6 +15609,47 @@ export namespace Prisma {
   export type PermissionScalarFieldEnum = (typeof PermissionScalarFieldEnum)[keyof typeof PermissionScalarFieldEnum]
 
 
+  export const PushyDeviceScalarFieldEnum: {
+    id: 'id',
+    tenantUserId: 'tenantUserId',
+    deviceToken: 'deviceToken',
+    platform: 'platform',
+    deviceName: 'deviceName',
+    appVersion: 'appVersion',
+    isActive: 'isActive',
+    lastActiveAt: 'lastActiveAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PushyDeviceScalarFieldEnum = (typeof PushyDeviceScalarFieldEnum)[keyof typeof PushyDeviceScalarFieldEnum]
+
+
+  export const PushySubscriptionScalarFieldEnum: {
+    id: 'id',
+    deviceId: 'deviceId',
+    topic: 'topic',
+    subscribedAt: 'subscribedAt'
+  };
+
+  export type PushySubscriptionScalarFieldEnum = (typeof PushySubscriptionScalarFieldEnum)[keyof typeof PushySubscriptionScalarFieldEnum]
+
+
+  export const PushyDeviceAllocationScalarFieldEnum: {
+    id: 'id',
+    deviceId: 'deviceId',
+    tenantId: 'tenantId',
+    subscriptionId: 'subscriptionId',
+    addOnId: 'addOnId',
+    allocationType: 'allocationType',
+    activatedAt: 'activatedAt',
+    expiresAt: 'expiresAt',
+    createdAt: 'createdAt'
+  };
+
+  export type PushyDeviceAllocationScalarFieldEnum = (typeof PushyDeviceAllocationScalarFieldEnum)[keyof typeof PushyDeviceAllocationScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -12192,6 +15745,30 @@ export namespace Prisma {
   export type PermissionOrderByRelevanceFieldEnum = (typeof PermissionOrderByRelevanceFieldEnum)[keyof typeof PermissionOrderByRelevanceFieldEnum]
 
 
+  export const PushyDeviceOrderByRelevanceFieldEnum: {
+    deviceToken: 'deviceToken',
+    platform: 'platform',
+    deviceName: 'deviceName',
+    appVersion: 'appVersion'
+  };
+
+  export type PushyDeviceOrderByRelevanceFieldEnum = (typeof PushyDeviceOrderByRelevanceFieldEnum)[keyof typeof PushyDeviceOrderByRelevanceFieldEnum]
+
+
+  export const PushySubscriptionOrderByRelevanceFieldEnum: {
+    topic: 'topic'
+  };
+
+  export type PushySubscriptionOrderByRelevanceFieldEnum = (typeof PushySubscriptionOrderByRelevanceFieldEnum)[keyof typeof PushySubscriptionOrderByRelevanceFieldEnum]
+
+
+  export const PushyDeviceAllocationOrderByRelevanceFieldEnum: {
+    allocationType: 'allocationType'
+  };
+
+  export type PushyDeviceAllocationOrderByRelevanceFieldEnum = (typeof PushyDeviceAllocationOrderByRelevanceFieldEnum)[keyof typeof PushyDeviceAllocationOrderByRelevanceFieldEnum]
+
+
   /**
    * Field references
    */
@@ -12246,6 +15823,7 @@ export namespace Prisma {
     maxTransactions?: IntNullableFilter<"SubscriptionPlan"> | number | null
     maxProducts?: IntNullableFilter<"SubscriptionPlan"> | number | null
     maxUsers?: IntNullableFilter<"SubscriptionPlan"> | number | null
+    maxDevices?: IntNullableFilter<"SubscriptionPlan"> | number | null
     description?: StringNullableFilter<"SubscriptionPlan"> | string | null
     subscription?: TenantSubscriptionListRelationFilter
   }
@@ -12258,6 +15836,7 @@ export namespace Prisma {
     maxTransactions?: SortOrderInput | SortOrder
     maxProducts?: SortOrderInput | SortOrder
     maxUsers?: SortOrderInput | SortOrder
+    maxDevices?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     subscription?: TenantSubscriptionOrderByRelationAggregateInput
     _relevance?: SubscriptionPlanOrderByRelevanceInput
@@ -12274,6 +15853,7 @@ export namespace Prisma {
     maxTransactions?: IntNullableFilter<"SubscriptionPlan"> | number | null
     maxProducts?: IntNullableFilter<"SubscriptionPlan"> | number | null
     maxUsers?: IntNullableFilter<"SubscriptionPlan"> | number | null
+    maxDevices?: IntNullableFilter<"SubscriptionPlan"> | number | null
     description?: StringNullableFilter<"SubscriptionPlan"> | string | null
     subscription?: TenantSubscriptionListRelationFilter
   }, "id" | "planName">
@@ -12286,6 +15866,7 @@ export namespace Prisma {
     maxTransactions?: SortOrderInput | SortOrder
     maxProducts?: SortOrderInput | SortOrder
     maxUsers?: SortOrderInput | SortOrder
+    maxDevices?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     _count?: SubscriptionPlanCountOrderByAggregateInput
     _avg?: SubscriptionPlanAvgOrderByAggregateInput
@@ -12305,6 +15886,7 @@ export namespace Prisma {
     maxTransactions?: IntNullableWithAggregatesFilter<"SubscriptionPlan"> | number | null
     maxProducts?: IntNullableWithAggregatesFilter<"SubscriptionPlan"> | number | null
     maxUsers?: IntNullableWithAggregatesFilter<"SubscriptionPlan"> | number | null
+    maxDevices?: IntNullableWithAggregatesFilter<"SubscriptionPlan"> | number | null
     description?: StringNullableWithAggregatesFilter<"SubscriptionPlan"> | string | null
   }
 
@@ -12388,6 +15970,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserListRelationFilter
     subscription?: TenantSubscriptionListRelationFilter
     tenantOutlets?: TenantOutletListRelationFilter
+    deviceAllocations?: PushyDeviceAllocationListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -12399,6 +15982,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserOrderByRelationAggregateInput
     subscription?: TenantSubscriptionOrderByRelationAggregateInput
     tenantOutlets?: TenantOutletOrderByRelationAggregateInput
+    deviceAllocations?: PushyDeviceAllocationOrderByRelationAggregateInput
     _relevance?: TenantOrderByRelevanceInput
   }
 
@@ -12414,6 +15998,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserListRelationFilter
     subscription?: TenantSubscriptionListRelationFilter
     tenantOutlets?: TenantOutletListRelationFilter
+    deviceAllocations?: PushyDeviceAllocationListRelationFilter
   }, "id" | "databaseName">
 
   export type TenantOrderByWithAggregationInput = {
@@ -12459,6 +16044,7 @@ export namespace Prisma {
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     subscriptionPlan?: XOR<SubscriptionPlanScalarRelationFilter, SubscriptionPlanWhereInput>
     subscriptionAddOn?: TenantSubscriptionAddOnListRelationFilter
+    deviceAllocations?: PushyDeviceAllocationListRelationFilter
   }
 
   export type TenantSubscriptionOrderByWithRelationInput = {
@@ -12477,6 +16063,7 @@ export namespace Prisma {
     tenant?: TenantOrderByWithRelationInput
     subscriptionPlan?: SubscriptionPlanOrderByWithRelationInput
     subscriptionAddOn?: TenantSubscriptionAddOnOrderByRelationAggregateInput
+    deviceAllocations?: PushyDeviceAllocationOrderByRelationAggregateInput
     _relevance?: TenantSubscriptionOrderByRelevanceInput
   }
 
@@ -12499,6 +16086,7 @@ export namespace Prisma {
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     subscriptionPlan?: XOR<SubscriptionPlanScalarRelationFilter, SubscriptionPlanWhereInput>
     subscriptionAddOn?: TenantSubscriptionAddOnListRelationFilter
+    deviceAllocations?: PushyDeviceAllocationListRelationFilter
   }, "id">
 
   export type TenantSubscriptionOrderByWithAggregationInput = {
@@ -12746,6 +16334,7 @@ export namespace Prisma {
     role?: StringFilter<"TenantUser"> | string
     isDeleted?: BoolFilter<"TenantUser"> | boolean
     tenant?: XOR<TenantNullableScalarRelationFilter, TenantWhereInput> | null
+    pushyDevices?: PushyDeviceListRelationFilter
   }
 
   export type TenantUserOrderByWithRelationInput = {
@@ -12756,6 +16345,7 @@ export namespace Prisma {
     role?: SortOrder
     isDeleted?: SortOrder
     tenant?: TenantOrderByWithRelationInput
+    pushyDevices?: PushyDeviceOrderByRelationAggregateInput
     _relevance?: TenantUserOrderByRelevanceInput
   }
 
@@ -12770,6 +16360,7 @@ export namespace Prisma {
     role?: StringFilter<"TenantUser"> | string
     isDeleted?: BoolFilter<"TenantUser"> | boolean
     tenant?: XOR<TenantNullableScalarRelationFilter, TenantWhereInput> | null
+    pushyDevices?: PushyDeviceListRelationFilter
   }, "id" | "username">
 
   export type TenantUserOrderByWithAggregationInput = {
@@ -12948,6 +16539,233 @@ export namespace Prisma {
     version?: IntNullableWithAggregatesFilter<"Permission"> | number | null
   }
 
+  export type PushyDeviceWhereInput = {
+    AND?: PushyDeviceWhereInput | PushyDeviceWhereInput[]
+    OR?: PushyDeviceWhereInput[]
+    NOT?: PushyDeviceWhereInput | PushyDeviceWhereInput[]
+    id?: IntFilter<"PushyDevice"> | number
+    tenantUserId?: IntFilter<"PushyDevice"> | number
+    deviceToken?: StringFilter<"PushyDevice"> | string
+    platform?: StringFilter<"PushyDevice"> | string
+    deviceName?: StringNullableFilter<"PushyDevice"> | string | null
+    appVersion?: StringNullableFilter<"PushyDevice"> | string | null
+    isActive?: BoolFilter<"PushyDevice"> | boolean
+    lastActiveAt?: DateTimeNullableFilter<"PushyDevice"> | Date | string | null
+    createdAt?: DateTimeFilter<"PushyDevice"> | Date | string
+    updatedAt?: DateTimeFilter<"PushyDevice"> | Date | string
+    tenantUser?: XOR<TenantUserScalarRelationFilter, TenantUserWhereInput>
+    subscriptions?: PushySubscriptionListRelationFilter
+    allocation?: XOR<PushyDeviceAllocationNullableScalarRelationFilter, PushyDeviceAllocationWhereInput> | null
+  }
+
+  export type PushyDeviceOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantUserId?: SortOrder
+    deviceToken?: SortOrder
+    platform?: SortOrder
+    deviceName?: SortOrderInput | SortOrder
+    appVersion?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    lastActiveAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    tenantUser?: TenantUserOrderByWithRelationInput
+    subscriptions?: PushySubscriptionOrderByRelationAggregateInput
+    allocation?: PushyDeviceAllocationOrderByWithRelationInput
+    _relevance?: PushyDeviceOrderByRelevanceInput
+  }
+
+  export type PushyDeviceWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    deviceToken?: string
+    AND?: PushyDeviceWhereInput | PushyDeviceWhereInput[]
+    OR?: PushyDeviceWhereInput[]
+    NOT?: PushyDeviceWhereInput | PushyDeviceWhereInput[]
+    tenantUserId?: IntFilter<"PushyDevice"> | number
+    platform?: StringFilter<"PushyDevice"> | string
+    deviceName?: StringNullableFilter<"PushyDevice"> | string | null
+    appVersion?: StringNullableFilter<"PushyDevice"> | string | null
+    isActive?: BoolFilter<"PushyDevice"> | boolean
+    lastActiveAt?: DateTimeNullableFilter<"PushyDevice"> | Date | string | null
+    createdAt?: DateTimeFilter<"PushyDevice"> | Date | string
+    updatedAt?: DateTimeFilter<"PushyDevice"> | Date | string
+    tenantUser?: XOR<TenantUserScalarRelationFilter, TenantUserWhereInput>
+    subscriptions?: PushySubscriptionListRelationFilter
+    allocation?: XOR<PushyDeviceAllocationNullableScalarRelationFilter, PushyDeviceAllocationWhereInput> | null
+  }, "id" | "deviceToken">
+
+  export type PushyDeviceOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantUserId?: SortOrder
+    deviceToken?: SortOrder
+    platform?: SortOrder
+    deviceName?: SortOrderInput | SortOrder
+    appVersion?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    lastActiveAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: PushyDeviceCountOrderByAggregateInput
+    _avg?: PushyDeviceAvgOrderByAggregateInput
+    _max?: PushyDeviceMaxOrderByAggregateInput
+    _min?: PushyDeviceMinOrderByAggregateInput
+    _sum?: PushyDeviceSumOrderByAggregateInput
+  }
+
+  export type PushyDeviceScalarWhereWithAggregatesInput = {
+    AND?: PushyDeviceScalarWhereWithAggregatesInput | PushyDeviceScalarWhereWithAggregatesInput[]
+    OR?: PushyDeviceScalarWhereWithAggregatesInput[]
+    NOT?: PushyDeviceScalarWhereWithAggregatesInput | PushyDeviceScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"PushyDevice"> | number
+    tenantUserId?: IntWithAggregatesFilter<"PushyDevice"> | number
+    deviceToken?: StringWithAggregatesFilter<"PushyDevice"> | string
+    platform?: StringWithAggregatesFilter<"PushyDevice"> | string
+    deviceName?: StringNullableWithAggregatesFilter<"PushyDevice"> | string | null
+    appVersion?: StringNullableWithAggregatesFilter<"PushyDevice"> | string | null
+    isActive?: BoolWithAggregatesFilter<"PushyDevice"> | boolean
+    lastActiveAt?: DateTimeNullableWithAggregatesFilter<"PushyDevice"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"PushyDevice"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"PushyDevice"> | Date | string
+  }
+
+  export type PushySubscriptionWhereInput = {
+    AND?: PushySubscriptionWhereInput | PushySubscriptionWhereInput[]
+    OR?: PushySubscriptionWhereInput[]
+    NOT?: PushySubscriptionWhereInput | PushySubscriptionWhereInput[]
+    id?: IntFilter<"PushySubscription"> | number
+    deviceId?: IntFilter<"PushySubscription"> | number
+    topic?: StringFilter<"PushySubscription"> | string
+    subscribedAt?: DateTimeFilter<"PushySubscription"> | Date | string
+    device?: XOR<PushyDeviceScalarRelationFilter, PushyDeviceWhereInput>
+  }
+
+  export type PushySubscriptionOrderByWithRelationInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    topic?: SortOrder
+    subscribedAt?: SortOrder
+    device?: PushyDeviceOrderByWithRelationInput
+    _relevance?: PushySubscriptionOrderByRelevanceInput
+  }
+
+  export type PushySubscriptionWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    deviceId_topic?: PushySubscriptionDeviceIdTopicCompoundUniqueInput
+    AND?: PushySubscriptionWhereInput | PushySubscriptionWhereInput[]
+    OR?: PushySubscriptionWhereInput[]
+    NOT?: PushySubscriptionWhereInput | PushySubscriptionWhereInput[]
+    deviceId?: IntFilter<"PushySubscription"> | number
+    topic?: StringFilter<"PushySubscription"> | string
+    subscribedAt?: DateTimeFilter<"PushySubscription"> | Date | string
+    device?: XOR<PushyDeviceScalarRelationFilter, PushyDeviceWhereInput>
+  }, "id" | "deviceId_topic">
+
+  export type PushySubscriptionOrderByWithAggregationInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    topic?: SortOrder
+    subscribedAt?: SortOrder
+    _count?: PushySubscriptionCountOrderByAggregateInput
+    _avg?: PushySubscriptionAvgOrderByAggregateInput
+    _max?: PushySubscriptionMaxOrderByAggregateInput
+    _min?: PushySubscriptionMinOrderByAggregateInput
+    _sum?: PushySubscriptionSumOrderByAggregateInput
+  }
+
+  export type PushySubscriptionScalarWhereWithAggregatesInput = {
+    AND?: PushySubscriptionScalarWhereWithAggregatesInput | PushySubscriptionScalarWhereWithAggregatesInput[]
+    OR?: PushySubscriptionScalarWhereWithAggregatesInput[]
+    NOT?: PushySubscriptionScalarWhereWithAggregatesInput | PushySubscriptionScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"PushySubscription"> | number
+    deviceId?: IntWithAggregatesFilter<"PushySubscription"> | number
+    topic?: StringWithAggregatesFilter<"PushySubscription"> | string
+    subscribedAt?: DateTimeWithAggregatesFilter<"PushySubscription"> | Date | string
+  }
+
+  export type PushyDeviceAllocationWhereInput = {
+    AND?: PushyDeviceAllocationWhereInput | PushyDeviceAllocationWhereInput[]
+    OR?: PushyDeviceAllocationWhereInput[]
+    NOT?: PushyDeviceAllocationWhereInput | PushyDeviceAllocationWhereInput[]
+    id?: IntFilter<"PushyDeviceAllocation"> | number
+    deviceId?: IntFilter<"PushyDeviceAllocation"> | number
+    tenantId?: IntFilter<"PushyDeviceAllocation"> | number
+    subscriptionId?: IntNullableFilter<"PushyDeviceAllocation"> | number | null
+    addOnId?: IntNullableFilter<"PushyDeviceAllocation"> | number | null
+    allocationType?: StringFilter<"PushyDeviceAllocation"> | string
+    activatedAt?: DateTimeFilter<"PushyDeviceAllocation"> | Date | string
+    expiresAt?: DateTimeNullableFilter<"PushyDeviceAllocation"> | Date | string | null
+    createdAt?: DateTimeFilter<"PushyDeviceAllocation"> | Date | string
+    device?: XOR<PushyDeviceScalarRelationFilter, PushyDeviceWhereInput>
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    subscription?: XOR<TenantSubscriptionNullableScalarRelationFilter, TenantSubscriptionWhereInput> | null
+  }
+
+  export type PushyDeviceAllocationOrderByWithRelationInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    tenantId?: SortOrder
+    subscriptionId?: SortOrderInput | SortOrder
+    addOnId?: SortOrderInput | SortOrder
+    allocationType?: SortOrder
+    activatedAt?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    device?: PushyDeviceOrderByWithRelationInput
+    tenant?: TenantOrderByWithRelationInput
+    subscription?: TenantSubscriptionOrderByWithRelationInput
+    _relevance?: PushyDeviceAllocationOrderByRelevanceInput
+  }
+
+  export type PushyDeviceAllocationWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    deviceId?: number
+    AND?: PushyDeviceAllocationWhereInput | PushyDeviceAllocationWhereInput[]
+    OR?: PushyDeviceAllocationWhereInput[]
+    NOT?: PushyDeviceAllocationWhereInput | PushyDeviceAllocationWhereInput[]
+    tenantId?: IntFilter<"PushyDeviceAllocation"> | number
+    subscriptionId?: IntNullableFilter<"PushyDeviceAllocation"> | number | null
+    addOnId?: IntNullableFilter<"PushyDeviceAllocation"> | number | null
+    allocationType?: StringFilter<"PushyDeviceAllocation"> | string
+    activatedAt?: DateTimeFilter<"PushyDeviceAllocation"> | Date | string
+    expiresAt?: DateTimeNullableFilter<"PushyDeviceAllocation"> | Date | string | null
+    createdAt?: DateTimeFilter<"PushyDeviceAllocation"> | Date | string
+    device?: XOR<PushyDeviceScalarRelationFilter, PushyDeviceWhereInput>
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    subscription?: XOR<TenantSubscriptionNullableScalarRelationFilter, TenantSubscriptionWhereInput> | null
+  }, "id" | "deviceId">
+
+  export type PushyDeviceAllocationOrderByWithAggregationInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    tenantId?: SortOrder
+    subscriptionId?: SortOrderInput | SortOrder
+    addOnId?: SortOrderInput | SortOrder
+    allocationType?: SortOrder
+    activatedAt?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: PushyDeviceAllocationCountOrderByAggregateInput
+    _avg?: PushyDeviceAllocationAvgOrderByAggregateInput
+    _max?: PushyDeviceAllocationMaxOrderByAggregateInput
+    _min?: PushyDeviceAllocationMinOrderByAggregateInput
+    _sum?: PushyDeviceAllocationSumOrderByAggregateInput
+  }
+
+  export type PushyDeviceAllocationScalarWhereWithAggregatesInput = {
+    AND?: PushyDeviceAllocationScalarWhereWithAggregatesInput | PushyDeviceAllocationScalarWhereWithAggregatesInput[]
+    OR?: PushyDeviceAllocationScalarWhereWithAggregatesInput[]
+    NOT?: PushyDeviceAllocationScalarWhereWithAggregatesInput | PushyDeviceAllocationScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"PushyDeviceAllocation"> | number
+    deviceId?: IntWithAggregatesFilter<"PushyDeviceAllocation"> | number
+    tenantId?: IntWithAggregatesFilter<"PushyDeviceAllocation"> | number
+    subscriptionId?: IntNullableWithAggregatesFilter<"PushyDeviceAllocation"> | number | null
+    addOnId?: IntNullableWithAggregatesFilter<"PushyDeviceAllocation"> | number | null
+    allocationType?: StringWithAggregatesFilter<"PushyDeviceAllocation"> | string
+    activatedAt?: DateTimeWithAggregatesFilter<"PushyDeviceAllocation"> | Date | string
+    expiresAt?: DateTimeNullableWithAggregatesFilter<"PushyDeviceAllocation"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"PushyDeviceAllocation"> | Date | string
+  }
+
   export type SubscriptionPlanCreateInput = {
     planName: string
     planType?: string
@@ -12955,6 +16773,7 @@ export namespace Prisma {
     maxTransactions?: number | null
     maxProducts?: number | null
     maxUsers?: number | null
+    maxDevices?: number | null
     description?: string | null
     subscription?: TenantSubscriptionCreateNestedManyWithoutSubscriptionPlanInput
   }
@@ -12967,6 +16786,7 @@ export namespace Prisma {
     maxTransactions?: number | null
     maxProducts?: number | null
     maxUsers?: number | null
+    maxDevices?: number | null
     description?: string | null
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutSubscriptionPlanInput
   }
@@ -12978,6 +16798,7 @@ export namespace Prisma {
     maxTransactions?: NullableIntFieldUpdateOperationsInput | number | null
     maxProducts?: NullableIntFieldUpdateOperationsInput | number | null
     maxUsers?: NullableIntFieldUpdateOperationsInput | number | null
+    maxDevices?: NullableIntFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     subscription?: TenantSubscriptionUpdateManyWithoutSubscriptionPlanNestedInput
   }
@@ -12990,6 +16811,7 @@ export namespace Prisma {
     maxTransactions?: NullableIntFieldUpdateOperationsInput | number | null
     maxProducts?: NullableIntFieldUpdateOperationsInput | number | null
     maxUsers?: NullableIntFieldUpdateOperationsInput | number | null
+    maxDevices?: NullableIntFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutSubscriptionPlanNestedInput
   }
@@ -13002,6 +16824,7 @@ export namespace Prisma {
     maxTransactions?: number | null
     maxProducts?: number | null
     maxUsers?: number | null
+    maxDevices?: number | null
     description?: string | null
   }
 
@@ -13012,6 +16835,7 @@ export namespace Prisma {
     maxTransactions?: NullableIntFieldUpdateOperationsInput | number | null
     maxProducts?: NullableIntFieldUpdateOperationsInput | number | null
     maxUsers?: NullableIntFieldUpdateOperationsInput | number | null
+    maxDevices?: NullableIntFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -13023,6 +16847,7 @@ export namespace Prisma {
     maxTransactions?: NullableIntFieldUpdateOperationsInput | number | null
     maxProducts?: NullableIntFieldUpdateOperationsInput | number | null
     maxUsers?: NullableIntFieldUpdateOperationsInput | number | null
+    maxDevices?: NullableIntFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -13105,6 +16930,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -13116,6 +16942,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -13126,6 +16953,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -13137,6 +16965,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -13173,6 +17002,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateInput = {
@@ -13187,6 +17017,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUpdateInput = {
@@ -13200,6 +17031,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateInput = {
@@ -13214,6 +17046,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionCreateManyInput = {
@@ -13448,6 +17281,7 @@ export namespace Prisma {
     role?: string
     isDeleted?: boolean
     tenant?: TenantCreateNestedOneWithoutTenantUsersInput
+    pushyDevices?: PushyDeviceCreateNestedManyWithoutTenantUserInput
   }
 
   export type TenantUserUncheckedCreateInput = {
@@ -13457,6 +17291,7 @@ export namespace Prisma {
     tenantId: number
     role?: string
     isDeleted?: boolean
+    pushyDevices?: PushyDeviceUncheckedCreateNestedManyWithoutTenantUserInput
   }
 
   export type TenantUserUpdateInput = {
@@ -13465,6 +17300,7 @@ export namespace Prisma {
     role?: StringFieldUpdateOperationsInput | string
     isDeleted?: BoolFieldUpdateOperationsInput | boolean
     tenant?: TenantUpdateOneWithoutTenantUsersNestedInput
+    pushyDevices?: PushyDeviceUpdateManyWithoutTenantUserNestedInput
   }
 
   export type TenantUserUncheckedUpdateInput = {
@@ -13474,6 +17310,7 @@ export namespace Prisma {
     tenantId?: IntFieldUpdateOperationsInput | number
     role?: StringFieldUpdateOperationsInput | string
     isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    pushyDevices?: PushyDeviceUncheckedUpdateManyWithoutTenantUserNestedInput
   }
 
   export type TenantUserCreateManyInput = {
@@ -13663,6 +17500,224 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
+  export type PushyDeviceCreateInput = {
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenantUser: TenantUserCreateNestedOneWithoutPushyDevicesInput
+    subscriptions?: PushySubscriptionCreateNestedManyWithoutDeviceInput
+    allocation?: PushyDeviceAllocationCreateNestedOneWithoutDeviceInput
+  }
+
+  export type PushyDeviceUncheckedCreateInput = {
+    id?: number
+    tenantUserId: number
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    subscriptions?: PushySubscriptionUncheckedCreateNestedManyWithoutDeviceInput
+    allocation?: PushyDeviceAllocationUncheckedCreateNestedOneWithoutDeviceInput
+  }
+
+  export type PushyDeviceUpdateInput = {
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUser?: TenantUserUpdateOneRequiredWithoutPushyDevicesNestedInput
+    subscriptions?: PushySubscriptionUpdateManyWithoutDeviceNestedInput
+    allocation?: PushyDeviceAllocationUpdateOneWithoutDeviceNestedInput
+  }
+
+  export type PushyDeviceUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantUserId?: IntFieldUpdateOperationsInput | number
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptions?: PushySubscriptionUncheckedUpdateManyWithoutDeviceNestedInput
+    allocation?: PushyDeviceAllocationUncheckedUpdateOneWithoutDeviceNestedInput
+  }
+
+  export type PushyDeviceCreateManyInput = {
+    id?: number
+    tenantUserId: number
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PushyDeviceUpdateManyMutationInput = {
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantUserId?: IntFieldUpdateOperationsInput | number
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushySubscriptionCreateInput = {
+    topic: string
+    subscribedAt?: Date | string
+    device: PushyDeviceCreateNestedOneWithoutSubscriptionsInput
+  }
+
+  export type PushySubscriptionUncheckedCreateInput = {
+    id?: number
+    deviceId: number
+    topic: string
+    subscribedAt?: Date | string
+  }
+
+  export type PushySubscriptionUpdateInput = {
+    topic?: StringFieldUpdateOperationsInput | string
+    subscribedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    device?: PushyDeviceUpdateOneRequiredWithoutSubscriptionsNestedInput
+  }
+
+  export type PushySubscriptionUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    topic?: StringFieldUpdateOperationsInput | string
+    subscribedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushySubscriptionCreateManyInput = {
+    id?: number
+    deviceId: number
+    topic: string
+    subscribedAt?: Date | string
+  }
+
+  export type PushySubscriptionUpdateManyMutationInput = {
+    topic?: StringFieldUpdateOperationsInput | string
+    subscribedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushySubscriptionUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    topic?: StringFieldUpdateOperationsInput | string
+    subscribedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceAllocationCreateInput = {
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+    device: PushyDeviceCreateNestedOneWithoutAllocationInput
+    tenant: TenantCreateNestedOneWithoutDeviceAllocationsInput
+    subscription?: TenantSubscriptionCreateNestedOneWithoutDeviceAllocationsInput
+  }
+
+  export type PushyDeviceAllocationUncheckedCreateInput = {
+    id?: number
+    deviceId: number
+    tenantId: number
+    subscriptionId?: number | null
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PushyDeviceAllocationUpdateInput = {
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    device?: PushyDeviceUpdateOneRequiredWithoutAllocationNestedInput
+    tenant?: TenantUpdateOneRequiredWithoutDeviceAllocationsNestedInput
+    subscription?: TenantSubscriptionUpdateOneWithoutDeviceAllocationsNestedInput
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceAllocationCreateManyInput = {
+    id?: number
+    deviceId: number
+    tenantId: number
+    subscriptionId?: number | null
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PushyDeviceAllocationUpdateManyMutationInput = {
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -13755,6 +17810,7 @@ export namespace Prisma {
     maxTransactions?: SortOrder
     maxProducts?: SortOrder
     maxUsers?: SortOrder
+    maxDevices?: SortOrder
     description?: SortOrder
   }
 
@@ -13764,6 +17820,7 @@ export namespace Prisma {
     maxTransactions?: SortOrder
     maxProducts?: SortOrder
     maxUsers?: SortOrder
+    maxDevices?: SortOrder
   }
 
   export type SubscriptionPlanMaxOrderByAggregateInput = {
@@ -13774,6 +17831,7 @@ export namespace Prisma {
     maxTransactions?: SortOrder
     maxProducts?: SortOrder
     maxUsers?: SortOrder
+    maxDevices?: SortOrder
     description?: SortOrder
   }
 
@@ -13785,6 +17843,7 @@ export namespace Prisma {
     maxTransactions?: SortOrder
     maxProducts?: SortOrder
     maxUsers?: SortOrder
+    maxDevices?: SortOrder
     description?: SortOrder
   }
 
@@ -13794,6 +17853,7 @@ export namespace Prisma {
     maxTransactions?: SortOrder
     maxProducts?: SortOrder
     maxUsers?: SortOrder
+    maxDevices?: SortOrder
   }
 
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
@@ -13961,11 +18021,21 @@ export namespace Prisma {
     none?: TenantOutletWhereInput
   }
 
+  export type PushyDeviceAllocationListRelationFilter = {
+    every?: PushyDeviceAllocationWhereInput
+    some?: PushyDeviceAllocationWhereInput
+    none?: PushyDeviceAllocationWhereInput
+  }
+
   export type TenantUserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type TenantOutletOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PushyDeviceAllocationOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -14292,6 +18362,16 @@ export namespace Prisma {
     isNot?: TenantWhereInput | null
   }
 
+  export type PushyDeviceListRelationFilter = {
+    every?: PushyDeviceWhereInput
+    some?: PushyDeviceWhereInput
+    none?: PushyDeviceWhereInput
+  }
+
+  export type PushyDeviceOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type TenantUserOrderByRelevanceInput = {
     fields: TenantUserOrderByRelevanceFieldEnum | TenantUserOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -14439,6 +18519,191 @@ export namespace Prisma {
     version?: SortOrder
   }
 
+  export type TenantUserScalarRelationFilter = {
+    is?: TenantUserWhereInput
+    isNot?: TenantUserWhereInput
+  }
+
+  export type PushySubscriptionListRelationFilter = {
+    every?: PushySubscriptionWhereInput
+    some?: PushySubscriptionWhereInput
+    none?: PushySubscriptionWhereInput
+  }
+
+  export type PushyDeviceAllocationNullableScalarRelationFilter = {
+    is?: PushyDeviceAllocationWhereInput | null
+    isNot?: PushyDeviceAllocationWhereInput | null
+  }
+
+  export type PushySubscriptionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PushyDeviceOrderByRelevanceInput = {
+    fields: PushyDeviceOrderByRelevanceFieldEnum | PushyDeviceOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PushyDeviceCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantUserId?: SortOrder
+    deviceToken?: SortOrder
+    platform?: SortOrder
+    deviceName?: SortOrder
+    appVersion?: SortOrder
+    isActive?: SortOrder
+    lastActiveAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PushyDeviceAvgOrderByAggregateInput = {
+    id?: SortOrder
+    tenantUserId?: SortOrder
+  }
+
+  export type PushyDeviceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantUserId?: SortOrder
+    deviceToken?: SortOrder
+    platform?: SortOrder
+    deviceName?: SortOrder
+    appVersion?: SortOrder
+    isActive?: SortOrder
+    lastActiveAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PushyDeviceMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantUserId?: SortOrder
+    deviceToken?: SortOrder
+    platform?: SortOrder
+    deviceName?: SortOrder
+    appVersion?: SortOrder
+    isActive?: SortOrder
+    lastActiveAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PushyDeviceSumOrderByAggregateInput = {
+    id?: SortOrder
+    tenantUserId?: SortOrder
+  }
+
+  export type PushyDeviceScalarRelationFilter = {
+    is?: PushyDeviceWhereInput
+    isNot?: PushyDeviceWhereInput
+  }
+
+  export type PushySubscriptionOrderByRelevanceInput = {
+    fields: PushySubscriptionOrderByRelevanceFieldEnum | PushySubscriptionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PushySubscriptionDeviceIdTopicCompoundUniqueInput = {
+    deviceId: number
+    topic: string
+  }
+
+  export type PushySubscriptionCountOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    topic?: SortOrder
+    subscribedAt?: SortOrder
+  }
+
+  export type PushySubscriptionAvgOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+  }
+
+  export type PushySubscriptionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    topic?: SortOrder
+    subscribedAt?: SortOrder
+  }
+
+  export type PushySubscriptionMinOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    topic?: SortOrder
+    subscribedAt?: SortOrder
+  }
+
+  export type PushySubscriptionSumOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+  }
+
+  export type TenantSubscriptionNullableScalarRelationFilter = {
+    is?: TenantSubscriptionWhereInput | null
+    isNot?: TenantSubscriptionWhereInput | null
+  }
+
+  export type PushyDeviceAllocationOrderByRelevanceInput = {
+    fields: PushyDeviceAllocationOrderByRelevanceFieldEnum | PushyDeviceAllocationOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type PushyDeviceAllocationCountOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    tenantId?: SortOrder
+    subscriptionId?: SortOrder
+    addOnId?: SortOrder
+    allocationType?: SortOrder
+    activatedAt?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PushyDeviceAllocationAvgOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    tenantId?: SortOrder
+    subscriptionId?: SortOrder
+    addOnId?: SortOrder
+  }
+
+  export type PushyDeviceAllocationMaxOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    tenantId?: SortOrder
+    subscriptionId?: SortOrder
+    addOnId?: SortOrder
+    allocationType?: SortOrder
+    activatedAt?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PushyDeviceAllocationMinOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    tenantId?: SortOrder
+    subscriptionId?: SortOrder
+    addOnId?: SortOrder
+    allocationType?: SortOrder
+    activatedAt?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PushyDeviceAllocationSumOrderByAggregateInput = {
+    id?: SortOrder
+    deviceId?: SortOrder
+    tenantId?: SortOrder
+    subscriptionId?: SortOrder
+    addOnId?: SortOrder
+  }
+
   export type TenantSubscriptionCreateNestedManyWithoutSubscriptionPlanInput = {
     create?: XOR<TenantSubscriptionCreateWithoutSubscriptionPlanInput, TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput> | TenantSubscriptionCreateWithoutSubscriptionPlanInput[] | TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput[]
     connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput | TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput[]
@@ -14576,6 +18841,13 @@ export namespace Prisma {
     connect?: TenantOutletWhereUniqueInput | TenantOutletWhereUniqueInput[]
   }
 
+  export type PushyDeviceAllocationCreateNestedManyWithoutTenantInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutTenantInput, PushyDeviceAllocationUncheckedCreateWithoutTenantInput> | PushyDeviceAllocationCreateWithoutTenantInput[] | PushyDeviceAllocationUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutTenantInput | PushyDeviceAllocationCreateOrConnectWithoutTenantInput[]
+    createMany?: PushyDeviceAllocationCreateManyTenantInputEnvelope
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+  }
+
   export type TenantUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -14595,6 +18867,13 @@ export namespace Prisma {
     connectOrCreate?: TenantOutletCreateOrConnectWithoutTenantInput | TenantOutletCreateOrConnectWithoutTenantInput[]
     createMany?: TenantOutletCreateManyTenantInputEnvelope
     connect?: TenantOutletWhereUniqueInput | TenantOutletWhereUniqueInput[]
+  }
+
+  export type PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutTenantInput, PushyDeviceAllocationUncheckedCreateWithoutTenantInput> | PushyDeviceAllocationCreateWithoutTenantInput[] | PushyDeviceAllocationUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutTenantInput | PushyDeviceAllocationCreateOrConnectWithoutTenantInput[]
+    createMany?: PushyDeviceAllocationCreateManyTenantInputEnvelope
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -14643,6 +18922,20 @@ export namespace Prisma {
     deleteMany?: TenantOutletScalarWhereInput | TenantOutletScalarWhereInput[]
   }
 
+  export type PushyDeviceAllocationUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutTenantInput, PushyDeviceAllocationUncheckedCreateWithoutTenantInput> | PushyDeviceAllocationCreateWithoutTenantInput[] | PushyDeviceAllocationUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutTenantInput | PushyDeviceAllocationCreateOrConnectWithoutTenantInput[]
+    upsert?: PushyDeviceAllocationUpsertWithWhereUniqueWithoutTenantInput | PushyDeviceAllocationUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: PushyDeviceAllocationCreateManyTenantInputEnvelope
+    set?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    disconnect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    delete?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    update?: PushyDeviceAllocationUpdateWithWhereUniqueWithoutTenantInput | PushyDeviceAllocationUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: PushyDeviceAllocationUpdateManyWithWhereWithoutTenantInput | PushyDeviceAllocationUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
+  }
+
   export type TenantUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -14685,6 +18978,20 @@ export namespace Prisma {
     deleteMany?: TenantOutletScalarWhereInput | TenantOutletScalarWhereInput[]
   }
 
+  export type PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutTenantInput, PushyDeviceAllocationUncheckedCreateWithoutTenantInput> | PushyDeviceAllocationCreateWithoutTenantInput[] | PushyDeviceAllocationUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutTenantInput | PushyDeviceAllocationCreateOrConnectWithoutTenantInput[]
+    upsert?: PushyDeviceAllocationUpsertWithWhereUniqueWithoutTenantInput | PushyDeviceAllocationUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: PushyDeviceAllocationCreateManyTenantInputEnvelope
+    set?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    disconnect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    delete?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    update?: PushyDeviceAllocationUpdateWithWhereUniqueWithoutTenantInput | PushyDeviceAllocationUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: PushyDeviceAllocationUpdateManyWithWhereWithoutTenantInput | PushyDeviceAllocationUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
+  }
+
   export type TenantOutletCreateNestedOneWithoutSubscriptionsInput = {
     create?: XOR<TenantOutletCreateWithoutSubscriptionsInput, TenantOutletUncheckedCreateWithoutSubscriptionsInput>
     connectOrCreate?: TenantOutletCreateOrConnectWithoutSubscriptionsInput
@@ -14716,11 +19023,25 @@ export namespace Prisma {
     connect?: TenantSubscriptionAddOnWhereUniqueInput | TenantSubscriptionAddOnWhereUniqueInput[]
   }
 
+  export type PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput> | PushyDeviceAllocationCreateWithoutSubscriptionInput[] | PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput | PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput[]
+    createMany?: PushyDeviceAllocationCreateManySubscriptionInputEnvelope
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+  }
+
   export type TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput = {
     create?: XOR<TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput, TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput> | TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput[] | TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput[]
     connectOrCreate?: TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput | TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput[]
     createMany?: TenantSubscriptionAddOnCreateManyTenantSubscriptionInputEnvelope
     connect?: TenantSubscriptionAddOnWhereUniqueInput | TenantSubscriptionAddOnWhereUniqueInput[]
+  }
+
+  export type PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput> | PushyDeviceAllocationCreateWithoutSubscriptionInput[] | PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput | PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput[]
+    createMany?: PushyDeviceAllocationCreateManySubscriptionInputEnvelope
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
   }
 
   export type TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput = {
@@ -14771,6 +19092,20 @@ export namespace Prisma {
     deleteMany?: TenantSubscriptionAddOnScalarWhereInput | TenantSubscriptionAddOnScalarWhereInput[]
   }
 
+  export type PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput> | PushyDeviceAllocationCreateWithoutSubscriptionInput[] | PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput | PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput[]
+    upsert?: PushyDeviceAllocationUpsertWithWhereUniqueWithoutSubscriptionInput | PushyDeviceAllocationUpsertWithWhereUniqueWithoutSubscriptionInput[]
+    createMany?: PushyDeviceAllocationCreateManySubscriptionInputEnvelope
+    set?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    disconnect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    delete?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    update?: PushyDeviceAllocationUpdateWithWhereUniqueWithoutSubscriptionInput | PushyDeviceAllocationUpdateWithWhereUniqueWithoutSubscriptionInput[]
+    updateMany?: PushyDeviceAllocationUpdateManyWithWhereWithoutSubscriptionInput | PushyDeviceAllocationUpdateManyWithWhereWithoutSubscriptionInput[]
+    deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
+  }
+
   export type TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput = {
     create?: XOR<TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput, TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput> | TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput[] | TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput[]
     connectOrCreate?: TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput | TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput[]
@@ -14783,6 +19118,20 @@ export namespace Prisma {
     update?: TenantSubscriptionAddOnUpdateWithWhereUniqueWithoutTenantSubscriptionInput | TenantSubscriptionAddOnUpdateWithWhereUniqueWithoutTenantSubscriptionInput[]
     updateMany?: TenantSubscriptionAddOnUpdateManyWithWhereWithoutTenantSubscriptionInput | TenantSubscriptionAddOnUpdateManyWithWhereWithoutTenantSubscriptionInput[]
     deleteMany?: TenantSubscriptionAddOnScalarWhereInput | TenantSubscriptionAddOnScalarWhereInput[]
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput> | PushyDeviceAllocationCreateWithoutSubscriptionInput[] | PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput | PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput[]
+    upsert?: PushyDeviceAllocationUpsertWithWhereUniqueWithoutSubscriptionInput | PushyDeviceAllocationUpsertWithWhereUniqueWithoutSubscriptionInput[]
+    createMany?: PushyDeviceAllocationCreateManySubscriptionInputEnvelope
+    set?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    disconnect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    delete?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+    update?: PushyDeviceAllocationUpdateWithWhereUniqueWithoutSubscriptionInput | PushyDeviceAllocationUpdateWithWhereUniqueWithoutSubscriptionInput[]
+    updateMany?: PushyDeviceAllocationUpdateManyWithWhereWithoutSubscriptionInput | PushyDeviceAllocationUpdateManyWithWhereWithoutSubscriptionInput[]
+    deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
   }
 
   export type TenantSubscriptionCreateNestedOneWithoutSubscriptionAddOnInput = {
@@ -14925,6 +19274,20 @@ export namespace Prisma {
     connect?: TenantWhereUniqueInput
   }
 
+  export type PushyDeviceCreateNestedManyWithoutTenantUserInput = {
+    create?: XOR<PushyDeviceCreateWithoutTenantUserInput, PushyDeviceUncheckedCreateWithoutTenantUserInput> | PushyDeviceCreateWithoutTenantUserInput[] | PushyDeviceUncheckedCreateWithoutTenantUserInput[]
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutTenantUserInput | PushyDeviceCreateOrConnectWithoutTenantUserInput[]
+    createMany?: PushyDeviceCreateManyTenantUserInputEnvelope
+    connect?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+  }
+
+  export type PushyDeviceUncheckedCreateNestedManyWithoutTenantUserInput = {
+    create?: XOR<PushyDeviceCreateWithoutTenantUserInput, PushyDeviceUncheckedCreateWithoutTenantUserInput> | PushyDeviceCreateWithoutTenantUserInput[] | PushyDeviceUncheckedCreateWithoutTenantUserInput[]
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutTenantUserInput | PushyDeviceCreateOrConnectWithoutTenantUserInput[]
+    createMany?: PushyDeviceCreateManyTenantUserInputEnvelope
+    connect?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+  }
+
   export type TenantUpdateOneWithoutTenantUsersNestedInput = {
     create?: XOR<TenantCreateWithoutTenantUsersInput, TenantUncheckedCreateWithoutTenantUsersInput>
     connectOrCreate?: TenantCreateOrConnectWithoutTenantUsersInput
@@ -14933,6 +19296,180 @@ export namespace Prisma {
     delete?: TenantWhereInput | boolean
     connect?: TenantWhereUniqueInput
     update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutTenantUsersInput, TenantUpdateWithoutTenantUsersInput>, TenantUncheckedUpdateWithoutTenantUsersInput>
+  }
+
+  export type PushyDeviceUpdateManyWithoutTenantUserNestedInput = {
+    create?: XOR<PushyDeviceCreateWithoutTenantUserInput, PushyDeviceUncheckedCreateWithoutTenantUserInput> | PushyDeviceCreateWithoutTenantUserInput[] | PushyDeviceUncheckedCreateWithoutTenantUserInput[]
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutTenantUserInput | PushyDeviceCreateOrConnectWithoutTenantUserInput[]
+    upsert?: PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput | PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput[]
+    createMany?: PushyDeviceCreateManyTenantUserInputEnvelope
+    set?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    disconnect?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    delete?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    connect?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    update?: PushyDeviceUpdateWithWhereUniqueWithoutTenantUserInput | PushyDeviceUpdateWithWhereUniqueWithoutTenantUserInput[]
+    updateMany?: PushyDeviceUpdateManyWithWhereWithoutTenantUserInput | PushyDeviceUpdateManyWithWhereWithoutTenantUserInput[]
+    deleteMany?: PushyDeviceScalarWhereInput | PushyDeviceScalarWhereInput[]
+  }
+
+  export type PushyDeviceUncheckedUpdateManyWithoutTenantUserNestedInput = {
+    create?: XOR<PushyDeviceCreateWithoutTenantUserInput, PushyDeviceUncheckedCreateWithoutTenantUserInput> | PushyDeviceCreateWithoutTenantUserInput[] | PushyDeviceUncheckedCreateWithoutTenantUserInput[]
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutTenantUserInput | PushyDeviceCreateOrConnectWithoutTenantUserInput[]
+    upsert?: PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput | PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput[]
+    createMany?: PushyDeviceCreateManyTenantUserInputEnvelope
+    set?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    disconnect?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    delete?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    connect?: PushyDeviceWhereUniqueInput | PushyDeviceWhereUniqueInput[]
+    update?: PushyDeviceUpdateWithWhereUniqueWithoutTenantUserInput | PushyDeviceUpdateWithWhereUniqueWithoutTenantUserInput[]
+    updateMany?: PushyDeviceUpdateManyWithWhereWithoutTenantUserInput | PushyDeviceUpdateManyWithWhereWithoutTenantUserInput[]
+    deleteMany?: PushyDeviceScalarWhereInput | PushyDeviceScalarWhereInput[]
+  }
+
+  export type TenantUserCreateNestedOneWithoutPushyDevicesInput = {
+    create?: XOR<TenantUserCreateWithoutPushyDevicesInput, TenantUserUncheckedCreateWithoutPushyDevicesInput>
+    connectOrCreate?: TenantUserCreateOrConnectWithoutPushyDevicesInput
+    connect?: TenantUserWhereUniqueInput
+  }
+
+  export type PushySubscriptionCreateNestedManyWithoutDeviceInput = {
+    create?: XOR<PushySubscriptionCreateWithoutDeviceInput, PushySubscriptionUncheckedCreateWithoutDeviceInput> | PushySubscriptionCreateWithoutDeviceInput[] | PushySubscriptionUncheckedCreateWithoutDeviceInput[]
+    connectOrCreate?: PushySubscriptionCreateOrConnectWithoutDeviceInput | PushySubscriptionCreateOrConnectWithoutDeviceInput[]
+    createMany?: PushySubscriptionCreateManyDeviceInputEnvelope
+    connect?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+  }
+
+  export type PushyDeviceAllocationCreateNestedOneWithoutDeviceInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutDeviceInput, PushyDeviceAllocationUncheckedCreateWithoutDeviceInput>
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutDeviceInput
+    connect?: PushyDeviceAllocationWhereUniqueInput
+  }
+
+  export type PushySubscriptionUncheckedCreateNestedManyWithoutDeviceInput = {
+    create?: XOR<PushySubscriptionCreateWithoutDeviceInput, PushySubscriptionUncheckedCreateWithoutDeviceInput> | PushySubscriptionCreateWithoutDeviceInput[] | PushySubscriptionUncheckedCreateWithoutDeviceInput[]
+    connectOrCreate?: PushySubscriptionCreateOrConnectWithoutDeviceInput | PushySubscriptionCreateOrConnectWithoutDeviceInput[]
+    createMany?: PushySubscriptionCreateManyDeviceInputEnvelope
+    connect?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+  }
+
+  export type PushyDeviceAllocationUncheckedCreateNestedOneWithoutDeviceInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutDeviceInput, PushyDeviceAllocationUncheckedCreateWithoutDeviceInput>
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutDeviceInput
+    connect?: PushyDeviceAllocationWhereUniqueInput
+  }
+
+  export type TenantUserUpdateOneRequiredWithoutPushyDevicesNestedInput = {
+    create?: XOR<TenantUserCreateWithoutPushyDevicesInput, TenantUserUncheckedCreateWithoutPushyDevicesInput>
+    connectOrCreate?: TenantUserCreateOrConnectWithoutPushyDevicesInput
+    upsert?: TenantUserUpsertWithoutPushyDevicesInput
+    connect?: TenantUserWhereUniqueInput
+    update?: XOR<XOR<TenantUserUpdateToOneWithWhereWithoutPushyDevicesInput, TenantUserUpdateWithoutPushyDevicesInput>, TenantUserUncheckedUpdateWithoutPushyDevicesInput>
+  }
+
+  export type PushySubscriptionUpdateManyWithoutDeviceNestedInput = {
+    create?: XOR<PushySubscriptionCreateWithoutDeviceInput, PushySubscriptionUncheckedCreateWithoutDeviceInput> | PushySubscriptionCreateWithoutDeviceInput[] | PushySubscriptionUncheckedCreateWithoutDeviceInput[]
+    connectOrCreate?: PushySubscriptionCreateOrConnectWithoutDeviceInput | PushySubscriptionCreateOrConnectWithoutDeviceInput[]
+    upsert?: PushySubscriptionUpsertWithWhereUniqueWithoutDeviceInput | PushySubscriptionUpsertWithWhereUniqueWithoutDeviceInput[]
+    createMany?: PushySubscriptionCreateManyDeviceInputEnvelope
+    set?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    disconnect?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    delete?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    connect?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    update?: PushySubscriptionUpdateWithWhereUniqueWithoutDeviceInput | PushySubscriptionUpdateWithWhereUniqueWithoutDeviceInput[]
+    updateMany?: PushySubscriptionUpdateManyWithWhereWithoutDeviceInput | PushySubscriptionUpdateManyWithWhereWithoutDeviceInput[]
+    deleteMany?: PushySubscriptionScalarWhereInput | PushySubscriptionScalarWhereInput[]
+  }
+
+  export type PushyDeviceAllocationUpdateOneWithoutDeviceNestedInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutDeviceInput, PushyDeviceAllocationUncheckedCreateWithoutDeviceInput>
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutDeviceInput
+    upsert?: PushyDeviceAllocationUpsertWithoutDeviceInput
+    disconnect?: PushyDeviceAllocationWhereInput | boolean
+    delete?: PushyDeviceAllocationWhereInput | boolean
+    connect?: PushyDeviceAllocationWhereUniqueInput
+    update?: XOR<XOR<PushyDeviceAllocationUpdateToOneWithWhereWithoutDeviceInput, PushyDeviceAllocationUpdateWithoutDeviceInput>, PushyDeviceAllocationUncheckedUpdateWithoutDeviceInput>
+  }
+
+  export type PushySubscriptionUncheckedUpdateManyWithoutDeviceNestedInput = {
+    create?: XOR<PushySubscriptionCreateWithoutDeviceInput, PushySubscriptionUncheckedCreateWithoutDeviceInput> | PushySubscriptionCreateWithoutDeviceInput[] | PushySubscriptionUncheckedCreateWithoutDeviceInput[]
+    connectOrCreate?: PushySubscriptionCreateOrConnectWithoutDeviceInput | PushySubscriptionCreateOrConnectWithoutDeviceInput[]
+    upsert?: PushySubscriptionUpsertWithWhereUniqueWithoutDeviceInput | PushySubscriptionUpsertWithWhereUniqueWithoutDeviceInput[]
+    createMany?: PushySubscriptionCreateManyDeviceInputEnvelope
+    set?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    disconnect?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    delete?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    connect?: PushySubscriptionWhereUniqueInput | PushySubscriptionWhereUniqueInput[]
+    update?: PushySubscriptionUpdateWithWhereUniqueWithoutDeviceInput | PushySubscriptionUpdateWithWhereUniqueWithoutDeviceInput[]
+    updateMany?: PushySubscriptionUpdateManyWithWhereWithoutDeviceInput | PushySubscriptionUpdateManyWithWhereWithoutDeviceInput[]
+    deleteMany?: PushySubscriptionScalarWhereInput | PushySubscriptionScalarWhereInput[]
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateOneWithoutDeviceNestedInput = {
+    create?: XOR<PushyDeviceAllocationCreateWithoutDeviceInput, PushyDeviceAllocationUncheckedCreateWithoutDeviceInput>
+    connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutDeviceInput
+    upsert?: PushyDeviceAllocationUpsertWithoutDeviceInput
+    disconnect?: PushyDeviceAllocationWhereInput | boolean
+    delete?: PushyDeviceAllocationWhereInput | boolean
+    connect?: PushyDeviceAllocationWhereUniqueInput
+    update?: XOR<XOR<PushyDeviceAllocationUpdateToOneWithWhereWithoutDeviceInput, PushyDeviceAllocationUpdateWithoutDeviceInput>, PushyDeviceAllocationUncheckedUpdateWithoutDeviceInput>
+  }
+
+  export type PushyDeviceCreateNestedOneWithoutSubscriptionsInput = {
+    create?: XOR<PushyDeviceCreateWithoutSubscriptionsInput, PushyDeviceUncheckedCreateWithoutSubscriptionsInput>
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutSubscriptionsInput
+    connect?: PushyDeviceWhereUniqueInput
+  }
+
+  export type PushyDeviceUpdateOneRequiredWithoutSubscriptionsNestedInput = {
+    create?: XOR<PushyDeviceCreateWithoutSubscriptionsInput, PushyDeviceUncheckedCreateWithoutSubscriptionsInput>
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutSubscriptionsInput
+    upsert?: PushyDeviceUpsertWithoutSubscriptionsInput
+    connect?: PushyDeviceWhereUniqueInput
+    update?: XOR<XOR<PushyDeviceUpdateToOneWithWhereWithoutSubscriptionsInput, PushyDeviceUpdateWithoutSubscriptionsInput>, PushyDeviceUncheckedUpdateWithoutSubscriptionsInput>
+  }
+
+  export type PushyDeviceCreateNestedOneWithoutAllocationInput = {
+    create?: XOR<PushyDeviceCreateWithoutAllocationInput, PushyDeviceUncheckedCreateWithoutAllocationInput>
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutAllocationInput
+    connect?: PushyDeviceWhereUniqueInput
+  }
+
+  export type TenantCreateNestedOneWithoutDeviceAllocationsInput = {
+    create?: XOR<TenantCreateWithoutDeviceAllocationsInput, TenantUncheckedCreateWithoutDeviceAllocationsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutDeviceAllocationsInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type TenantSubscriptionCreateNestedOneWithoutDeviceAllocationsInput = {
+    create?: XOR<TenantSubscriptionCreateWithoutDeviceAllocationsInput, TenantSubscriptionUncheckedCreateWithoutDeviceAllocationsInput>
+    connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutDeviceAllocationsInput
+    connect?: TenantSubscriptionWhereUniqueInput
+  }
+
+  export type PushyDeviceUpdateOneRequiredWithoutAllocationNestedInput = {
+    create?: XOR<PushyDeviceCreateWithoutAllocationInput, PushyDeviceUncheckedCreateWithoutAllocationInput>
+    connectOrCreate?: PushyDeviceCreateOrConnectWithoutAllocationInput
+    upsert?: PushyDeviceUpsertWithoutAllocationInput
+    connect?: PushyDeviceWhereUniqueInput
+    update?: XOR<XOR<PushyDeviceUpdateToOneWithWhereWithoutAllocationInput, PushyDeviceUpdateWithoutAllocationInput>, PushyDeviceUncheckedUpdateWithoutAllocationInput>
+  }
+
+  export type TenantUpdateOneRequiredWithoutDeviceAllocationsNestedInput = {
+    create?: XOR<TenantCreateWithoutDeviceAllocationsInput, TenantUncheckedCreateWithoutDeviceAllocationsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutDeviceAllocationsInput
+    upsert?: TenantUpsertWithoutDeviceAllocationsInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutDeviceAllocationsInput, TenantUpdateWithoutDeviceAllocationsInput>, TenantUncheckedUpdateWithoutDeviceAllocationsInput>
+  }
+
+  export type TenantSubscriptionUpdateOneWithoutDeviceAllocationsNestedInput = {
+    create?: XOR<TenantSubscriptionCreateWithoutDeviceAllocationsInput, TenantSubscriptionUncheckedCreateWithoutDeviceAllocationsInput>
+    connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutDeviceAllocationsInput
+    upsert?: TenantSubscriptionUpsertWithoutDeviceAllocationsInput
+    disconnect?: TenantSubscriptionWhereInput | boolean
+    delete?: TenantSubscriptionWhereInput | boolean
+    connect?: TenantSubscriptionWhereUniqueInput
+    update?: XOR<XOR<TenantSubscriptionUpdateToOneWithWhereWithoutDeviceAllocationsInput, TenantSubscriptionUpdateWithoutDeviceAllocationsInput>, TenantSubscriptionUncheckedUpdateWithoutDeviceAllocationsInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -15166,6 +19703,7 @@ export namespace Prisma {
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput = {
@@ -15179,6 +19717,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput = {
@@ -15275,6 +19814,7 @@ export namespace Prisma {
     password?: string | null
     role?: string
     isDeleted?: boolean
+    pushyDevices?: PushyDeviceCreateNestedManyWithoutTenantUserInput
   }
 
   export type TenantUserUncheckedCreateWithoutTenantInput = {
@@ -15283,6 +19823,7 @@ export namespace Prisma {
     password?: string | null
     role?: string
     isDeleted?: boolean
+    pushyDevices?: PushyDeviceUncheckedCreateNestedManyWithoutTenantUserInput
   }
 
   export type TenantUserCreateOrConnectWithoutTenantInput = {
@@ -15305,6 +19846,7 @@ export namespace Prisma {
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutTenantInput = {
@@ -15318,6 +19860,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutTenantInput = {
@@ -15354,6 +19897,37 @@ export namespace Prisma {
 
   export type TenantOutletCreateManyTenantInputEnvelope = {
     data: TenantOutletCreateManyTenantInput | TenantOutletCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PushyDeviceAllocationCreateWithoutTenantInput = {
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+    device: PushyDeviceCreateNestedOneWithoutAllocationInput
+    subscription?: TenantSubscriptionCreateNestedOneWithoutDeviceAllocationsInput
+  }
+
+  export type PushyDeviceAllocationUncheckedCreateWithoutTenantInput = {
+    id?: number
+    deviceId: number
+    subscriptionId?: number | null
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PushyDeviceAllocationCreateOrConnectWithoutTenantInput = {
+    where: PushyDeviceAllocationWhereUniqueInput
+    create: XOR<PushyDeviceAllocationCreateWithoutTenantInput, PushyDeviceAllocationUncheckedCreateWithoutTenantInput>
+  }
+
+  export type PushyDeviceAllocationCreateManyTenantInputEnvelope = {
+    data: PushyDeviceAllocationCreateManyTenantInput | PushyDeviceAllocationCreateManyTenantInput[]
     skipDuplicates?: boolean
   }
 
@@ -15429,6 +20003,37 @@ export namespace Prisma {
     isActive?: BoolFilter<"TenantOutlet"> | boolean
   }
 
+  export type PushyDeviceAllocationUpsertWithWhereUniqueWithoutTenantInput = {
+    where: PushyDeviceAllocationWhereUniqueInput
+    update: XOR<PushyDeviceAllocationUpdateWithoutTenantInput, PushyDeviceAllocationUncheckedUpdateWithoutTenantInput>
+    create: XOR<PushyDeviceAllocationCreateWithoutTenantInput, PushyDeviceAllocationUncheckedCreateWithoutTenantInput>
+  }
+
+  export type PushyDeviceAllocationUpdateWithWhereUniqueWithoutTenantInput = {
+    where: PushyDeviceAllocationWhereUniqueInput
+    data: XOR<PushyDeviceAllocationUpdateWithoutTenantInput, PushyDeviceAllocationUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type PushyDeviceAllocationUpdateManyWithWhereWithoutTenantInput = {
+    where: PushyDeviceAllocationScalarWhereInput
+    data: XOR<PushyDeviceAllocationUpdateManyMutationInput, PushyDeviceAllocationUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type PushyDeviceAllocationScalarWhereInput = {
+    AND?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
+    OR?: PushyDeviceAllocationScalarWhereInput[]
+    NOT?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
+    id?: IntFilter<"PushyDeviceAllocation"> | number
+    deviceId?: IntFilter<"PushyDeviceAllocation"> | number
+    tenantId?: IntFilter<"PushyDeviceAllocation"> | number
+    subscriptionId?: IntNullableFilter<"PushyDeviceAllocation"> | number | null
+    addOnId?: IntNullableFilter<"PushyDeviceAllocation"> | number | null
+    allocationType?: StringFilter<"PushyDeviceAllocation"> | string
+    activatedAt?: DateTimeFilter<"PushyDeviceAllocation"> | Date | string
+    expiresAt?: DateTimeNullableFilter<"PushyDeviceAllocation"> | Date | string | null
+    createdAt?: DateTimeFilter<"PushyDeviceAllocation"> | Date | string
+  }
+
   export type TenantOutletCreateWithoutSubscriptionsInput = {
     outletName: string
     address?: string | null
@@ -15486,6 +20091,7 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSubscriptionInput = {
@@ -15496,6 +20102,7 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSubscriptionInput = {
@@ -15510,6 +20117,7 @@ export namespace Prisma {
     maxTransactions?: number | null
     maxProducts?: number | null
     maxUsers?: number | null
+    maxDevices?: number | null
     description?: string | null
   }
 
@@ -15521,6 +20129,7 @@ export namespace Prisma {
     maxTransactions?: number | null
     maxProducts?: number | null
     maxUsers?: number | null
+    maxDevices?: number | null
     description?: string | null
   }
 
@@ -15547,6 +20156,37 @@ export namespace Prisma {
 
   export type TenantSubscriptionAddOnCreateManyTenantSubscriptionInputEnvelope = {
     data: TenantSubscriptionAddOnCreateManyTenantSubscriptionInput | TenantSubscriptionAddOnCreateManyTenantSubscriptionInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PushyDeviceAllocationCreateWithoutSubscriptionInput = {
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+    device: PushyDeviceCreateNestedOneWithoutAllocationInput
+    tenant: TenantCreateNestedOneWithoutDeviceAllocationsInput
+  }
+
+  export type PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput = {
+    id?: number
+    deviceId: number
+    tenantId: number
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput = {
+    where: PushyDeviceAllocationWhereUniqueInput
+    create: XOR<PushyDeviceAllocationCreateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput>
+  }
+
+  export type PushyDeviceAllocationCreateManySubscriptionInputEnvelope = {
+    data: PushyDeviceAllocationCreateManySubscriptionInput | PushyDeviceAllocationCreateManySubscriptionInput[]
     skipDuplicates?: boolean
   }
 
@@ -15630,6 +20270,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSubscriptionInput = {
@@ -15640,6 +20281,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SubscriptionPlanUpsertWithoutSubscriptionInput = {
@@ -15660,6 +20302,7 @@ export namespace Prisma {
     maxTransactions?: NullableIntFieldUpdateOperationsInput | number | null
     maxProducts?: NullableIntFieldUpdateOperationsInput | number | null
     maxUsers?: NullableIntFieldUpdateOperationsInput | number | null
+    maxDevices?: NullableIntFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -15671,6 +20314,7 @@ export namespace Prisma {
     maxTransactions?: NullableIntFieldUpdateOperationsInput | number | null
     maxProducts?: NullableIntFieldUpdateOperationsInput | number | null
     maxUsers?: NullableIntFieldUpdateOperationsInput | number | null
+    maxDevices?: NullableIntFieldUpdateOperationsInput | number | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -15690,6 +20334,22 @@ export namespace Prisma {
     data: XOR<TenantSubscriptionAddOnUpdateManyMutationInput, TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionInput>
   }
 
+  export type PushyDeviceAllocationUpsertWithWhereUniqueWithoutSubscriptionInput = {
+    where: PushyDeviceAllocationWhereUniqueInput
+    update: XOR<PushyDeviceAllocationUpdateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedUpdateWithoutSubscriptionInput>
+    create: XOR<PushyDeviceAllocationCreateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedCreateWithoutSubscriptionInput>
+  }
+
+  export type PushyDeviceAllocationUpdateWithWhereUniqueWithoutSubscriptionInput = {
+    where: PushyDeviceAllocationWhereUniqueInput
+    data: XOR<PushyDeviceAllocationUpdateWithoutSubscriptionInput, PushyDeviceAllocationUncheckedUpdateWithoutSubscriptionInput>
+  }
+
+  export type PushyDeviceAllocationUpdateManyWithWhereWithoutSubscriptionInput = {
+    where: PushyDeviceAllocationScalarWhereInput
+    data: XOR<PushyDeviceAllocationUpdateManyMutationInput, PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionInput>
+  }
+
   export type TenantSubscriptionCreateWithoutSubscriptionAddOnInput = {
     status?: string
     nextPaymentDate: Date | string
@@ -15700,6 +20360,7 @@ export namespace Prisma {
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutSubscriptionAddOnInput = {
@@ -15713,6 +20374,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutSubscriptionAddOnInput = {
@@ -15765,6 +20427,7 @@ export namespace Prisma {
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutSubscriptionAddOnInput = {
@@ -15778,6 +20441,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type SubscriptionAddOnUpsertWithoutSubscriptionsInput = {
@@ -15817,6 +20481,7 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantOutletsInput = {
@@ -15827,6 +20492,7 @@ export namespace Prisma {
     createdAt?: Date | string
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantOutletsInput = {
@@ -15844,6 +20510,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutOutletInput = {
@@ -15857,6 +20524,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutOutletInput = {
@@ -15887,6 +20555,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantOutletsInput = {
@@ -15897,6 +20566,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithWhereUniqueWithoutOutletInput = {
@@ -15925,6 +20595,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutDiscountInput = {
@@ -15938,6 +20609,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutDiscountInput = {
@@ -15973,6 +20645,7 @@ export namespace Prisma {
     createdAt?: Date | string
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantUsersInput = {
@@ -15983,11 +20656,49 @@ export namespace Prisma {
     createdAt?: Date | string
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantUsersInput = {
     where: TenantWhereUniqueInput
     create: XOR<TenantCreateWithoutTenantUsersInput, TenantUncheckedCreateWithoutTenantUsersInput>
+  }
+
+  export type PushyDeviceCreateWithoutTenantUserInput = {
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    subscriptions?: PushySubscriptionCreateNestedManyWithoutDeviceInput
+    allocation?: PushyDeviceAllocationCreateNestedOneWithoutDeviceInput
+  }
+
+  export type PushyDeviceUncheckedCreateWithoutTenantUserInput = {
+    id?: number
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    subscriptions?: PushySubscriptionUncheckedCreateNestedManyWithoutDeviceInput
+    allocation?: PushyDeviceAllocationUncheckedCreateNestedOneWithoutDeviceInput
+  }
+
+  export type PushyDeviceCreateOrConnectWithoutTenantUserInput = {
+    where: PushyDeviceWhereUniqueInput
+    create: XOR<PushyDeviceCreateWithoutTenantUserInput, PushyDeviceUncheckedCreateWithoutTenantUserInput>
+  }
+
+  export type PushyDeviceCreateManyTenantUserInputEnvelope = {
+    data: PushyDeviceCreateManyTenantUserInput | PushyDeviceCreateManyTenantUserInput[]
+    skipDuplicates?: boolean
   }
 
   export type TenantUpsertWithoutTenantUsersInput = {
@@ -16008,6 +20719,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantUsersInput = {
@@ -16018,6 +20730,462 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput = {
+    where: PushyDeviceWhereUniqueInput
+    update: XOR<PushyDeviceUpdateWithoutTenantUserInput, PushyDeviceUncheckedUpdateWithoutTenantUserInput>
+    create: XOR<PushyDeviceCreateWithoutTenantUserInput, PushyDeviceUncheckedCreateWithoutTenantUserInput>
+  }
+
+  export type PushyDeviceUpdateWithWhereUniqueWithoutTenantUserInput = {
+    where: PushyDeviceWhereUniqueInput
+    data: XOR<PushyDeviceUpdateWithoutTenantUserInput, PushyDeviceUncheckedUpdateWithoutTenantUserInput>
+  }
+
+  export type PushyDeviceUpdateManyWithWhereWithoutTenantUserInput = {
+    where: PushyDeviceScalarWhereInput
+    data: XOR<PushyDeviceUpdateManyMutationInput, PushyDeviceUncheckedUpdateManyWithoutTenantUserInput>
+  }
+
+  export type PushyDeviceScalarWhereInput = {
+    AND?: PushyDeviceScalarWhereInput | PushyDeviceScalarWhereInput[]
+    OR?: PushyDeviceScalarWhereInput[]
+    NOT?: PushyDeviceScalarWhereInput | PushyDeviceScalarWhereInput[]
+    id?: IntFilter<"PushyDevice"> | number
+    tenantUserId?: IntFilter<"PushyDevice"> | number
+    deviceToken?: StringFilter<"PushyDevice"> | string
+    platform?: StringFilter<"PushyDevice"> | string
+    deviceName?: StringNullableFilter<"PushyDevice"> | string | null
+    appVersion?: StringNullableFilter<"PushyDevice"> | string | null
+    isActive?: BoolFilter<"PushyDevice"> | boolean
+    lastActiveAt?: DateTimeNullableFilter<"PushyDevice"> | Date | string | null
+    createdAt?: DateTimeFilter<"PushyDevice"> | Date | string
+    updatedAt?: DateTimeFilter<"PushyDevice"> | Date | string
+  }
+
+  export type TenantUserCreateWithoutPushyDevicesInput = {
+    username: string
+    password?: string | null
+    role?: string
+    isDeleted?: boolean
+    tenant?: TenantCreateNestedOneWithoutTenantUsersInput
+  }
+
+  export type TenantUserUncheckedCreateWithoutPushyDevicesInput = {
+    id?: number
+    username: string
+    password?: string | null
+    tenantId: number
+    role?: string
+    isDeleted?: boolean
+  }
+
+  export type TenantUserCreateOrConnectWithoutPushyDevicesInput = {
+    where: TenantUserWhereUniqueInput
+    create: XOR<TenantUserCreateWithoutPushyDevicesInput, TenantUserUncheckedCreateWithoutPushyDevicesInput>
+  }
+
+  export type PushySubscriptionCreateWithoutDeviceInput = {
+    topic: string
+    subscribedAt?: Date | string
+  }
+
+  export type PushySubscriptionUncheckedCreateWithoutDeviceInput = {
+    id?: number
+    topic: string
+    subscribedAt?: Date | string
+  }
+
+  export type PushySubscriptionCreateOrConnectWithoutDeviceInput = {
+    where: PushySubscriptionWhereUniqueInput
+    create: XOR<PushySubscriptionCreateWithoutDeviceInput, PushySubscriptionUncheckedCreateWithoutDeviceInput>
+  }
+
+  export type PushySubscriptionCreateManyDeviceInputEnvelope = {
+    data: PushySubscriptionCreateManyDeviceInput | PushySubscriptionCreateManyDeviceInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PushyDeviceAllocationCreateWithoutDeviceInput = {
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutDeviceAllocationsInput
+    subscription?: TenantSubscriptionCreateNestedOneWithoutDeviceAllocationsInput
+  }
+
+  export type PushyDeviceAllocationUncheckedCreateWithoutDeviceInput = {
+    id?: number
+    tenantId: number
+    subscriptionId?: number | null
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PushyDeviceAllocationCreateOrConnectWithoutDeviceInput = {
+    where: PushyDeviceAllocationWhereUniqueInput
+    create: XOR<PushyDeviceAllocationCreateWithoutDeviceInput, PushyDeviceAllocationUncheckedCreateWithoutDeviceInput>
+  }
+
+  export type TenantUserUpsertWithoutPushyDevicesInput = {
+    update: XOR<TenantUserUpdateWithoutPushyDevicesInput, TenantUserUncheckedUpdateWithoutPushyDevicesInput>
+    create: XOR<TenantUserCreateWithoutPushyDevicesInput, TenantUserUncheckedCreateWithoutPushyDevicesInput>
+    where?: TenantUserWhereInput
+  }
+
+  export type TenantUserUpdateToOneWithWhereWithoutPushyDevicesInput = {
+    where?: TenantUserWhereInput
+    data: XOR<TenantUserUpdateWithoutPushyDevicesInput, TenantUserUncheckedUpdateWithoutPushyDevicesInput>
+  }
+
+  export type TenantUserUpdateWithoutPushyDevicesInput = {
+    username?: StringFieldUpdateOperationsInput | string
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    tenant?: TenantUpdateOneWithoutTenantUsersNestedInput
+  }
+
+  export type TenantUserUncheckedUpdateWithoutPushyDevicesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    username?: StringFieldUpdateOperationsInput | string
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    tenantId?: IntFieldUpdateOperationsInput | number
+    role?: StringFieldUpdateOperationsInput | string
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type PushySubscriptionUpsertWithWhereUniqueWithoutDeviceInput = {
+    where: PushySubscriptionWhereUniqueInput
+    update: XOR<PushySubscriptionUpdateWithoutDeviceInput, PushySubscriptionUncheckedUpdateWithoutDeviceInput>
+    create: XOR<PushySubscriptionCreateWithoutDeviceInput, PushySubscriptionUncheckedCreateWithoutDeviceInput>
+  }
+
+  export type PushySubscriptionUpdateWithWhereUniqueWithoutDeviceInput = {
+    where: PushySubscriptionWhereUniqueInput
+    data: XOR<PushySubscriptionUpdateWithoutDeviceInput, PushySubscriptionUncheckedUpdateWithoutDeviceInput>
+  }
+
+  export type PushySubscriptionUpdateManyWithWhereWithoutDeviceInput = {
+    where: PushySubscriptionScalarWhereInput
+    data: XOR<PushySubscriptionUpdateManyMutationInput, PushySubscriptionUncheckedUpdateManyWithoutDeviceInput>
+  }
+
+  export type PushySubscriptionScalarWhereInput = {
+    AND?: PushySubscriptionScalarWhereInput | PushySubscriptionScalarWhereInput[]
+    OR?: PushySubscriptionScalarWhereInput[]
+    NOT?: PushySubscriptionScalarWhereInput | PushySubscriptionScalarWhereInput[]
+    id?: IntFilter<"PushySubscription"> | number
+    deviceId?: IntFilter<"PushySubscription"> | number
+    topic?: StringFilter<"PushySubscription"> | string
+    subscribedAt?: DateTimeFilter<"PushySubscription"> | Date | string
+  }
+
+  export type PushyDeviceAllocationUpsertWithoutDeviceInput = {
+    update: XOR<PushyDeviceAllocationUpdateWithoutDeviceInput, PushyDeviceAllocationUncheckedUpdateWithoutDeviceInput>
+    create: XOR<PushyDeviceAllocationCreateWithoutDeviceInput, PushyDeviceAllocationUncheckedCreateWithoutDeviceInput>
+    where?: PushyDeviceAllocationWhereInput
+  }
+
+  export type PushyDeviceAllocationUpdateToOneWithWhereWithoutDeviceInput = {
+    where?: PushyDeviceAllocationWhereInput
+    data: XOR<PushyDeviceAllocationUpdateWithoutDeviceInput, PushyDeviceAllocationUncheckedUpdateWithoutDeviceInput>
+  }
+
+  export type PushyDeviceAllocationUpdateWithoutDeviceInput = {
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutDeviceAllocationsNestedInput
+    subscription?: TenantSubscriptionUpdateOneWithoutDeviceAllocationsNestedInput
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateWithoutDeviceInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceCreateWithoutSubscriptionsInput = {
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenantUser: TenantUserCreateNestedOneWithoutPushyDevicesInput
+    allocation?: PushyDeviceAllocationCreateNestedOneWithoutDeviceInput
+  }
+
+  export type PushyDeviceUncheckedCreateWithoutSubscriptionsInput = {
+    id?: number
+    tenantUserId: number
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    allocation?: PushyDeviceAllocationUncheckedCreateNestedOneWithoutDeviceInput
+  }
+
+  export type PushyDeviceCreateOrConnectWithoutSubscriptionsInput = {
+    where: PushyDeviceWhereUniqueInput
+    create: XOR<PushyDeviceCreateWithoutSubscriptionsInput, PushyDeviceUncheckedCreateWithoutSubscriptionsInput>
+  }
+
+  export type PushyDeviceUpsertWithoutSubscriptionsInput = {
+    update: XOR<PushyDeviceUpdateWithoutSubscriptionsInput, PushyDeviceUncheckedUpdateWithoutSubscriptionsInput>
+    create: XOR<PushyDeviceCreateWithoutSubscriptionsInput, PushyDeviceUncheckedCreateWithoutSubscriptionsInput>
+    where?: PushyDeviceWhereInput
+  }
+
+  export type PushyDeviceUpdateToOneWithWhereWithoutSubscriptionsInput = {
+    where?: PushyDeviceWhereInput
+    data: XOR<PushyDeviceUpdateWithoutSubscriptionsInput, PushyDeviceUncheckedUpdateWithoutSubscriptionsInput>
+  }
+
+  export type PushyDeviceUpdateWithoutSubscriptionsInput = {
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUser?: TenantUserUpdateOneRequiredWithoutPushyDevicesNestedInput
+    allocation?: PushyDeviceAllocationUpdateOneWithoutDeviceNestedInput
+  }
+
+  export type PushyDeviceUncheckedUpdateWithoutSubscriptionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantUserId?: IntFieldUpdateOperationsInput | number
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    allocation?: PushyDeviceAllocationUncheckedUpdateOneWithoutDeviceNestedInput
+  }
+
+  export type PushyDeviceCreateWithoutAllocationInput = {
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenantUser: TenantUserCreateNestedOneWithoutPushyDevicesInput
+    subscriptions?: PushySubscriptionCreateNestedManyWithoutDeviceInput
+  }
+
+  export type PushyDeviceUncheckedCreateWithoutAllocationInput = {
+    id?: number
+    tenantUserId: number
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    subscriptions?: PushySubscriptionUncheckedCreateNestedManyWithoutDeviceInput
+  }
+
+  export type PushyDeviceCreateOrConnectWithoutAllocationInput = {
+    where: PushyDeviceWhereUniqueInput
+    create: XOR<PushyDeviceCreateWithoutAllocationInput, PushyDeviceUncheckedCreateWithoutAllocationInput>
+  }
+
+  export type TenantCreateWithoutDeviceAllocationsInput = {
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutDeviceAllocationsInput = {
+    id?: number
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutDeviceAllocationsInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutDeviceAllocationsInput, TenantUncheckedCreateWithoutDeviceAllocationsInput>
+  }
+
+  export type TenantSubscriptionCreateWithoutDeviceAllocationsInput = {
+    status?: string
+    nextPaymentDate: Date | string
+    subscriptionValidUntil: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
+    discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
+    tenant: TenantCreateNestedOneWithoutSubscriptionInput
+    subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
+    subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+  }
+
+  export type TenantSubscriptionUncheckedCreateWithoutDeviceAllocationsInput = {
+    id?: number
+    tenantId: number
+    outletId: number
+    subscriptionPlanId: number
+    status?: string
+    nextPaymentDate: Date | string
+    subscriptionValidUntil: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    discountId?: number | null
+    subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+  }
+
+  export type TenantSubscriptionCreateOrConnectWithoutDeviceAllocationsInput = {
+    where: TenantSubscriptionWhereUniqueInput
+    create: XOR<TenantSubscriptionCreateWithoutDeviceAllocationsInput, TenantSubscriptionUncheckedCreateWithoutDeviceAllocationsInput>
+  }
+
+  export type PushyDeviceUpsertWithoutAllocationInput = {
+    update: XOR<PushyDeviceUpdateWithoutAllocationInput, PushyDeviceUncheckedUpdateWithoutAllocationInput>
+    create: XOR<PushyDeviceCreateWithoutAllocationInput, PushyDeviceUncheckedCreateWithoutAllocationInput>
+    where?: PushyDeviceWhereInput
+  }
+
+  export type PushyDeviceUpdateToOneWithWhereWithoutAllocationInput = {
+    where?: PushyDeviceWhereInput
+    data: XOR<PushyDeviceUpdateWithoutAllocationInput, PushyDeviceUncheckedUpdateWithoutAllocationInput>
+  }
+
+  export type PushyDeviceUpdateWithoutAllocationInput = {
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUser?: TenantUserUpdateOneRequiredWithoutPushyDevicesNestedInput
+    subscriptions?: PushySubscriptionUpdateManyWithoutDeviceNestedInput
+  }
+
+  export type PushyDeviceUncheckedUpdateWithoutAllocationInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantUserId?: IntFieldUpdateOperationsInput | number
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptions?: PushySubscriptionUncheckedUpdateManyWithoutDeviceNestedInput
+  }
+
+  export type TenantUpsertWithoutDeviceAllocationsInput = {
+    update: XOR<TenantUpdateWithoutDeviceAllocationsInput, TenantUncheckedUpdateWithoutDeviceAllocationsInput>
+    create: XOR<TenantCreateWithoutDeviceAllocationsInput, TenantUncheckedCreateWithoutDeviceAllocationsInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutDeviceAllocationsInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutDeviceAllocationsInput, TenantUncheckedUpdateWithoutDeviceAllocationsInput>
+  }
+
+  export type TenantUpdateWithoutDeviceAllocationsInput = {
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutDeviceAllocationsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantSubscriptionUpsertWithoutDeviceAllocationsInput = {
+    update: XOR<TenantSubscriptionUpdateWithoutDeviceAllocationsInput, TenantSubscriptionUncheckedUpdateWithoutDeviceAllocationsInput>
+    create: XOR<TenantSubscriptionCreateWithoutDeviceAllocationsInput, TenantSubscriptionUncheckedCreateWithoutDeviceAllocationsInput>
+    where?: TenantSubscriptionWhereInput
+  }
+
+  export type TenantSubscriptionUpdateToOneWithWhereWithoutDeviceAllocationsInput = {
+    where?: TenantSubscriptionWhereInput
+    data: XOR<TenantSubscriptionUpdateWithoutDeviceAllocationsInput, TenantSubscriptionUncheckedUpdateWithoutDeviceAllocationsInput>
+  }
+
+  export type TenantSubscriptionUpdateWithoutDeviceAllocationsInput = {
+    status?: StringFieldUpdateOperationsInput | string
+    nextPaymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
+    discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
+    tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
+    subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
+    subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+  }
+
+  export type TenantSubscriptionUncheckedUpdateWithoutDeviceAllocationsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionPlanId?: IntFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
+    nextPaymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
   }
 
   export type TenantSubscriptionCreateManySubscriptionPlanInput = {
@@ -16042,6 +21210,7 @@ export namespace Prisma {
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutSubscriptionPlanInput = {
@@ -16055,6 +21224,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutSubscriptionPlanInput = {
@@ -16120,11 +21290,23 @@ export namespace Prisma {
     isActive?: boolean
   }
 
+  export type PushyDeviceAllocationCreateManyTenantInput = {
+    id?: number
+    deviceId: number
+    subscriptionId?: number | null
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
   export type TenantUserUpdateWithoutTenantInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: NullableStringFieldUpdateOperationsInput | string | null
     role?: StringFieldUpdateOperationsInput | string
     isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    pushyDevices?: PushyDeviceUpdateManyWithoutTenantUserNestedInput
   }
 
   export type TenantUserUncheckedUpdateWithoutTenantInput = {
@@ -16133,6 +21315,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     role?: StringFieldUpdateOperationsInput | string
     isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    pushyDevices?: PushyDeviceUncheckedUpdateManyWithoutTenantUserNestedInput
   }
 
   export type TenantUserUncheckedUpdateManyWithoutTenantInput = {
@@ -16153,6 +21336,7 @@ export namespace Prisma {
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutTenantInput = {
@@ -16166,6 +21350,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutTenantInput = {
@@ -16205,10 +21390,53 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
   }
 
+  export type PushyDeviceAllocationUpdateWithoutTenantInput = {
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    device?: PushyDeviceUpdateOneRequiredWithoutAllocationNestedInput
+    subscription?: TenantSubscriptionUpdateOneWithoutDeviceAllocationsNestedInput
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateManyWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type TenantSubscriptionAddOnCreateManyTenantSubscriptionInput = {
     id?: number
     addOnId: number
     quantity?: number
+  }
+
+  export type PushyDeviceAllocationCreateManySubscriptionInput = {
+    id?: number
+    deviceId: number
+    tenantId: number
+    addOnId?: number | null
+    allocationType?: string
+    activatedAt?: Date | string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
   }
 
   export type TenantSubscriptionAddOnUpdateWithoutTenantSubscriptionInput = {
@@ -16226,6 +21454,38 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     addOnId?: IntFieldUpdateOperationsInput | number
     quantity?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type PushyDeviceAllocationUpdateWithoutSubscriptionInput = {
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    device?: PushyDeviceUpdateOneRequiredWithoutAllocationNestedInput
+    tenant?: TenantUpdateOneRequiredWithoutDeviceAllocationsNestedInput
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateWithoutSubscriptionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceId?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    addOnId?: NullableIntFieldUpdateOperationsInput | number | null
+    allocationType?: StringFieldUpdateOperationsInput | string
+    activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TenantSubscriptionCreateManyOutletInput = {
@@ -16250,6 +21510,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutOutletInput = {
@@ -16263,6 +21524,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutOutletInput = {
@@ -16299,6 +21561,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutDiscountInput = {
@@ -16312,6 +21575,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutDiscountInput = {
@@ -16324,6 +21588,80 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushyDeviceCreateManyTenantUserInput = {
+    id?: number
+    deviceToken: string
+    platform: string
+    deviceName?: string | null
+    appVersion?: string | null
+    isActive?: boolean
+    lastActiveAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PushyDeviceUpdateWithoutTenantUserInput = {
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptions?: PushySubscriptionUpdateManyWithoutDeviceNestedInput
+    allocation?: PushyDeviceAllocationUpdateOneWithoutDeviceNestedInput
+  }
+
+  export type PushyDeviceUncheckedUpdateWithoutTenantUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptions?: PushySubscriptionUncheckedUpdateManyWithoutDeviceNestedInput
+    allocation?: PushyDeviceAllocationUncheckedUpdateOneWithoutDeviceNestedInput
+  }
+
+  export type PushyDeviceUncheckedUpdateManyWithoutTenantUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    deviceToken?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    deviceName?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastActiveAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushySubscriptionCreateManyDeviceInput = {
+    id?: number
+    topic: string
+    subscribedAt?: Date | string
+  }
+
+  export type PushySubscriptionUpdateWithoutDeviceInput = {
+    topic?: StringFieldUpdateOperationsInput | string
+    subscribedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushySubscriptionUncheckedUpdateWithoutDeviceInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    topic?: StringFieldUpdateOperationsInput | string
+    subscribedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PushySubscriptionUncheckedUpdateManyWithoutDeviceInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    topic?: StringFieldUpdateOperationsInput | string
+    subscribedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 

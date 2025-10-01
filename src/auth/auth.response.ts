@@ -4,6 +4,8 @@ export interface TokenResponseBody {
     refreshToken: string,
     tenantId: number,
     userId: number,
+    notificationTopics?: string[],
+    planName?: string | null
 }
 
 export interface ValidateTokenResponseBody {

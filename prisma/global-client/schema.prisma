@@ -17,6 +17,7 @@ model SubscriptionPlan {
   maxTransactions Int?                 @map("MAX_TRANSACTIONS") // New: e.g., 75 for Free
   maxProducts     Int?                 @map("MAX_PRODUCTS") // New: e.g., 20 for Free
   maxUsers        Int?                 @map("MAX_USERS") // New: e.g., 2 for Basic
+  maxDevices      Int?                 @default(5) @map("MAX_DEVICES") // for push notifications devices
   description     String?              @map("DESCRIPTION")
   subscription    TenantSubscription[]
 
@@ -41,14 +42,15 @@ model SubscriptionAddOn {
 }
 
 model Tenant {
-  id            Int                  @id @default(autoincrement()) @map("ID")
-  tenantName    String               @map("TENANT_NAME")
-  databaseName  String?              @unique @map("DATABASE_NAME")
-  phoneNumber   String?              @map("PHONE_NUMBER")
-  createdAt     DateTime             @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
-  tenantUsers   TenantUser[]
-  subscription  TenantSubscription[]
-  tenantOutlets TenantOutlet[]
+  id                Int                     @id @default(autoincrement()) @map("ID")
+  tenantName        String                  @map("TENANT_NAME")
+  databaseName      String?                 @unique @map("DATABASE_NAME")
+  phoneNumber       String?                 @map("PHONE_NUMBER")
+  createdAt         DateTime                @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
+  tenantUsers       TenantUser[]
+  subscription      TenantSubscription[]
+  tenantOutlets     TenantOutlet[]
+  deviceAllocations PushyDeviceAllocation[]
 
   @@index([tenantName]) // If you often search for tenants by name
   @@index([createdAt]) // For sorting or filtering tenants by creation date
@@ -71,6 +73,7 @@ model TenantSubscription {
   tenant                 Tenant                    @relation(fields: [tenantId], references: [id])
   subscriptionPlan       SubscriptionPlan          @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
   subscriptionAddOn      TenantSubscriptionAddOn[]
+  deviceAllocations      PushyDeviceAllocation[]
 
   @@index([status])
   @@index([nextPaymentDate])
@@ -128,13 +131,14 @@ model Discount {
 }
 
 model TenantUser {
-  id        Int     @id @default(autoincrement()) @map("ID")
-  username  String  @unique @map("USERNAME")
-  password  String? @map("PASSWORD")
-  tenantId  Int     @map("TENANT_ID")
-  tenant    Tenant? @relation(fields: [tenantId], references: [id])
-  role      String  @default("user") @map("ROLE")
-  isDeleted Boolean @default(false) @map("IS_DELETED")
+  id           Int           @id @default(autoincrement()) @map("ID")
+  username     String        @unique @map("USERNAME")
+  password     String?       @map("PASSWORD")
+  tenantId     Int           @map("TENANT_ID")
+  tenant       Tenant?       @relation(fields: [tenantId], references: [id])
+  role         String        @default("user") @map("ROLE")
+  isDeleted    Boolean       @default(false) @map("IS_DELETED")
+  pushyDevices PushyDevice[]
 
   @@index([role])
   @@index([isDeleted])
@@ -174,4 +178,56 @@ model Permission {
   version      Int?      @default(1) @map("VERSION")
 
   @@map("permission")
+}
+
+model PushyDevice {
+  id            Int                    @id @default(autoincrement()) @map("ID")
+  tenantUserId  Int                    @map("TENANT_USER_ID")
+  deviceToken   String                 @unique @map("DEVICE_TOKEN") // Pushy device token
+  platform      String                 @map("PLATFORM") // "android", "ios", "web"
+  deviceName    String?                @map("DEVICE_NAME") // Optional device identifier
+  appVersion    String?                @map("APP_VERSION")
+  isActive      Boolean                @default(true) @map("IS_ACTIVE")
+  lastActiveAt  DateTime?              @map("LAST_ACTIVE_AT")
+  createdAt     DateTime               @default(now()) @map("CREATED_AT")
+  updatedAt     DateTime               @updatedAt @map("UPDATED_AT")
+  tenantUser    TenantUser             @relation(fields: [tenantUserId], references: [id])
+  subscriptions PushySubscription[]
+  allocation    PushyDeviceAllocation?
+
+  @@index([tenantUserId])
+  @@index([deviceToken])
+  @@map("pushy_device")
+}
+
+model PushySubscription {
+  id           Int         @id @default(autoincrement()) @map("ID")
+  deviceId     Int         @map("DEVICE_ID")
+  topic        String      @map("TOPIC") // e.g., "tenant_123_outlet_456_sales"
+  subscribedAt DateTime    @default(now()) @map("SUBSCRIBED_AT")
+  device       PushyDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, topic])
+  @@index([topic])
+  @@map("pushy_subscription")
+}
+
+// Track device allocation for billing
+model PushyDeviceAllocation {
+  id             Int                 @id @default(autoincrement()) @map("ID")
+  deviceId       Int                 @unique @map("DEVICE_ID")
+  tenantId       Int                 @map("TENANT_ID")
+  subscriptionId Int?                @map("SUBSCRIPTION_ID") // Which subscription covers this
+  addOnId        Int?                @map("ADD_ON_ID") // If using add-on
+  allocationType String              @default("included") @map("ALLOCATION_TYPE") // "included" or "addon"
+  activatedAt    DateTime            @default(now()) @map("ACTIVATED_AT")
+  expiresAt      DateTime?           @map("EXPIRES_AT") // For addon expiry
+  createdAt      DateTime            @default(now()) @map("CREATED_AT")
+  device         PushyDevice         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  tenant         Tenant              @relation(fields: [tenantId], references: [id])
+  subscription   TenantSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId])
+  @@index([allocationType])
+  @@map("pushy_device_allocation")
 }

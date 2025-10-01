@@ -60,7 +60,8 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 token: jwtToken,
                 tokenExpiryDate: tokenExpiryDate ?? "",
                 refreshToken: refreshToken.token,
-                tenantId: tenantUser?.id || 0,
+                globalTenantId: tenantUser?.tenantId || 0,
+                globalTenantUserId: tenantUser?.id || 0,
                 userId: customerUser?.id || 0,
                 notificationTopics: decodedToken.user?.notificationTopics,
                 planName: decodedToken.user?.planName
@@ -122,7 +123,8 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             token: jwtToken,
             tokenExpiryDate: tokenExpiryDate ?? "",
             refreshToken: newRefreshToken.token,
-            tenantId: tenantUser?.id || 0,
+            globalTenantId: tenantUser?.tenantId || 0,
+            globalTenantUserId: tenantUser?.id || 0,
             userId: customerUser?.id || 0,
             notificationTopics: decodedToken.user?.notificationTopics,
             planName: decodedToken.user?.planName
@@ -235,7 +237,6 @@ let getTenantPlanName = async (tenantId: number): Promise<string | null> => {
                 }
             }
         }
-
         return bestPlan;
     } catch (error) {
         console.error('Error getting tenant plan name:', error);
@@ -249,45 +250,60 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
         // Frontend will control whether to use them based on plan from JWT
 
         const tenantPrisma = getTenantPrisma(db);
+        const globalPrisma = getGlobalPrisma();
 
-        // Get user with roles and permissions
+        // Get user with roles
         const user = await tenantPrisma.user.findUnique({
             where: {
                 id: userId
             },
             include: {
-                userRoles: {
-                    include: {
-                        role: {
-                            include: {
-                                rolePermissions: {
-                                    include: {
-                                        permission: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                roles: true
+            }
+        });
+
+        if (!user) {
+            await tenantPrisma.$disconnect();
+            return [];
+        }
+
+        // Get all role IDs for this user
+        const roleIds = user.roles.map((role: any) => role.id);
+
+        // Get role permissions from tenant DB
+        const rolePermissions = await tenantPrisma.rolePermission.findMany({
+            where: {
+                roleId: {
+                    in: roleIds
+                },
+                deleted: false
             }
         });
 
         await tenantPrisma.$disconnect();
 
-        if (!user) {
-            return [];
-        }
+        // Get permission IDs
+        const permissionIds = rolePermissions.map((rp: any) => rp.permissionId);
 
-        // Extract notification permissions (check both name and category)
+        // Get actual permissions from global DB
+        const permissions = await globalPrisma.permission.findMany({
+            where: {
+                id: {
+                    in: permissionIds
+                },
+                deleted: false,
+                // Filter for notification permissions
+                name: {
+                    startsWith: 'Receive '
+                },
+                category: 'Notifications'
+            }
+        });
+
+        // Extract notification permission names
         const notificationPermissions = new Set<string>();
-        user.userRoles.forEach((userRole: any) => {
-            userRole.role.rolePermissions.forEach((rolePermission: any) => {
-                // Check if permission starts with "Receive" AND is in "Notifications" category
-                if (rolePermission.permission.name.startsWith('Receive ') &&
-                    rolePermission.permission.category === 'Notifications') {
-                    notificationPermissions.add(rolePermission.permission.name);
-                }
-            });
+        permissions.forEach((permission: any) => {
+            notificationPermissions.add(permission.name);
         });
 
         // Generate topics
@@ -330,8 +346,11 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
     let planName: string | null = null;
 
     if (tenantUser.username !== "avjiang") {
-        notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db);
         planName = await getTenantPlanName(tenantUser.tenantId);
+
+        if (planName === "Pro") {
+            notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db);
+        }
     }
 
     // Create a jwt token containing the user info that expires in 1 day

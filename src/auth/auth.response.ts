@@ -2,7 +2,8 @@ export interface TokenResponseBody {
     token: string,
     tokenExpiryDate: string,
     refreshToken: string,
-    tenantId: number,
+    globalTenantId: number,
+    globalTenantUserId: number,
     userId: number,
     notificationTopics?: string[],
     planName?: string | null

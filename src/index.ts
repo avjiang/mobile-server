@@ -56,7 +56,7 @@ app.use('/deliveryOrder', require('./delivery_order/delivery-order.controller'))
 app.use('/invoice', require('./invoice/invoice.controller'))
 app.use('/invoiceSettlement', require('./invoice_settlement/invoice_settlement.controller'))
 app.use('/quotation', require('./quotation/quotation.controller'))
-app.use('/pushy', require('./pushy/device.routes'))
+app.use('/pushy', require('./pushy/device.controller'))
 
 // error middleware
 app.use(errorMiddleware)

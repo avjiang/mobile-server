@@ -7,6 +7,7 @@ export interface TokenResponseBody {
     userId: number,
     notificationTopics?: string[],
     planName?: string | null
+    databaseName?: string | null
 }
 
 export interface ValidateTokenResponseBody {

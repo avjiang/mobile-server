@@ -322,6 +322,112 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
     }
 }
 
+async function clearStock(databaseName: string, stockClearance: StockAdjustment): Promise<number> {
+    const tenantPrisma = getTenantPrisma(databaseName);
+
+    try {
+        // Validate input
+        if (stockClearance.version === undefined || stockClearance.version < 0) {
+            throw new RequestValidateError('Valid version number must be provided');
+        }
+
+        await tenantPrisma.$transaction(async (tx) => {
+            // Fetch the stock balance
+            const stock = await tx.stockBalance.findFirst({
+                where: {
+                    itemId: stockClearance.itemId,
+                    outletId: stockClearance.outletId,
+                    deleted: false
+                },
+                select: { id: true, availableQuantity: true, onHandQuantity: true, version: true }
+            });
+
+            if (!stock) {
+                throw new NotFoundError(`Stock not found for itemId ${stockClearance.itemId} and outletId ${stockClearance.outletId}`);
+            }
+
+            // Version check
+            // const currentVersion = stock.version || 1;
+            // if (currentVersion !== stockClearance.version) {
+            //     throw new VersionMismatchError(`Version mismatch for item ${stockClearance.itemId}`, [{
+            //         itemId: stockClearance.itemId,
+            //         expectedVersion: stockClearance.version,
+            //         foundVersion: currentVersion,
+            //     }]);
+            // }
+
+            // Fetch all active stock receipts for this item/outlet
+            const stockReceipts = await tx.stockReceipt.findMany({
+                where: {
+                    itemId: stockClearance.itemId,
+                    outletId: stockClearance.outletId,
+                    quantity: { gt: 0 },
+                    deleted: false,
+                },
+                select: { id: true, quantity: true }
+            });
+
+            const previousAvailableQuantity = stock.availableQuantity;
+            const previousOnHandQuantity = stock.onHandQuantity;
+            const newQuantity = new Decimal(0);
+            const deltaQuantity = newQuantity.sub(stock.availableQuantity);
+
+            // Create stock movement record
+            await tx.stockMovement.create({
+                data: {
+                    itemId: stockClearance.itemId,
+                    outletId: stockClearance.outletId,
+                    previousAvailableQuantity,
+                    previousOnHandQuantity,
+                    availableQuantityDelta: deltaQuantity,
+                    onHandQuantityDelta: deltaQuantity,
+                    movementType: 'Stock Clearance',
+                    documentId: 0,
+                    reason: stockClearance.reason || 'Stock clearance',
+                    remark: stockClearance.remark || 'Stock cleared to zero',
+                    deleted: false,
+                    createdAt: new Date(),
+                    performedBy: stockClearance.performedBy ?? null,
+                }
+            });
+
+            // Mark all stock receipts as deleted
+            if (stockReceipts.length > 0) {
+                await Promise.all(stockReceipts.map(receipt =>
+                    tx.stockReceipt.update({
+                        where: { id: receipt.id },
+                        data: {
+                            quantity: receipt.quantity, // Keep original quantity for audit
+                            updatedAt: new Date(),
+                            version: { increment: 1 },
+                            deleted: true,
+                            deletedAt: new Date(),
+                        }
+                    })
+                ));
+            }
+
+            // Update stock balance to zero
+            await tx.stockBalance.update({
+                where: {
+                    id: stock.id,
+                },
+                data: {
+                    availableQuantity: newQuantity,
+                    onHandQuantity: newQuantity,
+                    version: { increment: 1 },
+                    updatedAt: new Date(),
+                    lastRestockDate: new Date(),
+                },
+            });
+        });
+
+        return 1; // Always return 1 since we process one item at a time
+    } catch (error) {
+        throw error;
+    }
+}
+
 let updateManyStocks = async (databaseName: string, stocks: StockBalance[]) => {
     try {
         const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -371,4 +477,4 @@ let removeStock = async (databaseName: string, id: number) => {
     }
 }
 
-export = { getAllStock, getStockByItemId, stockAdjustment, updateManyStocks, removeStock }
+export = { getAllStock, getStockByItemId, stockAdjustment, clearStock, updateManyStocks, removeStock }

@@ -573,11 +573,6 @@ let getById = async (id: number, databaseName: string) => {
                                         deleted: false
                                     },
                                     orderBy: { id: 'asc' }
-                                },
-                                invoiceSettlement: {
-                                    where: {
-                                        deleted: false
-                                    }
                                 }
                             }
                         }
@@ -590,28 +585,51 @@ let getById = async (id: number, databaseName: string) => {
             throw new NotFoundError("Quotation");
         }
 
-        // Calculate counts directly
+        // Calculate counts and restructure purchase orders with extracted settlements
         const totalPurchaseOrderCount = quotation.purchaseOrders.length;
         let totalDeliveryOrderCount = 0;
         let totalInvoiceCount = 0;
         let totalSettlementCount = 0;
 
-        quotation.purchaseOrders.forEach(po => {
-            totalDeliveryOrderCount += po.deliveryOrders?.length || 0;
-            totalInvoiceCount += po.invoices?.length || 0;
+        // Process each purchase order to extract and deduplicate invoice settlements
+        const enrichedPurchaseOrders = await Promise.all(
+            quotation.purchaseOrders.map(async (po) => {
+                totalDeliveryOrderCount += po.deliveryOrders?.length || 0;
+                totalInvoiceCount += po.invoices?.length || 0;
 
-            // Count unique settlements for this PO
-            const uniqueSettlements = new Set(
-                po.invoices
-                    .map(inv => inv.invoiceSettlement?.id)
-                    .filter(id => id !== undefined)
-            );
-            totalSettlementCount += uniqueSettlements.size;
-        });
+                // Extract unique invoice settlement IDs from this PO's invoices
+                const invoiceSettlementIds = new Set<number>();
+                po.invoices.forEach(inv => {
+                    if (inv.invoiceSettlementId) {
+                        invoiceSettlementIds.add(inv.invoiceSettlementId);
+                    }
+                });
 
-        // Return quotation with counts and restructured data
+                // Fetch invoice settlements for this PO
+                const invoiceSettlements = invoiceSettlementIds.size > 0
+                    ? await tenantPrisma.invoiceSettlement.findMany({
+                        where: {
+                            id: { in: Array.from(invoiceSettlementIds) },
+                            deleted: false
+                        },
+                        orderBy: { id: 'asc' }
+                    })
+                    : [];
+
+                totalSettlementCount += invoiceSettlements.length;
+
+                // Return PO with settlements at the same level as invoices and delivery orders
+                return {
+                    ...po,
+                    invoiceSettlements
+                };
+            })
+        );
+
+        // Return quotation with counts and restructured purchase orders
         return {
             ...quotation,
+            purchaseOrders: enrichedPurchaseOrders,
             itemCount: quotation.quotationItems.length,
             purchaseOrderCount: totalPurchaseOrderCount,
             deliveryOrderCount: totalDeliveryOrderCount,

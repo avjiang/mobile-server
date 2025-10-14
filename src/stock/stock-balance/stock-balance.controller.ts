@@ -5,7 +5,7 @@ import { StockBalance } from "../../../prisma/client/generated/client"
 import NetworkRequest from "../../api-helpers/network-request"
 import { RequestValidateError } from "../../api-helpers/error"
 import { sendResponse } from "../../api-helpers/network"
-import { CreateStocksRequestBody, StockAdjustmentRequestBody, UpdateStocksRequestBody } from "./stock-balance.request"
+import { CreateStocksRequestBody, StockAdjustment, StockAdjustmentRequestBody, UpdateStocksRequestBody } from "./stock-balance.request"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 
@@ -55,6 +55,28 @@ let stockAdjustment = (req: NetworkRequest<StockAdjustmentRequestBody>, res: Res
                 message = message.substring(0, message.length - 1)
             }
             sendResponse(res, message)
+        })
+        .catch(next)
+}
+
+let clearStock = (req: NetworkRequest<StockAdjustment>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+
+    const requestBody = req.body
+
+    // Validate required fields for single stock clearance
+    if (!requestBody.itemId || !requestBody.outletId || requestBody.version === undefined) {
+        throw new RequestValidateError('itemId, outletId, and version are required for stock clearance')
+    }
+
+    service.clearStock(req.user.databaseName, requestBody)
+        .then((clearedRecordCount: number) => {
+            sendResponse(res, `Successfully cleared stock`)
         })
         .catch(next)
 }
@@ -109,6 +131,6 @@ router.get("/sync", getAllStock)
 router.get('/find', getStockByItemId)
 router.put('/adjustment', stockAdjustment)
 router.put('/update', updateManyStocks)
-// router.post('/create', createManyStocks)
+router.post('/clear', clearStock)
 // router.delete('/:id', removeStock)
 export = router

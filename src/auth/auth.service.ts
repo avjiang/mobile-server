@@ -64,7 +64,8 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 globalTenantUserId: tenantUser?.id || 0,
                 userId: customerUser?.id || 0,
                 notificationTopics: decodedToken.user?.notificationTopics,
-                planName: decodedToken.user?.planName
+                planName: decodedToken.user?.planName,
+                databaseName: tenantUser?.tenant?.databaseName || ''
             }
             return response
         } catch (error) {
@@ -127,7 +128,8 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             globalTenantUserId: tenantUser?.id || 0,
             userId: customerUser?.id || 0,
             notificationTopics: decodedToken.user?.notificationTopics,
-            planName: decodedToken.user?.planName
+            planName: decodedToken.user?.planName,
+            databaseName: tenantUser.tenant?.databaseName || ''
         }
         return response
     }

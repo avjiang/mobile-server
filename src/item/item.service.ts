@@ -15,32 +15,28 @@ let getAll = async (
     const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
 
     try {
-        // Parse last sync timestamp with optimization for null/first sync
-        let lastSync: Date;
+        let where: any;
 
-        if (lastSyncTimestamp && lastSyncTimestamp !== 'null') {
-            lastSync = new Date(lastSyncTimestamp);
+        // If lastSyncTimestamp is null, get all data (first sync)
+        if (!lastSyncTimestamp || lastSyncTimestamp === 'null') {
+            where = lastVersion
+                ? { version: { gt: lastVersion } }
+                : {}; // No filtering - get all records
         } else {
-            // Option 1: Limit to recent data (e.g., last 30 days) for first sync
-            // const daysBack = 30;
-            // lastSync = new Date();
-            // lastSync.setDate(lastSync.getDate() - daysBack);
+            // Parse last sync timestamp for incremental sync
+            const lastSync = new Date(lastSyncTimestamp);
 
-            // Option 2: Or use current business date only
-            lastSync = new Date();
-            lastSync.setHours(0, 0, 0, 0); // Start of today
+            where = lastVersion
+                ? { version: { gt: lastVersion } }
+                : {
+                    OR: [
+                        { createdAt: { gte: lastSync } },
+                        { updatedAt: { gte: lastSync } },
+                        { deletedAt: { gte: lastSync } },
+                    ],
+                };
         }
 
-        // Build query conditions - add deleted filter
-        const where = lastVersion
-            ? { version: { gt: lastVersion } }
-            : {
-                OR: [
-                    { createdAt: { gte: lastSync } },
-                    { updatedAt: { gte: lastSync } },
-                    { deletedAt: { gte: lastSync } },
-                ],
-            };
         // Count total changes
         const total = await tenantPrisma.item.count({ where });
 

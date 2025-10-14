@@ -41,7 +41,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             salesItems,
             todayPurchaseOrders,
             todayDeliveryOrders,
-            todayInvoices
+            todayInvoices,
+            allSales
         ] = await Promise.all([
             // Voided sales
             tenantPrisma.sales.aggregate({
@@ -282,6 +283,42 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                             quantity: true
                         }
                     }
+                }
+            }),
+
+            // All sales for the session
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...sessionFilter,
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    businessDate: true,
+                    salesType: true,
+                    customerName: true,
+                    phoneNumber: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true,
+                    isTaxInclusive: true,
+                    status: true,
+                    remark: true,
+                    salesItems: {
+                        select: {
+                            id: true,
+                            itemName: true,
+                            itemModel: true,
+                            quantity: true,
+                            cost: true,
+                            discountAmount: true,
+                            taxAmount: true,
+                            subtotalAmount: true,
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
                 }
             })
         ]);
@@ -674,6 +711,31 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     itemCount: invoice.invoiceItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
                 }))
             },
+
+            // Sales array
+            sales: allSales.map(sale => ({
+                id: sale.id,
+                businessDate: sale.businessDate,
+                salesType: sale.salesType,
+                customerName: sale.customerName || 'Guest',
+                phoneNumber: sale.phoneNumber || '',
+                totalAmount: sale.totalAmount.toNumber(),
+                paidAmount: sale.paidAmount.toNumber(),
+                profitAmount: sale.profitAmount.toNumber(),
+                isTaxInclusive: true,
+                status: sale.status,
+                remark: sale.remark || '',
+                salesItems: sale.salesItems.map(item => ({
+                    id: item.id,
+                    itemName: item.itemName,
+                    itemModel: item.itemModel,
+                    cost: item.cost.toNumber(),
+                    quantity: item.quantity.toNumber(),
+                    discountAmount: item.discountAmount.toNumber(),
+                    taxAmount: item.taxAmount.toNumber(),
+                    subtotalAmount: item.subtotalAmount.toNumber()
+                }))
+            }))
         };
     }
     catch (error) {
@@ -723,7 +785,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             salesItems,
             todayPurchaseOrders,
             todayDeliveryOrders,
-            todayInvoices
+            todayInvoices,
+            allSales
         ] = await Promise.all([
             // Voided sales
             tenantPrisma.sales.aggregate({
@@ -964,6 +1027,42 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                             quantity: true
                         }
                     }
+                }
+            }),
+
+            // All sales for the outlet
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...outletFilter,
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    businessDate: true,
+                    salesType: true,
+                    customerName: true,
+                    phoneNumber: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true,
+                    isTaxInclusive: true,
+                    status: true,
+                    remark: true,
+                    salesItems: {
+                        select: {
+                            id: true,
+                            itemName: true,
+                            itemModel: true,
+                            quantity: true,
+                            cost: true,
+                            discountAmount: true,
+                            taxAmount: true,
+                            subtotalAmount: true,
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
                 }
             })
         ]);
@@ -1331,6 +1430,31 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     itemCount: invoice.invoiceItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
                 }))
             },
+
+            // Sales array
+            sales: allSales.map(sale => ({
+                id: sale.id,
+                businessDate: sale.businessDate,
+                salesType: sale.salesType,
+                customerName: sale.customerName || 'Guest',
+                phoneNumber: sale.phoneNumber || '',
+                totalAmount: sale.totalAmount.toNumber(),
+                paidAmount: sale.paidAmount.toNumber(),
+                profitAmount: sale.profitAmount.toNumber(),
+                status: sale.status,
+                remark: sale.remark || '',
+                isTaxInclusive: true,
+                salesItems: sale.salesItems.map(item => ({
+                    id: item.id,
+                    itemName: item.itemName,
+                    itemModel: item.itemModel,
+                    cost: item.cost.toNumber(),
+                    quantity: item.quantity.toNumber(),
+                    discountAmount: item.discountAmount.toNumber(),
+                    taxAmount: item.taxAmount.toNumber(),
+                    subtotalAmount: item.subtotalAmount.toNumber()
+                }))
+            }))
         };
     }
     catch (error) {

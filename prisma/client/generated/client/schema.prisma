@@ -121,6 +121,7 @@ model RolePermission {
   version      Int?      @default(1) @map("VERSION")
 
   @@unique([roleId, permissionId])
+  @@index([roleId])
   @@map("role_permission")
 }
 
@@ -161,6 +162,7 @@ model User {
   overrideRequests       OverrideLog[]           @relation("OverrideRequests")
   notificationPreference NotificationPreference?
 
+  @@index([email])
   @@map("user")
 }
 

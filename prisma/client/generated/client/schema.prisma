@@ -179,23 +179,22 @@ model OverrideLog {
 }
 
 model Setting {
-  id        Int         @id @default(autoincrement()) @map("ID")
-  tenantId  Int?        @map("TENANT_ID") // Nullable, references Tenant in global DB
-  userId    Int?        @map("USER_ID") // Nullable for user-specific settings
-  outletId  Int?        @map("OUTLET_ID") // Nullable for outlet-specific settings
-  key       String      @map("KEY") // e.g., "preferred_language"
-  value     String      @map("VALUE") // Stores value as string
-  type      SettingType @map("TYPE") // e.g., INT, STRING, BOOLEAN, JSON
-  deleted   Boolean     @default(false) @map("IS_DELETED")
-  deletedAt DateTime?   @map("DELETED_AT")
-  createdAt DateTime?   @default(now()) @map("CREATED_AT")
-  updatedAt DateTime?   @updatedAt @map("UPDATED_AT")
-  version   Int?        @default(1) @map("VERSION")
-  user      User?       @relation(fields: [userId], references: [id])
-  outlet    Outlet?     @relation(fields: [outletId], references: [id])
+  id                  Int       @id @default(autoincrement()) @map("ID")
+  settingDefinitionId Int       @map("SETTING_DEFINITION_ID") // References global SettingDefinition.ID (no FK)
+  tenantId            Int?      @map("TENANT_ID") // Nullable, references Tenant in global DB
+  userId              Int?      @map("USER_ID") // Nullable for user-specific settings
+  outletId            Int?      @map("OUTLET_ID") // Nullable for outlet-specific settings
+  value               String    @map("VALUE") // Stores value as string
+  deleted             Boolean   @default(false) @map("IS_DELETED")
+  deletedAt           DateTime? @map("DELETED_AT")
+  createdAt           DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime? @updatedAt @map("UPDATED_AT")
+  version             Int?      @default(1) @map("VERSION")
+  user                User?     @relation(fields: [userId], references: [id])
+  outlet              Outlet?   @relation(fields: [outletId], references: [id])
 
-  @@unique([tenantId, userId, outletId, key]) // Ensure uniqueness within scope
-  @@index([key]) // Index for faster lookups
+  @@unique([settingDefinitionId, tenantId, userId, outletId]) // Ensure uniqueness within scope
+  @@index([settingDefinitionId]) // Index for faster lookups
   @@map("setting")
 }
 

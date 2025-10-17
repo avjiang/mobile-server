@@ -180,6 +180,27 @@ model Permission {
   @@map("permission")
 }
 
+model SettingDefinition {
+  id              Int       @id @default(autoincrement()) @map("ID")
+  key             String    @unique @map("KEY") // e.g., "default_currency", "tax_rate"
+  category        String    @map("CATEGORY") // e.g., "Financial", "POS", "User Preference"
+  type            String    @map("TYPE") // "INT", "STRING", "BOOLEAN", "JSON"
+  defaultValue    String?   @map("DEFAULT_VALUE")
+  description     String?   @map("DESCRIPTION")
+  scope           String    @map("SCOPE") // "TENANT", "OUTLET", "USER"
+  isRequired      Boolean   @default(false) @map("IS_REQUIRED")
+  validationRules String?   @map("VALIDATION_RULES") @db.Text // JSON: {min, max, options, pattern}
+  createdAt       DateTime  @default(now()) @map("CREATED_AT")
+  updatedAt       DateTime  @updatedAt @map("UPDATED_AT")
+  deleted         Boolean   @default(false) @map("IS_DELETED")
+  deletedAt       DateTime? @map("DELETED_AT")
+  version         Int       @default(1) @map("VERSION")
+
+  @@index([category])
+  @@index([scope])
+  @@map("setting_definition")
+}
+
 model PushyDevice {
   id            Int                    @id @default(autoincrement()) @map("ID")
   tenantUserId  Int                    @map("TENANT_USER_ID")

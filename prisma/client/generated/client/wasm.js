@@ -185,12 +185,11 @@ exports.Prisma.OverrideLogScalarFieldEnum = {
 
 exports.Prisma.SettingScalarFieldEnum = {
   id: 'id',
+  settingDefinitionId: 'settingDefinitionId',
   tenantId: 'tenantId',
   userId: 'userId',
   outletId: 'outletId',
-  key: 'key',
   value: 'value',
-  type: 'type',
   deleted: 'deleted',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
@@ -1127,7 +1126,6 @@ exports.Prisma.OverrideLogOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.SettingOrderByRelevanceFieldEnum = {
-  key: 'key',
   value: 'value'
 };
 
@@ -1439,13 +1437,6 @@ exports.Prisma.RegisteredDeviceOrderByRelevanceFieldEnum = {
   status: 'status',
   appVersion: 'appVersion'
 };
-exports.SettingType = exports.$Enums.SettingType = {
-  INT: 'INT',
-  STRING: 'STRING',
-  BOOLEAN: 'BOOLEAN',
-  JSON: 'JSON'
-};
-
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   ORDERED: 'ORDERED',
   PREPARING: 'PREPARING',

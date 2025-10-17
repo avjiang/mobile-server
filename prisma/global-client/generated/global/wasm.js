@@ -224,6 +224,23 @@ exports.Prisma.PermissionScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.SettingDefinitionScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  category: 'category',
+  type: 'type',
+  defaultValue: 'defaultValue',
+  description: 'description',
+  scope: 'scope',
+  isRequired: 'isRequired',
+  validationRules: 'validationRules',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  version: 'version'
+};
+
 exports.Prisma.PushyDeviceScalarFieldEnum = {
   id: 'id',
   tenantUserId: 'tenantUserId',
@@ -318,6 +335,16 @@ exports.Prisma.PermissionOrderByRelevanceFieldEnum = {
   allowedRoles: 'allowedRoles'
 };
 
+exports.Prisma.SettingDefinitionOrderByRelevanceFieldEnum = {
+  key: 'key',
+  category: 'category',
+  type: 'type',
+  defaultValue: 'defaultValue',
+  description: 'description',
+  scope: 'scope',
+  validationRules: 'validationRules'
+};
+
 exports.Prisma.PushyDeviceOrderByRelevanceFieldEnum = {
   deviceToken: 'deviceToken',
   platform: 'platform',
@@ -345,6 +372,7 @@ exports.Prisma.ModelName = {
   TenantUser: 'TenantUser',
   RefreshToken: 'RefreshToken',
   Permission: 'Permission',
+  SettingDefinition: 'SettingDefinition',
   PushyDevice: 'PushyDevice',
   PushySubscription: 'PushySubscription',
   PushyDeviceAllocation: 'PushyDeviceAllocation'

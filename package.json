@@ -93,15 +93,11 @@
   "scripts": {
     "build": "tsc",
     "dev": "pm2 start ecosystem.config.js",
-    "start": "node dist/index.js",
-    "upgrade_tenant_db": "node dist/script/tenant_db_upgrade.js",
-    "migrate_global_db": "npx prisma migrate deploy --schema=prisma/global-client/schema.prisma",
-    "seed_tenant_items": "ts-node src/script/tenant_db_seed.ts",
-    "seed_global": "ts-node src/script/global_schema_seed.ts",
-    "generate_prisma": "npx prisma generate --schema=prisma/client/schema.prisma && npx prisma generate --schema=prisma/global-client/schema.prisma",
     "tunnel": "ngrok http --scheme=http --url=above-frog-capital.ngrok-free.app 8080",
-    "delete_all_db": "ts-node src/script/delete_all_db.ts",
-    "init": "npm run delete_all_db && npx prisma migrate deploy --schema=prisma/global-client/schema.prisma && npm run seed_global && npm run seed_tenant_items"
+    "start": "node dist/index.js",
+    "upgrade_db": "node dist/script/db_upgrade.js",
+    "generate_prisma": "npx prisma generate --schema=prisma/client/schema.prisma && npx prisma generate --schema=prisma/global-client/schema.prisma",
+    "seed_settings_definitions": "npx ts-node dist/script/setting_definitions_seed.js"
   },
   "keywords": [],
   "author": "",

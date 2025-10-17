@@ -64,6 +64,11 @@ export type RefreshToken = $Result.DefaultSelection<Prisma.$RefreshTokenPayload>
  */
 export type Permission = $Result.DefaultSelection<Prisma.$PermissionPayload>
 /**
+ * Model SettingDefinition
+ * 
+ */
+export type SettingDefinition = $Result.DefaultSelection<Prisma.$SettingDefinitionPayload>
+/**
  * Model PushyDevice
  * 
  */
@@ -303,6 +308,16 @@ export class PrismaClient<
     * ```
     */
   get permission(): Prisma.PermissionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.settingDefinition`: Exposes CRUD operations for the **SettingDefinition** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SettingDefinitions
+    * const settingDefinitions = await prisma.settingDefinition.findMany()
+    * ```
+    */
+  get settingDefinition(): Prisma.SettingDefinitionDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.pushyDevice`: Exposes CRUD operations for the **PushyDevice** model.
@@ -783,6 +798,7 @@ export namespace Prisma {
     TenantUser: 'TenantUser',
     RefreshToken: 'RefreshToken',
     Permission: 'Permission',
+    SettingDefinition: 'SettingDefinition',
     PushyDevice: 'PushyDevice',
     PushySubscription: 'PushySubscription',
     PushyDeviceAllocation: 'PushyDeviceAllocation'
@@ -804,7 +820,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation"
+      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1468,6 +1484,72 @@ export namespace Prisma {
           }
         }
       }
+      SettingDefinition: {
+        payload: Prisma.$SettingDefinitionPayload<ExtArgs>
+        fields: Prisma.SettingDefinitionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SettingDefinitionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SettingDefinitionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload>
+          }
+          findFirst: {
+            args: Prisma.SettingDefinitionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SettingDefinitionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload>
+          }
+          findMany: {
+            args: Prisma.SettingDefinitionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload>[]
+          }
+          create: {
+            args: Prisma.SettingDefinitionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload>
+          }
+          createMany: {
+            args: Prisma.SettingDefinitionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SettingDefinitionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload>
+          }
+          update: {
+            args: Prisma.SettingDefinitionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload>
+          }
+          deleteMany: {
+            args: Prisma.SettingDefinitionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SettingDefinitionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SettingDefinitionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettingDefinitionPayload>
+          }
+          aggregate: {
+            args: Prisma.SettingDefinitionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSettingDefinition>
+          }
+          groupBy: {
+            args: Prisma.SettingDefinitionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SettingDefinitionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SettingDefinitionCountArgs<ExtArgs>
+            result: $Utils.Optional<SettingDefinitionCountAggregateOutputType> | number
+          }
+        }
+      }
       PushyDevice: {
         payload: Prisma.$PushyDevicePayload<ExtArgs>
         fields: Prisma.PushyDeviceFieldRefs
@@ -1760,6 +1842,7 @@ export namespace Prisma {
     tenantUser?: TenantUserOmit
     refreshToken?: RefreshTokenOmit
     permission?: PermissionOmit
+    settingDefinition?: SettingDefinitionOmit
     pushyDevice?: PushyDeviceOmit
     pushySubscription?: PushySubscriptionOmit
     pushyDeviceAllocation?: PushyDeviceAllocationOmit
@@ -12381,6 +12464,1025 @@ export namespace Prisma {
 
 
   /**
+   * Model SettingDefinition
+   */
+
+  export type AggregateSettingDefinition = {
+    _count: SettingDefinitionCountAggregateOutputType | null
+    _avg: SettingDefinitionAvgAggregateOutputType | null
+    _sum: SettingDefinitionSumAggregateOutputType | null
+    _min: SettingDefinitionMinAggregateOutputType | null
+    _max: SettingDefinitionMaxAggregateOutputType | null
+  }
+
+  export type SettingDefinitionAvgAggregateOutputType = {
+    id: number | null
+    version: number | null
+  }
+
+  export type SettingDefinitionSumAggregateOutputType = {
+    id: number | null
+    version: number | null
+  }
+
+  export type SettingDefinitionMinAggregateOutputType = {
+    id: number | null
+    key: string | null
+    category: string | null
+    type: string | null
+    defaultValue: string | null
+    description: string | null
+    scope: string | null
+    isRequired: boolean | null
+    validationRules: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    version: number | null
+  }
+
+  export type SettingDefinitionMaxAggregateOutputType = {
+    id: number | null
+    key: string | null
+    category: string | null
+    type: string | null
+    defaultValue: string | null
+    description: string | null
+    scope: string | null
+    isRequired: boolean | null
+    validationRules: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    version: number | null
+  }
+
+  export type SettingDefinitionCountAggregateOutputType = {
+    id: number
+    key: number
+    category: number
+    type: number
+    defaultValue: number
+    description: number
+    scope: number
+    isRequired: number
+    validationRules: number
+    createdAt: number
+    updatedAt: number
+    deleted: number
+    deletedAt: number
+    version: number
+    _all: number
+  }
+
+
+  export type SettingDefinitionAvgAggregateInputType = {
+    id?: true
+    version?: true
+  }
+
+  export type SettingDefinitionSumAggregateInputType = {
+    id?: true
+    version?: true
+  }
+
+  export type SettingDefinitionMinAggregateInputType = {
+    id?: true
+    key?: true
+    category?: true
+    type?: true
+    defaultValue?: true
+    description?: true
+    scope?: true
+    isRequired?: true
+    validationRules?: true
+    createdAt?: true
+    updatedAt?: true
+    deleted?: true
+    deletedAt?: true
+    version?: true
+  }
+
+  export type SettingDefinitionMaxAggregateInputType = {
+    id?: true
+    key?: true
+    category?: true
+    type?: true
+    defaultValue?: true
+    description?: true
+    scope?: true
+    isRequired?: true
+    validationRules?: true
+    createdAt?: true
+    updatedAt?: true
+    deleted?: true
+    deletedAt?: true
+    version?: true
+  }
+
+  export type SettingDefinitionCountAggregateInputType = {
+    id?: true
+    key?: true
+    category?: true
+    type?: true
+    defaultValue?: true
+    description?: true
+    scope?: true
+    isRequired?: true
+    validationRules?: true
+    createdAt?: true
+    updatedAt?: true
+    deleted?: true
+    deletedAt?: true
+    version?: true
+    _all?: true
+  }
+
+  export type SettingDefinitionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SettingDefinition to aggregate.
+     */
+    where?: SettingDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettingDefinitions to fetch.
+     */
+    orderBy?: SettingDefinitionOrderByWithRelationInput | SettingDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SettingDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettingDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettingDefinitions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SettingDefinitions
+    **/
+    _count?: true | SettingDefinitionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SettingDefinitionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SettingDefinitionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SettingDefinitionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SettingDefinitionMaxAggregateInputType
+  }
+
+  export type GetSettingDefinitionAggregateType<T extends SettingDefinitionAggregateArgs> = {
+        [P in keyof T & keyof AggregateSettingDefinition]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSettingDefinition[P]>
+      : GetScalarType<T[P], AggregateSettingDefinition[P]>
+  }
+
+
+
+
+  export type SettingDefinitionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SettingDefinitionWhereInput
+    orderBy?: SettingDefinitionOrderByWithAggregationInput | SettingDefinitionOrderByWithAggregationInput[]
+    by: SettingDefinitionScalarFieldEnum[] | SettingDefinitionScalarFieldEnum
+    having?: SettingDefinitionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SettingDefinitionCountAggregateInputType | true
+    _avg?: SettingDefinitionAvgAggregateInputType
+    _sum?: SettingDefinitionSumAggregateInputType
+    _min?: SettingDefinitionMinAggregateInputType
+    _max?: SettingDefinitionMaxAggregateInputType
+  }
+
+  export type SettingDefinitionGroupByOutputType = {
+    id: number
+    key: string
+    category: string
+    type: string
+    defaultValue: string | null
+    description: string | null
+    scope: string
+    isRequired: boolean
+    validationRules: string | null
+    createdAt: Date
+    updatedAt: Date
+    deleted: boolean
+    deletedAt: Date | null
+    version: number
+    _count: SettingDefinitionCountAggregateOutputType | null
+    _avg: SettingDefinitionAvgAggregateOutputType | null
+    _sum: SettingDefinitionSumAggregateOutputType | null
+    _min: SettingDefinitionMinAggregateOutputType | null
+    _max: SettingDefinitionMaxAggregateOutputType | null
+  }
+
+  type GetSettingDefinitionGroupByPayload<T extends SettingDefinitionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SettingDefinitionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SettingDefinitionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SettingDefinitionGroupByOutputType[P]>
+            : GetScalarType<T[P], SettingDefinitionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SettingDefinitionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    key?: boolean
+    category?: boolean
+    type?: boolean
+    defaultValue?: boolean
+    description?: boolean
+    scope?: boolean
+    isRequired?: boolean
+    validationRules?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    version?: boolean
+  }, ExtArgs["result"]["settingDefinition"]>
+
+
+
+  export type SettingDefinitionSelectScalar = {
+    id?: boolean
+    key?: boolean
+    category?: boolean
+    type?: boolean
+    defaultValue?: boolean
+    description?: boolean
+    scope?: boolean
+    isRequired?: boolean
+    validationRules?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    version?: boolean
+  }
+
+  export type SettingDefinitionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "key" | "category" | "type" | "defaultValue" | "description" | "scope" | "isRequired" | "validationRules" | "createdAt" | "updatedAt" | "deleted" | "deletedAt" | "version", ExtArgs["result"]["settingDefinition"]>
+
+  export type $SettingDefinitionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SettingDefinition"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      key: string
+      category: string
+      type: string
+      defaultValue: string | null
+      description: string | null
+      scope: string
+      isRequired: boolean
+      validationRules: string | null
+      createdAt: Date
+      updatedAt: Date
+      deleted: boolean
+      deletedAt: Date | null
+      version: number
+    }, ExtArgs["result"]["settingDefinition"]>
+    composites: {}
+  }
+
+  type SettingDefinitionGetPayload<S extends boolean | null | undefined | SettingDefinitionDefaultArgs> = $Result.GetResult<Prisma.$SettingDefinitionPayload, S>
+
+  type SettingDefinitionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SettingDefinitionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SettingDefinitionCountAggregateInputType | true
+    }
+
+  export interface SettingDefinitionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SettingDefinition'], meta: { name: 'SettingDefinition' } }
+    /**
+     * Find zero or one SettingDefinition that matches the filter.
+     * @param {SettingDefinitionFindUniqueArgs} args - Arguments to find a SettingDefinition
+     * @example
+     * // Get one SettingDefinition
+     * const settingDefinition = await prisma.settingDefinition.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SettingDefinitionFindUniqueArgs>(args: SelectSubset<T, SettingDefinitionFindUniqueArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SettingDefinition that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SettingDefinitionFindUniqueOrThrowArgs} args - Arguments to find a SettingDefinition
+     * @example
+     * // Get one SettingDefinition
+     * const settingDefinition = await prisma.settingDefinition.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SettingDefinitionFindUniqueOrThrowArgs>(args: SelectSubset<T, SettingDefinitionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SettingDefinition that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettingDefinitionFindFirstArgs} args - Arguments to find a SettingDefinition
+     * @example
+     * // Get one SettingDefinition
+     * const settingDefinition = await prisma.settingDefinition.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SettingDefinitionFindFirstArgs>(args?: SelectSubset<T, SettingDefinitionFindFirstArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SettingDefinition that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettingDefinitionFindFirstOrThrowArgs} args - Arguments to find a SettingDefinition
+     * @example
+     * // Get one SettingDefinition
+     * const settingDefinition = await prisma.settingDefinition.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SettingDefinitionFindFirstOrThrowArgs>(args?: SelectSubset<T, SettingDefinitionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SettingDefinitions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettingDefinitionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SettingDefinitions
+     * const settingDefinitions = await prisma.settingDefinition.findMany()
+     * 
+     * // Get first 10 SettingDefinitions
+     * const settingDefinitions = await prisma.settingDefinition.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const settingDefinitionWithIdOnly = await prisma.settingDefinition.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SettingDefinitionFindManyArgs>(args?: SelectSubset<T, SettingDefinitionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SettingDefinition.
+     * @param {SettingDefinitionCreateArgs} args - Arguments to create a SettingDefinition.
+     * @example
+     * // Create one SettingDefinition
+     * const SettingDefinition = await prisma.settingDefinition.create({
+     *   data: {
+     *     // ... data to create a SettingDefinition
+     *   }
+     * })
+     * 
+     */
+    create<T extends SettingDefinitionCreateArgs>(args: SelectSubset<T, SettingDefinitionCreateArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SettingDefinitions.
+     * @param {SettingDefinitionCreateManyArgs} args - Arguments to create many SettingDefinitions.
+     * @example
+     * // Create many SettingDefinitions
+     * const settingDefinition = await prisma.settingDefinition.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SettingDefinitionCreateManyArgs>(args?: SelectSubset<T, SettingDefinitionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SettingDefinition.
+     * @param {SettingDefinitionDeleteArgs} args - Arguments to delete one SettingDefinition.
+     * @example
+     * // Delete one SettingDefinition
+     * const SettingDefinition = await prisma.settingDefinition.delete({
+     *   where: {
+     *     // ... filter to delete one SettingDefinition
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SettingDefinitionDeleteArgs>(args: SelectSubset<T, SettingDefinitionDeleteArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SettingDefinition.
+     * @param {SettingDefinitionUpdateArgs} args - Arguments to update one SettingDefinition.
+     * @example
+     * // Update one SettingDefinition
+     * const settingDefinition = await prisma.settingDefinition.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SettingDefinitionUpdateArgs>(args: SelectSubset<T, SettingDefinitionUpdateArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SettingDefinitions.
+     * @param {SettingDefinitionDeleteManyArgs} args - Arguments to filter SettingDefinitions to delete.
+     * @example
+     * // Delete a few SettingDefinitions
+     * const { count } = await prisma.settingDefinition.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SettingDefinitionDeleteManyArgs>(args?: SelectSubset<T, SettingDefinitionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SettingDefinitions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettingDefinitionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SettingDefinitions
+     * const settingDefinition = await prisma.settingDefinition.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SettingDefinitionUpdateManyArgs>(args: SelectSubset<T, SettingDefinitionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SettingDefinition.
+     * @param {SettingDefinitionUpsertArgs} args - Arguments to update or create a SettingDefinition.
+     * @example
+     * // Update or create a SettingDefinition
+     * const settingDefinition = await prisma.settingDefinition.upsert({
+     *   create: {
+     *     // ... data to create a SettingDefinition
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SettingDefinition we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SettingDefinitionUpsertArgs>(args: SelectSubset<T, SettingDefinitionUpsertArgs<ExtArgs>>): Prisma__SettingDefinitionClient<$Result.GetResult<Prisma.$SettingDefinitionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SettingDefinitions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettingDefinitionCountArgs} args - Arguments to filter SettingDefinitions to count.
+     * @example
+     * // Count the number of SettingDefinitions
+     * const count = await prisma.settingDefinition.count({
+     *   where: {
+     *     // ... the filter for the SettingDefinitions we want to count
+     *   }
+     * })
+    **/
+    count<T extends SettingDefinitionCountArgs>(
+      args?: Subset<T, SettingDefinitionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SettingDefinitionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SettingDefinition.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettingDefinitionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SettingDefinitionAggregateArgs>(args: Subset<T, SettingDefinitionAggregateArgs>): Prisma.PrismaPromise<GetSettingDefinitionAggregateType<T>>
+
+    /**
+     * Group by SettingDefinition.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettingDefinitionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SettingDefinitionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SettingDefinitionGroupByArgs['orderBy'] }
+        : { orderBy?: SettingDefinitionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SettingDefinitionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSettingDefinitionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SettingDefinition model
+   */
+  readonly fields: SettingDefinitionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SettingDefinition.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SettingDefinitionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SettingDefinition model
+   */
+  interface SettingDefinitionFieldRefs {
+    readonly id: FieldRef<"SettingDefinition", 'Int'>
+    readonly key: FieldRef<"SettingDefinition", 'String'>
+    readonly category: FieldRef<"SettingDefinition", 'String'>
+    readonly type: FieldRef<"SettingDefinition", 'String'>
+    readonly defaultValue: FieldRef<"SettingDefinition", 'String'>
+    readonly description: FieldRef<"SettingDefinition", 'String'>
+    readonly scope: FieldRef<"SettingDefinition", 'String'>
+    readonly isRequired: FieldRef<"SettingDefinition", 'Boolean'>
+    readonly validationRules: FieldRef<"SettingDefinition", 'String'>
+    readonly createdAt: FieldRef<"SettingDefinition", 'DateTime'>
+    readonly updatedAt: FieldRef<"SettingDefinition", 'DateTime'>
+    readonly deleted: FieldRef<"SettingDefinition", 'Boolean'>
+    readonly deletedAt: FieldRef<"SettingDefinition", 'DateTime'>
+    readonly version: FieldRef<"SettingDefinition", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SettingDefinition findUnique
+   */
+  export type SettingDefinitionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * Filter, which SettingDefinition to fetch.
+     */
+    where: SettingDefinitionWhereUniqueInput
+  }
+
+  /**
+   * SettingDefinition findUniqueOrThrow
+   */
+  export type SettingDefinitionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * Filter, which SettingDefinition to fetch.
+     */
+    where: SettingDefinitionWhereUniqueInput
+  }
+
+  /**
+   * SettingDefinition findFirst
+   */
+  export type SettingDefinitionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * Filter, which SettingDefinition to fetch.
+     */
+    where?: SettingDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettingDefinitions to fetch.
+     */
+    orderBy?: SettingDefinitionOrderByWithRelationInput | SettingDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SettingDefinitions.
+     */
+    cursor?: SettingDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettingDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettingDefinitions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettingDefinitions.
+     */
+    distinct?: SettingDefinitionScalarFieldEnum | SettingDefinitionScalarFieldEnum[]
+  }
+
+  /**
+   * SettingDefinition findFirstOrThrow
+   */
+  export type SettingDefinitionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * Filter, which SettingDefinition to fetch.
+     */
+    where?: SettingDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettingDefinitions to fetch.
+     */
+    orderBy?: SettingDefinitionOrderByWithRelationInput | SettingDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SettingDefinitions.
+     */
+    cursor?: SettingDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettingDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettingDefinitions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettingDefinitions.
+     */
+    distinct?: SettingDefinitionScalarFieldEnum | SettingDefinitionScalarFieldEnum[]
+  }
+
+  /**
+   * SettingDefinition findMany
+   */
+  export type SettingDefinitionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * Filter, which SettingDefinitions to fetch.
+     */
+    where?: SettingDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettingDefinitions to fetch.
+     */
+    orderBy?: SettingDefinitionOrderByWithRelationInput | SettingDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SettingDefinitions.
+     */
+    cursor?: SettingDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettingDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettingDefinitions.
+     */
+    skip?: number
+    distinct?: SettingDefinitionScalarFieldEnum | SettingDefinitionScalarFieldEnum[]
+  }
+
+  /**
+   * SettingDefinition create
+   */
+  export type SettingDefinitionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * The data needed to create a SettingDefinition.
+     */
+    data: XOR<SettingDefinitionCreateInput, SettingDefinitionUncheckedCreateInput>
+  }
+
+  /**
+   * SettingDefinition createMany
+   */
+  export type SettingDefinitionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SettingDefinitions.
+     */
+    data: SettingDefinitionCreateManyInput | SettingDefinitionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SettingDefinition update
+   */
+  export type SettingDefinitionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * The data needed to update a SettingDefinition.
+     */
+    data: XOR<SettingDefinitionUpdateInput, SettingDefinitionUncheckedUpdateInput>
+    /**
+     * Choose, which SettingDefinition to update.
+     */
+    where: SettingDefinitionWhereUniqueInput
+  }
+
+  /**
+   * SettingDefinition updateMany
+   */
+  export type SettingDefinitionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SettingDefinitions.
+     */
+    data: XOR<SettingDefinitionUpdateManyMutationInput, SettingDefinitionUncheckedUpdateManyInput>
+    /**
+     * Filter which SettingDefinitions to update
+     */
+    where?: SettingDefinitionWhereInput
+    /**
+     * Limit how many SettingDefinitions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SettingDefinition upsert
+   */
+  export type SettingDefinitionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * The filter to search for the SettingDefinition to update in case it exists.
+     */
+    where: SettingDefinitionWhereUniqueInput
+    /**
+     * In case the SettingDefinition found by the `where` argument doesn't exist, create a new SettingDefinition with this data.
+     */
+    create: XOR<SettingDefinitionCreateInput, SettingDefinitionUncheckedCreateInput>
+    /**
+     * In case the SettingDefinition was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SettingDefinitionUpdateInput, SettingDefinitionUncheckedUpdateInput>
+  }
+
+  /**
+   * SettingDefinition delete
+   */
+  export type SettingDefinitionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+    /**
+     * Filter which SettingDefinition to delete.
+     */
+    where: SettingDefinitionWhereUniqueInput
+  }
+
+  /**
+   * SettingDefinition deleteMany
+   */
+  export type SettingDefinitionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SettingDefinitions to delete
+     */
+    where?: SettingDefinitionWhereInput
+    /**
+     * Limit how many SettingDefinitions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SettingDefinition without action
+   */
+  export type SettingDefinitionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettingDefinition
+     */
+    select?: SettingDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettingDefinition
+     */
+    omit?: SettingDefinitionOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Model PushyDevice
    */
 
@@ -15609,6 +16711,26 @@ export namespace Prisma {
   export type PermissionScalarFieldEnum = (typeof PermissionScalarFieldEnum)[keyof typeof PermissionScalarFieldEnum]
 
 
+  export const SettingDefinitionScalarFieldEnum: {
+    id: 'id',
+    key: 'key',
+    category: 'category',
+    type: 'type',
+    defaultValue: 'defaultValue',
+    description: 'description',
+    scope: 'scope',
+    isRequired: 'isRequired',
+    validationRules: 'validationRules',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    deleted: 'deleted',
+    deletedAt: 'deletedAt',
+    version: 'version'
+  };
+
+  export type SettingDefinitionScalarFieldEnum = (typeof SettingDefinitionScalarFieldEnum)[keyof typeof SettingDefinitionScalarFieldEnum]
+
+
   export const PushyDeviceScalarFieldEnum: {
     id: 'id',
     tenantUserId: 'tenantUserId',
@@ -15743,6 +16865,19 @@ export namespace Prisma {
   };
 
   export type PermissionOrderByRelevanceFieldEnum = (typeof PermissionOrderByRelevanceFieldEnum)[keyof typeof PermissionOrderByRelevanceFieldEnum]
+
+
+  export const SettingDefinitionOrderByRelevanceFieldEnum: {
+    key: 'key',
+    category: 'category',
+    type: 'type',
+    defaultValue: 'defaultValue',
+    description: 'description',
+    scope: 'scope',
+    validationRules: 'validationRules'
+  };
+
+  export type SettingDefinitionOrderByRelevanceFieldEnum = (typeof SettingDefinitionOrderByRelevanceFieldEnum)[keyof typeof SettingDefinitionOrderByRelevanceFieldEnum]
 
 
   export const PushyDeviceOrderByRelevanceFieldEnum: {
@@ -16537,6 +17672,106 @@ export namespace Prisma {
     deleted?: BoolWithAggregatesFilter<"Permission"> | boolean
     deletedAt?: DateTimeNullableWithAggregatesFilter<"Permission"> | Date | string | null
     version?: IntNullableWithAggregatesFilter<"Permission"> | number | null
+  }
+
+  export type SettingDefinitionWhereInput = {
+    AND?: SettingDefinitionWhereInput | SettingDefinitionWhereInput[]
+    OR?: SettingDefinitionWhereInput[]
+    NOT?: SettingDefinitionWhereInput | SettingDefinitionWhereInput[]
+    id?: IntFilter<"SettingDefinition"> | number
+    key?: StringFilter<"SettingDefinition"> | string
+    category?: StringFilter<"SettingDefinition"> | string
+    type?: StringFilter<"SettingDefinition"> | string
+    defaultValue?: StringNullableFilter<"SettingDefinition"> | string | null
+    description?: StringNullableFilter<"SettingDefinition"> | string | null
+    scope?: StringFilter<"SettingDefinition"> | string
+    isRequired?: BoolFilter<"SettingDefinition"> | boolean
+    validationRules?: StringNullableFilter<"SettingDefinition"> | string | null
+    createdAt?: DateTimeFilter<"SettingDefinition"> | Date | string
+    updatedAt?: DateTimeFilter<"SettingDefinition"> | Date | string
+    deleted?: BoolFilter<"SettingDefinition"> | boolean
+    deletedAt?: DateTimeNullableFilter<"SettingDefinition"> | Date | string | null
+    version?: IntFilter<"SettingDefinition"> | number
+  }
+
+  export type SettingDefinitionOrderByWithRelationInput = {
+    id?: SortOrder
+    key?: SortOrder
+    category?: SortOrder
+    type?: SortOrder
+    defaultValue?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    scope?: SortOrder
+    isRequired?: SortOrder
+    validationRules?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    version?: SortOrder
+    _relevance?: SettingDefinitionOrderByRelevanceInput
+  }
+
+  export type SettingDefinitionWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    key?: string
+    AND?: SettingDefinitionWhereInput | SettingDefinitionWhereInput[]
+    OR?: SettingDefinitionWhereInput[]
+    NOT?: SettingDefinitionWhereInput | SettingDefinitionWhereInput[]
+    category?: StringFilter<"SettingDefinition"> | string
+    type?: StringFilter<"SettingDefinition"> | string
+    defaultValue?: StringNullableFilter<"SettingDefinition"> | string | null
+    description?: StringNullableFilter<"SettingDefinition"> | string | null
+    scope?: StringFilter<"SettingDefinition"> | string
+    isRequired?: BoolFilter<"SettingDefinition"> | boolean
+    validationRules?: StringNullableFilter<"SettingDefinition"> | string | null
+    createdAt?: DateTimeFilter<"SettingDefinition"> | Date | string
+    updatedAt?: DateTimeFilter<"SettingDefinition"> | Date | string
+    deleted?: BoolFilter<"SettingDefinition"> | boolean
+    deletedAt?: DateTimeNullableFilter<"SettingDefinition"> | Date | string | null
+    version?: IntFilter<"SettingDefinition"> | number
+  }, "id" | "key">
+
+  export type SettingDefinitionOrderByWithAggregationInput = {
+    id?: SortOrder
+    key?: SortOrder
+    category?: SortOrder
+    type?: SortOrder
+    defaultValue?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    scope?: SortOrder
+    isRequired?: SortOrder
+    validationRules?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    version?: SortOrder
+    _count?: SettingDefinitionCountOrderByAggregateInput
+    _avg?: SettingDefinitionAvgOrderByAggregateInput
+    _max?: SettingDefinitionMaxOrderByAggregateInput
+    _min?: SettingDefinitionMinOrderByAggregateInput
+    _sum?: SettingDefinitionSumOrderByAggregateInput
+  }
+
+  export type SettingDefinitionScalarWhereWithAggregatesInput = {
+    AND?: SettingDefinitionScalarWhereWithAggregatesInput | SettingDefinitionScalarWhereWithAggregatesInput[]
+    OR?: SettingDefinitionScalarWhereWithAggregatesInput[]
+    NOT?: SettingDefinitionScalarWhereWithAggregatesInput | SettingDefinitionScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"SettingDefinition"> | number
+    key?: StringWithAggregatesFilter<"SettingDefinition"> | string
+    category?: StringWithAggregatesFilter<"SettingDefinition"> | string
+    type?: StringWithAggregatesFilter<"SettingDefinition"> | string
+    defaultValue?: StringNullableWithAggregatesFilter<"SettingDefinition"> | string | null
+    description?: StringNullableWithAggregatesFilter<"SettingDefinition"> | string | null
+    scope?: StringWithAggregatesFilter<"SettingDefinition"> | string
+    isRequired?: BoolWithAggregatesFilter<"SettingDefinition"> | boolean
+    validationRules?: StringNullableWithAggregatesFilter<"SettingDefinition"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"SettingDefinition"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"SettingDefinition"> | Date | string
+    deleted?: BoolWithAggregatesFilter<"SettingDefinition"> | boolean
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"SettingDefinition"> | Date | string | null
+    version?: IntWithAggregatesFilter<"SettingDefinition"> | number
   }
 
   export type PushyDeviceWhereInput = {
@@ -17498,6 +18733,122 @@ export namespace Prisma {
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type SettingDefinitionCreateInput = {
+    key: string
+    category: string
+    type: string
+    defaultValue?: string | null
+    description?: string | null
+    scope: string
+    isRequired?: boolean
+    validationRules?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    version?: number
+  }
+
+  export type SettingDefinitionUncheckedCreateInput = {
+    id?: number
+    key: string
+    category: string
+    type: string
+    defaultValue?: string | null
+    description?: string | null
+    scope: string
+    isRequired?: boolean
+    validationRules?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    version?: number
+  }
+
+  export type SettingDefinitionUpdateInput = {
+    key?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    defaultValue?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: StringFieldUpdateOperationsInput | string
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    validationRules?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type SettingDefinitionUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    key?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    defaultValue?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: StringFieldUpdateOperationsInput | string
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    validationRules?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type SettingDefinitionCreateManyInput = {
+    id?: number
+    key: string
+    category: string
+    type: string
+    defaultValue?: string | null
+    description?: string | null
+    scope: string
+    isRequired?: boolean
+    validationRules?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    version?: number
+  }
+
+  export type SettingDefinitionUpdateManyMutationInput = {
+    key?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    defaultValue?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: StringFieldUpdateOperationsInput | string
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    validationRules?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type SettingDefinitionUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    key?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    defaultValue?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    scope?: StringFieldUpdateOperationsInput | string
+    isRequired?: BoolFieldUpdateOperationsInput | boolean
+    validationRules?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: IntFieldUpdateOperationsInput | number
   }
 
   export type PushyDeviceCreateInput = {
@@ -18515,6 +19866,73 @@ export namespace Prisma {
   }
 
   export type PermissionSumOrderByAggregateInput = {
+    id?: SortOrder
+    version?: SortOrder
+  }
+
+  export type SettingDefinitionOrderByRelevanceInput = {
+    fields: SettingDefinitionOrderByRelevanceFieldEnum | SettingDefinitionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SettingDefinitionCountOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    category?: SortOrder
+    type?: SortOrder
+    defaultValue?: SortOrder
+    description?: SortOrder
+    scope?: SortOrder
+    isRequired?: SortOrder
+    validationRules?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type SettingDefinitionAvgOrderByAggregateInput = {
+    id?: SortOrder
+    version?: SortOrder
+  }
+
+  export type SettingDefinitionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    category?: SortOrder
+    type?: SortOrder
+    defaultValue?: SortOrder
+    description?: SortOrder
+    scope?: SortOrder
+    isRequired?: SortOrder
+    validationRules?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type SettingDefinitionMinOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    category?: SortOrder
+    type?: SortOrder
+    defaultValue?: SortOrder
+    description?: SortOrder
+    scope?: SortOrder
+    isRequired?: SortOrder
+    validationRules?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type SettingDefinitionSumOrderByAggregateInput = {
     id?: SortOrder
     version?: SortOrder
   }

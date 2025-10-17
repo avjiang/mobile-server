@@ -817,9 +817,9 @@ let updateSettlement = async (settlement: InvoiceSettlementInput, databaseName: 
         }
 
         // Check if settlement can be updated (only allow updates for certain statuses)
-        if (existingSettlement.status === 'COMPLETED' && updateData.status !== 'CANCELLED') {
-            throw new RequestValidateError('Cannot modify completed settlement');
-        }
+        // if (existingSettlement.status === 'COMPLETED' && updateData.status !== 'CANCELLED') {
+        //     throw new RequestValidateError('Cannot modify completed settlement');
+        // }
 
         // Check for duplicate settlement number if being updated
         if (updateData.settlementNumber && updateData.settlementNumber !== existingSettlement.settlementNumber) {

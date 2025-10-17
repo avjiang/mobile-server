@@ -1,5 +1,10 @@
 {
     "editor.formatOnType": true,
     "editor.formatOnSave": true,
-    "editor.wordWrap": "on"
+    "editor.wordWrap": "on",
+    "editor.fontFamily": "SF Mono, Menlo, Monaco, 'Courier New', monospace",
+    "debug.console.fontSize": 15,
+    "terminal.integrated.fontSize": 14,
+    "chat.editor.fontSize": 15,
+    "chat.fontSize": 15
 }

@@ -466,6 +466,7 @@ let getById = async (id: number, databaseName: string) => {
                         deleted: false
                     },
                     select: {
+                        id: true,
                         invoiceNumber: true,
                         subtotalAmount: true,
                         totalAmount: true,
@@ -557,7 +558,8 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
         const existingPurchaseOrders = await tenantPrisma.purchaseOrder.findMany({
             where: {
                 purchaseOrderNumber: { in: purchaseOrderNumbers },
-                deleted: false
+                deleted: false,
+                status: { not: 'CANCELLED' } // Exclude cancelled purchase orders
             },
             select: { purchaseOrderNumber: true }
         });

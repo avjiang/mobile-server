@@ -515,8 +515,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             total,
             serverTimestamp: new Date().toISOString(),
         };
-    }
-    catch (error) {
+    } catch (error) {
         throw error;
     }
 }
@@ -605,14 +604,22 @@ let getById = async (id: number, databaseName: string) => {
                     }
                 });
 
-                // Fetch invoice settlements for this PO
+                // Fetch invoice settlements for this PO with related invoices
                 const invoiceSettlements = invoiceSettlementIds.size > 0
                     ? await tenantPrisma.invoiceSettlement.findMany({
                         where: {
                             id: { in: Array.from(invoiceSettlementIds) },
                             deleted: false
                         },
-                        orderBy: { id: 'asc' }
+                        orderBy: { id: 'asc' },
+                        include: {
+                            invoices: {
+                                where: {
+                                    deleted: false
+                                },
+                                orderBy: { id: 'asc' },
+                            }
+                        }
                     })
                     : [];
 
@@ -867,6 +874,9 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
             include: {
                 quotationItems: {
                     where: { deleted: false }
+                },
+                purchaseOrders: {
+                    where: { deleted: false }
                 }
             }
         });
@@ -995,6 +1005,20 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
                     currency: 'IDR',
                 }
             });
+
+            // If quotation is being cancelled, cancel all related purchase orders
+            if (updateData.status?.toUpperCase() === 'CANCELLED' && existingQuotation.purchaseOrders.length > 0) {
+                await tx.purchaseOrder.updateMany({
+                    where: {
+                        quotationId: id,
+                        deleted: false
+                    },
+                    data: {
+                        status: 'CANCELLED',
+                        version: { increment: 1 }
+                    }
+                });
+            }
 
             // Handle quotation items if provided
             if (updateData.quotationItems && Array.isArray(updateData.quotationItems)) {

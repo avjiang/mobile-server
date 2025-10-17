@@ -36,6 +36,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             completedSales,
             topSellingItems,
             mostProfitableItems,
+            mostLossItems,
             salesSummary,
             paymentBreakdown,
             salesItems,
@@ -143,6 +144,9 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     sales: {
                         ...completedSessionFilter,
                         status: "Completed"
+                    },
+                    profit: {
+                        gt: 0
                     }
                 },
                 _sum: {
@@ -151,6 +155,29 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 orderBy: {
                     _sum: {
                         profit: 'desc'
+                    }
+                },
+                take: 10
+            }),
+
+            // Most loss-making items (items sold at a loss)
+            tenantPrisma.salesItem.groupBy({
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                where: {
+                    sales: {
+                        ...completedSessionFilter,
+                        status: "Completed"
+                    },
+                    profit: {
+                        lt: 0
+                    }
+                },
+                _sum: {
+                    profit: true
+                },
+                orderBy: {
+                    _sum: {
+                        profit: 'asc'
                     }
                 },
                 take: 10
@@ -514,9 +541,68 @@ let generateReport = async (databaseName: string, sessionId: number) => {
 
         // Calculate net revenue and profit (only from completed sales)
         const netRevenue = totalCompletedRevenue;
-        const totalProfit = completedSales._sum?.profitAmount || new Decimal(0);
         const grossRevenue = salesSummary._sum?.totalAmount || new Decimal(0);
         const returnRefundImpact = (returnedSales._sum?.totalAmount || new Decimal(0)).plus(refundedSales._sum?.totalAmount || new Decimal(0));
+
+        // Split profit into gains and losses for completed sales
+        const completedSalesWithProfit = await tenantPrisma.sales.findMany({
+            where: {
+                ...completedSessionFilter,
+                status: "Completed",
+                deleted: false
+            },
+            select: {
+                profitAmount: true
+            }
+        });
+
+        let totalGains = new Decimal(0);
+        let totalLosses = new Decimal(0);
+        completedSalesWithProfit.forEach(sale => {
+            if (sale.profitAmount.gt(0)) {
+                totalGains = totalGains.plus(sale.profitAmount);
+            } else if (sale.profitAmount.lt(0)) {
+                totalLosses = totalLosses.plus(sale.profitAmount); // This will be negative
+            }
+        });
+
+        // Calculate total profit from gains and losses
+        const totalProfit = totalGains.plus(totalLosses);
+
+        // Split profit for partially paid sales
+        const partiallyPaidSalesWithProfit = await tenantPrisma.sales.findMany({
+            where: {
+                ...sessionFilter,
+                status: "Partially Paid",
+                deleted: false
+            },
+            select: {
+                profitAmount: true
+            }
+        });
+
+        let partiallyPaidGains = new Decimal(0);
+        let partiallyPaidLosses = new Decimal(0);
+        partiallyPaidSalesWithProfit.forEach(sale => {
+            if (sale.profitAmount.gt(0)) {
+                partiallyPaidGains = partiallyPaidGains.plus(sale.profitAmount);
+            } else if (sale.profitAmount.lt(0)) {
+                partiallyPaidLosses = partiallyPaidLosses.plus(sale.profitAmount);
+            }
+        });
+
+        // Calculate total profit for partially paid from gains and losses
+        const partiallyPaidTotalProfit = partiallyPaidGains.plus(partiallyPaidLosses);
+
+        // Calculate profit impact for returned/refunded sales (considering sign)
+        const returnedProfit = returnedSales._sum?.profitAmount || new Decimal(0);
+        const refundedProfit = refundedSales._sum?.profitAmount || new Decimal(0);
+
+        // For returned/refunded: if original was profitable, we lost profit; if loss, we recovered loss
+        const returnedProfitLoss = returnedProfit.gt(0) ? returnedProfit : new Decimal(0);
+        const returnedLossRecovery = returnedProfit.lt(0) ? returnedProfit.abs() : new Decimal(0);
+        const refundedProfitLoss = refundedProfit.gt(0) ? refundedProfit : new Decimal(0);
+        const refundedLossRecovery = refundedProfit.lt(0) ? refundedProfit.abs() : new Decimal(0);
 
         // Prepare response object
         return {
@@ -525,6 +611,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             grossRevenue: grossRevenue.toNumber(),
             returnRefundImpact: returnRefundImpact.toNumber(),
             totalProfit: totalProfit.toNumber(),
+            totalProfitGains: totalGains.toNumber(), // Sum of all positive profits
+            totalProfitLosses: totalLosses.toNumber(), // Sum of all negative profits (will be negative)
             averageTransactionValue: averageTransactionValue.toNumber(),
             totalPaidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
             changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber(),
@@ -537,6 +625,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 totalAmount: totalCompletedRevenue.toNumber(),
                 paidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
                 profit: totalProfit.toNumber(),
+                profitGains: totalGains.toNumber(),
+                profitLosses: totalLosses.toNumber(),
                 changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber()
             },
 
@@ -546,7 +636,9 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 totalAmount: (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (partiallyPaidSales._sum?.paidAmount || new Decimal(0)).toNumber(),
                 outstandingAmount: totalOutstandingAmount.toNumber(),
-                profit: (partiallyPaidSales._sum?.profitAmount || new Decimal(0)).toNumber(),
+                profit: partiallyPaidTotalProfit.toNumber(),
+                profitGains: partiallyPaidGains.toNumber(),
+                profitLosses: partiallyPaidLosses.toNumber(),
                 averageOutstandingPerTransaction: averageOutstandingPerTransaction.toNumber(),
                 paymentCoverageRatio: Math.round(paymentCoverageRatio.toNumber() * 100) / 100,
                 details: partiallyPaidSalesDetails.map(sale => ({
@@ -565,7 +657,9 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 count: returnedSales._count?.id || 0,
                 totalAmount: (returnedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (returnedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
-                lostProfit: (returnedSales._sum?.profitAmount || new Decimal(0)).toNumber(),
+                profitImpact: returnedProfit.toNumber(), // Original profit amount (can be positive or negative)
+                lostProfit: returnedProfitLoss.toNumber(), // Profit lost from profitable sales
+                recoveredLoss: returnedLossRecovery.toNumber(), // Loss recovered from loss-making sales
                 details: returnedSalesDetails.map(sale => ({
                     salesId: sale.id,
                     totalAmount: sale.totalAmount.toNumber(),
@@ -582,7 +676,9 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 count: refundedSales._count?.id || 0,
                 totalAmount: (refundedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (refundedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
-                lostProfit: (refundedSales._sum?.profitAmount || new Decimal(0)).toNumber(),
+                profitImpact: refundedProfit.toNumber(), // Original profit amount (can be positive or negative)
+                lostProfit: refundedProfitLoss.toNumber(), // Profit lost from profitable sales
+                recoveredLoss: refundedLossRecovery.toNumber(), // Loss recovered from loss-making sales
                 details: refundedSalesDetails.map(sale => ({
                     salesId: sale.id,
                     totalAmount: sale.totalAmount.toNumber(),
@@ -643,6 +739,14 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 itemCode: item.itemCode,
                 itemBrand: item.itemBrand,
                 profit: (item._sum.profit || new Decimal(0)).toNumber()
+            })),
+
+            mostLossItems: mostLossItems.map(item => ({
+                itemId: item.itemId,
+                itemName: item.itemName,
+                itemCode: item.itemCode,
+                itemBrand: item.itemBrand,
+                loss: (item._sum.profit || new Decimal(0)).toNumber() // Will be negative
             })),
 
             paymentBreakdown: paymentBreakdown.map(payment => ({
@@ -780,6 +884,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             completedSales,
             topSellingItems,
             mostProfitableItems,
+            mostLossItems,
             salesSummary,
             paymentBreakdown,
             salesItems,
@@ -887,6 +992,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     sales: {
                         ...outletFilter,
                         status: "Completed"
+                    },
+                    profit: {
+                        gt: 0
                     }
                 },
                 _sum: {
@@ -895,6 +1003,29 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 orderBy: {
                     _sum: {
                         profit: 'desc'
+                    }
+                },
+                take: 10
+            }),
+
+            // Most loss-making items (items sold at a loss)
+            tenantPrisma.salesItem.groupBy({
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                where: {
+                    sales: {
+                        ...outletFilter,
+                        status: "Completed"
+                    },
+                    profit: {
+                        lt: 0
+                    }
+                },
+                _sum: {
+                    profit: true
+                },
+                orderBy: {
+                    _sum: {
+                        profit: 'asc'
                     }
                 },
                 take: 10
@@ -1252,9 +1383,68 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             : new Decimal(0);
 
         const netRevenue = totalCompletedRevenue;
-        const totalProfit = completedSales._sum?.profitAmount || new Decimal(0);
         const grossRevenue = salesSummary._sum?.totalAmount || new Decimal(0);
         const returnRefundImpact = (returnedSales._sum?.totalAmount || new Decimal(0)).plus(refundedSales._sum?.totalAmount || new Decimal(0));
+
+        // Split profit into gains and losses for completed sales
+        const completedSalesWithProfit = await tenantPrisma.sales.findMany({
+            where: {
+                ...outletFilter,
+                status: "Completed",
+                deleted: false
+            },
+            select: {
+                profitAmount: true
+            }
+        });
+
+        let totalGains = new Decimal(0);
+        let totalLosses = new Decimal(0);
+        completedSalesWithProfit.forEach(sale => {
+            if (sale.profitAmount.gt(0)) {
+                totalGains = totalGains.plus(sale.profitAmount);
+            } else if (sale.profitAmount.lt(0)) {
+                totalLosses = totalLosses.plus(sale.profitAmount); // This will be negative
+            }
+        });
+
+        // Calculate total profit from gains and losses
+        const totalProfit = totalGains.plus(totalLosses);
+
+        // Split profit for partially paid sales
+        const partiallyPaidSalesWithProfit = await tenantPrisma.sales.findMany({
+            where: {
+                ...outletFilter,
+                status: "Partially Paid",
+                deleted: false
+            },
+            select: {
+                profitAmount: true
+            }
+        });
+
+        let partiallyPaidGains = new Decimal(0);
+        let partiallyPaidLosses = new Decimal(0);
+        partiallyPaidSalesWithProfit.forEach(sale => {
+            if (sale.profitAmount.gt(0)) {
+                partiallyPaidGains = partiallyPaidGains.plus(sale.profitAmount);
+            } else if (sale.profitAmount.lt(0)) {
+                partiallyPaidLosses = partiallyPaidLosses.plus(sale.profitAmount);
+            }
+        });
+
+        // Calculate total profit for partially paid from gains and losses
+        const partiallyPaidTotalProfit = partiallyPaidGains.plus(partiallyPaidLosses);
+
+        // Calculate profit impact for returned/refunded sales (considering sign)
+        const returnedProfit = returnedSales._sum?.profitAmount || new Decimal(0);
+        const refundedProfit = refundedSales._sum?.profitAmount || new Decimal(0);
+
+        // For returned/refunded: if original was profitable, we lost profit; if loss, we recovered loss
+        const returnedProfitLoss = returnedProfit.gt(0) ? returnedProfit : new Decimal(0);
+        const returnedLossRecovery = returnedProfit.lt(0) ? returnedProfit.abs() : new Decimal(0);
+        const refundedProfitLoss = refundedProfit.gt(0) ? refundedProfit : new Decimal(0);
+        const refundedLossRecovery = refundedProfit.lt(0) ? refundedProfit.abs() : new Decimal(0);
 
         // Prepare response object
         return {
@@ -1263,6 +1453,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             grossRevenue: grossRevenue.toNumber(),
             returnRefundImpact: returnRefundImpact.toNumber(),
             totalProfit: totalProfit.toNumber(),
+            totalProfitGains: totalGains.toNumber(), // Sum of all positive profits
+            totalProfitLosses: totalLosses.toNumber(), // Sum of all negative profits (will be negative)
             averageTransactionValue: averageTransactionValue.toNumber(),
             totalPaidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
             changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber(),
@@ -1275,6 +1467,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 totalAmount: totalCompletedRevenue.toNumber(),
                 paidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
                 profit: totalProfit.toNumber(),
+                profitGains: totalGains.toNumber(),
+                profitLosses: totalLosses.toNumber(),
                 changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber()
             },
 
@@ -1283,7 +1477,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 totalAmount: (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (partiallyPaidSales._sum?.paidAmount || new Decimal(0)).toNumber(),
                 outstandingAmount: totalOutstandingAmount.toNumber(),
-                profit: (partiallyPaidSales._sum?.profitAmount || new Decimal(0)).toNumber(),
+                profit: partiallyPaidTotalProfit.toNumber(),
+                profitGains: partiallyPaidGains.toNumber(),
+                profitLosses: partiallyPaidLosses.toNumber(),
                 averageOutstandingPerTransaction: averageOutstandingPerTransaction.toNumber(),
                 paymentCoverageRatio: Math.round(paymentCoverageRatio.toNumber() * 100) / 100,
                 details: partiallyPaidSalesDetails.map(sale => ({
@@ -1301,7 +1497,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 count: returnedSales._count?.id || 0,
                 totalAmount: (returnedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (returnedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
-                lostProfit: (returnedSales._sum?.profitAmount || new Decimal(0)).toNumber(),
+                profitImpact: returnedProfit.toNumber(), // Original profit amount (can be positive or negative)
+                lostProfit: returnedProfitLoss.toNumber(), // Profit lost from profitable sales
+                recoveredLoss: returnedLossRecovery.toNumber(), // Loss recovered from loss-making sales
                 details: returnedSalesDetails.map(sale => ({
                     salesId: sale.id,
                     totalAmount: sale.totalAmount.toNumber(),
@@ -1317,7 +1515,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 count: refundedSales._count?.id || 0,
                 totalAmount: (refundedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (refundedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
-                lostProfit: (refundedSales._sum?.profitAmount || new Decimal(0)).toNumber(),
+                profitImpact: refundedProfit.toNumber(), // Original profit amount (can be positive or negative)
+                lostProfit: refundedProfitLoss.toNumber(), // Profit lost from profitable sales
+                recoveredLoss: refundedLossRecovery.toNumber(), // Loss recovered from loss-making sales
                 details: refundedSalesDetails.map(sale => ({
                     salesId: sale.id,
                     totalAmount: sale.totalAmount.toNumber(),
@@ -1365,6 +1565,14 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 itemCode: item.itemCode,
                 itemBrand: item.itemBrand,
                 profit: (item._sum.profit || new Decimal(0)).toNumber()
+            })),
+
+            mostLossItems: mostLossItems.map(item => ({
+                itemId: item.itemId,
+                itemName: item.itemName,
+                itemCode: item.itemCode,
+                itemBrand: item.itemBrand,
+                loss: (item._sum.profit || new Decimal(0)).toNumber() // Will be negative
             })),
 
             paymentBreakdown: paymentBreakdown.map(payment => ({

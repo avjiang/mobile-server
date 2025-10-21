@@ -5,7 +5,7 @@ import NetworkRequest from "../api-helpers/network-request";
 import { RequestValidateError } from "../api-helpers/error";
 import { sendResponse } from "../api-helpers/network";
 import { AuthRequest } from "../middleware/auth-request";
-import { SyncSettingsRequest, UpdateSettingRequest } from "./settings.request";
+import { SyncSettingsRequest, UpdateSettingRequest, BatchUpdateSettingsRequest } from "./settings.request";
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ const router = express.Router();
  * Get all settings with delta sync support
  * Supports initial sync and incremental updates
  */
-let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
+let getAllSettings = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
@@ -28,42 +28,56 @@ let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     };
 
     service
-        .getAll(req.user.databaseName, req.user.tenantId, syncRequest)
-        .then((response) => sendResponse(res, response))
+        .getAllSettings(req.user.databaseName, req.user.tenantId, syncRequest)
+        .then(({ settings, total, serverTimestamp }) => sendResponse(res, { data: settings, total, serverTimestamp }))
+        .catch(next);
+};
+
+let getAllSettingsDefinition = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const lastSyncTimestamp = req.query.lastSyncTimestamp as string
+    const skip = req.query.skip ? parseInt(req.query.skip as string) : undefined
+    const take = req.query.take ? parseInt(req.query.take as string) : undefined
+
+    service
+        .getAllSettingDefinitions(lastSyncTimestamp, skip, take)
+        .then(({ definitions, total, serverTimestamp }) => sendResponse(res, { data: definitions, total, serverTimestamp }))
         .catch(next);
 };
 
 /**
- * PUT /settings
- * Update a single setting value
+ * PUT /settings/batch
+ * Batch update/create settings
  */
-let update = (req: NetworkRequest<UpdateSettingRequest>, res: Response, next: NextFunction) => {
+let batchUpdateSettings = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
 
-    if (Object.keys(req.body).length === 0) {
-        throw new RequestValidateError('Request body is empty');
+    const batchRequest: BatchUpdateSettingsRequest = req.body;
+
+    if (!batchRequest.settings || !Array.isArray(batchRequest.settings) || batchRequest.settings.length === 0) {
+        throw new RequestValidateError('Settings array is required and must not be empty');
     }
 
-    const updateRequest = req.body;
-
-    if (!updateRequest.key) {
-        throw new RequestValidateError('Setting key is required');
-    }
-
-    if (updateRequest.value === undefined || updateRequest.value === null) {
-        throw new RequestValidateError('Setting value is required');
+    // Validate each setting has either id or settingDefinitionId
+    for (const setting of batchRequest.settings) {
+        if (!setting.id && !setting.settingDefinitionId) {
+            throw new RequestValidateError('Each setting must have either id or settingDefinitionId');
+        }
     }
 
     service
-        .update(req.user.databaseName, req.user.tenantId, updateRequest)
-        .then((setting: Setting) => sendResponse(res, setting))
+        .batchUpdateSettings(req.user.databaseName, req.user.tenantId, batchRequest.settings)
+        .then(({ updated, serverTimestamp }) => sendResponse(res, { data: updated, serverTimestamp }))
         .catch(next);
 };
 
 // Routes
-router.get('/', getAll);
-router.put('/', update);
+router.get('/sync', getAllSettings);
+router.get('/definition/sync', getAllSettingsDefinition);
+router.put('/batchUpdate', batchUpdateSettings);
 
 export = router;

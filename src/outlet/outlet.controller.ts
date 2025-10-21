@@ -20,20 +20,6 @@ let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
-let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-        throw new RequestValidateError('User not authenticated');
-    }
-    if (!validator.isNumeric(req.params.id)) {
-        throw new RequestValidateError('ID format incorrect')
-    }
-    const categoryId: number = parseInt(req.params.id)
-    service.getById(req.user.databaseName, categoryId)
-        .then((category: Category) => sendResponse(res, category))
-        .catch(next)
-}
-
 //routes
 router.get("/", getAll)
-router.get('/:id', getById)
 export = router

@@ -2,40 +2,16 @@ import { PrismaClient as TenantPrismaClient, Setting } from "../../prisma/client
 import { PrismaClient as GlobalPrismaClient, SettingDefinition } from "../../prisma/global-client/generated/global";
 import { getTenantPrisma, getGlobalPrisma } from "../db";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error";
-import { SyncSettingsRequest, UpdateSettingRequest, SettingsResponse, SettingWithDefinition } from "./settings.request";
-
-// Cache for setting definitions (refresh every 5 minutes)
-let definitionsCache: SettingDefinition[] = [];
-let lastCacheUpdate: Date = new Date(0);
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-/**
- * Load setting definitions from global DB and cache them
- */
-async function loadSettingDefinitions(forceRefresh: boolean = false): Promise<SettingDefinition[]> {
-    const now = new Date();
-    const cacheExpired = now.getTime() - lastCacheUpdate.getTime() > CACHE_TTL_MS;
-
-    if (definitionsCache.length === 0 || cacheExpired || forceRefresh) {
-        const globalPrisma = getGlobalPrisma();
-        definitionsCache = await globalPrisma.settingDefinition.findMany({
-            where: { deleted: false },
-            orderBy: [{ category: 'asc' }, { key: 'asc' }]
-        });
-        lastCacheUpdate = now;
-    }
-
-    return definitionsCache;
-}
+import { SyncSettingsRequest, UpdateSettingRequest } from "./settings.request";
 
 /**
  * Get all settings with delta sync support (similar to sales.service.ts)
  */
-let getAll = async (
+let getAllSettings = async (
     databaseName: string,
     tenantId: number,
     request: SyncSettingsRequest
-): Promise<SettingsResponse> => {
+): Promise<{ settings: Setting[]; total: number; serverTimestamp: string }> => {
     const tenantPrisma: TenantPrismaClient = getTenantPrisma(databaseName);
     const { lastSyncTimestamp, outletId, userId, skip = 0, take = 100 } = request;
 
@@ -50,12 +26,8 @@ let getAll = async (
             lastSync = new Date(0);
         }
 
-        // Load definitions from cache
-        const definitions = await loadSettingDefinitions();
-
         // Build query conditions with delta sync
         const where: any = {
-            deleted: false,
             OR: [
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
@@ -85,18 +57,8 @@ let getAll = async (
             ]
         });
 
-        // Enrich settings with definitions
-        const enrichedSettings: SettingWithDefinition[] = settings.map(setting => {
-            const definition = definitions.find(d => d.id === setting.settingDefinitionId);
-            return {
-                ...setting,
-                definition
-            };
-        });
-
         return {
-            settings: enrichedSettings,
-            definitions: definitions, // Send all definitions for Flutter to cache
+            settings,
             total,
             serverTimestamp: new Date().toISOString()
         };
@@ -105,78 +67,56 @@ let getAll = async (
     }
 };
 
+
 /**
- * Update a single setting
+ * Get all setting definitions from global DB with delta sync support
  */
-let update = async (
-    databaseName: string,
-    tenantId: number,
-    request: UpdateSettingRequest
-): Promise<Setting> => {
-    const tenantPrisma: TenantPrismaClient = getTenantPrisma(databaseName);
-    const { key, value, outletId, userId } = request;
+let getAllSettingDefinitions = async (
+    lastSyncTimestamp?: string,
+    skip: number = 0,
+    take: number = 100
+): Promise<{ definitions: SettingDefinition[]; total: number; serverTimestamp: string }> => {
+    const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
 
     try {
-        // Load definitions to get the setting metadata
-        const definitions = await loadSettingDefinitions();
-        const definition = definitions.find(d => d.key === key);
+        // Parse last sync timestamp (same pattern as getAllSettings)
+        let lastSync: Date;
 
-        if (!definition) {
-            throw new NotFoundError(`Setting definition with key '${key}'`);
+        if (lastSyncTimestamp && lastSyncTimestamp !== 'null') {
+            lastSync = new Date(lastSyncTimestamp);
+        } else {
+            // Initial sync - get all definitions
+            lastSync = new Date(0);
         }
 
-        // Validate value based on type
-        validateSettingValue(definition, value);
-
-        // Determine scope values based on definition
-        const scopeData = {
-            tenantId: definition.scope === 'TENANT' ? tenantId : null,
-            outletId: definition.scope === 'OUTLET' ? outletId || null : null,
-            userId: definition.scope === 'USER' ? userId || null : null
+        // Build query conditions with delta sync
+        const where: any = {
+            OR: [
+                { createdAt: { gte: lastSync } },
+                { updatedAt: { gte: lastSync } },
+                { deletedAt: { gte: lastSync } }
+            ]
         };
 
-        // Validate required scope parameters
-        if (definition.scope === 'OUTLET' && !outletId) {
-            throw new RequestValidateError(`outletId is required for setting '${key}'`);
-        }
-        if (definition.scope === 'USER' && !userId) {
-            throw new RequestValidateError(`userId is required for setting '${key}'`);
-        }
+        // Count total
+        const total = await globalPrisma.settingDefinition.count({ where });
 
-        // Find existing setting
-        const existingSetting = await tenantPrisma.setting.findFirst({
-            where: {
-                settingDefinitionId: definition.id,
-                tenantId: scopeData.tenantId,
-                outletId: scopeData.outletId,
-                userId: scopeData.userId,
-                deleted: false
-            }
+        // Fetch definitions with pagination
+        const definitions = await globalPrisma.settingDefinition.findMany({
+            where,
+            skip,
+            take,
+            orderBy: [
+                { updatedAt: 'desc' },
+                { createdAt: 'desc' }
+            ]
         });
 
-        let setting: Setting;
-
-        if (existingSetting) {
-            // Update existing setting
-            setting = await tenantPrisma.setting.update({
-                where: { id: existingSetting.id },
-                data: {
-                    value,
-                    updatedAt: new Date()
-                }
-            });
-        } else {
-            // Create new setting
-            setting = await tenantPrisma.setting.create({
-                data: {
-                    settingDefinitionId: definition.id,
-                    value,
-                    ...scopeData
-                }
-            });
-        }
-
-        return setting;
+        return {
+            definitions,
+            total,
+            serverTimestamp: new Date().toISOString()
+        };
     } catch (error) {
         throw error;
     }
@@ -245,8 +185,139 @@ function validateSettingValue(definition: SettingDefinition, value: string): voi
     }
 }
 
+/**
+ * Batch update/create settings with validation (optimized with upsert support)
+ */
+let batchUpdateSettings = async (
+    databaseName: string,
+    tenantId: number,
+    updates: UpdateSettingRequest[]
+): Promise<{ updated: Setting[]; serverTimestamp: string }> => {
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(databaseName);
+    const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
+
+    try {
+        // Separate updates into existing (with ID) and new (without ID or null ID)
+        const existingUpdates = updates.filter(u => u.id != null); // Filters out both null and undefined
+        const newUpdates = updates.filter(u => u.id == null); // Catches both null and undefined
+
+        // Validate new updates have required fields
+        for (const update of newUpdates) {
+            if (!update.settingDefinitionId) {
+                throw new RequestValidateError('settingDefinitionId is required when creating new settings');
+            }
+        }
+
+        // Extract all setting IDs for existing settings
+        const settingIds = existingUpdates.map(u => u.id!);
+
+        // Extract all definition IDs (from both existing and new)
+        const definitionIdsFromExisting = existingUpdates.length > 0
+            ? (await tenantPrisma.setting.findMany({
+                where: { id: { in: settingIds } },
+                select: { settingDefinitionId: true }
+            })).map(s => s.settingDefinitionId)
+            : [];
+
+        const definitionIdsFromNew = newUpdates.map(u => u.settingDefinitionId!);
+        const allDefinitionIds = [...new Set([...definitionIdsFromExisting, ...definitionIdsFromNew])];
+
+        // Bulk fetch all definitions for validation
+        const definitions = await globalPrisma.settingDefinition.findMany({
+            where: { id: { in: allDefinitionIds } }
+        });
+
+        const definitionsMap = new Map(definitions.map(d => [d.id, d]));
+
+        // Bulk fetch existing settings if there are updates
+        let existingSettingsMap = new Map<number, Setting>();
+        if (settingIds.length > 0) {
+            const existingSettings = await tenantPrisma.setting.findMany({
+                where: { id: { in: settingIds } }
+            });
+            existingSettingsMap = new Map(existingSettings.map(s => [s.id, s]));
+
+            // Check if all settings exist
+            for (const update of existingUpdates) {
+                if (!existingSettingsMap.has(update.id!)) {
+                    throw new NotFoundError(`Setting with ID ${update.id} not found`);
+                }
+            }
+        }
+
+        // Validate all updates
+        for (const update of existingUpdates) {
+            const setting = existingSettingsMap.get(update.id!)!;
+            const definition = definitionsMap.get(setting.settingDefinitionId);
+
+            if (!definition) {
+                throw new NotFoundError(`Setting definition not found for setting ID ${update.id}`);
+            }
+
+            validateSettingValue(definition, update.value);
+        }
+
+        for (const update of newUpdates) {
+            const definition = definitionsMap.get(update.settingDefinitionId!);
+
+            if (!definition) {
+                throw new NotFoundError(`Setting definition with ID ${update.settingDefinitionId} not found`);
+            }
+
+            validateSettingValue(definition, update.value);
+        }
+
+        // Perform batch operations using transaction
+        const now = new Date();
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            const updated: Setting[] = [];
+
+            // Update existing settings
+            for (const update of existingUpdates) {
+                const updatedSetting = await tx.setting.update({
+                    where: { id: update.id! },
+                    data: {
+                        value: update.value,
+                        updatedAt: now,
+                        version: {
+                            increment: 1
+                        }
+                    }
+                });
+                updated.push(updatedSetting);
+            }
+
+            // Create new settings
+            for (const update of newUpdates) {
+                const newSetting = await tx.setting.create({
+                    data: {
+                        settingDefinitionId: update.settingDefinitionId!,
+                        tenantId: update.tenantId,
+                        userId: update.userId,
+                        outletId: update.outletId,
+                        value: update.value,
+                        createdAt: now,
+                        updatedAt: now,
+                        version: 1
+                    }
+                });
+                updated.push(newSetting);
+            }
+
+            return updated;
+        });
+
+        return {
+            updated: result,
+            serverTimestamp: now.toISOString()
+        };
+    } catch (error) {
+        throw error;
+    }
+};
+
 export = {
-    getAll,
-    update,
-    loadSettingDefinitions // For app initialization
+    getAllSettings,
+    getAllSettingDefinitions,
+    batchUpdateSettings
 };

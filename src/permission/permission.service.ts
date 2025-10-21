@@ -11,9 +11,7 @@ let getAll = async (syncRequest: SyncRequest) => {
             new Date(lastSyncTimestamp) : new Date(0);
 
         // Build where clause
-        const whereClause: any = {
-            deleted: false,
-        };
+        const whereClause: any = {};
 
         // Add timestamp filter for delta sync - check updatedAt, deletedAt, and createdAt
         if (lastSyncTimestamp) {

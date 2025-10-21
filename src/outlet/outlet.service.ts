@@ -13,29 +13,19 @@ let getAll = async (databaseName: string) => {
                 createdAt: 'desc'
             }
         });
-        return outlets;
+
+        // Map tenantOutletId to globalOutletId
+        return outlets.map(outlet => {
+            const { tenantOutletId, ...rest } = outlet;
+            return {
+                globalOutletId: tenantOutletId,
+                ...rest,
+            };
+        });
     }
     catch (error) {
         throw error
     }
 }
 
-let getById = async (databaseName: string, id: number) => {
-    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    try {
-        const category = await tenantPrisma.category.findUnique({
-            where: {
-                id: id
-            }
-        })
-        if (!category) {
-            throw new NotFoundError("Category")
-        }
-        return category
-    }
-    catch (error) {
-        throw error
-    }
-}
-
-export = { getAll, getById }
+export = { getAll }

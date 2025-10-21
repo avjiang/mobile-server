@@ -44,7 +44,6 @@ let getAll = async (
                         }
                     }
                 ],
-                deleted: false
             };
         }
 

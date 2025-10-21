@@ -10,19 +10,14 @@ export interface SyncSettingsRequest {
 }
 
 export interface UpdateSettingRequest {
-    key: string;
+    id?: number; // Optional - will create if not provided
+    settingDefinitionId?: number; // Required when creating new setting
     value: string;
     outletId?: number;
     userId?: number;
+    tenantId?: number;
 }
 
-export interface SettingsResponse {
-    settings: SettingWithDefinition[];
-    definitions: SettingDefinition[];
-    total: number;
-    serverTimestamp: string;
-}
-
-export interface SettingWithDefinition extends Setting {
-    definition?: SettingDefinition;
+export interface BatchUpdateSettingsRequest {
+    settings: UpdateSettingRequest[];
 }

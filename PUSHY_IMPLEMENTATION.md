@@ -10,7 +10,7 @@ Push notification system using Pushy SDK for multi-tenant Flutter POS applicatio
 - Frontend decides whether to register devices based on plan
 - Backend checks planName from JWT token only (no database queries)
 - **Hybrid Model**: Device limits calculated per outlet, but devices are tenant-wide pool
-- Each outlet subscription includes 5 devices (3 outlets = 15 total devices)
+- Each outlet subscription includes 3 devices (3 outlets = 9 total devices)
 - Additional devices: IDR 10,000/month per device (added to specific outlet subscription)
 - Clean approach: When plan changes, all refresh tokens are invalidated forcing re-login
 - **Cost Optimization**: Check device eligibility BEFORE calling `pushy.register()` to avoid unnecessary billing
@@ -93,7 +93,7 @@ The hybrid model applies to both **users** and **devices**:
 1. **Limits Calculation**: Sum of all outlet subscriptions
 
    - **Users**: 3 outlets × 10 users = 30 total users for tenant
-   - **Devices**: 3 outlets × 5 devices = 15 total devices for tenant
+   - **Devices**: 3 outlets × 3 devices = 9 total devices for tenant
    - Each outlet subscription contributes to the total pool
 
 2. **Tenant-Wide Pool**: Resources shared across all outlets
@@ -195,9 +195,12 @@ INSERT INTO permission (NAME, CATEGORY, DESCRIPTION) VALUES
 
 ### Subscription Add-on
 
+**Important**: The system uses **add-on ID (2)** to identify device add-ons, not the name. This ensures reliability even if the name changes.
+
 ```sql
-INSERT INTO subscription_add_on (NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUANTITY, SCOPE, DESCRIPTION) VALUES
-('Push Notification Device', 'device', 10000.00, null, 'tenant', 'Additional push notification device slot (IDR 10,000/month per device)');
+-- Add-on ID: 2
+INSERT INTO subscription_add_on (ID, NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUANTITY, SCOPE, DESCRIPTION) VALUES
+(2, 'Additional Push Notification Device', 'device', 10000.00, null, 'tenant', 'Additional push notification device slot (IDR 10,000/month per device)');
 ```
 
 ## API Endpoints
@@ -209,7 +212,7 @@ INSERT INTO subscription_add_on (NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUANTITY
 **IMPORTANT**: Call this endpoint BEFORE calling `pushy.register()` on the frontend to avoid unnecessary billing from Pushy.
 
 ```
-GET /pushy/devices/checkQuota
+GET /pushy/devices/check-eligibility
 Headers: Authorization: Bearer <jwt_token>
 
 Success Response (Can Register):
@@ -251,7 +254,205 @@ Success Response (Not Pro Plan):
 }
 ```
 
+#### Provider/Owner: Add Device Quota for Tenant
+
+**IMPORTANT**: This endpoint is for the **POS app provider/owner** to manually add device quota when a tenant requests additional device slots.
+
+**User Journey:**
+
+1. Tenant user hits device limit (3/3 devices)
+2. Tenant contacts you (provider) to request 2 more device slots
+3. You call this endpoint to add 2 device quota
+4. Tenant can immediately register new devices (now 3/5 available)
+
+```
+POST /admin/addDeviceQuota/:tenantId
+Headers: Authorization: Bearer <provider_admin_token>
+
+Request:
+{
+    "quantity": 2
+}
+
+Success Response:
+{
+    "success": true,
+    "message": "Added 2 device quota. Total add-on devices: 2",
+    "tenantId": 1,
+    "addOnQuantity": 2,
+    "monthlyCost": 20000,
+    "subscriptionId": 123
+}
+
+Notes:
+- This endpoint adds device quota to the tenant's FIRST active subscription
+- If tenant already has device add-ons, quantity will be ADDED to existing
+- Each device add-on costs IDR 10,000/month
+- The quota is immediately available for device registration
+- Maximum device limit = (3 devices per outlet × number of outlets) + add-on quantity
+- Example: 1 outlet with 2 add-ons = 3 + 2 = 5 total devices
+```
+
+#### Provider/Owner: Get All Tenant Devices
+
+**IMPORTANT**: This endpoint shows device statistics including inactive devices, but only returns **active** devices in the devices array.
+
+```
+GET /admin/tenantDevices/:tenantId
+Headers: Authorization: Bearer <provider_admin_token>
+
+Success Response:
+{
+    "success": true,
+    "tenantId": 1,
+    "tenantName": "Acme Corp",
+    "deviceUsage": {
+        "active": 4,
+        "inactive": 2,
+        "total": 6,
+        "maximum": 5
+    },
+    "devices": [
+        {
+            "id": 123,
+            "deviceToken": "d5f9c2a8b3e1...",
+            "platform": "android",
+            "deviceName": "Samsung Galaxy S21",
+            "appVersion": "1.0.0",
+            "isActive": true,
+            "lastActiveAt": "2024-01-15T14:20:00Z",
+            "createdAt": "2024-01-15T10:30:00Z",
+            "user": {
+                "id": 456,
+                "username": "cashier1",
+                "role": "Cashier"
+            },
+            "allocation": {
+                "type": "included",
+                "activatedAt": "2024-01-15T10:30:00Z"
+            }
+        },
+        {
+            "id": 124,
+            "deviceToken": "a7b9c3d2e1f4...",
+            "platform": "ios",
+            "deviceName": "iPhone 13",
+            "appVersion": "1.0.0",
+            "isActive": true,
+            "lastActiveAt": "2024-01-15T13:45:00Z",
+            "createdAt": "2024-01-14T09:15:00Z",
+            "user": {
+                "id": 457,
+                "username": "manager1",
+                "role": "Manager"
+            },
+            "allocation": {
+                "type": "addon",
+                "activatedAt": "2024-01-14T09:15:00Z"
+            }
+        }
+    ]
+}
+
+Notes:
+- Device usage statistics include ALL devices (active, inactive, total)
+- The devices array only contains ACTIVE devices (inactive devices are excluded from the list)
+- Devices are ordered by createdAt (newest first)
+- Includes device allocation information (included or addon)
+- Shows which user owns each device
+- Useful for auditing and managing tenant device usage
+```
+
+#### Provider/Owner: Reduce Device Quota for Tenant
+
+**IMPORTANT**: This endpoint **automatically deactivates excess devices** (oldest first) when quota is reduced below current active device count.
+
+**Deactivation Strategy:**
+
+- Uses FIFO (First In, First Out) based on `lastActiveAt` timestamp
+- Oldest/least recently active devices are deactivated first
+- Immediate effect - devices are deactivated instantly
+
+```
+POST /admin/reduceDeviceQuota/:tenantId
+Headers: Authorization: Bearer <provider_admin_token>
+
+Request:
+{
+    "quantity": 1
+}
+
+Success Response (No devices deactivated):
+{
+    "success": true,
+    "message": "Reduced 1 device quota.",
+    "tenantId": 1,
+    "addOnQuantity": 1,
+    "monthlyCost": 10000,
+    "subscriptionId": 123,
+    "quota": {
+        "previous": 5,
+        "current": 4
+    },
+    "devices": {
+        "active": 3,
+        "deactivated": 0,
+        "deactivatedList": []
+    }
+}
+
+Success Response (With automatic deactivation):
+{
+    "success": true,
+    "message": "Reduced 1 device quota. Automatically deactivated 1 excess device(s).",
+    "tenantId": 1,
+    "addOnQuantity": 1,
+    "monthlyCost": 10000,
+    "subscriptionId": 123,
+    "quota": {
+        "previous": 5,
+        "current": 4
+    },
+    "devices": {
+        "active": 4,
+        "deactivated": 1,
+        "deactivatedList": [
+            {
+                "deviceToken": "abc123...",
+                "platform": "android",
+                "deviceName": "Old Phone",
+                "username": "cashier1",
+                "lastActiveAt": "2024-01-10T08:30:00Z"
+            }
+        ]
+    }
+}
+
+Error Response (Insufficient add-on):
+{
+    "success": false,
+    "error": {
+        "errorType": "RequestValidateError",
+        "errorMessage": "Cannot reduce by 3. Current add-on quantity is 2"
+    }
+}
+
+Notes:
+- Reduces add-on quantity from the tenant's FIRST active subscription
+- If new quota < current active devices, excess devices are AUTO-DEACTIVATED
+- Deactivation is based on lastActiveAt (oldest first)
+- Cannot reduce more than current add-on quantity
+- If reducing to 0, the add-on record is deleted
+- Response includes list of deactivated devices for record-keeping
+```
+
 #### Register Device
+
+**Important Logic:**
+
+- If device already exists (same deviceToken), it will be **reactivated** without checking the limit
+- Device limit is **only checked for NEW devices** (first-time registration)
+- This allows users to re-login on the same device without hitting quota issues
 
 ```
 POST /pushy/devices/register
@@ -265,20 +466,34 @@ Request:
     "appVersion": "1.0.0"
 }
 
-Success Response:
+Success Response (New Device):
 {
     "success": true,
+    "message": "Device registered successfully",
     "device": {
         "id": 123,
         "deviceToken": "d5f9c2a8b3e1...",
         "platform": "android",
-        "topics": ["tenant_1", "tenant_1_sales", "tenant_1_user_456"]
+        "isActive": true
     },
-    "deviceUsage": {
-        "current": 3,
-        "maximum": 5,
-        "requiresAddOn": false
+    "subscribedTopics": ["tenant_1", "tenant_1_sales", "tenant_1_user_456"],
+    "deviceStats": {
+        "currentCount": 4,
+        "maxAllowed": 5
     }
+}
+
+Success Response (Existing Device Reactivated):
+{
+    "success": true,
+    "message": "Device updated successfully",
+    "device": {
+        "id": 123,
+        "deviceToken": "d5f9c2a8b3e1...",
+        "platform": "android",
+        "isActive": true
+    },
+    "subscribedTopics": ["tenant_1", "tenant_1_sales", "tenant_1_user_456"]
 }
 
 Error Response (Device Limit):
@@ -456,7 +671,7 @@ High-level notification service (Singleton)
 Device limit management (Singleton)
 
 - **Hybrid model**: Device limits calculated as sum of all outlet subscriptions
-- Each outlet subscription includes 5 devices
+- Each outlet subscription includes 3 devices
 - Additional device purchase (IDR 10,000/device/month) added to outlet subscription
 - Devices are pooled at tenant level (can be used at any outlet)
 - Device allocation tracking
@@ -851,6 +1066,187 @@ bool hasPermission(String permissionName) {
 }
 ```
 
+### Provider Billing Workflow
+
+#### Scenario 1: Adding Device Quota
+
+**Complete flow when tenant requests additional devices:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Tenant User: Try to register 6th device                 │
+│    GET /pushy/devices/check-eligibility                     │
+│    Response: canRegister: false, current: 5, maximum: 5    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Tenant: Contact Provider via email/WhatsApp             │
+│    "We need 2 more device slots"                           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Provider (You): Add device quota                        │
+│    POST /admin/addDeviceQuota/1                            │
+│    Body: { "quantity": 2 }                                 │
+│                                                              │
+│    Database Changes:                                         │
+│    - Creates/updates TenantSubscriptionAddOn                │
+│    - addOnId: 2 (Push Notification Device)                 │
+│    - quantity: 2                                            │
+│    - Attached to primary subscription                       │
+│                                                              │
+│    Monthly billing: +IDR 20,000 (2 × 10,000)               │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Tenant User: Check eligibility again                    │
+│    GET /pushy/devices/check-eligibility                     │
+│    Response: canRegister: true, current: 3, maximum: 5     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 5. Tenant User: Register device successfully               │
+│    POST /pushy/devices/register                            │
+│    Response: Success! current: 4, maximum: 5               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Billing Calculation:**
+
+- Base: 1 outlet × 3 devices = 3 devices (included in Pro plan)
+- Add-on: 2 additional devices = IDR 20,000/month
+- Total: 5 devices available
+
+**Provider Dashboard Query:**
+
+```sql
+-- To see all tenant device add-ons for billing
+SELECT
+    t.TENANT_NAME,
+    tsa.QUANTITY as additional_devices,
+    (tsa.QUANTITY * 10000) as monthly_cost
+FROM TENANT_SUBSCRIPTION_ADD_ON tsa
+JOIN TENANT_SUBSCRIPTION ts ON tsa.TENANT_SUBSCRIPTION_ID = ts.ID
+JOIN TENANT_OUTLET o ON ts.OUTLET_ID = o.ID
+JOIN TENANT t ON o.TENANT_ID = t.ID
+WHERE tsa.ADD_ON_ID = 2
+AND ts.STATUS IN ('Active', 'active', 'trial');
+```
+
+#### Scenario 2: Reducing Device Quota (with Automatic Deactivation)
+
+**Complete flow when provider reduces device quota and system auto-deactivates excess devices:**
+
+```
+Current State:
+┌───────────────────────────────────────────────────────┐
+│ Tenant has 5 devices registered (all active)          │
+│ - Device 1: lastActiveAt: 2024-01-10 08:30:00        │
+│ - Device 2: lastActiveAt: 2024-01-11 10:15:00        │
+│ - Device 3: lastActiveAt: 2024-01-12 14:20:00        │
+│ - Device 4: lastActiveAt: 2024-01-13 09:45:00        │
+│ - Device 5: lastActiveAt: 2024-01-14 16:30:00        │
+│                                                        │
+│ Current quota: 5 (3 base + 2 add-on)                 │
+└───────────────────────────────────────────────────────┘
+
+                       │
+                       ▼
+
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Provider (You): Reduce device quota by 1                │
+│    POST /admin/reduceDeviceQuota/1                         │
+│    Body: { "quantity": 1 }                                 │
+│                                                              │
+│    System Actions:                                           │
+│    ✓ Reduces add-on quantity: 2 → 1                        │
+│    ✓ New quota: 4 devices (3 base + 1 add-on)             │
+│    ✓ Checks current devices: 5 active                      │
+│    ✓ Calculates excess: 5 - 4 = 1 device to deactivate    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. System: Auto-deactivates excess device                  │
+│    Strategy: FIFO (oldest lastActiveAt first)              │
+│                                                              │
+│    Devices sorted by lastActiveAt (ascending):              │
+│    1. Device 1: 2024-01-10 08:30:00 ← DEACTIVATED          │
+│    2. Device 2: 2024-01-11 10:15:00                        │
+│    3. Device 3: 2024-01-12 14:20:00                        │
+│    4. Device 4: 2024-01-13 09:45:00                        │
+│    5. Device 5: 2024-01-14 16:30:00                        │
+│                                                              │
+│    For Device 1:                                             │
+│    ✓ Set isActive = false                                  │
+│    ✓ Delete from PushyDeviceAllocation                     │
+│    ✓ Add to deactivatedList response                       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Provider receives response with details                 │
+│    {                                                        │
+│      "success": true,                                       │
+│      "message": "Reduced 1 device quota. Automatically     │
+│                  deactivated 1 excess device(s).",         │
+│      "quota": {                                             │
+│        "previous": 5,                                       │
+│        "current": 4                                         │
+│      },                                                     │
+│      "devices": {                                           │
+│        "active": 4,                                         │
+│        "deactivated": 1,                                    │
+│        "deactivatedList": [                                 │
+│          {                                                  │
+│            "deviceToken": "abc123...",                      │
+│            "platform": "android",                           │
+│            "deviceName": "Old Phone",                       │
+│            "username": "cashier1",                          │
+│            "lastActiveAt": "2024-01-10T08:30:00Z"          │
+│          }                                                  │
+│        ]                                                    │
+│      }                                                      │
+│    }                                                        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌───────────────────────────────────────────────────────┐
+│ New State:                                             │
+│ - 4 devices active (Device 2, 3, 4, 5)               │
+│ - 1 device inactive (Device 1)                        │
+│ - Current quota: 4                                     │
+│ - Monthly billing: IDR 10,000 (1 add-on)              │
+└───────────────────────────────────────────────────────┘
+```
+
+**Deactivation Logic:**
+
+1. **Ordering**: Devices are sorted by `lastActiveAt` in ascending order (oldest first)
+2. **Selection**: First N devices from the sorted list are selected for deactivation
+3. **Execution**: For each device:
+   - Set `isActive = false` in `PushyDevice` table
+   - Delete entry from `PushyDeviceAllocation` table
+   - Add device info to response's `deactivatedList`
+
+**Why FIFO (First In, First Out)?**
+
+- Preserves most recently used devices (likely still in use)
+- Deactivates least recently used devices (likely abandoned/unused)
+- Fair and predictable deactivation strategy
+- Minimizes disruption to active users
+
+**Edge Cases:**
+
+- If reducing quota to 0 add-ons → Deletes the add-on record entirely
+- If quota reduction exceeds current add-on quantity → Error response
+- If devices ≤ new quota → No deactivation, just quota reduction
+- Inactive devices don't count toward active limit
+
 ### Handle Device Limit
 
 ```dart
@@ -859,7 +1255,7 @@ void showDeviceLimitDialog() {
         context: context,
         builder: (_) => AlertDialog(
             title: Text('Device Limit Reached'),
-            content: Text('Maximum 5 devices registered. Remove a device or purchase additional slot.'),
+            content: Text('Maximum 3 devices registered. Remove a device or purchase additional slot.'),
             actions: [
                 TextButton(
                     onPressed: () => Navigator.pushNamed(context, '/devices'),
@@ -907,11 +1303,11 @@ void showDeviceLimitDialog() {
 ```json
 {
   "success": false,
-  "error": "Device limit reached (5/5)",
+  "error": "Device limit reached (3/3)",
   "requiresAddOn": true,
   "deviceUsage": {
-    "current": 5,
-    "maximum": 5
+    "current": 3,
+    "maximum": 3
   },
   "additionalCost": 10000,
   "code": "DEVICE_LIMIT_EXCEEDED"

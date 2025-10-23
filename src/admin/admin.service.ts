@@ -639,4 +639,340 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
     }
 }
 
-export = { createTenant, createTenantUser, getTenantCost, getAllTenantCost }
+// Add device quota for a tenant (called by provider/owner)
+const addDeviceQuotaForTenant = async (tenantId: number, quantity: number) => {
+    if (!quantity || quantity <= 0) {
+        throw new RequestValidateError('Quantity must be a positive number');
+    }
+
+    // Get all active outlets for this tenant with their subscriptions
+    const tenantOutlets = await prisma.tenantOutlet.findMany({
+        where: {
+            tenantId,
+            isActive: true
+        },
+        include: {
+            subscriptions: {
+                where: {
+                    status: {
+                        in: ['Active', 'active', 'trial']
+                    }
+                },
+                include: {
+                    subscriptionPlan: true
+                }
+            }
+        }
+    });
+
+    if (!tenantOutlets || tenantOutlets.length === 0) {
+        throw new NotFoundError('No active outlets found for tenant');
+    }
+
+    // Get primary subscription (first active subscription)
+    let primarySubscription = null;
+    for (const outlet of tenantOutlets) {
+        if (outlet.subscriptions.length > 0) {
+            primarySubscription = outlet.subscriptions[0];
+            break;
+        }
+    }
+
+    if (!primarySubscription) {
+        throw new NotFoundError('No active subscription found for tenant');
+    }
+
+    const addOnId = 2; // Push Notification Device add-on
+
+    // Check existing add-on
+    const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
+        where: {
+            tenantSubscriptionId_addOnId: {
+                tenantSubscriptionId: primarySubscription.id,
+                addOnId
+            }
+        }
+    });
+
+    if (existingAddOn) {
+        // Update quantity (add to existing)
+        const updatedAddOn = await prisma.tenantSubscriptionAddOn.update({
+            where: {
+                tenantSubscriptionId_addOnId: {
+                    tenantSubscriptionId: primarySubscription.id,
+                    addOnId
+                }
+            },
+            data: {
+                quantity: existingAddOn.quantity + quantity
+            }
+        });
+
+        return {
+            success: true,
+            message: `Added ${quantity} device quota. Total add-on devices: ${updatedAddOn.quantity}`,
+            tenantId,
+            addOnQuantity: updatedAddOn.quantity,
+            monthlyCost: updatedAddOn.quantity * 10000,
+            subscriptionId: primarySubscription.id
+        };
+    } else {
+        // Create new add-on
+        const newAddOn = await prisma.tenantSubscriptionAddOn.create({
+            data: {
+                tenantSubscriptionId: primarySubscription.id,
+                addOnId,
+                quantity
+            }
+        });
+
+        return {
+            success: true,
+            message: `Added ${quantity} device quota`,
+            tenantId,
+            addOnQuantity: newAddOn.quantity,
+            monthlyCost: newAddOn.quantity * 10000,
+            subscriptionId: primarySubscription.id
+        };
+    }
+};
+
+// Reduce device quota for a tenant (called by provider/owner)
+// This will automatically deactivate excess devices (oldest first)
+const reduceDeviceQuotaForTenant = async (tenantId: number, quantityToReduce: number) => {
+    if (!quantityToReduce || quantityToReduce <= 0) {
+        throw new RequestValidateError('Quantity must be a positive number');
+    }
+
+    const deviceLimitService = require('../pushy/device.service');
+
+    // Step 1: Get all active outlets for this tenant with their subscriptions
+    const tenantOutlets = await prisma.tenantOutlet.findMany({
+        where: {
+            tenantId,
+            isActive: true
+        },
+        include: {
+            subscriptions: {
+                where: {
+                    status: {
+                        in: ['Active', 'active', 'trial']
+                    }
+                },
+                include: {
+                    subscriptionPlan: true,
+                    subscriptionAddOn: true
+                }
+            }
+        }
+    });
+
+    if (!tenantOutlets || tenantOutlets.length === 0) {
+        throw new NotFoundError('No active outlets found for tenant');
+    }
+
+    // Step 2: Find the add-on to reduce
+    let primarySubscription = null;
+    let deviceAddOn = null;
+    const addOnId = 2; // Push Notification Device add-on
+
+    for (const outlet of tenantOutlets) {
+        if (outlet.subscriptions.length > 0) {
+            primarySubscription = outlet.subscriptions[0];
+            deviceAddOn = primarySubscription.subscriptionAddOn.find(
+                addon => addon.addOnId === addOnId
+            );
+            if (deviceAddOn) break;
+        }
+    }
+
+    if (!primarySubscription) {
+        throw new NotFoundError('No active subscription found for tenant');
+    }
+
+    if (!deviceAddOn) {
+        throw new NotFoundError('No device add-on found to reduce');
+    }
+
+    if (deviceAddOn.quantity < quantityToReduce) {
+        throw new RequestValidateError(
+            `Cannot reduce by ${quantityToReduce}. Current add-on quantity is ${deviceAddOn.quantity}`
+        );
+    }
+
+    // Step 3: Reduce the add-on quantity
+    const newQuantity = deviceAddOn.quantity - quantityToReduce;
+
+    if (newQuantity === 0) {
+        // Remove add-on completely
+        await prisma.tenantSubscriptionAddOn.delete({
+            where: {
+                tenantSubscriptionId_addOnId: {
+                    tenantSubscriptionId: primarySubscription.id,
+                    addOnId
+                }
+            }
+        });
+    } else {
+        // Update quantity
+        await prisma.tenantSubscriptionAddOn.update({
+            where: {
+                tenantSubscriptionId_addOnId: {
+                    tenantSubscriptionId: primarySubscription.id,
+                    addOnId
+                }
+            },
+            data: {
+                quantity: newQuantity
+            }
+        });
+    }
+
+    // Step 4: Check if devices exceed new limit
+    const limitCheck = await deviceLimitService.checkDeviceLimit(tenantId);
+    const currentDeviceCount = limitCheck.currentCount;
+    const newMaxAllowed = limitCheck.maxAllowed;
+
+    const deactivatedDevices = [];
+
+    if (currentDeviceCount > newMaxAllowed) {
+        const excessCount = currentDeviceCount - newMaxAllowed;
+
+        // Step 5: Get devices to deactivate (oldest first - FIFO based on lastActiveAt)
+        const devicesToDeactivate = await prisma.pushyDevice.findMany({
+            where: {
+                tenantUser: { tenantId },
+                isActive: true
+            },
+            orderBy: {
+                lastActiveAt: 'asc' // Oldest devices first
+            },
+            take: excessCount,
+            include: {
+                tenantUser: {
+                    select: {
+                        username: true
+                    }
+                }
+            }
+        });
+
+        // Step 6: Deactivate excess devices
+        for (const device of devicesToDeactivate) {
+            await prisma.pushyDevice.update({
+                where: { id: device.id },
+                data: { isActive: false }
+            });
+
+            // Deallocate device
+            await deviceLimitService.deallocateDevice(device.id);
+
+            deactivatedDevices.push({
+                deviceToken: device.deviceToken,
+                platform: device.platform,
+                deviceName: device.deviceName,
+                username: device.tenantUser?.username || 'Unknown',
+                lastActiveAt: device.lastActiveAt
+            });
+        }
+    }
+
+    return {
+        success: true,
+        message: deactivatedDevices.length > 0
+            ? `Reduced ${quantityToReduce} device quota. Automatically deactivated ${deactivatedDevices.length} excess device(s).`
+            : `Reduced ${quantityToReduce} device quota.`,
+        tenantId,
+        addOnQuantity: newQuantity,
+        monthlyCost: newQuantity * 10000,
+        subscriptionId: primarySubscription.id,
+        quota: {
+            previous: newMaxAllowed + quantityToReduce,
+            current: newMaxAllowed
+        },
+        devices: {
+            active: currentDeviceCount - deactivatedDevices.length,
+            deactivated: deactivatedDevices.length,
+            deactivatedList: deactivatedDevices
+        }
+    };
+};
+
+// Get all active devices for a tenant
+const getTenantDevices = async (tenantId: number) => {
+    // Verify tenant exists
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId }
+    });
+
+    if (!tenant) {
+        throw new NotFoundError(`Tenant with ID ${tenantId} not found`);
+    }
+
+    // Get all devices for this tenant (both active and inactive)
+    const allDevices = await prisma.pushyDevice.findMany({
+        where: {
+            tenantUser: {
+                tenantId
+            }
+        },
+        include: {
+            tenantUser: {
+                select: {
+                    id: true,
+                    username: true,
+                    role: true
+                }
+            },
+            allocation: {
+                select: {
+                    allocationType: true,
+                    activatedAt: true
+                }
+            }
+        },
+        orderBy: {
+            createdAt: 'desc'
+        }
+    });
+
+    // Get device limit info
+    const deviceLimitService = require('../pushy/device.service');
+    const limitCheck = await deviceLimitService.checkDeviceLimit(tenantId);
+
+    // Count active and inactive devices
+    const activeDevices = allDevices.filter(d => d.isActive);
+    const inactiveDevices = allDevices.filter(d => !d.isActive);
+
+    return {
+        tenantId,
+        tenantName: tenant.tenantName,
+        deviceUsage: {
+            active: activeDevices.length,
+            inactive: inactiveDevices.length,
+            total: allDevices.length,
+            maximum: limitCheck.maxAllowed
+        },
+        devices: activeDevices.map(device => ({
+            id: device.id,
+            deviceToken: device.deviceToken,
+            platform: device.platform,
+            deviceName: device.deviceName,
+            appVersion: device.appVersion,
+            isActive: device.isActive,
+            lastActiveAt: device.lastActiveAt,
+            createdAt: device.createdAt,
+            user: {
+                id: device.tenantUser.id,
+                username: device.tenantUser.username,
+                role: device.tenantUser.role
+            },
+            allocation: device.allocation ? {
+                type: device.allocation.allocationType,
+                activatedAt: device.allocation.activatedAt
+            } : null
+        }))
+    };
+};
+
+export = { createTenant, createTenantUser, getTenantCost, getAllTenantCost, addDeviceQuotaForTenant, reduceDeviceQuotaForTenant, getTenantDevices }

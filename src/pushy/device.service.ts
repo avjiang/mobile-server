@@ -2,7 +2,7 @@ import { PrismaClient as GlobalPrismaClient } from '../../prisma/global-client/g
 const { getGlobalPrisma } = require('../db');
 
 const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
-const BASE_DEVICE_LIMIT = 5;
+const BASE_DEVICE_LIMIT = 3;
 const COST_PER_ADDITIONAL_DEVICE = 10000; // IDR 10,000 per month
 
 interface DeviceLimitCheck {
@@ -63,15 +63,17 @@ const checkDeviceLimit = async (tenantId: number): Promise<DeviceLimitCheck> => 
     let totalBaseDevices = 0;
     let totalAdditionalDevices = 0;
 
+    const DEVICE_ADDON_ID = 2; // Push Notification Device add-on ID
+
     for (const outlet of tenantOutlets) {
       for (const subscription of outlet.subscriptions) {
         // Add base devices from each outlet's subscription plan
         const basePlanLimit = subscription.subscriptionPlan?.maxDevices || BASE_DEVICE_LIMIT;
         totalBaseDevices += basePlanLimit;
 
-        // Add additional device add-ons for this subscription
+        // Add additional device add-ons for this subscription (filter by ID instead of name)
         const additionalDevices = subscription.subscriptionAddOn
-          .filter(addon => addon.addOn?.name === 'Push Notification Device')
+          .filter(addon => addon.addOnId === DEVICE_ADDON_ID)
           .reduce((sum, addon) => sum + addon.quantity, 0);
         totalAdditionalDevices += additionalDevices;
       }
@@ -346,8 +348,9 @@ const removeAdditionalDevice = async (
       throw new Error('No active subscription found');
     }
 
+    const DEVICE_ADDON_ID = 2; // Push Notification Device add-on ID
     const deviceAddOn = subscription.subscriptionAddOn.find(
-      addon => addon.addOn?.name === 'Push Notification Device'
+      addon => addon.addOnId === DEVICE_ADDON_ID
     );
 
     if (!deviceAddOn) {

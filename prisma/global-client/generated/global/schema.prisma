@@ -17,7 +17,7 @@ model SubscriptionPlan {
   maxTransactions Int?                 @map("MAX_TRANSACTIONS") // New: e.g., 75 for Free
   maxProducts     Int?                 @map("MAX_PRODUCTS") // New: e.g., 20 for Free
   maxUsers        Int?                 @map("MAX_USERS") // New: e.g., 2 for Basic
-  maxDevices      Int?                 @default(5) @map("MAX_DEVICES") // for push notifications devices
+  maxDevices      Int?                 @default(3) @map("MAX_DEVICES") // for push notifications devices
   description     String?              @map("DESCRIPTION")
   subscription    TenantSubscription[]
 

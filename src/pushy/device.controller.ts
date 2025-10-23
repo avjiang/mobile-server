@@ -32,15 +32,8 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
   }
 
   try {
-    // Frontend will handle Pro plan checking before allowing device registration
-    // Check device limit
-    const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
-
-    if (!limitCheck.canAddDevice) {
-      return next(new BusinessLogicError(limitCheck.message || 'Device limit reached'));
-    }
-
-    // Check if device already exists
+    // Check if device already exists FIRST (before checking limit)
+    // Because reactivating an existing device doesn't count against the limit
     const existingDevice = await globalPrisma.pushyDevice.findUnique({
       where: {
         deviceToken
@@ -52,7 +45,7 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         return next(new BusinessLogicError('Device is already registered to another user'));
       }
 
-      // Update existing device
+      // Update existing device (reactivate if inactive)
       const updatedDevice = await globalPrisma.pushyDevice.update({
         where: {
           id: existingDevice.id
@@ -80,6 +73,13 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         },
         subscribedTopics: topics
       });
+    }
+
+    // Check device limit ONLY for NEW devices
+    const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+
+    if (!limitCheck.canAddDevice) {
+      return next(new BusinessLogicError(limitCheck.message || 'Device limit reached'));
     }
 
     // Create new device

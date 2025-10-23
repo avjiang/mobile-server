@@ -157,7 +157,7 @@ const settingDefinitions = [
         scope: 'USER',
         isRequired: false,
         validationRules: JSON.stringify({
-            options: ['en', 'id', 'zh', 'ms']
+            options: ['en', 'id']
         })
     },
     // {

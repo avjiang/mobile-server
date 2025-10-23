@@ -13,6 +13,55 @@ Push notification system using Pushy SDK for multi-tenant Flutter POS applicatio
 - Each outlet subscription includes 5 devices (3 outlets = 15 total devices)
 - Additional devices: IDR 10,000/month per device (added to specific outlet subscription)
 - Clean approach: When plan changes, all refresh tokens are invalidated forcing re-login
+- **Cost Optimization**: Check device eligibility BEFORE calling `pushy.register()` to avoid unnecessary billing
+
+## Cost-Saving Strategy
+
+### Why Check Eligibility First?
+
+Pushy starts billing a device as soon as `Pushy.register()` is called on the client side. To avoid unnecessary costs:
+
+1. **Before**: Client calls `pushy.register()` → Device gets billed → Backend rejects due to limit
+2. **After**: Client checks eligibility → Backend validates → Only then call `pushy.register()`
+
+### Benefits
+
+- **Reduced Costs**: No billing for devices that exceed limits
+- **Better UX**: Show limit warning before device registration attempt
+- **Clear Messaging**: Users know upfront if they need to purchase additional slots
+- **Prevent Waste**: Avoid registering devices that will be immediately rejected
+
+### Implementation Flow
+
+```
+┌─────────────┐
+│ User Logs In│
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────────────┐
+│ Check Pro Plan & Permissions │
+└──────┬───────────────────────┘
+       │
+       ▼
+┌─────────────────────────────┐
+│ GET /devices/checkQuota     │ ◄── No Pushy billing here
+└──────┬──────────────────────┘
+       │
+       ├─── canRegister: false ───► Show error/upgrade dialog
+       │
+       └─── canRegister: true
+              │
+              ▼
+       ┌──────────────────┐
+       │ Pushy.register() │ ◄── Pushy billing starts here
+       └────────┬─────────┘
+                │
+                ▼
+       ┌─────────────────────┐
+       │ POST /devices/register│
+       └─────────────────────┘
+```
 
 ## Architecture
 
@@ -24,6 +73,7 @@ Push notification system using Pushy SDK for multi-tenant Flutter POS applicatio
 4. **Singleton pattern**: All services use singleton to prevent memory leaks
 5. **JWT-based plan checking**: Plan name embedded in JWT for efficient checking
 6. **Hybrid device model**: Limits calculated per outlet, devices pooled at tenant level
+7. **Cost optimization**: Check eligibility before Pushy SDK registration
 
 ### Topic Structure
 
@@ -154,6 +204,53 @@ INSERT INTO subscription_add_on (NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUANTITY
 
 ### Device Management
 
+#### Check Device Registration Eligibility
+
+**IMPORTANT**: Call this endpoint BEFORE calling `pushy.register()` on the frontend to avoid unnecessary billing from Pushy.
+
+```
+GET /pushy/devices/checkQuota
+Headers: Authorization: Bearer <jwt_token>
+
+Success Response (Can Register):
+{
+    "success": true,
+    "canRegister": true,
+    "reason": "Device registration allowed",
+    "deviceUsage": {
+        "current": 3,
+        "maximum": 5
+    },
+    "requiresPayment": false,
+    "additionalCost": 0
+}
+
+Success Response (Limit Reached):
+{
+    "success": true,
+    "canRegister": false,
+    "reason": "Device limit reached. Purchase additional device slot for IDR 10.000/month",
+    "deviceUsage": {
+        "current": 5,
+        "maximum": 5
+    },
+    "requiresPayment": true,
+    "additionalCost": 10000
+}
+
+Success Response (Not Pro Plan):
+{
+    "success": true,
+    "canRegister": false,
+    "reason": "Push notifications are only available for Pro plan",
+    "currentPlan": "Basic",
+    "deviceUsage": {
+        "current": 0,
+        "maximum": 0
+    }
+}
+```
+
 #### Register Device
 
 ```
@@ -187,14 +284,10 @@ Success Response:
 Error Response (Device Limit):
 {
     "success": false,
-    "error": "Device limit reached (5/5)",
-    "requiresAddOn": true,
-    "deviceUsage": {
-        "current": 5,
-        "maximum": 5
-    },
-    "additionalCost": 10000,
-    "code": "DEVICE_LIMIT_EXCEEDED"
+    "error": {
+        "errorType": "Function",
+        "errorMessage": "Device limit reached. Purchase additional device slot for IDR 10.000/month"
+    }
 }
 ```
 
@@ -696,6 +789,8 @@ Future<void> switchOutlet(int newOutletId) async {
 
 ### Register Device on Login
 
+**IMPORTANT**: Always check device eligibility BEFORE calling `Pushy.register()` to save costs.
+
 ```dart
 Future<void> onLoginSuccess(LoginResponse response) async {
     // Check if Pro plan
@@ -712,13 +807,32 @@ Future<void> onLoginSuccess(LoginResponse response) async {
     await SharedPreferences.setStringList('notification_topics', response.notificationTopics);
 
     try {
-        // Initialize Pushy and get device token
+        // STEP 1: Check eligibility BEFORE calling Pushy.register()
+        // This prevents unnecessary billing from Pushy
+        final eligibility = await ApiService.checkDeviceEligibility();
+
+        if (!eligibility.canRegister) {
+            // Handle cases where device cannot be registered
+            if (eligibility.requiresPayment) {
+                showDeviceLimitDialog(
+                    current: eligibility.deviceUsage.current,
+                    maximum: eligibility.deviceUsage.maximum,
+                    additionalCost: eligibility.additionalCost
+                );
+            } else {
+                showErrorDialog(eligibility.reason);
+            }
+            return;
+        }
+
+        // STEP 2: Only call Pushy.register() if eligibility check passed
+        // This is when Pushy starts billing for the device
         String deviceToken = await Pushy.register();
 
-        // Register device with backend
+        // STEP 3: Register device with backend
         await ApiService.registerDevice(deviceToken, Platform.operatingSystem);
 
-        // Subscribe to notification topics from login response
+        // STEP 4: Subscribe to notification topics from login response
         for (String topic in response.notificationTopics) {
             await Pushy.subscribe(topic);
         }

@@ -141,107 +141,107 @@ class PushyService {
         }
     }
 
-    public async subscribeToTopics(
-        deviceToken: string,
-        topics: string[]
-    ): Promise<PushyResponse> {
-        await this.initialize();
+    // public async subscribeToTopics(
+    //     deviceToken: string,
+    //     topics: string[]
+    // ): Promise<PushyResponse> {
+    //     await this.initialize();
 
-        if (!topics || topics.length === 0) {
-            return {
-                success: false,
-                error: 'No topics provided'
-            };
-        }
+    //     if (!topics || topics.length === 0) {
+    //         return {
+    //             success: false,
+    //             error: 'No topics provided'
+    //         };
+    //     }
 
-        try {
-            const subscribePromises = topics.map(topic =>
-                this.pushy.subscribe(topic, deviceToken)
-            );
+    //     try {
+    //         const subscribePromises = topics.map(topic =>
+    //             this.pushy.subscribe(topic, deviceToken)
+    //         );
 
-            await Promise.all(subscribePromises);
+    //         await Promise.all(subscribePromises);
 
-            return {
-                success: true,
-                info: `Subscribed to ${topics.length} topics`
-            };
-        } catch (error: any) {
-            console.error('Failed to subscribe to topics:', error);
-            return {
-                success: false,
-                error: error.message || 'Failed to subscribe to topics'
-            };
-        }
-    }
+    //         return {
+    //             success: true,
+    //             info: `Subscribed to ${topics.length} topics`
+    //         };
+    //     } catch (error: any) {
+    //         console.error('Failed to subscribe to topics:', error);
+    //         return {
+    //             success: false,
+    //             error: error.message || 'Failed to subscribe to topics'
+    //         };
+    //     }
+    // }
 
-    public async unsubscribeFromTopics(
-        deviceToken: string,
-        topics: string[]
-    ): Promise<PushyResponse> {
-        await this.initialize();
+    // public async unsubscribeFromTopics(
+    //     deviceToken: string,
+    //     topics: string[]
+    // ): Promise<PushyResponse> {
+    //     await this.initialize();
 
-        if (!topics || topics.length === 0) {
-            return {
-                success: false,
-                error: 'No topics provided'
-            };
-        }
+    //     if (!topics || topics.length === 0) {
+    //         return {
+    //             success: false,
+    //             error: 'No topics provided'
+    //         };
+    //     }
 
-        try {
-            const unsubscribePromises = topics.map(topic =>
-                this.pushy.unsubscribe(topic, deviceToken)
-            );
+    //     try {
+    //         const unsubscribePromises = topics.map(topic =>
+    //             this.pushy.unsubscribe(topic, deviceToken)
+    //         );
 
-            await Promise.all(unsubscribePromises);
+    //         await Promise.all(unsubscribePromises);
 
-            return {
-                success: true,
-                info: `Unsubscribed from ${topics.length} topics`
-            };
-        } catch (error: any) {
-            console.error('Failed to unsubscribe from topics:', error);
-            return {
-                success: false,
-                error: error.message || 'Failed to unsubscribe from topics'
-            };
-        }
-    }
+    //         return {
+    //             success: true,
+    //             info: `Unsubscribed from ${topics.length} topics`
+    //         };
+    //     } catch (error: any) {
+    //         console.error('Failed to unsubscribe from topics:', error);
+    //         return {
+    //             success: false,
+    //             error: error.message || 'Failed to unsubscribe from topics'
+    //         };
+    //     }
+    // }
 
-    public async getDeviceInfo(deviceToken: string): Promise<any> {
-        await this.initialize();
+    // public async getDeviceInfo(deviceToken: string): Promise<any> {
+    //     await this.initialize();
 
-        try {
-            const info = await this.pushy.getDeviceInfo(deviceToken);
-            return {
-                success: true,
-                data: info
-            };
-        } catch (error: any) {
-            console.error('Failed to get device info:', error);
-            return {
-                success: false,
-                error: error.message || 'Failed to get device info'
-            };
-        }
-    }
+    //     try {
+    //         const info = await this.pushy.getDeviceInfo(deviceToken);
+    //         return {
+    //             success: true,
+    //             data: info
+    //         };
+    //     } catch (error: any) {
+    //         console.error('Failed to get device info:', error);
+    //         return {
+    //             success: false,
+    //             error: error.message || 'Failed to get device info'
+    //         };
+    //     }
+    // }
 
-    public async getDeviceSubscriptions(deviceToken: string): Promise<any> {
-        await this.initialize();
+    // public async getDeviceSubscriptions(deviceToken: string): Promise<any> {
+    //     await this.initialize();
 
-        try {
-            const subscriptions = await this.pushy.getDeviceSubscriptions(deviceToken);
-            return {
-                success: true,
-                data: subscriptions
-            };
-        } catch (error: any) {
-            console.error('Failed to get device subscriptions:', error);
-            return {
-                success: false,
-                error: error.message || 'Failed to get device subscriptions'
-            };
-        }
-    }
+    //     try {
+    //         const subscriptions = await this.pushy.getDeviceSubscriptions(deviceToken);
+    //         return {
+    //             success: true,
+    //             data: subscriptions
+    //         };
+    //     } catch (error: any) {
+    //         console.error('Failed to get device subscriptions:', error);
+    //         return {
+    //             success: false,
+    //             error: error.message || 'Failed to get device subscriptions'
+    //         };
+    //     }
+    // }
 }
 
 export default PushyService.getInstance();

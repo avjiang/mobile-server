@@ -66,9 +66,9 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
 
       // Subscribe to topics based on permissions
       const topics = await getUserTopics(userInfo);
-      if (topics.length > 0) {
-        await PushyService.subscribeToTopics(deviceToken, topics);
-      }
+      // if (topics.length > 0) {
+      //   await PushyService.subscribeToTopics(deviceToken, topics);
+      // }
 
       return sendResponse(res, {
         message: 'Device updated successfully',
@@ -88,6 +88,8 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         tenantUserId: userInfo.tenantUserId,
         deviceToken,
         platform,
+        deviceName: req.body.deviceName || 'Unnamed Device',
+        appVersion: req.body.appVersion || '1.0.0',
         isActive: true,
         createdAt: new Date(),
         lastActiveAt: new Date()
@@ -103,9 +105,9 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
 
     // Subscribe to topics based on permissions
     const topics = await getUserTopics(userInfo);
-    if (topics.length > 0) {
-      await PushyService.subscribeToTopics(deviceToken, topics);
-    }
+    // if (topics.length > 0) {
+    //   await PushyService.subscribeToTopics(deviceToken, topics);
+    // }
 
     return sendResponse(res, {
       message: 'Device registered successfully',
@@ -153,9 +155,9 @@ const unregisterDevice = async (req: AuthRequest, res: Response, next: NextFunct
 
     // Unsubscribe from all topics
     const topics = await getUserTopics(userInfo);
-    if (topics.length > 0) {
-      await PushyService.unsubscribeFromTopics(deviceToken, topics);
-    }
+    // if (topics.length > 0) {
+    //   await PushyService.unsubscribeFromTopics(deviceToken, topics);
+    // }
 
     // Deallocate device
     await deviceLimitService.deallocateDevice(device.id);
@@ -192,6 +194,9 @@ const getUserDevices = async (req: AuthRequest, res: Response, next: NextFunctio
       }
     });
 
+    // Get tenant-wide device usage stats
+    const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+
     return sendResponse(res, {
       devices: devices.map(d => ({
         id: d.id,
@@ -200,10 +205,52 @@ const getUserDevices = async (req: AuthRequest, res: Response, next: NextFunctio
         isActive: d.isActive,
         createdAt: d.createdAt,
         lastActiveAt: d.lastActiveAt
-      }))
+      })),
+      deviceUsage: {
+        current: limitCheck.currentCount,
+        maximum: limitCheck.maxAllowed
+      }
     });
   } catch (error) {
     console.error('Error getting user devices:', error);
+    next(error);
+  }
+};
+
+const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const userInfo = req.user as UserInfo;
+
+  try {
+    // Check if tenant is on Pro plan
+    if (userInfo.planName !== 'Pro') {
+      return sendResponse(res, {
+        canRegister: false,
+        reason: 'Push notifications are only available for Pro plan',
+        currentPlan: userInfo.planName,
+        deviceUsage: {
+          current: 0,
+          maximum: 0
+        }
+      });
+    }
+
+    // Check device limit
+    const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+
+    return sendResponse(res, {
+      canRegister: limitCheck.canAddDevice,
+      reason: limitCheck.canAddDevice
+        ? 'Device registration allowed'
+        : limitCheck.message || 'Device limit reached',
+      deviceUsage: {
+        current: limitCheck.currentCount,
+        maximum: limitCheck.maxAllowed
+      },
+      requiresPayment: limitCheck.requiresPayment || false,
+      additionalCost: limitCheck.additionalCost || 0
+    });
+  } catch (error) {
+    console.error('Error checking device eligibility:', error);
     next(error);
   }
 };
@@ -296,11 +343,11 @@ const updateDeviceStatus = async (req: AuthRequest, res: Response, next: NextFun
 
     // Handle topic subscriptions based on active status
     const topics = await getUserTopics(userInfo);
-    if (isActive && topics.length > 0) {
-      await PushyService.subscribeToTopics(deviceToken, topics);
-    } else if (!isActive && topics.length > 0) {
-      await PushyService.unsubscribeFromTopics(deviceToken, topics);
-    }
+    // if (isActive && topics.length > 0) {
+    //   await PushyService.subscribeToTopics(deviceToken, topics);
+    // } else if (!isActive && topics.length > 0) {
+    //   await PushyService.unsubscribeFromTopics(deviceToken, topics);
+    // }
 
     return sendResponse(res, {
       message: 'Device status updated successfully',
@@ -403,16 +450,14 @@ const getUserTopics = async (userInfo: UserInfo): Promise<string[]> => {
 };
 
 // Device management routes
+router.get('/devices/checkQuota', checkDeviceEligibility);
 router.post('/devices/register', registerDevice);
 router.delete('/devices/:deviceToken', unregisterDevice);
 router.get('/devices/user', getUserDevices);
 router.patch('/devices/:deviceToken/status', updateDeviceStatus);
+
 // Admin routes
-router.get('/admin/devices/stats',
-  getTenantDeviceStats
-);
-router.post('/admin/devices/purchase',
-  purchaseAdditionalDevice
-);
+router.get('/admin/devices/stats', getTenantDeviceStats);
+router.post('/admin/devices/purchase', purchaseAdditionalDevice);
 
 export = router;

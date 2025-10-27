@@ -273,6 +273,19 @@ exports.Prisma.PushyDeviceAllocationScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.TenantWarehouseScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  warehouseName: 'warehouseName',
+  warehouseCode: 'warehouseCode',
+  address: 'address',
+  isActive: 'isActive',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -360,6 +373,12 @@ exports.Prisma.PushyDeviceAllocationOrderByRelevanceFieldEnum = {
   allocationType: 'allocationType'
 };
 
+exports.Prisma.TenantWarehouseOrderByRelevanceFieldEnum = {
+  warehouseName: 'warehouseName',
+  warehouseCode: 'warehouseCode',
+  address: 'address'
+};
+
 
 exports.Prisma.ModelName = {
   SubscriptionPlan: 'SubscriptionPlan',
@@ -375,7 +394,8 @@ exports.Prisma.ModelName = {
   SettingDefinition: 'SettingDefinition',
   PushyDevice: 'PushyDevice',
   PushySubscription: 'PushySubscription',
-  PushyDeviceAllocation: 'PushyDeviceAllocation'
+  PushyDeviceAllocation: 'PushyDeviceAllocation',
+  TenantWarehouse: 'TenantWarehouse'
 };
 
 /**

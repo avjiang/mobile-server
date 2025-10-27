@@ -51,6 +51,7 @@ model Tenant {
   subscription      TenantSubscription[]
   tenantOutlets     TenantOutlet[]
   deviceAllocations PushyDeviceAllocation[]
+  warehouses        TenantWarehouse[]
 
   @@index([tenantName]) // If you often search for tenants by name
   @@index([createdAt]) // For sorting or filtering tenants by creation date
@@ -251,4 +252,26 @@ model PushyDeviceAllocation {
   @@index([tenantId])
   @@index([allocationType])
   @@map("pushy_device_allocation")
+}
+
+// Warehouse tracking in global DB
+model TenantWarehouse {
+  id            Int       @id @default(autoincrement()) @map("ID")
+  tenantId      Int       @map("TENANT_ID")
+  warehouseName String    @map("WAREHOUSE_NAME")
+  warehouseCode String    @map("WAREHOUSE_CODE")
+  address       String?   @map("ADDRESS")
+  isActive      Boolean   @default(true) @map("IS_ACTIVE")
+  deleted       Boolean   @default(false) @map("IS_DELETED")
+  deletedAt     DateTime? @map("DELETED_AT")
+  createdAt     DateTime  @default(now()) @map("CREATED_AT")
+  updatedAt     DateTime  @updatedAt @map("UPDATED_AT")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, warehouseCode])
+  @@index([tenantId])
+  @@index([warehouseCode])
+  @@index([isActive])
+  @@index([deleted])
+  @@map("tenant_warehouse")
 }

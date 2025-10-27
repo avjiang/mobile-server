@@ -83,6 +83,11 @@ export type PushySubscription = $Result.DefaultSelection<Prisma.$PushySubscripti
  * 
  */
 export type PushyDeviceAllocation = $Result.DefaultSelection<Prisma.$PushyDeviceAllocationPayload>
+/**
+ * Model TenantWarehouse
+ * 
+ */
+export type TenantWarehouse = $Result.DefaultSelection<Prisma.$TenantWarehousePayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -348,6 +353,16 @@ export class PrismaClient<
     * ```
     */
   get pushyDeviceAllocation(): Prisma.PushyDeviceAllocationDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.tenantWarehouse`: Exposes CRUD operations for the **TenantWarehouse** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more TenantWarehouses
+    * const tenantWarehouses = await prisma.tenantWarehouse.findMany()
+    * ```
+    */
+  get tenantWarehouse(): Prisma.TenantWarehouseDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -801,7 +816,8 @@ export namespace Prisma {
     SettingDefinition: 'SettingDefinition',
     PushyDevice: 'PushyDevice',
     PushySubscription: 'PushySubscription',
-    PushyDeviceAllocation: 'PushyDeviceAllocation'
+    PushyDeviceAllocation: 'PushyDeviceAllocation',
+    TenantWarehouse: 'TenantWarehouse'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -820,7 +836,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation"
+      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation" | "tenantWarehouse"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1748,6 +1764,72 @@ export namespace Prisma {
           }
         }
       }
+      TenantWarehouse: {
+        payload: Prisma.$TenantWarehousePayload<ExtArgs>
+        fields: Prisma.TenantWarehouseFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.TenantWarehouseFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.TenantWarehouseFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload>
+          }
+          findFirst: {
+            args: Prisma.TenantWarehouseFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.TenantWarehouseFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload>
+          }
+          findMany: {
+            args: Prisma.TenantWarehouseFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload>[]
+          }
+          create: {
+            args: Prisma.TenantWarehouseCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload>
+          }
+          createMany: {
+            args: Prisma.TenantWarehouseCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.TenantWarehouseDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload>
+          }
+          update: {
+            args: Prisma.TenantWarehouseUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload>
+          }
+          deleteMany: {
+            args: Prisma.TenantWarehouseDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.TenantWarehouseUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.TenantWarehouseUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantWarehousePayload>
+          }
+          aggregate: {
+            args: Prisma.TenantWarehouseAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTenantWarehouse>
+          }
+          groupBy: {
+            args: Prisma.TenantWarehouseGroupByArgs<ExtArgs>
+            result: $Utils.Optional<TenantWarehouseGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.TenantWarehouseCountArgs<ExtArgs>
+            result: $Utils.Optional<TenantWarehouseCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1846,6 +1928,7 @@ export namespace Prisma {
     pushyDevice?: PushyDeviceOmit
     pushySubscription?: PushySubscriptionOmit
     pushyDeviceAllocation?: PushyDeviceAllocationOmit
+    tenantWarehouse?: TenantWarehouseOmit
   }
 
   /* Types for Logging */
@@ -2006,6 +2089,7 @@ export namespace Prisma {
     subscription: number
     tenantOutlets: number
     deviceAllocations: number
+    warehouses: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2013,6 +2097,7 @@ export namespace Prisma {
     subscription?: boolean | TenantCountOutputTypeCountSubscriptionArgs
     tenantOutlets?: boolean | TenantCountOutputTypeCountTenantOutletsArgs
     deviceAllocations?: boolean | TenantCountOutputTypeCountDeviceAllocationsArgs
+    warehouses?: boolean | TenantCountOutputTypeCountWarehousesArgs
   }
 
   // Custom InputTypes
@@ -2052,6 +2137,13 @@ export namespace Prisma {
    */
   export type TenantCountOutputTypeCountDeviceAllocationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PushyDeviceAllocationWhereInput
+  }
+
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountWarehousesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantWarehouseWhereInput
   }
 
 
@@ -4497,6 +4589,7 @@ export namespace Prisma {
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
     deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
+    warehouses?: boolean | Tenant$warehousesArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4516,6 +4609,7 @@ export namespace Prisma {
     subscription?: boolean | Tenant$subscriptionArgs<ExtArgs>
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
     deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
+    warehouses?: boolean | Tenant$warehousesArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4526,6 +4620,7 @@ export namespace Prisma {
       subscription: Prisma.$TenantSubscriptionPayload<ExtArgs>[]
       tenantOutlets: Prisma.$TenantOutletPayload<ExtArgs>[]
       deviceAllocations: Prisma.$PushyDeviceAllocationPayload<ExtArgs>[]
+      warehouses: Prisma.$TenantWarehousePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -4877,6 +4972,7 @@ export namespace Prisma {
     subscription<T extends Tenant$subscriptionArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$subscriptionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     tenantOutlets<T extends Tenant$tenantOutletsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$tenantOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     deviceAllocations<T extends Tenant$deviceAllocationsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$deviceAllocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    warehouses<T extends Tenant$warehousesArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$warehousesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5347,6 +5443,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PushyDeviceAllocationScalarFieldEnum | PushyDeviceAllocationScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant.warehouses
+   */
+  export type Tenant$warehousesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    where?: TenantWarehouseWhereInput
+    orderBy?: TenantWarehouseOrderByWithRelationInput | TenantWarehouseOrderByWithRelationInput[]
+    cursor?: TenantWarehouseWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TenantWarehouseScalarFieldEnum | TenantWarehouseScalarFieldEnum[]
   }
 
   /**
@@ -16564,6 +16684,1028 @@ export namespace Prisma {
 
 
   /**
+   * Model TenantWarehouse
+   */
+
+  export type AggregateTenantWarehouse = {
+    _count: TenantWarehouseCountAggregateOutputType | null
+    _avg: TenantWarehouseAvgAggregateOutputType | null
+    _sum: TenantWarehouseSumAggregateOutputType | null
+    _min: TenantWarehouseMinAggregateOutputType | null
+    _max: TenantWarehouseMaxAggregateOutputType | null
+  }
+
+  export type TenantWarehouseAvgAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+  }
+
+  export type TenantWarehouseSumAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+  }
+
+  export type TenantWarehouseMinAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    warehouseName: string | null
+    warehouseCode: string | null
+    address: string | null
+    isActive: boolean | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TenantWarehouseMaxAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    warehouseName: string | null
+    warehouseCode: string | null
+    address: string | null
+    isActive: boolean | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TenantWarehouseCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    warehouseName: number
+    warehouseCode: number
+    address: number
+    isActive: number
+    deleted: number
+    deletedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type TenantWarehouseAvgAggregateInputType = {
+    id?: true
+    tenantId?: true
+  }
+
+  export type TenantWarehouseSumAggregateInputType = {
+    id?: true
+    tenantId?: true
+  }
+
+  export type TenantWarehouseMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    warehouseName?: true
+    warehouseCode?: true
+    address?: true
+    isActive?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TenantWarehouseMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    warehouseName?: true
+    warehouseCode?: true
+    address?: true
+    isActive?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TenantWarehouseCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    warehouseName?: true
+    warehouseCode?: true
+    address?: true
+    isActive?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type TenantWarehouseAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TenantWarehouse to aggregate.
+     */
+    where?: TenantWarehouseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantWarehouses to fetch.
+     */
+    orderBy?: TenantWarehouseOrderByWithRelationInput | TenantWarehouseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: TenantWarehouseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantWarehouses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantWarehouses.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned TenantWarehouses
+    **/
+    _count?: true | TenantWarehouseCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: TenantWarehouseAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TenantWarehouseSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: TenantWarehouseMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: TenantWarehouseMaxAggregateInputType
+  }
+
+  export type GetTenantWarehouseAggregateType<T extends TenantWarehouseAggregateArgs> = {
+        [P in keyof T & keyof AggregateTenantWarehouse]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateTenantWarehouse[P]>
+      : GetScalarType<T[P], AggregateTenantWarehouse[P]>
+  }
+
+
+
+
+  export type TenantWarehouseGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantWarehouseWhereInput
+    orderBy?: TenantWarehouseOrderByWithAggregationInput | TenantWarehouseOrderByWithAggregationInput[]
+    by: TenantWarehouseScalarFieldEnum[] | TenantWarehouseScalarFieldEnum
+    having?: TenantWarehouseScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: TenantWarehouseCountAggregateInputType | true
+    _avg?: TenantWarehouseAvgAggregateInputType
+    _sum?: TenantWarehouseSumAggregateInputType
+    _min?: TenantWarehouseMinAggregateInputType
+    _max?: TenantWarehouseMaxAggregateInputType
+  }
+
+  export type TenantWarehouseGroupByOutputType = {
+    id: number
+    tenantId: number
+    warehouseName: string
+    warehouseCode: string
+    address: string | null
+    isActive: boolean
+    deleted: boolean
+    deletedAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: TenantWarehouseCountAggregateOutputType | null
+    _avg: TenantWarehouseAvgAggregateOutputType | null
+    _sum: TenantWarehouseSumAggregateOutputType | null
+    _min: TenantWarehouseMinAggregateOutputType | null
+    _max: TenantWarehouseMaxAggregateOutputType | null
+  }
+
+  type GetTenantWarehouseGroupByPayload<T extends TenantWarehouseGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<TenantWarehouseGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof TenantWarehouseGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], TenantWarehouseGroupByOutputType[P]>
+            : GetScalarType<T[P], TenantWarehouseGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type TenantWarehouseSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    warehouseName?: boolean
+    warehouseCode?: boolean
+    address?: boolean
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["tenantWarehouse"]>
+
+
+
+  export type TenantWarehouseSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    warehouseName?: boolean
+    warehouseCode?: boolean
+    address?: boolean
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type TenantWarehouseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "warehouseName" | "warehouseCode" | "address" | "isActive" | "deleted" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["tenantWarehouse"]>
+  export type TenantWarehouseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+
+  export type $TenantWarehousePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "TenantWarehouse"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      tenantId: number
+      warehouseName: string
+      warehouseCode: string
+      address: string | null
+      isActive: boolean
+      deleted: boolean
+      deletedAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["tenantWarehouse"]>
+    composites: {}
+  }
+
+  type TenantWarehouseGetPayload<S extends boolean | null | undefined | TenantWarehouseDefaultArgs> = $Result.GetResult<Prisma.$TenantWarehousePayload, S>
+
+  type TenantWarehouseCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<TenantWarehouseFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: TenantWarehouseCountAggregateInputType | true
+    }
+
+  export interface TenantWarehouseDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TenantWarehouse'], meta: { name: 'TenantWarehouse' } }
+    /**
+     * Find zero or one TenantWarehouse that matches the filter.
+     * @param {TenantWarehouseFindUniqueArgs} args - Arguments to find a TenantWarehouse
+     * @example
+     * // Get one TenantWarehouse
+     * const tenantWarehouse = await prisma.tenantWarehouse.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends TenantWarehouseFindUniqueArgs>(args: SelectSubset<T, TenantWarehouseFindUniqueArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one TenantWarehouse that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {TenantWarehouseFindUniqueOrThrowArgs} args - Arguments to find a TenantWarehouse
+     * @example
+     * // Get one TenantWarehouse
+     * const tenantWarehouse = await prisma.tenantWarehouse.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends TenantWarehouseFindUniqueOrThrowArgs>(args: SelectSubset<T, TenantWarehouseFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TenantWarehouse that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantWarehouseFindFirstArgs} args - Arguments to find a TenantWarehouse
+     * @example
+     * // Get one TenantWarehouse
+     * const tenantWarehouse = await prisma.tenantWarehouse.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends TenantWarehouseFindFirstArgs>(args?: SelectSubset<T, TenantWarehouseFindFirstArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TenantWarehouse that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantWarehouseFindFirstOrThrowArgs} args - Arguments to find a TenantWarehouse
+     * @example
+     * // Get one TenantWarehouse
+     * const tenantWarehouse = await prisma.tenantWarehouse.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends TenantWarehouseFindFirstOrThrowArgs>(args?: SelectSubset<T, TenantWarehouseFindFirstOrThrowArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more TenantWarehouses that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantWarehouseFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all TenantWarehouses
+     * const tenantWarehouses = await prisma.tenantWarehouse.findMany()
+     * 
+     * // Get first 10 TenantWarehouses
+     * const tenantWarehouses = await prisma.tenantWarehouse.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const tenantWarehouseWithIdOnly = await prisma.tenantWarehouse.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends TenantWarehouseFindManyArgs>(args?: SelectSubset<T, TenantWarehouseFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a TenantWarehouse.
+     * @param {TenantWarehouseCreateArgs} args - Arguments to create a TenantWarehouse.
+     * @example
+     * // Create one TenantWarehouse
+     * const TenantWarehouse = await prisma.tenantWarehouse.create({
+     *   data: {
+     *     // ... data to create a TenantWarehouse
+     *   }
+     * })
+     * 
+     */
+    create<T extends TenantWarehouseCreateArgs>(args: SelectSubset<T, TenantWarehouseCreateArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many TenantWarehouses.
+     * @param {TenantWarehouseCreateManyArgs} args - Arguments to create many TenantWarehouses.
+     * @example
+     * // Create many TenantWarehouses
+     * const tenantWarehouse = await prisma.tenantWarehouse.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends TenantWarehouseCreateManyArgs>(args?: SelectSubset<T, TenantWarehouseCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a TenantWarehouse.
+     * @param {TenantWarehouseDeleteArgs} args - Arguments to delete one TenantWarehouse.
+     * @example
+     * // Delete one TenantWarehouse
+     * const TenantWarehouse = await prisma.tenantWarehouse.delete({
+     *   where: {
+     *     // ... filter to delete one TenantWarehouse
+     *   }
+     * })
+     * 
+     */
+    delete<T extends TenantWarehouseDeleteArgs>(args: SelectSubset<T, TenantWarehouseDeleteArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one TenantWarehouse.
+     * @param {TenantWarehouseUpdateArgs} args - Arguments to update one TenantWarehouse.
+     * @example
+     * // Update one TenantWarehouse
+     * const tenantWarehouse = await prisma.tenantWarehouse.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends TenantWarehouseUpdateArgs>(args: SelectSubset<T, TenantWarehouseUpdateArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more TenantWarehouses.
+     * @param {TenantWarehouseDeleteManyArgs} args - Arguments to filter TenantWarehouses to delete.
+     * @example
+     * // Delete a few TenantWarehouses
+     * const { count } = await prisma.tenantWarehouse.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends TenantWarehouseDeleteManyArgs>(args?: SelectSubset<T, TenantWarehouseDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more TenantWarehouses.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantWarehouseUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many TenantWarehouses
+     * const tenantWarehouse = await prisma.tenantWarehouse.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends TenantWarehouseUpdateManyArgs>(args: SelectSubset<T, TenantWarehouseUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one TenantWarehouse.
+     * @param {TenantWarehouseUpsertArgs} args - Arguments to update or create a TenantWarehouse.
+     * @example
+     * // Update or create a TenantWarehouse
+     * const tenantWarehouse = await prisma.tenantWarehouse.upsert({
+     *   create: {
+     *     // ... data to create a TenantWarehouse
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the TenantWarehouse we want to update
+     *   }
+     * })
+     */
+    upsert<T extends TenantWarehouseUpsertArgs>(args: SelectSubset<T, TenantWarehouseUpsertArgs<ExtArgs>>): Prisma__TenantWarehouseClient<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of TenantWarehouses.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantWarehouseCountArgs} args - Arguments to filter TenantWarehouses to count.
+     * @example
+     * // Count the number of TenantWarehouses
+     * const count = await prisma.tenantWarehouse.count({
+     *   where: {
+     *     // ... the filter for the TenantWarehouses we want to count
+     *   }
+     * })
+    **/
+    count<T extends TenantWarehouseCountArgs>(
+      args?: Subset<T, TenantWarehouseCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], TenantWarehouseCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a TenantWarehouse.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantWarehouseAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends TenantWarehouseAggregateArgs>(args: Subset<T, TenantWarehouseAggregateArgs>): Prisma.PrismaPromise<GetTenantWarehouseAggregateType<T>>
+
+    /**
+     * Group by TenantWarehouse.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantWarehouseGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends TenantWarehouseGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: TenantWarehouseGroupByArgs['orderBy'] }
+        : { orderBy?: TenantWarehouseGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, TenantWarehouseGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTenantWarehouseGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the TenantWarehouse model
+   */
+  readonly fields: TenantWarehouseFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for TenantWarehouse.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__TenantWarehouseClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the TenantWarehouse model
+   */
+  interface TenantWarehouseFieldRefs {
+    readonly id: FieldRef<"TenantWarehouse", 'Int'>
+    readonly tenantId: FieldRef<"TenantWarehouse", 'Int'>
+    readonly warehouseName: FieldRef<"TenantWarehouse", 'String'>
+    readonly warehouseCode: FieldRef<"TenantWarehouse", 'String'>
+    readonly address: FieldRef<"TenantWarehouse", 'String'>
+    readonly isActive: FieldRef<"TenantWarehouse", 'Boolean'>
+    readonly deleted: FieldRef<"TenantWarehouse", 'Boolean'>
+    readonly deletedAt: FieldRef<"TenantWarehouse", 'DateTime'>
+    readonly createdAt: FieldRef<"TenantWarehouse", 'DateTime'>
+    readonly updatedAt: FieldRef<"TenantWarehouse", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * TenantWarehouse findUnique
+   */
+  export type TenantWarehouseFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantWarehouse to fetch.
+     */
+    where: TenantWarehouseWhereUniqueInput
+  }
+
+  /**
+   * TenantWarehouse findUniqueOrThrow
+   */
+  export type TenantWarehouseFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantWarehouse to fetch.
+     */
+    where: TenantWarehouseWhereUniqueInput
+  }
+
+  /**
+   * TenantWarehouse findFirst
+   */
+  export type TenantWarehouseFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantWarehouse to fetch.
+     */
+    where?: TenantWarehouseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantWarehouses to fetch.
+     */
+    orderBy?: TenantWarehouseOrderByWithRelationInput | TenantWarehouseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TenantWarehouses.
+     */
+    cursor?: TenantWarehouseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantWarehouses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantWarehouses.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TenantWarehouses.
+     */
+    distinct?: TenantWarehouseScalarFieldEnum | TenantWarehouseScalarFieldEnum[]
+  }
+
+  /**
+   * TenantWarehouse findFirstOrThrow
+   */
+  export type TenantWarehouseFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantWarehouse to fetch.
+     */
+    where?: TenantWarehouseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantWarehouses to fetch.
+     */
+    orderBy?: TenantWarehouseOrderByWithRelationInput | TenantWarehouseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TenantWarehouses.
+     */
+    cursor?: TenantWarehouseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantWarehouses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantWarehouses.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TenantWarehouses.
+     */
+    distinct?: TenantWarehouseScalarFieldEnum | TenantWarehouseScalarFieldEnum[]
+  }
+
+  /**
+   * TenantWarehouse findMany
+   */
+  export type TenantWarehouseFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantWarehouses to fetch.
+     */
+    where?: TenantWarehouseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantWarehouses to fetch.
+     */
+    orderBy?: TenantWarehouseOrderByWithRelationInput | TenantWarehouseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing TenantWarehouses.
+     */
+    cursor?: TenantWarehouseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantWarehouses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantWarehouses.
+     */
+    skip?: number
+    distinct?: TenantWarehouseScalarFieldEnum | TenantWarehouseScalarFieldEnum[]
+  }
+
+  /**
+   * TenantWarehouse create
+   */
+  export type TenantWarehouseCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * The data needed to create a TenantWarehouse.
+     */
+    data: XOR<TenantWarehouseCreateInput, TenantWarehouseUncheckedCreateInput>
+  }
+
+  /**
+   * TenantWarehouse createMany
+   */
+  export type TenantWarehouseCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many TenantWarehouses.
+     */
+    data: TenantWarehouseCreateManyInput | TenantWarehouseCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TenantWarehouse update
+   */
+  export type TenantWarehouseUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * The data needed to update a TenantWarehouse.
+     */
+    data: XOR<TenantWarehouseUpdateInput, TenantWarehouseUncheckedUpdateInput>
+    /**
+     * Choose, which TenantWarehouse to update.
+     */
+    where: TenantWarehouseWhereUniqueInput
+  }
+
+  /**
+   * TenantWarehouse updateMany
+   */
+  export type TenantWarehouseUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update TenantWarehouses.
+     */
+    data: XOR<TenantWarehouseUpdateManyMutationInput, TenantWarehouseUncheckedUpdateManyInput>
+    /**
+     * Filter which TenantWarehouses to update
+     */
+    where?: TenantWarehouseWhereInput
+    /**
+     * Limit how many TenantWarehouses to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * TenantWarehouse upsert
+   */
+  export type TenantWarehouseUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * The filter to search for the TenantWarehouse to update in case it exists.
+     */
+    where: TenantWarehouseWhereUniqueInput
+    /**
+     * In case the TenantWarehouse found by the `where` argument doesn't exist, create a new TenantWarehouse with this data.
+     */
+    create: XOR<TenantWarehouseCreateInput, TenantWarehouseUncheckedCreateInput>
+    /**
+     * In case the TenantWarehouse was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<TenantWarehouseUpdateInput, TenantWarehouseUncheckedUpdateInput>
+  }
+
+  /**
+   * TenantWarehouse delete
+   */
+  export type TenantWarehouseDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+    /**
+     * Filter which TenantWarehouse to delete.
+     */
+    where: TenantWarehouseWhereUniqueInput
+  }
+
+  /**
+   * TenantWarehouse deleteMany
+   */
+  export type TenantWarehouseDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TenantWarehouses to delete
+     */
+    where?: TenantWarehouseWhereInput
+    /**
+     * Limit how many TenantWarehouses to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * TenantWarehouse without action
+   */
+  export type TenantWarehouseDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantWarehouse
+     */
+    select?: TenantWarehouseSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantWarehouse
+     */
+    omit?: TenantWarehouseOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantWarehouseInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -16772,6 +17914,22 @@ export namespace Prisma {
   export type PushyDeviceAllocationScalarFieldEnum = (typeof PushyDeviceAllocationScalarFieldEnum)[keyof typeof PushyDeviceAllocationScalarFieldEnum]
 
 
+  export const TenantWarehouseScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    warehouseName: 'warehouseName',
+    warehouseCode: 'warehouseCode',
+    address: 'address',
+    isActive: 'isActive',
+    deleted: 'deleted',
+    deletedAt: 'deletedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type TenantWarehouseScalarFieldEnum = (typeof TenantWarehouseScalarFieldEnum)[keyof typeof TenantWarehouseScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -16902,6 +18060,15 @@ export namespace Prisma {
   };
 
   export type PushyDeviceAllocationOrderByRelevanceFieldEnum = (typeof PushyDeviceAllocationOrderByRelevanceFieldEnum)[keyof typeof PushyDeviceAllocationOrderByRelevanceFieldEnum]
+
+
+  export const TenantWarehouseOrderByRelevanceFieldEnum: {
+    warehouseName: 'warehouseName',
+    warehouseCode: 'warehouseCode',
+    address: 'address'
+  };
+
+  export type TenantWarehouseOrderByRelevanceFieldEnum = (typeof TenantWarehouseOrderByRelevanceFieldEnum)[keyof typeof TenantWarehouseOrderByRelevanceFieldEnum]
 
 
   /**
@@ -17106,6 +18273,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionListRelationFilter
     tenantOutlets?: TenantOutletListRelationFilter
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
+    warehouses?: TenantWarehouseListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -17118,6 +18286,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionOrderByRelationAggregateInput
     tenantOutlets?: TenantOutletOrderByRelationAggregateInput
     deviceAllocations?: PushyDeviceAllocationOrderByRelationAggregateInput
+    warehouses?: TenantWarehouseOrderByRelationAggregateInput
     _relevance?: TenantOrderByRelevanceInput
   }
 
@@ -17134,6 +18303,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionListRelationFilter
     tenantOutlets?: TenantOutletListRelationFilter
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
+    warehouses?: TenantWarehouseListRelationFilter
   }, "id" | "databaseName">
 
   export type TenantOrderByWithAggregationInput = {
@@ -18001,6 +19171,90 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"PushyDeviceAllocation"> | Date | string
   }
 
+  export type TenantWarehouseWhereInput = {
+    AND?: TenantWarehouseWhereInput | TenantWarehouseWhereInput[]
+    OR?: TenantWarehouseWhereInput[]
+    NOT?: TenantWarehouseWhereInput | TenantWarehouseWhereInput[]
+    id?: IntFilter<"TenantWarehouse"> | number
+    tenantId?: IntFilter<"TenantWarehouse"> | number
+    warehouseName?: StringFilter<"TenantWarehouse"> | string
+    warehouseCode?: StringFilter<"TenantWarehouse"> | string
+    address?: StringNullableFilter<"TenantWarehouse"> | string | null
+    isActive?: BoolFilter<"TenantWarehouse"> | boolean
+    deleted?: BoolFilter<"TenantWarehouse"> | boolean
+    deletedAt?: DateTimeNullableFilter<"TenantWarehouse"> | Date | string | null
+    createdAt?: DateTimeFilter<"TenantWarehouse"> | Date | string
+    updatedAt?: DateTimeFilter<"TenantWarehouse"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }
+
+  export type TenantWarehouseOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    warehouseName?: SortOrder
+    warehouseCode?: SortOrder
+    address?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+    _relevance?: TenantWarehouseOrderByRelevanceInput
+  }
+
+  export type TenantWarehouseWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    tenantId_warehouseCode?: TenantWarehouseTenantIdWarehouseCodeCompoundUniqueInput
+    AND?: TenantWarehouseWhereInput | TenantWarehouseWhereInput[]
+    OR?: TenantWarehouseWhereInput[]
+    NOT?: TenantWarehouseWhereInput | TenantWarehouseWhereInput[]
+    tenantId?: IntFilter<"TenantWarehouse"> | number
+    warehouseName?: StringFilter<"TenantWarehouse"> | string
+    warehouseCode?: StringFilter<"TenantWarehouse"> | string
+    address?: StringNullableFilter<"TenantWarehouse"> | string | null
+    isActive?: BoolFilter<"TenantWarehouse"> | boolean
+    deleted?: BoolFilter<"TenantWarehouse"> | boolean
+    deletedAt?: DateTimeNullableFilter<"TenantWarehouse"> | Date | string | null
+    createdAt?: DateTimeFilter<"TenantWarehouse"> | Date | string
+    updatedAt?: DateTimeFilter<"TenantWarehouse"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }, "id" | "tenantId_warehouseCode">
+
+  export type TenantWarehouseOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    warehouseName?: SortOrder
+    warehouseCode?: SortOrder
+    address?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: TenantWarehouseCountOrderByAggregateInput
+    _avg?: TenantWarehouseAvgOrderByAggregateInput
+    _max?: TenantWarehouseMaxOrderByAggregateInput
+    _min?: TenantWarehouseMinOrderByAggregateInput
+    _sum?: TenantWarehouseSumOrderByAggregateInput
+  }
+
+  export type TenantWarehouseScalarWhereWithAggregatesInput = {
+    AND?: TenantWarehouseScalarWhereWithAggregatesInput | TenantWarehouseScalarWhereWithAggregatesInput[]
+    OR?: TenantWarehouseScalarWhereWithAggregatesInput[]
+    NOT?: TenantWarehouseScalarWhereWithAggregatesInput | TenantWarehouseScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"TenantWarehouse"> | number
+    tenantId?: IntWithAggregatesFilter<"TenantWarehouse"> | number
+    warehouseName?: StringWithAggregatesFilter<"TenantWarehouse"> | string
+    warehouseCode?: StringWithAggregatesFilter<"TenantWarehouse"> | string
+    address?: StringNullableWithAggregatesFilter<"TenantWarehouse"> | string | null
+    isActive?: BoolWithAggregatesFilter<"TenantWarehouse"> | boolean
+    deleted?: BoolWithAggregatesFilter<"TenantWarehouse"> | boolean
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"TenantWarehouse"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"TenantWarehouse"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"TenantWarehouse"> | Date | string
+  }
+
   export type SubscriptionPlanCreateInput = {
     planName: string
     planType?: string
@@ -18166,6 +19420,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -18178,6 +19433,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -18189,6 +19445,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -18201,6 +19458,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -19069,6 +20327,93 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type TenantWarehouseCreateInput = {
+    warehouseName: string
+    warehouseCode: string
+    address?: string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutWarehousesInput
+  }
+
+  export type TenantWarehouseUncheckedCreateInput = {
+    id?: number
+    tenantId: number
+    warehouseName: string
+    warehouseCode: string
+    address?: string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantWarehouseUpdateInput = {
+    warehouseName?: StringFieldUpdateOperationsInput | string
+    warehouseCode?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutWarehousesNestedInput
+  }
+
+  export type TenantWarehouseUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    warehouseName?: StringFieldUpdateOperationsInput | string
+    warehouseCode?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantWarehouseCreateManyInput = {
+    id?: number
+    tenantId: number
+    warehouseName: string
+    warehouseCode: string
+    address?: string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantWarehouseUpdateManyMutationInput = {
+    warehouseName?: StringFieldUpdateOperationsInput | string
+    warehouseCode?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantWarehouseUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    warehouseName?: StringFieldUpdateOperationsInput | string
+    warehouseCode?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -19378,6 +20723,12 @@ export namespace Prisma {
     none?: PushyDeviceAllocationWhereInput
   }
 
+  export type TenantWarehouseListRelationFilter = {
+    every?: TenantWarehouseWhereInput
+    some?: TenantWarehouseWhereInput
+    none?: TenantWarehouseWhereInput
+  }
+
   export type TenantUserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -19387,6 +20738,10 @@ export namespace Prisma {
   }
 
   export type PushyDeviceAllocationOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type TenantWarehouseOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -20122,6 +21477,66 @@ export namespace Prisma {
     addOnId?: SortOrder
   }
 
+  export type TenantWarehouseOrderByRelevanceInput = {
+    fields: TenantWarehouseOrderByRelevanceFieldEnum | TenantWarehouseOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type TenantWarehouseTenantIdWarehouseCodeCompoundUniqueInput = {
+    tenantId: number
+    warehouseCode: string
+  }
+
+  export type TenantWarehouseCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    warehouseName?: SortOrder
+    warehouseCode?: SortOrder
+    address?: SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantWarehouseAvgOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+  }
+
+  export type TenantWarehouseMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    warehouseName?: SortOrder
+    warehouseCode?: SortOrder
+    address?: SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantWarehouseMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    warehouseName?: SortOrder
+    warehouseCode?: SortOrder
+    address?: SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantWarehouseSumOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+  }
+
   export type TenantSubscriptionCreateNestedManyWithoutSubscriptionPlanInput = {
     create?: XOR<TenantSubscriptionCreateWithoutSubscriptionPlanInput, TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput> | TenantSubscriptionCreateWithoutSubscriptionPlanInput[] | TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput[]
     connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput | TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput[]
@@ -20266,6 +21681,13 @@ export namespace Prisma {
     connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
   }
 
+  export type TenantWarehouseCreateNestedManyWithoutTenantInput = {
+    create?: XOR<TenantWarehouseCreateWithoutTenantInput, TenantWarehouseUncheckedCreateWithoutTenantInput> | TenantWarehouseCreateWithoutTenantInput[] | TenantWarehouseUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantWarehouseCreateOrConnectWithoutTenantInput | TenantWarehouseCreateOrConnectWithoutTenantInput[]
+    createMany?: TenantWarehouseCreateManyTenantInputEnvelope
+    connect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+  }
+
   export type TenantUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -20292,6 +21714,13 @@ export namespace Prisma {
     connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutTenantInput | PushyDeviceAllocationCreateOrConnectWithoutTenantInput[]
     createMany?: PushyDeviceAllocationCreateManyTenantInputEnvelope
     connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+  }
+
+  export type TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<TenantWarehouseCreateWithoutTenantInput, TenantWarehouseUncheckedCreateWithoutTenantInput> | TenantWarehouseCreateWithoutTenantInput[] | TenantWarehouseUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantWarehouseCreateOrConnectWithoutTenantInput | TenantWarehouseCreateOrConnectWithoutTenantInput[]
+    createMany?: TenantWarehouseCreateManyTenantInputEnvelope
+    connect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -20354,6 +21783,20 @@ export namespace Prisma {
     deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
   }
 
+  export type TenantWarehouseUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<TenantWarehouseCreateWithoutTenantInput, TenantWarehouseUncheckedCreateWithoutTenantInput> | TenantWarehouseCreateWithoutTenantInput[] | TenantWarehouseUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantWarehouseCreateOrConnectWithoutTenantInput | TenantWarehouseCreateOrConnectWithoutTenantInput[]
+    upsert?: TenantWarehouseUpsertWithWhereUniqueWithoutTenantInput | TenantWarehouseUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: TenantWarehouseCreateManyTenantInputEnvelope
+    set?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    disconnect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    delete?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    connect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    update?: TenantWarehouseUpdateWithWhereUniqueWithoutTenantInput | TenantWarehouseUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: TenantWarehouseUpdateManyWithWhereWithoutTenantInput | TenantWarehouseUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: TenantWarehouseScalarWhereInput | TenantWarehouseScalarWhereInput[]
+  }
+
   export type TenantUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -20408,6 +21851,20 @@ export namespace Prisma {
     update?: PushyDeviceAllocationUpdateWithWhereUniqueWithoutTenantInput | PushyDeviceAllocationUpdateWithWhereUniqueWithoutTenantInput[]
     updateMany?: PushyDeviceAllocationUpdateManyWithWhereWithoutTenantInput | PushyDeviceAllocationUpdateManyWithWhereWithoutTenantInput[]
     deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
+  }
+
+  export type TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<TenantWarehouseCreateWithoutTenantInput, TenantWarehouseUncheckedCreateWithoutTenantInput> | TenantWarehouseCreateWithoutTenantInput[] | TenantWarehouseUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantWarehouseCreateOrConnectWithoutTenantInput | TenantWarehouseCreateOrConnectWithoutTenantInput[]
+    upsert?: TenantWarehouseUpsertWithWhereUniqueWithoutTenantInput | TenantWarehouseUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: TenantWarehouseCreateManyTenantInputEnvelope
+    set?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    disconnect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    delete?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    connect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+    update?: TenantWarehouseUpdateWithWhereUniqueWithoutTenantInput | TenantWarehouseUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: TenantWarehouseUpdateManyWithWhereWithoutTenantInput | TenantWarehouseUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: TenantWarehouseScalarWhereInput | TenantWarehouseScalarWhereInput[]
   }
 
   export type TenantOutletCreateNestedOneWithoutSubscriptionsInput = {
@@ -20890,6 +22347,20 @@ export namespace Prisma {
     update?: XOR<XOR<TenantSubscriptionUpdateToOneWithWhereWithoutDeviceAllocationsInput, TenantSubscriptionUpdateWithoutDeviceAllocationsInput>, TenantSubscriptionUncheckedUpdateWithoutDeviceAllocationsInput>
   }
 
+  export type TenantCreateNestedOneWithoutWarehousesInput = {
+    create?: XOR<TenantCreateWithoutWarehousesInput, TenantUncheckedCreateWithoutWarehousesInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutWarehousesInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutWarehousesNestedInput = {
+    create?: XOR<TenantCreateWithoutWarehousesInput, TenantUncheckedCreateWithoutWarehousesInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutWarehousesInput
+    upsert?: TenantUpsertWithoutWarehousesInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutWarehousesInput, TenantUpdateWithoutWarehousesInput>, TenantUncheckedUpdateWithoutWarehousesInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -21349,6 +22820,39 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type TenantWarehouseCreateWithoutTenantInput = {
+    warehouseName: string
+    warehouseCode: string
+    address?: string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantWarehouseUncheckedCreateWithoutTenantInput = {
+    id?: number
+    warehouseName: string
+    warehouseCode: string
+    address?: string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantWarehouseCreateOrConnectWithoutTenantInput = {
+    where: TenantWarehouseWhereUniqueInput
+    create: XOR<TenantWarehouseCreateWithoutTenantInput, TenantWarehouseUncheckedCreateWithoutTenantInput>
+  }
+
+  export type TenantWarehouseCreateManyTenantInputEnvelope = {
+    data: TenantWarehouseCreateManyTenantInput | TenantWarehouseCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TenantUserUpsertWithWhereUniqueWithoutTenantInput = {
     where: TenantUserWhereUniqueInput
     update: XOR<TenantUserUpdateWithoutTenantInput, TenantUserUncheckedUpdateWithoutTenantInput>
@@ -21452,6 +22956,38 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"PushyDeviceAllocation"> | Date | string
   }
 
+  export type TenantWarehouseUpsertWithWhereUniqueWithoutTenantInput = {
+    where: TenantWarehouseWhereUniqueInput
+    update: XOR<TenantWarehouseUpdateWithoutTenantInput, TenantWarehouseUncheckedUpdateWithoutTenantInput>
+    create: XOR<TenantWarehouseCreateWithoutTenantInput, TenantWarehouseUncheckedCreateWithoutTenantInput>
+  }
+
+  export type TenantWarehouseUpdateWithWhereUniqueWithoutTenantInput = {
+    where: TenantWarehouseWhereUniqueInput
+    data: XOR<TenantWarehouseUpdateWithoutTenantInput, TenantWarehouseUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type TenantWarehouseUpdateManyWithWhereWithoutTenantInput = {
+    where: TenantWarehouseScalarWhereInput
+    data: XOR<TenantWarehouseUpdateManyMutationInput, TenantWarehouseUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type TenantWarehouseScalarWhereInput = {
+    AND?: TenantWarehouseScalarWhereInput | TenantWarehouseScalarWhereInput[]
+    OR?: TenantWarehouseScalarWhereInput[]
+    NOT?: TenantWarehouseScalarWhereInput | TenantWarehouseScalarWhereInput[]
+    id?: IntFilter<"TenantWarehouse"> | number
+    tenantId?: IntFilter<"TenantWarehouse"> | number
+    warehouseName?: StringFilter<"TenantWarehouse"> | string
+    warehouseCode?: StringFilter<"TenantWarehouse"> | string
+    address?: StringNullableFilter<"TenantWarehouse"> | string | null
+    isActive?: BoolFilter<"TenantWarehouse"> | boolean
+    deleted?: BoolFilter<"TenantWarehouse"> | boolean
+    deletedAt?: DateTimeNullableFilter<"TenantWarehouse"> | Date | string | null
+    createdAt?: DateTimeFilter<"TenantWarehouse"> | Date | string
+    updatedAt?: DateTimeFilter<"TenantWarehouse"> | Date | string
+  }
+
   export type TenantOutletCreateWithoutSubscriptionsInput = {
     outletName: string
     address?: string | null
@@ -21510,6 +23046,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSubscriptionInput = {
@@ -21521,6 +23058,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSubscriptionInput = {
@@ -21689,6 +23227,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSubscriptionInput = {
@@ -21700,6 +23239,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SubscriptionPlanUpsertWithoutSubscriptionInput = {
@@ -21900,6 +23440,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantOutletsInput = {
@@ -21911,6 +23452,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantOutletsInput = {
@@ -21974,6 +23516,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantOutletsInput = {
@@ -21985,6 +23528,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithWhereUniqueWithoutOutletInput = {
@@ -22064,6 +23608,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantUsersInput = {
@@ -22075,6 +23620,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantUsersInput = {
@@ -22138,6 +23684,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantUsersInput = {
@@ -22149,6 +23696,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput = {
@@ -22448,6 +23996,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDeviceAllocationsInput = {
@@ -22459,6 +24008,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDeviceAllocationsInput = {
@@ -22555,6 +24105,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDeviceAllocationsInput = {
@@ -22566,6 +24117,7 @@ export namespace Prisma {
     tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithoutDeviceAllocationsInput = {
@@ -22604,6 +24156,68 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+  }
+
+  export type TenantCreateWithoutWarehousesInput = {
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutWarehousesInput = {
+    id?: number
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutWarehousesInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutWarehousesInput, TenantUncheckedCreateWithoutWarehousesInput>
+  }
+
+  export type TenantUpsertWithoutWarehousesInput = {
+    update: XOR<TenantUpdateWithoutWarehousesInput, TenantUncheckedUpdateWithoutWarehousesInput>
+    create: XOR<TenantCreateWithoutWarehousesInput, TenantUncheckedCreateWithoutWarehousesInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutWarehousesInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutWarehousesInput, TenantUncheckedUpdateWithoutWarehousesInput>
+  }
+
+  export type TenantUpdateWithoutWarehousesInput = {
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutWarehousesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionCreateManySubscriptionPlanInput = {
@@ -22717,6 +24331,18 @@ export namespace Prisma {
     activatedAt?: Date | string
     expiresAt?: Date | string | null
     createdAt?: Date | string
+  }
+
+  export type TenantWarehouseCreateManyTenantInput = {
+    id?: number
+    warehouseName: string
+    warehouseCode: string
+    address?: string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TenantUserUpdateWithoutTenantInput = {
@@ -22838,6 +24464,41 @@ export namespace Prisma {
     activatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantWarehouseUpdateWithoutTenantInput = {
+    warehouseName?: StringFieldUpdateOperationsInput | string
+    warehouseCode?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantWarehouseUncheckedUpdateWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    warehouseName?: StringFieldUpdateOperationsInput | string
+    warehouseCode?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantWarehouseUncheckedUpdateManyWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    warehouseName?: StringFieldUpdateOperationsInput | string
+    warehouseCode?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TenantSubscriptionAddOnCreateManyTenantSubscriptionInput = {

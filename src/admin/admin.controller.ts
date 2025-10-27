@@ -135,6 +135,106 @@ let getTenantDevices = (req: AuthRequest, res: Response, next: NextFunction) => 
         .catch(next);
 }
 
+/**
+ * POST /tenants/:tenantId/warehouses
+ * Create warehouse for tenant (POS Owner only)
+ */
+let createWarehouse = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+
+    if (!tenantId || isNaN(tenantId)) {
+        throw new RequestValidateError('Valid tenant ID is required');
+    }
+
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty');
+    }
+
+    const { warehouseName, street, city, state, postalCode, country, contactPhone, contactEmail } = req.body;
+
+    if (!warehouseName) {
+        throw new RequestValidateError('Warehouse name is required');
+    }
+
+    service.createWarehouseForTenant(tenantId, {
+        warehouseName,
+        street,
+        city,
+        state,
+        postalCode,
+        country,
+        contactPhone,
+        contactEmail
+    })
+        .then((response: any) => {
+            const message = response.billableWarehouses === 0
+                ? 'First warehouse created successfully (FREE)'
+                : `Warehouse created. Additional charge: ${response.monthlyCost} IDR/month`;
+
+            sendResponse(res, {
+                success: true,
+                message,
+                warehouse: response.warehouse,
+                billing: {
+                    totalWarehouses: response.totalWarehouses,
+                    billableWarehouses: response.billableWarehouses,
+                    monthlyCost: response.monthlyCost,
+                    isFreeWarehouse: response.isFreeWarehouse
+                }
+            });
+        })
+        .catch(next);
+};
+
+/**
+ * DELETE /tenants/:tenantId/warehouses/:id
+ * Delete warehouse for tenant (POS Owner only)
+ */
+let deleteWarehouse = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const warehouseId = parseInt(req.params.id);
+
+    if (!tenantId || isNaN(tenantId)) {
+        throw new RequestValidateError('Valid tenant ID is required');
+    }
+
+    if (!warehouseId || isNaN(warehouseId)) {
+        throw new RequestValidateError('Valid warehouse ID is required');
+    }
+
+    service.deleteWarehouseForTenant(tenantId, warehouseId)
+        .then((response: any) => {
+            sendResponse(res, {
+                success: true,
+                message: response.message,
+                billing: {
+                    remainingWarehouses: response.remainingWarehouses,
+                    billableWarehouses: response.billableWarehouses,
+                    monthlyCost: response.monthlyCost
+                }
+            });
+        })
+        .catch(next);
+};
+
+/**
+ * GET /tenants/:tenantId/warehouses
+ * Get all warehouses for tenant (POS Owner only)
+ */
+let getTenantWarehouses = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+
+    if (!tenantId || isNaN(tenantId)) {
+        throw new RequestValidateError('Valid tenant ID is required');
+    }
+
+    service.getTenantWarehouses(tenantId)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
 //routes
 router.get('/tenantDetails/:id', getTenantDetails)
 router.get('/getAllTenantSubscription', getAllTenantSubscription)
@@ -143,5 +243,9 @@ router.post('/signup', createTenant)
 router.post('/createTenantUser/:tenantId', createTenantUser)
 router.post('/addDeviceQuota/:tenantId', addDeviceQuotaForTenant)
 router.post('/reduceDeviceQuota/:tenantId', reduceDeviceQuotaForTenant)
+// Warehouse endpoints
+router.post('/tenants/:tenantId/warehouses', createWarehouse)
+router.delete('/tenants/:tenantId/warehouses/:id', deleteWarehouse)
+router.get('/tenants/:tenantId/warehouses', getTenantWarehouses)
 
 export = router

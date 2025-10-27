@@ -58,6 +58,7 @@ app.use('/invoiceSettlement', require('./invoice_settlement/invoice_settlement.c
 app.use('/quotation', require('./quotation/quotation.controller'))
 app.use('/pushy', require('./pushy/device.controller'))
 app.use('/settings', require('./settings/settings.controller'))
+app.use('/warehouses', require('./warehouse/warehouse.controller'))
 
 // error middleware
 app.use(errorMiddleware)

@@ -975,4 +975,380 @@ const getTenantDevices = async (tenantId: number) => {
     };
 };
 
-export = { createTenant, createTenantUser, getTenantCost, getAllTenantCost, addDeviceQuotaForTenant, reduceDeviceQuotaForTenant, getTenantDevices }
+/**
+ * Create warehouse for tenant (POS Owner only)
+ * Automatically handles billing via subscription add-on (ID 3)
+ */
+let createWarehouseForTenant = async (
+    tenantId: number,
+    data: {
+        warehouseName: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
+        contactPhone?: string;
+        contactEmail?: string;
+    }
+) => {
+    try {
+        // Get tenant database name
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { databaseName: true }
+        });
+
+        if (!tenant || !tenant.databaseName) {
+            throw new NotFoundError('Tenant not found');
+        }
+
+        const databaseName = tenant.databaseName;
+        const tenantPrisma = getTenantPrisma(databaseName);
+
+        return await prisma.$transaction(async (globalTx) => {
+            return await tenantPrisma.$transaction(async (tenantTx) => {
+
+                // Step 1: Create TenantWarehouse in global DB
+                const warehouseCode = data.warehouseName.toUpperCase().replace(/\s+/g, '_');
+                const globalWarehouse = await globalTx.tenantWarehouse.create({
+                    data: {
+                        tenantId,
+                        warehouseName: data.warehouseName,
+                        warehouseCode,
+                        address: `${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || null,
+                        isActive: true,
+                    }
+                });
+
+                // Step 2: Create operational warehouse in tenant DB
+                const warehouse = await tenantTx.warehouse.create({
+                    data: {
+                        tenantWarehouseId: globalWarehouse.id,
+                        warehouseName: data.warehouseName,
+                        warehouseCode: globalWarehouse.warehouseCode,
+                        street: data.street || '',
+                        city: data.city || '',
+                        state: data.state || '',
+                        postalCode: data.postalCode || '',
+                        country: data.country || '',
+                        contactPhone: data.contactPhone,
+                        contactEmail: data.contactEmail,
+                    }
+                });
+
+                // Step 3: Handle warehouse add-on billing (matches user/device pattern)
+                // Get all active outlets for this tenant with their subscriptions
+                const tenantOutlets = await globalTx.tenantOutlet.findMany({
+                    where: {
+                        tenantId,
+                        isActive: true
+                    },
+                    include: {
+                        subscriptions: {
+                            where: {
+                                status: { in: ['Active', 'active', 'trial'] }
+                            },
+                            include: {
+                                subscriptionPlan: true
+                            }
+                        }
+                    }
+                });
+
+                // Get primary subscription (attach warehouse add-on here)
+                let primarySubscription = null;
+                for (const outlet of tenantOutlets) {
+                    if (outlet.subscriptions.length > 0) {
+                        primarySubscription = outlet.subscriptions[0];
+                        break;
+                    }
+                }
+
+                if (!primarySubscription) {
+                    throw new Error('No active subscription found for tenant');
+                }
+
+                // Count total active warehouses (including this new one)
+                const totalWarehouses = await globalTx.tenantWarehouse.count({
+                    where: {
+                        tenantId,
+                        isActive: true,
+                        deleted: false
+                    }
+                });
+
+                // Calculate billable warehouses (first one is free)
+                const billableWarehouses = Math.max(0, totalWarehouses - 1);
+
+                let isFreeWarehouse = false;
+                let monthlyCost = 0;
+
+                if (billableWarehouses > 0) {
+                    // Update or create warehouse add-on (Add-on ID 3)
+                    const warehouseAddOnId = 3; // "Extra Warehouse" add-on
+
+                    const existingAddOn = await globalTx.tenantSubscriptionAddOn.findUnique({
+                        where: {
+                            tenantSubscriptionId_addOnId: {
+                                tenantSubscriptionId: primarySubscription.id,
+                                addOnId: warehouseAddOnId,
+                            }
+                        }
+                    });
+
+                    if (!existingAddOn) {
+                        await globalTx.tenantSubscriptionAddOn.create({
+                            data: {
+                                tenantSubscriptionId: primarySubscription.id,
+                                addOnId: warehouseAddOnId,
+                                quantity: billableWarehouses,
+                            }
+                        });
+                    } else {
+                        await globalTx.tenantSubscriptionAddOn.update({
+                            where: {
+                                tenantSubscriptionId_addOnId: {
+                                    tenantSubscriptionId: primarySubscription.id,
+                                    addOnId: warehouseAddOnId,
+                                }
+                            },
+                            data: { quantity: billableWarehouses }
+                        });
+                    }
+
+                    monthlyCost = billableWarehouses * 100_000; // 100k IDR per warehouse
+                } else {
+                    isFreeWarehouse = true;
+                }
+
+                return {
+                    globalWarehouse,
+                    warehouse,
+                    isFreeWarehouse,
+                    billableWarehouses,
+                    totalWarehouses,
+                    monthlyCost,
+                    addOnAttachedTo: primarySubscription.id
+                };
+            });
+        });
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Delete warehouse for tenant (POS Owner only)
+ * Automatically updates billing via subscription add-on (ID 3)
+ */
+let deleteWarehouseForTenant = async (
+    tenantId: number,
+    warehouseId: number
+) => {
+    try {
+        // Get tenant database name
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { databaseName: true }
+        });
+
+        if (!tenant || !tenant.databaseName) {
+            throw new NotFoundError('Tenant not found');
+        }
+
+        const databaseName = tenant.databaseName;
+        const tenantPrisma = getTenantPrisma(databaseName);
+
+        return await prisma.$transaction(async (globalTx) => {
+            return await tenantPrisma.$transaction(async (tenantTx) => {
+
+                // Step 1: Get warehouse from tenant DB
+                const warehouse = await tenantTx.warehouse.findUnique({
+                    where: { id: warehouseId }
+                });
+
+                if (!warehouse) {
+                    throw new Error('Warehouse not found');
+                }
+
+                // Step 2: Check if warehouse has active stock
+                const hasStock = await tenantTx.warehouseStockBalance.findFirst({
+                    where: {
+                        warehouseId: warehouse.id,
+                        availableQuantity: { gt: 0 }
+                    }
+                });
+
+                if (hasStock) {
+                    throw new Error(
+                        'Cannot delete warehouse with active stock. ' +
+                        'Please transfer or clear stock first.'
+                    );
+                }
+
+                // Step 3: Soft delete warehouse in tenant DB
+                await tenantTx.warehouse.update({
+                    where: { id: warehouseId },
+                    data: {
+                        deleted: true,
+                        deletedAt: new Date()
+                    }
+                });
+
+                // Step 4: Soft delete in global DB
+                await globalTx.tenantWarehouse.update({
+                    where: { id: warehouse.tenantWarehouseId },
+                    data: {
+                        isActive: false,
+                        deleted: true,
+                        deletedAt: new Date()
+                    }
+                });
+
+                // Step 5: Update warehouse add-on quantity
+                // Get all active outlets for this tenant with their subscriptions
+                const tenantOutlets = await globalTx.tenantOutlet.findMany({
+                    where: {
+                        tenantId,
+                        isActive: true
+                    },
+                    include: {
+                        subscriptions: {
+                            where: {
+                                status: { in: ['Active', 'active', 'trial'] }
+                            },
+                            include: {
+                                subscriptionPlan: true
+                            }
+                        }
+                    }
+                });
+
+                // Get primary subscription
+                let primarySubscription = null;
+                for (const outlet of tenantOutlets) {
+                    if (outlet.subscriptions.length > 0) {
+                        primarySubscription = outlet.subscriptions[0];
+                        break;
+                    }
+                }
+
+                if (!primarySubscription) {
+                    throw new Error('No active subscription found for tenant');
+                }
+
+                // Recalculate total active warehouses (excluding the one we just deleted)
+                const totalWarehouses = await globalTx.tenantWarehouse.count({
+                    where: {
+                        tenantId,
+                        isActive: true,
+                        deleted: false
+                    }
+                });
+
+                // Calculate billable warehouses (first one is free)
+                const billableWarehouses = Math.max(0, totalWarehouses - 1);
+
+                // Update or delete warehouse add-on (Add-on ID 3)
+                const warehouseAddOnId = 3; // "Extra Warehouse" add-on
+
+                const existingAddOn = await globalTx.tenantSubscriptionAddOn.findUnique({
+                    where: {
+                        tenantSubscriptionId_addOnId: {
+                            tenantSubscriptionId: primarySubscription.id,
+                            addOnId: warehouseAddOnId,
+                        }
+                    }
+                });
+
+                if (billableWarehouses === 0) {
+                    // No billable warehouses left, remove add-on
+                    if (existingAddOn) {
+                        await globalTx.tenantSubscriptionAddOn.delete({
+                            where: {
+                                tenantSubscriptionId_addOnId: {
+                                    tenantSubscriptionId: primarySubscription.id,
+                                    addOnId: warehouseAddOnId,
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    // Still have billable warehouses, update quantity
+                    if (existingAddOn) {
+                        await globalTx.tenantSubscriptionAddOn.update({
+                            where: {
+                                tenantSubscriptionId_addOnId: {
+                                    tenantSubscriptionId: primarySubscription.id,
+                                    addOnId: warehouseAddOnId,
+                                }
+                            },
+                            data: { quantity: billableWarehouses }
+                        });
+                    } else {
+                        // Shouldn't happen, but create if missing
+                        await globalTx.tenantSubscriptionAddOn.create({
+                            data: {
+                                tenantSubscriptionId: primarySubscription.id,
+                                addOnId: warehouseAddOnId,
+                                quantity: billableWarehouses,
+                            }
+                        });
+                    }
+                }
+
+                const monthlyCost = billableWarehouses * 100_000; // 100k IDR per warehouse
+
+                return {
+                    deletedWarehouse: warehouse,
+                    remainingWarehouses: totalWarehouses,
+                    billableWarehouses,
+                    monthlyCost,
+                    message: totalWarehouses === 0
+                        ? 'All warehouses deleted. No warehouse charges.'
+                        : `${totalWarehouses} warehouse(s) remaining. Billable: ${billableWarehouses}`
+                };
+            });
+        });
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Get all warehouses for tenant (POS Owner only)
+ */
+let getTenantWarehouses = async (tenantId: number) => {
+    try {
+        const warehouses = await prisma.tenantWarehouse.findMany({
+            where: {
+                tenantId,
+                deleted: false
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        return {
+            data: warehouses,
+            total: warehouses.length
+        };
+    } catch (error) {
+        throw error;
+    }
+};
+
+export = {
+    createTenant,
+    createTenantUser,
+    getTenantCost,
+    getAllTenantCost,
+    addDeviceQuotaForTenant,
+    reduceDeviceQuotaForTenant,
+    getTenantDevices,
+    createWarehouseForTenant,
+    deleteWarehouseForTenant,
+    getTenantWarehouses
+}

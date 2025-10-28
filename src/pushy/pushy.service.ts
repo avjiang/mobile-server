@@ -1,4 +1,5 @@
 import Pushy from 'pushy';
+import PlanCheckService from './plan-check.service';
 
 const PUSHY_API_KEY = process.env.PUSHY_SECRET_API_KEY;
 
@@ -52,11 +53,24 @@ class PushyService {
 
     public async sendToTopic(
         topic: string,
-        notificationData: NotificationData
+        notificationData: NotificationData,
+        tenantId: number
     ): Promise<PushyResponse> {
         await this.initialize();
 
         try {
+            // Check if tenant has Pro plan (with 1-hour cache)
+            const isProPlan = await PlanCheckService.isProPlan(tenantId);
+
+            if (!isProPlan) {
+                console.log(`Skipping notification for tenant ${tenantId} - not on Pro plan`);
+                return {
+                    success: true,
+                    id: 'skipped',
+                    info: 'Notification skipped - not on Pro plan'
+                };
+            }
+
             const data = {
                 title: notificationData.title,
                 message: notificationData.message,
@@ -94,7 +108,8 @@ class PushyService {
 
     public async sendToDevices(
         deviceTokens: string[],
-        notificationData: NotificationData
+        notificationData: NotificationData,
+        tenantId: number
     ): Promise<PushyResponse> {
         await this.initialize();
 
@@ -106,6 +121,18 @@ class PushyService {
         }
 
         try {
+            // Check if tenant has Pro plan (with 1-hour cache)
+            const isProPlan = await PlanCheckService.isProPlan(tenantId);
+
+            if (!isProPlan) {
+                console.log(`Skipping notification for tenant ${tenantId} - not on Pro plan`);
+                return {
+                    success: true,
+                    id: 'skipped',
+                    info: 'Notification skipped - not on Pro plan'
+                };
+            }
+
             const data = {
                 title: notificationData.title,
                 message: notificationData.message,

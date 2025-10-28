@@ -60,11 +60,11 @@ class TokenInvalidationService {
       });
 
       console.log(`Revoked ${result.count} refresh tokens for tenant ${tenantId} due to plan change`);
-      
+
       // Note: JWT access tokens cannot be invalidated directly as they are stateless
       // They will naturally expire based on their expiry time (typically short-lived)
       // Users will be forced to re-authenticate when trying to refresh their tokens
-      
+
     } catch (error) {
       console.error('Error invalidating tenant tokens:', error);
       throw error;
@@ -128,45 +128,16 @@ class TokenInvalidationService {
    */
   public async onPlanChange(tenantId: number, oldPlan: string | null, newPlan: string): Promise<void> {
     console.log(`Plan change detected for tenant ${tenantId}: ${oldPlan || 'None'} -> ${newPlan}`);
-    
+
     // Only invalidate tokens if the plan actually changed
     if (oldPlan !== newPlan) {
       await this.invalidateTenantTokensOnPlanChange(tenantId);
-      
+
       // Optionally, send push notifications to inform users
-      await this.notifyUsersOfPlanChange(tenantId, oldPlan, newPlan);
-      
+      // await this.notifyUsersOfPlanChange(tenantId, oldPlan, newPlan);
+
       // Log the plan change event (optional - for audit trail)
       console.log(`Plan change completed for tenant ${tenantId}. All users must re-login to continue.`);
-    }
-  }
-
-  /**
-   * Send push notifications to users about plan changes
-   */
-  private async notifyUsersOfPlanChange(tenantId: number, oldPlan: string | null, newPlan: string): Promise<void> {
-    try {
-      // Get all active devices for this tenant
-      const devices = await this.globalPrisma.pushyDevice.findMany({
-        where: {
-          tenantUser: {
-            tenantId,
-            isDeleted: false
-          },
-          isActive: true
-        },
-        select: {
-          deviceToken: true
-        }
-      });
-
-      if (devices.length > 0) {
-        // This would integrate with your push notification service
-        console.log(`Would send plan change notification to ${devices.length} devices for tenant ${tenantId}`);
-      }
-    } catch (error) {
-      console.error('Error notifying users of plan change:', error);
-      // Don't throw - notifications are optional
     }
   }
 

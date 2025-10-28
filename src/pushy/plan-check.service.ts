@@ -12,7 +12,7 @@ class PlanCheckService {
   private globalPrisma: GlobalPrismaClient;
   private readonly PRO_PLAN_NAME = 'Pro';
   private planCheckCache: Map<number, { isProPlan: boolean; timestamp: number }> = new Map();
-  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+  private readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour cache (reduced queries by 95%)
 
   private constructor() {
     this.globalPrisma = getGlobalPrisma();

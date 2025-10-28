@@ -152,7 +152,13 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
         throw new RequestValidateError('Create failed: sales data missing')
     }
     const payments = requestBody.payments
-    service.completeNewSales(req.user.databaseName, sales, payments)
+    service.completeNewSales(
+        req.user.databaseName,
+        req.user.tenantId,
+        { userId: req.user.userId, username: req.user.username },
+        sales,
+        payments
+    )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }
@@ -312,7 +318,13 @@ const addPaymentToPartiallyPaidSales = (req: NetworkRequest<AddPaymentRequest>, 
     if (!payments || !Array.isArray(payments) || payments.length === 0) {
         throw new RequestValidateError('At least one payment is required');
     }
-    service.addPaymentToPartiallyPaidSales(req.user.databaseName, salesId, payments)
+    service.addPaymentToPartiallyPaidSales(
+        req.user.databaseName,
+        req.user.tenantId,
+        { userId: req.user.userId, username: req.user.username },
+        salesId,
+        payments
+    )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
 }
@@ -325,7 +337,12 @@ const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect');
     }
     const salesId: number = parseInt(req.params.id);
-    service.voidSales(req.user.databaseName, salesId)
+    service.voidSales(
+        req.user.databaseName,
+        req.user.tenantId,
+        { userId: req.user.userId, username: req.user.username },
+        salesId
+    )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
 }
@@ -338,7 +355,12 @@ const returnSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect');
     }
     const salesId: number = parseInt(req.params.id);
-    service.returnSales(req.user.databaseName, salesId)
+    service.returnSales(
+        req.user.databaseName,
+        req.user.tenantId,
+        { userId: req.user.userId, username: req.user.username },
+        salesId
+    )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
 }
@@ -351,7 +373,12 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect');
     }
     const salesId: number = parseInt(req.params.id);
-    service.refundSales(req.user.databaseName, salesId)
+    service.refundSales(
+        req.user.databaseName,
+        req.user.tenantId,
+        { userId: req.user.userId, username: req.user.username },
+        salesId
+    )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
 }

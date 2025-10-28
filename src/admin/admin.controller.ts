@@ -235,15 +235,47 @@ let getTenantWarehouses = (req: AuthRequest, res: Response, next: NextFunction) 
         .catch(next);
 };
 
+/**
+ * PUT /tenants/:tenantId/upgradePlan
+ * Upgrade tenant plan (POS Owner only)
+ */
+let upgradeTenantPlan = (req: NetworkRequest<{ planName: string }>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    if (!req.body || !req.body.planName) {
+        res.status(400).json({ error: 'Invalid request. Plan name is required.' });
+        return;
+    }
+
+    const tenantId: number = parseInt(req.params.tenantId);
+    const { planName } = req.body;
+
+    service.upgradeTenantPlan(tenantId, planName)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
 //routes
 router.get('/tenantDetails/:id', getTenantDetails)
 router.get('/getAllTenantSubscription', getAllTenantSubscription)
 router.get('/tenantDevices/:tenantId', getTenantDevices)
 router.post('/signup', createTenant)
 router.post('/createTenantUser/:tenantId', createTenantUser)
+
+// device quota routes
 router.post('/addDeviceQuota/:tenantId', addDeviceQuotaForTenant)
 router.post('/reduceDeviceQuota/:tenantId', reduceDeviceQuotaForTenant)
-// Warehouse endpoints
+
+// subscription plan routes
+router.put('/tenants/:tenantId/upgradePlan', upgradeTenantPlan)
+
+// warehouse routes
 router.post('/tenants/:tenantId/warehouses', createWarehouse)
 router.delete('/tenants/:tenantId/warehouses/:id', deleteWarehouse)
 router.get('/tenants/:tenantId/warehouses', getTenantWarehouses)

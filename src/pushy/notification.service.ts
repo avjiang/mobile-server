@@ -69,7 +69,7 @@ class NotificationService {
         }
       };
 
-      const result = await PushyService.sendToTopic(topic, notificationData);
+      const result = await PushyService.sendToTopic(topic, notificationData, request.tenantId);
       
       if (!result.success) {
         console.error('Failed to send permission-based notification:', result.error);
@@ -133,7 +133,7 @@ class NotificationService {
         }
       };
 
-      const result = await PushyService.sendToDevices(deviceTokens, notificationData);
+      const result = await PushyService.sendToDevices(deviceTokens, notificationData, request.tenantId);
       
       if (!result.success) {
         console.error('Failed to send user-specific notification:', result.error);

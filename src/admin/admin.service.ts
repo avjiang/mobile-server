@@ -1389,6 +1389,99 @@ let getTenantWarehouses = async (tenantId: number) => {
     }
 };
 
+/**
+ * Upgrade tenant plan (POS Owner only)
+ * Automatically invalidates tokens and clears plan cache
+ */
+const upgradeTenantPlan = async (tenantId: number, newPlanName: string) => {
+    try {
+        // Step 1: Validate new plan exists
+        const newPlan = await prisma.subscriptionPlan.findFirst({
+            where: { planName: newPlanName }
+        });
+
+        if (!newPlan) {
+            throw new NotFoundError(`Plan "${newPlanName}" not found`);
+        }
+
+        // Step 2: Get all active outlets for this tenant
+        const tenantOutlets = await prisma.tenantOutlet.findMany({
+            where: {
+                tenantId,
+                isActive: true
+            },
+            include: {
+                subscriptions: {
+                    where: {
+                        status: { in: ['Active', 'active', 'trial'] }
+                    },
+                    include: {
+                        subscriptionPlan: true
+                    }
+                }
+            }
+        });
+
+        if (!tenantOutlets || tenantOutlets.length === 0) {
+            throw new NotFoundError('No active outlets found for tenant');
+        }
+
+        // Step 3: Get current plan (from first subscription)
+        let currentSubscription = null;
+        let currentPlanName = null;
+        for (const outlet of tenantOutlets) {
+            if (outlet.subscriptions.length > 0) {
+                currentSubscription = outlet.subscriptions[0];
+                currentPlanName = currentSubscription.subscriptionPlan.planName;
+                break;
+            }
+        }
+
+        if (!currentSubscription) {
+            throw new NotFoundError('No active subscription found for tenant');
+        }
+
+        if (currentPlanName === newPlanName) {
+            throw new RequestValidateError(`Tenant is already on "${newPlanName}" plan`);
+        }
+
+        // Step 4: Update all outlet subscriptions to new plan
+        const updatedSubscriptions = [];
+        for (const outlet of tenantOutlets) {
+            for (const subscription of outlet.subscriptions) {
+                const updated = await prisma.tenantSubscription.update({
+                    where: { id: subscription.id },
+                    data: {
+                        subscriptionPlanId: newPlan.id
+                    },
+                    include: {
+                        subscriptionPlan: true
+                    }
+                });
+                updatedSubscriptions.push(updated);
+            }
+        }
+
+        // Step 5: Invalidate tokens and clear cache
+        const TokenInvalidationService = require('../pushy/token-invalidation.service').default;
+        await TokenInvalidationService.onPlanChange(tenantId, currentPlanName, newPlanName);
+
+        return {
+            success: true,
+            message: `Successfully upgraded from "${currentPlanName}" to "${newPlanName}"`,
+            tenantId,
+            previousPlan: currentPlanName,
+            newPlan: newPlanName,
+            updatedSubscriptions: updatedSubscriptions.length,
+            tokensInvalidated: true,
+            cacheCleared: true
+        };
+    } catch (error) {
+        console.error('Error upgrading tenant plan:', error);
+        throw error;
+    }
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -1399,5 +1492,6 @@ export = {
     getTenantDevices,
     createWarehouseForTenant,
     deleteWarehouseForTenant,
-    getTenantWarehouses
+    getTenantWarehouses,
+    upgradeTenantPlan
 }

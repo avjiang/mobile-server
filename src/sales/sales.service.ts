@@ -4,6 +4,47 @@ import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
+import PushyService from '../pushy/pushy.service';
+
+// Helper function to send sales notifications
+async function sendSalesNotification(
+    tenantId: number,
+    outletId: number,
+    title: string,
+    message: string,
+    data: any
+): Promise<void> {
+    try {
+        await PushyService.sendToTopic(
+            `/topics/tenant_${tenantId}_outlet_${outletId}_sales`,
+            { title, message, data },
+            tenantId
+        );
+    } catch (error) {
+        // Log error but don't fail the sale transaction
+        console.error('Failed to send sales notification:', error);
+    }
+}
+
+// Helper function to send inventory notifications
+async function sendInventoryNotification(
+    tenantId: number,
+    outletId: number,
+    title: string,
+    message: string,
+    data: any
+): Promise<void> {
+    try {
+        await PushyService.sendToTopic(
+            `/topics/tenant_${tenantId}_outlet_${outletId}_inventory`,
+            { title, message, data },
+            tenantId
+        );
+    } catch (error) {
+        // Log error but don't fail the transaction
+        console.error('Failed to send inventory notification:', error);
+    }
+}
 
 let getAll = async (databaseName: string, request: SyncRequest) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -491,8 +532,18 @@ async function updateStockReceiptsAfterSale(
     }
 }
 
-async function completeNewSales(databaseName: string, salesBody: CreateSalesRequest, payments: Payment[]) {
+async function completeNewSales(
+    databaseName: string,
+    tenantId: number,
+    performedBy: { userId: number, username: string },
+    salesBody: CreateSalesRequest,
+    payments: Payment[]
+) {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    // Store stock updates outside transaction for notification use
+    let stockUpdatesForNotification: any[] = [];
+
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
             const itemIds = salesBody.salesItems.map((item) => item.itemId);
@@ -509,6 +560,7 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
                     select: {
                         itemId: true,
                         availableQuantity: true,
+                        reorderThreshold: true, // For low stock notifications
                         item: {
                             select: {
                                 itemName: true,
@@ -765,15 +817,37 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
             // Prepare stock balance updates and movements
             const stockUpdates = salesBody.salesItems.map(item => {
                 const stockBalance = stockBalanceMap.get(item.itemId)!;
+                const newAvailableQuantity = new Decimal(stockBalance.availableQuantity)
+                    .minus(new Decimal(item.quantity));
+
+                // Check reorder threshold
+                const reorderThreshold = stockBalance.reorderThreshold
+                    ? new Decimal(stockBalance.reorderThreshold)
+                    : null;
+
+                const needsReorder = reorderThreshold
+                    ? newAvailableQuantity.lte(reorderThreshold) &&
+                    new Decimal(stockBalance.availableQuantity).gt(reorderThreshold)
+                    : false;
+
                 return {
                     id: stockBalance.itemId, // Using itemId as identifier
                     outletId: salesBody.outletId,
                     itemId: item.itemId,
+                    itemName: stockBalance.item.itemName,
+                    itemCode: stockBalance.item.itemCode,
                     quantity: new Decimal(item.quantity),
                     previousAvailable: new Decimal(stockBalance.availableQuantity),
                     previousOnHand: new Decimal(stockBalance.availableQuantity), // Assuming same as available
+                    newAvailableQuantity: newAvailableQuantity,
+                    reorderThreshold: reorderThreshold?.toNumber(),
+                    willBeOutOfStock: newAvailableQuantity.eq(0),
+                    needsReorder: needsReorder,
                 };
             });
+
+            // Store for notifications outside transaction
+            stockUpdatesForNotification = stockUpdates;
 
             // Batch update stock balances and create movements
             await Promise.all([
@@ -819,126 +893,110 @@ async function completeNewSales(databaseName: string, salesBody: CreateSalesRequ
             return createdSales;
         });
 
+        // Send sales notification after successful transaction
+        await sendSalesNotification(
+            tenantId,
+            salesBody.outletId,
+            'New Sale Completed',
+            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)}`,
+            {
+                type: 'sale_completed',
+                salesId: result.id,
+                amount: result.totalAmount,
+                customerName: result.customerName || 'Walk-in Customer',
+                status: result.status,
+                itemCount: salesBody.salesItems.length,
+                outletId: salesBody.outletId,
+                triggeringUserId: performedBy.userId,
+                triggeringUsername: performedBy.username,
+                timestamp: new Date().toISOString()
+            }
+        );
+
+        // Send out-of-stock notifications
+        const outOfStockItems = stockUpdatesForNotification.filter((u: any) => u.willBeOutOfStock);
+        if (outOfStockItems.length > 0) {
+            const title = outOfStockItems.length === 1
+                ? 'Out of Stock Alert'
+                : `${outOfStockItems.length} Items Out of Stock`;
+
+            const message = outOfStockItems.length === 1
+                ? `${outOfStockItems[0].itemName} is now out of stock`
+                : outOfStockItems.length <= 3
+                    ? outOfStockItems.map((i: any) => i.itemName).join(', ')
+                    : `${outOfStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${outOfStockItems.length - 2} more`;
+
+            await sendInventoryNotification(
+                tenantId,
+                salesBody.outletId,
+                title,
+                message,
+                {
+                    type: 'out_of_stock',
+                    priority: 'high',
+                    count: outOfStockItems.length,
+                    items: outOfStockItems.map((item: any) => ({
+                        itemId: item.itemId,
+                        itemName: item.itemName,
+                        itemCode: item.itemCode,
+                        previousStock: item.previousAvailable.toNumber(),
+                        currentStock: 0,
+                        soldQuantity: item.quantity.toNumber()
+                    })),
+                    outletId: salesBody.outletId,
+                    salesId: result.id,
+                    triggeringUserId: performedBy.userId,
+                    triggeringUsername: performedBy.username,
+                    timestamp: new Date().toISOString()
+                }
+            );
+        }
+
+        // Send low-stock notifications (reorder threshold)
+        const lowStockItems = stockUpdatesForNotification.filter((u: any) => u.needsReorder && !u.willBeOutOfStock);
+        if (lowStockItems.length > 0) {
+            const title = lowStockItems.length === 1
+                ? 'Low Stock Warning'
+                : `${lowStockItems.length} Items Low on Stock`;
+
+            const message = lowStockItems.length === 1
+                ? `${lowStockItems[0].itemName} is running low (${lowStockItems[0].newAvailableQuantity.toFixed(0)} left)`
+                : lowStockItems.length <= 3
+                    ? lowStockItems.map((i: any) => i.itemName).join(', ')
+                    : `${lowStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${lowStockItems.length - 2} more`;
+
+            await sendInventoryNotification(
+                tenantId,
+                salesBody.outletId,
+                title,
+                message,
+                {
+                    type: 'low_stock',
+                    priority: 'normal',
+                    count: lowStockItems.length,
+                    items: lowStockItems.map((item: any) => ({
+                        itemId: item.itemId,
+                        itemName: item.itemName,
+                        itemCode: item.itemCode,
+                        previousStock: item.previousAvailable.toNumber(),
+                        currentStock: item.newAvailableQuantity.toNumber(),
+                        reorderThreshold: item.reorderThreshold,
+                        soldQuantity: item.quantity.toNumber()
+                    })),
+                    outletId: salesBody.outletId,
+                    salesId: result.id,
+                    triggeringUserId: performedBy.userId,
+                    triggeringUsername: performedBy.username,
+                    timestamp: new Date().toISOString()
+                }
+            );
+        }
+
         return getById(databaseName, result.id);
     } catch (error) {
         throw error;
     }
 }
-
-// let completeSales = async (databaseName: string, salesId: number, payments: Payment[]) => {
-//     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-//     try {
-//         await tenantPrisma.$transaction(async (tx) => {
-
-//             //get sales grand total
-//             var sales = await tx.sales.findUnique({
-//                 where: {
-//                     id: salesId
-//                 }
-//             })
-
-//             if (!sales) {
-//                 throw new NotFoundError("Sales")
-//             }
-
-//             if (sales.status == 'completed') {
-//                 throw new BusinessLogicError("Sales already completed")
-//             }
-
-//             //throw error if payment amount is less than sales total amount
-//             let totalSalesAmount = sales.totalAmount
-//             let totalPaymentAmount = payments.reduce((sum, currentPayment) => sum + currentPayment.tenderedAmount, 0)
-//             if (totalPaymentAmount < totalSalesAmount) {
-//                 throw new BusinessLogicError("Total payment amount is less than the sales grand total amount")
-//             }
-
-//             //update sales properties
-//             var changeAmount = performPaymentCalculation(totalSalesAmount, totalPaymentAmount)
-//             sales.paidAmount = totalPaymentAmount
-//             sales.changeAmount = changeAmount
-//             sales.status = "completed"
-
-//             await tx.sales.update({
-//                 where: {
-//                     id: sales.id
-//                 },
-//                 data: sales
-//             })
-
-//             //insert payments
-//             await tx.payment.createMany({
-//                 data: payments
-//             })
-
-//             //update stock related data
-//             let salesItems = await tx.salesItem.findMany({
-//                 where: {
-//                     salesId: salesId
-//                 }
-//             })
-
-//             // Lazy-load to avoid circular dependency
-//             const { getByIdRaw } = require("../item/item.service")
-
-//             let stocks: StockBalance[] = []
-//             let stockChecks: StockMovement[] = []
-
-//             for (const salesItem of salesItems) {
-//                 var item = await getByIdRaw(salesItem.itemId)
-//                 if (item != null) {
-//                     var stockIndex = stocks.findIndex(stock => stock.id === item!.stockId)
-//                     if (stockIndex < 0) {
-//                         stockIndex = stocks.push(item.stock) - 1
-//                     }
-
-//                     let minusQuantity = salesItem.quantity * -1
-//                     let updatedAvailableQuantity = stocks[stockIndex].availableQuantity + minusQuantity
-//                     let updatedOnHandQuantity = stocks[stockIndex].onHandQuantity + minusQuantity
-//                     stocks[stockIndex].availableQuantity = updatedAvailableQuantity
-//                     stocks[stockIndex].onHandQuantity = updatedOnHandQuantity
-
-//                     let stockCheck: StockMovement = {
-//                         id: 0,
-//                         itemId: salesItem.itemId,
-//                         outletId: sales.outletId,
-//                         previousAvailableQuantity: item.stock.availableQuantity,
-//                         previousOnHandQuantity: item.stock.onHandQuantity,
-//                         availableQuantityDelta: minusQuantity,
-//                         onHandQuantityDelta: minusQuantity,
-//                         documentId: salesId,
-//                         movementType: 'Sales',
-//                         reason: '',
-//                         remark: '',
-//                         deleted: false,
-//                         version: 1,
-//                         performedBy: sales.performedBy,
-//                         createdAt: new Date(),
-//                         updatedAt: new Date(),
-//                     }
-//                     stockChecks.push(stockCheck)
-//                 }
-//             }
-
-//             await tx.stockMovement.createMany({
-//                 data: stockChecks
-//             })
-
-//             for (const stock of stocks) {
-//                 await tx.stockBalance.update({
-//                     where: {
-//                         id: stock.id
-//                     },
-//                     data: stock
-//                 })
-//             }
-//         })
-
-//         return getById(databaseName, salesId)
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
 
 let calculateSales = async (databaseName: string, salesRequestBody: CalculateSalesDto) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -949,40 +1007,6 @@ let calculateSales = async (databaseName: string, salesRequestBody: CalculateSal
         }
         return salesResponse
 
-    }
-    catch (error) {
-        throw error
-    }
-}
-
-// let performProfitCalculation = (sales: CreateSalesRequest) => {
-//     try {
-//         let items = sales.salesItems
-//         var totalProfitAmount = 0.00
-
-//         items.forEach(function (item) {
-//             let itemPrice = item.priceBeforeTax
-//             let itemCost = item.cost
-//             let itemQuantity = item.quantity
-//             var profit = itemPrice - itemCost
-//             var subTotalProfit = itemQuantity * profit
-//             item.profit = profit
-//             totalProfitAmount = totalProfitAmount + subTotalProfit
-//         })
-
-//         sales.profitAmount = totalProfitAmount
-//         return sales
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
-
-let performPaymentCalculation = (salesTotalAmount: Decimal, paidAmount: Decimal) => {
-    try {
-        // Only return a positive change amount if paid amount exceeds total amount
-        var changeAmount = paidAmount.gte(salesTotalAmount) ? paidAmount.minus(salesTotalAmount) : new Decimal(0);
-        return changeAmount;
     }
     catch (error) {
         throw error
@@ -1255,7 +1279,13 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
     }
 }
 
-let addPaymentToPartiallyPaidSales = async (databaseName: string, salesId: number, payments: Payment[]) => {
+let addPaymentToPartiallyPaidSales = async (
+    databaseName: string,
+    tenantId: number,
+    performedBy: { userId: number, username: string },
+    salesId: number,
+    payments: Payment[]
+) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -1313,8 +1343,28 @@ let addPaymentToPartiallyPaidSales = async (databaseName: string, salesId: numbe
                 }
             });
 
-            return updatedSales;
+            return { updatedSales, totalNewPaymentAmount, remainingAmount };
         });
+
+        // Send notification after successful transaction
+        const statusMessage = result.updatedSales.status === 'Completed' ? 'Debt Sales Payment Completed' : 'Payment Added';
+        await sendSalesNotification(
+            tenantId,
+            result.updatedSales.outletId,
+            statusMessage,
+            `Sales #${result.updatedSales.id} - Payment IDR ${result.totalNewPaymentAmount.toFixed(0)}`,
+            {
+                type: result.updatedSales.status === 'Completed' ? 'payment_completed' : 'payment_added',
+                salesId: result.updatedSales.id,
+                paymentAmount: result.totalNewPaymentAmount.toNumber(),
+                remainingAmount: result.remainingAmount.toNumber(),
+                newStatus: result.updatedSales.status,
+                outletId: result.updatedSales.outletId,
+                triggeringUserId: performedBy.userId,
+                triggeringUsername: performedBy.username,
+                timestamp: new Date().toISOString()
+            }
+        );
 
         // Return the complete updated sales record with all relationships
         return getById(databaseName, salesId);
@@ -1324,7 +1374,12 @@ let addPaymentToPartiallyPaidSales = async (databaseName: string, salesId: numbe
     }
 }
 
-let voidSales = async (databaseName: string, salesId: number) => {
+let voidSales = async (
+    databaseName: string,
+    tenantId: number,
+    performedBy: { userId: number, username: string },
+    salesId: number
+) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -1412,6 +1467,26 @@ let voidSales = async (databaseName: string, salesId: number) => {
             );
             return updatedSales;
         });
+
+        // Send notification after successful void
+        await sendSalesNotification(
+            tenantId,
+            result.outletId,
+            'Sale Voided',
+            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)} has been voided`,
+            {
+                type: 'sale_voided',
+                salesId: result.id,
+                amount: result.totalAmount,
+                customerName: result.customerName || 'Walk-in Customer',
+                previousStatus: 'Completed',
+                outletId: result.outletId,
+                triggeringUserId: performedBy.userId,
+                triggeringUsername: performedBy.username,
+                timestamp: new Date().toISOString()
+            }
+        );
+
         return getById(databaseName, salesId);
     }
     catch (error) {
@@ -1419,7 +1494,12 @@ let voidSales = async (databaseName: string, salesId: number) => {
     }
 }
 
-let returnSales = async (databaseName: string, salesId: number) => {
+let returnSales = async (
+    databaseName: string,
+    tenantId: number,
+    performedBy: { userId: number, username: string },
+    salesId: number
+) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -1508,6 +1588,26 @@ let returnSales = async (databaseName: string, salesId: number) => {
             );
             return updatedSales;
         });
+
+        // Send notification after successful return
+        await sendSalesNotification(
+            tenantId,
+            result.outletId,
+            'Sale Returned',
+            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)} has been returned`,
+            {
+                type: 'sale_returned',
+                salesId: result.id,
+                amount: result.totalAmount,
+                customerName: result.customerName || 'Walk-in Customer',
+                previousStatus: 'Completed',
+                outletId: result.outletId,
+                triggeringUserId: performedBy.userId,
+                triggeringUsername: performedBy.username,
+                timestamp: new Date().toISOString()
+            }
+        );
+
         return getById(databaseName, salesId);
     }
     catch (error) {
@@ -1515,7 +1615,12 @@ let returnSales = async (databaseName: string, salesId: number) => {
     }
 }
 
-let refundSales = async (databaseName: string, salesId: number) => {
+let refundSales = async (
+    databaseName: string,
+    tenantId: number,
+    performedBy: { userId: number, username: string },
+    salesId: number
+) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -1603,6 +1708,26 @@ let refundSales = async (databaseName: string, salesId: number) => {
             );
             return updatedSales;
         });
+
+        // Send notification after successful refund
+        await sendSalesNotification(
+            tenantId,
+            result.outletId,
+            'Sale Refunded',
+            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)} has been refunded`,
+            {
+                type: 'sale_refunded',
+                salesId: result.id,
+                amount: result.totalAmount,
+                customerName: result.customerName || 'Walk-in Customer',
+                previousStatus: 'Completed',
+                outletId: result.outletId,
+                triggeringUserId: performedBy.userId,
+                triggeringUsername: performedBy.username,
+                timestamp: new Date().toISOString()
+            }
+        );
+
         return getById(databaseName, salesId);
     }
     catch (error) {

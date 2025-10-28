@@ -17,7 +17,7 @@ model SubscriptionPlan {
   maxTransactions Int?                 @map("MAX_TRANSACTIONS") // New: e.g., 75 for Free
   maxProducts     Int?                 @map("MAX_PRODUCTS") // New: e.g., 20 for Free
   maxUsers        Int?                 @map("MAX_USERS") // New: e.g., 2 for Basic
-  maxDevices      Int?                 @default(3) @map("MAX_DEVICES") // for push notifications devices
+  maxDevices      Int?                 @default(0) @map("MAX_DEVICES") // for push notifications devices
   description     String?              @map("DESCRIPTION")
   subscription    TenantSubscription[]
 
@@ -190,7 +190,7 @@ model SettingDefinition {
   description     String?   @map("DESCRIPTION")
   scope           String    @map("SCOPE") // "TENANT", "OUTLET", "USER"
   isRequired      Boolean   @default(false) @map("IS_REQUIRED")
-  validationRules String?   @db.Text @map("VALIDATION_RULES") // JSON: {min, max, options, pattern}
+  validationRules String?   @map("VALIDATION_RULES") @db.Text // JSON: {min, max, options, pattern}
   createdAt       DateTime  @default(now()) @map("CREATED_AT")
   updatedAt       DateTime  @updatedAt @map("UPDATED_AT")
   deleted         Boolean   @default(false) @map("IS_DELETED")

@@ -1,5 +1,8 @@
 import Pushy from 'pushy';
 import PlanCheckService from './plan-check.service';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const PUSHY_API_KEY = process.env.PUSHY_SECRET_API_KEY;
 

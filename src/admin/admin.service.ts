@@ -10,6 +10,49 @@ const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('
 
 const prisma: PrismaClient = getGlobalPrisma()
 
+/**
+ * Helper function to get primary subscription for a tenant
+ * Returns first active subscription and all active outlets
+ */
+const getPrimarySubscription = async (tenantId: number, tx: any = prisma) => {
+    const tenantOutlets = await tx.tenantOutlet.findMany({
+        where: {
+            tenantId,
+            isActive: true
+        },
+        include: {
+            subscriptions: {
+                where: {
+                    status: { in: ['Active', 'active', 'trial'] }
+                },
+                include: {
+                    subscriptionPlan: true,
+                    subscriptionAddOn: true
+                }
+            }
+        }
+    });
+
+    if (!tenantOutlets || tenantOutlets.length === 0) {
+        throw new NotFoundError('No active outlets found for tenant');
+    }
+
+    // Find first subscription
+    let primarySubscription = null;
+    for (const outlet of tenantOutlets) {
+        if (outlet.subscriptions.length > 0) {
+            primarySubscription = outlet.subscriptions[0];
+            break;
+        }
+    }
+
+    if (!primarySubscription) {
+        throw new NotFoundError('No active subscription found for tenant');
+    }
+
+    return { primarySubscription, tenantOutlets };
+}
+
 let createTenant = async (body: CreateTenantRequest) => {
     let createdTenantId: number | null = null;
     let tenantDatabaseName: string | null = null;
@@ -354,8 +397,6 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
     } catch (error) {
         console.error('Error calculating tenant cost:', error);
         throw error;
-    } finally {
-        await prisma.$disconnect();
     }
 };
 
@@ -505,8 +546,6 @@ const getAllTenantCost = async () => {
     } catch (error) {
         console.error('Error calculating total cost:', error);
         throw error;
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -578,44 +617,20 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
         // --- Begin: Subscription add-on logic for user overage ---
         // HYBRID MODEL: User limits are calculated as sum of all outlet subscriptions
         // This matches the device limit logic - each outlet contributes to the total pool
-        // Get all active outlets for this tenant with their subscriptions
-        const tenantOutlets = await prisma.tenantOutlet.findMany({
-            where: {
-                tenantId,
-                isActive: true
-            },
-            include: {
-                subscriptions: {
-                    where: {
-                        status: {
-                            in: ['Active', 'active', 'trial']
-                        }
-                    },
-                    include: {
-                        subscriptionPlan: true
-                    }
-                }
-            }
-        });
+        const { primarySubscription, tenantOutlets } = await getPrimarySubscription(tenantId);
 
         // Calculate total user limit across all outlet subscriptions
         let totalMaxUsers = 0;
-        let primarySubscription = null;
-
         for (const outlet of tenantOutlets) {
             for (const subscription of outlet.subscriptions) {
                 const maxUsers = subscription.subscriptionPlan?.maxUsers;
                 if (maxUsers !== null && maxUsers !== undefined) {
                     totalMaxUsers += maxUsers;
-                    // Keep track of first subscription for add-on attachment
-                    if (!primarySubscription) {
-                        primarySubscription = subscription;
-                    }
                 }
             }
         }
 
-        if (primarySubscription && totalMaxUsers > 0) {
+        if (totalMaxUsers > 0) {
             // Count current active (non-deleted) users in global DB
             const currentUserCount = await prisma.tenantUser.count({
                 where: { tenantId, isDeleted: false },
@@ -688,49 +703,179 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
     }
 }
 
+// Delete tenant user and automatically adjust user add-on
+const deleteTenantUser = async (tenantId: number, userId: number) => {
+    // Find tenant and ensure tenant DB is available
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true, databaseName: true },
+    });
+    if (!tenant) {
+        throw new NotFoundError('Tenant not found');
+    }
+    if (!tenant.databaseName) {
+        throw new NotFoundError('Tenant database not initialized');
+    }
+
+    // Find the user to delete in global DB
+    const userToDelete = await prisma.tenantUser.findUnique({
+        where: { id: userId },
+    });
+    if (!userToDelete) {
+        throw new NotFoundError('User not found');
+    }
+    if (userToDelete.tenantId !== tenantId) {
+        throw new RequestValidateError('User does not belong to this tenant');
+    }
+    if (userToDelete.isDeleted) {
+        throw new RequestValidateError('User is already deleted');
+    }
+
+    // Prevent deleting the owner
+    if (userToDelete.role === 'Owner') {
+        throw new RequestValidateError('Cannot delete the tenant owner');
+    }
+
+    let tenantDbUserId: number | null = null;
+
+    try {
+        const tenantPrisma = getTenantPrisma(tenant.databaseName);
+
+        // Find user in tenant DB
+        const tenantUser = await tenantPrisma.user.findUnique({
+            where: { username: userToDelete.username },
+        });
+
+        if (tenantUser) {
+            tenantDbUserId = tenantUser.id;
+        }
+
+        // Step 1: Soft delete in global DB
+        await prisma.tenantUser.update({
+            where: { id: userId },
+            data: { isDeleted: true }
+        });
+
+        // Step 2: Soft delete in tenant DB (if exists)
+        if (tenantDbUserId) {
+            await tenantPrisma.user.update({
+                where: { id: tenantDbUserId },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date()
+                }
+            });
+        }
+
+        // Step 3: Recalculate user add-on (similar to createTenantUser logic)
+        const { primarySubscription, tenantOutlets } = await getPrimarySubscription(tenantId);
+
+        // Calculate total user limit across all outlet subscriptions
+        let totalMaxUsers = 0;
+        for (const outlet of tenantOutlets) {
+            for (const subscription of outlet.subscriptions) {
+                const maxUsers = subscription.subscriptionPlan?.maxUsers;
+                if (maxUsers !== null && maxUsers !== undefined) {
+                    totalMaxUsers += maxUsers;
+                }
+            }
+        }
+
+        if (totalMaxUsers > 0) {
+            // Count current active (non-deleted) users in global DB
+            const currentUserCount = await prisma.tenantUser.count({
+                where: { tenantId, isDeleted: false },
+            });
+
+            // Calculate new overage
+            const overage = Math.max(0, currentUserCount - totalMaxUsers);
+
+            const addOnId = 1; // Add-on for extra user
+
+            // Get existing add-on
+            const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
+                where: {
+                    tenantSubscriptionId_addOnId: {
+                        tenantSubscriptionId: primarySubscription.id,
+                        addOnId,
+                    }
+                }
+            });
+
+            if (overage === 0) {
+                // No overage, remove add-on if it exists
+                if (existingAddOn) {
+                    await prisma.tenantSubscriptionAddOn.delete({
+                        where: {
+                            tenantSubscriptionId_addOnId: {
+                                tenantSubscriptionId: primarySubscription.id,
+                                addOnId,
+                            }
+                        }
+                    });
+                }
+            } else {
+                // Still have overage, update quantity
+                if (existingAddOn && existingAddOn.quantity > overage) {
+                    await prisma.tenantSubscriptionAddOn.update({
+                        where: {
+                            tenantSubscriptionId_addOnId: {
+                                tenantSubscriptionId: primarySubscription.id,
+                                addOnId,
+                            }
+                        },
+                        data: { quantity: overage }
+                    });
+                }
+            }
+        }
+
+        await tenantPrisma.$disconnect();
+
+        return {
+            success: true,
+            message: 'User deleted successfully',
+            tenantId,
+            deletedUserId: userId,
+            username: userToDelete.username,
+        };
+    } catch (err) {
+        // Best-effort rollback
+        try {
+            // Reactivate in global DB if soft delete succeeded
+            await prisma.tenantUser.update({
+                where: { id: userId },
+                data: { isDeleted: false }
+            }).catch(() => { /* swallow */ });
+
+            // Reactivate in tenant DB if soft delete succeeded
+            if (tenantDbUserId && tenant.databaseName) {
+                const tenantPrisma = getTenantPrisma(tenant.databaseName);
+                try {
+                    await tenantPrisma.user.update({
+                        where: { id: tenantDbUserId },
+                        data: {
+                            deleted: false,
+                            deletedAt: null
+                        }
+                    });
+                } finally {
+                    await tenantPrisma.$disconnect();
+                }
+            }
+        } catch (_) { /* swallow */ }
+
+        throw err;
+    }
+}
+
 // Add device quota for a tenant (called by provider/owner)
 const addDeviceQuotaForTenant = async (tenantId: number, quantity: number) => {
     if (!quantity || quantity <= 0) {
         throw new RequestValidateError('Quantity must be a positive number');
     }
 
-    // Get all active outlets for this tenant with their subscriptions
-    const tenantOutlets = await prisma.tenantOutlet.findMany({
-        where: {
-            tenantId,
-            isActive: true
-        },
-        include: {
-            subscriptions: {
-                where: {
-                    status: {
-                        in: ['Active', 'active', 'trial']
-                    }
-                },
-                include: {
-                    subscriptionPlan: true
-                }
-            }
-        }
-    });
-
-    if (!tenantOutlets || tenantOutlets.length === 0) {
-        throw new NotFoundError('No active outlets found for tenant');
-    }
-
-    // Get primary subscription (first active subscription)
-    let primarySubscription = null;
-    for (const outlet of tenantOutlets) {
-        if (outlet.subscriptions.length > 0) {
-            primarySubscription = outlet.subscriptions[0];
-            break;
-        }
-    }
-
-    if (!primarySubscription) {
-        throw new NotFoundError('No active subscription found for tenant');
-    }
-
+    const { primarySubscription } = await getPrimarySubscription(tenantId);
     const addOnId = 2; // Push Notification Device add-on
 
     // Check existing add-on
@@ -795,49 +940,14 @@ const reduceDeviceQuotaForTenant = async (tenantId: number, quantityToReduce: nu
 
     const deviceLimitService = require('../pushy/device.service');
 
-    // Step 1: Get all active outlets for this tenant with their subscriptions
-    const tenantOutlets = await prisma.tenantOutlet.findMany({
-        where: {
-            tenantId,
-            isActive: true
-        },
-        include: {
-            subscriptions: {
-                where: {
-                    status: {
-                        in: ['Active', 'active', 'trial']
-                    }
-                },
-                include: {
-                    subscriptionPlan: true,
-                    subscriptionAddOn: true
-                }
-            }
-        }
-    });
+    // Step 1: Get primary subscription with add-ons
+    const { primarySubscription } = await getPrimarySubscription(tenantId);
 
-    if (!tenantOutlets || tenantOutlets.length === 0) {
-        throw new NotFoundError('No active outlets found for tenant');
-    }
-
-    // Step 2: Find the add-on to reduce
-    let primarySubscription = null;
-    let deviceAddOn = null;
+    // Step 2: Find the device add-on to reduce
     const addOnId = 2; // Push Notification Device add-on
-
-    for (const outlet of tenantOutlets) {
-        if (outlet.subscriptions.length > 0) {
-            primarySubscription = outlet.subscriptions[0];
-            deviceAddOn = primarySubscription.subscriptionAddOn.find(
-                addon => addon.addOnId === addOnId
-            );
-            if (deviceAddOn) break;
-        }
-    }
-
-    if (!primarySubscription) {
-        throw new NotFoundError('No active subscription found for tenant');
-    }
+    const deviceAddOn = primarySubscription.subscriptionAddOn.find(
+        (addon: any) => addon.addOnId === addOnId
+    );
 
     if (!deviceAddOn) {
         throw new NotFoundError('No device add-on found to reduce');
@@ -1058,65 +1168,91 @@ let createWarehouseForTenant = async (
         return await prisma.$transaction(async (globalTx) => {
             return await tenantPrisma.$transaction(async (tenantTx: any) => {
 
-                // Step 1: Create TenantWarehouse in global DB
+                // Step 1: Generate warehouse code and check for existing soft-deleted warehouse
                 const warehouseCode = data.warehouseName.toUpperCase().replace(/\s+/g, '_');
-                const globalWarehouse = await globalTx.tenantWarehouse.create({
-                    data: {
-                        tenantId,
-                        warehouseName: data.warehouseName,
-                        warehouseCode,
-                        address: `${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || null,
-                        isActive: true,
-                    }
-                });
-
-                // Step 2: Create operational warehouse in tenant DB
-                const warehouse = await tenantTx.warehouse.create({
-                    data: {
-                        tenantWarehouseId: globalWarehouse.id,
-                        warehouseName: data.warehouseName,
-                        warehouseCode: globalWarehouse.warehouseCode,
-                        street: data.street || '',
-                        city: data.city || '',
-                        state: data.state || '',
-                        postalCode: data.postalCode || '',
-                        country: data.country || '',
-                        contactPhone: data.contactPhone,
-                        contactEmail: data.contactEmail,
-                    }
-                });
-
-                // Step 3: Handle warehouse add-on billing (matches user/device pattern)
-                // Get all active outlets for this tenant with their subscriptions
-                const tenantOutlets = await globalTx.tenantOutlet.findMany({
+                const existingWarehouse = await globalTx.tenantWarehouse.findFirst({
                     where: {
                         tenantId,
-                        isActive: true
-                    },
-                    include: {
-                        subscriptions: {
-                            where: {
-                                status: { in: ['Active', 'active', 'trial'] }
-                            },
-                            include: {
-                                subscriptionPlan: true
-                            }
-                        }
+                        warehouseCode,
+                        deleted: true
                     }
                 });
 
-                // Get primary subscription (attach warehouse add-on here)
-                let primarySubscription = null;
-                for (const outlet of tenantOutlets) {
-                    if (outlet.subscriptions.length > 0) {
-                        primarySubscription = outlet.subscriptions[0];
-                        break;
-                    }
+                let globalWarehouse;
+                let warehouse;
+                let wasReactivated = false;
+
+                if (existingWarehouse) {
+                    // REACTIVATE: Existing soft-deleted warehouse found
+                    globalWarehouse = await globalTx.tenantWarehouse.update({
+                        where: { id: existingWarehouse.id },
+                        data: {
+                            warehouseName: data.warehouseName, // Update name in case it changed
+                            address: `${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || null,
+                            isActive: true,
+                            deleted: false,
+                            deletedAt: null
+                        }
+                    });
+
+                    // Reactivate and update in tenant DB
+                    await tenantTx.warehouse.updateMany({
+                        where: {
+                            tenantWarehouseId: existingWarehouse.id,
+                            deleted: true
+                        },
+                        data: {
+                            warehouseName: data.warehouseName,
+                            street: data.street || '',
+                            city: data.city || '',
+                            state: data.state || '',
+                            postalCode: data.postalCode || '',
+                            country: data.country || '',
+                            contactPhone: data.contactPhone,
+                            contactEmail: data.contactEmail,
+                            deleted: false,
+                            deletedAt: null
+                        }
+                    });
+
+                    // Get the reactivated warehouse
+                    warehouse = await tenantTx.warehouse.findFirst({
+                        where: { tenantWarehouseId: existingWarehouse.id }
+                    });
+
+                    wasReactivated = true;
+                } else {
+                    // CREATE: No existing warehouse - create new one
+                    globalWarehouse = await globalTx.tenantWarehouse.create({
+                        data: {
+                            tenantId,
+                            warehouseName: data.warehouseName,
+                            warehouseCode,
+                            address: `${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || null,
+                            isActive: true,
+                        }
+                    });
+
+                    // Create operational warehouse in tenant DB
+                    warehouse = await tenantTx.warehouse.create({
+                        data: {
+                            tenantWarehouseId: globalWarehouse.id,
+                            warehouseName: data.warehouseName,
+                            warehouseCode: globalWarehouse.warehouseCode,
+                            street: data.street || '',
+                            city: data.city || '',
+                            state: data.state || '',
+                            postalCode: data.postalCode || '',
+                            country: data.country || '',
+                            contactPhone: data.contactPhone,
+                            contactEmail: data.contactEmail,
+                        }
+                    });
                 }
 
-                if (!primarySubscription) {
-                    throw new Error('No active subscription found for tenant');
-                }
+                // Step 3: Handle warehouse add-on billing (matches user/device pattern)
+                // Get primary subscription using helper (pass transaction context)
+                const { primarySubscription } = await getPrimarySubscription(tenantId, globalTx);
 
                 // Count total active warehouses (including this new one)
                 const totalWarehouses = await globalTx.tenantWarehouse.count({
@@ -1174,6 +1310,7 @@ let createWarehouseForTenant = async (
                 return {
                     globalWarehouse,
                     warehouse,
+                    wasReactivated,
                     isFreeWarehouse,
                     billableWarehouses,
                     totalWarehouses,
@@ -1256,36 +1393,8 @@ let deleteWarehouseForTenant = async (
                 });
 
                 // Step 5: Update warehouse add-on quantity
-                // Get all active outlets for this tenant with their subscriptions
-                const tenantOutlets = await globalTx.tenantOutlet.findMany({
-                    where: {
-                        tenantId,
-                        isActive: true
-                    },
-                    include: {
-                        subscriptions: {
-                            where: {
-                                status: { in: ['Active', 'active', 'trial'] }
-                            },
-                            include: {
-                                subscriptionPlan: true
-                            }
-                        }
-                    }
-                });
-
-                // Get primary subscription
-                let primarySubscription = null;
-                for (const outlet of tenantOutlets) {
-                    if (outlet.subscriptions.length > 0) {
-                        primarySubscription = outlet.subscriptions[0];
-                        break;
-                    }
-                }
-
-                if (!primarySubscription) {
-                    throw new Error('No active subscription found for tenant');
-                }
+                // Get primary subscription using helper (pass transaction context)
+                const { primarySubscription } = await getPrimarySubscription(tenantId, globalTx);
 
                 // Recalculate total active warehouses (excluding the one we just deleted)
                 const totalWarehouses = await globalTx.tenantWarehouse.count({
@@ -1390,62 +1499,219 @@ let getTenantWarehouses = async (tenantId: number) => {
 };
 
 /**
- * Upgrade tenant plan (POS Owner only)
- * Automatically invalidates tokens and clears plan cache
+ * Helper function to handle downgrade to Basic plan
+ * Deactivates warehouses and removes add-ons
  */
-const upgradeTenantPlan = async (tenantId: number, newPlanName: string) => {
+const handleDowngradeToBasic = async (
+    tenantId: number,
+    primarySubscription: any,
+    globalTx: any,
+    tenantPrisma: any
+) => {
+    const warehouseAddOnId = 3; // "Extra Warehouse" add-on
+    const deviceAddOnId = 2; // "Push Notification Device" add-on
+
+    // Step 1: Count warehouses before deactivation
+    const warehouseCount = await globalTx.tenantWarehouse.count({
+        where: {
+            tenantId,
+            isActive: true,
+            deleted: false
+        }
+    });
+
+    // Step 2: Deactivate all warehouses in GLOBAL DB
+    await globalTx.tenantWarehouse.updateMany({
+        where: {
+            tenantId,
+            isActive: true,
+            deleted: false
+        },
+        data: {
+            isActive: false,
+            deleted: true,
+            deletedAt: new Date()
+        }
+    });
+
+    // Step 3: Deactivate all warehouses in TENANT DB
+    await tenantPrisma.warehouse.updateMany({
+        where: {
+            deleted: false
+        },
+        data: {
+            deleted: true,
+            deletedAt: new Date()
+        }
+    });
+
+    // Step 4: Remove warehouse add-on (ID 3)
+    const warehouseAddOnDeleted = await globalTx.tenantSubscriptionAddOn.deleteMany({
+        where: {
+            tenantSubscriptionId: primarySubscription.id,
+            addOnId: warehouseAddOnId
+        }
+    });
+
+    // Step 5: Remove ALL device add-ons (ID 2) - Basic plan has 0 device support
+    const deviceAddOnDeleted = await globalTx.tenantSubscriptionAddOn.deleteMany({
+        where: {
+            tenantSubscriptionId: primarySubscription.id,
+            addOnId: deviceAddOnId
+        }
+    });
+
+    return {
+        warehousesDeactivated: warehouseCount,
+        warehouseAddOnRemoved: warehouseAddOnDeleted.count > 0,
+        deviceAddOnRemoved: deviceAddOnDeleted.count > 0,
+        deviceAddOnCount: deviceAddOnDeleted.count
+    };
+};
+
+/**
+ * Change tenant plan (upgrade or downgrade)
+ * Automatically invalidates tokens and clears plan cache
+ * Handles downgrade logic: deactivates warehouses and removes add-ons
+ */
+const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
+    let tenantPrisma: TenantPrismaClient | null = null;
+
     try {
-        // Step 1: Validate new plan exists
-        const newPlan = await prisma.subscriptionPlan.findFirst({
-            where: { planName: newPlanName }
-        });
+        // Step 1: Validate new plan exists and get tenant info in parallel
+        const [newPlan, tenant] = await Promise.all([
+            prisma.subscriptionPlan.findFirst({
+                where: { planName: newPlanName }
+            }),
+            prisma.tenant.findUnique({
+                where: { id: tenantId },
+                select: { databaseName: true }
+            })
+        ]);
 
         if (!newPlan) {
             throw new NotFoundError(`Plan "${newPlanName}" not found`);
         }
 
-        // Step 2: Get all active outlets for this tenant
-        const tenantOutlets = await prisma.tenantOutlet.findMany({
-            where: {
-                tenantId,
-                isActive: true
-            },
-            include: {
-                subscriptions: {
-                    where: {
-                        status: { in: ['Active', 'active', 'trial'] }
-                    },
-                    include: {
-                        subscriptionPlan: true
-                    }
-                }
-            }
-        });
-
-        if (!tenantOutlets || tenantOutlets.length === 0) {
-            throw new NotFoundError('No active outlets found for tenant');
+        if (!tenant || !tenant.databaseName) {
+            throw new NotFoundError('Tenant database not found');
         }
 
-        // Step 3: Get current plan (from first subscription)
-        let currentSubscription = null;
-        let currentPlanName = null;
-        for (const outlet of tenantOutlets) {
-            if (outlet.subscriptions.length > 0) {
-                currentSubscription = outlet.subscriptions[0];
-                currentPlanName = currentSubscription.subscriptionPlan.planName;
-                break;
-            }
-        }
-
-        if (!currentSubscription) {
-            throw new NotFoundError('No active subscription found for tenant');
-        }
+        // Step 2: Get primary subscription and current plan
+        const { primarySubscription: currentSubscription, tenantOutlets } = await getPrimarySubscription(tenantId);
+        const currentPlanName = currentSubscription.subscriptionPlan.planName;
 
         if (currentPlanName === newPlanName) {
             throw new RequestValidateError(`Tenant is already on "${newPlanName}" plan`);
         }
 
-        // Step 4: Update all outlet subscriptions to new plan
+        // Step 3: Initialize tenant database connection
+        tenantPrisma = getTenantPrisma(tenant.databaseName);
+
+        // Step 4: Determine plan change direction
+        const isDowngradingToBasic = (
+            currentPlanName === 'Pro' && newPlanName === 'Basic'
+        );
+        const isUpgradingToPro = (
+            currentPlanName === 'Basic' && newPlanName === 'Pro'
+        );
+
+        let downgradeResult = null;
+        let upgradeResult = null;
+
+        // Step 5: Handle downgrade logic in transaction
+        if (isDowngradingToBasic) {
+            downgradeResult = await prisma.$transaction(async (globalTx) => {
+                return await handleDowngradeToBasic(
+                    tenantId,
+                    currentSubscription,
+                    globalTx,
+                    tenantPrisma!
+                );
+            });
+        }
+
+        // Step 5b: Handle upgrade to Pro - create or reactivate default warehouse
+        if (isUpgradingToPro) {
+            upgradeResult = await prisma.$transaction(async (globalTx) => {
+                return await tenantPrisma!.$transaction(async (tenantTx: any) => {
+                    // Check if soft-deleted Main Warehouse exists
+                    const existingWarehouse = await globalTx.tenantWarehouse.findFirst({
+                        where: {
+                            tenantId,
+                            warehouseCode: 'MAIN_WAREHOUSE',
+                            deleted: true
+                        }
+                    });
+
+                    if (existingWarehouse) {
+                        // REACTIVATE: Existing warehouse found - reactivate it
+                        const reactivatedGlobalWarehouse = await globalTx.tenantWarehouse.update({
+                            where: { id: existingWarehouse.id },
+                            data: {
+                                isActive: true,
+                                deleted: false,
+                                deletedAt: null
+                            }
+                        });
+
+                        // Reactivate in tenant DB
+                        await tenantTx.warehouse.updateMany({
+                            where: {
+                                tenantWarehouseId: existingWarehouse.id,
+                                deleted: true
+                            },
+                            data: {
+                                deleted: false,
+                                deletedAt: null
+                            }
+                        });
+
+                        // Get the reactivated tenant warehouse details
+                        const tenantWarehouse = await tenantTx.warehouse.findFirst({
+                            where: { tenantWarehouseId: existingWarehouse.id }
+                        });
+
+                        return {
+                            warehouseReactivated: true,
+                            warehouseCreated: false,
+                            warehouseId: tenantWarehouse?.id,
+                            warehouseName: reactivatedGlobalWarehouse.warehouseName,
+                            globalWarehouseId: reactivatedGlobalWarehouse.id
+                        };
+                    } else {
+                        // CREATE: No existing warehouse - create new one
+                        const globalWarehouse = await globalTx.tenantWarehouse.create({
+                            data: {
+                                tenantId,
+                                warehouseName: "Main Warehouse",
+                                warehouseCode: "MAIN_WAREHOUSE",
+                                isActive: true,
+                            }
+                        });
+
+                        // Create warehouse in tenant DB
+                        const tenantWarehouse = await tenantTx.warehouse.create({
+                            data: {
+                                tenantWarehouseId: globalWarehouse.id,
+                                warehouseName: "Main Warehouse",
+                                warehouseCode: "MAIN_WAREHOUSE",
+                            }
+                        });
+
+                        return {
+                            warehouseReactivated: false,
+                            warehouseCreated: true,
+                            warehouseId: tenantWarehouse.id,
+                            warehouseName: tenantWarehouse.warehouseName,
+                            globalWarehouseId: globalWarehouse.id
+                        };
+                    }
+                });
+            });
+        }
+
+        // Step 6: Update all outlet subscriptions to new plan
         const updatedSubscriptions = [];
         for (const outlet of tenantOutlets) {
             for (const subscription of outlet.subscriptions) {
@@ -1462,29 +1728,52 @@ const upgradeTenantPlan = async (tenantId: number, newPlanName: string) => {
             }
         }
 
-        // Step 5: Invalidate tokens and clear cache
+        // Step 7: Invalidate tokens and clear cache
         const TokenInvalidationService = require('../pushy/token-invalidation.service').default;
         await TokenInvalidationService.onPlanChange(tenantId, currentPlanName, newPlanName);
 
+        // Construct response message
+        let message = '';
+        if (isDowngradingToBasic) {
+            message = `Successfully downgraded from "${currentPlanName}" to "${newPlanName}". All warehouses and push notification devices have been deactivated.`;
+        } else if (isUpgradingToPro) {
+            // Check if warehouse was reactivated or created
+            if (upgradeResult?.warehouseReactivated) {
+                message = `Successfully upgraded from "${currentPlanName}" to "${newPlanName}". Main warehouse has been reactivated.`;
+            } else {
+                message = `Successfully upgraded from "${currentPlanName}" to "${newPlanName}". Main warehouse has been created.`;
+            }
+        } else {
+            message = `Successfully changed from "${currentPlanName}" to "${newPlanName}"`;
+        }
+
         return {
             success: true,
-            message: `Successfully upgraded from "${currentPlanName}" to "${newPlanName}"`,
+            message,
             tenantId,
             previousPlan: currentPlanName,
             newPlan: newPlanName,
             updatedSubscriptions: updatedSubscriptions.length,
             tokensInvalidated: true,
-            cacheCleared: true
+            cacheCleared: true,
+            downgradeDetails: downgradeResult, // null for upgrades
+            upgradeDetails: upgradeResult // null for downgrades
         };
     } catch (error) {
-        console.error('Error upgrading tenant plan:', error);
+        console.error('Error changing tenant plan:', error);
         throw error;
+    } finally {
+        // Ensure tenant DB connection is closed
+        if (tenantPrisma) {
+            await tenantPrisma.$disconnect();
+        }
     }
 };
 
 export = {
     createTenant,
     createTenantUser,
+    deleteTenantUser,
     getTenantCost,
     getAllTenantCost,
     addDeviceQuotaForTenant,
@@ -1493,5 +1782,5 @@ export = {
     createWarehouseForTenant,
     deleteWarehouseForTenant,
     getTenantWarehouses,
-    upgradeTenantPlan
+    changeTenantPlan
 }

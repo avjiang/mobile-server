@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `subscription_plan` MODIFY `MAX_DEVICES` INTEGER NULL DEFAULT 0;

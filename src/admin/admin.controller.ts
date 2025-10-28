@@ -74,6 +74,27 @@ let createTenantUser = (req: NetworkRequest<{ username: string; password: string
         .catch(next);
 }
 
+// Delete tenant user and automatically adjust user add-on
+let deleteTenantUser = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('Tenant ID format incorrect');
+    }
+    if (!validator.isNumeric(req.params.userId)) {
+        throw new RequestValidateError('User ID format incorrect');
+    }
+    const tenantId: number = parseInt(req.params.tenantId);
+    const userId: number = parseInt(req.params.userId);
+
+    service.deleteTenantUser(tenantId, userId)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+}
+
 // Provider/Owner: Add device quota for tenant
 let addDeviceQuotaForTenant = (req: NetworkRequest<{ quantity: number }>, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -167,14 +188,24 @@ let createWarehouse = (req: AuthRequest, res: Response, next: NextFunction) => {
         contactEmail
     })
         .then((response: any) => {
-            const message = response.billableWarehouses === 0
-                ? 'First warehouse created successfully (FREE)'
-                : `Warehouse created. Additional charge: ${response.monthlyCost} IDR/month`;
+            let message;
+            if (response.wasReactivated) {
+                // Warehouse was reactivated from soft-deleted state
+                message = response.billableWarehouses === 0
+                    ? 'Warehouse reactivated successfully (FREE)'
+                    : `Warehouse reactivated. Additional charge: ${response.monthlyCost} IDR/month`;
+            } else {
+                // Warehouse was created fresh
+                message = response.billableWarehouses === 0
+                    ? 'First warehouse created successfully (FREE)'
+                    : `Warehouse created. Additional charge: ${response.monthlyCost} IDR/month`;
+            }
 
             sendResponse(res, {
                 success: true,
                 message,
                 warehouse: response.warehouse,
+                wasReactivated: response.wasReactivated,
                 billing: {
                     totalWarehouses: response.totalWarehouses,
                     billableWarehouses: response.billableWarehouses,
@@ -236,10 +267,11 @@ let getTenantWarehouses = (req: AuthRequest, res: Response, next: NextFunction) 
 };
 
 /**
- * PUT /tenants/:tenantId/upgradePlan
- * Upgrade tenant plan (POS Owner only)
+ * PUT /tenants/:tenantId/changePlan
+ * Change tenant plan - supports both upgrade and downgrade (POS Owner only)
+ * When downgrading to Basic: deactivates all warehouses and push notification devices
  */
-let upgradeTenantPlan = (req: NetworkRequest<{ planName: string }>, res: Response, next: NextFunction) => {
+let changeTenantPlan = (req: NetworkRequest<{ planName: string }>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
@@ -254,7 +286,7 @@ let upgradeTenantPlan = (req: NetworkRequest<{ planName: string }>, res: Respons
     const tenantId: number = parseInt(req.params.tenantId);
     const { planName } = req.body;
 
-    service.upgradeTenantPlan(tenantId, planName)
+    service.changeTenantPlan(tenantId, planName)
         .then((response: any) => {
             sendResponse(res, response);
         })
@@ -267,13 +299,14 @@ router.get('/getAllTenantSubscription', getAllTenantSubscription)
 router.get('/tenantDevices/:tenantId', getTenantDevices)
 router.post('/signup', createTenant)
 router.post('/createTenantUser/:tenantId', createTenantUser)
+router.delete('/tenants/:tenantId/users/:userId', deleteTenantUser)
 
 // device quota routes
 router.post('/addDeviceQuota/:tenantId', addDeviceQuotaForTenant)
 router.post('/reduceDeviceQuota/:tenantId', reduceDeviceQuotaForTenant)
 
 // subscription plan routes
-router.put('/tenants/:tenantId/upgradePlan', upgradeTenantPlan)
+router.put('/tenants/:tenantId/changePlan', changeTenantPlan)
 
 // warehouse routes
 router.post('/tenants/:tenantId/warehouses', createWarehouse)

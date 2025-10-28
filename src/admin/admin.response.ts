@@ -3,6 +3,11 @@ import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, TenantSubscription 
 
 type TenantUserWithoutPassword = Omit<TenantUser, 'password'>;
 
+// Response type with renamed keys
+type TenantUserResponse = Omit<TenantUser, 'password' | 'tenantId'> & {
+    globalTenantId: number;
+};
+
 export class TenantDto {
     @Expose()
     id = 0;
@@ -20,17 +25,50 @@ export class TenantDto {
 export class GetAllTenantDto { }
 
 export class TenantCreationDto {
-    tenant: TenantDto;
-    tenantUser: TenantUserWithoutPassword;
-
     @Expose()
     @Transform(({ obj }) => ({ planName: obj.subscriptionPlan.planName }))
     subscription: { planName: string };
 
-    constructor(tenant: TenantDto, tenantUser: TenantUserWithoutPassword, subscription: TenantSubscription & { subscriptionPlan: SubscriptionPlan }) {
-        this.tenant = tenant;
-        this.tenantUser = tenantUser;
+    tenant: TenantDto;
+    tenantUser: TenantUserResponse;
+
+    warehouse?: {
+        id: number;
+        warehouseName: string;
+        warehouseCode: string;
+        globalWarehouseId: number;
+    };
+
+    constructor(
+        tenant: TenantDto,
+        tenantUser: TenantUserWithoutPassword,
+        subscription: TenantSubscription & { subscriptionPlan: SubscriptionPlan },
+        warehouse?: {
+            id: number;
+            warehouseName: string;
+            warehouseCode: string;
+            tenantWarehouseId: number;
+        }
+    ) {
         this.subscription = { planName: subscription.subscriptionPlan.planName };
+        this.tenant = tenant;
+
+        // Transform tenantId to globalTenantId
+        const { tenantId, ...userWithoutTenantId } = tenantUser;
+        this.tenantUser = {
+            ...userWithoutTenantId,
+            globalTenantId: tenantId,
+        };
+
+        // Transform tenantWarehouseId to globalWarehouseId
+        if (warehouse) {
+            this.warehouse = {
+                id: warehouse.id,
+                warehouseName: warehouse.warehouseName,
+                warehouseCode: warehouse.warehouseCode,
+                globalWarehouseId: warehouse.tenantWarehouseId,
+            };
+        }
     }
 }
 

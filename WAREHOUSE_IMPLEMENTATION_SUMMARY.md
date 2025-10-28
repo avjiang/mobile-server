@@ -47,6 +47,7 @@ Successfully implemented warehouse management system with POS owner-managed work
   - `createWarehouseForTenant()` - Create with automatic billing
   - `deleteWarehouseForTenant()` - Delete with billing update
   - `getTenantWarehouses()` - List all warehouses for tenant
+  - **Updated `createTenant()`** - Automatic warehouse creation for Pro plan
 - ✅ `admin.controller.ts` - Added 3 endpoints (115 lines)
   - `POST /admin/tenants/:tenantId/warehouses`
   - `DELETE /admin/tenants/:tenantId/warehouses/:id`
@@ -129,6 +130,71 @@ const monthlyCost = billableWarehouses * 100_000;
 
 ---
 
+## 🚀 Automatic Warehouse Creation
+
+### Pro Plan Users
+When a new tenant is created with a **Pro** plan, a default warehouse is automatically created:
+
+**Global Database:**
+- Creates `TenantWarehouse` record:
+  - `warehouseName`: "Main Warehouse"
+  - `warehouseCode`: "MAIN_WAREHOUSE"
+  - `isActive`: true
+
+**Tenant Database:**
+- Creates `Warehouse` record linked to global warehouse
+- Ready to use immediately after tenant creation
+
+**API Response:**
+- Includes warehouse information in `TenantCreationDto`:
+  ```json
+  {
+    "subscription": {
+      "planName": "Pro"
+    },
+    "tenant": {
+      "id": 1,
+      "tenantName": "My Store",
+      "databaseName": "my_store_db",
+      "createdAt": "2025-01-27T..."
+    },
+    "tenantUser": {
+      "id": 1,
+      "globalTenantId": 1,
+      "username": "my_store",
+      "role": "Owner",
+      "createdAt": "2025-01-27T...",
+      "updatedAt": "2025-01-27T..."
+    },
+    "warehouse": {
+      "id": 1,
+      "warehouseName": "Main Warehouse",
+      "warehouseCode": "MAIN_WAREHOUSE",
+      "globalWarehouseId": 1
+    }
+  }
+  ```
+
+**Response Key Transformations:**
+- `tenantUser.tenantId` → `tenantUser.globalTenantId` (renamed for clarity)
+- `warehouse.tenantWarehouseId` → `warehouse.globalWarehouseId` (renamed for clarity)
+
+**Billing:**
+- First warehouse is **FREE** (no add-on created)
+- Only additional warehouses beyond the first incur charges
+
+### Basic Plan Users
+- **No automatic warehouse creation**
+- API response will have `warehouse: undefined`
+- Warehouses can be added later by POS owner (will trigger billing)
+
+### Implementation Location
+- Function: `createTenant()` in [admin.service.ts](src/admin/admin.service.ts) (lines 116-157)
+- Response DTO: `TenantCreationDto` in [admin.response.ts](src/admin/admin.response.ts) (lines 22-53)
+- Rollback: Updated to delete warehouses if tenant DB setup fails (lines 168-179)
+
+---
+
 ## 📝 Migration Steps
 
 See [WAREHOUSE_IMPLEMENTATION_COMMANDS.md](WAREHOUSE_IMPLEMENTATION_COMMANDS.md) for detailed steps.
@@ -155,15 +221,33 @@ See [WAREHOUSE_IMPLEMENTATION_COMMANDS.md](WAREHOUSE_IMPLEMENTATION_COMMANDS.md)
 
 ## 🧪 Testing Checklist
 
+### Schema & Database
 - [ ] Global DB has `tenant_warehouse` table
-- [ ] Tenant DBs have 4 warehouse tables
+- [ ] Tenant DBs have 5 warehouse tables (including `warehouse_stock_movement_archive`)
 - [ ] Sales table has 3 stock source columns
-- [ ] Can create first warehouse (FREE)
+
+### Automatic Warehouse Creation
+- [ ] Creating Pro plan tenant automatically creates "Main Warehouse"
+- [ ] Creating Basic plan tenant does NOT create warehouse
+- [ ] First warehouse is FREE (no add-on created)
+
+### Manual Warehouse Management
+- [ ] Can create first warehouse manually (FREE)
 - [ ] Can create second warehouse (bills 100k)
 - [ ] Cannot delete warehouse with stock
-- [ ] Deleting warehouse updates billing
+- [ ] Deleting warehouse updates billing correctly
+- [ ] Deleting last billable warehouse removes add-on record
+
+### Customer Endpoints
 - [ ] Customer can view warehouses via `/warehouses/sync`
+- [ ] Customer can get warehouse details via `/warehouses/:id`
+- [ ] Customer can view stock via `/warehouses/:id/stock`
+
+### Billing
 - [ ] Billing add-on (ID 3) exists in `subscription_add_on`
+- [ ] Add-on quantity increases when adding warehouses
+- [ ] Add-on quantity decreases when deleting warehouses
+- [ ] Add-on is hard deleted when billable count reaches 0
 
 ---
 

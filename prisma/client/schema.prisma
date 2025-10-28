@@ -1517,3 +1517,30 @@ model WarehouseStockMovement {
   @@index([deleted])
   @@map("warehouse_stock_movement")
 }
+
+model WarehouseStockMovementArchive {
+  id                        Int       @id @default(autoincrement()) @map("ID")
+  itemId                    Int       @map("ITEM_ID")
+  itemCode                  String    @map("ITEM_CODE")
+  itemName                  String    @map("ITEM_NAME")
+  warehouseId               Int       @map("WAREHOUSE_ID")
+  warehouseName             String    @map("WAREHOUSE_NAME")
+  previousAvailableQuantity Decimal   @map("PREVIOUS_AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  previousOnHandQuantity    Decimal   @map("PREVIOUS_ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  availableQuantityDelta    Decimal   @map("AVAILABLE_QUANTITY_DELTA") @db.Decimal(15, 4)
+  onHandQuantityDelta       Decimal   @map("ON_HAND_QUANTITY_DELTA") @db.Decimal(15, 4)
+  movementType              String    @map("MOVEMENT_TYPE")
+  documentId                Int       @map("DOCUMENT_ID")
+  documentType              String    @map("DOCUMENT_TYPE")
+  reason                    String    @map("REASON")
+  remark                    String    @default("") @map("REMARK")
+  deleted                   Boolean   @default(false) @map("IS_DELETED")
+  createdAt                 DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt                 DateTime? @updatedAt @map("UPDATED_AT")
+  version                   Int?      @default(1) @map("VERSION")
+
+  @@index([itemId, createdAt])
+  @@index([warehouseId])
+  @@index([movementType])
+  @@map("warehouse_stock_movement_archive")
+}

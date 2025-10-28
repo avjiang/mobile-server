@@ -1,5 +1,6 @@
 import { plainToInstance } from "class-transformer";
 import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../prisma/global-client/generated/global";
+import { PrismaClient as TenantPrismaClient } from "../../prisma/client/generated/client";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { CreateTenantRequest } from "./admin.request";
 import bcrypt from "bcryptjs"
@@ -111,12 +112,48 @@ let createTenant = async (body: CreateTenantRequest) => {
                     tenantOutletId: result.subscription.outletId,
                 }
             })
+
+            // Create warehouse for Pro plan users
+            let createdWarehouse = null;
+            if (tenant.plan === 'Pro') {
+                // Create warehouse in global DB
+                const globalWarehouse = await prisma.tenantWarehouse.create({
+                    data: {
+                        tenantId: result.tenant.id,
+                        warehouseName: "Main Warehouse",
+                        warehouseCode: "MAIN_WAREHOUSE",
+                        isActive: true,
+                    }
+                });
+
+                // Create warehouse in tenant DB
+                const tenantWarehouse = await tenantPrisma.warehouse.create({
+                    data: {
+                        tenantWarehouseId: globalWarehouse.id,
+                        warehouseName: "Main Warehouse",
+                        warehouseCode: "MAIN_WAREHOUSE",
+                    }
+                });
+
+                createdWarehouse = {
+                    id: tenantWarehouse.id,
+                    warehouseName: tenantWarehouse.warehouseName,
+                    warehouseCode: tenantWarehouse.warehouseCode,
+                    tenantWarehouseId: tenantWarehouse.tenantWarehouseId,
+                };
+            }
+
             await tenantPrisma.$disconnect();
 
             // Return the API response
             const { password, ...tenantUserWithoutPassword } = result.tenantUser;
             const tenantDto = plainToInstance(TenantDto, result.tenant, { excludeExtraneousValues: true });
-            const tenantCreationDto = new TenantCreationDto(tenantDto, tenantUserWithoutPassword, result.subscription);
+            const tenantCreationDto = new TenantCreationDto(
+                tenantDto,
+                tenantUserWithoutPassword,
+                result.subscription,
+                createdWarehouse || undefined
+            );
             return tenantCreationDto;
         }
         catch (tenantDbError) {
@@ -137,6 +174,18 @@ let createTenant = async (body: CreateTenantRequest) => {
                         });
                         // Delete all tenant subscriptions
                         await tx.tenantSubscription.deleteMany({
+                            where: {
+                                tenantId: createdTenantId!
+                            }
+                        });
+                        // Delete all tenant warehouses
+                        await tx.tenantWarehouse.deleteMany({
+                            where: {
+                                tenantId: createdTenantId!
+                            }
+                        });
+                        // Delete all tenant outlets
+                        await tx.tenantOutlet.deleteMany({
                             where: {
                                 tenantId: createdTenantId!
                             }
@@ -1004,10 +1053,10 @@ let createWarehouseForTenant = async (
         }
 
         const databaseName = tenant.databaseName;
-        const tenantPrisma = getTenantPrisma(databaseName);
+        const tenantPrisma: TenantPrismaClient = getTenantPrisma(databaseName);
 
         return await prisma.$transaction(async (globalTx) => {
-            return await tenantPrisma.$transaction(async (tenantTx) => {
+            return await tenantPrisma.$transaction(async (tenantTx: any) => {
 
                 // Step 1: Create TenantWarehouse in global DB
                 const warehouseCode = data.warehouseName.toUpperCase().replace(/\s+/g, '_');
@@ -1158,10 +1207,10 @@ let deleteWarehouseForTenant = async (
         }
 
         const databaseName = tenant.databaseName;
-        const tenantPrisma = getTenantPrisma(databaseName);
+        const tenantPrisma: TenantPrismaClient = getTenantPrisma(databaseName);
 
         return await prisma.$transaction(async (globalTx) => {
-            return await tenantPrisma.$transaction(async (tenantTx) => {
+            return await tenantPrisma.$transaction(async (tenantTx: any) => {
 
                 // Step 1: Get warehouse from tenant DB
                 const warehouse = await tenantTx.warehouse.findUnique({

@@ -325,44 +325,47 @@ model Outlet {
 }
 
 model Item {
-  id                 Int                 @id @default(autoincrement()) @map("ID")
-  itemName           String              @map("ITEM_NAME")
-  itemCode           String              @map("ITEM_CODE")
-  itemType           String              @default("") @map("ITEM_TYPE")
-  itemModel          String              @default("") @map("ITEM_MODEL")
-  itemBrand          String              @default("") @map("ITEM_BRAND")
-  itemDescription    String?             @default("") @map("ITEM_DESCRIPTION")
-  categoryId         Int                 @map("CATEGORY_ID")
-  cost               Decimal             @map("COST") @db.Decimal(15, 4)
-  price              Decimal             @map("PRICE") @db.Decimal(15, 4)
-  currency           String              @default("IDR") @map("CURRENCY")
-  isOpenPrice        Boolean?            @default(false) @map("IS_OPEN_PRICE")
-  unitOfMeasure      String              @default("") @map("UNIT_OF_MEASURE")
-  height             Float?              @default(0) @map("HEIGHT")
-  width              Float?              @default(0) @map("WIDTH")
-  length             Float?              @default(0) @map("LENGTH")
-  weight             Float?              @default(0) @map("WEIGHT")
-  alternateLookUp    String?             @default("") @map("ALTERNATE_LOOKUP")
-  image              String?             @default("") @map("IMAGE")
-  hasTax             Boolean?            @map("HAS_TAX")
-  taxRate            Float?              @map("TAX_RATE")
-  supplierId         Int                 @map("SUPPLIER_ID")
-  deleted            Boolean             @default(false) @map("IS_DELETED")
-  deletedAt          DateTime?           @map("DELETED_AT")
-  createdAt          DateTime?           @default(now()) @map("CREATED_AT")
-  updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
-  version            Int?                @default(1) @map("VERSION")
-  category           Category            @relation(fields: [categoryId], references: [id])
-  supplier           Supplier            @relation(fields: [supplierId], references: [id])
-  stockBalance       StockBalance[]
-  stockMovements     StockMovement[]
-  stockSnapshots     StockSnapshot[]
-  stockReceipts      StockReceipt[]
-  recipes            Recipe[]
-  quotationItems     QuotationItem[]
-  purchaseOrderItems PurchaseOrderItem[]
-  deliveryOrderItems DeliveryOrderItem[]
-  invoiceItems       InvoiceItem[]
+  id                      Int                      @id @default(autoincrement()) @map("ID")
+  itemName                String                   @map("ITEM_NAME")
+  itemCode                String                   @map("ITEM_CODE")
+  itemType                String                   @default("") @map("ITEM_TYPE")
+  itemModel               String                   @default("") @map("ITEM_MODEL")
+  itemBrand               String                   @default("") @map("ITEM_BRAND")
+  itemDescription         String?                  @default("") @map("ITEM_DESCRIPTION")
+  categoryId              Int                      @map("CATEGORY_ID")
+  cost                    Decimal                  @map("COST") @db.Decimal(15, 4)
+  price                   Decimal                  @map("PRICE") @db.Decimal(15, 4)
+  currency                String                   @default("IDR") @map("CURRENCY")
+  isOpenPrice             Boolean?                 @default(false) @map("IS_OPEN_PRICE")
+  unitOfMeasure           String                   @default("") @map("UNIT_OF_MEASURE")
+  height                  Float?                   @default(0) @map("HEIGHT")
+  width                   Float?                   @default(0) @map("WIDTH")
+  length                  Float?                   @default(0) @map("LENGTH")
+  weight                  Float?                   @default(0) @map("WEIGHT")
+  alternateLookUp         String?                  @default("") @map("ALTERNATE_LOOKUP")
+  image                   String?                  @default("") @map("IMAGE")
+  hasTax                  Boolean?                 @map("HAS_TAX")
+  taxRate                 Float?                   @map("TAX_RATE")
+  supplierId              Int                      @map("SUPPLIER_ID")
+  deleted                 Boolean                  @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?                @map("DELETED_AT")
+  createdAt               DateTime?                @default(now()) @map("CREATED_AT")
+  updatedAt               DateTime?                @updatedAt @map("UPDATED_AT")
+  version                 Int?                     @default(1) @map("VERSION")
+  category                Category                 @relation(fields: [categoryId], references: [id])
+  supplier                Supplier                 @relation(fields: [supplierId], references: [id])
+  stockBalance            StockBalance[]
+  stockMovements          StockMovement[]
+  stockSnapshots          StockSnapshot[]
+  stockReceipts           StockReceipt[]
+  recipes                 Recipe[]
+  quotationItems          QuotationItem[]
+  purchaseOrderItems      PurchaseOrderItem[]
+  deliveryOrderItems      DeliveryOrderItem[]
+  invoiceItems            InvoiceItem[]
+  warehouseStockBalances  WarehouseStockBalance[]
+  warehouseStockMovements WarehouseStockMovement[]
+  warehouseStockReceipts  WarehouseStockReceipt[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -432,6 +435,9 @@ model Sales {
   tableId                 Int?          @map("TABLE_ID")
   orderStatus             String?       @map("ORDER_STATUS")
   isTaxInclusive          Boolean?      @default(false) @map("IS_TAX_INCLUSIVE")
+  stockSourceType         String?       @map("STOCK_SOURCE_TYPE")
+  stockSourceOutletId     Int?          @map("STOCK_SOURCE_OUTLET_ID")
+  stockSourceWarehouseId  Int?          @map("STOCK_SOURCE_WAREHOUSE_ID")
   salesItems              SalesItem[]
   payments                Payment[]
   registerLogs            RegisterLog[]
@@ -441,6 +447,8 @@ model Sales {
   @@index([businessDate])
   @@index([outletId])
   @@index([sessionId, completedSessionId])
+  @@index([stockSourceType])
+  @@index([stockSourceWarehouseId])
   @@map("sales")
 }
 
@@ -1409,4 +1417,130 @@ model RegisteredDevice {
   @@index([clientDeviceId])
   @@index([tenantId])
   @@map("registered_device")
+}
+
+// Warehouse models for centralized inventory management
+model Warehouse {
+  id                      Int                      @id @default(autoincrement()) @map("ID")
+  tenantWarehouseId       Int                      @map("TENANT_WAREHOUSE_ID")
+  warehouseName           String                   @map("WAREHOUSE_NAME")
+  warehouseCode           String                   @map("WAREHOUSE_CODE")
+  street                  String?                  @map("STREET")
+  city                    String?                  @map("CITY")
+  state                   String?                  @map("STATE")
+  postalCode              String?                  @map("POSTAL_CODE")
+  country                 String?                  @map("COUNTRY")
+  contactPhone            String?                  @map("CONTACT_PHONE")
+  contactEmail            String?                  @map("CONTACT_EMAIL")
+  deleted                 Boolean                  @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?                @map("DELETED_AT")
+  createdAt               DateTime                 @default(now()) @map("CREATED_AT")
+  updatedAt               DateTime                 @updatedAt @map("UPDATED_AT")
+  warehouseStockBalances  WarehouseStockBalance[]
+  warehouseStockMovements WarehouseStockMovement[]
+  warehouseStockReceipts  WarehouseStockReceipt[]
+
+  @@index([warehouseCode])
+  @@index([tenantWarehouseId])
+  @@index([deleted])
+  @@map("warehouse")
+}
+
+model WarehouseStockBalance {
+  id                Int       @id @default(autoincrement()) @map("ID")
+  itemId            Int       @map("ITEM_ID")
+  warehouseId       Int       @map("WAREHOUSE_ID")
+  availableQuantity Decimal   @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  onHandQuantity    Decimal   @map("ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  reorderThreshold  Decimal?  @map("REORDER_THRESHOLD") @db.Decimal(15, 4)
+  deleted           Boolean   @default(false) @map("IS_DELETED")
+  lastRestockDate   DateTime? @map("LAST_RESTOCK_DATE")
+  deletedAt         DateTime? @map("DELETED_AT")
+  createdAt         DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime? @updatedAt @map("UPDATED_AT")
+  version           Int?      @default(1) @map("VERSION")
+  item              Item      @relation(fields: [itemId], references: [id])
+  warehouse         Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([itemId, warehouseId, reorderThreshold, deleted, availableQuantity])
+  @@index([warehouseId])
+  @@index([deleted])
+  @@map("warehouse_stock_balance")
+}
+
+model WarehouseStockReceipt {
+  id                Int       @id @default(autoincrement()) @map("ID")
+  itemId            Int       @map("ITEM_ID")
+  warehouseId       Int       @map("WAREHOUSE_ID")
+  deliveryOrderId   Int?      @map("DELIVERY_ORDER_ID")
+  quantity          Decimal   @map("QUANTITY") @db.Decimal(15, 4)
+  availableQuantity Decimal   @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  cost              Decimal   @map("COST") @db.Decimal(15, 4)
+  receiptDate       DateTime  @default(now()) @map("RECEIPT_DATE")
+  remark            String?   @default("") @map("REMARK")
+  createdAt         DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime? @updatedAt @map("UPDATED_AT")
+  deleted           Boolean   @default(false) @map("IS_DELETED")
+  deletedAt         DateTime? @map("DELETED_AT")
+  item              Item      @relation(fields: [itemId], references: [id])
+  warehouse         Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@index([itemId, receiptDate])
+  @@index([warehouseId])
+  @@index([deleted])
+  @@map("warehouse_stock_receipt")
+}
+
+model WarehouseStockMovement {
+  id                        Int       @id @default(autoincrement()) @map("ID")
+  itemId                    Int       @map("ITEM_ID")
+  warehouseId               Int       @map("WAREHOUSE_ID")
+  previousAvailableQuantity Decimal   @map("PREVIOUS_AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  previousOnHandQuantity    Decimal   @map("PREVIOUS_ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  availableQuantityDelta    Decimal   @map("AVAILABLE_QUANTITY_DELTA") @db.Decimal(15, 4)
+  onHandQuantityDelta       Decimal   @map("ON_HAND_QUANTITY_DELTA") @db.Decimal(15, 4)
+  movementType              String    @map("MOVEMENT_TYPE")
+  documentId                Int       @map("DOCUMENT_ID")
+  reason                    String    @map("REASON")
+  remark                    String    @default("") @map("REMARK")
+  deleted                   Boolean   @default(false) @map("IS_DELETED")
+  createdAt                 DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt                 DateTime? @updatedAt @map("UPDATED_AT")
+  version                   Int?      @default(1) @map("VERSION")
+  performedBy               String?   @default("") @map("PERFORMED_BY")
+  item                      Item      @relation(fields: [itemId], references: [id])
+  warehouse                 Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@index([itemId, createdAt])
+  @@index([warehouseId])
+  @@index([movementType])
+  @@index([deleted])
+  @@map("warehouse_stock_movement")
+}
+
+model WarehouseStockMovementArchive {
+  id                        Int       @id @default(autoincrement()) @map("ID")
+  itemId                    Int       @map("ITEM_ID")
+  itemCode                  String    @map("ITEM_CODE")
+  itemName                  String    @map("ITEM_NAME")
+  warehouseId               Int       @map("WAREHOUSE_ID")
+  warehouseName             String    @map("WAREHOUSE_NAME")
+  previousAvailableQuantity Decimal   @map("PREVIOUS_AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  previousOnHandQuantity    Decimal   @map("PREVIOUS_ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  availableQuantityDelta    Decimal   @map("AVAILABLE_QUANTITY_DELTA") @db.Decimal(15, 4)
+  onHandQuantityDelta       Decimal   @map("ON_HAND_QUANTITY_DELTA") @db.Decimal(15, 4)
+  movementType              String    @map("MOVEMENT_TYPE")
+  documentId                Int       @map("DOCUMENT_ID")
+  documentType              String    @map("DOCUMENT_TYPE")
+  reason                    String    @map("REASON")
+  remark                    String    @default("") @map("REMARK")
+  deleted                   Boolean   @default(false) @map("IS_DELETED")
+  createdAt                 DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt                 DateTime? @updatedAt @map("UPDATED_AT")
+  version                   Int?      @default(1) @map("VERSION")
+
+  @@index([itemId, createdAt])
+  @@index([warehouseId])
+  @@index([movementType])
+  @@map("warehouse_stock_movement_archive")
 }

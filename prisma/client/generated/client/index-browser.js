@@ -378,7 +378,10 @@ exports.Prisma.SalesScalarFieldEnum = {
   version: 'version',
   tableId: 'tableId',
   orderStatus: 'orderStatus',
-  isTaxInclusive: 'isTaxInclusive'
+  isTaxInclusive: 'isTaxInclusive',
+  stockSourceType: 'stockSourceType',
+  stockSourceOutletId: 'stockSourceOutletId',
+  stockSourceWarehouseId: 'stockSourceWarehouseId'
 };
 
 exports.Prisma.SalesItemScalarFieldEnum = {
@@ -1089,6 +1092,96 @@ exports.Prisma.RegisteredDeviceScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.WarehouseScalarFieldEnum = {
+  id: 'id',
+  tenantWarehouseId: 'tenantWarehouseId',
+  warehouseName: 'warehouseName',
+  warehouseCode: 'warehouseCode',
+  street: 'street',
+  city: 'city',
+  state: 'state',
+  postalCode: 'postalCode',
+  country: 'country',
+  contactPhone: 'contactPhone',
+  contactEmail: 'contactEmail',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WarehouseStockBalanceScalarFieldEnum = {
+  id: 'id',
+  itemId: 'itemId',
+  warehouseId: 'warehouseId',
+  availableQuantity: 'availableQuantity',
+  onHandQuantity: 'onHandQuantity',
+  reorderThreshold: 'reorderThreshold',
+  deleted: 'deleted',
+  lastRestockDate: 'lastRestockDate',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.WarehouseStockReceiptScalarFieldEnum = {
+  id: 'id',
+  itemId: 'itemId',
+  warehouseId: 'warehouseId',
+  deliveryOrderId: 'deliveryOrderId',
+  quantity: 'quantity',
+  availableQuantity: 'availableQuantity',
+  cost: 'cost',
+  receiptDate: 'receiptDate',
+  remark: 'remark',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt'
+};
+
+exports.Prisma.WarehouseStockMovementScalarFieldEnum = {
+  id: 'id',
+  itemId: 'itemId',
+  warehouseId: 'warehouseId',
+  previousAvailableQuantity: 'previousAvailableQuantity',
+  previousOnHandQuantity: 'previousOnHandQuantity',
+  availableQuantityDelta: 'availableQuantityDelta',
+  onHandQuantityDelta: 'onHandQuantityDelta',
+  movementType: 'movementType',
+  documentId: 'documentId',
+  reason: 'reason',
+  remark: 'remark',
+  deleted: 'deleted',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version',
+  performedBy: 'performedBy'
+};
+
+exports.Prisma.WarehouseStockMovementArchiveScalarFieldEnum = {
+  id: 'id',
+  itemId: 'itemId',
+  itemCode: 'itemCode',
+  itemName: 'itemName',
+  warehouseId: 'warehouseId',
+  warehouseName: 'warehouseName',
+  previousAvailableQuantity: 'previousAvailableQuantity',
+  previousOnHandQuantity: 'previousOnHandQuantity',
+  availableQuantityDelta: 'availableQuantityDelta',
+  onHandQuantityDelta: 'onHandQuantityDelta',
+  movementType: 'movementType',
+  documentId: 'documentId',
+  documentType: 'documentType',
+  reason: 'reason',
+  remark: 'remark',
+  deleted: 'deleted',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1224,7 +1317,8 @@ exports.Prisma.SalesOrderByRelevanceFieldEnum = {
   status: 'status',
   remark: 'remark',
   performedBy: 'performedBy',
-  orderStatus: 'orderStatus'
+  orderStatus: 'orderStatus',
+  stockSourceType: 'stockSourceType'
 };
 
 exports.Prisma.SalesItemOrderByRelevanceFieldEnum = {
@@ -1437,6 +1531,39 @@ exports.Prisma.RegisteredDeviceOrderByRelevanceFieldEnum = {
   status: 'status',
   appVersion: 'appVersion'
 };
+
+exports.Prisma.WarehouseOrderByRelevanceFieldEnum = {
+  warehouseName: 'warehouseName',
+  warehouseCode: 'warehouseCode',
+  street: 'street',
+  city: 'city',
+  state: 'state',
+  postalCode: 'postalCode',
+  country: 'country',
+  contactPhone: 'contactPhone',
+  contactEmail: 'contactEmail'
+};
+
+exports.Prisma.WarehouseStockReceiptOrderByRelevanceFieldEnum = {
+  remark: 'remark'
+};
+
+exports.Prisma.WarehouseStockMovementOrderByRelevanceFieldEnum = {
+  movementType: 'movementType',
+  reason: 'reason',
+  remark: 'remark',
+  performedBy: 'performedBy'
+};
+
+exports.Prisma.WarehouseStockMovementArchiveOrderByRelevanceFieldEnum = {
+  itemCode: 'itemCode',
+  itemName: 'itemName',
+  warehouseName: 'warehouseName',
+  movementType: 'movementType',
+  documentType: 'documentType',
+  reason: 'reason',
+  remark: 'remark'
+};
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   ORDERED: 'ORDERED',
   PREPARING: 'PREPARING',
@@ -1525,7 +1652,12 @@ exports.Prisma.ModelName = {
   PromotionItem: 'PromotionItem',
   PromotionCustomer: 'PromotionCustomer',
   PromotionUsage: 'PromotionUsage',
-  RegisteredDevice: 'RegisteredDevice'
+  RegisteredDevice: 'RegisteredDevice',
+  Warehouse: 'Warehouse',
+  WarehouseStockBalance: 'WarehouseStockBalance',
+  WarehouseStockReceipt: 'WarehouseStockReceipt',
+  WarehouseStockMovement: 'WarehouseStockMovement',
+  WarehouseStockMovementArchive: 'WarehouseStockMovementArchive'
 };
 
 /**

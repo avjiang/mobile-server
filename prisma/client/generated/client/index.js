@@ -1725,11 +1725,12 @@ const config = {
     "db"
   ],
   "activeProvider": "mysql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
         "fromEnvVar": "TENANT_DATABASE_URL",
-        "value": "mysql://root:rootroot@127.0.0.1:3306/{tenant_db_name}"
+        "value": null
       }
     }
   },

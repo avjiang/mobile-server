@@ -13628,6 +13628,7 @@ export namespace Prisma {
     id: number | null
     tenantUserId: number | null
     deviceToken: string | null
+    deviceFingerprint: string | null
     platform: string | null
     deviceName: string | null
     appVersion: string | null
@@ -13641,6 +13642,7 @@ export namespace Prisma {
     id: number | null
     tenantUserId: number | null
     deviceToken: string | null
+    deviceFingerprint: string | null
     platform: string | null
     deviceName: string | null
     appVersion: string | null
@@ -13654,6 +13656,7 @@ export namespace Prisma {
     id: number
     tenantUserId: number
     deviceToken: number
+    deviceFingerprint: number
     platform: number
     deviceName: number
     appVersion: number
@@ -13679,6 +13682,7 @@ export namespace Prisma {
     id?: true
     tenantUserId?: true
     deviceToken?: true
+    deviceFingerprint?: true
     platform?: true
     deviceName?: true
     appVersion?: true
@@ -13692,6 +13696,7 @@ export namespace Prisma {
     id?: true
     tenantUserId?: true
     deviceToken?: true
+    deviceFingerprint?: true
     platform?: true
     deviceName?: true
     appVersion?: true
@@ -13705,6 +13710,7 @@ export namespace Prisma {
     id?: true
     tenantUserId?: true
     deviceToken?: true
+    deviceFingerprint?: true
     platform?: true
     deviceName?: true
     appVersion?: true
@@ -13805,6 +13811,7 @@ export namespace Prisma {
     id: number
     tenantUserId: number
     deviceToken: string
+    deviceFingerprint: string | null
     platform: string
     deviceName: string | null
     appVersion: string | null
@@ -13837,6 +13844,7 @@ export namespace Prisma {
     id?: boolean
     tenantUserId?: boolean
     deviceToken?: boolean
+    deviceFingerprint?: boolean
     platform?: boolean
     deviceName?: boolean
     appVersion?: boolean
@@ -13856,6 +13864,7 @@ export namespace Prisma {
     id?: boolean
     tenantUserId?: boolean
     deviceToken?: boolean
+    deviceFingerprint?: boolean
     platform?: boolean
     deviceName?: boolean
     appVersion?: boolean
@@ -13865,7 +13874,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type PushyDeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantUserId" | "deviceToken" | "platform" | "deviceName" | "appVersion" | "isActive" | "lastActiveAt" | "createdAt" | "updatedAt", ExtArgs["result"]["pushyDevice"]>
+  export type PushyDeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantUserId" | "deviceToken" | "deviceFingerprint" | "platform" | "deviceName" | "appVersion" | "isActive" | "lastActiveAt" | "createdAt" | "updatedAt", ExtArgs["result"]["pushyDevice"]>
   export type PushyDeviceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenantUser?: boolean | TenantUserDefaultArgs<ExtArgs>
     subscriptions?: boolean | PushyDevice$subscriptionsArgs<ExtArgs>
@@ -13884,6 +13893,7 @@ export namespace Prisma {
       id: number
       tenantUserId: number
       deviceToken: string
+      deviceFingerprint: string | null
       platform: string
       deviceName: string | null
       appVersion: string | null
@@ -14266,6 +14276,7 @@ export namespace Prisma {
     readonly id: FieldRef<"PushyDevice", 'Int'>
     readonly tenantUserId: FieldRef<"PushyDevice", 'Int'>
     readonly deviceToken: FieldRef<"PushyDevice", 'String'>
+    readonly deviceFingerprint: FieldRef<"PushyDevice", 'String'>
     readonly platform: FieldRef<"PushyDevice", 'String'>
     readonly deviceName: FieldRef<"PushyDevice", 'String'>
     readonly appVersion: FieldRef<"PushyDevice", 'String'>
@@ -17877,6 +17888,7 @@ export namespace Prisma {
     id: 'id',
     tenantUserId: 'tenantUserId',
     deviceToken: 'deviceToken',
+    deviceFingerprint: 'deviceFingerprint',
     platform: 'platform',
     deviceName: 'deviceName',
     appVersion: 'appVersion',
@@ -18040,6 +18052,7 @@ export namespace Prisma {
 
   export const PushyDeviceOrderByRelevanceFieldEnum: {
     deviceToken: 'deviceToken',
+    deviceFingerprint: 'deviceFingerprint',
     platform: 'platform',
     deviceName: 'deviceName',
     appVersion: 'appVersion'
@@ -18951,6 +18964,7 @@ export namespace Prisma {
     id?: IntFilter<"PushyDevice"> | number
     tenantUserId?: IntFilter<"PushyDevice"> | number
     deviceToken?: StringFilter<"PushyDevice"> | string
+    deviceFingerprint?: StringNullableFilter<"PushyDevice"> | string | null
     platform?: StringFilter<"PushyDevice"> | string
     deviceName?: StringNullableFilter<"PushyDevice"> | string | null
     appVersion?: StringNullableFilter<"PushyDevice"> | string | null
@@ -18967,6 +18981,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantUserId?: SortOrder
     deviceToken?: SortOrder
+    deviceFingerprint?: SortOrderInput | SortOrder
     platform?: SortOrder
     deviceName?: SortOrderInput | SortOrder
     appVersion?: SortOrderInput | SortOrder
@@ -18983,10 +18998,12 @@ export namespace Prisma {
   export type PushyDeviceWhereUniqueInput = Prisma.AtLeast<{
     id?: number
     deviceToken?: string
+    unique_user_device_fingerprint?: PushyDeviceUnique_user_device_fingerprintCompoundUniqueInput
     AND?: PushyDeviceWhereInput | PushyDeviceWhereInput[]
     OR?: PushyDeviceWhereInput[]
     NOT?: PushyDeviceWhereInput | PushyDeviceWhereInput[]
     tenantUserId?: IntFilter<"PushyDevice"> | number
+    deviceFingerprint?: StringNullableFilter<"PushyDevice"> | string | null
     platform?: StringFilter<"PushyDevice"> | string
     deviceName?: StringNullableFilter<"PushyDevice"> | string | null
     appVersion?: StringNullableFilter<"PushyDevice"> | string | null
@@ -18997,12 +19014,13 @@ export namespace Prisma {
     tenantUser?: XOR<TenantUserScalarRelationFilter, TenantUserWhereInput>
     subscriptions?: PushySubscriptionListRelationFilter
     allocation?: XOR<PushyDeviceAllocationNullableScalarRelationFilter, PushyDeviceAllocationWhereInput> | null
-  }, "id" | "deviceToken">
+  }, "id" | "deviceToken" | "unique_user_device_fingerprint">
 
   export type PushyDeviceOrderByWithAggregationInput = {
     id?: SortOrder
     tenantUserId?: SortOrder
     deviceToken?: SortOrder
+    deviceFingerprint?: SortOrderInput | SortOrder
     platform?: SortOrder
     deviceName?: SortOrderInput | SortOrder
     appVersion?: SortOrderInput | SortOrder
@@ -19024,6 +19042,7 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"PushyDevice"> | number
     tenantUserId?: IntWithAggregatesFilter<"PushyDevice"> | number
     deviceToken?: StringWithAggregatesFilter<"PushyDevice"> | string
+    deviceFingerprint?: StringNullableWithAggregatesFilter<"PushyDevice"> | string | null
     platform?: StringWithAggregatesFilter<"PushyDevice"> | string
     deviceName?: StringNullableWithAggregatesFilter<"PushyDevice"> | string | null
     appVersion?: StringNullableWithAggregatesFilter<"PushyDevice"> | string | null
@@ -20111,6 +20130,7 @@ export namespace Prisma {
 
   export type PushyDeviceCreateInput = {
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -20127,6 +20147,7 @@ export namespace Prisma {
     id?: number
     tenantUserId: number
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -20140,6 +20161,7 @@ export namespace Prisma {
 
   export type PushyDeviceUpdateInput = {
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20156,6 +20178,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantUserId?: IntFieldUpdateOperationsInput | number
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20171,6 +20194,7 @@ export namespace Prisma {
     id?: number
     tenantUserId: number
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -20182,6 +20206,7 @@ export namespace Prisma {
 
   export type PushyDeviceUpdateManyMutationInput = {
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20195,6 +20220,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantUserId?: IntFieldUpdateOperationsInput | number
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21318,10 +21344,16 @@ export namespace Prisma {
     search: string
   }
 
+  export type PushyDeviceUnique_user_device_fingerprintCompoundUniqueInput = {
+    tenantUserId: number
+    deviceFingerprint: string
+  }
+
   export type PushyDeviceCountOrderByAggregateInput = {
     id?: SortOrder
     tenantUserId?: SortOrder
     deviceToken?: SortOrder
+    deviceFingerprint?: SortOrder
     platform?: SortOrder
     deviceName?: SortOrder
     appVersion?: SortOrder
@@ -21340,6 +21372,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantUserId?: SortOrder
     deviceToken?: SortOrder
+    deviceFingerprint?: SortOrder
     platform?: SortOrder
     deviceName?: SortOrder
     appVersion?: SortOrder
@@ -21353,6 +21386,7 @@ export namespace Prisma {
     id?: SortOrder
     tenantUserId?: SortOrder
     deviceToken?: SortOrder
+    deviceFingerprint?: SortOrder
     platform?: SortOrder
     deviceName?: SortOrder
     appVersion?: SortOrder
@@ -23630,6 +23664,7 @@ export namespace Prisma {
 
   export type PushyDeviceCreateWithoutTenantUserInput = {
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -23644,6 +23679,7 @@ export namespace Prisma {
   export type PushyDeviceUncheckedCreateWithoutTenantUserInput = {
     id?: number
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -23722,6 +23758,7 @@ export namespace Prisma {
     id?: IntFilter<"PushyDevice"> | number
     tenantUserId?: IntFilter<"PushyDevice"> | number
     deviceToken?: StringFilter<"PushyDevice"> | string
+    deviceFingerprint?: StringNullableFilter<"PushyDevice"> | string | null
     platform?: StringFilter<"PushyDevice"> | string
     deviceName?: StringNullableFilter<"PushyDevice"> | string | null
     appVersion?: StringNullableFilter<"PushyDevice"> | string | null
@@ -23888,6 +23925,7 @@ export namespace Prisma {
 
   export type PushyDeviceCreateWithoutSubscriptionsInput = {
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -23903,6 +23941,7 @@ export namespace Prisma {
     id?: number
     tenantUserId: number
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -23931,6 +23970,7 @@ export namespace Prisma {
 
   export type PushyDeviceUpdateWithoutSubscriptionsInput = {
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23946,6 +23986,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantUserId?: IntFieldUpdateOperationsInput | number
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23958,6 +23999,7 @@ export namespace Prisma {
 
   export type PushyDeviceCreateWithoutAllocationInput = {
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -23973,6 +24015,7 @@ export namespace Prisma {
     id?: number
     tenantUserId: number
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -24061,6 +24104,7 @@ export namespace Prisma {
 
   export type PushyDeviceUpdateWithoutAllocationInput = {
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -24076,6 +24120,7 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantUserId?: IntFieldUpdateOperationsInput | number
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -24672,6 +24717,7 @@ export namespace Prisma {
   export type PushyDeviceCreateManyTenantUserInput = {
     id?: number
     deviceToken: string
+    deviceFingerprint?: string | null
     platform: string
     deviceName?: string | null
     appVersion?: string | null
@@ -24683,6 +24729,7 @@ export namespace Prisma {
 
   export type PushyDeviceUpdateWithoutTenantUserInput = {
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -24697,6 +24744,7 @@ export namespace Prisma {
   export type PushyDeviceUncheckedUpdateWithoutTenantUserInput = {
     id?: IntFieldUpdateOperationsInput | number
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null
@@ -24711,6 +24759,7 @@ export namespace Prisma {
   export type PushyDeviceUncheckedUpdateManyWithoutTenantUserInput = {
     id?: IntFieldUpdateOperationsInput | number
     deviceToken?: StringFieldUpdateOperationsInput | string
+    deviceFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     platform?: StringFieldUpdateOperationsInput | string
     deviceName?: NullableStringFieldUpdateOperationsInput | string | null
     appVersion?: NullableStringFieldUpdateOperationsInput | string | null

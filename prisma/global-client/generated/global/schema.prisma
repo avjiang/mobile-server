@@ -203,22 +203,25 @@ model SettingDefinition {
 }
 
 model PushyDevice {
-  id            Int                    @id @default(autoincrement()) @map("ID")
-  tenantUserId  Int                    @map("TENANT_USER_ID")
-  deviceToken   String                 @unique @map("DEVICE_TOKEN") // Pushy device token
-  platform      String                 @map("PLATFORM") // "android", "ios", "web"
-  deviceName    String?                @map("DEVICE_NAME") // Optional device identifier
-  appVersion    String?                @map("APP_VERSION")
-  isActive      Boolean                @default(true) @map("IS_ACTIVE")
-  lastActiveAt  DateTime?              @map("LAST_ACTIVE_AT")
-  createdAt     DateTime               @default(now()) @map("CREATED_AT")
-  updatedAt     DateTime               @updatedAt @map("UPDATED_AT")
-  tenantUser    TenantUser             @relation(fields: [tenantUserId], references: [id])
-  subscriptions PushySubscription[]
-  allocation    PushyDeviceAllocation?
+  id                Int                    @id @default(autoincrement()) @map("ID")
+  tenantUserId      Int                    @map("TENANT_USER_ID")
+  deviceToken       String                 @unique @map("DEVICE_TOKEN") // Pushy device token (can change on reinstall)
+  deviceFingerprint String?                @map("DEVICE_FINGERPRINT") // Persistent device ID (survives reinstall)
+  platform          String                 @map("PLATFORM") // "android", "ios", "web"
+  deviceName        String?                @map("DEVICE_NAME") // Optional device identifier
+  appVersion        String?                @map("APP_VERSION")
+  isActive          Boolean                @default(true) @map("IS_ACTIVE")
+  lastActiveAt      DateTime?              @map("LAST_ACTIVE_AT")
+  createdAt         DateTime               @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime               @updatedAt @map("UPDATED_AT")
+  tenantUser        TenantUser             @relation(fields: [tenantUserId], references: [id])
+  subscriptions     PushySubscription[]
+  allocation        PushyDeviceAllocation?
 
+  @@unique([tenantUserId, deviceFingerprint], name: "unique_user_device_fingerprint")
   @@index([tenantUserId])
   @@index([deviceToken])
+  @@index([deviceFingerprint])
   @@map("pushy_device")
 }
 

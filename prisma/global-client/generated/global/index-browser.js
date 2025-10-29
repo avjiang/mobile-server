@@ -245,6 +245,7 @@ exports.Prisma.PushyDeviceScalarFieldEnum = {
   id: 'id',
   tenantUserId: 'tenantUserId',
   deviceToken: 'deviceToken',
+  deviceFingerprint: 'deviceFingerprint',
   platform: 'platform',
   deviceName: 'deviceName',
   appVersion: 'appVersion',
@@ -360,6 +361,7 @@ exports.Prisma.SettingDefinitionOrderByRelevanceFieldEnum = {
 
 exports.Prisma.PushyDeviceOrderByRelevanceFieldEnum = {
   deviceToken: 'deviceToken',
+  deviceFingerprint: 'deviceFingerprint',
   platform: 'platform',
   deviceName: 'deviceName',
   appVersion: 'appVersion'

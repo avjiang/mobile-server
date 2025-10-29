@@ -16,6 +16,9 @@ const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
 interface RegisterDeviceRequest {
   deviceToken: string;
   platform: 'ios' | 'android' | 'web';
+  deviceFingerprint: string;
+  deviceName?: string;
+  appVersion?: string;
 }
 
 interface UpdateDeviceRequest {
@@ -25,34 +28,39 @@ interface UpdateDeviceRequest {
 
 const registerDevice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userInfo = req.user as UserInfo;
-  const { deviceToken, platform } = req.body as RegisterDeviceRequest;
+  const { deviceToken, platform, deviceFingerprint } = req.body as RegisterDeviceRequest;
 
   if (!deviceToken || !platform) {
     return next(new RequestValidateError('Device token and platform are required'));
   }
 
+  if (!deviceFingerprint) {
+    return next(new RequestValidateError('Device fingerprint is required'));
+  }
+
   try {
-    // Check if device already exists FIRST (before checking limit)
-    // Because reactivating an existing device doesn't count against the limit
-    const existingDevice = await globalPrisma.pushyDevice.findUnique({
+    // STEP 1: Check if device with same FINGERPRINT exists for this user
+    // This handles the reinstall scenario where Pushy token changes
+    const existingDeviceByFingerprint = await globalPrisma.pushyDevice.findFirst({
       where: {
-        deviceToken
+        tenantUserId: userInfo.tenantUserId,
+        deviceFingerprint: deviceFingerprint
       }
     });
 
-    if (existingDevice) {
-      if (existingDevice.tenantUserId !== userInfo.tenantUserId) {
-        return next(new BusinessLogicError('Device is already registered to another user'));
-      }
-
-      // Update existing device (reactivate if inactive)
+    if (existingDeviceByFingerprint) {
+      // REINSTALL SCENARIO: Same device, new Pushy token
+      // Update the device token (Pushy token rotation on reinstall)
       const updatedDevice = await globalPrisma.pushyDevice.update({
         where: {
-          id: existingDevice.id
+          id: existingDeviceByFingerprint.id
         },
         data: {
+          deviceToken: deviceToken,  // Update to new Pushy token
+          platform: platform,
+          deviceName: req.body.deviceName || existingDeviceByFingerprint.deviceName,
+          appVersion: req.body.appVersion,
           isActive: true,
-          platform,
           lastActiveAt: new Date()
         }
       });
@@ -63,31 +71,91 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
       //   await PushyService.subscribeToTopics(deviceToken, topics);
       // }
 
+      // Get current device usage (count stays the same for reinstalls)
+      const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+
       return sendResponse(res, {
-        message: 'Device updated successfully',
+        message: 'Device token updated successfully',
+        isReinstall: true,
         device: {
           id: updatedDevice.id,
           deviceToken: updatedDevice.deviceToken,
+          deviceFingerprint: updatedDevice.deviceFingerprint,
           platform: updatedDevice.platform,
           isActive: updatedDevice.isActive
         },
-        subscribedTopics: topics
+        subscribedTopics: topics,
+        deviceUsage: {
+          current: limitCheck.currentCount,
+          maximum: limitCheck.maxAllowed
+        }
       });
     }
 
-    // Check device limit ONLY for NEW devices
+    // STEP 2: Check if device with same DEVICETOKEN exists (edge case)
+    const existingDeviceByToken = await globalPrisma.pushyDevice.findUnique({
+      where: {
+        deviceToken
+      }
+    });
+
+    if (existingDeviceByToken) {
+      // Edge case: Token collision or upgrading from old version without fingerprint
+      if (existingDeviceByToken.tenantUserId !== userInfo.tenantUserId) {
+        return next(new BusinessLogicError('Device token already registered to another user'));
+      }
+
+      // Same token, same user, but different/no fingerprint
+      // Update the device with the new fingerprint
+      const updatedDevice = await globalPrisma.pushyDevice.update({
+        where: {
+          id: existingDeviceByToken.id
+        },
+        data: {
+          deviceFingerprint: deviceFingerprint,
+          platform: platform,
+          deviceName: req.body.deviceName || existingDeviceByToken.deviceName,
+          appVersion: req.body.appVersion,
+          isActive: true,
+          lastActiveAt: new Date()
+        }
+      });
+
+      const topics = await getUserTopics(userInfo);
+      const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+
+      return sendResponse(res, {
+        message: 'Device updated successfully',
+        isReinstall: false,
+        device: {
+          id: updatedDevice.id,
+          deviceToken: updatedDevice.deviceToken,
+          deviceFingerprint: updatedDevice.deviceFingerprint,
+          platform: updatedDevice.platform,
+          isActive: updatedDevice.isActive
+        },
+        subscribedTopics: topics,
+        deviceUsage: {
+          current: limitCheck.currentCount,
+          maximum: limitCheck.maxAllowed
+        }
+      });
+    }
+
+    // STEP 3: NEW DEVICE - Check quota
     const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
 
     if (!limitCheck.canAddDevice) {
       return next(new BusinessLogicError(limitCheck.message || 'Device limit reached'));
     }
 
-    // Create new device
+    // STEP 4: Create new device
     const newDevice = await globalPrisma.pushyDevice.create({
       data: {
         tenantUserId: userInfo.tenantUserId,
-        deviceToken,
-        platform,
+        deviceToken: deviceToken,
+        deviceFingerprint: deviceFingerprint,
+        platform: platform,
         deviceName: req.body.deviceName || 'Unnamed Device',
         appVersion: req.body.appVersion || '1.0.0',
         isActive: true,
@@ -96,7 +164,7 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
       }
     });
 
-    // Allocate device
+    // STEP 5: Allocate device
     await deviceLimitService.allocateDevice(
       userInfo.tenantId,
       newDevice.id,
@@ -111,16 +179,18 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
 
     return sendResponse(res, {
       message: 'Device registered successfully',
+      isReinstall: false,
       device: {
         id: newDevice.id,
         deviceToken: newDevice.deviceToken,
+        deviceFingerprint: newDevice.deviceFingerprint,
         platform: newDevice.platform,
         isActive: newDevice.isActive
       },
       subscribedTopics: topics,
-      deviceStats: {
-        currentCount: limitCheck.currentCount + 1,
-        maxAllowed: limitCheck.maxAllowed
+      deviceUsage: {
+        current: limitCheck.currentCount + 1,
+        maximum: limitCheck.maxAllowed
       }
     });
   } catch (error) {
@@ -219,6 +289,7 @@ const getUserDevices = async (req: AuthRequest, res: Response, next: NextFunctio
 
 const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userInfo = req.user as UserInfo;
+  const { deviceFingerprint } = req.query;
 
   try {
     // Check if tenant is on Pro plan
@@ -234,7 +305,40 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
       });
     }
 
-    // Check device limit
+    // If deviceFingerprint is provided, check if this device already exists for this user
+    if (deviceFingerprint && typeof deviceFingerprint === 'string') {
+      const existingDevice = await globalPrisma.pushyDevice.findFirst({
+        where: {
+          tenantUserId: userInfo.tenantUserId,
+          deviceFingerprint: deviceFingerprint
+        }
+      });
+
+      if (existingDevice) {
+        // This is a reinstall scenario - device already registered
+        const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+
+        return sendResponse(res, {
+          canRegister: true,
+          reason: 'Existing device will be reactivated',
+          isReinstall: true,
+          existingDevice: {
+            id: existingDevice.id,
+            deviceName: existingDevice.deviceName,
+            platform: existingDevice.platform,
+            lastActiveAt: existingDevice.lastActiveAt
+          },
+          deviceUsage: {
+            current: limitCheck.currentCount,
+            maximum: limitCheck.maxAllowed
+          },
+          requiresPayment: false,
+          additionalCost: 0
+        });
+      }
+    }
+
+    // Check device limit for NEW devices
     const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
 
     return sendResponse(res, {
@@ -242,6 +346,7 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
       reason: limitCheck.canAddDevice
         ? 'Device registration allowed'
         : limitCheck.message || 'Device limit reached',
+      isReinstall: false,
       deviceUsage: {
         current: limitCheck.currentCount,
         maximum: limitCheck.maxAllowed

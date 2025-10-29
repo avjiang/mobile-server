@@ -131,27 +131,27 @@ All endpoints are prefixed with:
           {
             "name": "Extra Warehouse",
             "quantity": 2,
-            "pricePerUnit": 100000,
+            "pricePerUnit": 190000,
             "totalCost": 200000
           },
           {
             "name": "Additional Push Notification Device",
             "quantity": 5,
-            "pricePerUnit": 10000,
-            "totalCost": 50000
+            "pricePerUnit": 19000,
+            "totalCost": 95000
           }
         ],
         "discounts": [],
-        "totalCost": 250000,
-        "totalCostBeforeDiscount": 250000,
+        "totalCost": 295000,
+        "totalCostBeforeDiscount": 295000,
         "totalDiscount": 0,
         "status": "Active",
         "subscriptionValidUntil": "2025-11-27T10:00:00.000Z"
       }
     }
   ],
-  "totalMonthlyCost": 250000,
-  "totalCostBeforeDiscount": 250000,
+  "totalMonthlyCost": 295000,
+  "totalCostBeforeDiscount": 295000,
   "totalDiscount": 0
 }
 ```
@@ -159,7 +159,7 @@ All endpoints are prefixed with:
 **Pricing Summary:**
 - **Pro Plan Base:** 0 IDR/month
 - **Extra Warehouse:** 100,000 IDR/month per warehouse (first warehouse free)
-- **Extra Device:** 10,000 IDR/month per device (beyond plan limit)
+- **Extra Device:** 19,000 IDR/month per device (beyond plan limit)
 
 ---
 
@@ -219,7 +219,7 @@ Current available plans:
 | Add-on ID | Name | Type | Price | Scope | Description |
 |-----------|------|------|-------|-------|-------------|
 | 1 | Extra User | user | Varies | outlet | Additional user slot |
-| 2 | Additional Push Notification Device | device | 10,000 IDR | tenant | Extra device beyond plan limit |
+| 2 | Additional Push Notification Device | device | 19,000 IDR | tenant | Extra device beyond plan limit |
 | 3 | Extra Warehouse | warehouse | 100,000 IDR | tenant | Additional warehouse beyond first free |
 
 ---
@@ -438,13 +438,13 @@ DELETE /api/admin/tenants/1/users/4
   "message": "Added 5 device quota. Total add-on devices: 8",
   "tenantId": 1,
   "addOnQuantity": 8,
-  "monthlyCost": 80000,
+  "monthlyCost": 152000,
   "subscriptionId": 1
 }
 ```
 
 **Notes:**
-- Price: 10,000 IDR/month per device
+- Price: 19,000 IDR/month per device
 - Updates existing add-on or creates new one
 - Immediate effect - devices can be activated right away
 

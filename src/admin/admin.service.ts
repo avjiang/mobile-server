@@ -907,7 +907,7 @@ const addDeviceQuotaForTenant = async (tenantId: number, quantity: number) => {
             message: `Added ${quantity} device quota. Total add-on devices: ${updatedAddOn.quantity}`,
             tenantId,
             addOnQuantity: updatedAddOn.quantity,
-            monthlyCost: updatedAddOn.quantity * 10000,
+            monthlyCost: updatedAddOn.quantity * 19000,
             subscriptionId: primarySubscription.id
         };
     } else {
@@ -925,7 +925,7 @@ const addDeviceQuotaForTenant = async (tenantId: number, quantity: number) => {
             message: `Added ${quantity} device quota`,
             tenantId,
             addOnQuantity: newAddOn.quantity,
-            monthlyCost: newAddOn.quantity * 10000,
+            monthlyCost: newAddOn.quantity * 19000,
             subscriptionId: primarySubscription.id
         };
     }
@@ -1043,7 +1043,7 @@ const reduceDeviceQuotaForTenant = async (tenantId: number, quantityToReduce: nu
             : `Reduced ${quantityToReduce} device quota.`,
         tenantId,
         addOnQuantity: newQuantity,
-        monthlyCost: newQuantity * 10000,
+        monthlyCost: newQuantity * 19000,
         subscriptionId: primarySubscription.id,
         quota: {
             previous: newMaxAllowed + quantityToReduce,

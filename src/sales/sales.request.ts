@@ -130,3 +130,16 @@ export class CompleteNewSalesRequest {
     sales: CreateSalesRequest = new CreateSalesRequest();
     @Expose() payments: Payment[] = [];
 }
+
+export class GetDeliveryListRequest {
+    @Expose() outletId: number = 0;
+    @Expose() businessDateFrom?: Date;
+    @Expose() businessDateTo?: Date;
+    @Expose() customerId?: number;
+}
+
+export class ConfirmDeliveryBatchRequest {
+    @Expose() salesIds: number[] = [];
+    @Expose() deliveryNotes?: string;
+    @Expose() deliveredAt?: Date;
+}

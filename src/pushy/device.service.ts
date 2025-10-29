@@ -3,7 +3,7 @@ const { getGlobalPrisma } = require('../db');
 
 const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
 const BASE_DEVICE_LIMIT = 3;
-const COST_PER_ADDITIONAL_DEVICE = 10000; // IDR 10,000 per month
+const COST_PER_ADDITIONAL_DEVICE = 19000; // IDR 19,000 per month
 
 interface DeviceLimitCheck {
   canAddDevice: boolean;
@@ -272,7 +272,7 @@ const purchaseAdditionalDevice = async (
           pricePerUnit: COST_PER_ADDITIONAL_DEVICE,
           maxQuantity: null, // unlimited
           scope: 'tenant',
-          description: 'Additional push notification device slot (IDR 10,000/month per device)'
+          description: 'Additional push notification device slot (IDR 19,000/month per device)'
         }
       });
     }

@@ -438,6 +438,9 @@ model Sales {
   stockSourceType         String?       @map("STOCK_SOURCE_TYPE")
   stockSourceOutletId     Int?          @map("STOCK_SOURCE_OUTLET_ID")
   stockSourceWarehouseId  Int?          @map("STOCK_SOURCE_WAREHOUSE_ID")
+  deliveredAt             DateTime?     @map("DELIVERED_AT")
+  deliveredBy             String?       @map("DELIVERED_BY")
+  deliveryNotes           String?       @default("") @map("DELIVERY_NOTES")
   salesItems              SalesItem[]
   payments                Payment[]
   registerLogs            RegisterLog[]

@@ -11,7 +11,7 @@ Push notification system using Pushy SDK for multi-tenant Flutter POS applicatio
 - **Backend uses database + 1-hour cache for plan checking** (95% query reduction)
 - **Hybrid Model**: Device limits calculated per outlet, but devices are tenant-wide pool
 - Each outlet subscription includes 3 devices (3 outlets = 9 total devices)
-- Additional devices: IDR 10,000/month per device (added to specific outlet subscription)
+- Additional devices: IDR 19,000/month per device (added to specific outlet subscription)
 - Clean approach: When plan changes, all refresh tokens are invalidated forcing re-login
 - **Cost Optimization**:
   - Check device eligibility BEFORE calling `pushy.register()` to avoid unnecessary billing
@@ -87,6 +87,143 @@ Pushy starts billing a device as soon as `Pushy.register()` is called on the cli
 - **User-specific**: `tenant_{tenantId}_user_{userId}` (for direct messages)
 
 **Note**: The client app dynamically subscribes to outlet-specific topics based on the current outlet context.
+
+### How Notification Topics are Generated
+
+The `notificationTopics` array in the login response is generated in [auth.service.ts](src/auth/auth.service.ts) during JWT token creation:
+
+**Flow:**
+
+1. **User logs in** → `authenticate()` function called ([auth.service.ts:15-79](src/auth/auth.service.ts#L15-L79))
+2. **JWT token generated** → `generateJwtToken()` function called ([auth.service.ts:345-370](src/auth/auth.service.ts#L345-L370))
+3. **If Pro plan** → `getNotificationTopics()` function called ([auth.service.ts:249-343](src/auth/auth.service.ts#L249-L343))
+4. **Topics embedded in JWT** → Returned in login response payload
+
+**Topic Generation Logic** ([auth.service.ts:249-343](src/auth/auth.service.ts#L249-L343)):
+
+```typescript
+// 1. Query user's permissions from database
+const permissions = await globalPrisma.permission.findMany({
+    where: {
+        id: { in: permissionIds },
+        deleted: false,
+        name: { startsWith: 'Receive ' },  // Filter notification permissions
+        category: 'Notifications'             // Only notification category
+    }
+});
+
+// 2. Convert permission names to topics
+// Example: "Receive Sales Notification" → "sales"
+const shortPermission = permission
+    .replace('Receive ', '')
+    .replace(' Notification', '')
+    .replace(' Alert', '')
+    .toLowerCase();
+
+// 3. Generate topics
+topics.push(`tenant_${tenantId}`);                          // Tenant-wide
+topics.push(`tenant_${tenantId}_${shortPermission}`);       // Permission-based
+topics.push(`tenant_${tenantId}_user_${userId}`);          // User-specific
+```
+
+### Adding New Notification Topics
+
+To introduce a new notification topic (e.g., "delivery"), follow these steps:
+
+#### Step 1: Add Permission to Global Database
+
+Insert a new permission in the **global database** `permission` table:
+
+```sql
+INSERT INTO permission (NAME, CATEGORY, DESCRIPTION, DELETED)
+VALUES ('Receive Delivery Notification', 'Notifications', 'Receive delivery notifications', false);
+```
+
+**Naming Convention:**
+- **Must start with**: `"Receive "`
+- **Must end with**: `" Notification"` or `" Alert"`
+- **Category**: `"Notifications"`
+- **Result topic**: `"delivery"` (after removing "Receive " and " Notification", then lowercasing)
+
+#### Step 2: Assign Permission to Roles
+
+Link the permission to appropriate roles in the **tenant database** `role_permission` table:
+
+```sql
+-- Example: Assign to Manager role
+INSERT INTO role_permission (roleId, permissionId, deleted)
+VALUES (1, <new_permission_id>, false);
+```
+
+#### Step 3: Users Re-login to Get New Topics
+
+After adding the permission:
+- Users must **re-login** to get updated `notificationTopics` in their JWT
+- The new topic will automatically appear in the login response
+- No code changes required in [auth.service.ts](src/auth/auth.service.ts) - topics are generated dynamically
+
+#### Step 4: Use the Topic in Your Code
+
+Once the permission exists, use it in your service/controller:
+
+```typescript
+import NotificationService from '../pushy/notification.service';
+
+// Example: Send delivery notification
+await NotificationService.sendPermissionBasedNotification({
+    tenantId: userInfo.tenantId,
+    type: 'DELIVERY',                    // Add this type to NotificationRequest interface
+    permissionName: 'delivery',          // Matches the generated topic
+    title: 'New Delivery Assigned',
+    message: `Delivery #${deliveryId} has been assigned to you`,
+    triggerUserId: userInfo.userId,
+    planName: userInfo.planName,
+    data: {
+        deliveryId: deliveryId,
+        customerName: 'John Doe',
+        // ... additional data
+    },
+    outletId: outletId  // Optional: for outlet-specific notifications
+});
+```
+
+#### Step 5: Add Helper Method (Optional)
+
+For convenience, add a helper method in [notification.service.ts](src/pushy/notification.service.ts):
+
+```typescript
+public async sendDeliveryNotification(
+    tenantId: number,
+    title: string,
+    message: string,
+    triggerUserId?: number,
+    planName?: string | null,
+    data?: any,
+    outletId?: number
+): Promise<void> {
+    await this.sendPermissionBasedNotification({
+        tenantId,
+        type: 'DELIVERY',
+        permissionName: 'delivery',
+        title,
+        message,
+        triggerUserId,
+        planName,
+        data,
+        outletId
+    });
+}
+```
+
+### Important Notes
+
+- **Topics are permission-based**: Tied to the global `permission` table
+- **Only for Pro plan**: Topics are only generated if tenant has Pro plan ([auth.service.ts:353-355](src/auth/auth.service.ts#L353-L355))
+- **Automatic generation**: No hardcoding needed - topics are dynamically generated from permissions
+- **Re-login required**: Users must re-login after permission changes to get updated topics
+- **Outlet-specific vs Tenant-wide**: Use `outletId` parameter to determine topic scope
+  - With `outletId`: `tenant_{tenantId}_outlet_{outletId}_delivery`
+  - Without `outletId`: `tenant_{tenantId}_delivery`
 
 ## Hybrid Model (Users & Devices)
 
@@ -204,7 +341,7 @@ INSERT INTO permission (NAME, CATEGORY, DESCRIPTION) VALUES
 ```sql
 -- Add-on ID: 2
 INSERT INTO subscription_add_on (ID, NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUANTITY, SCOPE, DESCRIPTION) VALUES
-(2, 'Additional Push Notification Device', 'device', 10000.00, null, 'tenant', 'Additional push notification device slot (IDR 10,000/month per device)');
+(2, 'Additional Push Notification Device', 'device', 19000.00, null, 'tenant', 'Additional push notification device slot (IDR 19,000/month per device)');
 ```
 
 ## API Endpoints
@@ -236,13 +373,13 @@ Success Response (Limit Reached):
 {
     "success": true,
     "canRegister": false,
-    "reason": "Device limit reached. Purchase additional device slot for IDR 10.000/month",
+    "reason": "Device limit reached. Purchase additional device slot for IDR 19.000/month",
     "deviceUsage": {
         "current": 5,
         "maximum": 5
     },
     "requiresPayment": true,
-    "additionalCost": 10000
+    "additionalCost": 19000
 }
 
 Success Response (Not Pro Plan):
@@ -291,7 +428,7 @@ Success Response:
 Notes:
 - This endpoint adds device quota to the tenant's FIRST active subscription
 - If tenant already has device add-ons, quantity will be ADDED to existing
-- Each device add-on costs IDR 10,000/month
+- Each device add-on costs IDR 19,000/month
 - The quota is immediately available for device registration
 - Maximum device limit = (3 devices per outlet × number of outlets) + add-on quantity
 - Example: 1 outlet with 2 add-ons = 3 + 2 = 5 total devices
@@ -392,7 +529,7 @@ Success Response (No devices deactivated):
     "message": "Reduced 1 device quota.",
     "tenantId": 1,
     "addOnQuantity": 1,
-    "monthlyCost": 10000,
+    "monthlyCost": 19000,
     "subscriptionId": 123,
     "quota": {
         "previous": 5,
@@ -411,7 +548,7 @@ Success Response (With automatic deactivation):
     "message": "Reduced 1 device quota. Automatically deactivated 1 excess device(s).",
     "tenantId": 1,
     "addOnQuantity": 1,
-    "monthlyCost": 10000,
+    "monthlyCost": 19000,
     "subscriptionId": 123,
     "quota": {
         "previous": 5,
@@ -505,7 +642,7 @@ Error Response (Device Limit):
     "success": false,
     "error": {
         "errorType": "Function",
-        "errorMessage": "Device limit reached. Purchase additional device slot for IDR 10.000/month"
+        "errorMessage": "Device limit reached. Purchase additional device slot for IDR 19.000/month"
     }
 }
 ```
@@ -630,7 +767,7 @@ Response:
     "success": true,
     "message": "Removed 1 additional device slot(s)",
     "totalAdditionalDevices": 1,
-    "monthlyAdditionalCost": 10000
+    "monthlyAdditionalCost": 19000
 }
 ```
 
@@ -656,7 +793,7 @@ Device limit management (Singleton)
 
 - **Hybrid model**: Device limits calculated as sum of all outlet subscriptions
 - Each outlet subscription includes 3 devices
-- Additional device purchase (IDR 10,000/device/month) added to outlet subscription
+- Additional device purchase (IDR 19,000/device/month) added to outlet subscription
 - Devices are pooled at tenant level (can be used at any outlet)
 - Device allocation tracking
 
@@ -1464,7 +1601,7 @@ bool hasPermission(String permissionName) {
 │    - quantity: 2                                            │
 │    - Attached to primary subscription                       │
 │                                                              │
-│    Monthly billing: +IDR 20,000 (2 × 10,000)               │
+│    Monthly billing: +IDR 20,000 (2 × 19,000)               │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
@@ -1495,7 +1632,7 @@ bool hasPermission(String permissionName) {
 SELECT
     t.TENANT_NAME,
     tsa.QUANTITY as additional_devices,
-    (tsa.QUANTITY * 10000) as monthly_cost
+    (tsa.QUANTITY * 19000) as monthly_cost
 FROM TENANT_SUBSCRIPTION_ADD_ON tsa
 JOIN TENANT_SUBSCRIPTION ts ON tsa.TENANT_SUBSCRIPTION_ID = ts.ID
 JOIN TENANT_OUTLET o ON ts.OUTLET_ID = o.ID
@@ -1587,7 +1724,7 @@ Current State:
 │ - 4 devices active (Device 2, 3, 4, 5)               │
 │ - 1 device inactive (Device 1)                        │
 │ - Current quota: 4                                     │
-│ - Monthly billing: IDR 10,000 (1 add-on)              │
+│ - Monthly billing: IDR 19,000 (1 add-on)              │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -1630,7 +1767,7 @@ void showDeviceLimitDialog() {
                 ),
                 ElevatedButton(
                     onPressed: () => purchaseAdditionalDevice(),
-                    child: Text('Add Device (IDR 10,000/month)')
+                    child: Text('Add Device (IDR 19,000/month)')
                 ),
             ],
         ),
@@ -1676,7 +1813,7 @@ void showDeviceLimitDialog() {
     "current": 3,
     "maximum": 3
   },
-  "additionalCost": 10000,
+  "additionalCost": 19000,
   "code": "DEVICE_LIMIT_EXCEEDED"
 }
 ```

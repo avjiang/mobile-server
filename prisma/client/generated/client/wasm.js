@@ -381,7 +381,10 @@ exports.Prisma.SalesScalarFieldEnum = {
   isTaxInclusive: 'isTaxInclusive',
   stockSourceType: 'stockSourceType',
   stockSourceOutletId: 'stockSourceOutletId',
-  stockSourceWarehouseId: 'stockSourceWarehouseId'
+  stockSourceWarehouseId: 'stockSourceWarehouseId',
+  deliveredAt: 'deliveredAt',
+  deliveredBy: 'deliveredBy',
+  deliveryNotes: 'deliveryNotes'
 };
 
 exports.Prisma.SalesItemScalarFieldEnum = {
@@ -1318,7 +1321,9 @@ exports.Prisma.SalesOrderByRelevanceFieldEnum = {
   remark: 'remark',
   performedBy: 'performedBy',
   orderStatus: 'orderStatus',
-  stockSourceType: 'stockSourceType'
+  stockSourceType: 'stockSourceType',
+  deliveredBy: 'deliveredBy',
+  deliveryNotes: 'deliveryNotes'
 };
 
 exports.Prisma.SalesItemOrderByRelevanceFieldEnum = {

@@ -1121,7 +1121,7 @@ This follows the **exact same pattern** as user and device add-ons in `admin.ser
 -- subscription_add_on table (global, predefined)
 ID | NAME              | ADD_ON_TYPE | PRICE_PER_UNIT | SCOPE
 1  | Extra User        | user        | 50000          | outlet
-2  | Extra Device      | device      | 10000          | tenant
+2  | Extra Device      | device      | 19000          | tenant
 3  | Extra Warehouse   | warehouse   | 100000         | tenant  -- NEW
 
 -- tenant_subscription_add_on (per tenant usage)
@@ -1149,12 +1149,12 @@ const addOns = subscription.subscriptionAddOn.map(({ addOn, quantity }) => ({
 // Example with warehouses:
 // addOns = [
 //   { name: "Extra User", quantity: 3, pricePerUnit: 50000, totalCost: 150000 },
-//   { name: "Extra Device", quantity: 5, pricePerUnit: 10000, totalCost: 50000 },
+//   { name: "Extra Device", quantity: 5, pricePerUnit: 19000, totalCost: 95000 },
 //   { name: "Extra Warehouse", quantity: 2, pricePerUnit: 100000, totalCost: 200000 }
 // ]
 
 const totalAddOnCost = addOns.reduce((sum, addOn) => sum + addOn.totalCost, 0);
-// totalAddOnCost = 150000 + 50000 + 200000 = 400000
+// totalAddOnCost = 150000 + 95000 + 200000 = 445000
 
 const totalCost = basePlanCost + totalAddOnCost;
 ```

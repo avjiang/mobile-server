@@ -383,9 +383,65 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next);
 }
 
+const getDeliveryList = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { outletId, businessDateFrom, businessDateTo, customerId } = req.query;
+
+    if (!outletId || !validator.isNumeric(outletId as string)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+
+    const outletIdNum = parseInt(outletId as string);
+    const customerIdNum = customerId && validator.isNumeric(customerId as string) ? parseInt(customerId as string) : undefined;
+    const dateFrom = businessDateFrom ? new Date(businessDateFrom as string) : undefined;
+    const dateTo = businessDateTo ? new Date(businessDateTo as string) : undefined;
+
+    service.getDeliveryList(
+        req.user.databaseName,
+        outletIdNum,
+        dateFrom,
+        dateTo,
+        customerIdNum
+    )
+        .then((deliveryList) => sendResponse(res, deliveryList))
+        .catch(next);
+}
+
+const confirmDeliveryBatch = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { salesIds, deliveryNotes, deliveredAt } = req.body;
+
+    if (!salesIds || !Array.isArray(salesIds) || salesIds.length === 0) {
+        throw new RequestValidateError('salesIds array is required and must not be empty');
+    }
+
+    const deliveredAtDate = deliveredAt ? new Date(deliveredAt) : undefined;
+
+    service.confirmDeliveryBatch(
+        req.user.databaseName,
+        req.user.tenantId,
+        { userId: req.user.userId, username: req.user.username },
+        salesIds,
+        deliveryNotes,
+        deliveredAtDate
+    )
+        .then((result) => {
+            sendResponse(res, {
+                message: 'Delivery confirmed successfully',
+                ...result
+            });
+        })
+        .catch(next);
+}
+
 //routes
 router.get('/getTotalSalesData', getTotalSalesData)
 router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
+router.get('/delivery-list', getDeliveryList)
 router.get('/outlet', getAll)
 router.get('/dateRange', getAllByDateRange)
 router.get('/:id', getById)
@@ -394,6 +450,7 @@ router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
 // router.post('/completeSales', completeSales)
 router.post('/addPayment', addPaymentToPartiallyPaidSales);
+router.post('/delivery/confirm', confirmDeliveryBatch);
 router.put('/update', update)
 router.put('/void/:id', voidSales)
 router.put('/return/:id', returnSales)

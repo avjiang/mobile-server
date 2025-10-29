@@ -1397,6 +1397,9 @@ let voidSales = async (
             if (!sales) {
                 throw new NotFoundError("Sales");
             }
+            if (sales.status === "Delivered") {
+                throw new BusinessLogicError("Cannot void a delivered sale");
+            }
             if (sales.status !== "Completed") {
                 throw new BusinessLogicError("Only completed sales can be voided");
             }
@@ -1516,6 +1519,9 @@ let returnSales = async (
             });
             if (!sales) {
                 throw new NotFoundError("Sales");
+            }
+            if (sales.status === "Delivered") {
+                throw new BusinessLogicError("Cannot return a delivered sale. Please contact support.");
             }
             if (sales.status !== "Completed") {
                 throw new BusinessLogicError("Only completed sales can be returned");
@@ -1638,6 +1644,9 @@ let refundSales = async (
             if (!sales) {
                 throw new NotFoundError("Sales");
             }
+            if (sales.status === "Delivered") {
+                throw new BusinessLogicError("Cannot refund a delivered sale. Please contact support.");
+            }
             if (sales.status !== "Completed") {
                 throw new BusinessLogicError("Only completed sales can be refunded");
             }
@@ -1735,6 +1744,175 @@ let refundSales = async (
     }
 }
 
+let getDeliveryList = async (
+    databaseName: string,
+    outletId: number,
+    businessDateFrom?: Date,
+    businessDateTo?: Date,
+    customerId?: number
+) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const where: any = {
+            outletId: outletId,
+            salesType: 'DELIVERY',
+            status: {
+                in: ['Completed', 'Partially Paid']
+            },
+            deliveredAt: null,
+            deleted: false,
+        };
+
+        if (businessDateFrom) {
+            where.businessDate = { gte: businessDateFrom };
+        }
+        if (businessDateTo) {
+            where.businessDate = { ...where.businessDate, lte: businessDateTo };
+        }
+        if (customerId) {
+            where.customerId = customerId;
+        }
+
+        const deliveryList = await tenantPrisma.sales.findMany({
+            where,
+            select: {
+                id: true,
+                businessDate: true,
+                customerName: true,
+                phoneNumber: true,
+                shipStreet: true,
+                shipCity: true,
+                shipState: true,
+                shipPostalCode: true,
+                shipCountry: true,
+                totalAmount: true,
+                paidAmount: true,
+                status: true,
+                remark: true,
+                createdAt: true,
+                salesItems: {
+                    select: {
+                        itemName: true,
+                        itemCode: true,
+                        quantity: true,
+                        price: true,
+                        subtotalAmount: true,
+                    },
+                    where: {
+                        deleted: false
+                    }
+                }
+            },
+            orderBy: {
+                businessDate: 'asc'
+            }
+        });
+
+        return deliveryList;
+    } catch (error) {
+        throw error;
+    }
+}
+
+let confirmDeliveryBatch = async (
+    databaseName: string,
+    tenantId: number,
+    performedBy: { userId: number, username: string },
+    salesIds: number[],
+    deliveryNotes?: string,
+    deliveredAt?: Date
+) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    try {
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Validate all sales exist and are eligible for delivery
+            const sales = await tx.sales.findMany({
+                where: {
+                    id: { in: salesIds },
+                    deleted: false
+                }
+            });
+
+            if (sales.length !== salesIds.length) {
+                throw new NotFoundError('One or more sales records not found');
+            }
+
+            // Validate each sale
+            const validationErrors: string[] = [];
+            sales.forEach(sale => {
+                if (sale.salesType !== 'DELIVERY') {
+                    validationErrors.push(`Sales #${sale.id} is not a delivery sale`);
+                }
+                if (!['Completed', 'Partially Paid'].includes(sale.status)) {
+                    validationErrors.push(
+                        `Sales #${sale.id} has invalid status: ${sale.status}. Only Completed or Partially Paid sales can be delivered.`
+                    );
+                }
+                if (sale.deliveredAt !== null) {
+                    validationErrors.push(`Sales #${sale.id} has already been delivered`);
+                }
+            });
+
+            if (validationErrors.length > 0) {
+                throw new BusinessLogicError(validationErrors.join('; '));
+            }
+
+            // Update all sales to Delivered status
+            await tx.sales.updateMany({
+                where: {
+                    id: { in: salesIds }
+                },
+                data: {
+                    status: 'Delivered',
+                    deliveredAt: deliveredAt || new Date(),
+                    deliveredBy: performedBy.username,
+                    deliveryNotes: deliveryNotes || '',
+                    updatedAt: new Date()
+                }
+            });
+
+            return sales;
+        });
+
+        // Send delivery notification
+        const outletId = result[0]?.outletId;
+        if (outletId) {
+            try {
+                await PushyService.sendToTopic(
+                    `/topics/tenant_${tenantId}_outlet_${outletId}_delivery`,
+                    {
+                        title: 'Deliveries Confirmed',
+                        message: `${salesIds.length} delivery order(s) have been delivered`,
+                        data: {
+                            type: 'delivery_confirmed',
+                            salesIds: salesIds,
+                            deliveredBy: performedBy.username,
+                            deliveredAt: deliveredAt || new Date(),
+                            count: salesIds.length,
+                            outletId: outletId,
+                            triggeringUserId: performedBy.userId,
+                            triggeringUsername: performedBy.username,
+                            timestamp: new Date().toISOString()
+                        }
+                    },
+                    tenantId
+                );
+            } catch (error) {
+                console.error('Failed to send delivery notification:', error);
+            }
+        }
+
+        return {
+            successCount: salesIds.length,
+            deliveredSalesIds: salesIds,
+            deliveredAt: deliveredAt || new Date()
+        };
+    } catch (error) {
+        throw error;
+    }
+}
+
 export = {
     getAll,
     getByDateRange,
@@ -1750,5 +1928,7 @@ export = {
     addPaymentToPartiallyPaidSales,
     voidSales,
     returnSales,
-    refundSales
+    refundSales,
+    getDeliveryList,
+    confirmDeliveryBatch
 }

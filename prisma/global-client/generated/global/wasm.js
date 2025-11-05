@@ -233,6 +233,7 @@ exports.Prisma.SettingDefinitionScalarFieldEnum = {
   description: 'description',
   scope: 'scope',
   isRequired: 'isRequired',
+  isReadOnly: 'isReadOnly',
   validationRules: 'validationRules',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',

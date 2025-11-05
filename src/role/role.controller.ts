@@ -22,8 +22,15 @@ let getAllRole = (req: AuthRequest, res: Response, next: NextFunction) => {
         take: req.query.take ? parseInt(req.query.take as string) : undefined,
     };
     service
-        .getAll(req.user.databaseName, syncRequest)
-        .then(({ roles, total, serverTimestamp }) => sendResponse(res, { data: roles, total, serverTimestamp }))
+        .getAll(req.user.databaseName, req.user.userId, req.user.tenantId, req.user.planName, syncRequest)
+        .then(({ roles, total, serverTimestamp, notificationTopics }) => {
+            const response: any = { data: roles, total, serverTimestamp };
+            // Only include notificationTopics if it exists (current user affected or initial sync)
+            if (notificationTopics !== undefined) {
+                response.notificationTopics = notificationTopics;
+            }
+            sendResponse(res, response);
+        })
         .catch(next);
 }
 

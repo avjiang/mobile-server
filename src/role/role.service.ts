@@ -1,14 +1,20 @@
 import { PrismaClient, Category } from "../../prisma/client/generated/client"
+import { PrismaClient as GlobalPrismaClient } from "../../prisma/global-client/generated/global";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
-import { getTenantPrisma } from '../db';
+import { getTenantPrisma, getGlobalPrisma } from '../db';
 import { CreateRoleRequestBody } from "./role.request";
 import { SyncRequest } from "src/item/item.request";
 
-// stock function 
+const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
+
+// stock function
 let getAll = async (
     databaseName: string,
+    userId: number,
+    tenantId: number,
+    planName: string | null | undefined,
     syncRequest: SyncRequest
-): Promise<{ roles: any[]; total: number; serverTimestamp: string }> => {
+): Promise<{ roles: any[]; total: number; serverTimestamp: string; notificationTopics?: string[] }> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
 
@@ -80,13 +86,272 @@ let getAll = async (
             }
         });
 
+        // Check if current user's permissions were affected by role changes
+        // Only include notificationTopics on first page (skip=0) to avoid duplicates in pagination
+        // Only for Pro plan tenants (push notifications feature)
+        let notificationTopics: string[] | undefined = undefined;
+
+        if (skip === 0 && planName === 'Pro') {
+            // On first page, check if user is affected by ANY role changes (not just current page)
+            // This ensures we detect changes even if user's role is on a later page
+            if (!lastSyncTimestamp) {
+                // Initial sync - check if user has active device before generating topics
+                const hasActiveDevice = await checkUserHasActiveDevice(tenantId, userId, databaseName);
+                if (hasActiveDevice) {
+                    notificationTopics = await generateNotificationTopics(tenantId, userId, databaseName);
+                } else {
+                    // Return empty array to force frontend to unsubscribe from all topics
+                    notificationTopics = [];
+                }
+            } else if (total > 0) {
+                // Get ALL changed role IDs (not paginated) for accurate user impact check
+                const allChangedRoleIds = await tenantPrisma.role.findMany({
+                    where,
+                    select: { id: true }
+                });
+
+                const currentUserAffected = await checkIfUserAffectedByRoleChanges(
+                    tenantPrisma,
+                    userId,
+                    allChangedRoleIds.map(r => r.id),
+                    lastSync
+                );
+
+                if (currentUserAffected) {
+                    // Check if user has active device before generating topics
+                    const hasActiveDevice = await checkUserHasActiveDevice(tenantId, userId, databaseName);
+                    if (hasActiveDevice) {
+                        notificationTopics = await generateNotificationTopics(tenantId, userId, databaseName);
+                    } else {
+                        // Return empty array to force frontend to unsubscribe from all topics
+                        notificationTopics = [];
+                    }
+                }
+            }
+        }
+
         return {
             roles,
             total,
             serverTimestamp: new Date().toISOString(),
+            notificationTopics
         };
     } catch (error) {
         throw error;
+    }
+};
+
+// Helper: Check if user is affected by role changes
+const checkIfUserAffectedByRoleChanges = async (
+    tenantPrisma: PrismaClient,
+    userId: number,
+    changedRoleIds: number[],
+    lastSync?: Date
+): Promise<boolean> => {
+    if (changedRoleIds.length === 0 && lastSync) {
+        return false;
+    }
+
+    // Check if user is assigned to any of the changed roles
+    const userWithChangedRoles = await tenantPrisma.user.findFirst({
+        where: {
+            id: userId,
+            deleted: false,
+            roles: {
+                some: changedRoleIds.length > 0 ? {
+                    id: { in: changedRoleIds },
+                    deleted: false
+                } : { deleted: false }
+            }
+        }
+    });
+
+    return userWithChangedRoles !== null;
+};
+
+// Helper: Check if user has an active device with allocation
+const checkUserHasActiveDevice = async (
+    tenantId: number,
+    userId: number,
+    databaseName: string
+): Promise<boolean> => {
+    try {
+        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+        // Get user from tenant database
+        const user = await tenantPrisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true }
+        });
+
+        if (!user) {
+            return false;
+        }
+
+        // Get global tenant user
+        const globalTenantUser = await globalPrisma.tenantUser.findFirst({
+            where: {
+                username: user.username,
+                tenantId: tenantId
+            },
+            select: { id: true }
+        });
+
+        if (!globalTenantUser) {
+            return false;
+        }
+
+        // Check if user has any active device with allocation
+        const activeDevice = await globalPrisma.pushyDevice.findFirst({
+            where: {
+                tenantUserId: globalTenantUser.id,
+                isActive: true,
+                allocation: {
+                    isNot: null
+                }
+            }
+        });
+
+        return activeDevice !== null;
+    } catch (error) {
+        console.error('Error checking user active device:', error);
+        return false;
+    }
+};
+
+// Helper: Generate notification topics for a user
+const generateNotificationTopics = async (
+    tenantId: number,
+    userId: number,
+    databaseName: string
+): Promise<string[]> => {
+    try {
+        const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+        // Get user with roles and permissions in a single optimized query
+        const user = await tenantPrisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                username: true,
+                roles: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        permission: {
+                            where: { deleted: false },
+                            select: {
+                                permissionId: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return [];
+        }
+
+        // Check if user has super admin role (ID 1)
+        const isSuperAdmin = user.roles.some(role => role.id === 1);
+
+        // Fetch notification permissions
+        let permissions;
+
+        if (isSuperAdmin) {
+            // Super admin gets ALL notification topics automatically
+            permissions = await globalPrisma.permission.findMany({
+                where: {
+                    deleted: false,
+                    name: { startsWith: 'Receive ' },
+                    category: 'Notifications'
+                },
+                select: { name: true }
+            });
+        } else {
+            // Regular user - permission-based access
+            // Extract unique permission IDs
+            const permissionIds = new Set<number>();
+            user.roles.forEach(role => {
+                role.permission.forEach(rolePermission => {
+                    permissionIds.add(rolePermission.permissionId);
+                });
+            });
+
+            if (permissionIds.size === 0) {
+                // User has no permissions, return only basic tenant and user topics
+                const globalTenantUser = await globalPrisma.tenantUser.findFirst({
+                    where: {
+                        username: user.username,
+                        tenantId: tenantId
+                    },
+                    select: { id: true }
+                });
+
+                const topics = [`tenant_${tenantId}`];
+                if (globalTenantUser) {
+                    topics.push(`tenant_${tenantId}_user_${globalTenantUser.id}`);
+                }
+                return topics;
+            }
+
+            // Fetch notification permissions from global database
+            permissions = await globalPrisma.permission.findMany({
+                where: {
+                    id: { in: Array.from(permissionIds) },
+                    name: { startsWith: 'Receive ' },
+                    category: 'Notifications',
+                    deleted: false
+                },
+                select: { name: true }
+            });
+        }
+
+        // Generate topics
+        const topics: string[] = [];
+
+        // Define outlet-specific permissions (these need outlet context)
+        const outletSpecificPermissions = ['sales', 'inventory', 'order'];
+
+        // Add tenant-wide topic
+        topics.push(`tenant_${tenantId}`);
+
+        // Add permission-based topics
+        permissions.forEach(permission => {
+            const shortPermission = permission.name
+                .replace('Receive ', '')
+                .replace(' Notification', '')
+                .replace(' Alert', '')
+                .toLowerCase();
+
+            // Check if this permission is outlet-specific
+            if (outletSpecificPermissions.includes(shortPermission)) {
+                // Add outlet-specific topic (default to outlet_1)
+                // TODO: In future, detect user's actual outlet from session/context
+                topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+            } else {
+                // Add tenant-wide topic for financial, staff, system alerts
+                topics.push(`tenant_${tenantId}_${shortPermission}`);
+            }
+        });
+
+        // Add user-specific topic (requires global tenantUserId)
+        const globalTenantUser = await globalPrisma.tenantUser.findFirst({
+            where: {
+                username: user.username,
+                tenantId: tenantId
+            },
+            select: { id: true }
+        });
+
+        if (globalTenantUser) {
+            topics.push(`tenant_${tenantId}_user_${globalTenantUser.id}`);
+        }
+
+        return topics;
+    } catch (error) {
+        console.error('Error generating notification topics:', error);
+        return [];
     }
 };
 

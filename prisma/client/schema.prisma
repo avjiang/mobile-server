@@ -372,6 +372,7 @@ model Item {
   @@index([categoryId])
   @@index([updatedAt])
   @@index([supplierId])
+  @@index([alternateLookUp])
   @@map("item")
 }
 

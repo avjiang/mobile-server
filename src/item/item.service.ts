@@ -1,6 +1,6 @@
 import { PrismaClient, Item, Prisma } from "../../prisma/client/generated/client"
 import { Decimal } from 'decimal.js';
-import { NotFoundError } from "../api-helpers/error"
+import { NotFoundError, BusinessLogicError } from "../api-helpers/error"
 import salesService from "../sales/sales.service"
 import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.response"
 import { plainToInstance } from "class-transformer"
@@ -169,14 +169,41 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const createdItems = await tenantPrisma.$transaction(async (tx) => {
+            // Batch check all alternateLookup values in a single query
+            const alternateLookups = itemBodyArray
+                .map(item => item.alternateLookup)
+                .filter((lookup): lookup is string => lookup !== undefined && lookup.trim() !== '');
+
+            if (alternateLookups.length > 0) {
+                const existingItems = await tx.item.findMany({
+                    where: {
+                        alternateLookUp: { in: alternateLookups },
+                        deleted: false
+                    },
+                    select: {
+                        id: true,
+                        itemName: true,
+                        alternateLookUp: true
+                    }
+                });
+
+                if (existingItems.length > 0) {
+                    const duplicates = existingItems.map(item =>
+                        `"${item.alternateLookUp}" (Item ID: ${item.id}, Item Name: ${item.itemName})`
+                    ).join(', ');
+                    throw new BusinessLogicError(`Items with alternate lookup already exist: ${duplicates}`);
+                }
+            }
+
             // Create items with nested relations in parallel
             return Promise.all(
                 itemBodyArray.map(async (itemBody) => {
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, ...itemWithoutId } = itemBody;
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, ...itemWithoutId } = itemBody;
 
                     const createdItem = await tx.item.create({
                         data: {
                             ...itemWithoutId,
+                            alternateLookUp: alternateLookup, // Map DTO field to Prisma field
                             cost: cost || 0, // Use provided cost or default to 0
                             stockBalance: {
                                 create: {
@@ -258,6 +285,21 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
         const { id, version, categoryId, supplierId, reorderThreshold, deleted, ...updateData } = item;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
+            // Check if alternateLookUp is being updated and not empty
+            if (updateData.alternateLookUp && updateData.alternateLookUp.trim() !== '') {
+                const existingItem = await tx.item.findFirst({
+                    where: {
+                        alternateLookUp: updateData.alternateLookUp,
+                        deleted: false,
+                        id: { not: id } // Exclude current item from check
+                    }
+                });
+
+                if (existingItem) {
+                    throw new BusinessLogicError(`An item with alternate lookup "${updateData.alternateLookUp}" already exists (Item ID: ${existingItem.id}, Item Name: ${existingItem.itemName})`);
+                }
+            }
+
             // Prepare the item update data
             const itemUpdateData: any = {
                 ...updateData,

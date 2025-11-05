@@ -272,50 +272,75 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
         // Get all role IDs for this user
         const roleIds = user.roles.map((role: any) => role.id);
 
-        // Get role permissions from tenant DB
-        const rolePermissions = await tenantPrisma.rolePermission.findMany({
-            where: {
-                roleId: {
-                    in: roleIds
-                },
-                deleted: false
-            }
-        });
+        // Check if user has super admin role (ID 1)
+        const isSuperAdmin = roleIds.includes(1);
 
         await tenantPrisma.$disconnect();
 
-        // Get permission IDs
-        const permissionIds = rolePermissions.map((rp: any) => rp.permissionId);
-
-        // Get actual permissions from global DB
-        const permissions = await globalPrisma.permission.findMany({
-            where: {
-                id: {
-                    in: permissionIds
-                },
-                deleted: false,
-                // Filter for notification permissions
-                name: {
-                    startsWith: 'Receive '
-                },
-                category: 'Notifications'
-            }
-        });
-
         // Extract notification permission names
         const notificationPermissions = new Set<string>();
-        permissions.forEach((permission: any) => {
-            notificationPermissions.add(permission.name);
-        });
+
+        if (isSuperAdmin) {
+            // Super admin gets ALL notification topics automatically
+            // Fetch all notification permissions from global DB
+            const allNotificationPermissions = await globalPrisma.permission.findMany({
+                where: {
+                    deleted: false,
+                    name: {
+                        startsWith: 'Receive '
+                    },
+                    category: 'Notifications'
+                }
+            });
+
+            allNotificationPermissions.forEach((permission: any) => {
+                notificationPermissions.add(permission.name);
+            });
+        } else {
+            // Regular user - permission-based access
+            // Get role permissions from tenant DB
+            const rolePermissions = await tenantPrisma.rolePermission.findMany({
+                where: {
+                    roleId: {
+                        in: roleIds
+                    },
+                    deleted: false
+                }
+            });
+
+            // Get permission IDs
+            const permissionIds = rolePermissions.map((rp: any) => rp.permissionId);
+
+            // Get actual permissions from global DB
+            const permissions = await globalPrisma.permission.findMany({
+                where: {
+                    id: {
+                        in: permissionIds
+                    },
+                    deleted: false,
+                    // Filter for notification permissions
+                    name: {
+                        startsWith: 'Receive '
+                    },
+                    category: 'Notifications'
+                }
+            });
+
+            permissions.forEach((permission: any) => {
+                notificationPermissions.add(permission.name);
+            });
+        }
 
         // Generate topics
         const topics: string[] = [];
 
+        // Define outlet-specific permissions (these need outlet context)
+        const outletSpecificPermissions = ['sales', 'inventory', 'order'];
+
         // Add tenant-wide topic (for system-level notifications)
         topics.push(`tenant_${tenantId}`);
 
-        // Add permission-based topics at tenant level
-        // These are used for tenant-wide notifications (e.g., financial, system alerts)
+        // Add permission-based topics
         notificationPermissions.forEach(permission => {
             // Convert permission name to topic: "Receive Sales Notification" -> "sales"
             const shortPermission = permission
@@ -324,16 +349,29 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
                 .replace(' Alert', '')
                 .toLowerCase();
 
-            // Add tenant-level permission topic
-            topics.push(`tenant_${tenantId}_${shortPermission}`);
-
-            // Note: Outlet-specific topics like `tenant_${tenantId}_outlet_${outletId}_${shortPermission}`
-            // will be subscribed dynamically when the user is working in a specific outlet context
-            // This is handled by the client app based on the current outlet selection
+            // Check if this permission is outlet-specific
+            if (outletSpecificPermissions.includes(shortPermission)) {
+                // Add outlet-specific topic (default to outlet_1)
+                // TODO: In future, detect user's actual outlet from session/context
+                topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+            } else {
+                // Add tenant-wide topic for financial, staff, system alerts
+                topics.push(`tenant_${tenantId}_${shortPermission}`);
+            }
         });
 
-        // Add user-specific topic for direct messages
-        topics.push(`tenant_${tenantId}_user_${userId}`);
+        // Add user-specific topic for direct messages (requires global tenantUserId)
+        const globalTenantUser = await globalPrisma.tenantUser.findFirst({
+            where: {
+                username: user.username,
+                tenantId: tenantId
+            },
+            select: { id: true }
+        });
+
+        if (globalTenantUser) {
+            topics.push(`tenant_${tenantId}_user_${globalTenantUser.id}`);
+        }
 
         return topics;
     } catch (error) {

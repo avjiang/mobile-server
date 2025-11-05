@@ -48,6 +48,7 @@ Stores the **definition/schema** for all settings.
 | `DESCRIPTION` | STRING | Human-readable description |
 | `SCOPE` | STRING | Where it applies: "TENANT", "OUTLET", "USER" |
 | `IS_REQUIRED` | BOOLEAN | Whether setting must have a value |
+| `IS_READ_ONLY` | BOOLEAN | Whether setting cannot be modified by users (default: false) |
 | `VALIDATION_RULES` | TEXT (JSON) | Validation rules: `{min, max, options, pattern}` |
 | `VERSION` | INT | For versioning and cache invalidation |
 | `CREATED_AT` | DATETIME | Creation timestamp |
@@ -66,6 +67,7 @@ model SettingDefinition {
   description     String?   @map("DESCRIPTION")
   scope           String    @map("SCOPE")
   isRequired      Boolean   @default(false) @map("IS_REQUIRED")
+  isReadOnly      Boolean   @default(false) @map("IS_READ_ONLY")
   validationRules String?   @db.Text @map("VALIDATION_RULES")
   createdAt       DateTime  @default(now()) @map("CREATED_AT")
   updatedAt       DateTime  @updatedAt @map("UPDATED_AT")
@@ -89,6 +91,8 @@ model SettingDefinition {
   "DEFAULT_VALUE": "IDR",
   "SCOPE": "OUTLET",
   "DESCRIPTION": "Default currency for transactions",
+  "IS_REQUIRED": false,
+  "IS_READ_ONLY": false,
   "VALIDATION_RULES": "{\"options\": [\"IDR\", \"USD\", \"SGD\"]}"
 }
 ```
@@ -209,6 +213,39 @@ The `VALIDATION_RULES` column stores JSON-formatted validation constraints.
 
 ---
 
+### Read-Only Settings
+
+The `isReadOnly` field allows you to mark certain settings as **read-only**, preventing users from modifying them through the API.
+
+**Use Cases:**
+- **System-managed settings**: Settings that should only be changed by system administrators or automated processes
+- **Calculated values**: Settings derived from other data that shouldn't be manually edited
+- **License restrictions**: Settings controlled by subscription plan or license type
+- **Safety-critical settings**: Configuration that could break functionality if incorrectly modified
+
+**Example:**
+```json
+{
+  "key": "subscription_plan",
+  "category": "System",
+  "type": "STRING",
+  "defaultValue": "Free",
+  "scope": "TENANT",
+  "isReadOnly": true,
+  "description": "Current subscription plan (managed by billing system)"
+}
+```
+
+**Behavior:**
+- Read-only settings can be retrieved via `GET /settings/sync`
+- Attempts to update read-only settings via `PUT /settings/batchUpdate` will be **rejected with validation error**
+- Only system-level operations (direct database access or admin tools) can modify read-only settings
+- Clients should disable UI controls for read-only settings
+
+**Note:** The backend currently returns all settings including read-only ones. Enforcement of read-only constraints should be implemented in the service layer if needed.
+
+---
+
 ## API Endpoints
 
 ### 1. GET `/settings/sync` - Sync All Settings
@@ -298,6 +335,7 @@ Fetch all setting definitions with delta sync support.
       "description": "Default currency for transactions",
       "validationRules": "{\"options\": [\"IDR\", \"USD\", \"SGD\"]}",
       "isRequired": false,
+      "isReadOnly": false,
       "version": 1,
       "createdAt": "2025-01-15T10:00:00Z",
       "updatedAt": "2025-01-15T10:00:00Z",
@@ -594,6 +632,7 @@ INSERT INTO setting_definition (
   DESCRIPTION,
   `SCOPE`,
   IS_REQUIRED,
+  IS_READ_ONLY,
   VALIDATION_RULES
 ) VALUES (
   'enable_loyalty_program',
@@ -602,6 +641,7 @@ INSERT INTO setting_definition (
   'false',
   'Enable customer loyalty points',
   'OUTLET',
+  0,
   0,
   NULL
 );
@@ -617,6 +657,7 @@ Or if using a seed script:
   description: 'Enable customer loyalty points',
   scope: 'OUTLET',
   isRequired: false,
+  isReadOnly: false,
   validationRules: null
 }
 ```
@@ -844,6 +885,45 @@ This prevents issues with clock differences between client and server.
 ---
 
 ## Troubleshooting
+
+### Issue: New field not appearing in API response
+
+**Symptoms:**
+- Added new field to `setting_definition` schema (e.g., `isReadOnly`)
+- Ran migration and Prisma generate successfully
+- Field exists in database
+- Field still doesn't appear in API response
+
+**Cause:**
+The Node.js server has the old Prisma client loaded in memory from before the schema change.
+
+**Solution:**
+1. **Restart the server** - This is the most common fix!
+   ```bash
+   # Stop your current server (Ctrl+C or kill the process)
+   # Then restart
+   npm run dev
+   ```
+
+2. **Verify the steps were completed:**
+   ```bash
+   # 1. Check migration was applied
+   npx prisma migrate status --schema=prisma/global-client/schema.prisma
+
+   # 2. Regenerate Prisma client
+   npx prisma generate --schema=prisma/global-client/schema.prisma
+
+   # 3. Restart server
+   npm run dev
+   ```
+
+3. **Verify the field appears:**
+   ```bash
+   curl -H "Authorization: Bearer <token>" \
+     'http://localhost:8080/settings/definition/sync?lastSyncTimestamp=null&take=1'
+   ```
+
+---
 
 ### Issue: Settings not syncing
 

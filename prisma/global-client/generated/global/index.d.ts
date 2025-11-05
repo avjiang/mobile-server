@@ -12614,6 +12614,7 @@ export namespace Prisma {
     description: string | null
     scope: string | null
     isRequired: boolean | null
+    isReadOnly: boolean | null
     validationRules: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -12631,6 +12632,7 @@ export namespace Prisma {
     description: string | null
     scope: string | null
     isRequired: boolean | null
+    isReadOnly: boolean | null
     validationRules: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -12648,6 +12650,7 @@ export namespace Prisma {
     description: number
     scope: number
     isRequired: number
+    isReadOnly: number
     validationRules: number
     createdAt: number
     updatedAt: number
@@ -12677,6 +12680,7 @@ export namespace Prisma {
     description?: true
     scope?: true
     isRequired?: true
+    isReadOnly?: true
     validationRules?: true
     createdAt?: true
     updatedAt?: true
@@ -12694,6 +12698,7 @@ export namespace Prisma {
     description?: true
     scope?: true
     isRequired?: true
+    isReadOnly?: true
     validationRules?: true
     createdAt?: true
     updatedAt?: true
@@ -12711,6 +12716,7 @@ export namespace Prisma {
     description?: true
     scope?: true
     isRequired?: true
+    isReadOnly?: true
     validationRules?: true
     createdAt?: true
     updatedAt?: true
@@ -12815,6 +12821,7 @@ export namespace Prisma {
     description: string | null
     scope: string
     isRequired: boolean
+    isReadOnly: boolean
     validationRules: string | null
     createdAt: Date
     updatedAt: Date
@@ -12851,6 +12858,7 @@ export namespace Prisma {
     description?: boolean
     scope?: boolean
     isRequired?: boolean
+    isReadOnly?: boolean
     validationRules?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -12870,6 +12878,7 @@ export namespace Prisma {
     description?: boolean
     scope?: boolean
     isRequired?: boolean
+    isReadOnly?: boolean
     validationRules?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -12878,7 +12887,7 @@ export namespace Prisma {
     version?: boolean
   }
 
-  export type SettingDefinitionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "key" | "category" | "type" | "defaultValue" | "description" | "scope" | "isRequired" | "validationRules" | "createdAt" | "updatedAt" | "deleted" | "deletedAt" | "version", ExtArgs["result"]["settingDefinition"]>
+  export type SettingDefinitionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "key" | "category" | "type" | "defaultValue" | "description" | "scope" | "isRequired" | "isReadOnly" | "validationRules" | "createdAt" | "updatedAt" | "deleted" | "deletedAt" | "version", ExtArgs["result"]["settingDefinition"]>
 
   export type $SettingDefinitionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SettingDefinition"
@@ -12892,6 +12901,7 @@ export namespace Prisma {
       description: string | null
       scope: string
       isRequired: boolean
+      isReadOnly: boolean
       validationRules: string | null
       createdAt: Date
       updatedAt: Date
@@ -13275,6 +13285,7 @@ export namespace Prisma {
     readonly description: FieldRef<"SettingDefinition", 'String'>
     readonly scope: FieldRef<"SettingDefinition", 'String'>
     readonly isRequired: FieldRef<"SettingDefinition", 'Boolean'>
+    readonly isReadOnly: FieldRef<"SettingDefinition", 'Boolean'>
     readonly validationRules: FieldRef<"SettingDefinition", 'String'>
     readonly createdAt: FieldRef<"SettingDefinition", 'DateTime'>
     readonly updatedAt: FieldRef<"SettingDefinition", 'DateTime'>
@@ -17873,6 +17884,7 @@ export namespace Prisma {
     description: 'description',
     scope: 'scope',
     isRequired: 'isRequired',
+    isReadOnly: 'isReadOnly',
     validationRules: 'validationRules',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
@@ -18869,6 +18881,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"SettingDefinition"> | string | null
     scope?: StringFilter<"SettingDefinition"> | string
     isRequired?: BoolFilter<"SettingDefinition"> | boolean
+    isReadOnly?: BoolFilter<"SettingDefinition"> | boolean
     validationRules?: StringNullableFilter<"SettingDefinition"> | string | null
     createdAt?: DateTimeFilter<"SettingDefinition"> | Date | string
     updatedAt?: DateTimeFilter<"SettingDefinition"> | Date | string
@@ -18886,6 +18899,7 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     scope?: SortOrder
     isRequired?: SortOrder
+    isReadOnly?: SortOrder
     validationRules?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -18907,6 +18921,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"SettingDefinition"> | string | null
     scope?: StringFilter<"SettingDefinition"> | string
     isRequired?: BoolFilter<"SettingDefinition"> | boolean
+    isReadOnly?: BoolFilter<"SettingDefinition"> | boolean
     validationRules?: StringNullableFilter<"SettingDefinition"> | string | null
     createdAt?: DateTimeFilter<"SettingDefinition"> | Date | string
     updatedAt?: DateTimeFilter<"SettingDefinition"> | Date | string
@@ -18924,6 +18939,7 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     scope?: SortOrder
     isRequired?: SortOrder
+    isReadOnly?: SortOrder
     validationRules?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -18949,6 +18965,7 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"SettingDefinition"> | string | null
     scope?: StringWithAggregatesFilter<"SettingDefinition"> | string
     isRequired?: BoolWithAggregatesFilter<"SettingDefinition"> | boolean
+    isReadOnly?: BoolWithAggregatesFilter<"SettingDefinition"> | boolean
     validationRules?: StringNullableWithAggregatesFilter<"SettingDefinition"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"SettingDefinition"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"SettingDefinition"> | Date | string
@@ -20020,6 +20037,7 @@ export namespace Prisma {
     description?: string | null
     scope: string
     isRequired?: boolean
+    isReadOnly?: boolean
     validationRules?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -20037,6 +20055,7 @@ export namespace Prisma {
     description?: string | null
     scope: string
     isRequired?: boolean
+    isReadOnly?: boolean
     validationRules?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -20053,6 +20072,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     scope?: StringFieldUpdateOperationsInput | string
     isRequired?: BoolFieldUpdateOperationsInput | boolean
+    isReadOnly?: BoolFieldUpdateOperationsInput | boolean
     validationRules?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -20070,6 +20090,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     scope?: StringFieldUpdateOperationsInput | string
     isRequired?: BoolFieldUpdateOperationsInput | boolean
+    isReadOnly?: BoolFieldUpdateOperationsInput | boolean
     validationRules?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -20087,6 +20108,7 @@ export namespace Prisma {
     description?: string | null
     scope: string
     isRequired?: boolean
+    isReadOnly?: boolean
     validationRules?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -20103,6 +20125,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     scope?: StringFieldUpdateOperationsInput | string
     isRequired?: BoolFieldUpdateOperationsInput | boolean
+    isReadOnly?: BoolFieldUpdateOperationsInput | boolean
     validationRules?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -20120,6 +20143,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     scope?: StringFieldUpdateOperationsInput | string
     isRequired?: BoolFieldUpdateOperationsInput | boolean
+    isReadOnly?: BoolFieldUpdateOperationsInput | boolean
     validationRules?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -21266,6 +21290,7 @@ export namespace Prisma {
     description?: SortOrder
     scope?: SortOrder
     isRequired?: SortOrder
+    isReadOnly?: SortOrder
     validationRules?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -21288,6 +21313,7 @@ export namespace Prisma {
     description?: SortOrder
     scope?: SortOrder
     isRequired?: SortOrder
+    isReadOnly?: SortOrder
     validationRules?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -21305,6 +21331,7 @@ export namespace Prisma {
     description?: SortOrder
     scope?: SortOrder
     isRequired?: SortOrder
+    isReadOnly?: SortOrder
     validationRules?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder

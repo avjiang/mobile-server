@@ -1302,7 +1302,7 @@ let createWarehouseForTenant = async (
                         });
                     }
 
-                    monthlyCost = billableWarehouses * 100_000; // 100k IDR per warehouse
+                    monthlyCost = billableWarehouses * 149_000; // 149k IDR per warehouse
                 } else {
                     isFreeWarehouse = true;
                 }
@@ -1456,7 +1456,7 @@ let deleteWarehouseForTenant = async (
                     }
                 }
 
-                const monthlyCost = billableWarehouses * 100_000; // 100k IDR per warehouse
+                const monthlyCost = billableWarehouses * 149_000; // 149k IDR per warehouse
 
                 return {
                     deletedWarehouse: warehouse,

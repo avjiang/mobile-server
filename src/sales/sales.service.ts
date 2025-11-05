@@ -5,6 +5,7 @@ import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSa
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import PushyService from '../pushy/pushy.service';
+import { randomUUID } from 'crypto';
 
 // Helper function to send sales notifications
 async function sendSalesNotification(
@@ -15,9 +16,21 @@ async function sendSalesNotification(
     data: any
 ): Promise<void> {
     try {
+        const notificationPayload = {
+            title,
+            message,
+            data: {
+                notificationId: randomUUID(),
+                type: 'SALES',
+                tenantId,
+                timestamp: new Date().toISOString(),
+                ...data
+            }
+        };
+
         await PushyService.sendToTopic(
-            `/topics/tenant_${tenantId}_outlet_${outletId}_sales`,
-            { title, message, data },
+            `tenant_${tenantId}_outlet_${outletId}_sales`,
+            notificationPayload,
             tenantId
         );
     } catch (error) {
@@ -35,9 +48,21 @@ async function sendInventoryNotification(
     data: any
 ): Promise<void> {
     try {
+        const notificationPayload = {
+            title,
+            message,
+            data: {
+                notificationId: randomUUID(),
+                type: 'INVENTORY',
+                tenantId,
+                timestamp: new Date().toISOString(),
+                ...data
+            }
+        };
+
         await PushyService.sendToTopic(
-            `/topics/tenant_${tenantId}_outlet_${outletId}_inventory`,
-            { title, message, data },
+            `tenant_${tenantId}_outlet_${outletId}_inventory`,
+            notificationPayload,
             tenantId
         );
     } catch (error) {
@@ -355,183 +380,6 @@ let getById = async (databaseName: string, id: number) => {
     }
 }
 
-// let create = async (databaseName: string, salesBody: SalesCreationRequest) => {
-//     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-//     try {
-//         const createdSales = await tenantPrisma.$transaction(async (tx) => {
-//             //calculate profit amount
-//             let updatedSales = performProfitCalculation(salesBody.sales)
-
-//             //separate sales & salesitem to perform update to different tables
-//             const sales = await tx.sales.create({
-//                 data: {
-//                     outletId: updatedSales.outletId,
-//                     businessDate: updatedSales.businessDate,
-//                     salesType: updatedSales.salesType,
-//                     customerId: updatedSales.customerId,
-//                     billStreet: updatedSales.billStreet,
-//                     billCity: updatedSales.billCity,
-//                     billState: updatedSales.billState,
-//                     billPostalCode: updatedSales.billPostalCode,
-//                     billCountry: updatedSales.billCountry,
-//                     shipStreet: updatedSales.shipStreet,
-//                     shipCity: updatedSales.shipCity,
-//                     shipState: updatedSales.shipState,
-//                     shipPostalCode: updatedSales.shipPostalCode,
-//                     shipCountry: updatedSales.shipCountry,
-//                     totalItemDiscountAmount: updatedSales.totalItemDiscountAmount,
-//                     discountPercentage: updatedSales.discountPercentage,
-//                     discountAmount: updatedSales.discountAmount,
-//                     profitAmount: updatedSales.profitAmount,
-//                     serviceChargeAmount: updatedSales.serviceChargeAmount,
-//                     taxAmount: updatedSales.taxAmount,
-//                     roundingAmount: updatedSales.roundingAmount,
-//                     subtotalAmount: updatedSales.subtotalAmount,
-//                     totalAmount: updatedSales.totalAmount,
-//                     paidAmount: updatedSales.paidAmount,
-//                     changeAmount: updatedSales.changeAmount,
-//                     status: updatedSales.status,
-//                     remark: updatedSales.remark,
-//                     sessionId: updatedSales.sessionId,
-//                     eodId: updatedSales.eodId,
-//                     salesQuotationId: updatedSales.salesQuotationId,
-//                     performedBy: updatedSales.performedBy,
-//                     deleted: updatedSales.deleted,
-//                 }
-//             })
-
-//             await Promise.all(updatedSales.salesItems.map(async (salesItem) => {
-//                 return tx.salesItem.create({
-//                     data: {
-//                         salesId: sales.id,
-//                         itemId: salesItem.itemId,
-//                         itemName: salesItem.itemName,
-//                         itemCode: salesItem.itemCode,
-//                         itemBrand: salesItem.itemBrand,
-//                         quantity: salesItem.quantity,
-//                         cost: salesItem.cost,
-//                         price: salesItem.price,
-//                         priceBeforeTax: salesItem.priceBeforeTax,
-//                         profit: salesItem.profit,
-//                         discountPercentage: salesItem.discountPercentage,
-//                         discountAmount: salesItem.discountAmount,
-//                         serviceChargeAmount: salesItem.serviceChargeAmount,
-//                         taxAmount: salesItem.taxAmount,
-//                         subtotalAmount: salesItem.subtotalAmount,
-//                         remark: salesItem.remark,
-//                         deleted: salesItem.deleted
-//                     }
-//                 })
-//             }))
-
-//             return sales
-//         })
-
-//         return getById(databaseName, createdSales.id)
-//     }
-//     catch (error) {
-//         throw error
-//     }
-// }
-
-async function getFIFOCostForSalesItem(
-    tenantPrisma: Prisma.TransactionClient,
-    itemId: number,
-    outletId: number,
-    quantity: Decimal
-): Promise<{ usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] }> {
-    try {
-        // Get stock receipts ordered by FIFO (oldest first)
-        const stockReceipts = await tenantPrisma.stockReceipt.findMany({
-            where: {
-                itemId: itemId,
-                outletId: outletId,
-                deleted: false,
-                quantity: { gt: 0 },
-            },
-            orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
-        });
-
-        if (stockReceipts.length === 0) {
-            // Fallback to item cost if no stock receipts found
-            const item = await tenantPrisma.item.findUnique({
-                where: { id: itemId },
-            });
-            return {
-                usedReceipts: [{ id: -1, quantityUsed: new Decimal(quantity), cost: new Decimal(item?.cost || 0) }],
-            };
-        }
-
-        let remainingQuantity = new Decimal(quantity);
-        let usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
-
-        // Use FIFO to assign quantities and costs from stock receipts using Decimal
-        for (const receipt of stockReceipts) {
-            if (remainingQuantity.lte(0)) break;
-
-            const quantityToUse = Decimal.min(remainingQuantity, new Decimal(receipt.quantity));
-            remainingQuantity = remainingQuantity.minus(quantityToUse);
-
-            usedReceipts.push({
-                id: receipt.id,
-                quantityUsed: quantityToUse,
-                cost: new Decimal(receipt.cost),
-            });
-        }
-
-        // If remaining quantity exists, use the last receipt's cost
-        if (remainingQuantity.gt(0) && stockReceipts.length > 0) {
-            const lastReceipt = stockReceipts[stockReceipts.length - 1];
-            usedReceipts.push({
-                id: -1,
-                quantityUsed: remainingQuantity,
-                cost: new Decimal(lastReceipt.cost),
-            });
-        }
-
-        if (remainingQuantity.gt(0) && usedReceipts.length === 0) {
-            throw new Error(`Insufficient stock receipts for item ${itemId}`);
-        }
-        return { usedReceipts };
-    } catch (error) {
-        throw error;
-    }
-}
-
-async function updateStockReceiptsAfterSale(
-    tenantPrisma: Prisma.TransactionClient,
-    usedReceipts: { id: number; quantityUsed: number; cost: number }[]
-) {
-    try {
-        // Update stock receipt quantities based on FIFO usage
-        await Promise.all(
-            usedReceipts
-                .filter((usage) => usage.id !== -1) // Skip fallback receipts
-                .map(async (usage) => {
-                    const receipt = await tenantPrisma.stockReceipt.findUnique({
-                        where: { id: usage.id },
-                    });
-                    if (!receipt) {
-                        throw new Error(`StockReceipt with id ${usage.id} not found`);
-                    }
-                    const newQuantity = Number(receipt.quantity) - Number(usage.quantityUsed);
-                    await tenantPrisma.stockReceipt.update({
-                        where: { id: usage.id },
-                        data: {
-                            quantity: newQuantity,
-                            updatedAt: new Date(),
-                            version: { increment: 1 },
-                            deleted: newQuantity === 0 ? true : undefined,
-                            deletedAt: newQuantity === 0 ? new Date() : undefined,
-                        },
-                    });
-                })
-        );
-    } catch (error) {
-        throw error;
-    }
-}
-
 async function completeNewSales(
     databaseName: string,
     tenantId: number,
@@ -558,6 +406,7 @@ async function completeNewSales(
                         deleted: false,
                     },
                     select: {
+                        id: true, // Added for direct updates
                         itemId: true,
                         availableQuantity: true,
                         reorderThreshold: true, // For low stock notifications
@@ -798,21 +647,23 @@ async function completeNewSales(
                 }))
             });
 
-            // Batch update stock receipts
-            await Promise.all(
-                stockReceiptUpdates.map(async (update) => {
-                    await tx.stockReceipt.update({
-                        where: { id: update.id },
-                        data: {
-                            quantity: update.newQuantity,
-                            updatedAt: new Date(),
-                            version: { increment: 1 },
-                            deleted: update.newQuantity.eq(0) ? true : undefined,
-                            deletedAt: update.newQuantity.eq(0) ? new Date() : undefined,
-                        },
-                    });
-                })
-            );
+            // Batch update stock receipts (parallel execution for performance)
+            if (stockReceiptUpdates.length > 0) {
+                await Promise.all(
+                    stockReceiptUpdates.map((update) =>
+                        tx.stockReceipt.update({
+                            where: { id: update.id },
+                            data: {
+                                quantity: update.newQuantity,
+                                updatedAt: new Date(),
+                                version: { increment: 1 },
+                                deleted: update.newQuantity.eq(0) ? true : undefined,
+                                deletedAt: update.newQuantity.eq(0) ? new Date() : undefined,
+                            },
+                        })
+                    )
+                );
+            }
 
             // Prepare stock balance updates and movements
             const stockUpdates = salesBody.salesItems.map(item => {
@@ -831,7 +682,7 @@ async function completeNewSales(
                     : false;
 
                 return {
-                    id: stockBalance.itemId, // Using itemId as identifier
+                    stockBalanceId: stockBalance.id, // Use actual stock balance ID
                     outletId: salesBody.outletId,
                     itemId: item.itemId,
                     itemName: stockBalance.item.itemName,
@@ -849,29 +700,20 @@ async function completeNewSales(
             // Store for notifications outside transaction
             stockUpdatesForNotification = stockUpdates;
 
-            // Batch update stock balances and create movements
+            // Batch update stock balances and create movements (optimized - no redundant queries)
             await Promise.all([
-                ...stockUpdates.map(async (update) => {
-                    const stockBalance = await tx.stockBalance.findFirst({
-                        where: {
-                            itemId: update.itemId,
-                            outletId: update.outletId,
-                            deleted: false,
+                // Update stock balances directly using stored IDs
+                ...stockUpdates.map((update) =>
+                    tx.stockBalance.update({
+                        where: { id: update.stockBalanceId },
+                        data: {
+                            availableQuantity: { decrement: update.quantity.toNumber() },
+                            onHandQuantity: { decrement: update.quantity.toNumber() },
+                            version: { increment: 1 },
+                            updatedAt: new Date(),
                         },
-                    });
-
-                    if (stockBalance) {
-                        await tx.stockBalance.update({
-                            where: { id: stockBalance.id },
-                            data: {
-                                availableQuantity: { decrement: update.quantity.toNumber() },
-                                onHandQuantity: { decrement: update.quantity.toNumber() },
-                                version: { increment: 1 },
-                                updatedAt: new Date(),
-                            },
-                        });
-                    }
-                }),
+                    })
+                ),
 
                 // Batch create stock movements
                 tx.stockMovement.createMany({
@@ -893,104 +735,104 @@ async function completeNewSales(
             return createdSales;
         });
 
-        // Send sales notification after successful transaction
-        await sendSalesNotification(
-            tenantId,
-            salesBody.outletId,
-            'New Sale Completed',
-            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)}`,
-            {
-                type: 'sale_completed',
-                salesId: result.id,
-                amount: result.totalAmount,
-                customerName: result.customerName || 'Walk-in Customer',
-                status: result.status,
-                itemCount: salesBody.salesItems.length,
-                outletId: salesBody.outletId,
-                triggeringUserId: performedBy.userId,
-                triggeringUsername: performedBy.username,
-                timestamp: new Date().toISOString()
-            }
-        );
-
-        // Send out-of-stock notifications
+        // Prepare all notifications
         const outOfStockItems = stockUpdatesForNotification.filter((u: any) => u.willBeOutOfStock);
-        if (outOfStockItems.length > 0) {
-            const title = outOfStockItems.length === 1
-                ? 'Out of Stock Alert'
-                : `${outOfStockItems.length} Items Out of Stock`;
-
-            const message = outOfStockItems.length === 1
-                ? `${outOfStockItems[0].itemName} is now out of stock`
-                : outOfStockItems.length <= 3
-                    ? outOfStockItems.map((i: any) => i.itemName).join(', ')
-                    : `${outOfStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${outOfStockItems.length - 2} more`;
-
-            await sendInventoryNotification(
-                tenantId,
-                salesBody.outletId,
-                title,
-                message,
-                {
-                    type: 'out_of_stock',
-                    priority: 'high',
-                    count: outOfStockItems.length,
-                    items: outOfStockItems.map((item: any) => ({
-                        itemId: item.itemId,
-                        itemName: item.itemName,
-                        itemCode: item.itemCode,
-                        previousStock: item.previousAvailable.toNumber(),
-                        currentStock: 0,
-                        soldQuantity: item.quantity.toNumber()
-                    })),
-                    outletId: salesBody.outletId,
-                    salesId: result.id,
-                    triggeringUserId: performedBy.userId,
-                    triggeringUsername: performedBy.username,
-                    timestamp: new Date().toISOString()
-                }
-            );
-        }
-
-        // Send low-stock notifications (reorder threshold)
         const lowStockItems = stockUpdatesForNotification.filter((u: any) => u.needsReorder && !u.willBeOutOfStock);
-        if (lowStockItems.length > 0) {
-            const title = lowStockItems.length === 1
-                ? 'Low Stock Warning'
-                : `${lowStockItems.length} Items Low on Stock`;
 
-            const message = lowStockItems.length === 1
-                ? `${lowStockItems[0].itemName} is running low (${lowStockItems[0].newAvailableQuantity.toFixed(0)} left)`
-                : lowStockItems.length <= 3
-                    ? lowStockItems.map((i: any) => i.itemName).join(', ')
-                    : `${lowStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${lowStockItems.length - 2} more`;
-
-            await sendInventoryNotification(
+        // Send all notifications in parallel (fire-and-forget, don't block response)
+        Promise.all([
+            // Sales notification
+            sendSalesNotification(
                 tenantId,
                 salesBody.outletId,
-                title,
-                message,
+                'New Sale Completed',
+                `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)}`,
                 {
-                    type: 'low_stock',
-                    priority: 'normal',
-                    count: lowStockItems.length,
-                    items: lowStockItems.map((item: any) => ({
-                        itemId: item.itemId,
-                        itemName: item.itemName,
-                        itemCode: item.itemCode,
-                        previousStock: item.previousAvailable.toNumber(),
-                        currentStock: item.newAvailableQuantity.toNumber(),
-                        reorderThreshold: item.reorderThreshold,
-                        soldQuantity: item.quantity.toNumber()
-                    })),
-                    outletId: salesBody.outletId,
+                    type: 'sale_completed',
                     salesId: result.id,
+                    amount: new Decimal(result.totalAmount).toNumber(),
+                    customerName: result.customerName || 'Walk-in Customer',
+                    status: result.status,
+                    itemCount: salesBody.salesItems.length,
+                    outletId: salesBody.outletId,
                     triggeringUserId: performedBy.userId,
                     triggeringUsername: performedBy.username,
                     timestamp: new Date().toISOString()
                 }
-            );
-        }
+            ),
+
+            // Out-of-stock notification (if needed)
+            ...(outOfStockItems.length > 0 ? [
+                sendInventoryNotification(
+                    tenantId,
+                    salesBody.outletId,
+                    outOfStockItems.length === 1
+                        ? 'Out of Stock Alert'
+                        : `${outOfStockItems.length} Items Out of Stock`,
+                    outOfStockItems.length === 1
+                        ? `${outOfStockItems[0].itemName} is now out of stock`
+                        : outOfStockItems.length <= 3
+                            ? outOfStockItems.map((i: any) => i.itemName).join(', ')
+                            : `${outOfStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${outOfStockItems.length - 2} more`,
+                    {
+                        type: 'out_of_stock',
+                        priority: 'high',
+                        count: outOfStockItems.length,
+                        items: outOfStockItems.map((item: any) => ({
+                            itemId: item.itemId,
+                            itemName: item.itemName,
+                            itemCode: item.itemCode,
+                            previousStock: item.previousAvailable.toNumber(),
+                            currentStock: 0,
+                            soldQuantity: item.quantity.toNumber()
+                        })),
+                        outletId: salesBody.outletId,
+                        salesId: result.id,
+                        triggeringUserId: performedBy.userId,
+                        triggeringUsername: performedBy.username,
+                        timestamp: new Date().toISOString()
+                    }
+                )
+            ] : []),
+
+            // Low-stock notification (if needed)
+            ...(lowStockItems.length > 0 ? [
+                sendInventoryNotification(
+                    tenantId,
+                    salesBody.outletId,
+                    lowStockItems.length === 1
+                        ? 'Low Stock Warning'
+                        : `${lowStockItems.length} Items Low on Stock`,
+                    lowStockItems.length === 1
+                        ? `${lowStockItems[0].itemName} is running low (${lowStockItems[0].newAvailableQuantity.toFixed(0)} left)`
+                        : lowStockItems.length <= 3
+                            ? lowStockItems.map((i: any) => i.itemName).join(', ')
+                            : `${lowStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${lowStockItems.length - 2} more`,
+                    {
+                        type: 'low_stock',
+                        priority: 'normal',
+                        count: lowStockItems.length,
+                        items: lowStockItems.map((item: any) => ({
+                            itemId: item.itemId,
+                            itemName: item.itemName,
+                            itemCode: item.itemCode,
+                            previousStock: item.previousAvailable.toNumber(),
+                            currentStock: item.newAvailableQuantity.toNumber(),
+                            reorderThreshold: item.reorderThreshold,
+                            soldQuantity: item.quantity.toNumber()
+                        })),
+                        outletId: salesBody.outletId,
+                        salesId: result.id,
+                        triggeringUserId: performedBy.userId,
+                        triggeringUsername: performedBy.username,
+                        timestamp: new Date().toISOString()
+                    }
+                )
+            ] : [])
+        ]).catch(error => {
+            // Log notification errors but don't fail the response
+            console.error('Failed to send notifications:', error);
+        });
 
         return getById(databaseName, result.id);
     } catch (error) {
@@ -1480,7 +1322,7 @@ let voidSales = async (
             {
                 type: 'sale_voided',
                 salesId: result.id,
-                amount: result.totalAmount,
+                amount: new Decimal(result.totalAmount).toNumber(),
                 customerName: result.customerName || 'Walk-in Customer',
                 previousStatus: 'Completed',
                 outletId: result.outletId,
@@ -1604,7 +1446,7 @@ let returnSales = async (
             {
                 type: 'sale_returned',
                 salesId: result.id,
-                amount: result.totalAmount,
+                amount: new Decimal(result.totalAmount).toNumber(),
                 customerName: result.customerName || 'Walk-in Customer',
                 previousStatus: 'Completed',
                 outletId: result.outletId,
@@ -1727,7 +1569,7 @@ let refundSales = async (
             {
                 type: 'sale_refunded',
                 salesId: result.id,
-                amount: result.totalAmount,
+                amount: new Decimal(result.totalAmount).toNumber(),
                 customerName: result.customerName || 'Walk-in Customer',
                 previousStatus: 'Completed',
                 outletId: result.outletId,
@@ -1918,8 +1760,6 @@ export = {
     getByDateRange,
     getById,
     calculateSales,
-    // create,
-    // completeSales,
     completeNewSales,
     update,
     remove,

@@ -158,7 +158,7 @@ All endpoints are prefixed with:
 
 **Pricing Summary:**
 - **Pro Plan Base:** 0 IDR/month
-- **Extra Warehouse:** 100,000 IDR/month per warehouse (first warehouse free)
+- **Extra Warehouse:** 149,000 IDR/month per warehouse (first warehouse free)
 - **Extra Device:** 19,000 IDR/month per device (beyond plan limit)
 
 ---
@@ -220,7 +220,7 @@ Current available plans:
 |-----------|------|------|-------|-------|-------------|
 | 1 | Extra User | user | Varies | outlet | Additional user slot |
 | 2 | Additional Push Notification Device | device | 19,000 IDR | tenant | Extra device beyond plan limit |
-| 3 | Extra Warehouse | warehouse | 100,000 IDR | tenant | Additional warehouse beyond first free |
+| 3 | Extra Warehouse | warehouse | 149,000 IDR | tenant | Additional warehouse beyond first free |
 
 ---
 
@@ -520,7 +520,7 @@ DELETE /api/admin/tenants/1/users/4
 
 **Endpoint:** `POST /api/admin/tenants/:tenantId/warehouses`
 
-**Description:** Creates a new warehouse for the tenant. First warehouse is FREE, additional warehouses cost 100k IDR/month each. If a warehouse with the same name was previously deleted, it will be **reactivated** instead of creating a duplicate.
+**Description:** Creates a new warehouse for the tenant. First warehouse is FREE, additional warehouses cost 149k IDR/month each. If a warehouse with the same name was previously deleted, it will be **reactivated** instead of creating a duplicate.
 
 **Authentication:** Required (POS Owner only)
 
@@ -559,7 +559,7 @@ DELETE /api/admin/tenants/1/users/4
 ```json
 {
   "success": true,
-  "message": "Warehouse created. Additional charge: 100000 IDR/month",
+  "message": "Warehouse created. Additional charge: 149000 IDR/month",
   "warehouse": {
     "id": 2,
     "tenantWarehouseId": 2,
@@ -577,7 +577,7 @@ DELETE /api/admin/tenants/1/users/4
   "billing": {
     "totalWarehouses": 2,
     "billableWarehouses": 1,
-    "monthlyCost": 100000,
+    "monthlyCost": 149000,
     "isFreeWarehouse": false
   }
 }
@@ -587,7 +587,7 @@ DELETE /api/admin/tenants/1/users/4
 ```json
 {
   "success": true,
-  "message": "Warehouse reactivated. Additional charge: 100000 IDR/month",
+  "message": "Warehouse reactivated. Additional charge: 149000 IDR/month",
   "warehouse": {
     "id": 2,
     "tenantWarehouseId": 2,
@@ -605,7 +605,7 @@ DELETE /api/admin/tenants/1/users/4
   "billing": {
     "totalWarehouses": 2,
     "billableWarehouses": 1,
-    "monthlyCost": 100000,
+    "monthlyCost": 149000,
     "isFreeWarehouse": false
   }
 }
@@ -633,7 +633,7 @@ DELETE /api/admin/tenants/1/users/4
 - Creates warehouse in **both** global and tenant databases (atomic transaction)
 - Auto-generates `warehouseCode` from warehouse name (e.g., "Downtown Warehouse" → "DOWNTOWN_WAREHOUSE")
 - First warehouse: FREE
-- Additional warehouses: 100,000 IDR/month each
+- Additional warehouses: 149,000 IDR/month each
 - Automatically creates/updates warehouse add-on (ID 3)
 - `wasReactivated` flag indicates whether warehouse was created fresh or reactivated
 
@@ -1061,7 +1061,7 @@ POST /api/admin/tenants/1/warehouses
 {
   "warehouseName": "Secondary Storage"
 }
-# Cost: 100,000 IDR/month
+# Cost: 149,000 IDR/month
 
 # Total Monthly Cost: 150,000 IDR
 ```
@@ -1116,7 +1116,7 @@ POST /api/admin/tenants/1/warehouses
   "contactPhone": "+62-21-5551234"
 }
 # Response: { "wasReactivated": false, "warehouse": { "id": 4 } }
-# Cost: 100,000 IDR/month (2nd warehouse)
+# Cost: 149,000 IDR/month (2nd warehouse)
 
 # Step 2: User realizes they don't need it - delete
 DELETE /api/admin/tenants/1/warehouses/4
@@ -1139,7 +1139,7 @@ POST /api/admin/tenants/1/warehouses
 #     "contactPhone": "+62-21-5559999"
 #   }
 # }
-# Cost: 100,000 IDR/month
+# Cost: 149,000 IDR/month
 ```
 
 ---
@@ -1180,7 +1180,7 @@ PUT /api/admin/tenants/1/changePlan
 POST /api/admin/tenants/1/warehouses
 { "warehouseName": "Downtown Storage" }
 # Response: { "wasReactivated": true }  # ✅ Reactivated!
-# Cost: 100,000 IDR/month
+# Cost: 149,000 IDR/month
 ```
 
 ---

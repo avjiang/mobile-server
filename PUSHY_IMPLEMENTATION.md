@@ -1,5 +1,858 @@
 # Pushy Push Notification Implementation
 
+---
+
+## 📋 CHANGELOG - 2025-01-05
+
+### 🆕 NEW FEATURES: Notification Tracking, Device Usage Standardization & Bug Fixes
+
+**Summary**: Added unique notification IDs for tracking, standardized device usage response, fixed Pushy topic prefix bug, and improved error logging.
+
+**Changes**:
+
+#### 1. **Notification ID for Tracking**
+- All notifications now include a unique `notificationId` field (UUID)
+- Enables notification tracking, read receipts, and duplicate prevention
+- Non-breaking change - frontend can optionally use this field
+
+**Payload Structure**:
+```json
+{
+  "title": "New Sale",
+  "message": "Sale #123 completed",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "SALES",
+    "tenantId": 1,
+    "triggerUserId": 456,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    ...
+  }
+}
+```
+
+**Note**: `notificationId` is inside the `data` object, accessible via `payload.data.notificationId` in Flutter.
+
+**Use Cases**:
+- Track notification delivery status
+- Implement read/unread notifications
+- Prevent duplicate notifications on client
+- Build notification history
+- Analytics and reporting
+
+#### 2. **Improved Device Usage Response (Personal Devices)**
+- `GET /pushy/devices/user` now shows only user-specific device counts
+- Removed misleading `maximum` field (was showing tenant-wide limit)
+- Personal endpoint focuses on user's own devices only
+
+**BREAKING CHANGE**:
+```json
+// BEFORE
+"deviceUsage": {
+  "current": 2,
+  "maximum": 5
+}
+
+// AFTER
+"deviceUsage": {
+  "active": 2,      // Renamed from 'current'
+  "inactive": 0,    // NEW - user's inactive devices
+  "total": 2        // NEW - user's total devices
+  // No 'maximum' - was tenant-wide and misleading
+}
+```
+
+**Why the change?**
+- `maximum` showed tenant-wide limit, not user limit
+- Confusing: User with 2 devices seeing "2/5" when tenant is at 5/5 capacity
+- Personal endpoint now focuses on personal stats only
+- For tenant capacity, use `GET /pushy/devices/` (admin endpoint)
+
+**Migration Required**:
+- Update `DeviceUsage` model: `current` → `active`
+- Add `inactive` and `total` fields
+- Remove `maximum` field from personal devices model
+
+#### 3. **Critical Bug Fix: Pushy Topic Prefix**
+- Fixed `NO_RECIPIENTS` error when sending to topics
+- Pushy SDK requires `/topics/` prefix for topic-based notifications
+- Backend now correctly sends to `/topics/tenant_X_outlet_Y_sales` format
+
+**Before (Broken):**
+```typescript
+await pushy.sendPushNotification(data, [topic], options);
+// Sent to: ['tenant_1_outlet_1_sales'] ❌
+```
+
+**After (Fixed):**
+```typescript
+const topicPath = `/topics/${topic}`;
+await pushy.sendPushNotification(data, topicPath, options);
+// Sent to: '/topics/tenant_1_outlet_1_sales' ✅
+```
+
+**Impact**: All topic-based notifications now work correctly. Devices subscribed to topics will receive notifications.
+
+#### 4. **Improved Error Logging**
+- Enhanced error messages with detailed context
+- Shows exact topic name, tenant ID, and notification title
+- Special handling for `NO_RECIPIENTS` error with troubleshooting tips
+- Device token preview in error logs (first 3 tokens shown)
+
+**Example Error Output:**
+```
+❌ Failed to send push notification
+   Topic (backend): "tenant_1_outlet_1_sales"
+   Topic (Pushy API): "/topics/tenant_1_outlet_1_sales"
+   Tenant ID: 1
+   Notification: New Sale Completed
+   Error Code: NO_RECIPIENTS
+   ⚠️  NO SUBSCRIBERS FOUND FOR TOPIC
+   💡 Possible causes:
+      1. Topic name mismatch
+      2. No devices subscribed yet
+      3. All devices unsubscribed
+      4. Wrong Pushy app
+```
+
+#### 5. **Debug Endpoint for Topic Subscriptions**
+- Added `GET /pushy/debug/topics` endpoint
+- Lists all active devices and their subscribed topics
+- Helps diagnose topic subscription mismatches
+
+**Files Changed**:
+- [notification.service.ts](src/pushy/notification.service.ts) - Added `notificationId` inside data object
+- [sales.service.ts](src/sales/sales.service.ts) - Fixed local notification helpers with proper structure
+- [device.controller.ts](src/pushy/device.controller.ts) - Removed misleading `maximum`, added debug endpoint
+- [pushy.service.ts](src/pushy/pushy.service.ts) - Fixed `/topics/` prefix bug, improved error logging, added debug method
+
+---
+
+## 📋 CHANGELOG - 2025-01-01
+
+### 🎯 New Features: Tenant Device Management & Enhanced Device Validation
+
+**Summary**: Added tenant-level device management capabilities and improved device deletion detection for better admin control and user experience.
+
+---
+
+## 📋 CHANGELOG - 2025-01-03
+
+### 🔒 CRITICAL FIX: Role Service Device Validation
+
+**Issue**: Role endpoint was returning notification topics for deleted devices, allowing them to resubscribe and receive notifications after admin deletion.
+
+**Files Changed**:
+- [role.service.ts:160-208](src/role/role.service.ts#L160-L208) - Added `checkUserHasActiveDevice()` helper
+- [role.service.ts:94-131](src/role/role.service.ts#L94-L131) - Updated topic generation logic
+
+**What Was Broken**:
+```typescript
+// BEFORE (BUG):
+if (!lastSyncTimestamp) {
+    // Initial sync - always returned topics (even for deleted devices!)
+    notificationTopics = await generateNotificationTopics(...);
+} else if (currentUserAffected) {
+    // Returned topics if user affected (even for deleted devices!)
+    notificationTopics = await generateNotificationTopics(...);
+}
+```
+
+**Attack Scenario**:
+1. Admin deletes employee's device → Device unsubscribed from topics ✅
+2. Employee keeps app open → Next role sync triggered
+3. Role endpoint returns `notificationTopics` array (BUG) ❌
+4. Frontend resubscribes to all topics → Employee receives notifications again ❌
+5. **Device deletion completely bypassed**
+
+**What's Fixed**:
+```typescript
+// AFTER (FIXED):
+if (!lastSyncTimestamp) {
+    // Check if user has active device BEFORE generating topics
+    const hasActiveDevice = await checkUserHasActiveDevice(tenantId, userId, databaseName);
+    if (hasActiveDevice) {
+        notificationTopics = await generateNotificationTopics(...);
+    } else {
+        notificationTopics = []; // Empty array forces frontend to unsubscribe
+    }
+} else if (currentUserAffected) {
+    // Check device status before generating topics
+    const hasActiveDevice = await checkUserHasActiveDevice(tenantId, userId, databaseName);
+    if (hasActiveDevice) {
+        notificationTopics = await generateNotificationTopics(...);
+    } else {
+        notificationTopics = []; // Empty array forces frontend to unsubscribe
+    }
+}
+```
+
+**Device Validation Logic**:
+```typescript
+const checkUserHasActiveDevice = async (
+    tenantId: number,
+    userId: number,
+    databaseName: string
+): Promise<boolean> => {
+    // 1. Get user from tenant database
+    const user = await tenantPrisma.user.findUnique({ where: { id: userId } });
+    if (!user) return false;
+
+    // 2. Get global tenant user
+    const globalTenantUser = await globalPrisma.tenantUser.findFirst({
+        where: { username: user.username, tenantId }
+    });
+    if (!globalTenantUser) return false;
+
+    // 3. Check for active device with allocation
+    const activeDevice = await globalPrisma.pushyDevice.findFirst({
+        where: {
+            tenantUserId: globalTenantUser.id,
+            isActive: true,
+            allocation: { isNot: null }
+        }
+    });
+
+    return activeDevice !== null;
+};
+```
+
+**When Device Check Runs**:
+- ✅ Initial sync (first app open)
+- ✅ Role permission changes affecting user
+- ❌ NO check when no role changes (zero performance impact)
+
+**Performance Impact**:
+| Scenario | Device Check? | Query Cost |
+|----------|--------------|------------|
+| No role changes | ❌ NO | 0 queries |
+| Role changes, user not affected | ❌ NO | 0 queries |
+| Role changes, user affected | ✅ YES | +3 queries (user + tenantUser + device) |
+| Initial sync | ✅ YES | +3 queries |
+
+**Frontend Behavior**:
+- Deleted device receives `notificationTopics: []` on next role sync
+- Frontend should unsubscribe from ALL current topics when array is empty
+- Device will no longer receive notifications
+- Works in conjunction with `checkDeviceEligibility` for detection on app restart
+
+**Security Impact**: CRITICAL - Prevents unauthorized notification access after device deletion
+
+---
+
+#### 1. **Tenant Device List & Delete** (New Endpoints)
+
+**New Endpoints**:
+
+- `GET /pushy/devices/` - List all tenant devices (no role check - frontend controls visibility)
+- `DELETE /pushy/devices/:deviceId` - Delete specific device by ID
+
+**Updated Endpoint**:
+
+- `GET /pushy/devices/user` - Enhanced to include allocation info and only return active devices
+
+**Endpoint Comparison**:
+
+| Endpoint                  | Purpose           | Scope             | Use Case                                 |
+| ------------------------- | ----------------- | ----------------- | ---------------------------------------- |
+| `GET /pushy/devices/user` | My Devices        | Current user only | User wants to see their own devices      |
+| `GET /pushy/devices/`     | Device Management | All tenant users  | Admin wants to manage all tenant devices |
+
+**What Changed**:
+
+- Tenant super admins can now view ALL devices registered in their tenant
+- Can delete any device, which will:
+  - Unsubscribe device from Pushy topics via API (prevents future notifications)
+  - Mark device as inactive
+  - Remove device allocation
+  - User will be notified when they next open the app
+- `/devices/user` endpoint enhanced with allocation info
+
+#### 2. **Enhanced Device Eligibility Check**
+
+**Updated Endpoint**: `GET /pushy/devices/checkQuota?deviceFingerprint=xyz`
+
+**What Changed**:
+
+- Now checks if device is active AND has valid allocation
+- Returns `isDeleted: true` if admin removed the device
+- Frontend can detect deleted devices before attempting Pushy registration
+
+#### 3. **Automatic Pushy Topic Unsubscription**
+
+**New Service Method**: `PushyService.unsubscribeDeviceFromAllTopics(deviceToken)`
+
+**How It Works**:
+
+- Queries Pushy API to get device's current subscribed topics
+- Unsubscribes device from ALL topics automatically
+- No need to track topic list in database
+
+---
+
+### 🚀 Quick Start Guide for Frontend Team
+
+#### **Scenario 1: Detect Deleted Device on App Startup**
+
+```dart
+// lib/services/pushy_device_manager.dart
+
+Future<void> initializePushNotifications() async {
+  // 1. Get device fingerprint
+  final fingerprint = await getDeviceFingerprint();
+
+  // 2. Check device eligibility (UPDATED)
+  final response = await ApiService.checkDeviceEligibility(
+    deviceFingerprint: fingerprint
+  );
+
+  // 3. Handle deleted device (NEW)
+  if (!response.canRegister && response.isDeleted == true) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Device Removed'),
+        content: Text(response.reason),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return; // Stop Pushy registration
+  }
+
+  // 4. Continue normal registration if device is valid
+  final deviceToken = await Pushy.register();
+  await ApiService.registerDevice(deviceToken, fingerprint);
+}
+```
+
+#### **Scenario 2: Display Device Management Screen (Tenant Super Admin)**
+
+```dart
+// lib/screens/device_management_screen.dart
+
+class DeviceManagementScreen extends StatefulWidget {
+  @override
+  _DeviceManagementScreenState createState() => _DeviceManagementScreenState();
+}
+
+class _DeviceManagementScreenState extends State<DeviceManagementScreen> {
+  Future<DeviceListResponse>? _devicesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDevices();
+  }
+
+  void _loadDevices() {
+    setState(() {
+      _devicesFuture = ApiService.getTenantDevices(); // GET /pushy/devices/
+    });
+  }
+
+  Future<void> _deleteDevice(int deviceId, String deviceName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Remove Device'),
+        content: Text('Remove "$deviceName"? User will no longer receive notifications on this device.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Remove'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ApiService.deleteDevice(deviceId); // DELETE /pushy/devices/:deviceId
+        _loadDevices(); // Refresh list
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Device removed successfully')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to remove device: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Device Management')),
+      body: FutureBuilder<DeviceListResponse>(
+        future: _devicesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final data = snapshot.data!;
+          final devices = data.devices;
+
+          return Column(
+            children: [
+              // Usage Stats
+              Card(
+                margin: EdgeInsets.all(16),
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStat('Active', data.deviceUsage.active.toString(), Colors.green),
+                      _buildStat('Inactive', data.deviceUsage.inactive.toString(), Colors.grey),
+                      _buildStat('Limit', '${data.deviceUsage.active}/${data.deviceUsage.maximum}', Colors.blue),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Device List
+              Expanded(
+                child: ListView.builder(
+                  itemCount: devices.length,
+                  itemBuilder: (context, index) {
+                    final device = devices[index];
+                    return ListTile(
+                      leading: Icon(_getPlatformIcon(device.platform)),
+                      title: Text(device.deviceName ?? 'Unnamed Device'),
+                      subtitle: Text('User: ${device.user.username}\nLast active: ${_formatDate(device.lastActiveAt)}'),
+                      isThreeLine: true,
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _deleteDevice(device.id, device.deviceName ?? 'this device'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  IconData _getPlatformIcon(String platform) {
+    switch (platform.toLowerCase()) {
+      case 'android': return Icons.android;
+      case 'ios': return Icons.apple;
+      default: return Icons.devices;
+    }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Never';
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+}
+```
+
+#### **API Service Methods (NEW)**
+
+```dart
+// lib/services/api_service.dart
+
+class ApiService {
+  // Get all tenant devices
+  static Future<DeviceListResponse> getTenantDevices() async {
+    final response = await get('/pushy/devices/');
+    return DeviceListResponse.fromJson(response.data);
+  }
+
+  // Delete device by ID
+  static Future<DeleteDeviceResponse> deleteDevice(int deviceId) async {
+    final response = await delete('/pushy/devices/$deviceId');
+    return DeleteDeviceResponse.fromJson(response.data);
+  }
+
+  // Check device eligibility (UPDATED - now returns isDeleted flag)
+  static Future<EligibilityResponse> checkDeviceEligibility({
+    required String deviceFingerprint
+  }) async {
+    final response = await get('/pushy/devices/checkQuota?deviceFingerprint=$deviceFingerprint');
+    return EligibilityResponse.fromJson(response.data);
+  }
+
+  // Get current user's devices
+  static Future<DeviceListResponse> getMyDevices() async {
+    final response = await get('/pushy/devices/user');
+    return DeviceListResponse.fromJson(response.data);
+  }
+}
+```
+
+#### **Complete Response Models with Implementation**
+
+```dart
+// lib/models/pushy_responses.dart
+
+class DeviceListResponse {
+  final List<Device> devices;
+  final DeviceUsage deviceUsage;
+
+  DeviceListResponse({required this.devices, required this.deviceUsage});
+
+  factory DeviceListResponse.fromJson(Map<String, dynamic> json) {
+    return DeviceListResponse(
+      devices: (json['data']['devices'] as List).map((d) => Device.fromJson(d)).toList(),
+      deviceUsage: DeviceUsage.fromJson(json['data']['deviceUsage']),
+    );
+  }
+}
+
+class Device {
+  final int id;
+  final String deviceToken;
+  final String deviceFingerprint;
+  final String platform;
+  final String? deviceName;
+  final String? appVersion;
+  final bool isActive;
+  final DateTime? lastActiveAt;
+  final DateTime createdAt;
+  final User? user; // Only present in GET /pushy/devices/ (tenant-wide)
+  final DeviceAllocation? allocation;
+
+  Device({
+    required this.id,
+    required this.deviceToken,
+    required this.deviceFingerprint,
+    required this.platform,
+    this.deviceName,
+    this.appVersion,
+    required this.isActive,
+    this.lastActiveAt,
+    required this.createdAt,
+    this.user,
+    this.allocation,
+  });
+
+  factory Device.fromJson(Map<String, dynamic> json) {
+    return Device(
+      id: json['id'],
+      deviceToken: json['deviceToken'],
+      deviceFingerprint: json['deviceFingerprint'],
+      platform: json['platform'],
+      deviceName: json['deviceName'],
+      appVersion: json['appVersion'],
+      isActive: json['isActive'],
+      lastActiveAt: json['lastActiveAt'] != null ? DateTime.parse(json['lastActiveAt']) : null,
+      createdAt: DateTime.parse(json['createdAt']),
+      user: json['user'] != null ? User.fromJson(json['user']) : null,
+      allocation: json['allocation'] != null ? DeviceAllocation.fromJson(json['allocation']) : null,
+    );
+  }
+}
+
+class User {
+  final int id;
+  final String username;
+
+  User({required this.id, required this.username});
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'],
+      username: json['username'],
+    );
+  }
+}
+
+class DeviceAllocation {
+  final String type; // "included" or "addon"
+  final DateTime activatedAt;
+
+  DeviceAllocation({required this.type, required this.activatedAt});
+
+  factory DeviceAllocation.fromJson(Map<String, dynamic> json) {
+    return DeviceAllocation(
+      type: json['type'],
+      activatedAt: DateTime.parse(json['activatedAt']),
+    );
+  }
+}
+
+class DeviceUsage {
+  final int active;
+  final int inactive;
+  final int total;
+  final int maximum;
+
+  DeviceUsage({
+    required this.active,
+    required this.inactive,
+    required this.total,
+    required this.maximum,
+  });
+
+  factory DeviceUsage.fromJson(Map<String, dynamic> json) {
+    return DeviceUsage(
+      active: json['active'],
+      inactive: json['inactive'],
+      total: json['total'],
+      maximum: json['maximum'],
+    );
+  }
+}
+
+class DeleteDeviceResponse {
+  final String message;
+  final DeletedDevice device;
+  final List<String> unsubscribedTopics;
+
+  DeleteDeviceResponse({
+    required this.message,
+    required this.device,
+    required this.unsubscribedTopics,
+  });
+
+  factory DeleteDeviceResponse.fromJson(Map<String, dynamic> json) {
+    return DeleteDeviceResponse(
+      message: json['data']['message'],
+      device: DeletedDevice.fromJson(json['data']['device']),
+      unsubscribedTopics: List<String>.from(json['data']['unsubscribedTopics']),
+    );
+  }
+}
+
+class DeletedDevice {
+  final int id;
+  final String deviceName;
+  final String platform;
+  final String username;
+
+  DeletedDevice({
+    required this.id,
+    required this.deviceName,
+    required this.platform,
+    required this.username,
+  });
+
+  factory DeletedDevice.fromJson(Map<String, dynamic> json) {
+    return DeletedDevice(
+      id: json['id'],
+      deviceName: json['deviceName'],
+      platform: json['platform'],
+      username: json['username'],
+    );
+  }
+}
+
+class EligibilityResponse {
+  final bool canRegister;
+  final String reason;
+  final bool? isDeleted; // NEW - true if device was deleted by admin
+  final bool? isReinstall; // true if existing device found
+  final DeviceUsage deviceUsage;
+  final bool requiresPayment;
+  final int additionalCost;
+
+  EligibilityResponse({
+    required this.canRegister,
+    required this.reason,
+    this.isDeleted,
+    this.isReinstall,
+    required this.deviceUsage,
+    required this.requiresPayment,
+    required this.additionalCost,
+  });
+
+  factory EligibilityResponse.fromJson(Map<String, dynamic> json) {
+    return EligibilityResponse(
+      canRegister: json['data']['canRegister'],
+      reason: json['data']['reason'],
+      isDeleted: json['data']['isDeleted'],
+      isReinstall: json['data']['isReinstall'],
+      deviceUsage: DeviceUsage.fromJson(json['data']['deviceUsage']),
+      requiresPayment: json['data']['requiresPayment'],
+      additionalCost: json['data']['additionalCost'] ?? 0,
+    );
+  }
+}
+```
+
+#### **Sample API Payloads**
+
+**1. GET /pushy/devices/ - Tenant Device List**
+
+```json
+{
+  "success": true,
+  "data": {
+    "devices": [
+      {
+        "id": 123,
+        "deviceToken": "d5f9c2a8b3e1f4a7b2c9d3e5f1a8b4c7",
+        "deviceFingerprint": "abc123xyz789",
+        "platform": "android",
+        "deviceName": "Samsung Galaxy S21",
+        "appVersion": "1.2.5",
+        "isActive": true,
+        "lastActiveAt": "2025-01-01T14:30:00.000Z",
+        "createdAt": "2024-12-15T10:00:00.000Z",
+        "user": {
+          "id": 456,
+          "username": "cashier1"
+        },
+        "allocation": {
+          "type": "included",
+          "activatedAt": "2024-12-15T10:00:00.000Z"
+        }
+      },
+      {
+        "id": 124,
+        "deviceToken": "e7a8b2c3d1f4a9b6c8d2e3f5a7b1c4d9",
+        "deviceFingerprint": "def456uvw012",
+        "platform": "ios",
+        "deviceName": "iPhone 13 Pro",
+        "appVersion": "1.2.5",
+        "isActive": true,
+        "lastActiveAt": "2025-01-01T15:45:00.000Z",
+        "createdAt": "2024-12-20T08:30:00.000Z",
+        "user": {
+          "id": 457,
+          "username": "manager1"
+        },
+        "allocation": {
+          "type": "addon",
+          "activatedAt": "2024-12-20T08:30:00.000Z"
+        }
+      }
+    ],
+    "deviceUsage": {
+      "active": 2,
+      "inactive": 0,
+      "total": 2,
+      "maximum": 5
+    }
+  }
+}
+```
+
+**2. DELETE /pushy/devices/:deviceId - Delete Device**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Device removed successfully. User \"cashier1\" will no longer receive notifications on this device.",
+    "device": {
+      "id": 123,
+      "deviceName": "Samsung Galaxy S21",
+      "platform": "android",
+      "username": "cashier1"
+    },
+    "unsubscribedTopics": [
+      "tenant_1_outlet_1_sales",
+      "tenant_1_outlet_1_inventory",
+      "tenant_1_user_456"
+    ]
+  }
+}
+```
+
+**3. GET /pushy/devices/user - My Devices**
+
+```json
+{
+  "success": true,
+  "data": {
+    "devices": [
+      {
+        "id": 123,
+        "deviceToken": "d5f9c2a8b3e1f4a7b2c9d3e5f1a8b4c7",
+        "deviceFingerprint": "abc123xyz789",
+        "platform": "android",
+        "deviceName": "Samsung Galaxy S21",
+        "appVersion": "1.2.5",
+        "isActive": true,
+        "lastActiveAt": "2025-01-01T14:30:00.000Z",
+        "createdAt": "2024-12-15T10:00:00.000Z",
+        "allocation": {
+          "type": "included",
+          "activatedAt": "2024-12-15T10:00:00.000Z"
+        }
+      }
+    ],
+    "deviceUsage": {
+      "current": 2,
+      "maximum": 5
+    }
+  }
+}
+```
+
+**4. GET /pushy/devices/checkQuota?deviceFingerprint=xyz - Device Deleted**
+
+```json
+{
+  "success": true,
+  "data": {
+    "canRegister": false,
+    "reason": "Your device has been removed by administrator. Push notifications are disabled for this device.",
+    "isDeleted": true,
+    "deviceUsage": {
+      "current": 2,
+      "maximum": 5
+    },
+    "requiresPayment": false,
+    "additionalCost": 0
+  }
+}
+```
+
+---
+
+### ⚠️ Important Notes for Frontend
+
+1. **No Logout Required**: When device is deleted, user does NOT need to logout. They simply won't receive push notifications anymore.
+
+2. **No Manual Unsubscribe Needed**: Backend automatically unsubscribes device from Pushy topics via API. Frontend doesn't need to call `Pushy.unsubscribe()`.
+
+3. **Detection Timing**: Deleted devices are detected when:
+
+   - User opens app (calls `checkDeviceEligibility`)
+   - User tries to register device
+   - Admin views device list
+
+4. **Notification Behavior After Deletion**:
+   - Device will NOT receive notifications (blocked at Pushy server level)
+   - Frontend local state may show "subscribed" but this is harmless
+   - Next app restart will clear the stale state
+
+---
+
 ## Overview
 
 Push notification system using Pushy SDK for multi-tenant Flutter POS application with device limits and subscription-based access.
@@ -82,11 +935,40 @@ Pushy starts billing a device as soon as `Pushy.register()` is called on the cli
 ### Topic Structure
 
 - **Tenant-wide**: `tenant_{tenantId}` (for system-level notifications)
-- **Tenant-level permission-based**: `tenant_{tenantId}_{permission}` (for financial, system alerts)
+- **Tenant-level permission-based**: `tenant_{tenantId}_{permission}` (for financial, staff, system alerts)
 - **Outlet-specific permission-based**: `tenant_{tenantId}_outlet_{outletId}_{permission}` (for sales, inventory, orders)
-- **User-specific**: `tenant_{tenantId}_user_{userId}` (for direct messages)
+- **User-specific**: `tenant_{tenantId}_user_{tenantUserId}` (for direct messages)
 
-**Note**: The client app dynamically subscribes to outlet-specific topics based on the current outlet context.
+**IMPORTANT - User-Specific Topics**:
+
+- Uses `tenantUserId` from global `TenantUser` table, NOT `userId` from tenant database
+- Example: `tenant_2_user_456` where `456` is the `TenantUser.id` (global database)
+- Frontend must subscribe using the correct `tenantUserId` to receive direct notifications
+
+**Super Admin Behavior (Role ID 1)**:
+
+- Super admin automatically receives **ALL** notification topics regardless of permissions
+- No need to manually assign notification permissions to super admin role
+- Example: Super admin gets sales, inventory, order, financial, staff, system topics automatically
+- Regular users only get topics based on their assigned notification permissions
+
+**Current Implementation (v1.0)**:
+
+- All users receive `outlet_1` topics by default at login
+- Prevents cross-outlet notification disruption in multi-outlet tenants
+- Example: `tenant_2_outlet_1_sales`, `tenant_2_outlet_1_inventory`
+
+**Outlet-Specific Permissions** (hardcoded to `outlet_1`):
+
+- `sales` → `tenant_2_outlet_1_sales`
+- `inventory` → `tenant_2_outlet_1_inventory`
+- `order` → `tenant_2_outlet_1_order`
+
+**Tenant-Wide Permissions** (no outlet context):
+
+- `financial` → `tenant_2_financial`
+- `staff` → `tenant_2_staff`
+- `system` → `tenant_2_system`
 
 ### How Notification Topics are Generated
 
@@ -99,32 +981,183 @@ The `notificationTopics` array in the login response is generated in [auth.servi
 3. **If Pro plan** → `getNotificationTopics()` function called ([auth.service.ts:249-343](src/auth/auth.service.ts#L249-L343))
 4. **Topics embedded in JWT** → Returned in login response payload
 
-**Topic Generation Logic** ([auth.service.ts:249-343](src/auth/auth.service.ts#L249-L343)):
+**Topic Generation Logic** ([auth.service.ts:272-365](src/auth/auth.service.ts#L272-L365)):
 
 ```typescript
-// 1. Query user's permissions from database
-const permissions = await globalPrisma.permission.findMany({
-    where: {
-        id: { in: permissionIds },
-        deleted: false,
-        name: { startsWith: 'Receive ' },  // Filter notification permissions
-        category: 'Notifications'             // Only notification category
-    }
-});
+// 1. Check if user has super admin role (ID 1)
+const roleIds = user.roles.map((role) => role.id);
+const isSuperAdmin = roleIds.includes(1);
 
-// 2. Convert permission names to topics
+// 2. Query permissions based on role
+let permissions;
+
+if (isSuperAdmin) {
+  // Super admin gets ALL notification permissions automatically
+  permissions = await globalPrisma.permission.findMany({
+    where: {
+      deleted: false,
+      name: { startsWith: "Receive " },
+      category: "Notifications",
+    },
+  });
+} else {
+  // Regular user - permission-based access
+  permissions = await globalPrisma.permission.findMany({
+    where: {
+      id: { in: permissionIds },
+      deleted: false,
+      name: { startsWith: "Receive " },
+      category: "Notifications",
+    },
+  });
+}
+
+// 3. Define outlet-specific permissions
+const outletSpecificPermissions = ["sales", "inventory", "order"];
+
+// 4. Convert permission names to topics
 // Example: "Receive Sales Notification" → "sales"
 const shortPermission = permission
-    .replace('Receive ', '')
-    .replace(' Notification', '')
-    .replace(' Alert', '')
-    .toLowerCase();
+  .replace("Receive ", "")
+  .replace(" Notification", "")
+  .replace(" Alert", "")
+  .toLowerCase();
 
-// 3. Generate topics
-topics.push(`tenant_${tenantId}`);                          // Tenant-wide
-topics.push(`tenant_${tenantId}_${shortPermission}`);       // Permission-based
-topics.push(`tenant_${tenantId}_user_${userId}`);          // User-specific
+// 5. Generate topics based on permission type
+topics.push(`tenant_${tenantId}`); // Tenant-wide
+
+if (outletSpecificPermissions.includes(shortPermission)) {
+  // Outlet-specific: sales, inventory, order
+  topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+} else {
+  // Tenant-wide: financial, staff, system
+  topics.push(`tenant_${tenantId}_${shortPermission}`);
+}
+
+// 6. Add user-specific topic (requires global tenantUserId)
+const globalTenantUser = await globalPrisma.tenantUser.findFirst({
+  where: { username: user.username, tenantId: tenantId },
+});
+
+if (globalTenantUser) {
+  // Use tenantUserId from global database, NOT userId from tenant database
+  topics.push(`tenant_${tenantId}_user_${globalTenantUser.id}`);
+}
 ```
+
+### Notification Topics Delta Sync (Role Sync Endpoint)
+
+In addition to receiving topics during login, the frontend can also receive updated `notificationTopics` through the existing role delta sync endpoint when permissions change.
+
+**Endpoint**: `GET /role/sync` ([role.controller.ts:182](src/role/role.controller.ts#L182))
+
+**When topics are included in response:**
+
+- Only on first page (`skip=0`) to avoid duplicates across pagination
+- Only for Pro plan tenants
+- Only when current user's permissions are affected by role changes
+- Super admin (role ID 1) always gets ALL notification topics
+
+**Implementation**: [role.service.ts:generateNotificationTopics()](src/role/role.service.ts#L160-L274)
+
+**Response Example:**
+
+```json
+{
+  "success": true,
+  "data": [...roles...],
+  "total": 10,
+  "serverTimestamp": "2024-01-15T10:30:00Z",
+  "notificationTopics": [
+    "tenant_1",
+    "tenant_1_outlet_1_sales",
+    "tenant_1_outlet_1_inventory",
+    "tenant_1_outlet_1_order",
+    "tenant_1_financial",
+    "tenant_1_user_456"
+  ]
+}
+```
+
+**Detection Logic:**
+
+1. **Initial sync** (`lastSyncTimestamp` is null or not provided):
+
+   - Always returns `notificationTopics` for current user
+   - Frontend receives topics and subscribes during first sync
+
+2. **Delta sync** (subsequent syncs with `lastSyncTimestamp`):
+   - Checks if ANY changed roles affect current user (checks all pages, not just current page)
+   - If user has any of the changed roles → Returns `notificationTopics`
+   - If user doesn't have any changed roles → `notificationTopics` field not included
+
+**Pagination Handling:**
+
+- Topics only returned on first page (`skip=0`) to avoid duplicate arrays
+- Detection checks ALL changed roles across ALL pages
+- Example: 10 pages of role changes, user's role on page 5 → Detection still works, topics returned on page 1
+
+**Plan Enforcement:**
+
+- Topics only included if `planName === 'Pro'`
+- Basic plan tenants never receive topics in this endpoint
+
+**Cost Optimization:**
+
+- Zero additional HTTP requests (piggybacks on existing role sync)
+- No dedicated notification topics endpoint needed
+- Frontend already polls `/role/sync` every 2 minutes for delta changes
+
+**Frontend Integration:**
+
+```dart
+Future<void> syncRoles() async {
+    final response = await ApiService.getRoleSync(
+        lastSyncTimestamp: lastSyncTimestamp,
+        skip: 0,
+        take: 50
+    );
+
+    // Update roles
+    updateLocalRoles(response.data);
+
+    // If notificationTopics is present, update subscriptions
+    if (response.notificationTopics != null) {
+        await updatePushySubscriptions(response.notificationTopics);
+    }
+
+    lastSyncTimestamp = response.serverTimestamp;
+}
+
+Future<void> updatePushySubscriptions(List<String> newTopics) async {
+    // Get current topics from local storage
+    final currentTopics = await getStoredTopics();
+
+    // Calculate topics to unsubscribe/subscribe
+    final toUnsubscribe = currentTopics.where((t) => !newTopics.contains(t));
+    final toSubscribe = newTopics.where((t) => !currentTopics.contains(t));
+
+    // Unsubscribe from removed topics
+    for (final topic in toUnsubscribe) {
+        await Pushy.unsubscribe(topic);
+    }
+
+    // Subscribe to new topics
+    for (final topic in toSubscribe) {
+        await Pushy.subscribe(topic);
+    }
+
+    // Store updated topics
+    await storeTopics(newTopics);
+}
+```
+
+**Benefits:**
+
+- Automatic topic updates when admin changes user's role/permissions
+- No need for users to log out and log back in
+- 50% reduction in HTTP requests (no dedicated endpoint)
+- Zero additional infrastructure cost
 
 ### Adding New Notification Topics
 
@@ -140,6 +1173,7 @@ VALUES ('Receive Delivery Notification', 'Notifications', 'Receive delivery noti
 ```
 
 **Naming Convention:**
+
 - **Must start with**: `"Receive "`
 - **Must end with**: `" Notification"` or `" Alert"`
 - **Category**: `"Notifications"`
@@ -158,6 +1192,7 @@ VALUES (1, <new_permission_id>, false);
 #### Step 3: Users Re-login to Get New Topics
 
 After adding the permission:
+
 - Users must **re-login** to get updated `notificationTopics` in their JWT
 - The new topic will automatically appear in the login response
 - No code changes required in [auth.service.ts](src/auth/auth.service.ts) - topics are generated dynamically
@@ -167,23 +1202,23 @@ After adding the permission:
 Once the permission exists, use it in your service/controller:
 
 ```typescript
-import NotificationService from '../pushy/notification.service';
+import NotificationService from "../pushy/notification.service";
 
 // Example: Send delivery notification
 await NotificationService.sendPermissionBasedNotification({
-    tenantId: userInfo.tenantId,
-    type: 'DELIVERY',                    // Add this type to NotificationRequest interface
-    permissionName: 'delivery',          // Matches the generated topic
-    title: 'New Delivery Assigned',
-    message: `Delivery #${deliveryId} has been assigned to you`,
-    triggerUserId: userInfo.userId,
-    planName: userInfo.planName,
-    data: {
-        deliveryId: deliveryId,
-        customerName: 'John Doe',
-        // ... additional data
-    },
-    outletId: outletId  // Optional: for outlet-specific notifications
+  tenantId: userInfo.tenantId,
+  type: "DELIVERY", // Add this type to NotificationRequest interface
+  permissionName: "delivery", // Matches the generated topic
+  title: "New Delivery Assigned",
+  message: `Delivery #${deliveryId} has been assigned to you`,
+  triggerUserId: userInfo.userId,
+  planName: userInfo.planName,
+  data: {
+    deliveryId: deliveryId,
+    customerName: "John Doe",
+    // ... additional data
+  },
+  outletId: outletId, // Optional: for outlet-specific notifications
 });
 ```
 
@@ -224,6 +1259,505 @@ public async sendDeliveryNotification(
 - **Outlet-specific vs Tenant-wide**: Use `outletId` parameter to determine topic scope
   - With `outletId`: `tenant_{tenantId}_outlet_{outletId}_delivery`
   - Without `outletId`: `tenant_{tenantId}_delivery`
+
+## Currently Implemented Notification Types
+
+This section documents all push notification types currently implemented in the codebase. All notifications include a unique `notificationId` (UUID) for tracking, and common metadata fields (`tenantId`, `timestamp`, `triggeringUserId`, `triggeringUsername`).
+
+### Sales Notifications
+
+**Topic**: `tenant_{tenantId}_outlet_{outletId}_sales`
+
+**Implementation**: [sales.service.ts](src/sales/sales.service.ts)
+
+All sales notifications are sent through helper functions defined at the top of the sales service file.
+
+#### 1. Sale Completed
+
+**Trigger**: After successful new sale transaction
+**Type**: `sale_completed`
+**Location**: [sales.service.ts:745-762](src/sales/sales.service.ts#L745-L762)
+
+**Payload Structure**:
+```json
+{
+  "title": "New Sale Completed",
+  "message": "Sale #123 - IDR 50000",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "SALES",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "salesId": 123,
+    "amount": 50000,
+    "customerName": "Walk-in Customer",
+    "status": "Completed",
+    "itemCount": 5,
+    "outletId": 1,
+    "triggeringUserId": 456,
+    "triggeringUsername": "cashier1"
+  }
+}
+```
+
+#### 2. Payment Added (Partially Paid)
+
+**Trigger**: When payment is added to a partially paid sale (but not fully paid yet)
+**Type**: `payment_added`
+**Location**: [sales.service.ts:1197-1215](src/sales/sales.service.ts#L1197-L1215)
+
+**Payload Structure**:
+```json
+{
+  "title": "Payment Added",
+  "message": "Sales #123 - Payment IDR 25000",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "SALES",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "salesId": 123,
+    "paymentAmount": 25000,
+    "remainingAmount": 25000,
+    "newStatus": "Partially Paid",
+    "outletId": 1,
+    "triggeringUserId": 456,
+    "triggeringUsername": "cashier1"
+  }
+}
+```
+
+#### 3. Debt Sales Payment Completed
+
+**Trigger**: When a partially paid sale becomes fully paid
+**Type**: `payment_completed`
+**Location**: [sales.service.ts:1197-1215](src/sales/sales.service.ts#L1197-L1215)
+
+**Payload Structure**:
+```json
+{
+  "title": "Debt Sales Payment Completed",
+  "message": "Sales #123 - Payment IDR 25000",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "SALES",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "salesId": 123,
+    "paymentAmount": 25000,
+    "remainingAmount": 0,
+    "newStatus": "Completed",
+    "outletId": 1,
+    "triggeringUserId": 456,
+    "triggeringUsername": "cashier1"
+  }
+}
+```
+
+**Note**: The title and type differ from "Payment Added" based on whether the payment completes the sale.
+
+#### 4. Sale Voided
+
+**Trigger**: When a completed sale is voided (stock is restored)
+**Type**: `sale_voided`
+**Location**: [sales.service.ts:1322-1339](src/sales/sales.service.ts#L1322-L1339)
+
+**Payload Structure**:
+```json
+{
+  "title": "Sale Voided",
+  "message": "Sale #123 - IDR 50000 has been voided",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "SALES",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "salesId": 123,
+    "amount": 50000,
+    "customerName": "Walk-in Customer",
+    "previousStatus": "Completed",
+    "outletId": 1,
+    "triggeringUserId": 456,
+    "triggeringUsername": "manager1"
+  }
+}
+```
+
+**Business Logic**: Only completed sales (not delivered) can be voided. Stock balances and movements are automatically updated.
+
+#### 5. Sale Returned
+
+**Trigger**: When a completed sale is returned (stock is restored)
+**Type**: `sale_returned`
+**Location**: [sales.service.ts:1446-1463](src/sales/sales.service.ts#L1446-L1463)
+
+**Payload Structure**:
+```json
+{
+  "title": "Sale Returned",
+  "message": "Sale #123 - IDR 50000 has been returned",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "SALES",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "salesId": 123,
+    "amount": 50000,
+    "customerName": "Walk-in Customer",
+    "previousStatus": "Completed",
+    "outletId": 1,
+    "triggeringUserId": 456,
+    "triggeringUsername": "manager1"
+  }
+}
+```
+
+**Business Logic**: Only completed sales (not delivered) can be returned. Payment status is updated to "Returned".
+
+#### 6. Sale Refunded
+
+**Trigger**: When a completed sale is refunded (stock is restored)
+**Type**: `sale_refunded`
+**Location**: [sales.service.ts:1569-1586](src/sales/sales.service.ts#L1569-L1586)
+
+**Payload Structure**:
+```json
+{
+  "title": "Sale Refunded",
+  "message": "Sale #123 - IDR 50000 has been refunded",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "SALES",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "salesId": 123,
+    "amount": 50000,
+    "customerName": "Walk-in Customer",
+    "previousStatus": "Completed",
+    "outletId": 1,
+    "triggeringUserId": 456,
+    "triggeringUsername": "manager1"
+  }
+}
+```
+
+**Business Logic**: Only completed sales (not delivered) can be refunded. Payment status is updated to "Refunded".
+
+---
+
+### Inventory Notifications
+
+**Topic**: `tenant_{tenantId}_outlet_{outletId}_inventory`
+
+**Implementation**: [sales.service.ts](src/sales/sales.service.ts)
+
+Inventory notifications are triggered automatically after sales transactions based on stock level changes.
+
+#### 7. Out of Stock Alert
+
+**Trigger**: When one or more items go completely out of stock after a sale
+**Type**: `out_of_stock`
+**Priority**: `high`
+**Location**: [sales.service.ts:764-801](src/sales/sales.service.ts#L764-L801)
+
+**Payload Structure (Single Item)**:
+```json
+{
+  "title": "Out of Stock Alert",
+  "message": "Item A is now out of stock",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "INVENTORY",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "priority": "high",
+    "count": 1,
+    "items": [
+      {
+        "itemId": 1,
+        "itemName": "Item A",
+        "itemCode": "ABC123",
+        "previousStock": 5,
+        "currentStock": 0,
+        "soldQuantity": 5
+      }
+    ],
+    "outletId": 1,
+    "salesId": 123,
+    "triggeringUserId": 456,
+    "triggeringUsername": "cashier1"
+  }
+}
+```
+
+**Payload Structure (Multiple Items)**:
+```json
+{
+  "title": "3 Items Out of Stock",
+  "message": "Item A, Item B and 1 more",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "INVENTORY",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "priority": "high",
+    "count": 3,
+    "items": [
+      {
+        "itemId": 1,
+        "itemName": "Item A",
+        "itemCode": "ABC123",
+        "previousStock": 5,
+        "currentStock": 0,
+        "soldQuantity": 5
+      },
+      {
+        "itemId": 2,
+        "itemName": "Item B",
+        "itemCode": "XYZ456",
+        "previousStock": 3,
+        "currentStock": 0,
+        "soldQuantity": 3
+      },
+      {
+        "itemId": 3,
+        "itemName": "Item C",
+        "itemCode": "DEF789",
+        "previousStock": 2,
+        "currentStock": 0,
+        "soldQuantity": 2
+      }
+    ],
+    "outletId": 1,
+    "salesId": 123,
+    "triggeringUserId": 456,
+    "triggeringUsername": "cashier1"
+  }
+}
+```
+
+**Message Format**:
+- **1 item**: Shows item name directly
+- **2-3 items**: Shows all item names separated by commas
+- **4+ items**: Shows first 2 items + count of remaining (e.g., "Item A, Item B and 2 more")
+
+#### 8. Low Stock Warning
+
+**Trigger**: When one or more items fall below their reorder threshold after a sale (but not out of stock)
+**Type**: `low_stock`
+**Priority**: `normal`
+**Location**: [sales.service.ts:803-841](src/sales/sales.service.ts#L803-L841)
+
+**Payload Structure (Single Item)**:
+```json
+{
+  "title": "Low Stock Warning",
+  "message": "Item A is running low (5 left)",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "INVENTORY",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "priority": "normal",
+    "count": 1,
+    "items": [
+      {
+        "itemId": 1,
+        "itemName": "Item A",
+        "itemCode": "ABC123",
+        "previousStock": 10,
+        "currentStock": 5,
+        "reorderThreshold": 8,
+        "soldQuantity": 5
+      }
+    ],
+    "outletId": 1,
+    "salesId": 123,
+    "triggeringUserId": 456,
+    "triggeringUsername": "cashier1"
+  }
+}
+```
+
+**Payload Structure (Multiple Items)**:
+```json
+{
+  "title": "3 Items Low on Stock",
+  "message": "Item A, Item B and 1 more",
+  "data": {
+    "notificationId": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "INVENTORY",
+    "tenantId": 1,
+    "timestamp": "2025-01-05T10:30:00.000Z",
+    "priority": "normal",
+    "count": 3,
+    "items": [
+      {
+        "itemId": 1,
+        "itemName": "Item A",
+        "itemCode": "ABC123",
+        "previousStock": 10,
+        "currentStock": 5,
+        "reorderThreshold": 8,
+        "soldQuantity": 5
+      },
+      {
+        "itemId": 2,
+        "itemName": "Item B",
+        "itemCode": "XYZ456",
+        "previousStock": 15,
+        "currentStock": 7,
+        "reorderThreshold": 10,
+        "soldQuantity": 8
+      },
+      {
+        "itemId": 3,
+        "itemName": "Item C",
+        "itemCode": "DEF789",
+        "previousStock": 20,
+        "currentStock": 9,
+        "reorderThreshold": 12,
+        "soldQuantity": 11
+      }
+    ],
+    "outletId": 1,
+    "salesId": 123,
+    "triggeringUserId": 456,
+    "triggeringUsername": "cashier1"
+  }
+}
+```
+
+**Business Logic**:
+- Triggered when: `newAvailableQuantity <= reorderThreshold` AND `previousAvailableQuantity > reorderThreshold`
+- Only items that JUST crossed the threshold are included (not items already below threshold)
+- Items that are out of stock are NOT included in this notification (they get the Out of Stock Alert instead)
+
+**Message Format**: Same as Out of Stock Alert (1 item shows name, 2-3 shows all, 4+ shows first 2 + count)
+
+---
+
+### Delivery Notifications
+
+**Topic**: `/topics/tenant_{tenantId}_outlet_{outletId}_delivery`
+
+**Implementation**: [sales.service.ts](src/sales/sales.service.ts)
+
+**Note**: Uses direct Pushy SDK call instead of NotificationService helper.
+
+#### 9. Deliveries Confirmed (Batch)
+
+**Trigger**: When one or more delivery orders are marked as delivered
+**Type**: `delivery_confirmed`
+**Location**: [sales.service.ts:1726-1752](src/sales/sales.service.ts#L1726-L1752)
+
+**Payload Structure**:
+```json
+{
+  "title": "Deliveries Confirmed",
+  "message": "3 delivery order(s) have been delivered",
+  "data": {
+    "type": "delivery_confirmed",
+    "salesIds": [123, 124, 125],
+    "deliveredBy": "driver1",
+    "deliveredAt": "2025-01-05T10:30:00.000Z",
+    "count": 3,
+    "outletId": 1,
+    "triggeringUserId": 456,
+    "triggeringUsername": "manager1",
+    "timestamp": "2025-01-05T10:30:00.000Z"
+  }
+}
+```
+
+**Business Logic**:
+- Supports batch delivery confirmation (multiple sales IDs)
+- Only sales with `salesType: 'DELIVERY'` and status `'Completed'` or `'Partially Paid'` can be delivered
+- Sales must not have been delivered before (`deliveredAt` must be null)
+- Updates all sales to status `'Delivered'` with delivery timestamp
+
+**Note**: This notification does NOT include `notificationId` as it uses the old direct Pushy SDK approach instead of the NotificationService helper functions.
+
+---
+
+## Notification Implementation Notes
+
+### Error Handling
+
+All notification sends are wrapped in try-catch blocks to ensure they never disrupt the main transaction:
+
+```typescript
+try {
+    await sendSalesNotification(...);
+} catch (error) {
+    // Log error but don't fail the sale transaction
+    console.error('Failed to send sales notification:', error);
+}
+```
+
+**Impact**: If a notification fails to send, the business operation (sale, void, return, etc.) still completes successfully.
+
+### Topic Prefix
+
+All notifications sent via PushyService use the `/topics/` prefix as required by Pushy SDK:
+
+```typescript
+await PushyService.sendToTopic(
+    `/topics/tenant_${tenantId}_outlet_${outletId}_sales`,
+    notificationPayload,
+    tenantId
+);
+```
+
+**Note**: The delivery notification still uses the old format without proper prefix handling and should be migrated to use NotificationService helpers.
+
+### Notification ID for Tracking
+
+Since January 2025, all notifications (except delivery) include a unique `notificationId` (UUID v4) inside the `data` object:
+
+```typescript
+data: {
+    notificationId: randomUUID(),
+    type: 'SALES',
+    tenantId,
+    timestamp: new Date().toISOString(),
+    ...data
+}
+```
+
+**Use Cases**:
+- Track notification delivery status
+- Implement read/unread notifications
+- Prevent duplicate notifications on client
+- Build notification history
+- Analytics and reporting
+
+**Access in Flutter**: `payload.data.notificationId`
+
+### Common Metadata Fields
+
+All notifications include these standard fields in the `data` object:
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `notificationId` | string (UUID) | Unique notification identifier | `"550e8400-e29b-41d4-a716-446655440000"` |
+| `type` | string | Category of notification | `"SALES"`, `"INVENTORY"`, `"DELIVERY"` |
+| `tenantId` | number | Tenant identifier | `1` |
+| `timestamp` | string (ISO 8601) | When notification was created | `"2025-01-05T10:30:00.000Z"` |
+| `outletId` | number | Outlet identifier | `1` |
+| `triggeringUserId` | number | User who triggered the action | `456` |
+| `triggeringUsername` | string | Username who triggered the action | `"cashier1"` |
+
+### Migration TODO
+
+The delivery notification implementation should be migrated to use the `sendInventoryNotification` or create a dedicated `sendDeliveryNotification` helper function to:
+
+1. Add proper `notificationId` for tracking
+2. Standardize error handling
+3. Use consistent notification structure
+4. Ensure proper `/topics/` prefix handling
+
+---
 
 ## Hybrid Model (Users & Devices)
 
@@ -344,6 +1878,151 @@ INSERT INTO subscription_add_on (ID, NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUAN
 (2, 'Additional Push Notification Device', 'device', 19000.00, null, 'tenant', 'Additional push notification device slot (IDR 19,000/month per device)');
 ```
 
+## Device Lifecycle & Allocation
+
+### Device States
+
+A device can be in one of the following states:
+
+1. **Active with Allocation**: Device is registered, active, and has an allocation record (counts toward quota)
+2. **Inactive without Allocation**: Device was unregistered or deactivated by admin (doesn't count toward quota)
+3. **Not Registered**: Device never registered before (no record exists)
+
+### Registration & Re-registration Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ NEW DEVICE (First Registration)                          │
+│ ─────────────────────────────────────────────────────────│
+│ 1. Check fingerprint exists (any user)                  │
+│    └─ Not found: Continue                               │
+│ 2. Check quota: Current < Maximum?                       │
+│    ├─ Yes: Continue                                      │
+│    └─ No: Return error "Device limit reached"           │
+│ 3. Create device record (isActive: true)                │
+│ 4. Create allocation record                             │
+│ 5. Subscribe to topics                                   │
+│                                                           │
+│ Result: Device active and counting toward quota          │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ SAME USER - SAME DEVICE (Reinstall/App Update)           │
+│ ─────────────────────────────────────────────────────────│
+│ 1. Find device by fingerprint (same tenantUserId)       │
+│ 2. Update device token/metadata                         │
+│ 3. If device was inactive:                              │
+│    ├─ Check quota                                       │
+│    └─ Create allocation                                 │
+│ 4. Update topic subscriptions                           │
+│                                                           │
+│ Result: Device updated, same owner, same allocation      │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ DIFFERENT USER - SAME DEVICE (Ownership Transfer)        │
+│ ─────────────────────────────────────────────────────────│
+│ Scenario: Cashier A logs out, Cashier B logs in          │
+│                                                           │
+│ 1. Find device by fingerprint (different tenantUserId)  │
+│ 2. Verify same tenant (cross-tenant blocked)            │
+│ 3. Transfer ownership: tenantUserId = new user          │
+│ 4. Update device token/metadata                         │
+│ 5. If device was inactive:                              │
+│    ├─ Check quota                                       │
+│    └─ Create allocation                                 │
+│ 6. Allocation stays the same (no quota change)          │
+│ 7. Update topic subscriptions for new user              │
+│                                                           │
+│ Result: Device ownership transferred, same allocation    │
+│ Quota Impact: ZERO (still 1 device, just new owner)     │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ DIFFERENT TENANT - SAME DEVICE (Blocked)                 │
+│ ─────────────────────────────────────────────────────────│
+│ Scenario: Tenant A user → Tenant B user tries same device│
+│                                                           │
+│ 1. Find device by fingerprint                           │
+│ 2. Check tenant: device.tenantId !== user.tenantId      │
+│ 3. Return error: "Device registered to another tenant"  │
+│                                                           │
+│ Result: Registration blocked (security)                  │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Unregistration Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ USER UNREGISTERS DEVICE                                   │
+│ ─────────────────────────────────────────────────────────│
+│ 1. Find device record                                    │
+│ 2. Check if allocation exists                           │
+│    ├─ Yes: Delete allocation                            │
+│    └─ No: Skip gracefully (already removed)             │
+│ 3. Update device (isActive: false)                      │
+│ 4. Unsubscribe from topics                              │
+│                                                           │
+│ Result: Device inactive, not counting toward quota       │
+│ Note: Device record kept for re-registration             │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Admin Quota Reduction Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ ADMIN REDUCES QUOTA (Excess devices auto-deactivated)    │
+│ ─────────────────────────────────────────────────────────│
+│ 1. Reduce add-on quantity                               │
+│ 2. Calculate new quota limit                            │
+│ 3. If current active > new quota:                       │
+│    ├─ Calculate excess: current - quota                 │
+│    ├─ Find oldest devices (by lastActiveAt, FIFO)       │
+│    ├─ For each excess device:                           │
+│    │   ├─ Delete allocation record                      │
+│    │   └─ Update device (isActive: false)               │
+│    └─ Return deactivated device list                    │
+│                                                           │
+│ Result: Only excess devices deactivated (oldest first)   │
+│ Note: Other devices remain active and allocated          │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Key Implementation Details
+
+1. **Allocation Table**: `PushyDeviceAllocation` table tracks which devices count toward quota
+
+   - Only active devices have allocation records
+   - Inactive devices have no allocation (don't count toward quota)
+
+2. **Graceful Handling**: All flows handle missing allocations gracefully
+
+   - Unregister: Skips deletion if allocation doesn't exist
+   - Re-register: Creates new allocation even if previously missing
+
+3. **Quota Checking**: Only checked when activating/reactivating devices
+
+   - New device registration: Always checks quota
+   - Re-registration of inactive device: Checks quota
+   - Ownership transfer of active device: No quota check (uses same allocation)
+   - Update of active device by same user: No quota check needed
+
+4. **Device Fingerprinting & Ownership Transfer**:
+
+   - **One fingerprint = One device** (prevents duplicate allocations)
+   - **Cross-user transfer**: When User B logs in on User A's device → ownership transfers
+   - **Same tenant only**: Cross-tenant device sharing is blocked for security
+   - **Allocation preserved**: Transfer keeps same allocation (no quota impact)
+   - **Perfect for POS**: Multiple cashiers on same terminal = 1 quota slot
+
+5. **Real-World Benefits**:
+   - Shared POS terminals don't waste quota slots
+   - Family tablets count as 1 device, not multiple
+   - Demo devices don't inflate quota usage
+   - Fair billing: Pay per physical device, not per user
+
 ## API Endpoints
 
 ### Device Management
@@ -352,8 +2031,10 @@ INSERT INTO subscription_add_on (ID, NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUAN
 
 **IMPORTANT**: Call this endpoint BEFORE calling `pushy.register()` on the frontend to avoid unnecessary billing from Pushy.
 
+**UPDATED 2025-01-01**: Now checks if device is active and has valid allocation.
+
 ```
-GET /pushy/devices/check-eligibility
+GET /pushy/devices/checkQuota?deviceFingerprint=xyz
 Headers: Authorization: Bearer <jwt_token>
 
 Success Response (Can Register):
@@ -361,6 +2042,20 @@ Success Response (Can Register):
     "success": true,
     "canRegister": true,
     "reason": "Device registration allowed",
+    "deviceUsage": {
+        "current": 3,
+        "maximum": 5
+    },
+    "requiresPayment": false,
+    "additionalCost": 0
+}
+
+Success Response (Device Deleted by Admin) - NEW:
+{
+    "success": true,
+    "canRegister": false,
+    "reason": "Your device has been removed by administrator. Push notifications are disabled for this device.",
+    "isDeleted": true,
     "deviceUsage": {
         "current": 3,
         "maximum": 5
@@ -393,6 +2088,114 @@ Success Response (Not Pro Plan):
         "maximum": 0
     }
 }
+```
+
+#### Get All Tenant Devices (NEW - 2025-01-01)
+
+**Purpose**: List all devices registered in the tenant. No role check - frontend controls visibility.
+
+```
+GET /pushy/devices/
+Headers: Authorization: Bearer <jwt_token>
+
+Success Response:
+{
+    "success": true,
+    "data": {
+        "devices": [
+            {
+                "id": 123,
+                "deviceToken": "d5f9c2a8b3e1...",
+                "deviceFingerprint": "abc123xyz",
+                "platform": "android",
+                "deviceName": "Samsung Galaxy S21",
+                "appVersion": "1.0.0",
+                "isActive": true,
+                "lastActiveAt": "2024-01-15T14:20:00Z",
+                "createdAt": "2024-01-15T10:30:00Z",
+                "user": {
+                    "id": 456,
+                    "username": "cashier1"
+                },
+                "allocation": {
+                    "type": "included",
+                    "activatedAt": "2024-01-15T10:30:00Z"
+                }
+            },
+            {
+                "id": 124,
+                "deviceToken": "e7a8b2c3d1f4...",
+                "deviceFingerprint": "def456uvw",
+                "platform": "ios",
+                "deviceName": "iPhone 13",
+                "appVersion": "1.0.0",
+                "isActive": true,
+                "lastActiveAt": "2024-01-15T13:45:00Z",
+                "createdAt": "2024-01-14T09:15:00Z",
+                "user": {
+                    "id": 457,
+                    "username": "manager1"
+                },
+                "allocation": {
+                    "type": "addon",
+                    "activatedAt": "2024-01-14T09:15:00Z"
+                }
+            }
+        ],
+        "deviceUsage": {
+            "active": 2,
+            "inactive": 0,
+            "total": 2,
+            "maximum": 5
+        }
+    }
+}
+
+Notes:
+- Returns ONLY active devices with valid allocation (filtered at database level)
+- Devices ordered by createdAt (newest first)
+- Shows which user owns each device
+- Includes allocation information (included or addon)
+- No role check required - visibility controlled by frontend
+- Optimized query: filters at DB level instead of in-memory
+```
+
+#### Delete Device by ID (NEW - 2025-01-01)
+
+**Purpose**: Remove a device from the tenant. Device will no longer receive push notifications.
+
+**IMPORTANT**: This endpoint automatically unsubscribes the device from ALL Pushy topics via API.
+
+```
+DELETE /pushy/devices/:deviceId
+Headers: Authorization: Bearer <jwt_token>
+
+Success Response:
+{
+    "success": true,
+    "data": {
+        "message": "Device removed successfully. User \"cashier1\" will no longer receive notifications on this device.",
+        "device": {
+            "id": 123,
+            "deviceName": "Samsung Galaxy S21",
+            "platform": "android",
+            "username": "cashier1"
+        },
+        "unsubscribedTopics": [
+            "tenant_1_sales",
+            "tenant_1_inventory",
+            "tenant_1_user_456"
+        ]
+    }
+}
+
+Notes:
+- Automatically calls Pushy API to unsubscribe device from ALL topics
+- Marks device as inactive (isActive: false)
+- Removes device allocation
+- Device can be re-registered later if quota allows
+- User will be notified when they next open the app (via checkQuota)
+- No role check required - visibility controlled by frontend
 ```
 
 #### Provider/Owner: Add Device Quota for Tenant
@@ -591,9 +2394,17 @@ Notes:
 
 **Important Logic:**
 
-- If device already exists (same deviceToken), it will be **reactivated** without checking the limit
-- Device limit is **only checked for NEW devices** (first-time registration)
-- This allows users to re-login on the same device without hitting quota issues
+- **Device Fingerprinting**: One device fingerprint = one device registration (prevents quota waste on shared devices)
+- **Ownership Transfer**: When a different user logs in on same device, ownership transfers automatically
+- **Same Tenant Only**: Device can only be transferred within the same tenant (cross-tenant blocked)
+- **Quota Impact**: Ownership transfer does NOT consume additional quota (same allocation kept)
+- **Allocation Management**: Inactive devices have no allocation; allocation is created on re-registration
+
+**Real-World Scenarios:**
+
+1. **POS Terminal Shift Change**: Morning cashier → Afternoon cashier on same device = 1 quota slot (ownership transferred)
+2. **Shared Family Tablet**: Dad → Mom → Kid on same tablet = 1 quota slot (not 3)
+3. **Demo Device**: Sales Rep A → Sales Rep B on same demo tablet = 1 quota slot
 
 ```
 POST /pushy/devices/register
@@ -624,30 +2435,73 @@ Success Response (New Device):
     }
 }
 
-Success Response (Existing Device Reactivated):
+Success Response (Same User Reinstall):
 {
     "success": true,
-    "message": "Device updated successfully",
+    "message": "Device token updated successfully",
+    "isReinstall": true,
+    "isOwnershipTransfer": false,
     "device": {
         "id": 123,
         "deviceToken": "d5f9c2a8b3e1...",
+        "deviceFingerprint": "abc123xyz",
         "platform": "android",
         "isActive": true
     },
-    "subscribedTopics": ["tenant_1", "tenant_1_sales", "tenant_1_user_456"]
+    "subscribedTopics": ["tenant_1", "tenant_1_sales", "tenant_1_user_456"],
+    "deviceUsage": {
+        "current": 4,
+        "maximum": 5
+    }
+}
+
+Success Response (Ownership Transfer - Different User):
+{
+    "success": true,
+    "message": "Device ownership transferred from cashier_morning",
+    "isReinstall": true,
+    "isOwnershipTransfer": true,
+    "device": {
+        "id": 123,
+        "deviceToken": "new_pushy_token_456...",
+        "deviceFingerprint": "abc123xyz",
+        "platform": "android",
+        "isActive": true
+    },
+    "subscribedTopics": ["tenant_1", "tenant_1_sales", "tenant_1_user_789"],
+    "deviceUsage": {
+        "current": 4,
+        "maximum": 5
+    }
 }
 
 Error Response (Device Limit):
 {
     "success": false,
     "error": {
-        "errorType": "Function",
+        "errorType": "BusinessLogicError",
         "errorMessage": "Device limit reached. Purchase additional device slot for IDR 19.000/month"
+    }
+}
+
+Error Response (Cross-Tenant Device):
+{
+    "success": false,
+    "error": {
+        "errorType": "BusinessLogicError",
+        "errorMessage": "Device is registered to another tenant"
     }
 }
 ```
 
 #### Unregister Device
+
+**Important Logic:**
+
+- **Graceful Deallocation**: Handles cases where allocation doesn't exist (already removed by admin quota reduction)
+- **Device Marking**: Sets `isActive: false` but keeps device record for re-registration
+- **Allocation Cleanup**: Removes allocation record if it exists
+- **Re-registration Ready**: User can re-register the same device later if quota allows
 
 ```
 DELETE /pushy/devices/:deviceToken
@@ -662,38 +2516,67 @@ Success Response:
 
 #### Get User's Devices
 
+**Purpose**: Get devices for the **current user only**. Use this for "My Devices" screen.
+
+**UPDATED 2025-01-01**: Now includes `deviceFingerprint`, `appVersion`, and `allocation` information. Only returns active devices.
+
+**Note**: For tenant-wide device list (all users), use `GET /pushy/devices/` instead.
+
 ```
 GET /pushy/devices/user
 Headers: Authorization: Bearer <jwt_token>
 
-Response:
+Success Response:
 {
     "success": true,
-    "devices": [
-        {
-            "id": 123,
-            "deviceToken": "d5f9c2a8b3e1...",
-            "platform": "android",
-            "deviceName": "Samsung Galaxy S21",
-            "isActive": true,
-            "createdAt": "2024-01-15T10:30:00Z",
-            "lastActiveAt": "2024-01-15T14:20:00Z"
-        },
-        {
-            "id": 124,
-            "deviceToken": "a7b9c3d2e1f4...",
-            "platform": "ios",
-            "deviceName": "iPhone 13",
-            "isActive": true,
-            "createdAt": "2024-01-14T09:15:00Z",
-            "lastActiveAt": "2024-01-15T13:45:00Z"
+    "data": {
+        "devices": [
+            {
+                "id": 123,
+                "deviceToken": "d5f9c2a8b3e1...",
+                "deviceFingerprint": "abc123xyz",
+                "platform": "android",
+                "deviceName": "Samsung Galaxy S21",
+                "appVersion": "1.0.0",
+                "isActive": true,
+                "lastActiveAt": "2024-01-15T14:20:00Z",
+                "createdAt": "2024-01-15T10:30:00Z",
+                "allocation": {
+                    "type": "included",
+                    "activatedAt": "2024-01-15T10:30:00Z"
+                }
+            },
+            {
+                "id": 124,
+                "deviceToken": "a7b9c3d2e1f4...",
+                "deviceFingerprint": "def456uvw",
+                "platform": "ios",
+                "deviceName": "iPhone 13",
+                "appVersion": "1.0.0",
+                "isActive": true,
+                "lastActiveAt": "2024-01-15T13:45:00Z",
+                "createdAt": "2024-01-14T09:15:00Z",
+                "allocation": {
+                    "type": "addon",
+                    "activatedAt": "2024-01-14T09:15:00Z"
+                }
+            }
+        ],
+        "deviceUsage": {
+            "active": 2,
+            "inactive": 0,
+            "total": 2
         }
-    ],
-    "deviceUsage": {
-        "current": 2,
-        "maximum": 5
     }
 }
+
+Notes:
+- Returns only CURRENT USER's devices (filtered by tenantUserId)
+- Only returns ACTIVE devices (inactive devices are hidden)
+- Includes allocation type (included vs addon)
+- deviceUsage shows only user-specific counts (no tenant-wide maximum)
+- For tenant capacity and quota info, use GET /pushy/devices/ (admin endpoint)
+- Use for "My Devices" personal management screen
 ```
 
 #### Update Device Status
@@ -1788,17 +3671,23 @@ void showDeviceLimitDialog() {
   "userId": 789,
   "notificationTopics": [
     "tenant_1",
-    "tenant_1_sales",
-    "tenant_1_inventory",
-    "tenant_1_order",
+    "tenant_1_outlet_1_sales",
+    "tenant_1_outlet_1_inventory",
+    "tenant_1_outlet_1_order",
     "tenant_1_financial",
     "tenant_1_staff",
     "tenant_1_system",
-    "tenant_1_user_456"
+    "tenant_1_user_456" // ← Note: 456 is tenantUserId (global), NOT userId (789)
   ],
   "planName": "Pro"
 }
 ```
+
+**Important Notes**:
+
+- `userId: 789` is the tenant database user ID
+- `tenant_1_user_456` uses `tenantUserId` (456) from global `TenantUser` table
+- These are **different IDs** - always use `tenantUserId` for notifications
 
 ## Error Responses
 
@@ -1930,17 +3819,311 @@ Cache is **ONLY** checked when notifications are sent:
 
 ---
 
-## Implementation Checklist
+## Future Enhancements
 
-- [ ] Set PUSHY_SECRET_API_KEY environment variable
-- [ ] Run Prisma migrations for database schema
-- [ ] Insert notification permissions into Permission table
-- [ ] Insert device add-on into subscription_add_on table
-- [ ] Update subscription plans with max_devices field
-- [ ] Test device registration with Pro plan account
-- [ ] Test device limit enforcement
-- [ ] Test notification delivery to registered devices
-- [x] Implement plan checking with 1-hour cache
-- [x] Implement plan upgrade endpoint
-- [x] Implement sales notifications
-- [x] Implement inventory notifications (out-of-stock and low-stock)
+### 1. Dynamic Outlet Detection (v2.0)
+
+**Current Limitation**:
+
+- All users get hardcoded `outlet_1` topics at login
+- Multi-outlet tenants: User must manually switch outlet context in frontend
+
+**Planned Enhancement**:
+
+```typescript
+// Detect user's actual outlet from session/user assignment
+const userOutlet = await getUserPrimaryOutlet(userId, tenantId);
+const outletId = userOutlet?.id || 1; // Default to outlet_1 if not found
+
+// Generate topics for user's specific outlet
+topics.push(`tenant_${tenantId}_outlet_${outletId}_sales`);
+```
+
+**Benefits**:
+
+- Users automatically get topics for their assigned outlet
+- No frontend logic needed for initial outlet context
+- Notifications arrive immediately without manual subscription
+
+**Implementation Steps**:
+
+1. Add `primaryOutletId` field to `TenantUser` table
+2. Update login flow to detect user's outlet
+3. Generate outlet-specific topics based on user's outlet
+4. Maintain backward compatibility with `outlet_1` default
+
+---
+
+### 2. Multi-Outlet Topic Subscription (v2.1)
+
+**Use Case**: Manager works across multiple outlets
+
+**Current Limitation**:
+
+- User only subscribed to one outlet at a time
+- Must manually switch to see notifications from other outlets
+
+**Planned Enhancement**:
+
+```typescript
+// Get all outlets user has access to
+const userOutlets = await getUserOutlets(userId, tenantId);
+
+// Subscribe to all accessible outlets
+userOutlets.forEach((outlet) => {
+  topics.push(`tenant_${tenantId}_outlet_${outlet.id}_sales`);
+  topics.push(`tenant_${tenantId}_outlet_${outlet.id}_inventory`);
+});
+```
+
+**Benefits**:
+
+- Managers receive notifications from all their outlets
+- Regional managers can monitor multiple locations
+- Better oversight for multi-outlet operations
+
+**Considerations**:
+
+- May increase Pushy API calls
+- User receives more notifications (need filtering in frontend)
+- Quota calculation remains per physical device
+
+---
+
+### 3. Frontend Outlet Switching (Current Implementation)
+
+**How It Works** (as documented):
+
+```dart
+// When user switches outlet in app
+Future<void> switchOutlet(int newOutletId) async {
+  final outletSpecificPermissions = ['sales', 'inventory', 'order'];
+
+  // Unsubscribe from old outlet
+  for (final permission in outletSpecificPermissions) {
+    await Pushy.unsubscribe('tenant_${tenantId}_outlet_${currentOutletId}_$permission');
+  }
+
+  // Subscribe to new outlet
+  for (final permission in outletSpecificPermissions) {
+    await Pushy.subscribe('tenant_${tenantId}_outlet_${newOutletId}_$permission');
+  }
+}
+```
+
+**When to Use**:
+
+- Single-outlet users don't need this (already subscribed to outlet_1)
+- Multi-outlet users can manually switch when needed
+- Temporary outlet access (e.g., covering for absent staff)
+
+---
+
+### 4. Admin Force Unregister Device (Pending Implementation)
+
+**Requirement**: Allow tenant super admin to unregister any device without affecting allocation
+
+**Endpoint**: `DELETE /pushy/admin/devices/:deviceToken`
+
+**Use Case**: Admin helps users remove devices without quota manipulation
+
+**Implementation Plan**:
+
+```typescript
+const adminForceUnregisterDevice = async (req, res, next) => {
+  // 1. Verify admin role
+  // 2. Find device and verify tenant ownership
+  // 3. Mark device as inactive (DO NOT delete allocation)
+  // 4. Return success with audit trail
+};
+```
+
+**Key Features**:
+
+- Only deactivates device (keeps allocation intact)
+- No quota impact (tenant still pays for same slots)
+- Prevents quota manipulation
+- Audit trail: returns who deactivated the device
+
+**Status**: Planned but not yet implemented
+
+---
+
+### 5. Delivery Module Notifications (Future)
+
+**Planned Topics**:
+
+- `tenant_{tenantId}_outlet_{outletId}_delivery` (outlet-specific)
+- For delivery assignment, status updates, completion
+
+**Permission**: `Receive Delivery Notification`
+
+**Implementation**: Follow same pattern as sales/inventory notifications
+
+---
+
+## Changelog
+
+### 2025-01-05: Notification Tracking & Device Usage Improvements
+
+**Changes Made:**
+
+1. **Added Unique Notification IDs**
+   - Added `notificationId` (UUID) to all notification payloads for tracking
+   - Enables read receipts, duplicate prevention, and analytics
+   - Located inside `data` object for frontend access
+
+   **Files Modified:**
+   - [notification.service.ts](src/pushy/notification.service.ts): Added UUID import and notificationId to both `sendPermissionBasedNotification()` and `sendToSpecificUsers()`
+   - [sales.service.ts](src/sales/sales.service.ts): Added UUID import and notificationId to local notification helpers
+
+   **Payload Structure:**
+   ```typescript
+   // Before
+   {
+     title: "New Sale",
+     message: "Sale #123 completed",
+     data: { type: "SALES", tenantId: 1 }
+   }
+
+   // After
+   {
+     title: "New Sale",
+     message: "Sale #123 completed",
+     data: {
+       notificationId: "550e8400-e29b-41d4-a716-446655440000",
+       type: "SALES",
+       tenantId: 1,
+       timestamp: "2025-01-05T10:30:00.000Z",
+       ...
+     }
+   }
+   ```
+
+2. **Standardized Device Usage Response**
+   - Removed misleading `maximum` field from `GET /pushy/devices/user` (personal devices endpoint)
+   - Changed structure from `{current, maximum}` to `{active, inactive, total}`
+   - `maximum` showed tenant-wide limit, not user-specific limit (confusing for users)
+
+   **Files Modified:**
+   - [device.controller.ts](src/pushy/device.controller.ts): Updated `getUserDevices()` to add inactive count and remove maximum field
+
+   **Response Structure:**
+   ```typescript
+   // Before (Personal Devices)
+   {
+     devices: [...],
+     deviceUsage: {
+       current: 2,
+       maximum: 10  // Tenant-wide limit (misleading)
+     }
+   }
+
+   // After (Personal Devices)
+   {
+     devices: [...],
+     deviceUsage: {
+       active: 2,
+       inactive: 1,
+       total: 3  // User-specific total
+     }
+   }
+
+   // Admin endpoint unchanged (still includes maximum for quota management)
+   ```
+
+3. **Fixed Pushy Topic Prefix Bug (CRITICAL)**
+   - Fixed `NO_RECIPIENTS` error when sending notifications to topics with subscribers
+   - Root cause: Pushy SDK requires `/topics/` prefix for topic-based notifications
+   - Code was sending topic name without prefix: `'tenant_1_outlet_1_sales'`
+   - Fixed to use: `'/topics/tenant_1_outlet_1_sales'`
+
+   **Files Modified:**
+   - [pushy.service.ts](src/pushy/pushy.service.ts:93-94): Added `topicPath` variable with `/topics/` prefix
+
+   **Code Change:**
+   ```typescript
+   // Before (BROKEN)
+   const response = await this.pushy.sendPushNotification(
+     data,
+     [topic],  // ❌ Wrong format
+     options
+   );
+
+   // After (FIXED)
+   const topicPath = `/topics/${topic}`;  // ✅ Correct format
+   const response = await this.pushy.sendPushNotification(
+     data,
+     topicPath,
+     options
+   );
+   ```
+
+4. **Enhanced Error Logging**
+   - Improved error messages to show which topic failed with detailed context
+   - Added special handling for `NO_RECIPIENTS` error with troubleshooting tips
+
+   **Files Modified:**
+   - [pushy.service.ts](src/pushy/pushy.service.ts:107-124): Enhanced error logging in `sendToTopic()`
+
+   **Error Output Example:**
+   ```
+   ❌ Failed to send push notification
+      Topic (backend): "tenant_1_outlet_1_sales"
+      Topic (Pushy API): "/topics/tenant_1_outlet_1_sales"
+      Tenant ID: 1
+      Notification: New Sale
+      Error Code: NO_RECIPIENTS
+      Error Message: No devices matched the specified condition...
+      ⚠️  NO SUBSCRIBERS FOUND FOR TOPIC: "tenant_1_outlet_1_sales"
+      💡 Possible causes:
+         1. Topic name mismatch (devices should subscribe to "tenant_1_outlet_1_sales" WITHOUT /topics/ prefix)
+         2. No devices have subscribed to this topic yet
+         3. All devices unsubscribed from this topic
+         4. Devices subscribed to different Pushy app
+   ```
+
+5. **Added Debug Endpoint for Topic Subscriptions**
+   - New admin endpoint to view all device topic subscriptions for troubleshooting
+   - Endpoint: `GET /pushy/debug/topics`
+
+   **Files Modified:**
+   - [device.controller.ts](src/pushy/device.controller.ts): Added debug endpoint
+   - [pushy.service.ts](src/pushy/pushy.service.ts:258-328): Added `debugTopicSubscriptions()` method
+
+   **Response Example:**
+   ```json
+   {
+     "success": true,
+     "tenantId": 1,
+     "totalDevices": 3,
+     "devices": [
+       {
+         "username": "john@example.com",
+         "platform": "ios",
+         "deviceName": "iPhone 13",
+         "deviceToken": "a1b2c3d4e5f6g7h8i9j0...",
+         "subscribedTopics": [
+           "tenant_1_outlet_1_sales",
+           "tenant_1_outlet_1_inventory",
+           "tenant_1_customer"
+         ],
+         "topicCount": 3
+       }
+     ]
+   }
+   ```
+
+**Migration Guide for Frontend:**
+
+1. **Notification ID**: Access via `notificationData.data.notificationId` (not root level)
+2. **Device Usage**: Update UI to show `active`, `inactive`, `total` instead of `current`, `maximum`
+3. **Topic Subscriptions**: No changes needed (devices still subscribe without `/topics/` prefix)
+
+**Files Changed:**
+- [src/pushy/notification.service.ts](src/pushy/notification.service.ts)
+- [src/sales/sales.service.ts](src/sales/sales.service.ts)
+- [src/pushy/device.controller.ts](src/pushy/device.controller.ts)
+- [src/pushy/pushy.service.ts](src/pushy/pushy.service.ts)
+
+---

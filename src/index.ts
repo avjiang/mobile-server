@@ -47,7 +47,6 @@ app.use('/stockReceipt', require('./stock/stock-receipt/stock-receipt.controller
 app.use('/session', require('./session/session.controller'))
 app.use('/menu', require('./menu/menu.controller'))
 app.use('/report', require('./report/report.controller'))
-app.use('/device', require('./device/device.controller'))
 app.use('/role', require('./role/role.controller'))
 app.use('/permission', require('./permission/permission.controller'))
 app.use('/outlet', require('./outlet/outlet.controller'))

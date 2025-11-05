@@ -30,6 +30,9 @@ export class ItemDto {
     @Expose()
     itemBrand: string = "";
 
+    @Expose()
+    alternateLookup: string | undefined = undefined;
+
     // @Expose()
     // itemDescription: string | undefined = undefined;
 

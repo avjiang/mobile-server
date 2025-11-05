@@ -39,23 +39,50 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
   }
 
   try {
-    // STEP 1: Check if device with same FINGERPRINT exists for this user
-    // This handles the reinstall scenario where Pushy token changes
+    // STEP 1: Check if device with same FINGERPRINT exists (ANY USER in same tenant)
+    // This handles both reinstall and device ownership transfer scenarios
     const existingDeviceByFingerprint = await globalPrisma.pushyDevice.findFirst({
       where: {
-        tenantUserId: userInfo.tenantUserId,
         deviceFingerprint: deviceFingerprint
+      },
+      include: {
+        tenantUser: {
+          select: {
+            tenantId: true,
+            username: true
+          }
+        }
       }
     });
 
     if (existingDeviceByFingerprint) {
-      // REINSTALL SCENARIO: Same device, new Pushy token
-      // Update the device token (Pushy token rotation on reinstall)
+      // Check if device belongs to a different tenant
+      if (existingDeviceByFingerprint.tenantUser.tenantId !== userInfo.tenantId) {
+        return next(new BusinessLogicError('Device is registered to another tenant'));
+      }
+
+      // Device belongs to same tenant - either same user or different user
+      const isSameUser = existingDeviceByFingerprint.tenantUserId === userInfo.tenantUserId;
+      const wasInactive = !existingDeviceByFingerprint.isActive;
+
+      // If device is being transferred to different user OR being reactivated
+      if (!isSameUser || wasInactive) {
+        // Check if we need quota (only if reactivating an inactive device from different user)
+        if (!isSameUser && wasInactive) {
+          const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+          if (!limitCheck.canAddDevice) {
+            return next(new BusinessLogicError(limitCheck.message || 'Device limit reached'));
+          }
+        }
+      }
+
+      // Transfer ownership and update device
       const updatedDevice = await globalPrisma.pushyDevice.update({
         where: {
           id: existingDeviceByFingerprint.id
         },
         data: {
+          tenantUserId: userInfo.tenantUserId,  // Transfer ownership to current user
           deviceToken: deviceToken,  // Update to new Pushy token
           platform: platform,
           deviceName: req.body.deviceName || existingDeviceByFingerprint.deviceName,
@@ -65,18 +92,30 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         }
       });
 
+      // If device was inactive, need to create allocation
+      if (wasInactive) {
+        await deviceLimitService.allocateDevice(
+          userInfo.tenantId,
+          updatedDevice.id,
+          false
+        );
+      }
+
       // Subscribe to topics based on permissions
       const topics = await getUserTopics(userInfo);
       // if (topics.length > 0) {
       //   await PushyService.subscribeToTopics(deviceToken, topics);
       // }
 
-      // Get current device usage (count stays the same for reinstalls)
+      // Get current device usage
       const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
 
       return sendResponse(res, {
-        message: 'Device token updated successfully',
+        message: isSameUser
+          ? 'Device token updated successfully'
+          : `Device ownership transferred from ${existingDeviceByFingerprint.tenantUser.username}`,
         isReinstall: true,
+        isOwnershipTransfer: !isSameUser,
         device: {
           id: updatedDevice.id,
           deviceToken: updatedDevice.deviceToken,
@@ -106,6 +145,17 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
       }
 
       // Same token, same user, but different/no fingerprint
+      // Check if device was previously deactivated and needs reallocation
+      const wasInactive = !existingDeviceByToken.isActive;
+
+      // If reactivating, check quota first
+      if (wasInactive) {
+        const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+        if (!limitCheck.canAddDevice) {
+          return next(new BusinessLogicError(limitCheck.message || 'Device limit reached'));
+        }
+      }
+
       // Update the device with the new fingerprint
       const updatedDevice = await globalPrisma.pushyDevice.update({
         where: {
@@ -120,6 +170,15 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
           lastActiveAt: new Date()
         }
       });
+
+      // If device was inactive, need to create allocation
+      if (wasInactive) {
+        await deviceLimitService.allocateDevice(
+          userInfo.tenantId,
+          updatedDevice.id,
+          false
+        );
+      }
 
       const topics = await getUserTopics(userInfo);
       const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
@@ -255,30 +314,48 @@ const getUserDevices = async (req: AuthRequest, res: Response, next: NextFunctio
   const userInfo = req.user as UserInfo;
 
   try {
+    // Get only current user's devices
     const devices = await globalPrisma.pushyDevice.findMany({
       where: {
-        tenantUserId: userInfo.tenantUserId
+        tenantUserId: userInfo.tenantUserId,
+        isActive: true // Only show active devices
+      },
+      include: {
+        allocation: true
       },
       orderBy: {
         lastActiveAt: 'desc'
       }
     });
 
-    // Get tenant-wide device usage stats
-    const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+    // Count inactive devices for this user
+    const inactiveCount = await globalPrisma.pushyDevice.count({
+      where: {
+        tenantUserId: userInfo.tenantUserId,
+        isActive: false
+      }
+    });
 
     return sendResponse(res, {
       devices: devices.map(d => ({
         id: d.id,
         deviceToken: d.deviceToken,
+        deviceFingerprint: d.deviceFingerprint,
         platform: d.platform,
+        deviceName: d.deviceName,
+        appVersion: d.appVersion,
         isActive: d.isActive,
+        lastActiveAt: d.lastActiveAt,
         createdAt: d.createdAt,
-        lastActiveAt: d.lastActiveAt
+        allocation: d.allocation ? {
+          type: d.allocation.allocationType,
+          activatedAt: d.allocation.activatedAt
+        } : null
       })),
       deviceUsage: {
-        current: limitCheck.currentCount,
-        maximum: limitCheck.maxAllowed
+        active: devices.length,
+        inactive: inactiveCount,
+        total: devices.length + inactiveCount
       }
     });
   } catch (error) {
@@ -311,16 +388,34 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
         where: {
           tenantUserId: userInfo.tenantUserId,
           deviceFingerprint: deviceFingerprint
+        },
+        include: {
+          allocation: true
         }
       });
 
       if (existingDevice) {
-        // This is a reinstall scenario - device already registered
         const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
 
+        // Check if device was deleted by admin (inactive or no allocation)
+        if (!existingDevice.isActive || !existingDevice.allocation) {
+          return sendResponse(res, {
+            canRegister: false,
+            reason: 'Your device has been removed by administrator. Push notifications are disabled for this device.',
+            isDeleted: true,
+            deviceUsage: {
+              current: limitCheck.currentCount,
+              maximum: limitCheck.maxAllowed
+            },
+            requiresPayment: false,
+            additionalCost: 0
+          });
+        }
+
+        // Device is active and has allocation - allow reactivation
         return sendResponse(res, {
           canRegister: true,
-          reason: 'Existing device will be reactivated',
+          reason: 'Existing device is active',
           isReinstall: true,
           existingDevice: {
             id: existingDevice.id,
@@ -469,6 +564,143 @@ const updateDeviceStatus = async (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
+const getAllTenantDevices = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const userInfo = req.user as UserInfo;
+
+  try {
+    // Get only active devices with allocation (filter at database level)
+    const activeDevices = await globalPrisma.pushyDevice.findMany({
+      where: {
+        tenantUser: {
+          tenantId: userInfo.tenantId
+        },
+        isActive: true, // Filter at DB level
+        allocation: {
+          isNot: null // Only get devices with allocation
+        }
+      },
+      include: {
+        tenantUser: {
+          select: {
+            id: true,
+            username: true
+          }
+        },
+        allocation: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // Get tenant-wide device usage stats
+    const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+
+    return sendResponse(res, {
+      devices: activeDevices.map(d => ({
+        id: d.id,
+        deviceToken: d.deviceToken,
+        deviceFingerprint: d.deviceFingerprint,
+        platform: d.platform,
+        deviceName: d.deviceName,
+        appVersion: d.appVersion,
+        isActive: d.isActive,
+        lastActiveAt: d.lastActiveAt,
+        createdAt: d.createdAt,
+        user: {
+          id: d.tenantUser.id,
+          username: d.tenantUser.username
+        },
+        allocation: d.allocation ? {
+          type: d.allocation.allocationType,
+          activatedAt: d.allocation.activatedAt
+        } : null
+      })),
+      deviceUsage: {
+        active: activeDevices.length,
+        inactive: limitCheck.currentCount - activeDevices.length,
+        total: limitCheck.currentCount,
+        maximum: limitCheck.maxAllowed
+      }
+    });
+  } catch (error) {
+    console.error('Error getting all tenant devices:', error);
+    next(error);
+  }
+};
+
+const deleteDeviceById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const userInfo = req.user as UserInfo;
+  const { deviceId } = req.params;
+
+  if (!deviceId) {
+    return next(new RequestValidateError('Device ID is required'));
+  }
+
+  try {
+    // Find device and verify it belongs to this tenant
+    const device = await globalPrisma.pushyDevice.findUnique({
+      where: {
+        id: parseInt(deviceId)
+      },
+      include: {
+        tenantUser: {
+          select: {
+            tenantId: true,
+            username: true
+          }
+        }
+      }
+    });
+
+    if (!device) {
+      return next(new NotFoundError('Device'));
+    }
+
+    // Verify device belongs to current tenant
+    if (device.tenantUser.tenantId !== userInfo.tenantId) {
+      return next(new BusinessLogicError('Unauthorized to delete this device'));
+    }
+
+    // Unsubscribe device from all Pushy topics via API
+    const unsubscribeResult = await PushyService.unsubscribeDeviceFromAllTopics(device.deviceToken);
+
+    if (!unsubscribeResult.success) {
+      console.error('Failed to unsubscribe device from Pushy topics:', unsubscribeResult.error);
+      // Continue with deletion even if unsubscribe fails
+    } else {
+      console.log('Device unsubscribed from topics:', unsubscribeResult.data?.unsubscribedTopics);
+    }
+
+    // Deallocate device (removes from PushyDeviceAllocation)
+    await deviceLimitService.deallocateDevice(device.id);
+
+    // Mark device as inactive
+    await globalPrisma.pushyDevice.update({
+      where: {
+        id: device.id
+      },
+      data: {
+        isActive: false
+      }
+    });
+
+    return sendResponse(res, {
+      message: `Device removed successfully. User "${device.tenantUser.username}" will no longer receive notifications on this device.`,
+      device: {
+        id: device.id,
+        deviceName: device.deviceName,
+        platform: device.platform,
+        username: device.tenantUser.username
+      },
+      unsubscribedTopics: unsubscribeResult.data?.unsubscribedTopics || []
+    });
+  } catch (error) {
+    console.error('Error deleting device:', error);
+    next(error);
+  }
+};
+
 const getUserTopics = async (userInfo: UserInfo): Promise<string[]> => {
   try {
     const tenantPrisma: TenantPrismaClient = getTenantPrisma(userInfo.databaseName);
@@ -557,12 +789,29 @@ const getUserTopics = async (userInfo: UserInfo): Promise<string[]> => {
 // Device management routes
 router.get('/devices/checkQuota', checkDeviceEligibility);
 router.post('/devices/register', registerDevice);
-router.delete('/devices/:deviceToken', unregisterDevice);
+router.delete('/devices/unregisterDevice/:deviceToken', unregisterDevice);
 router.get('/devices/user', getUserDevices);
 router.patch('/devices/:deviceToken/status', updateDeviceStatus);
+
+// Tenant device management (no role check - frontend controls visibility)
+router.get('/devices/', getAllTenantDevices);
+router.delete('/devices/removeDevice/:deviceId', deleteDeviceById);
 
 // Admin routes
 router.get('/admin/devices/stats', getTenantDeviceStats);
 router.post('/admin/devices/purchase', purchaseAdditionalDevice);
+
+// Debug routes
+router.get('/debug/topics', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const userInfo = req.user as UserInfo;
+
+  try {
+    const result = await PushyService.debugTopicSubscriptions(userInfo.tenantId);
+    return sendResponse(res, result);
+  } catch (error) {
+    console.error('Error debugging topic subscriptions:', error);
+    next(error);
+  }
+});
 
 export = router;

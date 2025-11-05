@@ -154,11 +154,17 @@ const allocateDevice = async (
 
 const deallocateDevice = async (deviceId: number): Promise<void> => {
   try {
-    await globalPrisma.pushyDeviceAllocation.delete({
-      where: {
-        deviceId
-      }
+    // Check if allocation exists first
+    const allocation = await globalPrisma.pushyDeviceAllocation.findUnique({
+      where: { deviceId }
     });
+
+    // Only delete if allocation exists
+    if (allocation) {
+      await globalPrisma.pushyDeviceAllocation.delete({
+        where: { deviceId }
+      });
+    }
   } catch (error) {
     console.error('Error deallocating device:', error);
     throw error;

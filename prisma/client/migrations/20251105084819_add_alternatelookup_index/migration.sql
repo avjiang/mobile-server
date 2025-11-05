@@ -1,0 +1,2 @@
+-- CreateIndex
+CREATE INDEX `item_ALTERNATE_LOOKUP_idx` ON `item`(`ALTERNATE_LOOKUP`);

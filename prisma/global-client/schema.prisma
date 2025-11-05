@@ -190,6 +190,7 @@ model SettingDefinition {
   description     String?   @map("DESCRIPTION")
   scope           String    @map("SCOPE") // "TENANT", "OUTLET", "USER"
   isRequired      Boolean   @default(false) @map("IS_REQUIRED")
+  isReadOnly      Boolean   @default(false) @map("IS_READ_ONLY") // NEW FIELD
   validationRules String?   @map("VALIDATION_RULES") @db.Text // JSON: {min, max, options, pattern}
   createdAt       DateTime  @default(now()) @map("CREATED_AT")
   updatedAt       DateTime  @updatedAt @map("UPDATED_AT")

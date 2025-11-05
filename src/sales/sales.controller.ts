@@ -438,23 +438,23 @@ const confirmDeliveryBatch = (req: AuthRequest, res: Response, next: NextFunctio
         .catch(next);
 }
 
-//routes
+// sales routes
 router.get('/getTotalSalesData', getTotalSalesData)
 router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
-router.get('/delivery-list', getDeliveryList)
 router.get('/outlet', getAll)
 router.get('/dateRange', getAllByDateRange)
 router.get('/:id', getById)
-// router.post('/create', create)
 router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
-// router.post('/completeSales', completeSales)
 router.post('/addPayment', addPaymentToPartiallyPaidSales);
-router.post('/delivery/confirm', confirmDeliveryBatch);
 router.put('/update', update)
 router.put('/void/:id', voidSales)
 router.put('/return/:id', returnSales)
 router.put('/refund/:id', refundSales)
 router.delete('/:id', remove)
+
+// delivery list routes
+router.get('/delivery/list', getDeliveryList);
+router.post('/delivery/confirm', confirmDeliveryBatch);
 
 export = router

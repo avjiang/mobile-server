@@ -6,6 +6,7 @@ export default class NetworkResponse<T> {
     error?: ResponseError;
     total?: number;
     serverTimestamp?: string;
+    notificationTopics?: string[];
 
     constructor(success: boolean, dataOrError: T | ResponseError) {
         this.success = success;
@@ -13,7 +14,7 @@ export default class NetworkResponse<T> {
         if (!success && dataOrError instanceof ResponseError) {
             this.error = dataOrError;
         } else if (success) {
-            const dataWithExtras = dataOrError as T & { data?: any; items?: any; total?: number; serverTimestamp?: string };
+            const dataWithExtras = dataOrError as T & { data?: any; items?: any; total?: number; serverTimestamp?: string; notificationTopics?: string[] };
 
             if (!dataWithExtras || (typeof dataWithExtras !== 'object' && !Array.isArray(dataWithExtras))) {
                 this.data = dataWithExtras as T;
@@ -25,6 +26,9 @@ export default class NetworkResponse<T> {
                 if (typeof dataWithExtras.serverTimestamp === 'string') {
                     this.serverTimestamp = dataWithExtras.serverTimestamp;
                 }
+                if (Array.isArray(dataWithExtras.notificationTopics)) {
+                    this.notificationTopics = dataWithExtras.notificationTopics;
+                }
             } else if (dataWithExtras.items && Array.isArray(dataWithExtras.items)) {
                 this.data = dataWithExtras.items as T;
                 if (typeof dataWithExtras.total === 'number') {
@@ -33,15 +37,21 @@ export default class NetworkResponse<T> {
                 if (typeof dataWithExtras.serverTimestamp === 'string') {
                     this.serverTimestamp = dataWithExtras.serverTimestamp;
                 }
+                if (Array.isArray(dataWithExtras.notificationTopics)) {
+                    this.notificationTopics = dataWithExtras.notificationTopics;
+                }
             } else if (Array.isArray(dataWithExtras)) {
                 this.data = dataWithExtras as T;
             } else if (dataWithExtras && typeof dataWithExtras === 'object') {
-                const { total, serverTimestamp, ...cleanedData } = dataWithExtras;
+                const { total, serverTimestamp, notificationTopics, ...cleanedData } = dataWithExtras;
                 if (typeof total === 'number') {
                     this.total = total;
                 }
                 if (typeof serverTimestamp === 'string') {
                     this.serverTimestamp = serverTimestamp;
+                }
+                if (Array.isArray(notificationTopics)) {
+                    this.notificationTopics = notificationTopics;
                 }
                 this.data = cleanedData as T;
             }

@@ -1,6 +1,7 @@
 import PushyService from './pushy.service';
 import { PrismaClient as GlobalPrismaClient, TenantUser } from '../../prisma/global-client/generated/global';
 import { PrismaClient as TenantPrismaClient, User } from '../../prisma/client/generated/client';
+import { randomUUID } from 'crypto';
 const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 interface NotificationRequest {
@@ -56,11 +57,12 @@ class NotificationService {
         // Tenant-wide notification (e.g., financial, system alerts)
         topic = `tenant_${request.tenantId}_${request.permissionName}`;
       }
-      
+
       const notificationData = {
         title: request.title,
         message: request.message,
         data: {
+          notificationId: randomUUID(),
           type: request.type,
           tenantId: request.tenantId,
           triggerUserId: request.triggerUserId,
@@ -70,11 +72,9 @@ class NotificationService {
       };
 
       const result = await PushyService.sendToTopic(topic, notificationData, request.tenantId);
-      
+
       if (!result.success) {
         console.error('Failed to send permission-based notification:', result.error);
-      } else {
-        console.log(`Notification sent to topic ${topic}:`, result.id);
       }
     } catch (error) {
       console.error('Error in sendPermissionBasedNotification:', error);
@@ -120,11 +120,12 @@ class NotificationService {
       }
 
       const deviceTokens = devices.map(d => d.deviceToken);
-      
+
       const notificationData = {
         title: request.title,
         message: request.message,
         data: {
+          notificationId: randomUUID(),
           type: request.type,
           tenantId: request.tenantId,
           triggerUserId: request.triggerUserId,
@@ -134,11 +135,9 @@ class NotificationService {
       };
 
       const result = await PushyService.sendToDevices(deviceTokens, notificationData, request.tenantId);
-      
+
       if (!result.success) {
         console.error('Failed to send user-specific notification:', result.error);
-      } else {
-        console.log(`Notification sent to ${deviceTokens.length} devices:`, result.id);
       }
     } catch (error) {
       console.error('Error in sendToSpecificUsers:', error);
@@ -254,14 +253,14 @@ class NotificationService {
     tenantDatabaseName: string
   ): Promise<any> {
     const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenantDatabaseName);
-    
+
     try {
       const preferences = await tenantPrisma.notificationPreference.findUnique({
         where: {
           userId
         }
       });
-      
+
       return preferences;
     } catch (error) {
       console.error('Error getting user notification preferences:', error);
@@ -277,7 +276,7 @@ class NotificationService {
     preferences: any
   ): Promise<any> {
     const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenantDatabaseName);
-    
+
     try {
       const updated = await tenantPrisma.notificationPreference.upsert({
         where: {
@@ -289,7 +288,7 @@ class NotificationService {
           ...preferences
         }
       });
-      
+
       return updated;
     } catch (error) {
       console.error('Error updating user notification preferences:', error);

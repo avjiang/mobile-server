@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - User Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .tip-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .tip-box strong {
+            color: #2e7d32;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box strong {
+            color: #e65100;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            color: #1565c0;
+        }
+        .step-card {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid #667eea;
+        }
+        .step-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 5px 5px 5px 0;
+        }
+        .badge-purple {
+            background: #764ba2;
+            color: white;
+        }
+        .badge-blue {
+            background: #2196f3;
+            color: white;
+        }
+        .badge-green {
+            background: #4caf50;
+            color: white;
+        }
+        .badge-orange {
+            background: #ff9800;
+            color: white;
+        }
+        .faq {
+            background: #fafafa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .faq strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .quick-ref {
+            background: #fff9c4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .quick-ref table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .quick-ref td {
+            padding: 8px;
+            border-bottom: 1px solid #f0e68c;
+        }
+        .quick-ref td:first-child {
+            font-weight: bold;
+            color: #f57f17;
+            width: 40%;
+        }
+        .toc {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .toc h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            display: block;
+            padding: 5px 0;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .setting-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .setting-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        .setting-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        .setting-item .setting-key {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+        .setting-item .setting-desc {
+            margin-top: 8px;
+            font-size: 0.95em;
+            color: #666;
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .header {
+                background: #667eea;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Settings</h1>
+            <p>User Guide - Customize Your Application Experience</p>
+        </div>
+        <div class="content">
+            <div class="toc">
+                <h3>📋 Table of Contents</h3>
+                <a href="#what-is">1. What are Settings?</a>
+                <a href="#accessing">2. Accessing the Settings Menu</a>
+                <a href="#scopes">3. Understanding Setting Scopes</a>
+                <a href="#available">4. Available Settings</a>
+                <a href="#changing">5. Changing Settings</a>
+                <a href="#immediate">6. Settings with Immediate Effects</a>
+                <a href="#readonly">7. Read-Only Settings</a>
+                <a href="#tips">8. Tips & Best Practices</a>
+                <a href="#troubleshooting">9. Troubleshooting</a>
+            </div>
+
+            <div class="section" id="what-is">
+                <h2>1. What are Settings?</h2>
+                <p>Settings allow you to customize how the application behaves according to your business needs and personal preferences.</p>
+
+                <h3>Types of Settings</h3>
+                <ul>
+                    <li><strong>User Preferences</strong> - Your personal settings (language, date format)</li>
+                    <li><strong>Outlet Settings</strong> - Store/location-specific settings (tax rate, currency, POS settings)</li>
+                    <li><strong>Global Settings</strong> - Company-wide settings (company name, receipt footer)</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>📝 Important:</strong> Settings are organized into tabs based on their scope. You'll see only the settings relevant to your current role and permissions.
+                </div>
+            </div>
+
+            <div class="section" id="accessing">
+                <h2>2. Accessing the Settings Menu</h2>
+
+                <div class="step-card">
+                    <h4>How to Access Settings:</h4>
+                    <ol>
+                        <li>Open the application</li>
+                        <li>Tap the <strong>"Functions"</strong> menu</li>
+                        <li>Scroll down and select <strong>"Settings"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 Can't see the Settings menu?</strong> Contact your administrator to get the necessary permissions.
+                </div>
+
+                <h3>Settings Screen Layout</h3>
+                <p>The Settings screen is organized into three tabs:</p>
+                <ul>
+                    <li><span class="badge badge-blue">User Preferences</span> - Your personal settings</li>
+                    <li><span class="badge badge-green">Outlet Settings</span> - Settings for the current store/location</li>
+                    <li><span class="badge badge-purple">Global Settings</span> - Company-wide settings</li>
+                </ul>
+            </div>
+
+            <div class="section" id="scopes">
+                <h2>3. Understanding Setting Scopes</h2>
+                <p>Settings follow a <strong>3-tier hierarchy</strong> that determines which value is used:</p>
+
+                <div class="step-card">
+                    <h4>Scope Priority (Highest to Lowest):</h4>
+                    <ol>
+                        <li><strong>USER</strong> - Your personal preference (highest priority)</li>
+                        <li><strong>OUTLET</strong> - Store/location setting</li>
+                        <li><strong>TENANT</strong> - Company default (fallback)</li>
+                    </ol>
+                </div>
+
+                <h3>How It Works</h3>
+                <p><strong>Example Scenario:</strong></p>
+                <ul>
+                    <li>Company default language: <code>English</code> (TENANT scope)</li>
+                    <li>Outlet 1 tax rate: <code>11%</code> (OUTLET scope)</li>
+                    <li>Your language preference: <code>Indonesian</code> (USER scope)</li>
+                </ul>
+                <p><strong>Result:</strong> You'll see the app in Indonesian (your USER setting overrides company default), but Outlet 1 will use 11% tax rate.</p>
+
+                <div class="info-box">
+                    <strong>📝 Note:</strong> USER settings only affect you. OUTLET settings affect everyone using that outlet. TENANT settings affect the entire company.
+                </div>
+            </div>
+
+            <div class="section" id="available">
+                <h2>4. Available Settings</h2>
+
+                <h3>💰 Financial Settings</h3>
+                <p><span class="badge badge-green">OUTLET Scope</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Tax Rate</strong>
+                        <div class="setting-desc">Default tax rate percentage (PPN). Range: 0-100</div>
+                    </div>
+                </div>
+
+                <h3>🛒 POS Settings</h3>
+                <p><span class="badge badge-green">OUTLET Scope</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Auto Print Receipt</strong>
+                        <div class="setting-desc">Automatically print receipt after completing a sale</div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Receipt Copies</strong>
+                        <div class="setting-desc">Number of receipt copies to print (1-5)</div>
+                    </div>
+                </div>
+
+                <h3>📦 Inventory Settings</h3>
+                <p><span class="badge badge-green">OUTLET Scope</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Low Stock Threshold</strong>
+                        <div class="setting-desc">Alert when stock falls below this quantity (0-1000)</div>
+                    </div>
+                </div>
+
+                <h3>👤 User Preferences</h3>
+                <p><span class="badge badge-blue">USER Scope</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Language 🚀</strong>
+                        <div class="setting-desc">Your preferred language (en, id). <strong>Changes immediately!</strong></div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Date Format</strong>
+                        <div class="setting-desc">Preferred date format (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)</div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Push Notifications 🔒</strong>
+                        <div class="setting-desc">Push notification registration status (Read-only, device-specific)</div>
+                    </div>
+                </div>
+
+                <h3>🏢 System Settings</h3>
+                <p><span class="badge badge-purple">TENANT Scope</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Company Name</strong>
+                        <div class="setting-desc">Company name shown on invoices and receipts</div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Receipt Footer</strong>
+                        <div class="setting-desc">Footer text on receipts (max 200 characters)</div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <strong>💡 Legend:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>🚀 = Changes take effect immediately</li>
+                        <li>🔒 = Read-only (display only)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="changing">
+                <h2>5. Changing Settings</h2>
+
+                <div class="step-card">
+                    <h4>Step-by-Step Guide:</h4>
+                    <ol>
+                        <li>Open the <strong>Settings</strong> screen</li>
+                        <li>Select the appropriate tab (User / Outlet / Global)</li>
+                        <li>Find the setting you want to change</li>
+                        <li>Tap on the setting to edit it</li>
+                        <li>Enter the new value</li>
+                        <li>Tap <strong>"Save Changes"</strong></li>
+                    </ol>
+                </div>
+
+                <h3>Real-Time Validation</h3>
+                <p>The app validates your input as you type:</p>
+                <ul>
+                    <li><strong>✅ Valid input:</strong> Normal white input field</li>
+                    <li><strong>❌ Invalid input:</strong> Red border with error message below</li>
+                </ul>
+
+                <div class="warning-box">
+                    <strong>⚠️ Important:</strong> You cannot save changes if any setting has validation errors. Fix all errors before saving.
+                </div>
+
+                <h3>Batch Updates</h3>
+                <p>You can change multiple settings at once:</p>
+                <ol>
+                    <li>Make changes to multiple settings</li>
+                    <li>The "Save Changes" button will be enabled</li>
+                    <li>Tap "Save Changes" once to update all settings</li>
+                </ol>
+
+                <div class="tip-box">
+                    <strong>💡 Efficiency Tip:</strong> Change all settings you need first, then save once. This is faster than saving after each change!
+                </div>
+            </div>
+
+            <div class="section" id="immediate">
+                <h2>6. Settings with Immediate Effects 🚀</h2>
+                <p>Some settings take effect <strong>immediately</strong> when changed, without requiring app restart.</p>
+
+                <h3>Current Immediate Effect Settings:</h3>
+
+                <div class="step-card">
+                    <h4>1. Language Setting</h4>
+                    <p><strong>Effect:</strong> App language changes immediately to your selected language</p>
+                    <p><strong>Options:</strong> English (en), Indonesian (id)</p>
+                    <div class="tip-box" style="margin-top: 15px;">
+                        <strong>💡 Try it!</strong> Change your language and see all text in the app update instantly without restarting!
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>📝 Note:</strong> Other settings may require you to restart the app or navigate to a different screen to see the changes take effect.
+                </div>
+            </div>
+
+            <div class="section" id="readonly">
+                <h2>7. Read-Only Settings 🔒</h2>
+                <p>Some settings are <strong>display-only</strong> and cannot be edited. These show important information about your account or device status.</p>
+
+                <h3>Types of Read-Only Settings</h3>
+
+                <div class="step-card">
+                    <h4>Standard Read-Only Settings</h4>
+                    <p>Settings stored in the database that you can view but not edit.</p>
+                    <p><strong>Visual indicator:</strong> Lock icon 🔒 with greyed-out text</p>
+                </div>
+
+                <div class="step-card">
+                    <h4>Device-Specific Settings ⭐</h4>
+                    <p>Settings that show information specific to your current device.</p>
+                    <p><strong>Example:</strong> Push notification registration status</p>
+                    <p><strong>Visual indicator:</strong> Modern pill/badge showing "Active" (green) or "Inactive" (red)</p>
+                </div>
+
+                <h3>Current Read-Only Settings:</h3>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Push Notifications Registered ⭐</strong>
+                        <div class="setting-desc">Shows if this device is registered to receive push notifications</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 Why read-only?</strong> These settings are controlled by the system or device and should not be manually changed to ensure proper functionality.
+                </div>
+            </div>
+
+            <div class="section" id="tips">
+                <h2>8. Tips & Best Practices</h2>
+
+                <h3>🎯 Usage Tips</h3>
+                <div class="quick-ref">
+                    <table>
+                        <tr>
+                            <td>Check Before Saving</td>
+                            <td>Review all changes before tapping "Save Changes"</td>
+                        </tr>
+                        <tr>
+                            <td>Use Default Values</td>
+                            <td>If unsure, use the default value provided by the system</td>
+                        </tr>
+                        <tr>
+                            <td>Test Changes</td>
+                            <td>After changing settings, test the affected feature to ensure it works as expected</td>
+                        </tr>
+                        <tr>
+                            <td>Document Changes</td>
+                            <td>Keep note of important setting changes for reference</td>
+                        </tr>
+                        <tr>
+                            <td>Sync Regularly</td>
+                            <td>Open Settings screen periodically to sync latest changes from server</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3>⚠️ Common Mistakes to Avoid</h3>
+                <ul>
+                    <li><strong>Ignoring validation errors</strong> - Always fix errors shown in red before saving</li>
+                    <li><strong>Changing wrong scope</strong> - Make sure you're editing in the correct tab (User/Outlet/Global)</li>
+                    <li><strong>Using extreme values</strong> - Stay within recommended ranges (e.g., don't set tax rate to 200%)</li>
+                    <li><strong>Forgetting to save</strong> - Changes aren't applied until you tap "Save Changes"</li>
+                </ul>
+
+                <h3>🔐 Security Tips</h3>
+                <ul>
+                    <li>Don't share your user preferences with others - create separate accounts instead</li>
+                    <li>Only change outlet settings if you're authorized to do so</li>
+                    <li>Be careful with global settings - they affect everyone in the company</li>
+                    <li>If unsure about a setting, ask your manager before changing it</li>
+                </ul>
+            </div>
+
+            <div class="section" id="troubleshooting">
+                <h2>9. Troubleshooting</h2>
+
+                <div class="warning-box">
+                    <strong>❌ Can't Save Changes</strong><br>
+                    <strong>Problem:</strong> The "Save Changes" button is disabled<br><br>
+                    <strong>Possible Causes:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>There are validation errors (check for red borders)</li>
+                        <li>You haven't made any changes yet</li>
+                        <li>You don't have permission to change these settings</li>
+                    </ul>
+                    <strong>Solution:</strong>
+                    <ul>
+                        <li>Fix all validation errors shown in red</li>
+                        <li>Make sure you've actually changed a value</li>
+                        <li>Contact your administrator for permissions</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Changes Not Appearing</strong><br>
+                    <strong>Problem:</strong> Saved changes but they're not showing in the app<br><br>
+                    <strong>Solution:</strong>
+                    <ol style="margin-top: 10px;">
+                        <li>Close and reopen the Settings screen to sync</li>
+                        <li>Restart the app if the setting isn't immediate-effect</li>
+                        <li>Check if you edited in the correct scope (User/Outlet/Global)</li>
+                        <li>Verify you have internet connection for sync</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🔴 Validation Error Messages</strong><br>
+                    <strong>Problem:</strong> Getting error messages when entering values<br><br>
+                    <strong>Common Errors:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>"This field is required"</strong> - You must enter a value</li>
+                        <li><strong>"Value must be between X and Y"</strong> - Enter a number within the range</li>
+                        <li><strong>"Must be a valid number"</strong> - Enter numbers only, no letters</li>
+                        <li><strong>"Value must be one of: ..."</strong> - Choose from the allowed options</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>📱 Settings Not Loading</strong><br>
+                    <strong>Problem:</strong> Settings screen shows loading or empty<br><br>
+                    <strong>Solution:</strong>
+                    <ol style="margin-top: 10px;">
+                        <li>Check your internet connection</li>
+                        <li>Wait a few seconds for sync to complete</li>
+                        <li>Close and reopen the Settings screen</li>
+                        <li>Restart the app</li>
+                        <li>Contact support if problem persists</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🔄 Different Values on Different Devices</strong><br>
+                    <strong>Problem:</strong> Settings show different values on another device<br><br>
+                    <strong>Explanation:</strong> This is normal for device-specific settings like push notification status<br><br>
+                    <strong>Solution:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Device-specific settings (marked with ⭐) are unique per device</li>
+                        <li>User/Outlet/Global settings should sync across devices</li>
+                        <li>If non-device settings differ, open Settings screen on both devices to force sync</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>❓ Frequently Asked Questions</h2>
+
+                <div class="faq">
+                    <strong>Q: What's the difference between User, Outlet, and Global settings?</strong>
+                    <p>A: User settings are personal to you. Outlet settings affect everyone at that store location. Global settings affect the entire company.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Can I reset a setting to its default value?</strong>
+                    <p>A: Currently, you can manually change it back to the default value shown in the setting description. Contact your administrator if you need help.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Why can't I edit some settings?</strong>
+                    <p>A: Settings marked with 🔒 are read-only and managed by the system or administrators. You can view them but not change them.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Do settings sync across my devices?</strong>
+                    <p>A: Yes! Most settings sync automatically. Device-specific settings (marked with ⭐) are unique to each device.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: What happens if I enter an invalid value?</strong>
+                    <p>A: The app will show a red border and error message. You must fix the error before you can save changes.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Can I change multiple settings at once?</strong>
+                    <p>A: Yes! Change as many settings as you need, then tap "Save Changes" once to save all changes together.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Why does changing language work immediately but other settings don't?</strong>
+                    <p>A: Some settings (marked with 🚀) are designed to take effect immediately. Others may require app restart or navigating to a different screen.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Who can change outlet and global settings?</strong>
+                    <p>A: Only users with appropriate permissions can change these settings. Contact your manager or administrator for access.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Version 1.0</strong> | Last Updated: November 6, 2025</p>
+            <p>Configure your app the way you want it!</p>
+            <p style="margin-top: 20px; font-size: 1.5em;">Happy Configuring! ⚙️✨</p>
+        </div>
+    </div>
+</body>
+</html>

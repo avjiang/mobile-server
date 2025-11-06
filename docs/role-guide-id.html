@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role & Pengguna - Panduan Pengguna</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .tip-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .tip-box strong {
+            color: #2e7d32;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box strong {
+            color: #e65100;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            color: #1565c0;
+        }
+        .step-card {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid #667eea;
+        }
+        .step-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 5px 5px 5px 0;
+        }
+        .badge-purple {
+            background: #764ba2;
+            color: white;
+        }
+        .badge-blue {
+            background: #2196f3;
+            color: white;
+        }
+        .badge-green {
+            background: #4caf50;
+            color: white;
+        }
+        .faq {
+            background: #fafafa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .faq strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .quick-ref {
+            background: #fff9c4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .quick-ref table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .quick-ref td {
+            padding: 8px;
+            border-bottom: 1px solid #f0e68c;
+        }
+        .quick-ref td:first-child {
+            font-weight: bold;
+            color: #f57f17;
+            width: 40%;
+        }
+        .toc {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .toc h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            display: block;
+            padding: 5px 0;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .permission-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .permission-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        .permission-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .permission-item span {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .header {
+                background: #667eea;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👥 Role & Pengguna</h1>
+            <p>Panduan Pengguna - Kelola Akses & Izin Tim Anda</p>
+        </div>
+        <div class="content">
+            <div class="toc">
+                <h3>📋 Daftar Isi</h3>
+                <a href="#apa-itu">1. Apa itu Role & Pengguna?</a>
+                <a href="#memulai">2. Mengakses Menu Role & Pengguna</a>
+                <a href="#role">3. Mengelola Role (Peran)</a>
+                <a href="#user">4. Mengelola Pengguna</a>
+                <a href="#permissions">5. Memahami Izin (Permissions)</a>
+                <a href="#notifications">6. Notifikasi & Perangkat</a>
+                <a href="#tips">7. Tips & Trik</a>
+                <a href="#masalah">8. Pemecahan Masalah</a>
+            </div>
+
+            <div class="section" id="apa-itu">
+                <h2>1. Apa itu Role & Pengguna?</h2>
+                <p>Fitur Role & Pengguna memungkinkan Anda mengatur siapa saja yang dapat mengakses sistem dan apa yang dapat mereka lakukan.</p>
+
+                <h3>Role (Peran)</h3>
+                <p><strong>Role</strong> adalah sekumpulan izin yang dapat Anda berikan kepada pengguna. Contohnya:</p>
+                <ul>
+                    <li><strong>Kasir</strong> - Hanya dapat melakukan penjualan dan melihat stok</li>
+                    <li><strong>Manager</strong> - Dapat melihat laporan dan mengelola inventori</li>
+                    <li><strong>Owner</strong> - Memiliki akses penuh ke semua fitur</li>
+                    <li><strong>Supir Pengiriman</strong> - Hanya dapat mengakses daftar pengiriman</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>📝 Catatan Penting:</strong> Anda bebas membuat role dengan nama apa saja sesuai kebutuhan bisnis Anda. Sistem ini sangat fleksibel dan dapat disesuaikan dengan struktur organisasi Anda.
+                </div>
+
+                <h3>Pengguna (User)</h3>
+                <p><strong>Pengguna</strong> adalah orang yang dapat login ke sistem. Setiap pengguna dapat memiliki satu atau lebih role yang menentukan apa yang dapat mereka akses.</p>
+
+                <h3>Super Admin</h3>
+                <p>Role khusus dengan nama <strong>"Super Admin"</strong> memiliki akses penuh ke semua fitur tanpa batasan. Role ini tidak memerlukan izin tambahan.</p>
+
+                <div class="warning-box">
+                    <strong>⚠️ Peringatan:</strong> Berikan role Super Admin hanya kepada orang yang sangat dipercaya. Role ini memiliki akses penuh tanpa batasan!
+                </div>
+            </div>
+
+            <div class="section" id="memulai">
+                <h2>2. Mengakses Menu Role & Pengguna</h2>
+                <h3>Persyaratan Akses</h3>
+                <p>Untuk mengakses menu Role & Pengguna, Anda memerlukan izin khusus:</p>
+                <ul>
+                    <li><span class="badge badge-purple">Kelola Kontrol Akses</span> - Izin untuk mengelola role dan pengguna</li>
+                    <li>Atau memiliki role <span class="badge badge-green">Super Admin</span></li>
+                </ul>
+
+                <div class="step-card">
+                    <h4>Cara Mengakses:</h4>
+                    <ol>
+                        <li>Buka aplikasi</li>
+                        <li>Ketuk menu <strong>"Fungsi"</strong></li>
+                        <li>Gulir ke bawah hingga bagian <strong>"Kontrol Akses"</strong></li>
+                        <li>Pilih <strong>"Role"</strong> atau <strong>"Pengguna"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 Tidak melihat menu ini?</strong> Hubungi administrator atau pemilik bisnis Anda untuk mendapatkan izin akses yang diperlukan.
+                </div>
+            </div>
+
+            <div class="section" id="role">
+                <h2>3. Mengelola Role (Peran)</h2>
+
+                <h3>Melihat Daftar Role</h3>
+                <p>Setelah membuka menu Role, Anda akan melihat semua role yang sudah dibuat beserta jumlah pengguna di setiap role.</p>
+
+                <div class="step-card">
+                    <h4>Membuat Role Baru</h4>
+                    <ol>
+                        <li>Buka halaman <strong>Role</strong></li>
+                        <li>Ketuk tombol <strong>"Tambah Role"</strong> atau ikon <strong>+</strong></li>
+                        <li>Masukkan <strong>Nama Role</strong> (contoh: "Kasir", "Manager", "Supir")</li>
+                        <li>Pilih <strong>Izin</strong> yang ingin diberikan ke role ini (lihat bagian Izin di bawah)</li>
+                        <li>Ketuk <strong>"Simpan"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-card">
+                    <h4>Mengedit Role</h4>
+                    <ol>
+                        <li>Ketuk pada role yang ingin diedit</li>
+                        <li>Ubah nama atau izin sesuai kebutuhan</li>
+                        <li>Ketuk <strong>"Simpan Perubahan"</strong></li>
+                    </ol>
+                    <div class="tip-box">
+                        <strong>💡 Tips:</strong> Perubahan izin akan langsung berlaku untuk semua pengguna yang memiliki role tersebut.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h4>Menghapus Role</h4>
+                    <ol>
+                        <li>Ketuk pada role yang ingin dihapus</li>
+                        <li>Ketuk tombol <strong>"Hapus Role"</strong></li>
+                        <li>Konfirmasi penghapusan</li>
+                    </ol>
+                    <div class="warning-box">
+                        <strong>⚠️ Perhatian:</strong> Pastikan tidak ada pengguna yang masih menggunakan role ini. Jika ada, pindahkan mereka ke role lain terlebih dahulu.
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="user">
+                <h2>4. Mengelola Pengguna</h2>
+
+                <h3>Melihat Daftar Pengguna</h3>
+                <p>Di halaman Pengguna, Anda dapat melihat semua pengguna yang terdaftar beserta role mereka.</p>
+
+                <div class="step-card">
+                    <h4>Menambah Pengguna Baru</h4>
+                    <ol>
+                        <li>Buka halaman <strong>Pengguna</strong></li>
+                        <li>Ketuk tombol <strong>"Tambah Pengguna"</strong> atau ikon <strong>+</strong></li>
+                        <li>Isi informasi pengguna:
+                            <ul>
+                                <li><strong>Nama Lengkap</strong></li>
+                                <li><strong>Email</strong> (untuk login)</li>
+                                <li><strong>Password</strong> (kata sandi awal)</li>
+                                <li><strong>Nomor Telepon</strong> (opsional)</li>
+                            </ul>
+                        </li>
+                        <li>Pilih <strong>Role</strong> untuk pengguna ini (bisa lebih dari satu)</li>
+                        <li>Ketuk <strong>"Simpan"</strong></li>
+                    </ol>
+                    <div class="info-box">
+                        <strong>📝 Catatan:</strong> Pengguna dapat memiliki lebih dari satu role. Semua izin dari semua role akan digabungkan.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h4>Mengedit Pengguna</h4>
+                    <ol>
+                        <li>Ketuk pada pengguna yang ingin diedit</li>
+                        <li>Ubah informasi atau role sesuai kebutuhan</li>
+                        <li>Untuk mengubah password, aktifkan opsi <strong>"Ubah Password"</strong></li>
+                        <li>Ketuk <strong>"Simpan Perubahan"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="step-card">
+                    <h4>Menonaktifkan Pengguna</h4>
+                    <ol>
+                        <li>Ketuk pada pengguna yang ingin dinonaktifkan</li>
+                        <li>Ketuk tombol <strong>"Nonaktifkan Pengguna"</strong></li>
+                        <li>Konfirmasi tindakan</li>
+                    </ol>
+                    <div class="tip-box">
+                        <strong>💡 Tips:</strong> Menonaktifkan lebih baik daripada menghapus jika Anda mungkin perlu mengaktifkan kembali pengguna di masa depan.
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="permissions">
+                <h2>5. Memahami Izin (Permissions)</h2>
+                <p>Izin menentukan apa yang dapat dilakukan pengguna di dalam sistem. Berikut adalah daftar lengkap izin yang tersedia:</p>
+
+                <h3>📊 Dashboard & Laporan</h3>
+                <div class="permission-list">
+                    <div class="permission-item">
+                        <strong>Lihat Dashboard</strong>
+                        <span>Melihat dashboard dan analitik</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Lihat Laporan Sesi</strong>
+                        <span>Melihat laporan sesi kasir</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Lihat Laporan Keuangan</strong>
+                        <span>Melihat laporan keuangan dan pernyataan</span>
+                    </div>
+                </div>
+
+                <h3>📦 Inventori & Stok</h3>
+                <div class="permission-list">
+                    <div class="permission-item">
+                        <strong>Lihat Inventori</strong>
+                        <span>Melihat daftar produk dan stok</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Lihat Jumlah Stok</strong>
+                        <span>Melihat jumlah stok lengkap</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Kelola Inventori</strong>
+                        <span>Tambah, edit, dan hapus produk</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Kelola Supplier</strong>
+                        <span>Tambah, edit, dan hapus supplier</span>
+                    </div>
+                </div>
+
+                <h3>💰 Penjualan</h3>
+                <div class="permission-list">
+                    <div class="permission-item">
+                        <strong>Proses Penjualan</strong>
+                        <span>Membuat dan memproses transaksi penjualan</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Lihat Riwayat Penjualan</strong>
+                        <span>Melihat riwayat penjualan</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Ubah Riwayat Penjualan</strong>
+                        <span>Mengubah transaksi yang sudah ada</span>
+                    </div>
+                </div>
+
+                <h3>👥 Pelanggan & Pengguna</h3>
+                <div class="permission-list">
+                    <div class="permission-item">
+                        <strong>Kelola Pelanggan</strong>
+                        <span>Tambah, edit, dan hapus data pelanggan</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Kelola Pengguna</strong>
+                        <span>Mengelola akun pengguna sistem</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Kelola Role</strong>
+                        <span>Membuat dan mengelola role</span>
+                    </div>
+                </div>
+
+                <h3>🏪 Menu Fungsi</h3>
+                <div class="permission-list">
+                    <div class="permission-item">
+                        <strong>Kelola Data Master</strong>
+                        <span>Akses ke kategori dan supplier</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Kelola Pengadaan</strong>
+                        <span>Akses ke quotation, purchase order, dll</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Kelola Kontrol Akses</strong>
+                        <span>Akses ke role dan pengguna</span>
+                    </div>
+                </div>
+
+                <h3>🏢 Lainnya</h3>
+                <div class="permission-list">
+                    <div class="permission-item">
+                        <strong>Kelola Outlet</strong>
+                        <span>Mengelola informasi outlet/toko</span>
+                    </div>
+                    <div class="permission-item">
+                        <strong>Kelola Perangkat Notifikasi</strong>
+                        <span>Mengelola perangkat yang menerima notifikasi</span>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <strong>💡 Tips Keamanan:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Berikan hanya izin yang benar-benar diperlukan untuk setiap role</li>
+                        <li>Tinjau izin secara berkala untuk memastikan masih sesuai</li>
+                        <li>Pisahkan tugas penting (contoh: yang membuat penjualan berbeda dengan yang mengubah riwayat)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="notifications">
+                <h2>6. Notifikasi & Perangkat</h2>
+                <p>Sistem mendukung notifikasi push untuk membantu tim Anda tetap terinformasi tentang aktivitas penting.</p>
+
+                <h3>Jenis Notifikasi yang Tersedia</h3>
+
+                <div class="step-card">
+                    <h4>1. Notifikasi Penjualan</h4>
+                    <p><strong>Izin:</strong> <span class="badge badge-blue">Terima Notifikasi Penjualan</span></p>
+                    <p>Pengguna dengan izin ini akan menerima pemberitahuan tentang:</p>
+                    <ul>
+                        <li>Penjualan baru selesai</li>
+                        <li>Pembayaran ditambahkan (untuk penjualan hutang)</li>
+                        <li>Pembayaran hutang lunas</li>
+                        <li>Penjualan dibatalkan (void)</li>
+                        <li>Penjualan dikembalikan (return)</li>
+                        <li>Penjualan direfund</li>
+                        <li>Pengiriman dikonfirmasi</li>
+                    </ul>
+                </div>
+
+                <div class="step-card">
+                    <h4>2. Notifikasi Inventori</h4>
+                    <p><strong>Izin:</strong> <span class="badge badge-blue">Terima Notifikasi Inventaris</span></p>
+                    <p>Pengguna dengan izin ini akan menerima pemberitahuan tentang:</p>
+                    <ul>
+                        <li>Stok produk habis (out of stock)</li>
+                        <li>Stok produk di bawah ambang batas (low stock warning)</li>
+                    </ul>
+                    <div class="info-box" style="margin-top: 15px;">
+                        <strong>📝 Catatan:</strong> Notifikasi inventori dikirim secara otomatis setelah transaksi penjualan yang menyebabkan perubahan stok.
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>📱 Izin Master Notifikasi:</strong> Untuk menerima notifikasi apa pun, pengguna harus memiliki izin <span class="badge badge-green">Terima Notifikasi</span> ditambah dengan izin spesifik (Penjualan atau Inventori).
+                </div>
+
+                <h3>Mengelola Perangkat Notifikasi</h3>
+                <p>Pengguna dengan izin <span class="badge badge-purple">Kelola Perangkat Notifikasi Push</span> dapat:</p>
+                <ul>
+                    <li>Melihat semua perangkat yang terdaftar untuk notifikasi</li>
+                    <li>Menghapus perangkat yang tidak aktif</li>
+                    <li>Menguji pengiriman notifikasi</li>
+                </ul>
+
+                <div class="step-card">
+                    <h4>Cara Mengaktifkan Notifikasi</h4>
+                    <ol>
+                        <li>Pastikan pengguna memiliki izin notifikasi yang sesuai</li>
+                        <li>Login ke aplikasi di perangkat</li>
+                        <li>Izinkan notifikasi saat diminta oleh sistem</li>
+                        <li>Perangkat akan otomatis terdaftar</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Catatan:</strong> Notifikasi hanya berfungsi pada perangkat yang sudah login dan memberikan izin notifikasi di pengaturan perangkat.
+                </div>
+            </div>
+
+            <div class="section" id="tips">
+                <h2>7. Tips & Trik</h2>
+
+                <h3>🎯 Best Practices</h3>
+                <div class="quick-ref">
+                    <table>
+                        <tr>
+                            <td>Mulai dengan Template</td>
+                            <td>Buat role dasar seperti "Kasir", "Manager", "Owner" terlebih dahulu</td>
+                        </tr>
+                        <tr>
+                            <td>Gunakan Nama yang Jelas</td>
+                            <td>Beri nama role yang mudah dipahami (contoh: "Kasir Shift Pagi" daripada "Role1")</td>
+                        </tr>
+                        <tr>
+                            <td>Tinjau Berkala</td>
+                            <td>Periksa izin setiap role minimal 1 bulan sekali</td>
+                        </tr>
+                        <tr>
+                            <td>Dokumentasi</td>
+                            <td>Catat siapa yang memiliki akses apa dan mengapa</td>
+                        </tr>
+                        <tr>
+                            <td>Password Kuat</td>
+                            <td>Gunakan kombinasi huruf besar, kecil, angka, dan simbol</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3>🔒 Keamanan</h3>
+                <ul>
+                    <li><strong>Jangan bagikan akun</strong> - Setiap orang harus memiliki akun sendiri</li>
+                    <li><strong>Ubah password default</strong> - Minta pengguna baru mengubah password setelah login pertama</li>
+                    <li><strong>Nonaktifkan segera</strong> - Nonaktifkan akun karyawan yang sudah berhenti</li>
+                    <li><strong>Monitor aktivitas</strong> - Periksa log aktivitas secara berkala</li>
+                    <li><strong>Batasi Super Admin</strong> - Maksimal 2-3 orang saja</li>
+                </ul>
+
+                <h3>⚡ Efisiensi</h3>
+                <ul>
+                    <li><strong>Role berdasarkan posisi</strong> - Buat role untuk setiap posisi di tim Anda</li>
+                    <li><strong>Gunakan multiple role</strong> - Berikan beberapa role jika diperlukan daripada membuat role baru yang kompleks</li>
+                    <li><strong>Template untuk role baru</strong> - Duplikasi role yang sudah ada saat membuat yang serupa</li>
+                </ul>
+
+                <h3>📱 Contoh Struktur Role</h3>
+                <div class="step-card">
+                    <h4>Toko Kecil (2-5 orang)</h4>
+                    <ul>
+                        <li><strong>Owner</strong> - Semua izin (atau Super Admin)</li>
+                        <li><strong>Kasir</strong> - Proses penjualan, lihat inventori</li>
+                    </ul>
+                </div>
+
+                <div class="step-card">
+                    <h4>Toko Menengah (5-15 orang)</h4>
+                    <ul>
+                        <li><strong>Owner/Manager</strong> - Semua izin</li>
+                        <li><strong>Supervisor</strong> - Laporan, kelola inventori</li>
+                        <li><strong>Kasir</strong> - Proses penjualan</li>
+                        <li><strong>Gudang</strong> - Kelola inventori, lihat stok</li>
+                        <li><strong>Supir</strong> - Hanya akses daftar pengiriman</li>
+                    </ul>
+                </div>
+
+                <div class="step-card">
+                    <h4>Toko Besar (15+ orang, multi-outlet)</h4>
+                    <ul>
+                        <li><strong>Super Admin</strong> - Akses penuh semua outlet</li>
+                        <li><strong>Manager Outlet</strong> - Semua izin untuk outlet tertentu</li>
+                        <li><strong>Supervisor</strong> - Laporan dan inventori</li>
+                        <li><strong>Kasir Senior</strong> - Penjualan + ubah riwayat</li>
+                        <li><strong>Kasir</strong> - Hanya proses penjualan</li>
+                        <li><strong>Admin Gudang</strong> - Kelola inventori dan supplier</li>
+                        <li><strong>Staff Gudang</strong> - Hanya lihat dan update stok</li>
+                        <li><strong>Tim Pengiriman</strong> - Hanya daftar pengiriman</li>
+                        <li><strong>Akuntan</strong> - Semua laporan, tidak bisa ubah data</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="masalah">
+                <h2>8. Pemecahan Masalah</h2>
+
+                <div class="warning-box">
+                    <strong>❌ Pengguna Tidak Bisa Login</strong><br>
+                    <strong>Masalah:</strong> Pengguna tidak dapat masuk ke sistem<br><br>
+                    <strong>Solusi:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Periksa apakah akun sudah aktif (tidak dinonaktifkan)</li>
+                        <li>Pastikan email dan password benar</li>
+                        <li>Reset password pengguna jika lupa</li>
+                        <li>Periksa koneksi internet</li>
+                        <li>Coba logout dan login kembali</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🚫 Menu Tidak Terlihat</strong><br>
+                    <strong>Masalah:</strong> Pengguna tidak melihat menu tertentu<br><br>
+                    <strong>Solusi:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Periksa role pengguna - pastikan memiliki izin yang sesuai</li>
+                        <li>Verifikasi izin di role tersebut sudah benar</li>
+                        <li>Minta pengguna logout dan login kembali</li>
+                        <li>Periksa apakah pengguna di outlet yang benar</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🔔 Notifikasi Tidak Diterima</strong><br>
+                    <strong>Masalah:</strong> Pengguna tidak menerima notifikasi<br><br>
+                    <strong>Solusi:</strong>
+                    <ol style="margin-top: 10px;">
+                        <li>Pastikan pengguna memiliki izin <strong>"Terima Notifikasi"</strong></li>
+                        <li>Periksa izin spesifik (Penjualan atau Inventori) sudah diberikan</li>
+                        <li>Verifikasi izin notifikasi di pengaturan perangkat</li>
+                        <li>Pastikan aplikasi tidak dalam mode hemat baterai</li>
+                        <li>Coba logout dan login kembali</li>
+                        <li>Reinstall aplikasi jika masih bermasalah</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Tidak Bisa Menghapus Role</strong><br>
+                    <strong>Masalah:</strong> Role tidak dapat dihapus<br><br>
+                    <strong>Solusi:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Periksa apakah masih ada pengguna dengan role ini</li>
+                        <li>Pindahkan semua pengguna ke role lain terlebih dahulu</li>
+                        <li>Setelah tidak ada pengguna, role dapat dihapus</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🔄 Perubahan Izin Tidak Berlaku</strong><br>
+                    <strong>Masalah:</strong> Setelah mengubah izin, pengguna masih tidak bisa akses<br><br>
+                    <strong>Solusi:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Minta pengguna logout dan login kembali</li>
+                        <li>Tunggu beberapa saat untuk sinkronisasi data</li>
+                        <li>Periksa kembali izin sudah tersimpan dengan benar</li>
+                        <li>Pastikan tidak ada role lain yang membatasi akses</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>❓ Pertanyaan yang Sering Diajukan</h2>
+
+                <div class="faq">
+                    <strong>T: Berapa jumlah maksimal role yang bisa dibuat?</strong>
+                    <p>J: Tidak ada batasan jumlah role. Anda dapat membuat sebanyak yang diperlukan sesuai kebutuhan bisnis Anda.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Apakah pengguna bisa memiliki lebih dari satu role?</strong>
+                    <p>J: Ya! Satu pengguna dapat memiliki beberapa role. Semua izin dari semua role akan digabungkan dan pengguna akan memiliki akses ke semua fitur yang diizinkan oleh role-role tersebut.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Apa bedanya "Super Admin" dengan role yang memiliki semua izin?</strong>
+                    <p>J: Super Admin adalah role khusus yang otomatis memiliki semua izin tanpa perlu dikonfigurasi. Role ini juga akan otomatis mendapat akses ke fitur baru yang ditambahkan di masa depan. Role biasa dengan semua izin harus dikonfigurasi manual untuk setiap izin.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Bagaimana jika saya lupa password pengguna?</strong>
+                    <p>J: Anda dapat mereset password pengguna dengan mengedit pengguna tersebut dan mengaktifkan opsi "Ubah Password", lalu masukkan password baru.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Apakah pengguna yang dinonaktifkan masih bisa login?</strong>
+                    <p>J: Tidak. Pengguna yang dinonaktifkan tidak dapat login ke sistem. Anda dapat mengaktifkan kembali kapan saja jika diperlukan.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Apakah saya bisa melihat aktivitas pengguna?</strong>
+                    <p>J: Ya, sistem mencatat semua transaksi dan perubahan data beserta informasi siapa yang melakukannya. Anda dapat melihat ini di laporan atau riwayat setiap data.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Bagaimana cara membuat role yang hanya bisa melihat tapi tidak bisa mengubah data?</strong>
+                    <p>J: Berikan hanya izin "Lihat" (View) tanpa izin "Kelola" (Manage). Contoh: berikan "Lihat Inventori" tanpa "Kelola Inventori" untuk pengguna yang hanya boleh melihat stok.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Apakah notifikasi bekerja di semua perangkat?</strong>
+                    <p>J: Notifikasi akan dikirim ke semua perangkat tempat pengguna login dan memberikan izin notifikasi. Satu pengguna dapat menerima notifikasi di beberapa perangkat sekaligus.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Bagaimana cara terbaik mengatur izin untuk kasir?</strong>
+                    <p>J: Untuk kasir, berikan minimal: "Proses Penjualan", "Lihat Inventori", dan "Terima Notifikasi Terkait Penjualan". Hindari memberikan izin untuk mengubah riwayat penjualan atau mengelola harga untuk keamanan yang lebih baik.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Versi 1.0</strong> | Terakhir Diperbarui: 6 November 2025</p>
+            <p>Kelola tim Anda dengan aman dan efisien!</p>
+            <p style="margin-top: 20px; font-size: 1.5em;">Selamat Mengelola! 👥🔐</p>
+        </div>
+    </div>
+</body>
+</html>

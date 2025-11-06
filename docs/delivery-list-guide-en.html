@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery List - User Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .tip-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .tip-box strong {
+            color: #2e7d32;
+        }
+
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .warning-box strong {
+            color: #e65100;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info-box strong {
+            color: #1565c0;
+        }
+
+        .step-card {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid #667eea;
+        }
+
+        .step-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 5px 5px 5px 0;
+        }
+
+        .badge-green {
+            background: #4caf50;
+            color: white;
+        }
+
+        .badge-orange {
+            background: #ff9800;
+            color: white;
+        }
+
+        .badge-blue {
+            background: #2196f3;
+            color: white;
+        }
+
+        .faq {
+            background: #fafafa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .faq strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .quick-ref {
+            background: #fff9c4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .quick-ref table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .quick-ref td {
+            padding: 8px;
+            border-bottom: 1px solid #f0e68c;
+        }
+
+        .quick-ref td:first-child {
+            font-weight: bold;
+            color: #f57f17;
+            width: 40%;
+        }
+
+        .toc {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .toc h3 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            display: block;
+            padding: 5px 0;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            background: #f5f5f5;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+
+            .header {
+                background: #667eea;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Delivery List</h1>
+            <p>User Guide - Complete Step-by-Step Instructions</p>
+        </div>
+
+        <div class="content">
+            <!-- Table of Contents -->
+            <div class="toc">
+                <h3>📋 Table of Contents</h3>
+                <a href="#what-is">1. What is Delivery List?</a>
+                <a href="#getting-started">2. Getting Started</a>
+                <a href="#viewing">3. Viewing Your Deliveries</a>
+                <a href="#searching">4. Searching for Deliveries</a>
+                <a href="#details">5. Viewing Delivery Details</a>
+                <a href="#single">6. Confirming a Single Delivery</a>
+                <a href="#batch">7. Confirming Multiple Deliveries</a>
+                <a href="#auto-verify">8. Understanding Auto-Verification</a>
+                <a href="#tips">9. Tips & Tricks</a>
+                <a href="#troubleshooting">10. Troubleshooting</a>
+            </div>
+
+            <!-- Section 1 -->
+            <div class="section" id="what-is">
+                <h2>1. What is Delivery List?</h2>
+                <p>Delivery List shows all pending deliveries that need to be completed.</p>
+
+                <h3>How Deliveries Are Created</h3>
+                <p>Deliveries are automatically added to this list when you create a <strong>Sale with Delivery type</strong>.</p>
+
+                <div class="step-card">
+                    <h4>To create a delivery sale:</h4>
+                    <ol>
+                        <li>Add items to cart</li>
+                        <li>Open the cart modal</li>
+                        <li>Look at the <strong>top-left corner</strong> of the cart</li>
+                        <li>Select <strong>"Delivery"</strong> as the sales type</li>
+                        <li>Complete the sale</li>
+                    </ol>
+                    <p>The sale will then appear in the Delivery List, ready for delivery and confirmation.</p>
+                </div>
+
+                <h3>What You Can Do</h3>
+                <ul>
+                    <li>✅ View customer information and addresses</li>
+                    <li>📱 Scan item barcodes to verify packages</li>
+                    <li>✔️ Confirm single or multiple deliveries</li>
+                    <li>💬 Contact customers via WhatsApp</li>
+                    <li>🗺️ Navigate to delivery addresses using Google Maps</li>
+                </ul>
+            </div>
+
+            <!-- Section 2 -->
+            <div class="section" id="getting-started">
+                <h2>2. Getting Started</h2>
+                <h3>Accessing Delivery List</h3>
+                <ol>
+                    <li>Open the app</li>
+                    <li>Tap on <strong>"Functions"</strong> from the main menu</li>
+                    <li>Select <strong>"Delivery List"</strong></li>
+                    <li>You'll see a list of all pending deliveries</li>
+                </ol>
+
+                <div class="tip-box">
+                    <strong>💡 Tip:</strong> Pull down on the screen to refresh the list at any time.
+                </div>
+            </div>
+
+            <!-- Section 3 -->
+            <div class="section" id="viewing">
+                <h2>3. Viewing Your Deliveries</h2>
+                <p>Each delivery card shows:</p>
+                <ul>
+                    <li><strong>Customer Name</strong> - Who to deliver to</li>
+                    <li><strong>Phone Number</strong> - Tap to contact via WhatsApp</li>
+                    <li><strong>Delivery Address</strong> - Tap to open in Google Maps</li>
+                    <li><strong>Number of Items</strong> - How many items in the delivery</li>
+                    <li><strong>Total Amount</strong> - Total value of the order</li>
+                    <li><strong>Payment Status:</strong>
+                        <br><span class="badge badge-green">Fully Paid</span> - Customer already paid
+                        <br><span class="badge badge-orange">Collect Rp X</span> - Amount to collect on delivery (COD)
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Section 4 -->
+            <div class="section" id="searching">
+                <h2>4. Searching for Deliveries</h2>
+                <p>Can't find a specific delivery? Use the search bar:</p>
+                <ol>
+                    <li>Tap the search bar at the top</li>
+                    <li>Type the customer's name or phone number</li>
+                    <li>The list will filter automatically as you type</li>
+                    <li>Tap the ✕ button to clear and see all deliveries again</li>
+                </ol>
+            </div>
+
+            <!-- Section 5 -->
+            <div class="section" id="details">
+                <h2>5. Viewing Delivery Details</h2>
+                <p>Want to see more information about a delivery?</p>
+                <ol>
+                    <li>Tap anywhere on a delivery card</li>
+                    <li>A detailed view will open with two tabs</li>
+                </ol>
+
+                <h3>Information Tab</h3>
+                <ul>
+                    <li>Full customer details</li>
+                    <li>Complete delivery address (tap to open Google Maps)</li>
+                    <li>Payment breakdown</li>
+                    <li>Any special remarks</li>
+                </ul>
+
+                <h3>Items Tab</h3>
+                <ul>
+                    <li>List of all items to deliver</li>
+                    <li>Item codes (if available)</li>
+                    <li>Quantities and prices</li>
+                    <li>Verification status for each item</li>
+                </ul>
+            </div>
+
+            <!-- Section 6 -->
+            <div class="section" id="single">
+                <h2>6. Confirming a Single Delivery</h2>
+
+                <div class="step-card">
+                    <h4>Step 1: Open Delivery Details</h4>
+                    <ol>
+                        <li>Tap on the delivery card</li>
+                        <li>Switch to the <strong>"Items"</strong> tab</li>
+                    </ol>
+                </div>
+
+                <div class="step-card">
+                    <h4>Step 2: Verify Items</h4>
+                    <p>You'll see each item with one of these statuses:</p>
+                    <ul>
+                        <li><strong>📦 Scan Button</strong> - Item needs barcode scanning</li>
+                        <li><strong>✅ Green Checkmark</strong> - Item already verified</li>
+                    </ul>
+
+                    <p><strong>For items that need scanning:</strong></p>
+                    <ol>
+                        <li>Tap the <strong>scan icon</strong> (QR code) on the item</li>
+                        <li>Point your camera at the item's barcode</li>
+                        <li>Wait for the beep/vibration</li>
+                        <li>Item will turn green with a checkmark ✅</li>
+                    </ol>
+
+                    <div class="info-box">
+                        <strong>📝 Note:</strong> Some items don't have barcodes and will be auto-verified.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h4>Step 3: Confirm Delivery</h4>
+                    <ol>
+                        <li>Once all items are verified (green checkmarks)</li>
+                        <li>The <strong>"Confirm Delivery"</strong> button turns green</li>
+                        <li>Tap <strong>"Confirm Delivery"</strong></li>
+                        <li>Done! The delivery is marked as complete</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Section 7 -->
+            <div class="section" id="batch">
+                <h2>7. Confirming Multiple Deliveries at Once</h2>
+                <p>Save time by confirming several deliveries together:</p>
+
+                <div class="step-card">
+                    <h4>Step 1: Select Deliveries</h4>
+                    <ol>
+                        <li>Tap the checkbox on each delivery you want to confirm</li>
+                        <li>You can select as many as you need</li>
+                        <li>The title bar will show: <strong>"X selected"</strong></li>
+                        <li>A floating button appears: <strong>"Confirm X Deliveries"</strong></li>
+                    </ol>
+                    <div class="tip-box">
+                        <strong>💡 Tip:</strong> To unselect all, tap <strong>"Clear All"</strong> (red text) in the top right.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h4>Step 2: Start Batch Verification</h4>
+                    <ol>
+                        <li>Tap the <strong>"Confirm X Deliveries"</strong> floating button</li>
+                        <li>A verification screen opens showing:
+                            <ul>
+                                <li>Overall progress at the top</li>
+                                <li>All selected deliveries grouped together</li>
+                                <li>Current verification status</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="step-card">
+                    <h4>Step 3: Verify All Items</h4>
+                    <p>The verification screen shows all deliveries:</p>
+                    <ol>
+                        <li><strong>Tap on a delivery</strong> to expand and see its items</li>
+                        <li><strong>Scan each item</strong> one by one:
+                            <ul>
+                                <li>Items with barcodes show a scan button</li>
+                                <li>Tap scan button → Point camera → Scan barcode</li>
+                                <li>Item turns green when verified ✅</li>
+                            </ul>
+                        </li>
+                        <li><strong>Watch the progress bar</strong> fill up as you scan</li>
+                        <li>Items without barcodes are already green (auto-verified)</li>
+                    </ol>
+                    <div class="tip-box">
+                        <strong>💡 Tip:</strong> You can scan items from different deliveries in any order!
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h4>Step 4: Confirm All at Once</h4>
+                    <ol>
+                        <li>When progress shows all items verified</li>
+                        <li>The <strong>"Confirm All Deliveries"</strong> button turns green</li>
+                        <li>Tap the button</li>
+                        <li>All selected deliveries confirmed together!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Section 8 -->
+            <div class="section" id="auto-verify">
+                <h2>8. Understanding Auto-Verification</h2>
+
+                <h3>What is Auto-Verification?</h3>
+                <p>Some items don't have barcodes in the system. The app automatically verifies these items for you.</p>
+
+                <h3>How to Recognize Auto-Verified Items</h3>
+                <ul>
+                    <li><strong>✅ Green checkmark</strong> appears immediately</li>
+                    <li><strong>No scan button</strong> needed</li>
+                    <li><strong>Already counted</strong> in your progress</li>
+                </ul>
+
+                <h3>Warning Dialog</h3>
+                <p>When you open a delivery with items without barcodes:</p>
+                <ul>
+                    <li>A warning dialog appears once</li>
+                    <li>Shows which items are auto-verified</li>
+                    <li>Tap <strong>"Confirm"</strong> to continue</li>
+                    <li>You can tap the ℹ️ icon anytime to see the list again</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>Example:</strong><br>
+                    <strong>Delivery has 3 items:</strong><br>
+                    ✅ "Custom Cake" - Auto-verified (no barcode)<br>
+                    📦 "Nasi Goreng Special" - Needs scan<br>
+                    📦 "Iced Tea" - Needs scan<br><br>
+                    <strong>Progress shows:</strong> 1/3 verified immediately (custom cake auto-verified)
+                </div>
+            </div>
+
+            <!-- Section 9 -->
+            <div class="section" id="tips">
+                <h2>9. Tips & Tricks</h2>
+
+                <h3>🚀 Speed Up Your Deliveries</h3>
+                <ul>
+                    <li><strong>Group nearby deliveries</strong> - Select multiple deliveries in the same area</li>
+                    <li><strong>Scan while loading</strong> - Verify items as you load them into your vehicle</li>
+                    <li><strong>Use the progress bar</strong> - Quickly see which deliveries still need verification</li>
+                </ul>
+
+                <h3>📱 Quick Actions</h3>
+                <div class="quick-ref">
+                    <table>
+                        <tr>
+                            <td>Tap phone number</td>
+                            <td>Opens WhatsApp directly</td>
+                        </tr>
+                        <tr>
+                            <td>Tap address</td>
+                            <td>Opens in Google Maps with directions</td>
+                        </tr>
+                        <tr>
+                            <td>Pull down</td>
+                            <td>Refreshes the delivery list</td>
+                        </tr>
+                        <tr>
+                            <td>Tap "Clear All"</td>
+                            <td>Deselects all checkboxes at once</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3>🔍 Better Scanning</h3>
+                <ul>
+                    <li><strong>Good lighting</strong> - Scan in well-lit areas</li>
+                    <li><strong>Hold steady</strong> - Keep camera still on barcode</li>
+                    <li><strong>Clean barcodes</strong> - Wipe off any dirt or moisture</li>
+                    <li><strong>Correct distance</strong> - Hold phone 6-8 inches from barcode</li>
+                </ul>
+
+                <h3>💰 Payment Collection</h3>
+                <p><strong>Check payment status</strong> before delivery:</p>
+                <ul>
+                    <li><span class="badge badge-green">Fully Paid</span> - No collection needed</li>
+                    <li><span class="badge badge-orange">Collect Rp X</span> - Amount to collect</li>
+                </ul>
+                <p>Payment details are in the Information tab</p>
+            </div>
+
+            <!-- Section 10 -->
+            <div class="section" id="troubleshooting">
+                <h2>10. Troubleshooting</h2>
+
+                <div class="warning-box">
+                    <strong>❌ "Barcode Not Found" Error</strong><br>
+                    <strong>Problem:</strong> Scanned barcode doesn't match any item<br><br>
+                    <strong>Solution:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Check you're scanning the correct item</li>
+                        <li>Make sure barcode is for an item in this delivery</li>
+                        <li>Try cleaning the barcode and scanning again</li>
+                        <li>If barcode is damaged, contact support</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>📷 Camera Not Opening</strong><br>
+                    <strong>Problem:</strong> Camera doesn't open when tapping scan button<br><br>
+                    <strong>Solution:</strong>
+                    <ol style="margin-top: 10px;">
+                        <li>Check camera permissions in phone settings</li>
+                        <li>Close and reopen the app</li>
+                        <li>Make sure no other app is using the camera</li>
+                        <li>Restart your phone if issue persists</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🔄 List Not Updating</strong><br>
+                    <strong>Problem:</strong> New deliveries not showing<br><br>
+                    <strong>Solution:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Pull down on the screen to refresh</li>
+                        <li>Check your internet connection</li>
+                        <li>Make sure you're on the correct outlet</li>
+                        <li>Contact support if problem continues</li>
+                    </ul>
+                </div>
+
+                <h3>📞 Need More Help?</h3>
+                <div class="info-box">
+                    <strong>Contact Support</strong><br>
+                    If you encounter issues not covered in this guide:
+                    <ol style="margin-top: 10px;">
+                        <li>Take a screenshot of the error</li>
+                        <li>Note what you were trying to do</li>
+                        <li>Contact your support team</li>
+                        <li>Provide your outlet information</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- FAQ -->
+            <div class="section">
+                <h2>❓ Frequently Asked Questions</h2>
+
+                <div class="faq">
+                    <strong>Q: Can I confirm a delivery without scanning?</strong>
+                    <p>A: Yes, if all items are auto-verified (no barcodes). Otherwise, you must scan all items with barcodes.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: What if customer isn't home?</strong>
+                    <p>A: Don't confirm the delivery. Contact the customer via WhatsApp or phone first.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Can I undo a confirmed delivery?</strong>
+                    <p>A: No, confirmations are final. Contact support if you confirmed by mistake.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Why are some items already verified?</strong>
+                    <p>A: Items without barcodes in the system are auto-verified for your convenience.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>Q: Can I scan items in any order?</strong>
+                    <p>A: Yes! Scan items in whatever order is convenient for you.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Version 1.1</strong> | Last Updated: November 6, 2025</p>
+            <p>We value your feedback! Help us improve by sharing your experience.</p>
+            <p style="margin-top: 20px; font-size: 1.5em;">Happy Delivering! 🚚📦</p>
+        </div>
+    </div>
+</body>
+</html>

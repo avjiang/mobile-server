@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan - Panduan Pengguna</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .tip-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .tip-box strong {
+            color: #2e7d32;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box strong {
+            color: #e65100;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            color: #1565c0;
+        }
+        .step-card {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid #667eea;
+        }
+        .step-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 5px 5px 5px 0;
+        }
+        .badge-purple {
+            background: #764ba2;
+            color: white;
+        }
+        .badge-blue {
+            background: #2196f3;
+            color: white;
+        }
+        .badge-green {
+            background: #4caf50;
+            color: white;
+        }
+        .badge-orange {
+            background: #ff9800;
+            color: white;
+        }
+        .faq {
+            background: #fafafa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .faq strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .quick-ref {
+            background: #fff9c4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .quick-ref table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .quick-ref td {
+            padding: 8px;
+            border-bottom: 1px solid #f0e68c;
+        }
+        .quick-ref td:first-child {
+            font-weight: bold;
+            color: #f57f17;
+            width: 40%;
+        }
+        .toc {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .toc h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            display: block;
+            padding: 5px 0;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .setting-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .setting-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        .setting-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        .setting-item .setting-key {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+        .setting-item .setting-desc {
+            margin-top: 8px;
+            font-size: 0.95em;
+            color: #666;
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .header {
+                background: #667eea;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Pengaturan</h1>
+            <p>Panduan Pengguna - Sesuaikan Pengalaman Aplikasi Anda</p>
+        </div>
+        <div class="content">
+            <div class="toc">
+                <h3>📋 Daftar Isi</h3>
+                <a href="#what-is">1. Apa itu Pengaturan?</a>
+                <a href="#accessing">2. Mengakses Menu Pengaturan</a>
+                <a href="#scopes">3. Memahami Cakupan Pengaturan</a>
+                <a href="#available">4. Pengaturan yang Tersedia</a>
+                <a href="#changing">5. Mengubah Pengaturan</a>
+                <a href="#immediate">6. Pengaturan dengan Efek Langsung</a>
+                <a href="#readonly">7. Pengaturan Hanya Baca</a>
+                <a href="#tips">8. Tips & Praktik Terbaik</a>
+                <a href="#troubleshooting">9. Pemecahan Masalah</a>
+            </div>
+
+            <div class="section" id="what-is">
+                <h2>1. Apa itu Pengaturan?</h2>
+                <p>Pengaturan memungkinkan Anda menyesuaikan cara aplikasi beroperasi sesuai dengan kebutuhan bisnis dan preferensi pribadi Anda.</p>
+
+                <h3>Jenis Pengaturan</h3>
+                <ul>
+                    <li><strong>Preferensi Pengguna</strong> - Pengaturan pribadi Anda (bahasa, format tanggal)</li>
+                    <li><strong>Pengaturan Outlet</strong> - Pengaturan khusus toko/lokasi (tarif pajak, mata uang, pengaturan POS)</li>
+                    <li><strong>Pengaturan Global</strong> - Pengaturan seluruh perusahaan (nama perusahaan, footer struk)</li>
+                </ul>
+
+                <div class="info-box">
+                    <strong>📝 Penting:</strong> Pengaturan diorganisir ke dalam tab berdasarkan cakupannya. Anda hanya akan melihat pengaturan yang relevan dengan peran dan izin Anda saat ini.
+                </div>
+            </div>
+
+            <div class="section" id="accessing">
+                <h2>2. Mengakses Menu Pengaturan</h2>
+
+                <div class="step-card">
+                    <h4>Cara Mengakses Pengaturan:</h4>
+                    <ol>
+                        <li>Buka aplikasi</li>
+                        <li>Ketuk menu <strong>"Fungsi"</strong></li>
+                        <li>Gulir ke bawah dan pilih <strong>"Pengaturan"</strong></li>
+                    </ol>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 Tidak melihat menu Pengaturan?</strong> Hubungi administrator Anda untuk mendapatkan izin yang diperlukan.
+                </div>
+
+                <h3>Tampilan Layar Pengaturan</h3>
+                <p>Layar Pengaturan diorganisir ke dalam tiga tab:</p>
+                <ul>
+                    <li><span class="badge badge-blue">Preferensi Pengguna</span> - Pengaturan pribadi Anda</li>
+                    <li><span class="badge badge-green">Pengaturan Outlet</span> - Pengaturan untuk toko/lokasi saat ini</li>
+                    <li><span class="badge badge-purple">Pengaturan Global</span> - Pengaturan seluruh perusahaan</li>
+                </ul>
+            </div>
+
+            <div class="section" id="scopes">
+                <h2>3. Memahami Cakupan Pengaturan</h2>
+                <p>Pengaturan mengikuti <strong>hierarki 3 tingkat</strong> yang menentukan nilai mana yang digunakan:</p>
+
+                <div class="step-card">
+                    <h4>Prioritas Cakupan (Tertinggi ke Terendah):</h4>
+                    <ol>
+                        <li><strong>USER</strong> - Preferensi pribadi Anda (prioritas tertinggi)</li>
+                        <li><strong>OUTLET</strong> - Pengaturan toko/lokasi</li>
+                        <li><strong>TENANT</strong> - Default perusahaan (fallback)</li>
+                    </ol>
+                </div>
+
+                <h3>Cara Kerjanya</h3>
+                <p><strong>Contoh Skenario:</strong></p>
+                <ul>
+                    <li>Bahasa default perusahaan: <code>Bahasa Inggris</code> (cakupan TENANT)</li>
+                    <li>Tarif pajak Outlet 1: <code>11%</code> (cakupan OUTLET)</li>
+                    <li>Preferensi bahasa Anda: <code>Bahasa Indonesia</code> (cakupan USER)</li>
+                </ul>
+                <p><strong>Hasil:</strong> Anda akan melihat aplikasi dalam Bahasa Indonesia (pengaturan USER Anda menimpa default perusahaan), tetapi Outlet 1 akan menggunakan tarif pajak 11%.</p>
+
+                <div class="info-box">
+                    <strong>📝 Catatan:</strong> Pengaturan USER hanya mempengaruhi Anda. Pengaturan OUTLET mempengaruhi semua orang yang menggunakan outlet tersebut. Pengaturan TENANT mempengaruhi seluruh perusahaan.
+                </div>
+            </div>
+
+            <div class="section" id="available">
+                <h2>4. Pengaturan yang Tersedia</h2>
+
+                <h3>💰 Pengaturan Keuangan</h3>
+                <p><span class="badge badge-green">Cakupan OUTLET</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Tarif Pajak</strong>
+                        <div class="setting-desc">Persentase tarif pajak default (PPN). Rentang: 0-100</div>
+                    </div>
+                </div>
+
+                <h3>🛒 Pengaturan POS</h3>
+                <p><span class="badge badge-green">Cakupan OUTLET</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Cetak Struk Otomatis</strong>
+                        <div class="setting-desc">Cetak struk secara otomatis setelah menyelesaikan penjualan</div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Salinan Struk</strong>
+                        <div class="setting-desc">Jumlah salinan struk yang dicetak (1-5)</div>
+                    </div>
+                </div>
+
+                <h3>📦 Pengaturan Inventori</h3>
+                <p><span class="badge badge-green">Cakupan OUTLET</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Ambang Batas Stok Rendah</strong>
+                        <div class="setting-desc">Peringatan ketika stok turun di bawah jumlah ini (0-1000)</div>
+                    </div>
+                </div>
+
+                <h3>👤 Preferensi Pengguna</h3>
+                <p><span class="badge badge-blue">Cakupan USER</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Bahasa 🚀</strong>
+                        <div class="setting-desc">Bahasa pilihan Anda (en, id). <strong>Berubah langsung!</strong></div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Format Tanggal</strong>
+                        <div class="setting-desc">Format tanggal pilihan (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)</div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Notifikasi Push 🔒</strong>
+                        <div class="setting-desc">Status pendaftaran notifikasi push (Hanya baca, khusus perangkat)</div>
+                    </div>
+                </div>
+
+                <h3>🏢 Pengaturan Sistem</h3>
+                <p><span class="badge badge-purple">Cakupan TENANT</span></p>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Nama Perusahaan</strong>
+                        <div class="setting-desc">Nama perusahaan yang ditampilkan di faktur dan struk</div>
+                    </div>
+                    <div class="setting-item">
+                        <strong>Footer Struk</strong>
+                        <div class="setting-desc">Teks footer pada struk (maksimal 200 karakter)</div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <strong>💡 Legenda:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>🚀 = Perubahan berlaku langsung</li>
+                        <li>🔒 = Hanya baca (hanya tampilan)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section" id="changing">
+                <h2>5. Mengubah Pengaturan</h2>
+
+                <div class="step-card">
+                    <h4>Panduan Langkah demi Langkah:</h4>
+                    <ol>
+                        <li>Buka layar <strong>Pengaturan</strong></li>
+                        <li>Pilih tab yang sesuai (User / Outlet / Global)</li>
+                        <li>Temukan pengaturan yang ingin Anda ubah</li>
+                        <li>Ketuk pada pengaturan untuk mengeditnya</li>
+                        <li>Masukkan nilai baru</li>
+                        <li>Ketuk <strong>"Simpan Perubahan"</strong></li>
+                    </ol>
+                </div>
+
+                <h3>Validasi Real-Time</h3>
+                <p>Aplikasi memvalidasi input Anda saat Anda mengetik:</p>
+                <ul>
+                    <li><strong>✅ Input valid:</strong> Bidang input putih normal</li>
+                    <li><strong>❌ Input tidak valid:</strong> Border merah dengan pesan kesalahan di bawahnya</li>
+                </ul>
+
+                <div class="warning-box">
+                    <strong>⚠️ Penting:</strong> Anda tidak dapat menyimpan perubahan jika ada pengaturan yang memiliki kesalahan validasi. Perbaiki semua kesalahan sebelum menyimpan.
+                </div>
+
+                <h3>Pembaruan Batch</h3>
+                <p>Anda dapat mengubah beberapa pengaturan sekaligus:</p>
+                <ol>
+                    <li>Lakukan perubahan pada beberapa pengaturan</li>
+                    <li>Tombol "Simpan Perubahan" akan diaktifkan</li>
+                    <li>Ketuk "Simpan Perubahan" sekali untuk memperbarui semua pengaturan</li>
+                </ol>
+
+                <div class="tip-box">
+                    <strong>💡 Tips Efisiensi:</strong> Ubah semua pengaturan yang Anda butuhkan terlebih dahulu, kemudian simpan sekali. Ini lebih cepat daripada menyimpan setelah setiap perubahan!
+                </div>
+            </div>
+
+            <div class="section" id="immediate">
+                <h2>6. Pengaturan dengan Efek Langsung 🚀</h2>
+                <p>Beberapa pengaturan berlaku <strong>segera</strong> saat diubah, tanpa memerlukan restart aplikasi.</p>
+
+                <h3>Pengaturan Efek Langsung Saat Ini:</h3>
+
+                <div class="step-card">
+                    <h4>1. Pengaturan Bahasa</h4>
+                    <p><strong>Efek:</strong> Bahasa aplikasi berubah segera ke bahasa yang Anda pilih</p>
+                    <p><strong>Opsi:</strong> Bahasa Inggris (en), Bahasa Indonesia (id)</p>
+                    <div class="tip-box" style="margin-top: 15px;">
+                        <strong>💡 Coba sekarang!</strong> Ubah bahasa Anda dan lihat semua teks dalam aplikasi diperbarui secara instan tanpa restart!
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>📝 Catatan:</strong> Pengaturan lain mungkin memerlukan Anda untuk me-restart aplikasi atau menavigasi ke layar yang berbeda untuk melihat perubahan berlaku.
+                </div>
+            </div>
+
+            <div class="section" id="readonly">
+                <h2>7. Pengaturan Hanya Baca 🔒</h2>
+                <p>Beberapa pengaturan <strong>hanya untuk ditampilkan</strong> dan tidak dapat diedit. Ini menampilkan informasi penting tentang akun atau status perangkat Anda.</p>
+
+                <h3>Jenis Pengaturan Hanya Baca</h3>
+
+                <div class="step-card">
+                    <h4>Pengaturan Hanya Baca Standar</h4>
+                    <p>Pengaturan yang disimpan di database yang dapat Anda lihat tetapi tidak dapat diedit.</p>
+                    <p><strong>Indikator visual:</strong> Ikon gembok 🔒 dengan teks berwarna abu-abu</p>
+                </div>
+
+                <div class="step-card">
+                    <h4>Pengaturan Khusus Perangkat ⭐</h4>
+                    <p>Pengaturan yang menampilkan informasi khusus untuk perangkat Anda saat ini.</p>
+                    <p><strong>Contoh:</strong> Status pendaftaran notifikasi push</p>
+                    <p><strong>Indikator visual:</strong> Pill/badge modern menampilkan "Aktif" (hijau) atau "Tidak Aktif" (merah)</p>
+                </div>
+
+                <h3>Pengaturan Hanya Baca Saat Ini:</h3>
+                <div class="setting-grid">
+                    <div class="setting-item">
+                        <strong>Notifikasi Push Terdaftar ⭐</strong>
+                        <div class="setting-desc">Menampilkan apakah perangkat ini terdaftar untuk menerima notifikasi push</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 Mengapa hanya baca?</strong> Pengaturan ini dikontrol oleh sistem atau perangkat dan tidak boleh diubah secara manual untuk memastikan fungsi yang tepat.
+                </div>
+            </div>
+
+            <div class="section" id="tips">
+                <h2>8. Tips & Praktik Terbaik</h2>
+
+                <h3>🎯 Tips Penggunaan</h3>
+                <div class="quick-ref">
+                    <table>
+                        <tr>
+                            <td>Periksa Sebelum Menyimpan</td>
+                            <td>Tinjau semua perubahan sebelum mengetuk "Simpan Perubahan"</td>
+                        </tr>
+                        <tr>
+                            <td>Gunakan Nilai Default</td>
+                            <td>Jika tidak yakin, gunakan nilai default yang disediakan sistem</td>
+                        </tr>
+                        <tr>
+                            <td>Uji Perubahan</td>
+                            <td>Setelah mengubah pengaturan, uji fitur yang terpengaruh untuk memastikan berfungsi sesuai harapan</td>
+                        </tr>
+                        <tr>
+                            <td>Dokumentasikan Perubahan</td>
+                            <td>Catat perubahan pengaturan penting untuk referensi</td>
+                        </tr>
+                        <tr>
+                            <td>Sinkronisasi Teratur</td>
+                            <td>Buka layar Pengaturan secara berkala untuk menyinkronkan perubahan terbaru dari server</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3>⚠️ Kesalahan Umum yang Harus Dihindari</h3>
+                <ul>
+                    <li><strong>Mengabaikan kesalahan validasi</strong> - Selalu perbaiki kesalahan yang ditampilkan dalam warna merah sebelum menyimpan</li>
+                    <li><strong>Mengubah cakupan yang salah</strong> - Pastikan Anda mengedit di tab yang benar (User/Outlet/Global)</li>
+                    <li><strong>Menggunakan nilai ekstrem</strong> - Tetap dalam rentang yang direkomendasikan (misalnya, jangan set tarif pajak 200%)</li>
+                    <li><strong>Lupa menyimpan</strong> - Perubahan tidak diterapkan sampai Anda mengetuk "Simpan Perubahan"</li>
+                </ul>
+
+                <h3>🔐 Tips Keamanan</h3>
+                <ul>
+                    <li>Jangan bagikan preferensi pengguna Anda dengan orang lain - buat akun terpisah sebagai gantinya</li>
+                    <li>Hanya ubah pengaturan outlet jika Anda berwenang untuk melakukannya</li>
+                    <li>Hati-hati dengan pengaturan global - mereka mempengaruhi semua orang di perusahaan</li>
+                    <li>Jika tidak yakin tentang pengaturan, tanyakan kepada manajer Anda sebelum mengubahnya</li>
+                </ul>
+            </div>
+
+            <div class="section" id="troubleshooting">
+                <h2>9. Pemecahan Masalah</h2>
+
+                <div class="warning-box">
+                    <strong>❌ Tidak Bisa Menyimpan Perubahan</strong><br>
+                    <strong>Masalah:</strong> Tombol "Simpan Perubahan" dinonaktifkan<br><br>
+                    <strong>Kemungkinan Penyebab:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Ada kesalahan validasi (periksa border merah)</li>
+                        <li>Anda belum melakukan perubahan apa pun</li>
+                        <li>Anda tidak memiliki izin untuk mengubah pengaturan ini</li>
+                    </ul>
+                    <strong>Solusi:</strong>
+                    <ul>
+                        <li>Perbaiki semua kesalahan validasi yang ditampilkan dalam warna merah</li>
+                        <li>Pastikan Anda benar-benar mengubah nilai</li>
+                        <li>Hubungi administrator Anda untuk izin</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Perubahan Tidak Muncul</strong><br>
+                    <strong>Masalah:</strong> Perubahan tersimpan tetapi tidak muncul di aplikasi<br><br>
+                    <strong>Solusi:</strong>
+                    <ol style="margin-top: 10px;">
+                        <li>Tutup dan buka kembali layar Pengaturan untuk sinkronisasi</li>
+                        <li>Restart aplikasi jika pengaturan bukan efek-langsung</li>
+                        <li>Periksa apakah Anda mengedit di cakupan yang benar (User/Outlet/Global)</li>
+                        <li>Verifikasi Anda memiliki koneksi internet untuk sinkronisasi</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🔴 Pesan Kesalahan Validasi</strong><br>
+                    <strong>Masalah:</strong> Mendapat pesan kesalahan saat memasukkan nilai<br><br>
+                    <strong>Kesalahan Umum:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>"Bidang ini wajib diisi"</strong> - Anda harus memasukkan nilai</li>
+                        <li><strong>"Nilai harus antara X dan Y"</strong> - Masukkan angka dalam rentang tersebut</li>
+                        <li><strong>"Harus berupa angka yang valid"</strong> - Masukkan angka saja, tanpa huruf</li>
+                        <li><strong>"Nilai harus salah satu dari: ..."</strong> - Pilih dari opsi yang diizinkan</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>📱 Pengaturan Tidak Dimuat</strong><br>
+                    <strong>Masalah:</strong> Layar pengaturan menampilkan loading atau kosong<br><br>
+                    <strong>Solusi:</strong>
+                    <ol style="margin-top: 10px;">
+                        <li>Periksa koneksi internet Anda</li>
+                        <li>Tunggu beberapa detik untuk sinkronisasi selesai</li>
+                        <li>Tutup dan buka kembali layar Pengaturan</li>
+                        <li>Restart aplikasi</li>
+                        <li>Hubungi dukungan jika masalah berlanjut</li>
+                    </ol>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🔄 Nilai Berbeda di Perangkat Berbeda</strong><br>
+                    <strong>Masalah:</strong> Pengaturan menampilkan nilai berbeda di perangkat lain<br><br>
+                    <strong>Penjelasan:</strong> Ini normal untuk pengaturan khusus perangkat seperti status notifikasi push<br><br>
+                    <strong>Solusi:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Pengaturan khusus perangkat (ditandai dengan ⭐) unik untuk setiap perangkat</li>
+                        <li>Pengaturan User/Outlet/Global harus sinkron di semua perangkat</li>
+                        <li>Jika pengaturan non-perangkat berbeda, buka layar Pengaturan di kedua perangkat untuk memaksa sinkronisasi</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>❓ Pertanyaan yang Sering Diajukan</h2>
+
+                <div class="faq">
+                    <strong>T: Apa perbedaan antara pengaturan User, Outlet, dan Global?</strong>
+                    <p>J: Pengaturan User bersifat pribadi untuk Anda. Pengaturan Outlet mempengaruhi semua orang di lokasi toko tersebut. Pengaturan Global mempengaruhi seluruh perusahaan.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Bisakah saya mereset pengaturan ke nilai default?</strong>
+                    <p>J: Saat ini, Anda dapat mengubahnya kembali secara manual ke nilai default yang ditampilkan dalam deskripsi pengaturan. Hubungi administrator Anda jika memerlukan bantuan.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Mengapa saya tidak bisa mengedit beberapa pengaturan?</strong>
+                    <p>J: Pengaturan yang ditandai dengan 🔒 adalah hanya-baca dan dikelola oleh sistem atau administrator. Anda dapat melihatnya tetapi tidak dapat mengubahnya.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Apakah pengaturan sinkron di semua perangkat saya?</strong>
+                    <p>J: Ya! Sebagian besar pengaturan sinkron secara otomatis. Pengaturan khusus perangkat (ditandai dengan ⭐) unik untuk setiap perangkat.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Apa yang terjadi jika saya memasukkan nilai yang tidak valid?</strong>
+                    <p>J: Aplikasi akan menampilkan border merah dan pesan kesalahan. Anda harus memperbaiki kesalahan sebelum dapat menyimpan perubahan.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Bisakah saya mengubah beberapa pengaturan sekaligus?</strong>
+                    <p>J: Ya! Ubah sebanyak pengaturan yang Anda butuhkan, kemudian ketuk "Simpan Perubahan" sekali untuk menyimpan semua perubahan bersama-sama.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Mengapa mengubah bahasa bekerja langsung tetapi pengaturan lain tidak?</strong>
+                    <p>J: Beberapa pengaturan (ditandai dengan 🚀) dirancang untuk berlaku segera. Lainnya mungkin memerlukan restart aplikasi atau navigasi ke layar yang berbeda.</p>
+                </div>
+
+                <div class="faq">
+                    <strong>T: Siapa yang dapat mengubah pengaturan outlet dan global?</strong>
+                    <p>J: Hanya pengguna dengan izin yang sesuai yang dapat mengubah pengaturan ini. Hubungi manajer atau administrator Anda untuk akses.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Versi 1.0</strong> | Terakhir Diperbarui: 6 November 2025</p>
+            <p>Konfigurasikan aplikasi Anda sesuai keinginan!</p>
+            <p style="margin-top: 20px; font-size: 1.5em;">Selamat Mengonfigurasi! ⚙️✨</p>
+        </div>
+    </div>
+</body>
+</html>

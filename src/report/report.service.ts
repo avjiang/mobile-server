@@ -331,6 +331,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     isTaxInclusive: true,
                     status: true,
                     remark: true,
+                    completedSessionId: true,
                     salesItems: {
                         select: {
                             id: true,
@@ -350,80 +351,79 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             })
         ]);
 
-        // Get detailed returned sales information
-        const returnedSalesDetails = await tenantPrisma.sales.findMany({
-            where: {
-                ...sessionFilter,
-                status: "Returned",
-                deleted: false
-            },
-            select: {
-                id: true,
-                totalAmount: true,
-                paidAmount: true,
-                customerId: true,
-                businessDate: true,
-                remark: true,
-                customerName: true,
-                phoneNumber: true
-            }
-        });
+        // Get detailed sales information for each status in parallel
+        const [returnedSalesDetails, refundedSalesDetails, partiallyPaidSalesDetails, voidedSalesDetails] = await Promise.all([
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...sessionFilter,
+                    status: "Returned",
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    customerId: true,
+                    businessDate: true,
+                    remark: true,
+                    customerName: true,
+                    phoneNumber: true
+                }
+            }),
 
-        // Get detailed refunded sales information
-        const refundedSalesDetails = await tenantPrisma.sales.findMany({
-            where: {
-                ...sessionFilter,
-                status: "Refunded",
-                deleted: false
-            },
-            select: {
-                id: true,
-                totalAmount: true,
-                paidAmount: true,
-                customerId: true,
-                businessDate: true,
-                remark: true,
-                customerName: true,
-                phoneNumber: true
-            }
-        });
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...sessionFilter,
+                    status: "Refunded",
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    customerId: true,
+                    businessDate: true,
+                    remark: true,
+                    customerName: true,
+                    phoneNumber: true
+                }
+            }),
 
-        // Get detailed partially paid sales information
-        const partiallyPaidSalesDetails = await tenantPrisma.sales.findMany({
-            where: {
-                ...sessionFilter,
-                status: "Partially Paid",
-                deleted: false
-            },
-            select: {
-                id: true,
-                totalAmount: true,
-                paidAmount: true,
-                customerId: true,
-                businessDate: true,
-                customerName: true,
-                phoneNumber: true
-            }
-        });
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...sessionFilter,
+                    status: "Partially Paid",
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    customerId: true,
+                    businessDate: true,
+                    customerName: true,
+                    phoneNumber: true
+                }
+            }),
 
-        // Get detailed voided sales information
-        const voidedSalesDetails = await tenantPrisma.sales.findMany({
-            where: {
-                ...sessionFilter,
-                status: "Voided",
-                deleted: false
-            },
-            select: {
-                id: true,
-                totalAmount: true,
-                paidAmount: true,
-                customerId: true,
-                businessDate: true,
-                remark: true,
-                customerName: true,
-                phoneNumber: true
-            }
-        });
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...sessionFilter,
+                    status: "Voided",
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    customerId: true,
+                    businessDate: true,
+                    remark: true,
+                    customerName: true,
+                    phoneNumber: true
+                }
+            })
+        ]);
 
         // Get the unique item IDs sold in this session
         const soldItemIds = [...new Set(salesItems.map(item => item.itemId))];
@@ -452,9 +452,12 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         // Calculate top-selling categories
         const categorySales: Record<number, { categoryName: string, quantitySold: Decimal, revenue: Decimal }> = {};
 
+        // Create a map for O(1) item lookup
+        const itemsMap = new Map(itemsWithCategories.map(item => [item.id, item]));
+
         // Process each sales item and aggregate by category
         salesItems.forEach(salesItem => {
-            const item = itemsWithCategories.find(i => i.id === salesItem.itemId);
+            const item = itemsMap.get(salesItem.itemId);
             if (!item) return;
 
             const categoryId = item.categoryId;
@@ -481,24 +484,18 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 revenue: category.revenue
             }));
 
-        // Calculate session sales count (all non-voided)
-        const sessionSalesCount = await tenantPrisma.sales.count({
-            where: {
-                ...sessionFilter,
-                status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
-            }
-        });
+        // Calculate session sales count (all non-voided) from allSales in memory
+        const sessionSalesCount = allSales.filter(sale =>
+            ["Completed", "Partially Paid", "Returned", "Refunded"].includes(sale.status)
+        ).length;
 
-        // Get the list of unique item IDs sold in this session for stock balance (from all non-voided sales)
-        const uniqueSoldItemIds = [...new Set(salesItems.map(item => item.itemId))];
-
-        // Now get stock information ONLY for items that were sold in this session
+        // Now get stock information ONLY for items that were sold in this session (reuse soldItemIds)
         const stockBalanceItems = await tenantPrisma.stockBalance.findMany({
             where: {
                 deleted: false,
                 outletId: session.outletId,
                 itemId: {
-                    in: uniqueSoldItemIds
+                    in: soldItemIds
                 }
             },
             select: {
@@ -544,17 +541,10 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         const grossRevenue = salesSummary._sum?.totalAmount || new Decimal(0);
         const returnRefundImpact = (returnedSales._sum?.totalAmount || new Decimal(0)).plus(refundedSales._sum?.totalAmount || new Decimal(0));
 
-        // Split profit into gains and losses for completed sales
-        const completedSalesWithProfit = await tenantPrisma.sales.findMany({
-            where: {
-                ...completedSessionFilter,
-                status: "Completed",
-                deleted: false
-            },
-            select: {
-                profitAmount: true
-            }
-        });
+        // Split profit into gains and losses for completed sales (filter from allSales in memory)
+        const completedSalesWithProfit = allSales.filter(sale =>
+            sale.completedSessionId === sessionId && sale.status === "Completed"
+        );
 
         let totalGains = new Decimal(0);
         let totalLosses = new Decimal(0);
@@ -569,17 +559,10 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         // Calculate total profit from gains and losses
         const totalProfit = totalGains.plus(totalLosses);
 
-        // Split profit for partially paid sales
-        const partiallyPaidSalesWithProfit = await tenantPrisma.sales.findMany({
-            where: {
-                ...sessionFilter,
-                status: "Partially Paid",
-                deleted: false
-            },
-            select: {
-                profitAmount: true
-            }
-        });
+        // Split profit for partially paid sales (filter from allSales in memory)
+        const partiallyPaidSalesWithProfit = allSales.filter(sale =>
+            sale.status === "Partially Paid"
+        );
 
         let partiallyPaidGains = new Decimal(0);
         let partiallyPaidLosses = new Decimal(0);
@@ -1299,8 +1282,11 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
         // Calculate top-selling categories
         const categorySales: Record<number, { categoryName: string, quantitySold: Decimal, revenue: Decimal }> = {};
 
+        // Create a map for O(1) item lookup
+        const itemsMap = new Map(itemsWithCategories.map(item => [item.id, item]));
+
         salesItems.forEach(salesItem => {
-            const item = itemsWithCategories.find(i => i.id === salesItem.itemId);
+            const item = itemsMap.get(salesItem.itemId);
             if (!item) return;
 
             const categoryId = item.categoryId;
@@ -1326,23 +1312,18 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 revenue: category.revenue
             }));
 
-        // Calculate outlet sales count (all non-voided)
-        const outletSalesCount = await tenantPrisma.sales.count({
-            where: {
-                ...outletFilter,
-                status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
-            }
-        });
+        // Calculate outlet sales count (all non-voided) from allSales in memory
+        const outletSalesCount = allSales.filter(sale =>
+            ["Completed", "Partially Paid", "Returned", "Refunded"].includes(sale.status)
+        ).length;
 
-        // Get stock information for items sold in this outlet
-        const uniqueSoldItemIds = [...new Set(salesItems.map(item => item.itemId))];
-
+        // Get stock information for items sold in this outlet (reuse soldItemIds)
         const stockBalanceItems = await tenantPrisma.stockBalance.findMany({
             where: {
                 deleted: false,
                 outletId: outletId,
                 itemId: {
-                    in: uniqueSoldItemIds
+                    in: soldItemIds
                 }
             },
             select: {
@@ -1386,17 +1367,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
         const grossRevenue = salesSummary._sum?.totalAmount || new Decimal(0);
         const returnRefundImpact = (returnedSales._sum?.totalAmount || new Decimal(0)).plus(refundedSales._sum?.totalAmount || new Decimal(0));
 
-        // Split profit into gains and losses for completed sales
-        const completedSalesWithProfit = await tenantPrisma.sales.findMany({
-            where: {
-                ...outletFilter,
-                status: "Completed",
-                deleted: false
-            },
-            select: {
-                profitAmount: true
-            }
-        });
+        // Split profit into gains and losses for completed sales (filter from allSales in memory)
+        const completedSalesWithProfit = allSales.filter(sale => sale.status === "Completed");
 
         let totalGains = new Decimal(0);
         let totalLosses = new Decimal(0);
@@ -1411,17 +1383,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
         // Calculate total profit from gains and losses
         const totalProfit = totalGains.plus(totalLosses);
 
-        // Split profit for partially paid sales
-        const partiallyPaidSalesWithProfit = await tenantPrisma.sales.findMany({
-            where: {
-                ...outletFilter,
-                status: "Partially Paid",
-                deleted: false
-            },
-            select: {
-                profitAmount: true
-            }
-        });
+        // Split profit for partially paid sales (filter from allSales in memory)
+        const partiallyPaidSalesWithProfit = allSales.filter(sale => sale.status === "Partially Paid");
 
         let partiallyPaidGains = new Decimal(0);
         let partiallyPaidLosses = new Decimal(0);

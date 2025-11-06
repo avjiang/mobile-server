@@ -71,11 +71,10 @@ class NotificationService {
         }
       };
 
-      const result = await PushyService.sendToTopic(topic, notificationData, request.tenantId);
-
-      if (!result.success) {
-        console.error('Failed to send permission-based notification:', result.error);
-      }
+      // Fire and forget - don't wait for notification to complete
+      PushyService.sendToTopic(topic, notificationData, request.tenantId).catch(error => {
+        console.error('Failed to send permission-based notification:', error);
+      });
     } catch (error) {
       console.error('Error in sendPermissionBasedNotification:', error);
     }
@@ -134,11 +133,10 @@ class NotificationService {
         }
       };
 
-      const result = await PushyService.sendToDevices(deviceTokens, notificationData, request.tenantId);
-
-      if (!result.success) {
-        console.error('Failed to send user-specific notification:', result.error);
-      }
+      // Fire and forget - don't wait for notification to complete
+      PushyService.sendToDevices(deviceTokens, notificationData, request.tenantId).catch(error => {
+        console.error('Failed to send user-specific notification:', error);
+      });
     } catch (error) {
       console.error('Error in sendToSpecificUsers:', error);
     }

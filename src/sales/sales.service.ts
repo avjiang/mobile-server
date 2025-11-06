@@ -7,7 +7,7 @@ import { SyncRequest } from "src/item/item.request";
 import PushyService from '../pushy/pushy.service';
 import { randomUUID } from 'crypto';
 
-// Helper function to send sales notifications
+// Helper function to send sales notifications (non-blocking)
 async function sendSalesNotification(
     tenantId: number,
     outletId: number,
@@ -15,31 +15,30 @@ async function sendSalesNotification(
     message: string,
     data: any
 ): Promise<void> {
-    try {
-        const notificationPayload = {
-            title,
-            message,
-            data: {
-                notificationId: randomUUID(),
-                type: 'SALES',
-                tenantId,
-                timestamp: new Date().toISOString(),
-                ...data
-            }
-        };
+    const notificationPayload = {
+        title,
+        message,
+        data: {
+            notificationId: randomUUID(),
+            type: 'SALES',
+            tenantId,
+            timestamp: new Date().toISOString(),
+            ...data
+        }
+    };
 
-        await PushyService.sendToTopic(
-            `tenant_${tenantId}_outlet_${outletId}_sales`,
-            notificationPayload,
-            tenantId
-        );
-    } catch (error) {
+    // Fire and forget - don't wait for notification to complete
+    PushyService.sendToTopic(
+        `tenant_${tenantId}_outlet_${outletId}_sales`,
+        notificationPayload,
+        tenantId
+    ).catch(error => {
         // Log error but don't fail the sale transaction
         console.error('Failed to send sales notification:', error);
-    }
+    });
 }
 
-// Helper function to send inventory notifications
+// Helper function to send inventory notifications (non-blocking)
 async function sendInventoryNotification(
     tenantId: number,
     outletId: number,
@@ -47,28 +46,27 @@ async function sendInventoryNotification(
     message: string,
     data: any
 ): Promise<void> {
-    try {
-        const notificationPayload = {
-            title,
-            message,
-            data: {
-                notificationId: randomUUID(),
-                type: 'INVENTORY',
-                tenantId,
-                timestamp: new Date().toISOString(),
-                ...data
-            }
-        };
+    const notificationPayload = {
+        title,
+        message,
+        data: {
+            notificationId: randomUUID(),
+            type: 'INVENTORY',
+            tenantId,
+            timestamp: new Date().toISOString(),
+            ...data
+        }
+    };
 
-        await PushyService.sendToTopic(
-            `tenant_${tenantId}_outlet_${outletId}_inventory`,
-            notificationPayload,
-            tenantId
-        );
-    } catch (error) {
+    // Fire and forget - don't wait for notification to complete
+    PushyService.sendToTopic(
+        `tenant_${tenantId}_outlet_${outletId}_inventory`,
+        notificationPayload,
+        tenantId
+    ).catch(error => {
         // Log error but don't fail the transaction
         console.error('Failed to send inventory notification:', error);
-    }
+    });
 }
 
 let getAll = async (databaseName: string, request: SyncRequest) => {
@@ -122,12 +120,8 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                 status: true,
                 remark: true,
                 shipStreet: true,
-                // customer: {
-                //     select: {
-                //         firstName: true,
-                //         lastName: true,
-                //     },
-                // },
+                deliveredAt: true,
+                deliveredBy: true,
                 payments: {
                     select: {
                         method: true
@@ -157,6 +151,8 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             shipStreet: sale.shipStreet,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
+            deliveredAt: sale.deliveredAt,
+            deliveredBy: sale.deliveredBy,
             payments: sale.payments || [],
         }));
 
@@ -224,12 +220,8 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 paidAmount: true,
                 status: true,
                 remark: true,
-                // customer: {
-                //     select: {
-                //         firstName: true,
-                //         lastName: true,
-                //     },
-                // },
+                deliveredAt: true,
+                deliveredBy: true,
                 payments: {
                     select: {
                         method: true
@@ -255,6 +247,8 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             status: sale.status,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
+            deliveredAt: sale.deliveredAt,
+            deliveredBy: sale.deliveredBy,
             payments: sale.payments || []
         }));
 
@@ -1001,118 +995,84 @@ let remove = async (databaseName: string, id: number) => {
 let getTotalSalesData = async (databaseName: string, sessionID: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // Run all queries concurrently for better performance
-        const [
-            activeSales,
-            voidedSales,
-            returnedSales,
-            refundedSales,
-            completedSales,
-            partiallyPaidSales
-        ] = await Promise.all([
-            // Active sales (Completed + Partially Paid)
-            tenantPrisma.sales.aggregate({
-                where: {
-                    sessionId: sessionID,
-                    deleted: false,
-                    status: {
-                        in: ["Completed", "Partially Paid"]
-                    }
-                },
-                _count: { id: true },
-                _sum: {
-                    totalAmount: true,
-                    paidAmount: true,
-                    profitAmount: true,
-                    changeAmount: true
-                }
-            }),
+        // Fetch all sales for the session with minimal fields (single query)
+        const allSales = await tenantPrisma.sales.findMany({
+            where: {
+                sessionId: sessionID,
+                deleted: false
+            },
+            select: {
+                status: true,
+                totalAmount: true,
+                paidAmount: true,
+                profitAmount: true,
+                changeAmount: true
+            }
+        });
 
-            // Voided sales
-            tenantPrisma.sales.count({
-                where: {
-                    sessionId: sessionID,
-                    status: "Voided",
-                    deleted: false
-                }
-            }),
+        // Filter and aggregate in memory by status
+        const completedSales = allSales.filter(sale => sale.status === "Completed");
+        const partiallyPaidSales = allSales.filter(sale => sale.status === "Partially Paid");
+        const voidedSales = allSales.filter(sale => sale.status === "Voided");
+        const returnedSales = allSales.filter(sale => sale.status === "Returned");
+        const refundedSales = allSales.filter(sale => sale.status === "Refunded");
+        const activeSales = [...completedSales, ...partiallyPaidSales];
 
-            // Returned sales
-            tenantPrisma.sales.count({
-                where: {
-                    sessionId: sessionID,
-                    status: "Returned",
-                    deleted: false
-                }
-            }),
+        // Aggregate active sales (Completed + Partially Paid)
+        let activeTotalAmount = new Decimal(0);
+        let activePaidAmount = new Decimal(0);
+        let activeProfitAmount = new Decimal(0);
+        let activeChangeAmount = new Decimal(0);
 
-            // Refunded sales
-            tenantPrisma.sales.count({
-                where: {
-                    sessionId: sessionID,
-                    status: "Refunded",
-                    deleted: false
-                }
-            }),
+        activeSales.forEach(sale => {
+            activeTotalAmount = activeTotalAmount.plus(sale.totalAmount);
+            activePaidAmount = activePaidAmount.plus(sale.paidAmount);
+            activeProfitAmount = activeProfitAmount.plus(sale.profitAmount);
+            activeChangeAmount = activeChangeAmount.plus(sale.changeAmount || 0);
+        });
 
-            // Completed sales
-            tenantPrisma.sales.count({
-                where: {
-                    sessionId: sessionID,
-                    status: "Completed",
-                    deleted: false
-                }
-            }),
+        // Aggregate partially paid sales
+        let partiallyPaidTotalAmount = new Decimal(0);
+        let partiallyPaidPaidAmount = new Decimal(0);
 
-            // Partially paid sales
-            tenantPrisma.sales.aggregate({
-                where: {
-                    sessionId: sessionID,
-                    status: "Partially Paid",
-                    deleted: false
-                },
-                _count: { id: true },
-                _sum: {
-                    totalAmount: true,
-                    paidAmount: true
-                }
-            })
-        ]);
+        partiallyPaidSales.forEach(sale => {
+            partiallyPaidTotalAmount = partiallyPaidTotalAmount.plus(sale.totalAmount);
+            partiallyPaidPaidAmount = partiallyPaidPaidAmount.plus(sale.paidAmount);
+        });
 
         // Calculate derived metrics using Decimal arithmetic
-        const netRevenue = (activeSales._sum?.totalAmount || new Decimal(0));
-        const netProfit = (activeSales._sum?.profitAmount || new Decimal(0));
+        const netRevenue = activeTotalAmount;
+        const netProfit = activeProfitAmount;
 
-        const totalTransactions = (activeSales._count?.id || 0) + voidedSales +
-            returnedSales + refundedSales;
+        const totalTransactions = activeSales.length + voidedSales.length +
+            returnedSales.length + refundedSales.length;
 
-        const averageTransactionValue = activeSales._count.id > 0 ?
-            netRevenue.dividedBy(activeSales._count.id) : new Decimal(0);
+        const averageTransactionValue = activeSales.length > 0 ?
+            netRevenue.dividedBy(activeSales.length) : new Decimal(0);
 
-        const outstandingAmount = (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).minus(
-            partiallyPaidSales._sum?.paidAmount || new Decimal(0));
+        const outstandingAmount = partiallyPaidTotalAmount.minus(partiallyPaidPaidAmount);
 
         return {
             // Summary metrics
-            salesCount: activeSales._count?.id || 0,
+            salesCount: activeSales.length,
             totalRevenue: netRevenue,
             totalProfit: netProfit,
 
             // Enhanced metrics
             averageTransactionValue: Math.round(averageTransactionValue.toNumber() * 100) / 100,
-            totalPaidAmount: activeSales._sum?.paidAmount || new Decimal(0),
-            totalChangeGiven: activeSales._sum?.changeAmount || new Decimal(0),
+            totalPaidAmount: activePaidAmount,
+            totalChangeGiven: activeChangeAmount,
             outstandingAmount: outstandingAmount,
 
             // Transaction counts by status
             transactionCounts: {
                 total: totalTransactions,
-                completed: completedSales,
-                partiallyPaid: partiallyPaidSales._count?.id || 0,
-                voided: voidedSales,
-                returned: returnedSales,
-                refunded: refundedSales,
-                // active: activeSales._count?.id || 0
+                completed: completedSales.length,
+                partiallyPaid: partiallyPaidSales.length,
+                voided: voidedSales.length,
+                returned: returnedSales.length,
+                refunded: refundedSales.length,
+                // active: activeSales.length
             },
         };
     }
@@ -1683,7 +1643,7 @@ let confirmDeliveryBatch = async (
             // Validate each sale
             const validationErrors: string[] = [];
             sales.forEach(sale => {
-                if (sale.salesType !== 'DELIVERY') {
+                if (sale.salesType !== 'Delivery') {
                     validationErrors.push(`Sales #${sale.id} is not a delivery sale`);
                 }
                 if (!['Completed', 'Partially Paid'].includes(sale.status)) {
@@ -1700,49 +1660,63 @@ let confirmDeliveryBatch = async (
                 throw new BusinessLogicError(validationErrors.join('; '));
             }
 
-            // Update all sales to Delivered status
-            await tx.sales.updateMany({
-                where: {
-                    id: { in: salesIds }
-                },
-                data: {
-                    status: 'Delivered',
-                    deliveredAt: deliveredAt || new Date(),
-                    deliveredBy: performedBy.username,
-                    deliveryNotes: deliveryNotes || '',
-                    updatedAt: new Date()
-                }
-            });
+            // Separate sales by payment status
+            const completedSales = sales.filter(s => s.status === 'Completed').map(s => s.id);
+            const partiallyPaidSales = sales.filter(s => s.status === 'Partially Paid').map(s => s.id);
+
+            const deliveryData = {
+                deliveredAt: deliveredAt || new Date(),
+                deliveredBy: performedBy.username,
+                deliveryNotes: deliveryNotes || '',
+                updatedAt: new Date()
+            };
+
+            // Update completed sales to 'Delivered' status
+            if (completedSales.length > 0) {
+                await tx.sales.updateMany({
+                    where: { id: { in: completedSales } },
+                    data: {
+                        status: 'Delivered',
+                        ...deliveryData
+                    }
+                });
+            }
+
+            // Update partially paid sales - keep 'Partially Paid' status
+            if (partiallyPaidSales.length > 0) {
+                await tx.sales.updateMany({
+                    where: { id: { in: partiallyPaidSales } },
+                    data: deliveryData
+                });
+            }
 
             return sales;
         });
 
-        // Send delivery notification
+        // Send delivery notification (non-blocking)
         const outletId = result[0]?.outletId;
         if (outletId) {
-            try {
-                await PushyService.sendToTopic(
-                    `/topics/tenant_${tenantId}_outlet_${outletId}_delivery`,
-                    {
-                        title: 'Deliveries Confirmed',
-                        message: `${salesIds.length} delivery order(s) have been delivered`,
-                        data: {
-                            type: 'delivery_confirmed',
-                            salesIds: salesIds,
-                            deliveredBy: performedBy.username,
-                            deliveredAt: deliveredAt || new Date(),
-                            count: salesIds.length,
-                            outletId: outletId,
-                            triggeringUserId: performedBy.userId,
-                            triggeringUsername: performedBy.username,
-                            timestamp: new Date().toISOString()
-                        }
-                    },
-                    tenantId
-                );
-            } catch (error) {
+            PushyService.sendToTopic(
+                `/topics/tenant_${tenantId}_outlet_${outletId}_delivery`,
+                {
+                    title: 'Deliveries Confirmed',
+                    message: `${salesIds.length} delivery order(s) have been delivered`,
+                    data: {
+                        type: 'delivery_confirmed',
+                        salesIds: salesIds,
+                        deliveredBy: performedBy.username,
+                        deliveredAt: deliveredAt || new Date(),
+                        count: salesIds.length,
+                        outletId: outletId,
+                        triggeringUserId: performedBy.userId,
+                        triggeringUsername: performedBy.username,
+                        timestamp: new Date().toISOString()
+                    }
+                },
+                tenantId
+            ).catch(error => {
                 console.error('Failed to send delivery notification:', error);
-            }
+            });
         }
 
         return {

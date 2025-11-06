@@ -387,25 +387,6 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
 let remove = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // const item = await getByIdRaw(databaseName, id)
-        // if (!item) {
-        //     throw new NotFoundError("Item")
-        // }
-        // await tenantPrisma.$transaction(async (tx) => {
-        //     await tx.stockMovement.updateMany({ where: { itemId: id }, data: { deleted: true } }),
-        //         await tx.stockBalance.update({
-        //             where: {
-        //                 id: (await tx.item.findUnique({
-        //                     where: { id: id },
-        //                     select: { stockId: true },
-        //                 }))?.stockId,
-        //             },
-        //             data: {
-        //                 deleted: true,
-        //             },
-        //         }),
-        //         await tx.item.update({ where: { id: id }, data: { deleted: true } })
-        // })
         const updatedItem = await tenantPrisma.$transaction([
             // Soft-delete the Item
             tenantPrisma.item.update({
@@ -498,23 +479,24 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
                 supplier: true
             },
         });
-        // Step 4: Enrich items with total availableQuantity
-        const enrichedItems = await Promise.all(items.map(async (item) => {
-            const supplier = await tenantPrisma.supplier.findUnique({
-                where: { id: item.supplierId }
-            });
+
+        // Create a map for O(1) lookup of stock quantities
+        const stockQuantityMap = new Map(
+            lowStockItems.map((ls) => [ls.itemId, ls._sum.availableQuantity || 0])
+        );
+
+        // Enrich items with data (no additional queries needed - supplier is already loaded)
+        const enrichedItems = items.map((item) => {
             return {
                 ...item,
                 stockBalance: undefined,
                 category: undefined,
                 supplier: undefined,
                 lastRestockDate: item.stockBalance[0]?.updatedAt || null,
-                supplierName: supplier?.companyName || "",
-                stockQuantity:
-                    lowStockItems.find((ls) => ls.itemId === item.id)?._sum
-                        .availableQuantity || 0,
+                supplierName: item.supplier?.companyName || "",
+                stockQuantity: stockQuantityMap.get(item.id) || 0,
             };
-        }));
+        });
         return enrichedItems;
     }
     catch (error) {
@@ -574,20 +556,46 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
             };
         }
 
-        const topSoldItems = [];
-        for (const soldItem of topSoldItemsData) {
-            const itemDetails = await getById(databaseName, soldItem.itemId);
-            if (!itemDetails) continue;
+        // Collect all itemIds for bulk query
+        const itemIds = topSoldItemsData.map(soldItem => soldItem.itemId);
+
+        // Single bulk query to fetch all items at once
+        const items = await tenantPrisma.item.findMany({
+            where: {
+                id: { in: itemIds }
+            },
+            include: {
+                stockBalance: {
+                    select: {
+                        availableQuantity: true
+                    }
+                }
+            }
+        });
+
+        // Create a map for O(1) lookup
+        const itemMap = new Map(items.map(item => [item.id, item]));
+
+        // Build the result array
+        const topSoldItems = topSoldItemsData.map(soldItem => {
+            const item = itemMap.get(soldItem.itemId);
+            if (!item) return null;
+
+            const itemDetails = {
+                ...item,
+                stockQuantity: item.stockBalance[0]?.availableQuantity || 0
+            };
 
             const quantitySold = soldItem._sum.quantity ? new Decimal(soldItem._sum.quantity) : new Decimal(0);
             const itemPrice = itemDetails.price ? new Decimal(itemDetails.price) : new Decimal(0);
 
-            topSoldItems.push({
+            return {
                 item: itemDetails,
                 quantitySold: quantitySold.toNumber(),
                 totalRevenue: itemPrice.mul(quantitySold)
-            });
-        }
+            };
+        }).filter(item => item !== null);
+
         return {
             topSoldItems,
         };

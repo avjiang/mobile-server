@@ -6,6 +6,13 @@ import { getTenantPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import PushyService from '../pushy/pushy.service';
 import { randomUUID } from 'crypto';
+import {
+    NotificationMessages,
+    formatOutOfStockMessage,
+    formatLowStockMessage,
+    getOutOfStockTitle,
+    getLowStockTitle
+} from '../pushy/notification-messages';
 
 // Helper function to send sales notifications (non-blocking)
 async function sendSalesNotification(
@@ -739,8 +746,11 @@ async function completeNewSales(
             sendSalesNotification(
                 tenantId,
                 salesBody.outletId,
-                'New Sale Completed',
-                `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)}`,
+                NotificationMessages.sales.newSaleCompleted.title,
+                NotificationMessages.sales.newSaleCompleted.message(
+                    result.id,
+                    new Decimal(result.totalAmount).toFixed(0)
+                ),
                 {
                     type: 'sale_completed',
                     salesId: result.id,
@@ -760,14 +770,8 @@ async function completeNewSales(
                 sendInventoryNotification(
                     tenantId,
                     salesBody.outletId,
-                    outOfStockItems.length === 1
-                        ? 'Out of Stock Alert'
-                        : `${outOfStockItems.length} Items Out of Stock`,
-                    outOfStockItems.length === 1
-                        ? `${outOfStockItems[0].itemName} is now out of stock`
-                        : outOfStockItems.length <= 3
-                            ? outOfStockItems.map((i: any) => i.itemName).join(', ')
-                            : `${outOfStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${outOfStockItems.length - 2} more`,
+                    getOutOfStockTitle(outOfStockItems.length),
+                    formatOutOfStockMessage(outOfStockItems),
                     {
                         type: 'out_of_stock',
                         priority: 'high',
@@ -794,14 +798,8 @@ async function completeNewSales(
                 sendInventoryNotification(
                     tenantId,
                     salesBody.outletId,
-                    lowStockItems.length === 1
-                        ? 'Low Stock Warning'
-                        : `${lowStockItems.length} Items Low on Stock`,
-                    lowStockItems.length === 1
-                        ? `${lowStockItems[0].itemName} is running low (${lowStockItems[0].newAvailableQuantity.toFixed(0)} left)`
-                        : lowStockItems.length <= 3
-                            ? lowStockItems.map((i: any) => i.itemName).join(', ')
-                            : `${lowStockItems.slice(0, 2).map((i: any) => i.itemName).join(', ')} and ${lowStockItems.length - 2} more`,
+                    getLowStockTitle(lowStockItems.length),
+                    formatLowStockMessage(lowStockItems),
                     {
                         type: 'low_stock',
                         priority: 'normal',
@@ -1149,12 +1147,19 @@ let addPaymentToPartiallyPaidSales = async (
         });
 
         // Send notification after successful transaction
-        const statusMessage = result.updatedSales.status === 'Completed' ? 'Debt Sales Payment Completed' : 'Payment Added';
+        const isCompleted = result.updatedSales.status === 'Completed';
+        const notificationConfig = isCompleted
+            ? NotificationMessages.sales.paymentCompleted
+            : NotificationMessages.sales.paymentAdded;
+
         await sendSalesNotification(
             tenantId,
             result.updatedSales.outletId,
-            statusMessage,
-            `Sales #${result.updatedSales.id} - Payment IDR ${result.totalNewPaymentAmount.toFixed(0)}`,
+            notificationConfig.title,
+            notificationConfig.message(
+                result.updatedSales.id,
+                result.totalNewPaymentAmount.toFixed(0)
+            ),
             {
                 type: result.updatedSales.status === 'Completed' ? 'payment_completed' : 'payment_added',
                 salesId: result.updatedSales.id,
@@ -1277,8 +1282,11 @@ let voidSales = async (
         await sendSalesNotification(
             tenantId,
             result.outletId,
-            'Sale Voided',
-            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)} has been voided`,
+            NotificationMessages.sales.saleVoided.title,
+            NotificationMessages.sales.saleVoided.message(
+                result.id,
+                new Decimal(result.totalAmount).toFixed(0)
+            ),
             {
                 type: 'sale_voided',
                 salesId: result.id,
@@ -1401,8 +1409,11 @@ let returnSales = async (
         await sendSalesNotification(
             tenantId,
             result.outletId,
-            'Sale Returned',
-            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)} has been returned`,
+            NotificationMessages.sales.saleReturned.title,
+            NotificationMessages.sales.saleReturned.message(
+                result.id,
+                new Decimal(result.totalAmount).toFixed(0)
+            ),
             {
                 type: 'sale_returned',
                 salesId: result.id,
@@ -1524,8 +1535,11 @@ let refundSales = async (
         await sendSalesNotification(
             tenantId,
             result.outletId,
-            'Sale Refunded',
-            `Sale #${result.id} - IDR ${new Decimal(result.totalAmount).toFixed(0)} has been refunded`,
+            NotificationMessages.sales.saleRefunded.title,
+            NotificationMessages.sales.saleRefunded.message(
+                result.id,
+                new Decimal(result.totalAmount).toFixed(0)
+            ),
             {
                 type: 'sale_refunded',
                 salesId: result.id,
@@ -1697,10 +1711,10 @@ let confirmDeliveryBatch = async (
         const outletId = result[0]?.outletId;
         if (outletId) {
             PushyService.sendToTopic(
-                `/topics/tenant_${tenantId}_outlet_${outletId}_delivery`,
+                `tenant_${tenantId}_outlet_${outletId}_delivery`,
                 {
-                    title: 'Deliveries Confirmed',
-                    message: `${salesIds.length} delivery order(s) have been delivered`,
+                    title: NotificationMessages.delivery.deliveriesConfirmed.title,
+                    message: NotificationMessages.delivery.deliveriesConfirmed.message(salesIds.length),
                     data: {
                         type: 'delivery_confirmed',
                         salesIds: salesIds,

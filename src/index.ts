@@ -1,12 +1,19 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import cors from 'cors'
+import compression from 'compression'
 import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
 const app = express()
 const port = process.env.PORT || 8080;
+
+// Enable gzip compression for all responses
+app.use(compression({
+  threshold: 1024, // Only compress responses larger than 1KB
+  level: 6, // Compression level (1-9, 6 is balanced)
+}));
 
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ limit: '1mb', extended: true }));

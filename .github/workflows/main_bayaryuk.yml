@@ -58,3 +58,14 @@ jobs:
           # slot-name: 'Production' # Be sure this slot name exists in Azure
 
           package: './release.zip'
+
+      - name: Wait for Azure to extract files
+        run: sleep 30 
+
+      - name: Upgrade all tenant databases  
+        run: |
+          az webapp ssh \
+            --name BayarYuk \
+            --resource-group bayar-yuk \
+            --command "cd /home/site/wwwroot && npm run upgrade_db"
+        timeout-minutes: 15

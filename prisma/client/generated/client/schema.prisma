@@ -347,6 +347,7 @@ model Item {
   hasTax                  Boolean?                 @map("HAS_TAX")
   taxRate                 Float?                   @map("TAX_RATE")
   supplierId              Int                      @map("SUPPLIER_ID")
+  hasVariants             Boolean                  @default(false) @map("HAS_VARIANTS")
   deleted                 Boolean                  @default(false) @map("IS_DELETED")
   deletedAt               DateTime?                @map("DELETED_AT")
   createdAt               DateTime?                @default(now()) @map("CREATED_AT")
@@ -354,6 +355,7 @@ model Item {
   version                 Int?                     @default(1) @map("VERSION")
   category                Category                 @relation(fields: [categoryId], references: [id])
   supplier                Supplier                 @relation(fields: [supplierId], references: [id])
+  variants                ItemVariant[]
   stockBalance            StockBalance[]
   stockMovements          StockMovement[]
   stockSnapshots          StockSnapshot[]
@@ -460,10 +462,13 @@ model SalesItem {
   id                  Int                 @id @default(autoincrement()) @map("ID")
   salesId             Int                 @map("SALES_ID")
   itemId              Int                 @map("ITEM_ID")
+  itemVariantId       Int?                @map("ITEM_VARIANT_ID")
   itemName            String              @map("ITEM_NAME")
   itemCode            String              @map("ITEM_CODE")
   itemBrand           String              @map("ITEM_BRAND")
   itemModel           String              @default("") @map("ITEM_MODEL")
+  variantSku          String?             @map("VARIANT_SKU")
+  variantName         String?             @map("VARIANT_NAME")
   quantity            Decimal             @map("QUANTITY") @db.Decimal(15, 4)
   cost                Decimal             @map("COST") @db.Decimal(15, 4)
   price               Decimal             @map("PRICE") @db.Decimal(15, 4)
@@ -484,11 +489,13 @@ model SalesItem {
   priority            String?             @map("PRIORITY") // e.g., "NORMAL", "RUSH"
   estimatedPrepTime   Int?                @map("ESTIMATED_PREP_TIME") // In minutes
   sales               Sales               @relation(fields: [salesId], references: [id])
+  itemVariant         ItemVariant?        @relation(fields: [itemVariantId], references: [id])
   selectedModifiers   SalesItemModifier[]
   orderRouting        OrderRouting[]
 
   @@index([itemStatus])
   @@index([itemId])
+  @@index([itemVariantId])
   @@index([quantity])
   @@index([profit])
   @@map("sales_item")
@@ -560,26 +567,29 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id             Int       @id @default(autoincrement()) @map("ID")
-  invoiceId      Int       @map("INVOICE_ID")
-  itemId         Int       @map("ITEM_ID")
-  quantity       Decimal   @map("QUANTITY") @db.Decimal(15, 4)
-  unitPrice      Decimal   @map("UNIT_PRICE") @db.Decimal(15, 4)
-  discountType   String?   @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
-  discountAmount Decimal?  @default(0) @map("DISCOUNT_AMOUNT")
-  taxAmount      Decimal?  @map("TAX_AMOUNT") @db.Decimal(15, 4)
-  subtotal       Decimal   @map("SUBTOTAL") @db.Decimal(15, 4)
-  remark         String?   @default("") @map("REMARK")
-  createdAt      DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt      DateTime? @map("UPDATED_AT")
-  deleted        Boolean   @default(false) @map("IS_DELETED")
-  deletedAt      DateTime? @map("DELETED_AT")
-  version        Int?      @default(1) @map("VERSION")
-  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
-  item           Item      @relation(fields: [itemId], references: [id])
+  id             Int          @id @default(autoincrement()) @map("ID")
+  invoiceId      Int          @map("INVOICE_ID")
+  itemId         Int          @map("ITEM_ID")
+  itemVariantId  Int?         @map("ITEM_VARIANT_ID")
+  quantity       Decimal      @map("QUANTITY") @db.Decimal(15, 4)
+  unitPrice      Decimal      @map("UNIT_PRICE") @db.Decimal(15, 4)
+  discountType   String?      @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
+  discountAmount Decimal?     @default(0) @map("DISCOUNT_AMOUNT")
+  taxAmount      Decimal?     @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  subtotal       Decimal      @map("SUBTOTAL") @db.Decimal(15, 4)
+  remark         String?      @default("") @map("REMARK")
+  createdAt      DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt      DateTime?    @map("UPDATED_AT")
+  deleted        Boolean      @default(false) @map("IS_DELETED")
+  deletedAt      DateTime?    @map("DELETED_AT")
+  version        Int?         @default(1) @map("VERSION")
+  invoice        Invoice      @relation(fields: [invoiceId], references: [id])
+  item           Item         @relation(fields: [itemId], references: [id])
+  itemVariant    ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
   @@index([invoiceId])
   @@index([itemId])
+  @@index([itemVariantId])
   @@map("invoice_item")
 }
 
@@ -655,6 +665,7 @@ model DeliveryOrderItem {
   id               Int           @id @default(autoincrement()) @map("ID")
   deliveryOrderId  Int           @map("DELIVERY_ORDER_ID")
   itemId           Int           @map("ITEM_ID")
+  itemVariantId    Int?          @map("ITEM_VARIANT_ID")
   orderedQuantity  Float         @map("ORDERED_QUANTITY")
   receivedQuantity Float         @map("RECEIVED_QUANTITY")
   unitPrice        Decimal?      @default(0) @map("UNIT_PRICE") @db.Decimal(15, 4)
@@ -667,9 +678,11 @@ model DeliveryOrderItem {
   deletedAt        DateTime?     @map("DELETED_AT")
   deliveryOrder    DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
   item             Item          @relation(fields: [itemId], references: [id])
+  itemVariant      ItemVariant?  @relation(fields: [itemVariantId], references: [id])
 
   @@index([deliveryOrderId])
   @@index([itemId])
+  @@index([itemVariantId])
   @@map("delivery_order_item")
 }
 
@@ -714,28 +727,31 @@ model Quotation {
 }
 
 model QuotationItem {
-  id             Int       @id @default(autoincrement()) @map("ID")
-  quotationId    Int       @map("QUOTATION_ID")
-  itemId         Int       @map("ITEM_ID")
-  quantity       Decimal   @map("QUANTITY") @db.Decimal(15, 4)
-  unitPrice      Decimal   @map("UNIT_PRICE") @db.Decimal(15, 4)
-  taxAmount      Decimal?  @map("TAX_AMOUNT") @db.Decimal(15, 4)
-  discountType   String?   @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
-  discountAmount Decimal?  @default(0) @map("DISCOUNT_AMOUNT")
-  subtotal       Decimal   @map("SUBTOTAL") @db.Decimal(15, 4)
-  remark         String?   @default("") @map("REMARK")
-  leadTime       Int?      @map("LEAD_TIME") // Lead time in days
-  isAccepted     Boolean?  @map("IS_ACCEPTED") // Whether this item was accepted
-  version        Int?      @default(1) @map("VERSION")
-  createdAt      DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt      DateTime? @updatedAt @map("UPDATED_AT")
-  deleted        Boolean   @default(false) @map("IS_DELETED")
-  deletedAt      DateTime? @map("DELETED_AT")
-  quotation      Quotation @relation(fields: [quotationId], references: [id])
-  item           Item      @relation(fields: [itemId], references: [id])
+  id             Int          @id @default(autoincrement()) @map("ID")
+  quotationId    Int          @map("QUOTATION_ID")
+  itemId         Int          @map("ITEM_ID")
+  itemVariantId  Int?         @map("ITEM_VARIANT_ID")
+  quantity       Decimal      @map("QUANTITY") @db.Decimal(15, 4)
+  unitPrice      Decimal      @map("UNIT_PRICE") @db.Decimal(15, 4)
+  taxAmount      Decimal?     @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  discountType   String?      @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
+  discountAmount Decimal?     @default(0) @map("DISCOUNT_AMOUNT")
+  subtotal       Decimal      @map("SUBTOTAL") @db.Decimal(15, 4)
+  remark         String?      @default("") @map("REMARK")
+  leadTime       Int?         @map("LEAD_TIME") // Lead time in days
+  isAccepted     Boolean?     @map("IS_ACCEPTED") // Whether this item was accepted
+  version        Int?         @default(1) @map("VERSION")
+  createdAt      DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt      DateTime?    @updatedAt @map("UPDATED_AT")
+  deleted        Boolean      @default(false) @map("IS_DELETED")
+  deletedAt      DateTime?    @map("DELETED_AT")
+  quotation      Quotation    @relation(fields: [quotationId], references: [id])
+  item           Item         @relation(fields: [itemId], references: [id])
+  itemVariant    ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
   @@index([quotationId])
   @@index([itemId])
+  @@index([itemVariantId])
   @@map("quotation_item")
 }
 
@@ -781,6 +797,7 @@ model PurchaseOrderItem {
   id              Int           @id @default(autoincrement()) @map("ID")
   purchaseOrderId Int           @map("PURCHASE_ORDER_ID")
   itemId          Int           @map("ITEM_ID")
+  itemVariantId   Int?          @map("ITEM_VARIANT_ID")
   quantity        Decimal       @map("QUANTITY") @db.Decimal(15, 4)
   taxAmount       Decimal?      @map("TAX_AMOUNT") @db.Decimal(15, 4)
   discountType    String?       @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
@@ -795,9 +812,11 @@ model PurchaseOrderItem {
   deletedAt       DateTime?     @map("DELETED_AT")
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
   item            Item          @relation(fields: [itemId], references: [id])
+  itemVariant     ItemVariant?  @relation(fields: [itemVariantId], references: [id])
 
   @@index([purchaseOrderId])
   @@index([itemId])
+  @@index([itemVariantId])
   @@map("purchase_order_item")
 }
 
@@ -913,22 +932,25 @@ model Declaration {
 }
 
 model StockBalance {
-  id                Int       @id @default(autoincrement()) @map("ID")
-  itemId            Int       @map("ITEM_ID")
-  outletId          Int       @map("OUTLET_ID")
-  availableQuantity Decimal   @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
-  onHandQuantity    Decimal   @map("ON_HAND_QUANTITY") @db.Decimal(15, 4)
-  reorderThreshold  Decimal?  @map("REORDER_THRESHOLD") @db.Decimal(15, 4)
-  deleted           Boolean   @default(false) @map("IS_DELETED")
-  lastRestockDate   DateTime? @map("LAST_RESTOCK_DATE")
-  deletedAt         DateTime? @map("DELETED_AT")
-  createdAt         DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt         DateTime? @updatedAt @map("UPDATED_AT")
-  version           Int?      @default(1) @map("VERSION")
-  item              Item      @relation(fields: [itemId], references: [id])
-  outlet            Outlet    @relation(fields: [outletId], references: [id])
+  id                Int          @id @default(autoincrement()) @map("ID")
+  itemId            Int          @map("ITEM_ID")
+  outletId          Int          @map("OUTLET_ID")
+  itemVariantId     Int?         @map("ITEM_VARIANT_ID")
+  availableQuantity Decimal      @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  onHandQuantity    Decimal      @map("ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  reorderThreshold  Decimal?     @map("REORDER_THRESHOLD") @db.Decimal(15, 4)
+  deleted           Boolean      @default(false) @map("IS_DELETED")
+  lastRestockDate   DateTime?    @map("LAST_RESTOCK_DATE")
+  deletedAt         DateTime?    @map("DELETED_AT")
+  createdAt         DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?    @updatedAt @map("UPDATED_AT")
+  version           Int?         @default(1) @map("VERSION")
+  item              Item         @relation(fields: [itemId], references: [id])
+  outlet            Outlet       @relation(fields: [outletId], references: [id])
+  itemVariant       ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
-  @@unique([itemId, outletId, reorderThreshold, deleted, availableQuantity])
+  @@unique([itemId, outletId, itemVariantId, reorderThreshold, deleted, availableQuantity])
+  @@index([itemVariantId])
   @@map("stock_balance")
 }
 
@@ -936,6 +958,7 @@ model StockReceipt {
   id              Int            @id @default(autoincrement()) @map("ID")
   itemId          Int            @map("ITEM_ID")
   outletId        Int            @map("OUTLET_ID")
+  itemVariantId   Int?           @map("ITEM_VARIANT_ID")
   deliveryOrderId Int?           @map("DELIVERY_ORDER_ID") // Optional foreign key to DeliveryOrder
   quantity        Decimal        @map("QUANTITY") @db.Decimal(15, 4)
   cost            Decimal        @map("COST") @db.Decimal(15, 4) // Cost at the time of this receipt
@@ -947,9 +970,11 @@ model StockReceipt {
   version         Int?           @default(1) @map("VERSION")
   item            Item           @relation(fields: [itemId], references: [id])
   outlet          Outlet         @relation(fields: [outletId], references: [id])
+  itemVariant     ItemVariant?   @relation(fields: [itemVariantId], references: [id])
   deliveryOrder   DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id])
 
   @@index([deliveryOrderId])
+  @@index([itemVariantId])
   @@map("stock_receipt")
 }
 
@@ -972,27 +997,30 @@ model StockReceiptArchive {
 }
 
 model StockMovement {
-  id                        Int       @id @default(autoincrement()) @map("ID")
-  itemId                    Int       @map("ITEM_ID")
-  outletId                  Int       @map("OUTLET_ID")
-  previousAvailableQuantity Decimal   @map("PREVIOUS_AVAILABLE_QUANTITY") @db.Decimal(15, 4)
-  previousOnHandQuantity    Decimal   @map("PREVIOUS_ON_HAND_QUANTITY") @db.Decimal(15, 4)
-  availableQuantityDelta    Decimal   @map("AVAILABLE_QUANTITY_DELTA") @db.Decimal(15, 4)
-  onHandQuantityDelta       Decimal   @map("ON_HAND_QUANTITY_DELTA") @db.Decimal(15, 4)
-  movementType              String    @map("MOVEMENT_TYPE")
-  documentId                Int       @map("DOCUMENT_ID")
-  reason                    String    @map("REASON")
-  remark                    String    @default("") @map("REMARK")
-  deleted                   Boolean   @default(false) @map("IS_DELETED")
-  createdAt                 DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt                 DateTime? @updatedAt @map("UPDATED_AT")
-  version                   Int?      @default(1) @map("VERSION")
-  performedBy               String?   @default("") @map("PERFORMED_BY")
-  item                      Item      @relation(fields: [itemId], references: [id])
-  outlet                    Outlet    @relation(fields: [outletId], references: [id])
+  id                        Int          @id @default(autoincrement()) @map("ID")
+  itemId                    Int          @map("ITEM_ID")
+  outletId                  Int          @map("OUTLET_ID")
+  itemVariantId             Int?         @map("ITEM_VARIANT_ID")
+  previousAvailableQuantity Decimal      @map("PREVIOUS_AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  previousOnHandQuantity    Decimal      @map("PREVIOUS_ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  availableQuantityDelta    Decimal      @map("AVAILABLE_QUANTITY_DELTA") @db.Decimal(15, 4)
+  onHandQuantityDelta       Decimal      @map("ON_HAND_QUANTITY_DELTA") @db.Decimal(15, 4)
+  movementType              String       @map("MOVEMENT_TYPE")
+  documentId                Int          @map("DOCUMENT_ID")
+  reason                    String       @map("REASON")
+  remark                    String       @default("") @map("REMARK")
+  deleted                   Boolean      @default(false) @map("IS_DELETED")
+  createdAt                 DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt                 DateTime?    @updatedAt @map("UPDATED_AT")
+  version                   Int?         @default(1) @map("VERSION")
+  performedBy               String?      @default("") @map("PERFORMED_BY")
+  item                      Item         @relation(fields: [itemId], references: [id])
+  outlet                    Outlet       @relation(fields: [outletId], references: [id])
+  itemVariant               ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
   @@index([itemId, createdAt])
   @@index([outletId])
+  @@index([itemVariantId])
   @@index([movementType])
   @@index([deleted])
   @@map("stock_movement")
@@ -1026,21 +1054,24 @@ model StockMovementArchive {
 }
 
 model StockSnapshot {
-  id                Int       @id @default(autoincrement()) @map("ID")
-  itemId            Int       @map("ITEM_ID")
-  outletId          Int       @map("OUTLET_ID")
-  availableQuantity Decimal   @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
-  onHandQuantity    Decimal   @map("ON_HAND_QUANTITY") @db.Decimal(15, 4)
-  deleted           Boolean   @default(false) @map("IS_DELETED")
-  deletedAt         DateTime? @map("DELETED_AT")
-  createdAt         DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt         DateTime? @updatedAt @map("UPDATED_AT")
-  version           Int?      @default(1) @map("VERSION")
-  item              Item      @relation(fields: [itemId], references: [id])
-  outlet            Outlet    @relation(fields: [outletId], references: [id])
+  id                Int          @id @default(autoincrement()) @map("ID")
+  itemId            Int          @map("ITEM_ID")
+  outletId          Int          @map("OUTLET_ID")
+  itemVariantId     Int?         @map("ITEM_VARIANT_ID")
+  availableQuantity Decimal      @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  onHandQuantity    Decimal      @map("ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  deleted           Boolean      @default(false) @map("IS_DELETED")
+  deletedAt         DateTime?    @map("DELETED_AT")
+  createdAt         DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?    @updatedAt @map("UPDATED_AT")
+  version           Int?         @default(1) @map("VERSION")
+  item              Item         @relation(fields: [itemId], references: [id])
+  outlet            Outlet       @relation(fields: [outletId], references: [id])
+  itemVariant       ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
   @@index([itemId, createdAt])
   @@index([outletId])
+  @@index([itemVariantId])
   @@map("stock_snapshot")
 }
 
@@ -1451,72 +1482,81 @@ model Warehouse {
 }
 
 model WarehouseStockBalance {
-  id                Int       @id @default(autoincrement()) @map("ID")
-  itemId            Int       @map("ITEM_ID")
-  warehouseId       Int       @map("WAREHOUSE_ID")
-  availableQuantity Decimal   @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
-  onHandQuantity    Decimal   @map("ON_HAND_QUANTITY") @db.Decimal(15, 4)
-  reorderThreshold  Decimal?  @map("REORDER_THRESHOLD") @db.Decimal(15, 4)
-  deleted           Boolean   @default(false) @map("IS_DELETED")
-  lastRestockDate   DateTime? @map("LAST_RESTOCK_DATE")
-  deletedAt         DateTime? @map("DELETED_AT")
-  createdAt         DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt         DateTime? @updatedAt @map("UPDATED_AT")
-  version           Int?      @default(1) @map("VERSION")
-  item              Item      @relation(fields: [itemId], references: [id])
-  warehouse         Warehouse @relation(fields: [warehouseId], references: [id])
+  id                Int          @id @default(autoincrement()) @map("ID")
+  itemId            Int          @map("ITEM_ID")
+  warehouseId       Int          @map("WAREHOUSE_ID")
+  itemVariantId     Int?         @map("ITEM_VARIANT_ID")
+  availableQuantity Decimal      @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  onHandQuantity    Decimal      @map("ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  reorderThreshold  Decimal?     @map("REORDER_THRESHOLD") @db.Decimal(15, 4)
+  deleted           Boolean      @default(false) @map("IS_DELETED")
+  lastRestockDate   DateTime?    @map("LAST_RESTOCK_DATE")
+  deletedAt         DateTime?    @map("DELETED_AT")
+  createdAt         DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?    @updatedAt @map("UPDATED_AT")
+  version           Int?         @default(1) @map("VERSION")
+  item              Item         @relation(fields: [itemId], references: [id])
+  warehouse         Warehouse    @relation(fields: [warehouseId], references: [id])
+  itemVariant       ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
-  @@unique([itemId, warehouseId, reorderThreshold, deleted, availableQuantity])
+  @@unique([itemId, warehouseId, itemVariantId, reorderThreshold, deleted, availableQuantity])
   @@index([warehouseId])
+  @@index([itemVariantId])
   @@index([deleted])
   @@map("warehouse_stock_balance")
 }
 
 model WarehouseStockReceipt {
-  id                Int       @id @default(autoincrement()) @map("ID")
-  itemId            Int       @map("ITEM_ID")
-  warehouseId       Int       @map("WAREHOUSE_ID")
-  deliveryOrderId   Int?      @map("DELIVERY_ORDER_ID")
-  quantity          Decimal   @map("QUANTITY") @db.Decimal(15, 4)
-  availableQuantity Decimal   @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
-  cost              Decimal   @map("COST") @db.Decimal(15, 4)
-  receiptDate       DateTime  @default(now()) @map("RECEIPT_DATE")
-  remark            String?   @default("") @map("REMARK")
-  createdAt         DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt         DateTime? @updatedAt @map("UPDATED_AT")
-  deleted           Boolean   @default(false) @map("IS_DELETED")
-  deletedAt         DateTime? @map("DELETED_AT")
-  item              Item      @relation(fields: [itemId], references: [id])
-  warehouse         Warehouse @relation(fields: [warehouseId], references: [id])
+  id                Int          @id @default(autoincrement()) @map("ID")
+  itemId            Int          @map("ITEM_ID")
+  warehouseId       Int          @map("WAREHOUSE_ID")
+  itemVariantId     Int?         @map("ITEM_VARIANT_ID")
+  deliveryOrderId   Int?         @map("DELIVERY_ORDER_ID")
+  quantity          Decimal      @map("QUANTITY") @db.Decimal(15, 4)
+  availableQuantity Decimal      @map("AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  cost              Decimal      @map("COST") @db.Decimal(15, 4)
+  receiptDate       DateTime     @default(now()) @map("RECEIPT_DATE")
+  remark            String?      @default("") @map("REMARK")
+  createdAt         DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?    @updatedAt @map("UPDATED_AT")
+  deleted           Boolean      @default(false) @map("IS_DELETED")
+  deletedAt         DateTime?    @map("DELETED_AT")
+  item              Item         @relation(fields: [itemId], references: [id])
+  warehouse         Warehouse    @relation(fields: [warehouseId], references: [id])
+  itemVariant       ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
   @@index([itemId, receiptDate])
   @@index([warehouseId])
+  @@index([itemVariantId])
   @@index([deleted])
   @@map("warehouse_stock_receipt")
 }
 
 model WarehouseStockMovement {
-  id                        Int       @id @default(autoincrement()) @map("ID")
-  itemId                    Int       @map("ITEM_ID")
-  warehouseId               Int       @map("WAREHOUSE_ID")
-  previousAvailableQuantity Decimal   @map("PREVIOUS_AVAILABLE_QUANTITY") @db.Decimal(15, 4)
-  previousOnHandQuantity    Decimal   @map("PREVIOUS_ON_HAND_QUANTITY") @db.Decimal(15, 4)
-  availableQuantityDelta    Decimal   @map("AVAILABLE_QUANTITY_DELTA") @db.Decimal(15, 4)
-  onHandQuantityDelta       Decimal   @map("ON_HAND_QUANTITY_DELTA") @db.Decimal(15, 4)
-  movementType              String    @map("MOVEMENT_TYPE")
-  documentId                Int       @map("DOCUMENT_ID")
-  reason                    String    @map("REASON")
-  remark                    String    @default("") @map("REMARK")
-  deleted                   Boolean   @default(false) @map("IS_DELETED")
-  createdAt                 DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt                 DateTime? @updatedAt @map("UPDATED_AT")
-  version                   Int?      @default(1) @map("VERSION")
-  performedBy               String?   @default("") @map("PERFORMED_BY")
-  item                      Item      @relation(fields: [itemId], references: [id])
-  warehouse                 Warehouse @relation(fields: [warehouseId], references: [id])
+  id                        Int          @id @default(autoincrement()) @map("ID")
+  itemId                    Int          @map("ITEM_ID")
+  warehouseId               Int          @map("WAREHOUSE_ID")
+  itemVariantId             Int?         @map("ITEM_VARIANT_ID")
+  previousAvailableQuantity Decimal      @map("PREVIOUS_AVAILABLE_QUANTITY") @db.Decimal(15, 4)
+  previousOnHandQuantity    Decimal      @map("PREVIOUS_ON_HAND_QUANTITY") @db.Decimal(15, 4)
+  availableQuantityDelta    Decimal      @map("AVAILABLE_QUANTITY_DELTA") @db.Decimal(15, 4)
+  onHandQuantityDelta       Decimal      @map("ON_HAND_QUANTITY_DELTA") @db.Decimal(15, 4)
+  movementType              String       @map("MOVEMENT_TYPE")
+  documentId                Int          @map("DOCUMENT_ID")
+  reason                    String       @map("REASON")
+  remark                    String       @default("") @map("REMARK")
+  deleted                   Boolean      @default(false) @map("IS_DELETED")
+  createdAt                 DateTime?    @default(now()) @map("CREATED_AT")
+  updatedAt                 DateTime?    @updatedAt @map("UPDATED_AT")
+  version                   Int?         @default(1) @map("VERSION")
+  performedBy               String?      @default("") @map("PERFORMED_BY")
+  item                      Item         @relation(fields: [itemId], references: [id])
+  warehouse                 Warehouse    @relation(fields: [warehouseId], references: [id])
+  itemVariant               ItemVariant? @relation(fields: [itemVariantId], references: [id])
 
   @@index([itemId, createdAt])
   @@index([warehouseId])
+  @@index([itemVariantId])
   @@index([movementType])
   @@index([deleted])
   @@map("warehouse_stock_movement")
@@ -1547,4 +1587,87 @@ model WarehouseStockMovementArchive {
   @@index([warehouseId])
   @@index([movementType])
   @@map("warehouse_stock_movement_archive")
+}
+
+// ============================================================================
+// PRODUCT VARIANT MODELS
+// ============================================================================
+
+// Variant Attribute Values - stores user-defined values for each attribute type
+model VariantAttributeValue {
+  id                    Int                    @id @default(autoincrement()) @map("ID")
+  definitionKey         String                 @map("DEFINITION_KEY") // "Color", "Size", "Storage" (from hardcoded enum)
+  value                 String                 @map("VALUE") // User input: "Green", "Large", "256GB"
+  displayValue          String                 @map("DISPLAY_VALUE") // Display: "Green", "Large", "256GB"
+  sortOrder             Int                    @default(0) @map("SORT_ORDER")
+  deleted               Boolean                @default(false) @map("IS_DELETED")
+  deletedAt             DateTime?              @map("DELETED_AT")
+  createdAt             DateTime               @default(now()) @map("CREATED_AT")
+  updatedAt             DateTime               @updatedAt @map("UPDATED_AT")
+  version               Int                    @default(1) @map("VERSION")
+  itemVariantAttributes ItemVariantAttribute[]
+
+  @@unique([definitionKey, value])
+  @@index([definitionKey])
+  @@index([deleted])
+  @@map("variant_attribute_value")
+}
+
+// Item Variant - represents a specific variation of an item
+model ItemVariant {
+  id                      Int                      @id @default(autoincrement()) @map("ID")
+  itemId                  Int                      @map("ITEM_ID")
+  variantSku              String                   @unique @map("VARIANT_SKU")
+  variantName             String                   @map("VARIANT_NAME") // e.g., "Green - 256GB"
+  cost                    Decimal?                 @map("COST") @db.Decimal(15, 4) // Override parent cost
+  price                   Decimal?                 @map("PRICE") @db.Decimal(15, 4) // Override parent price
+  weight                  Float?                   @map("WEIGHT")
+  height                  Float?                   @map("HEIGHT")
+  width                   Float?                   @map("WIDTH")
+  length                  Float?                   @map("LENGTH")
+  image                   String?                  @map("IMAGE")
+  barcode                 String?                  @map("BARCODE")
+  deleted                 Boolean                  @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?                @map("DELETED_AT")
+  createdAt               DateTime                 @default(now()) @map("CREATED_AT")
+  updatedAt               DateTime                 @updatedAt @map("UPDATED_AT")
+  version                 Int                      @default(1) @map("VERSION")
+  item                    Item                     @relation(fields: [itemId], references: [id])
+  variantAttributes       ItemVariantAttribute[]
+  stockBalances           StockBalance[]
+  stockMovements          StockMovement[]
+  stockReceipts           StockReceipt[]
+  stockSnapshots          StockSnapshot[]
+  salesItems              SalesItem[]
+  purchaseOrderItems      PurchaseOrderItem[]
+  deliveryOrderItems      DeliveryOrderItem[]
+  quotationItems          QuotationItem[]
+  invoiceItems            InvoiceItem[]
+  warehouseStockBalances  WarehouseStockBalance[]
+  warehouseStockMovements WarehouseStockMovement[]
+  warehouseStockReceipts  WarehouseStockReceipt[]
+
+  @@index([itemId])
+  @@index([variantSku])
+  @@index([deleted])
+  @@map("item_variant")
+}
+
+// Junction table linking variants to their attribute values
+model ItemVariantAttribute {
+  id                      Int                   @id @default(autoincrement()) @map("ID")
+  itemVariantId           Int                   @map("ITEM_VARIANT_ID")
+  variantAttributeValueId Int                   @map("VARIANT_ATTRIBUTE_VALUE_ID")
+  deleted                 Boolean               @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?             @map("DELETED_AT")
+  createdAt               DateTime              @default(now()) @map("CREATED_AT")
+  updatedAt               DateTime              @updatedAt @map("UPDATED_AT")
+  version                 Int                   @default(1) @map("VERSION")
+  itemVariant             ItemVariant           @relation(fields: [itemVariantId], references: [id])
+  variantAttributeValue   VariantAttributeValue @relation(fields: [variantAttributeValueId], references: [id])
+
+  @@unique([itemVariantId, variantAttributeValueId])
+  @@index([itemVariantId])
+  @@index([variantAttributeValueId])
+  @@map("item_variant_attribute")
 }

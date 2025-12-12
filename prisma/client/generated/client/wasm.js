@@ -315,6 +315,7 @@ exports.Prisma.ItemScalarFieldEnum = {
   hasTax: 'hasTax',
   taxRate: 'taxRate',
   supplierId: 'supplierId',
+  hasVariants: 'hasVariants',
   deleted: 'deleted',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
@@ -391,10 +392,13 @@ exports.Prisma.SalesItemScalarFieldEnum = {
   id: 'id',
   salesId: 'salesId',
   itemId: 'itemId',
+  itemVariantId: 'itemVariantId',
   itemName: 'itemName',
   itemCode: 'itemCode',
   itemBrand: 'itemBrand',
   itemModel: 'itemModel',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   quantity: 'quantity',
   cost: 'cost',
   price: 'price',
@@ -465,6 +469,7 @@ exports.Prisma.InvoiceItemScalarFieldEnum = {
   id: 'id',
   invoiceId: 'invoiceId',
   itemId: 'itemId',
+  itemVariantId: 'itemVariantId',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   discountType: 'discountType',
@@ -532,6 +537,7 @@ exports.Prisma.DeliveryOrderItemScalarFieldEnum = {
   id: 'id',
   deliveryOrderId: 'deliveryOrderId',
   itemId: 'itemId',
+  itemVariantId: 'itemVariantId',
   orderedQuantity: 'orderedQuantity',
   receivedQuantity: 'receivedQuantity',
   unitPrice: 'unitPrice',
@@ -577,6 +583,7 @@ exports.Prisma.QuotationItemScalarFieldEnum = {
   id: 'id',
   quotationId: 'quotationId',
   itemId: 'itemId',
+  itemVariantId: 'itemVariantId',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   taxAmount: 'taxAmount',
@@ -624,6 +631,7 @@ exports.Prisma.PurchaseOrderItemScalarFieldEnum = {
   id: 'id',
   purchaseOrderId: 'purchaseOrderId',
   itemId: 'itemId',
+  itemVariantId: 'itemVariantId',
   quantity: 'quantity',
   taxAmount: 'taxAmount',
   discountType: 'discountType',
@@ -730,6 +738,7 @@ exports.Prisma.StockBalanceScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   outletId: 'outletId',
+  itemVariantId: 'itemVariantId',
   availableQuantity: 'availableQuantity',
   onHandQuantity: 'onHandQuantity',
   reorderThreshold: 'reorderThreshold',
@@ -745,6 +754,7 @@ exports.Prisma.StockReceiptScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   outletId: 'outletId',
+  itemVariantId: 'itemVariantId',
   deliveryOrderId: 'deliveryOrderId',
   quantity: 'quantity',
   cost: 'cost',
@@ -774,6 +784,7 @@ exports.Prisma.StockMovementScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   outletId: 'outletId',
+  itemVariantId: 'itemVariantId',
   previousAvailableQuantity: 'previousAvailableQuantity',
   previousOnHandQuantity: 'previousOnHandQuantity',
   availableQuantityDelta: 'availableQuantityDelta',
@@ -815,6 +826,7 @@ exports.Prisma.StockSnapshotScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   outletId: 'outletId',
+  itemVariantId: 'itemVariantId',
   availableQuantity: 'availableQuantity',
   onHandQuantity: 'onHandQuantity',
   deleted: 'deleted',
@@ -1117,6 +1129,7 @@ exports.Prisma.WarehouseStockBalanceScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   warehouseId: 'warehouseId',
+  itemVariantId: 'itemVariantId',
   availableQuantity: 'availableQuantity',
   onHandQuantity: 'onHandQuantity',
   reorderThreshold: 'reorderThreshold',
@@ -1132,6 +1145,7 @@ exports.Prisma.WarehouseStockReceiptScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   warehouseId: 'warehouseId',
+  itemVariantId: 'itemVariantId',
   deliveryOrderId: 'deliveryOrderId',
   quantity: 'quantity',
   availableQuantity: 'availableQuantity',
@@ -1148,6 +1162,7 @@ exports.Prisma.WarehouseStockMovementScalarFieldEnum = {
   id: 'id',
   itemId: 'itemId',
   warehouseId: 'warehouseId',
+  itemVariantId: 'itemVariantId',
   previousAvailableQuantity: 'previousAvailableQuantity',
   previousOnHandQuantity: 'previousOnHandQuantity',
   availableQuantityDelta: 'availableQuantityDelta',
@@ -1180,6 +1195,50 @@ exports.Prisma.WarehouseStockMovementArchiveScalarFieldEnum = {
   reason: 'reason',
   remark: 'remark',
   deleted: 'deleted',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.VariantAttributeValueScalarFieldEnum = {
+  id: 'id',
+  definitionKey: 'definitionKey',
+  value: 'value',
+  displayValue: 'displayValue',
+  sortOrder: 'sortOrder',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.ItemVariantScalarFieldEnum = {
+  id: 'id',
+  itemId: 'itemId',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
+  cost: 'cost',
+  price: 'price',
+  weight: 'weight',
+  height: 'height',
+  width: 'width',
+  length: 'length',
+  image: 'image',
+  barcode: 'barcode',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.ItemVariantAttributeScalarFieldEnum = {
+  id: 'id',
+  itemVariantId: 'itemVariantId',
+  variantAttributeValueId: 'variantAttributeValueId',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   version: 'version'
@@ -1331,6 +1390,8 @@ exports.Prisma.SalesItemOrderByRelevanceFieldEnum = {
   itemCode: 'itemCode',
   itemBrand: 'itemBrand',
   itemModel: 'itemModel',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   remark: 'remark',
   specialInstructions: 'specialInstructions',
   itemStatus: 'itemStatus',
@@ -1569,6 +1630,19 @@ exports.Prisma.WarehouseStockMovementArchiveOrderByRelevanceFieldEnum = {
   reason: 'reason',
   remark: 'remark'
 };
+
+exports.Prisma.VariantAttributeValueOrderByRelevanceFieldEnum = {
+  definitionKey: 'definitionKey',
+  value: 'value',
+  displayValue: 'displayValue'
+};
+
+exports.Prisma.ItemVariantOrderByRelevanceFieldEnum = {
+  variantSku: 'variantSku',
+  variantName: 'variantName',
+  image: 'image',
+  barcode: 'barcode'
+};
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   ORDERED: 'ORDERED',
   PREPARING: 'PREPARING',
@@ -1662,7 +1736,10 @@ exports.Prisma.ModelName = {
   WarehouseStockBalance: 'WarehouseStockBalance',
   WarehouseStockReceipt: 'WarehouseStockReceipt',
   WarehouseStockMovement: 'WarehouseStockMovement',
-  WarehouseStockMovementArchive: 'WarehouseStockMovementArchive'
+  WarehouseStockMovementArchive: 'WarehouseStockMovementArchive',
+  VariantAttributeValue: 'VariantAttributeValue',
+  ItemVariant: 'ItemVariant',
+  ItemVariantAttribute: 'ItemVariantAttribute'
 };
 
 /**

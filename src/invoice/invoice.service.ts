@@ -23,7 +23,8 @@ const updateStockReceiptCosts = async (
     tx: Prisma.TransactionClient,
     invoiceId: number,
     deliveryOrderIds: number[],
-    invoiceItems: any[]
+    invoiceItems: any[],
+    isTaxInclusive: boolean
 ): Promise<void> => {
     try {
         // Get delivery order items with their details
@@ -83,13 +84,20 @@ const updateStockReceiptCosts = async (
                 const discountPerUnit = discountAmount.div(quantity);
                 const discountedUnitPrice = originalUnitPrice.sub(discountPerUnit);
 
+                // Calculate tax per unit if tax is exclusive
+                let taxPerUnit = new Decimal(0);
+                if (!isTaxInclusive && invoiceItem.taxAmount) {
+                    const taxAmount = new Decimal(invoiceItem.taxAmount);
+                    taxPerUnit = taxAmount.div(quantity);
+                }
+
                 // Calculate delivery fee per unit
                 const deliveryFee = new Decimal(deliveryOrderItem.deliveryFee || 0);
                 const deliveryOrderQuantity = new Decimal(deliveryOrderItem.receivedQuantity);
                 const deliveryFeePerUnit = deliveryOrderQuantity.gt(0) ? deliveryFee.div(deliveryOrderQuantity) : new Decimal(0);
 
-                // Calculate new cost: discounted unit price + delivery fee per unit
-                const newCost = discountedUnitPrice.add(deliveryFeePerUnit);
+                // Calculate new cost: discounted unit price + tax per unit (if exclusive) + delivery fee per unit
+                const newCost = discountedUnitPrice.add(taxPerUnit).add(deliveryFeePerUnit);
 
                 // Update stock receipt cost
                 await tx.stockReceipt.update({
@@ -972,7 +980,13 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
 
                     // Update stock receipt costs if there are discounted items and delivery orders are linked
                     if (hasDiscountedItems && invoiceData.deliveryOrderIds && invoiceData.deliveryOrderIds.length > 0) {
-                        await updateStockReceiptCosts(tx, newInvoice.id, invoiceData.deliveryOrderIds, invoiceData.invoiceItems);
+                        await updateStockReceiptCosts(
+                            tx,
+                            newInvoice.id,
+                            invoiceData.deliveryOrderIds,
+                            invoiceData.invoiceItems,
+                            invoiceData.isTaxInclusive ?? true
+                        );
                     }
 
                     // Fetch the created items to include in response
@@ -1273,7 +1287,13 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                     if (hasDiscountedItems &&
                         updateData.deliveryOrderIds &&
                         updateData.deliveryOrderIds.length > 0) {
-                        await updateStockReceiptCosts(tx, id, updateData.deliveryOrderIds, updateData.invoiceItems);
+                        await updateStockReceiptCosts(
+                            tx,
+                            id,
+                            updateData.deliveryOrderIds,
+                            updateData.invoiceItems,
+                            updateData.isTaxInclusive ?? existingInvoiceData?.isTaxInclusive ?? true
+                        );
                     }
                 }
             }

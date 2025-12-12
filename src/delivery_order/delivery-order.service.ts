@@ -660,7 +660,6 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
 
 // Optimized helper function for batch stock operations
 const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string) => {
-    const stockOperations = [];
     const movementOperations = [];
     const receiptOperations = [];
 
@@ -696,32 +695,31 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             const unitPrice = new Decimal(item.unitPrice || 0);
             const perUnitCost = unitPrice.plus(deliveryFee.div(quantityDelta));
 
-            // Fix stock balance operation to match the actual unique constraint
-            stockOperations.push({
-                where: {
-                    itemId_outletId_reorderThreshold_deleted_availableQuantity: {
+            // Use update if balance exists (by id), otherwise create new
+            // This avoids Prisma compound unique key issues with nullable fields
+            if (currentBalance?.id) {
+                await tx.stockBalance.update({
+                    where: { id: currentBalance.id },
+                    data: {
+                        availableQuantity: newAvailableQuantity,
+                        onHandQuantity: newOnHandQuantity,
+                        lastRestockDate: new Date(),
+                        updatedAt: new Date()
+                    }
+                });
+            } else {
+                await tx.stockBalance.create({
+                    data: {
                         itemId: item.itemId,
                         outletId: deliveryOrder.outletId,
-                        reorderThreshold: currentBalance?.reorderThreshold ?? null,
-                        deleted: false,
-                        availableQuantity: previousAvailableQuantity
+                        itemVariantId: null,
+                        availableQuantity: quantityDelta,
+                        onHandQuantity: quantityDelta,
+                        reorderThreshold: null,
+                        lastRestockDate: new Date()
                     }
-                },
-                update: {
-                    availableQuantity: newAvailableQuantity,
-                    onHandQuantity: newOnHandQuantity,
-                    lastRestockDate: new Date(),
-                    updatedAt: new Date()
-                },
-                create: {
-                    itemId: item.itemId,
-                    outletId: deliveryOrder.outletId,
-                    availableQuantity: quantityDelta,
-                    onHandQuantity: quantityDelta,
-                    reorderThreshold: null,
-                    lastRestockDate: new Date()
-                }
-            });
+                });
+            }
 
             // Prepare movement operation - convert Decimal to number for storage
             movementOperations.push({
@@ -750,11 +748,6 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
         }
     }
 
-    // Execute stock balance upserts sequentially to avoid unique constraint conflicts
-    for (const stockOp of stockOperations) {
-        await tx.stockBalance.upsert(stockOp);
-    }
-
     // Execute movements and receipts in batch
     await Promise.all([
         movementOperations.length > 0 ? tx.stockMovement.createMany({ data: movementOperations }) : Promise.resolve(),
@@ -764,7 +757,6 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
 
 // Helper function to reverse stock operations when delivery order is cancelled
 const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string) => {
-    const stockOperations = [];
     const movementOperations = [];
 
     // Get all current stock balances in one query
@@ -799,28 +791,13 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                 const finalAvailableQuantity = newAvailableQuantity.lt(0) ? new Decimal(0) : newAvailableQuantity;
                 const finalOnHandQuantity = newOnHandQuantity.lt(0) ? new Decimal(0) : newOnHandQuantity;
 
-                // Update stock balance
-                stockOperations.push({
-                    where: {
-                        itemId_outletId_reorderThreshold_deleted_availableQuantity: {
-                            itemId: item.itemId,
-                            outletId: deliveryOrder.outletId,
-                            reorderThreshold: currentBalance.reorderThreshold,
-                            deleted: false,
-                            availableQuantity: previousAvailableQuantity
-                        }
-                    },
-                    update: {
+                // Update stock balance by id (avoids Prisma compound unique key issues with nullable fields)
+                await tx.stockBalance.update({
+                    where: { id: currentBalance.id },
+                    data: {
                         availableQuantity: finalAvailableQuantity,
                         onHandQuantity: finalOnHandQuantity,
                         updatedAt: new Date()
-                    },
-                    create: {
-                        itemId: item.itemId,
-                        outletId: deliveryOrder.outletId,
-                        availableQuantity: new Decimal(0),
-                        onHandQuantity: new Decimal(0),
-                        reorderThreshold: null
                     }
                 });
 
@@ -840,11 +817,6 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                 });
             }
         }
-    }
-
-    // Execute stock balance upserts sequentially to avoid unique constraint conflicts
-    for (const stockOp of stockOperations) {
-        await tx.stockBalance.upsert(stockOp);
     }
 
     // Execute movements in batch

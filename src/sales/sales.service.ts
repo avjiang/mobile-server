@@ -395,20 +395,22 @@ async function completeNewSales(
 
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            const itemIds = salesBody.salesItems.map((item) => item.itemId);
-
             // Batch all initial queries
             const [stockBalances, stockReceipts, customer] = await Promise.all([
-                // Get stock balances for validation
+                // Get stock balances for validation (with variant support)
                 tx.stockBalance.findMany({
                     where: {
-                        itemId: { in: itemIds },
-                        outletId: salesBody.outletId,
-                        deleted: false,
+                        OR: salesBody.salesItems.map(item => ({
+                            itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            outletId: salesBody.outletId,
+                            deleted: false,
+                        })),
                     },
                     select: {
                         id: true, // Added for direct updates
                         itemId: true,
+                        itemVariantId: true, // Added for variant support
                         availableQuantity: true,
                         reorderThreshold: true, // For low stock notifications
                         item: {
@@ -421,17 +423,21 @@ async function completeNewSales(
                     },
                 }),
 
-                // Get all stock receipts needed for FIFO in one query
+                // Get all stock receipts needed for FIFO in one query (with variant support)
                 tx.stockReceipt.findMany({
                     where: {
-                        itemId: { in: itemIds },
-                        outletId: salesBody.outletId,
-                        deleted: false,
-                        quantity: { gt: 0 },
+                        OR: salesBody.salesItems.map(item => ({
+                            itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            outletId: salesBody.outletId,
+                            deleted: false,
+                            quantity: { gt: 0 },
+                        })),
                     },
                     select: {
                         id: true,
                         itemId: true,
+                        itemVariantId: true, // Added for variant support
                         quantity: true,
                         cost: true,
                         receiptDate: true,
@@ -452,14 +458,20 @@ async function completeNewSales(
                 throw new Error(`Invalid customerId: ${salesBody.customerId}`);
             }
 
-            // Create lookup maps for better performance
-            const stockBalanceMap = new Map(stockBalances.map(sb => [sb.itemId, sb]));
-            const stockReceiptsByItem = new Map<number, typeof stockReceipts>();
+            // Create lookup maps for better performance (with variant support using composite keys)
+            const stockBalanceMap = new Map(
+                stockBalances.map(sb => [
+                    `${sb.itemId}-${sb.itemVariantId || 'null'}`, // Composite key
+                    sb
+                ])
+            );
+            const stockReceiptsByItem = new Map<string, typeof stockReceipts>();
             stockReceipts.forEach(receipt => {
-                if (!stockReceiptsByItem.has(receipt.itemId)) {
-                    stockReceiptsByItem.set(receipt.itemId, []);
+                const lookupKey = `${receipt.itemId}-${receipt.itemVariantId || 'null'}`;
+                if (!stockReceiptsByItem.has(lookupKey)) {
+                    stockReceiptsByItem.set(lookupKey, []);
                 }
-                stockReceiptsByItem.get(receipt.itemId)!.push(receipt);
+                stockReceiptsByItem.get(lookupKey)!.push(receipt);
             });
 
             // Validate stock availability and calculate FIFO costs in one pass
@@ -469,22 +481,25 @@ async function completeNewSales(
             }> = [];
 
             for (const item of salesBody.salesItems) {
-                const stockBalance = stockBalanceMap.get(item.itemId);
+                const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
+                const stockBalance = stockBalanceMap.get(lookupKey);
                 if (!stockBalance) {
-                    stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}`);
+                    const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
+                    stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}${variantInfo}`);
                     continue;
                 }
 
                 if (new Decimal(stockBalance.availableQuantity).lt(item.quantity)) {
+                    const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
                     stockValidationErrors.push(
-                        `Insufficient stock for ${stockBalance.item.itemName} (${stockBalance.item.itemCode}). ` +
+                        `Insufficient stock for ${stockBalance.item.itemName}${variantInfo} (${stockBalance.item.itemCode}). ` +
                         `Available: ${stockBalance.availableQuantity}, Required: ${item.quantity}`
                     );
                     continue;
                 }
 
                 // Calculate FIFO cost
-                const itemReceipts = stockReceiptsByItem.get(item.itemId) || [];
+                const itemReceipts = stockReceiptsByItem.get(lookupKey) || [];
                 let remainingQuantity = new Decimal(item.quantity);
                 let usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
 
@@ -562,8 +577,11 @@ async function completeNewSales(
 
                     salesItemData.push({
                         itemId: item.itemId,
+                        itemVariantId: item.itemVariantId || null, // Variant support
                         itemName: item.itemName,
                         itemCode: item.itemCode,
+                        variantSku: item.variantSku || null, // Variant support
+                        variantName: item.variantName || null, // Variant support
                         itemBrand: item.itemBrand,
                         itemModel: item.itemModel,
                         quantity: receiptQuantity,
@@ -666,9 +684,10 @@ async function completeNewSales(
                 );
             }
 
-            // Prepare stock balance updates and movements
+            // Prepare stock balance updates and movements (with variant support)
             const stockUpdates = salesBody.salesItems.map(item => {
-                const stockBalance = stockBalanceMap.get(item.itemId)!;
+                const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
+                const stockBalance = stockBalanceMap.get(lookupKey)!;
                 const newAvailableQuantity = new Decimal(stockBalance.availableQuantity)
                     .minus(new Decimal(item.quantity));
 
@@ -686,8 +705,10 @@ async function completeNewSales(
                     stockBalanceId: stockBalance.id, // Use actual stock balance ID
                     outletId: salesBody.outletId,
                     itemId: item.itemId,
+                    itemVariantId: item.itemVariantId || null, // Variant support
                     itemName: stockBalance.item.itemName,
                     itemCode: stockBalance.item.itemCode,
+                    variantName: item.variantName || null, // Variant support
                     quantity: new Decimal(item.quantity),
                     previousAvailable: new Decimal(stockBalance.availableQuantity),
                     previousOnHand: new Decimal(stockBalance.availableQuantity), // Assuming same as available
@@ -716,10 +737,11 @@ async function completeNewSales(
                     })
                 ),
 
-                // Batch create stock movements
+                // Batch create stock movements (with variant support)
                 tx.stockMovement.createMany({
                     data: stockUpdates.map(update => ({
                         itemId: update.itemId,
+                        itemVariantId: update.itemVariantId, // Variant support
                         outletId: update.outletId,
                         previousAvailableQuantity: update.previousAvailable.toNumber(),
                         previousOnHandQuantity: update.previousOnHand.toNumber(),
@@ -1231,13 +1253,14 @@ let voidSales = async (
                 }
             });
 
-            // Restore stock for each sales item
+            // Restore stock for each sales item (with variant support)
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
                     // Update Stock Balance - add back the quantities
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
                             itemId: salesItem.itemId,
+                            itemVariantId: salesItem.itemVariantId || null, // Variant support
                             outletId: sales.outletId,
                             deleted: false,
                         },
@@ -1257,10 +1280,11 @@ let voidSales = async (
                                 },
                             },
                         });
-                        // Create Stock Movement record for the void
+                        // Create Stock Movement record for the void (with variant support)
                         await tx.stockMovement.create({
                             data: {
                                 itemId: salesItem.itemId,
+                                itemVariantId: salesItem.itemVariantId || null, // Variant support
                                 outletId: sales.outletId,
                                 previousAvailableQuantity: stockBalance.availableQuantity.toNumber(),
                                 previousOnHandQuantity: stockBalance.onHandQuantity.toNumber(),
@@ -1357,13 +1381,14 @@ let returnSales = async (
                 }
             });
 
-            // Restore stock for each sales item
+            // Restore stock for each sales item (with variant support)
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
                     // Update Stock Balance - add back the quantities
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
                             itemId: salesItem.itemId,
+                            itemVariantId: salesItem.itemVariantId || null, // Variant support
                             outletId: sales.outletId,
                             deleted: false,
                         },
@@ -1384,10 +1409,11 @@ let returnSales = async (
                             },
                         });
 
-                        // Create Stock Movement record for the return
+                        // Create Stock Movement record for the return (with variant support)
                         await tx.stockMovement.create({
                             data: {
                                 itemId: salesItem.itemId,
+                                itemVariantId: salesItem.itemVariantId || null, // Variant support
                                 outletId: sales.outletId,
                                 previousAvailableQuantity: stockBalance.availableQuantity,
                                 previousOnHandQuantity: stockBalance.onHandQuantity,
@@ -1484,13 +1510,14 @@ let refundSales = async (
                 }
             });
 
-            // Restore stock for each sales item
+            // Restore stock for each sales item (with variant support)
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
                     // Update Stock Balance - add back the quantities
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
                             itemId: salesItem.itemId,
+                            itemVariantId: salesItem.itemVariantId || null, // Variant support
                             outletId: sales.outletId,
                             deleted: false,
                         },
@@ -1510,10 +1537,11 @@ let refundSales = async (
                             },
                         });
 
-                        // Create Stock Movement record for the refund
+                        // Create Stock Movement record for the refund (with variant support)
                         await tx.stockMovement.create({
                             data: {
                                 itemId: salesItem.itemId,
+                                itemVariantId: salesItem.itemVariantId || null, // Variant support
                                 outletId: sales.outletId,
                                 previousAvailableQuantity: stockBalance.availableQuantity,
                                 previousOnHandQuantity: stockBalance.onHandQuantity,

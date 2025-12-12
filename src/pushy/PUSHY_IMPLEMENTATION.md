@@ -11,11 +11,13 @@
 **Changes**:
 
 #### 1. **Notification ID for Tracking**
+
 - All notifications now include a unique `notificationId` field (UUID)
 - Enables notification tracking, read receipts, and duplicate prevention
 - Non-breaking change - frontend can optionally use this field
 
 **Payload Structure**:
+
 ```json
 {
   "title": "New Sale",
@@ -34,6 +36,7 @@
 **Note**: `notificationId` is inside the `data` object, accessible via `payload.data.notificationId` in Flutter.
 
 **Use Cases**:
+
 - Track notification delivery status
 - Implement read/unread notifications
 - Prevent duplicate notifications on client
@@ -41,11 +44,13 @@
 - Analytics and reporting
 
 #### 2. **Improved Device Usage Response (Personal Devices)**
+
 - `GET /pushy/devices/user` now shows only user-specific device counts
 - Removed misleading `maximum` field (was showing tenant-wide limit)
 - Personal endpoint focuses on user's own devices only
 
 **BREAKING CHANGE**:
+
 ```json
 // BEFORE
 "deviceUsage": {
@@ -63,28 +68,33 @@
 ```
 
 **Why the change?**
+
 - `maximum` showed tenant-wide limit, not user limit
 - Confusing: User with 2 devices seeing "2/5" when tenant is at 5/5 capacity
 - Personal endpoint now focuses on personal stats only
 - For tenant capacity, use `GET /pushy/devices/` (admin endpoint)
 
 **Migration Required**:
+
 - Update `DeviceUsage` model: `current` → `active`
 - Add `inactive` and `total` fields
 - Remove `maximum` field from personal devices model
 
 #### 3. **Critical Bug Fix: Pushy Topic Prefix**
+
 - Fixed `NO_RECIPIENTS` error when sending to topics
 - Pushy SDK requires `/topics/` prefix for topic-based notifications
 - Backend now correctly sends to `/topics/tenant_X_outlet_Y_sales` format
 
 **Before (Broken):**
+
 ```typescript
 await pushy.sendPushNotification(data, [topic], options);
 // Sent to: ['tenant_1_outlet_1_sales'] ❌
 ```
 
 **After (Fixed):**
+
 ```typescript
 const topicPath = `/topics/${topic}`;
 await pushy.sendPushNotification(data, topicPath, options);
@@ -94,12 +104,14 @@ await pushy.sendPushNotification(data, topicPath, options);
 **Impact**: All topic-based notifications now work correctly. Devices subscribed to topics will receive notifications.
 
 #### 4. **Improved Error Logging**
+
 - Enhanced error messages with detailed context
 - Shows exact topic name, tenant ID, and notification title
 - Special handling for `NO_RECIPIENTS` error with troubleshooting tips
 - Device token preview in error logs (first 3 tokens shown)
 
 **Example Error Output:**
+
 ```
 ❌ Failed to send push notification
    Topic (backend): "tenant_1_outlet_1_sales"
@@ -116,11 +128,13 @@ await pushy.sendPushNotification(data, topicPath, options);
 ```
 
 #### 5. **Debug Endpoint for Topic Subscriptions**
+
 - Added `GET /pushy/debug/topics` endpoint
 - Lists all active devices and their subscribed topics
 - Helps diagnose topic subscription mismatches
 
 **Files Changed**:
+
 - [notification.service.ts](src/pushy/notification.service.ts) - Added `notificationId` inside data object
 - [sales.service.ts](src/sales/sales.service.ts) - Fixed local notification helpers with proper structure
 - [device.controller.ts](src/pushy/device.controller.ts) - Removed misleading `maximum`, added debug endpoint
@@ -143,10 +157,12 @@ await pushy.sendPushNotification(data, topicPath, options);
 **Issue**: Role endpoint was returning notification topics for deleted devices, allowing them to resubscribe and receive notifications after admin deletion.
 
 **Files Changed**:
+
 - [role.service.ts:160-208](src/role/role.service.ts#L160-L208) - Added `checkUserHasActiveDevice()` helper
 - [role.service.ts:94-131](src/role/role.service.ts#L94-L131) - Updated topic generation logic
 
 **What Was Broken**:
+
 ```typescript
 // BEFORE (BUG):
 if (!lastSyncTimestamp) {
@@ -159,6 +175,7 @@ if (!lastSyncTimestamp) {
 ```
 
 **Attack Scenario**:
+
 1. Admin deletes employee's device → Device unsubscribed from topics ✅
 2. Employee keeps app open → Next role sync triggered
 3. Role endpoint returns `notificationTopics` array (BUG) ❌
@@ -166,6 +183,7 @@ if (!lastSyncTimestamp) {
 5. **Device deletion completely bypassed**
 
 **What's Fixed**:
+
 ```typescript
 // AFTER (FIXED):
 if (!lastSyncTimestamp) {
@@ -188,36 +206,38 @@ if (!lastSyncTimestamp) {
 ```
 
 **Device Validation Logic**:
+
 ```typescript
 const checkUserHasActiveDevice = async (
-    tenantId: number,
-    userId: number,
-    databaseName: string
+  tenantId: number,
+  userId: number,
+  databaseName: string
 ): Promise<boolean> => {
-    // 1. Get user from tenant database
-    const user = await tenantPrisma.user.findUnique({ where: { id: userId } });
-    if (!user) return false;
+  // 1. Get user from tenant database
+  const user = await tenantPrisma.user.findUnique({ where: { id: userId } });
+  if (!user) return false;
 
-    // 2. Get global tenant user
-    const globalTenantUser = await globalPrisma.tenantUser.findFirst({
-        where: { username: user.username, tenantId }
-    });
-    if (!globalTenantUser) return false;
+  // 2. Get global tenant user
+  const globalTenantUser = await globalPrisma.tenantUser.findFirst({
+    where: { username: user.username, tenantId },
+  });
+  if (!globalTenantUser) return false;
 
-    // 3. Check for active device with allocation
-    const activeDevice = await globalPrisma.pushyDevice.findFirst({
-        where: {
-            tenantUserId: globalTenantUser.id,
-            isActive: true,
-            allocation: { isNot: null }
-        }
-    });
+  // 3. Check for active device with allocation
+  const activeDevice = await globalPrisma.pushyDevice.findFirst({
+    where: {
+      tenantUserId: globalTenantUser.id,
+      isActive: true,
+      allocation: { isNot: null },
+    },
+  });
 
-    return activeDevice !== null;
+  return activeDevice !== null;
 };
 ```
 
 **When Device Check Runs**:
+
 - ✅ Initial sync (first app open)
 - ✅ Role permission changes affecting user
 - ❌ NO check when no role changes (zero performance impact)
@@ -231,6 +251,7 @@ const checkUserHasActiveDevice = async (
 | Initial sync | ✅ YES | +3 queries |
 
 **Frontend Behavior**:
+
 - Deleted device receives `notificationTopics: []` on next role sync
 - Frontend should unsubscribe from ALL current topics when array is empty
 - Device will no longer receive notifications
@@ -1279,6 +1300,7 @@ All sales notifications are sent through helper functions defined at the top of 
 **Location**: [sales.service.ts:745-762](src/sales/sales.service.ts#L745-L762)
 
 **Payload Structure**:
+
 ```json
 {
   "title": "New Sale Completed",
@@ -1307,6 +1329,7 @@ All sales notifications are sent through helper functions defined at the top of 
 **Location**: [sales.service.ts:1197-1215](src/sales/sales.service.ts#L1197-L1215)
 
 **Payload Structure**:
+
 ```json
 {
   "title": "Payment Added",
@@ -1334,6 +1357,7 @@ All sales notifications are sent through helper functions defined at the top of 
 **Location**: [sales.service.ts:1197-1215](src/sales/sales.service.ts#L1197-L1215)
 
 **Payload Structure**:
+
 ```json
 {
   "title": "Debt Sales Payment Completed",
@@ -1363,6 +1387,7 @@ All sales notifications are sent through helper functions defined at the top of 
 **Location**: [sales.service.ts:1322-1339](src/sales/sales.service.ts#L1322-L1339)
 
 **Payload Structure**:
+
 ```json
 {
   "title": "Sale Voided",
@@ -1392,6 +1417,7 @@ All sales notifications are sent through helper functions defined at the top of 
 **Location**: [sales.service.ts:1446-1463](src/sales/sales.service.ts#L1446-L1463)
 
 **Payload Structure**:
+
 ```json
 {
   "title": "Sale Returned",
@@ -1421,6 +1447,7 @@ All sales notifications are sent through helper functions defined at the top of 
 **Location**: [sales.service.ts:1569-1586](src/sales/sales.service.ts#L1569-L1586)
 
 **Payload Structure**:
+
 ```json
 {
   "title": "Sale Refunded",
@@ -1461,6 +1488,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 **Location**: [sales.service.ts:764-801](src/sales/sales.service.ts#L764-L801)
 
 **Payload Structure (Single Item)**:
+
 ```json
 {
   "title": "Out of Stock Alert",
@@ -1491,6 +1519,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 ```
 
 **Payload Structure (Multiple Items)**:
+
 ```json
 {
   "title": "3 Items Out of Stock",
@@ -1537,6 +1566,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 ```
 
 **Message Format**:
+
 - **1 item**: Shows item name directly
 - **2-3 items**: Shows all item names separated by commas
 - **4+ items**: Shows first 2 items + count of remaining (e.g., "Item A, Item B and 2 more")
@@ -1549,6 +1579,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 **Location**: [sales.service.ts:803-841](src/sales/sales.service.ts#L803-L841)
 
 **Payload Structure (Single Item)**:
+
 ```json
 {
   "title": "Low Stock Warning",
@@ -1580,6 +1611,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 ```
 
 **Payload Structure (Multiple Items)**:
+
 ```json
 {
   "title": "3 Items Low on Stock",
@@ -1629,6 +1661,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 ```
 
 **Business Logic**:
+
 - Triggered when: `newAvailableQuantity <= reorderThreshold` AND `previousAvailableQuantity > reorderThreshold`
 - Only items that JUST crossed the threshold are included (not items already below threshold)
 - Items that are out of stock are NOT included in this notification (they get the Out of Stock Alert instead)
@@ -1652,6 +1685,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 **Location**: [sales.service.ts:1726-1752](src/sales/sales.service.ts#L1726-L1752)
 
 **Payload Structure**:
+
 ```json
 {
   "title": "Deliveries Confirmed",
@@ -1671,6 +1705,7 @@ Inventory notifications are triggered automatically after sales transactions bas
 ```
 
 **Business Logic**:
+
 - Supports batch delivery confirmation (multiple sales IDs)
 - Only sales with `salesType: 'DELIVERY'` and status `'Completed'` or `'Partially Paid'` can be delivered
 - Sales must not have been delivered before (`deliveredAt` must be null)
@@ -1687,60 +1722,65 @@ Inventory notifications are triggered automatically after sales transactions bas
 **IMPORTANT**: All push notifications should be sent using a "fire-and-forget" pattern to avoid blocking the main business logic.
 
 **Why?**
+
 - Push notifications can take 100-500ms to complete (network call to Pushy servers)
 - Business transactions (sales, inventory updates) should respond immediately
 - Notification failures should NEVER block or fail business operations
 - Improved user experience with faster API response times
 
 **Correct Pattern** (Non-Blocking):
+
 ```typescript
 // Helper function in sales.service.ts
 async function sendSalesNotification(
-    tenantId: number,
-    outletId: number,
-    title: string,
-    message: string,
-    data: any
+  tenantId: number,
+  outletId: number,
+  title: string,
+  message: string,
+  data: any
 ): Promise<void> {
-    const notificationPayload = {
-        title,
-        message,
-        data: {
-            notificationId: randomUUID(),
-            type: 'SALES',
-            tenantId,
-            timestamp: new Date().toISOString(),
-            ...data
-        }
-    };
+  const notificationPayload = {
+    title,
+    message,
+    data: {
+      notificationId: randomUUID(),
+      type: "SALES",
+      tenantId,
+      timestamp: new Date().toISOString(),
+      ...data,
+    },
+  };
 
-    // Fire and forget - don't wait for notification to complete
-    PushyService.sendToTopic(
-        `tenant_${tenantId}_outlet_${outletId}_sales`,
-        notificationPayload,
-        tenantId
-    ).catch(error => {
-        console.error('Failed to send sales notification:', error);
-    });
+  // Fire and forget - don't wait for notification to complete
+  PushyService.sendToTopic(
+    `tenant_${tenantId}_outlet_${outletId}_sales`,
+    notificationPayload,
+    tenantId
+  ).catch((error) => {
+    console.error("Failed to send sales notification:", error);
+  });
 }
 ```
 
 **Wrong Pattern** (Blocking - DON'T DO THIS):
+
 ```typescript
 // ❌ BAD: Using await blocks the business transaction
 await PushyService.sendToTopic(
-    `tenant_${tenantId}_outlet_${outletId}_sales`,
-    notificationPayload,
-    tenantId
+  `tenant_${tenantId}_outlet_${outletId}_sales`,
+  notificationPayload,
+  tenantId
 );
 ```
 
 **Performance Impact**:
+
 - **Before (Blocking)**: Sales API responds in 500-800ms (300ms DB + 500ms Pushy)
 - **After (Non-blocking)**: Sales API responds in 300-400ms (300ms DB + 0ms for Pushy since it runs in parallel)
 - **Improvement**: ~50% faster response time
 
 **Implementation Checklist**:
+
 - ✅ Remove `await` before `PushyService.sendToTopic()` or `PushyService.sendToDevices()`
 - ✅ Remove `try-catch` wrapper (not needed since we don't await)
 - ✅ Add `.catch(error => { ... })` to handle errors without blocking
@@ -1748,6 +1788,7 @@ await PushyService.sendToTopic(
 - ✅ Keep notification calls AFTER the main database transaction completes
 
 **Files Updated**:
+
 - [sales.service.ts](src/sales/sales.service.ts) - Helper functions `sendSalesNotification()` and `sendInventoryNotification()`
 - [notification.service.ts](src/pushy/notification.service.ts) - Core methods `sendPermissionBasedNotification()` and `sendToSpecificUsers()`
 
@@ -1757,9 +1798,11 @@ All notification sends use `.catch()` to handle errors gracefully without disrup
 
 ```typescript
 // Fire and forget pattern with error handling
-PushyService.sendToTopic(topic, notificationPayload, tenantId).catch(error => {
-    console.error('Failed to send sales notification:', error);
-});
+PushyService.sendToTopic(topic, notificationPayload, tenantId).catch(
+  (error) => {
+    console.error("Failed to send sales notification:", error);
+  }
+);
 ```
 
 **Impact**: If a notification fails to send, the business operation (sale, void, return, etc.) still completes successfully.
@@ -1771,11 +1814,11 @@ All notifications sent via PushyService use the `/topics/` prefix as required by
 ```typescript
 // Non-blocking notification send
 PushyService.sendToTopic(
-    `/topics/tenant_${tenantId}_outlet_${outletId}_sales`,
-    notificationPayload,
-    tenantId
-).catch(error => {
-    console.error('Failed to send notification:', error);
+  `/topics/tenant_${tenantId}_outlet_${outletId}_sales`,
+  notificationPayload,
+  tenantId
+).catch((error) => {
+  console.error("Failed to send notification:", error);
 });
 ```
 
@@ -1796,6 +1839,7 @@ data: {
 ```
 
 **Use Cases**:
+
 - Track notification delivery status
 - Implement read/unread notifications
 - Prevent duplicate notifications on client
@@ -1808,15 +1852,15 @@ data: {
 
 All notifications include these standard fields in the `data` object:
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `notificationId` | string (UUID) | Unique notification identifier | `"550e8400-e29b-41d4-a716-446655440000"` |
-| `type` | string | Category of notification | `"SALES"`, `"INVENTORY"`, `"DELIVERY"` |
-| `tenantId` | number | Tenant identifier | `1` |
-| `timestamp` | string (ISO 8601) | When notification was created | `"2025-01-05T10:30:00.000Z"` |
-| `outletId` | number | Outlet identifier | `1` |
-| `triggeringUserId` | number | User who triggered the action | `456` |
-| `triggeringUsername` | string | Username who triggered the action | `"cashier1"` |
+| Field                | Type              | Description                       | Example                                  |
+| -------------------- | ----------------- | --------------------------------- | ---------------------------------------- |
+| `notificationId`     | string (UUID)     | Unique notification identifier    | `"550e8400-e29b-41d4-a716-446655440000"` |
+| `type`               | string            | Category of notification          | `"SALES"`, `"INVENTORY"`, `"DELIVERY"`   |
+| `tenantId`           | number            | Tenant identifier                 | `1`                                      |
+| `timestamp`          | string (ISO 8601) | When notification was created     | `"2025-01-05T10:30:00.000Z"`             |
+| `outletId`           | number            | Outlet identifier                 | `1`                                      |
+| `triggeringUserId`   | number            | User who triggered the action     | `456`                                    |
+| `triggeringUsername` | string            | Username who triggered the action | `"cashier1"`                             |
 
 ### Migration TODO
 
@@ -4039,15 +4083,18 @@ const adminForceUnregisterDevice = async (req, res, next) => {
 **Changes Made:**
 
 1. **Added Unique Notification IDs**
+
    - Added `notificationId` (UUID) to all notification payloads for tracking
    - Enables read receipts, duplicate prevention, and analytics
    - Located inside `data` object for frontend access
 
    **Files Modified:**
+
    - [notification.service.ts](src/pushy/notification.service.ts): Added UUID import and notificationId to both `sendPermissionBasedNotification()` and `sendToSpecificUsers()`
    - [sales.service.ts](src/sales/sales.service.ts): Added UUID import and notificationId to local notification helpers
 
    **Payload Structure:**
+
    ```typescript
    // Before
    {
@@ -4071,14 +4118,17 @@ const adminForceUnregisterDevice = async (req, res, next) => {
    ```
 
 2. **Standardized Device Usage Response**
+
    - Removed misleading `maximum` field from `GET /pushy/devices/user` (personal devices endpoint)
    - Changed structure from `{current, maximum}` to `{active, inactive, total}`
    - `maximum` showed tenant-wide limit, not user-specific limit (confusing for users)
 
    **Files Modified:**
+
    - [device.controller.ts](src/pushy/device.controller.ts): Updated `getUserDevices()` to add inactive count and remove maximum field
 
    **Response Structure:**
+
    ```typescript
    // Before (Personal Devices)
    {
@@ -4103,25 +4153,28 @@ const adminForceUnregisterDevice = async (req, res, next) => {
    ```
 
 3. **Fixed Pushy Topic Prefix Bug (CRITICAL)**
+
    - Fixed `NO_RECIPIENTS` error when sending notifications to topics with subscribers
    - Root cause: Pushy SDK requires `/topics/` prefix for topic-based notifications
    - Code was sending topic name without prefix: `'tenant_1_outlet_1_sales'`
    - Fixed to use: `'/topics/tenant_1_outlet_1_sales'`
 
    **Files Modified:**
+
    - [pushy.service.ts](src/pushy/pushy.service.ts:93-94): Added `topicPath` variable with `/topics/` prefix
 
    **Code Change:**
+
    ```typescript
    // Before (BROKEN)
    const response = await this.pushy.sendPushNotification(
      data,
-     [topic],  // ❌ Wrong format
+     [topic], // ❌ Wrong format
      options
    );
 
    // After (FIXED)
-   const topicPath = `/topics/${topic}`;  // ✅ Correct format
+   const topicPath = `/topics/${topic}`; // ✅ Correct format
    const response = await this.pushy.sendPushNotification(
      data,
      topicPath,
@@ -4130,13 +4183,16 @@ const adminForceUnregisterDevice = async (req, res, next) => {
    ```
 
 4. **Enhanced Error Logging**
+
    - Improved error messages to show which topic failed with detailed context
    - Added special handling for `NO_RECIPIENTS` error with troubleshooting tips
 
    **Files Modified:**
+
    - [pushy.service.ts](src/pushy/pushy.service.ts:107-124): Enhanced error logging in `sendToTopic()`
 
    **Error Output Example:**
+
    ```
    ❌ Failed to send push notification
       Topic (backend): "tenant_1_outlet_1_sales"
@@ -4154,14 +4210,17 @@ const adminForceUnregisterDevice = async (req, res, next) => {
    ```
 
 5. **Added Debug Endpoint for Topic Subscriptions**
+
    - New admin endpoint to view all device topic subscriptions for troubleshooting
    - Endpoint: `GET /pushy/debug/topics`
 
    **Files Modified:**
+
    - [device.controller.ts](src/pushy/device.controller.ts): Added debug endpoint
    - [pushy.service.ts](src/pushy/pushy.service.ts:258-328): Added `debugTopicSubscriptions()` method
 
    **Response Example:**
+
    ```json
    {
      "success": true,
@@ -4191,6 +4250,7 @@ const adminForceUnregisterDevice = async (req, res, next) => {
 3. **Topic Subscriptions**: No changes needed (devices still subscribe without `/topics/` prefix)
 
 **Files Changed:**
+
 - [src/pushy/notification.service.ts](src/pushy/notification.service.ts)
 - [src/sales/sales.service.ts](src/sales/sales.service.ts)
 - [src/pushy/device.controller.ts](src/pushy/device.controller.ts)

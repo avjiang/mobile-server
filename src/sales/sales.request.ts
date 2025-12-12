@@ -70,8 +70,11 @@ export class CreateSalesItemRequest {
     @Expose() id: number = 0;
     @Expose() salesId: number = 0;
     @Expose() itemId: number = 0;
+    @Expose() itemVariantId?: number | null; // Variant support
     @Expose() itemCode: string = "";
     @Expose() itemName: string = "";
+    @Expose() variantSku?: string | null; // Variant support
+    @Expose() variantName?: string | null; // Variant support
     @Expose() itemBrand: string = "";
     @Expose() itemModel: string = "";
     @Expose() quantity: PrismaDecimal = new PrismaDecimal(0);

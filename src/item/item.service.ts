@@ -7,6 +7,19 @@ import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "./item.request"
 
+/**
+ * Convert string to Title Case to prevent duplicate attribute values
+ * Examples: "green" → "Green", "rose gold" → "Rose Gold", "256gb" → "256gb"
+ */
+function toTitleCase(str: string): string {
+    if (!str) return str;
+    return str
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
 let getAll = async (
     databaseName: string,
     syncRequest: SyncRequest
@@ -40,16 +53,72 @@ let getAll = async (
         // Count total changes
         const total = await tenantPrisma.item.count({ where });
 
-        // Fetch paginated items
+        // Fetch paginated items with variants and stock balances (optimized query)
         const items = await tenantPrisma.item.findMany({
             where,
             skip,
             take,
+            include: {
+                stockBalance: {
+                    where: { deleted: false },
+                    select: {
+                        availableQuantity: true,
+                        itemVariantId: true, // To match with variants
+                    },
+                },
+                variants: {
+                    where: { deleted: false },
+                    include: {
+                        variantAttributes: {
+                            where: { deleted: false },
+                            include: {
+                                variantAttributeValue: true,
+                            },
+                        },
+                        stockBalances: {
+                            where: { deleted: false },
+                            select: {
+                                availableQuantity: true,
+                            },
+                        },
+                    },
+                },
+            },
         });
-        // Map to DTO
-        const response = items.map((item) => ({
-            ...item,
-        }));
+
+        // Map to DTO and transform variants with stock quantities
+        const response = items.map((item) => {
+            // Calculate total stock quantity for base item (non-variant items)
+            const baseItemStock = item.stockBalance
+                .filter(sb => sb.itemVariantId === null)
+                .reduce((sum, sb) => sum + Number(sb.availableQuantity), 0);
+
+            const transformedVariants = item.variants?.map(variant => {
+                // Calculate stock quantity for this variant
+                const variantStockQuantity = variant.stockBalances
+                    .reduce((sum, sb) => sum + Number(sb.availableQuantity), 0);
+
+                return {
+                    ...variant,
+                    stockQuantity: variantStockQuantity, // Add stock quantity for frontend
+                    attributes: variant.variantAttributes.map(va => ({
+                        definitionKey: va.variantAttributeValue.definitionKey,
+                        value: va.variantAttributeValue.value,
+                        displayValue: va.variantAttributeValue.displayValue,
+                        sortOrder: va.variantAttributeValue.sortOrder,
+                    })),
+                    variantAttributes: undefined,
+                    stockBalances: undefined, // Remove raw field
+                };
+            });
+
+            return {
+                ...item,
+                stockQuantity: baseItemStock, // Add stock quantity for base item
+                stockBalance: undefined, // Remove raw field
+                variants: transformedVariants,
+            };
+        });
         // Return with server timestamp
         return {
             items: response,
@@ -145,18 +214,65 @@ let getById = async (databaseName: string, id: number) => {
             },
             include: {
                 stockBalance: {
+                    where: { deleted: false },
                     select: {
-                        availableQuantity: true
+                        availableQuantity: true,
+                        itemVariantId: true, // To match with variants
                     }
-                }
+                },
+                variants: {
+                    where: { deleted: false },
+                    include: {
+                        variantAttributes: {
+                            where: { deleted: false },
+                            include: {
+                                variantAttributeValue: true,
+                            },
+                        },
+                        stockBalances: {
+                            where: { deleted: false },
+                            select: {
+                                availableQuantity: true,
+                            },
+                        },
+                    },
+                },
             }
         })
         if (!item) {
             throw new NotFoundError("Item")
         }
+
+        // Calculate total stock quantity for base item (non-variant items)
+        const baseItemStock = item.stockBalance
+            .filter(sb => sb.itemVariantId === null)
+            .reduce((sum, sb) => sum + Number(sb.availableQuantity), 0);
+
+        // Transform variants to friendlier format with stock quantities
+        const transformedVariants = item.variants?.map(variant => {
+            // Calculate stock quantity for this variant
+            const variantStockQuantity = variant.stockBalances
+                .reduce((sum, sb) => sum + Number(sb.availableQuantity), 0);
+
+            return {
+                ...variant,
+                stockQuantity: variantStockQuantity, // Add stock quantity for frontend
+                attributes: variant.variantAttributes.map(va => ({
+                    definitionKey: va.variantAttributeValue.definitionKey,
+                    value: va.variantAttributeValue.value,
+                    displayValue: va.variantAttributeValue.displayValue,
+                    sortOrder: va.variantAttributeValue.sortOrder,
+                })),
+                variantAttributes: undefined,
+                stockBalances: undefined, // Remove raw field
+            };
+        });
+
         const rawItemWithStock = {
             ...item,
-            stockQuantity: item.stockBalance[0]?.availableQuantity || 0
+            stockQuantity: baseItemStock,
+            stockBalance: undefined, // Remove raw field
+            variants: transformedVariants,
         };
         return rawItemWithStock
     }
@@ -198,13 +314,17 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
             // Create items with nested relations in parallel
             return Promise.all(
                 itemBodyArray.map(async (itemBody) => {
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, ...itemWithoutId } = itemBody;
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, ...itemWithoutId } = itemBody as any;
+
+                    // Auto-flag hasVariants if variants array exists
+                    const hasVariants = variants && Array.isArray(variants) && variants.length > 0;
 
                     const createdItem = await tx.item.create({
                         data: {
                             ...itemWithoutId,
                             alternateLookUp: alternateLookup, // Map DTO field to Prisma field
                             cost: cost || 0, // Use provided cost or default to 0
+                            hasVariants, // Auto-set based on variants array
                             stockBalance: {
                                 create: {
                                     outlet: { connect: { id: 1 } },
@@ -258,6 +378,66 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         });
                     }
 
+                    // Create variants if provided
+                    if (hasVariants && variants) {
+                        for (const variantData of variants) {
+                            const { attributes, ...variantFields } = variantData;
+
+                            // Create ItemVariant
+                            const variant = await tx.itemVariant.create({
+                                data: {
+                                    itemId: createdItem.id,
+                                    variantSku: variantFields.variantSku,
+                                    variantName: variantFields.variantName,
+                                    cost: variantFields.cost,
+                                    price: variantFields.price,
+                                    image: variantFields.image,
+                                    barcode: variantFields.barcode,
+                                    weight: variantFields.weight,
+                                    length: variantFields.length,
+                                    width: variantFields.width,
+                                    height: variantFields.height,
+                                },
+                            });
+
+                            // Create variant attributes
+                            if (attributes && Array.isArray(attributes)) {
+                                for (const attr of attributes) {
+                                    // Auto-capitalize value to prevent duplicates (e.g., "Green" vs "green")
+                                    const normalizedValue = toTitleCase(attr.value.trim());
+                                    const normalizedDisplayValue = attr.displayValue
+                                        ? toTitleCase(attr.displayValue.trim())
+                                        : normalizedValue;
+
+                                    // Upsert VariantAttributeValue
+                                    const attrValue = await tx.variantAttributeValue.upsert({
+                                        where: {
+                                            definitionKey_value: {
+                                                definitionKey: attr.definitionKey,
+                                                value: normalizedValue,
+                                            },
+                                        },
+                                        create: {
+                                            definitionKey: attr.definitionKey,
+                                            value: normalizedValue,
+                                            displayValue: normalizedDisplayValue,
+                                            sortOrder: attr.sortOrder || 0,
+                                        },
+                                        update: {}, // No update needed if exists
+                                    });
+
+                                    // Create ItemVariantAttribute junction
+                                    await tx.itemVariantAttribute.create({
+                                        data: {
+                                            itemVariantId: variant.id,
+                                            variantAttributeValueId: attrValue.id,
+                                        },
+                                    });
+                                }
+                            }
+                        }
+                    }
+
                     return createdItem;
                 })
             );
@@ -278,11 +458,11 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
     }
 };
 
-let update = async (databaseName: string, item: Item & { reorderThreshold?: number }) => {
+let update = async (databaseName: string, item: Item & { reorderThreshold?: number, variants?: any[] }) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Extract id, version, and relation fields from the item object
-        const { id, version, categoryId, supplierId, reorderThreshold, deleted, ...updateData } = item;
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, ...updateData } = item as any;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Check if alternateLookUp is being updated and not empty
@@ -371,6 +551,112 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         deleted: true,
                         updatedAt: deletionDate
                     }
+                });
+
+                // Soft-delete all related variants
+                await tx.itemVariant.updateMany({
+                    where: {
+                        itemId: id,
+                        deleted: false
+                    },
+                    data: {
+                        deleted: true,
+                        deletedAt: deletionDate,
+                    }
+                });
+            }
+
+            // Handle variants update/creation if provided
+            if (variants && Array.isArray(variants)) {
+                // Auto-flag hasVariants if not already set
+                if (!itemUpdate.hasVariants) {
+                    await tx.item.update({
+                        where: { id },
+                        data: { hasVariants: true },
+                    });
+                }
+
+                // Process each variant
+                for (const variantData of variants) {
+                    const { id: variantId, attributes, ...variantFields } = variantData;
+
+                    if (variantId) {
+                        // Update existing variant
+                        await tx.itemVariant.update({
+                            where: { id: variantId },
+                            data: {
+                                variantSku: variantFields.variantSku,
+                                variantName: variantFields.variantName,
+                                cost: variantFields.cost,
+                                price: variantFields.price,
+                                image: variantFields.image,
+                                barcode: variantFields.barcode,
+                                weight: variantFields.weight,
+                                length: variantFields.length,
+                                width: variantFields.width,
+                                height: variantFields.height,
+                            },
+                        });
+                    } else {
+                        // Create new variant
+                        const variant = await tx.itemVariant.create({
+                            data: {
+                                itemId: id,
+                                variantSku: variantFields.variantSku,
+                                variantName: variantFields.variantName,
+                                cost: variantFields.cost,
+                                price: variantFields.price,
+                                image: variantFields.image,
+                                barcode: variantFields.barcode,
+                                weight: variantFields.weight,
+                                length: variantFields.length,
+                                width: variantFields.width,
+                                height: variantFields.height,
+                            },
+                        });
+
+                        // Create variant attributes
+                        if (attributes && Array.isArray(attributes)) {
+                            for (const attr of attributes) {
+                                // Auto-capitalize value to prevent duplicates (e.g., "Green" vs "green")
+                                const normalizedValue = toTitleCase(attr.value.trim());
+                                const normalizedDisplayValue = attr.displayValue
+                                    ? toTitleCase(attr.displayValue.trim())
+                                    : normalizedValue;
+
+                                // Upsert VariantAttributeValue
+                                const attrValue = await tx.variantAttributeValue.upsert({
+                                    where: {
+                                        definitionKey_value: {
+                                            definitionKey: attr.definitionKey,
+                                            value: normalizedValue,
+                                        },
+                                    },
+                                    create: {
+                                        definitionKey: attr.definitionKey,
+                                        value: normalizedValue,
+                                        displayValue: normalizedDisplayValue,
+                                        sortOrder: attr.sortOrder || 0,
+                                    },
+                                    update: {},
+                                });
+
+                                // Create ItemVariantAttribute junction
+                                await tx.itemVariantAttribute.create({
+                                    data: {
+                                        itemVariantId: variant.id,
+                                        variantAttributeValueId: attrValue.id,
+                                    },
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Touch item's updatedAt so sync API picks up variant changes
+                await tx.item.update({
+                    where: { id },
+                    data: { updatedAt: new Date() },
                 });
             }
 

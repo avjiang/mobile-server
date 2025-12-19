@@ -470,6 +470,8 @@ exports.Prisma.InvoiceItemScalarFieldEnum = {
   invoiceId: 'invoiceId',
   itemId: 'itemId',
   itemVariantId: 'itemVariantId',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   discountType: 'discountType',
@@ -538,6 +540,8 @@ exports.Prisma.DeliveryOrderItemScalarFieldEnum = {
   deliveryOrderId: 'deliveryOrderId',
   itemId: 'itemId',
   itemVariantId: 'itemVariantId',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   orderedQuantity: 'orderedQuantity',
   receivedQuantity: 'receivedQuantity',
   unitPrice: 'unitPrice',
@@ -584,6 +588,8 @@ exports.Prisma.QuotationItemScalarFieldEnum = {
   quotationId: 'quotationId',
   itemId: 'itemId',
   itemVariantId: 'itemVariantId',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   taxAmount: 'taxAmount',
@@ -632,6 +638,8 @@ exports.Prisma.PurchaseOrderItemScalarFieldEnum = {
   purchaseOrderId: 'purchaseOrderId',
   itemId: 'itemId',
   itemVariantId: 'itemVariantId',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   quantity: 'quantity',
   taxAmount: 'taxAmount',
   discountType: 'discountType',
@@ -1413,6 +1421,8 @@ exports.Prisma.InvoiceOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.InvoiceItemOrderByRelevanceFieldEnum = {
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   discountType: 'discountType',
   remark: 'remark'
 };
@@ -1442,6 +1452,8 @@ exports.Prisma.DeliveryOrderOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.DeliveryOrderItemOrderByRelevanceFieldEnum = {
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   remark: 'remark'
 };
 
@@ -1455,6 +1467,8 @@ exports.Prisma.QuotationOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.QuotationItemOrderByRelevanceFieldEnum = {
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   discountType: 'discountType',
   remark: 'remark'
 };
@@ -1469,6 +1483,8 @@ exports.Prisma.PurchaseOrderOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.PurchaseOrderItemOrderByRelevanceFieldEnum = {
+  variantSku: 'variantSku',
+  variantName: 'variantName',
   discountType: 'discountType',
   remark: 'remark'
 };

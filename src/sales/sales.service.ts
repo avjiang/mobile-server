@@ -1036,9 +1036,10 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
         const voidedSales = allSales.filter(sale => sale.status === "Voided");
         const returnedSales = allSales.filter(sale => sale.status === "Returned");
         const refundedSales = allSales.filter(sale => sale.status === "Refunded");
-        const activeSales = [...completedSales, ...partiallyPaidSales];
+        const deliveredSales = allSales.filter(sale => sale.status === "Delivered");
+        const activeSales = [...completedSales, ...partiallyPaidSales, ...deliveredSales];
 
-        // Aggregate active sales (Completed + Partially Paid)
+        // Aggregate active sales (Completed + Partially Paid + Delivered)
         let activeTotalAmount = new Decimal(0);
         let activePaidAmount = new Decimal(0);
         let activeProfitAmount = new Decimal(0);
@@ -1089,10 +1090,10 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
                 total: totalTransactions,
                 completed: completedSales.length,
                 partiallyPaid: partiallyPaidSales.length,
+                delivered: deliveredSales.length,
                 voided: voidedSales.length,
                 returned: returnedSales.length,
                 refunded: refundedSales.length,
-                // active: activeSales.length
             },
         };
     }
@@ -1638,6 +1639,9 @@ let getDeliveryList = async (
                     select: {
                         itemName: true,
                         itemCode: true,
+                        itemVariantId: true,
+                        variantSku: true,
+                        variantName: true,
                         quantity: true,
                         price: true,
                         subtotalAmount: true,

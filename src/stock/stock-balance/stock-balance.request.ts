@@ -14,6 +14,7 @@ export interface StockAdjustmentRequestBody {
 
 export interface StockAdjustment {
     itemId: number,
+    itemVariantId?: number | null,  // For variant items - required if item.hasVariants=true
     adjustQuantity?: number,
     overrideQuantity?: number,
     cost: number,

@@ -205,6 +205,24 @@ let getLowStockItems = (req: AuthRequest, res: Response, next: NextFunction) => 
         .catch(next)
 }
 
+let getVariantAttributeValues = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    const request = {
+        skip: req.query.skip ? parseInt(req.query.skip as string) : undefined,
+        take: req.query.take ? parseInt(req.query.take as string) : undefined,
+        lastSyncTimestamp: req.query.lastSyncTimestamp as string,
+    };
+
+    service.getVariantAttributeValues(req.user.databaseName, request)
+        .then(({ data, total, serverTimestamp }) => {
+            sendResponse(res, { data, total, serverTimestamp });
+        })
+        .catch(next);
+}
+
 //routes
 router.get("/sync", getAll)
 router.get("/getBySupplierId", getAllBySupplierId)
@@ -212,6 +230,7 @@ router.get("/getByCategoryId", getAllByCategoryId)
 router.get("/getLowStockItemCount", getLowStockItemCount)
 router.get("/getLowStockItems", getLowStockItems)
 router.get("/getItemSoldRanking", getSoldItemRanking)
+router.get("/variant/attributes/values", getVariantAttributeValues)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)

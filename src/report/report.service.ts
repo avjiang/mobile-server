@@ -34,6 +34,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
             refundedSales,
             partiallyPaidSales,
             completedSales,
+            deliveredSales,
             topSellingItems,
             mostProfitableItems,
             mostLossItems,
@@ -116,13 +117,29 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 }
             }),
 
+            // Delivered sales aggregate
+            tenantPrisma.sales.aggregate({
+                where: {
+                    ...sessionFilter,
+                    status: "Delivered",
+                    deleted: false
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true,
+                    changeAmount: true
+                }
+            }),
+
             // Include all non-voided sales for top selling items (not just completed)
             tenantPrisma.salesItem.groupBy({
                 by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
                 where: {
                     sales: {
                         ...sessionFilter,
-                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
+                        status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
                     }
                 },
                 _sum: {
@@ -207,7 +224,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 where: {
                     ...sessionFilter,
                     sales: {
-                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
+                        status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
                     }
                 },
                 _sum: {
@@ -220,7 +237,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 where: {
                     sales: {
                         ...sessionFilter,
-                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
+                        status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
                     }
                 },
                 select: {
@@ -352,7 +369,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         ]);
 
         // Get detailed sales information for each status in parallel
-        const [returnedSalesDetails, refundedSalesDetails, partiallyPaidSalesDetails, voidedSalesDetails] = await Promise.all([
+        const [returnedSalesDetails, refundedSalesDetails, partiallyPaidSalesDetails, voidedSalesDetails, deliveredSalesDetails] = await Promise.all([
             tenantPrisma.sales.findMany({
                 where: {
                     ...sessionFilter,
@@ -410,6 +427,25 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 where: {
                     ...sessionFilter,
                     status: "Voided",
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    customerId: true,
+                    businessDate: true,
+                    remark: true,
+                    customerName: true,
+                    phoneNumber: true
+                }
+            }),
+
+            // Delivered sales details
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...sessionFilter,
+                    status: "Delivered",
                     deleted: false
                 },
                 select: {
@@ -486,7 +522,7 @@ let generateReport = async (databaseName: string, sessionId: number) => {
 
         // Calculate session sales count (all non-voided) from allSales in memory
         const sessionSalesCount = allSales.filter(sale =>
-            ["Completed", "Partially Paid", "Returned", "Refunded"].includes(sale.status)
+            ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"].includes(sale.status)
         ).length;
 
         // Now get stock information ONLY for items that were sold in this session (reuse soldItemIds)
@@ -576,6 +612,24 @@ let generateReport = async (databaseName: string, sessionId: number) => {
 
         // Calculate total profit for partially paid from gains and losses
         const partiallyPaidTotalProfit = partiallyPaidGains.plus(partiallyPaidLosses);
+
+        // Split profit for delivered sales (filter from allSales in memory)
+        const deliveredSalesWithProfit = allSales.filter(sale =>
+            sale.status === "Delivered"
+        );
+
+        let deliveredGains = new Decimal(0);
+        let deliveredLosses = new Decimal(0);
+        deliveredSalesWithProfit.forEach(sale => {
+            if (sale.profitAmount.gt(0)) {
+                deliveredGains = deliveredGains.plus(sale.profitAmount);
+            } else if (sale.profitAmount.lt(0)) {
+                deliveredLosses = deliveredLosses.plus(sale.profitAmount);
+            }
+        });
+
+        // Calculate total profit for delivered from gains and losses
+        const deliveredTotalProfit = deliveredGains.plus(deliveredLosses);
 
         // Calculate profit impact for returned/refunded sales (considering sign)
         const returnedProfit = returnedSales._sum?.profitAmount || new Decimal(0);
@@ -679,6 +733,26 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                 totalAmount: (voidedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (voidedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
                 details: voidedSalesDetails.map(sale => ({
+                    salesId: sale.id,
+                    totalAmount: sale.totalAmount.toNumber(),
+                    paidAmount: sale.paidAmount.toNumber(),
+                    customerName: sale.customerName || 'Guest',
+                    phoneNumber: sale.phoneNumber || '',
+                    businessDate: sale.businessDate,
+                    remark: sale.remark || ''
+                }))
+            },
+
+            // Delivered sales info
+            deliveredSales: {
+                count: deliveredSales._count?.id || 0,
+                totalAmount: (deliveredSales._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (deliveredSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+                profit: deliveredTotalProfit.toNumber(),
+                profitGains: deliveredGains.toNumber(),
+                profitLosses: deliveredLosses.toNumber(),
+                changeGiven: (deliveredSales._sum?.changeAmount || new Decimal(0)).toNumber(),
+                details: deliveredSalesDetails.map(sale => ({
                     salesId: sale.id,
                     totalAmount: sale.totalAmount.toNumber(),
                     paidAmount: sale.paidAmount.toNumber(),
@@ -865,6 +939,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             refundedSales,
             partiallyPaidSales,
             completedSales,
+            deliveredSales,
             topSellingItems,
             mostProfitableItems,
             mostLossItems,
@@ -947,13 +1022,29 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 }
             }),
 
+            // Delivered sales aggregate
+            tenantPrisma.sales.aggregate({
+                where: {
+                    ...outletFilter,
+                    status: "Delivered",
+                    deleted: false
+                },
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true,
+                    changeAmount: true
+                }
+            }),
+
             // Include all non-voided sales for top selling items
             tenantPrisma.salesItem.groupBy({
                 by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
                 where: {
                     sales: {
                         ...outletFilter,
-                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
+                        status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
                     }
                 },
                 _sum: {
@@ -1038,7 +1129,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 where: {
                     ...outletFilter,
                     sales: {
-                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
+                        status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
                     }
                 },
                 _sum: {
@@ -1051,7 +1142,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 where: {
                     sales: {
                         ...outletFilter,
-                        status: { in: ["Completed", "Partially Paid", "Returned", "Refunded"] }
+                        status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
                     }
                 },
                 select: {
@@ -1182,7 +1273,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
         ]);
 
         // Get detailed sales information for each status
-        const [returnedSalesDetails, refundedSalesDetails, partiallyPaidSalesDetails, voidedSalesDetails] = await Promise.all([
+        const [returnedSalesDetails, refundedSalesDetails, partiallyPaidSalesDetails, voidedSalesDetails, deliveredSalesDetails] = await Promise.all([
             tenantPrisma.sales.findMany({
                 where: {
                     ...outletFilter,
@@ -1240,6 +1331,25 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 where: {
                     ...outletFilter,
                     status: "Voided",
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    customerId: true,
+                    businessDate: true,
+                    remark: true,
+                    customerName: true,
+                    phoneNumber: true
+                }
+            }),
+
+            // Delivered sales details
+            tenantPrisma.sales.findMany({
+                where: {
+                    ...outletFilter,
+                    status: "Delivered",
                     deleted: false
                 },
                 select: {
@@ -1314,7 +1424,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
 
         // Calculate outlet sales count (all non-voided) from allSales in memory
         const outletSalesCount = allSales.filter(sale =>
-            ["Completed", "Partially Paid", "Returned", "Refunded"].includes(sale.status)
+            ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"].includes(sale.status)
         ).length;
 
         // Get stock information for items sold in this outlet (reuse soldItemIds)
@@ -1398,6 +1508,22 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
 
         // Calculate total profit for partially paid from gains and losses
         const partiallyPaidTotalProfit = partiallyPaidGains.plus(partiallyPaidLosses);
+
+        // Split profit for delivered sales (filter from allSales in memory)
+        const deliveredSalesWithProfit = allSales.filter(sale => sale.status === "Delivered");
+
+        let deliveredGains = new Decimal(0);
+        let deliveredLosses = new Decimal(0);
+        deliveredSalesWithProfit.forEach(sale => {
+            if (sale.profitAmount.gt(0)) {
+                deliveredGains = deliveredGains.plus(sale.profitAmount);
+            } else if (sale.profitAmount.lt(0)) {
+                deliveredLosses = deliveredLosses.plus(sale.profitAmount);
+            }
+        });
+
+        // Calculate total profit for delivered from gains and losses
+        const deliveredTotalProfit = deliveredGains.plus(deliveredLosses);
 
         // Calculate profit impact for returned/refunded sales (considering sign)
         const returnedProfit = returnedSales._sum?.profitAmount || new Decimal(0);
@@ -1497,6 +1623,26 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 totalAmount: (voidedSales._sum?.totalAmount || new Decimal(0)).toNumber(),
                 paidAmount: (voidedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
                 details: voidedSalesDetails.map(sale => ({
+                    salesId: sale.id,
+                    totalAmount: sale.totalAmount.toNumber(),
+                    paidAmount: sale.paidAmount.toNumber(),
+                    customerName: sale.customerName || 'Guest',
+                    phoneNumber: sale.phoneNumber || '',
+                    businessDate: sale.businessDate,
+                    remark: sale.remark || ''
+                }))
+            },
+
+            // Delivered sales info
+            deliveredSales: {
+                count: deliveredSales._count?.id || 0,
+                totalAmount: (deliveredSales._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (deliveredSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+                profit: deliveredTotalProfit.toNumber(),
+                profitGains: deliveredGains.toNumber(),
+                profitLosses: deliveredLosses.toNumber(),
+                changeGiven: (deliveredSales._sum?.changeAmount || new Decimal(0)).toNumber(),
+                details: deliveredSalesDetails.map(sale => ({
                     salesId: sale.id,
                     totalAmount: sale.totalAmount.toNumber(),
                     paidAmount: sale.paidAmount.toNumber(),

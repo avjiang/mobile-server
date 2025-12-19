@@ -32,11 +32,26 @@ let getStockByItemId = (req: AuthRequest, res: Response, next: NextFunction) => 
         throw new RequestValidateError('User not authenticated');
     }
     const itemId = req.query.itemId as string
+    const itemVariantId = req.query.itemVariantId as string | undefined
+
     if (!validator.isNumeric(itemId)) {
         throw new RequestValidateError('Item ID format incorrect')
     }
-    service.getStockByItemId(req.user.databaseName, parseInt(itemId))
-        .then((stock: StockBalance) => sendResponse(res, stock))
+
+    // Parse itemVariantId: "null" string means null, numeric string means number, undefined means don't filter
+    let parsedVariantId: number | null | undefined = undefined;
+    if (itemVariantId !== undefined) {
+        if (itemVariantId === 'null') {
+            parsedVariantId = null;
+        } else if (validator.isNumeric(itemVariantId)) {
+            parsedVariantId = parseInt(itemVariantId);
+        } else {
+            throw new RequestValidateError('Item Variant ID format incorrect');
+        }
+    }
+
+    service.getStockByItemId(req.user.databaseName, parseInt(itemId), parsedVariantId)
+        .then((stock: any) => sendResponse(res, stock))
         .catch(next)
 }
 

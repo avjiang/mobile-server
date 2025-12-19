@@ -13,11 +13,11 @@ class RequestValidateError extends Error {
     }
 }
 
-// stock function 
+// stock function
 let getAllStock = async (
     databaseName: string,
     syncRequest: SyncRequest
-): Promise<{ stockBalances: StockBalance[]; total: number; serverTimestamp: string }> => {
+): Promise<{ stockBalances: any[]; total: number; serverTimestamp: string }> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
 
@@ -37,17 +37,86 @@ let getAllStock = async (
                 ],
             };
 
-        // Count total matching records
-        const total = await tenantPrisma.stockBalance.count({ where });
-
-        // Fetch paginated stocks with related item info
+        // Fetch stocks with variant info for nesting
         const stocks = await tenantPrisma.stockBalance.findMany({
             where,
+            include: {
+                itemVariant: {
+                    select: {
+                        id: true,
+                        variantSku: true,
+                        variantName: true,
+                    }
+                },
+                item: {
+                    select: {
+                        id: true,
+                        hasVariants: true,
+                    }
+                }
+            },
             skip,
             take,
         });
+
+        // Group variant stocks under parent items by itemId-outletId
+        const stockMap = new Map<string, any>();
+
+        for (const stock of stocks) {
+            const key = `${stock.itemId}-${stock.outletId}`;
+
+            if (stock.itemVariantId === null) {
+                // This is a base item stock (no variant)
+                if (!stockMap.has(key)) {
+                    const { itemVariant, item, ...stockData } = stock;
+                    stockMap.set(key, {
+                        ...stockData,
+                        variants: item?.hasVariants ? [] : null,
+                    });
+                } else {
+                    // Base stock already exists from variant, update it
+                    const existing = stockMap.get(key);
+                    const { itemVariant, item, ...stockData } = stock;
+                    stockMap.set(key, {
+                        ...stockData,
+                        variants: existing.variants,
+                    });
+                }
+            } else {
+                // This is a variant stock
+                if (!stockMap.has(key)) {
+                    // Create placeholder for parent (will be updated if parent stock exists)
+                    stockMap.set(key, {
+                        id: null,
+                        itemId: stock.itemId,
+                        outletId: stock.outletId,
+                        availableQuantity: new Decimal(0),
+                        onHandQuantity: new Decimal(0),
+                        itemVariantId: null,
+                        deleted: false,
+                        version: 0,
+                        variants: [],
+                    });
+                }
+
+                const parent = stockMap.get(key);
+                if (!parent.variants) parent.variants = [];
+
+                // Add variant to parent's variants array
+                const { itemVariant, item, ...stockData } = stock;
+                parent.variants.push({
+                    ...stockData,
+                    variantSku: itemVariant?.variantSku,
+                    variantName: itemVariant?.variantName,
+                });
+            }
+        }
+
+        // Count total matching records (by unique itemId-outletId pairs)
+        const total = stockMap.size;
+
         return {
-            stockBalances: stocks,
+            stockBalances: Array.from(stockMap.values()),
             total,
             serverTimestamp: new Date().toISOString(),
         };
@@ -56,17 +125,35 @@ let getAllStock = async (
     }
 };
 
-let getStockByItemId = async (databaseName: string, itemId: number) => {
+let getStockByItemId = async (databaseName: string, itemId: number, itemVariantId?: number | null) => {
     try {
         const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+        // Build where condition - include itemVariantId if provided
+        const whereCondition: any = {
+            itemId: itemId,
+            deleted: false
+        };
+
+        // Only add itemVariantId filter if explicitly provided (including null)
+        if (itemVariantId !== undefined) {
+            whereCondition.itemVariantId = itemVariantId;
+        }
+
         const stock = await tenantPrisma.stockBalance.findFirst({
-            where: {
-                itemId: itemId,
-                deleted: false
+            where: whereCondition,
+            include: {
+                itemVariant: {
+                    select: {
+                        variantSku: true,
+                        variantName: true,
+                    }
+                }
             }
         });
         if (!stock) {
-            throw new NotFoundError("Stock Balance");
+            const variantInfo = itemVariantId ? ` and variantId ${itemVariantId}` : '';
+            throw new NotFoundError(`Stock Balance for itemId ${itemId}${variantInfo}`);
         }
         return stock;
     }
@@ -81,8 +168,8 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
 
     try {
         await tenantPrisma.$transaction(async (tx) => {
-            const stockMovements = [];
-            const stockUpdates: { id: number; availableQuantity: Decimal; onHandQuantity: Decimal; clientVersion: number }[] = [];
+            const stockMovements: any[] = [];
+            const stockUpdates: { id: number; availableQuantity: Decimal; onHandQuantity: Decimal; clientVersion: number; itemId: number; outletId: number; itemVariantId: number | null }[] = [];
             const versionMismatches: VersionMismatchDetail[] = [];
 
             // Step 1: Validate input first (before any DB queries)
@@ -101,28 +188,60 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                 }
             }
 
-            // Step 2: Batch fetch all stock balances in a single query
-            const stockBalanceKeys = stockAdjustments.map(adj => ({ itemId: adj.itemId, outletId: adj.outletId }));
+            // Step 1.5: Validate variant requirements
+            const itemIds = [...new Set(stockAdjustments.map(adj => adj.itemId))];
+            const items = await tx.item.findMany({
+                where: { id: { in: itemIds }, deleted: false },
+                select: { id: true, hasVariants: true, itemName: true }
+            });
+            const itemMap = new Map(items.map(item => [item.id, item]));
+
+            for (const adjustment of stockAdjustments) {
+                const item = itemMap.get(adjustment.itemId);
+                if (!item) {
+                    throw new NotFoundError(`Item with ID ${adjustment.itemId} not found`);
+                }
+
+                // Validate variant rules
+                if (item.hasVariants && (adjustment.itemVariantId === null || adjustment.itemVariantId === undefined)) {
+                    throw new RequestValidateError(
+                        `Item "${item.itemName}" has variants. You must specify itemVariantId to adjust variant stock. ` +
+                        `Adjusting main item stock directly is not allowed.`
+                    );
+                }
+                if (!item.hasVariants && adjustment.itemVariantId) {
+                    throw new RequestValidateError(
+                        `Item "${item.itemName}" does not have variants. Remove itemVariantId from request.`
+                    );
+                }
+            }
+
+            // Step 2: Batch fetch all stock balances in a single query (with variant support)
             const stockBalances = await tx.stockBalance.findMany({
                 where: {
-                    OR: stockBalanceKeys,
+                    OR: stockAdjustments.map(adj => ({
+                        itemId: adj.itemId,
+                        outletId: adj.outletId,
+                        itemVariantId: adj.itemVariantId || null,
+                    })),
                     deleted: false
                 },
-                select: { id: true, itemId: true, outletId: true, availableQuantity: true, onHandQuantity: true, version: true }
+                select: { id: true, itemId: true, outletId: true, itemVariantId: true, availableQuantity: true, onHandQuantity: true, version: true }
             });
 
-            // Create a map for quick lookup
+            // Create a map for quick lookup using composite key (with variant support)
             const stockBalanceMap = new Map(
-                stockBalances.map(stock => [`${stock.itemId}-${stock.outletId}`, stock])
+                stockBalances.map(stock => [`${stock.itemId}-${stock.itemVariantId || 'null'}-${stock.outletId}`, stock])
             );
 
             // Step 3: Validate all adjustments against fetched stocks
             const validatedAdjustments = stockAdjustments.map(adjustment => {
-                const stockKey = `${adjustment.itemId}-${adjustment.outletId}`;
+                const stockKey = `${adjustment.itemId}-${adjustment.itemVariantId || 'null'}-${adjustment.outletId}`;
                 const stock = stockBalanceMap.get(stockKey);
 
                 if (!stock) {
-                    throw new NotFoundError(`Stock not found for itemId ${adjustment.itemId} and outletId ${adjustment.outletId}`);
+                    const variantInfo = adjustment.itemVariantId ? ` and variantId ${adjustment.itemVariantId}` : '';
+                    throw new NotFoundError(`Stock not found for itemId ${adjustment.itemId}${variantInfo} and outletId ${adjustment.outletId}`);
                 }
 
                 const currentVersion = stock.version || 1;
@@ -142,23 +261,31 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                 throw new VersionMismatchError(`Version mismatches detected for ${versionMismatches.length} item(s)`, versionMismatches);
             }
 
-            // Step 5: Batch fetch all stock receipts that might be affected
+            // Step 5: Batch fetch all stock receipts that might be affected (with variant support)
             const receiptKeys = validatedAdjustments
                 .filter(({ adjustment }) => adjustment.overrideQuantity !== undefined || (adjustment.adjustQuantity && adjustment.adjustQuantity < 0))
-                .map(({ adjustment }) => ({ itemId: adjustment.itemId, outletId: adjustment.outletId }));
+                .map(({ adjustment }) => ({
+                    itemId: adjustment.itemId,
+                    outletId: adjustment.outletId,
+                    itemVariantId: adjustment.itemVariantId || null
+                }));
 
             const stockReceipts = receiptKeys.length > 0 ? await tx.stockReceipt.findMany({
                 where: {
-                    OR: receiptKeys,
-                    quantity: { gt: 0 },
-                    deleted: false,
+                    OR: receiptKeys.map(key => ({
+                        itemId: key.itemId,
+                        outletId: key.outletId,
+                        itemVariantId: key.itemVariantId,
+                        quantity: { gt: 0 },
+                        deleted: false,
+                    })),
                 },
                 orderBy: [{ itemId: 'asc' }, { outletId: 'asc' }, { receiptDate: 'asc' }]
             }) : [];
 
-            // Group receipts by itemId-outletId for quick lookup
+            // Group receipts by composite key (with variant support)
             const receiptsByKey = stockReceipts.reduce((acc, receipt) => {
-                const key = `${receipt.itemId}-${receipt.outletId}`;
+                const key = `${receipt.itemId}-${receipt.itemVariantId || 'null'}-${receipt.outletId}`;
                 if (!acc[key]) acc[key] = [];
                 acc[key].push(receipt);
                 return acc;
@@ -169,7 +296,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
             const receiptCreates: any[] = [];
 
             for (const { adjustment, stock } of validatedAdjustments) {
-                const receiptKey = `${adjustment.itemId}-${adjustment.outletId}`;
+                const receiptKey = `${adjustment.itemId}-${adjustment.itemVariantId || 'null'}-${adjustment.outletId}`;
                 const receipts = receiptsByKey[receiptKey] || [];
 
                 const previousAvailableQuantity = stock.availableQuantity;
@@ -190,9 +317,10 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     deltaQuantity = adjustValue;
                 }
 
-                // Prepare stock movement
+                // Prepare stock movement (with variant support)
                 stockMovements.push({
                     itemId: adjustment.itemId,
+                    itemVariantId: adjustment.itemVariantId || null,  // Variant support
                     outletId: adjustment.outletId,
                     previousAvailableQuantity,
                     previousOnHandQuantity,
@@ -207,12 +335,15 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     performedBy: adjustment.performedBy ?? null,
                 });
 
-                // Prepare stock balance update
+                // Prepare stock balance update (with variant info for delta sync)
                 stockUpdates.push({
                     id: stock.id,
                     availableQuantity: newAvailableQuantity,
                     onHandQuantity: newOnHandQuantity,
                     clientVersion: adjustment.version,
+                    itemId: adjustment.itemId,
+                    outletId: adjustment.outletId,
+                    itemVariantId: adjustment.itemVariantId || null,
                 });
 
                 // Handle StockReceipt adjustments
@@ -232,6 +363,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     if (newAvailableQuantity.greaterThan(0)) {
                         receiptCreates.push({
                             itemId: adjustment.itemId,
+                            itemVariantId: adjustment.itemVariantId || null,  // Variant support
                             outletId: adjustment.outletId,
                             quantity: newAvailableQuantity,
                             cost: new Decimal(adjustment.cost || 0),
@@ -257,12 +389,14 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                         remainingReduction = remainingReduction.sub(reduction);
                     }
                     if (remainingReduction.greaterThan(0)) {
-                        throw new RequestValidateError(`Insufficient StockReceipt quantity for item ${adjustment.itemId}`);
+                        const variantInfo = adjustment.itemVariantId ? ` variantId ${adjustment.itemVariantId}` : '';
+                        throw new RequestValidateError(`Insufficient StockReceipt quantity for item ${adjustment.itemId}${variantInfo}`);
                     }
                 } else if (deltaQuantity.greaterThan(0)) {
                     // Handle positive adjustments
                     receiptCreates.push({
                         itemId: adjustment.itemId,
+                        itemVariantId: adjustment.itemVariantId || null,  // Variant support
                         outletId: adjustment.outletId,
                         quantity: deltaQuantity,
                         cost: new Decimal(adjustment.cost || 0),
@@ -313,6 +447,25 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                 )
             ].filter(Boolean));
 
+            // Step 8: Touch parent stock's updatedAt for delta sync (variant support)
+            // When variant stock changes, update parent stock so sync API returns it
+            const variantUpdates = stockUpdates.filter(u => u.itemVariantId !== null);
+            if (variantUpdates.length > 0) {
+                const parentStockKeys = [...new Set(variantUpdates.map(u => `${u.itemId}-${u.outletId}`))];
+                for (const key of parentStockKeys) {
+                    const [itemId, outletId] = key.split('-').map(Number);
+                    await tx.stockBalance.updateMany({
+                        where: {
+                            itemId,
+                            outletId,
+                            itemVariantId: null,
+                            deleted: false
+                        },
+                        data: { updatedAt: new Date() }
+                    });
+                }
+            }
+
             adjustedCount = stockUpdates.length;
         });
 
@@ -332,35 +485,50 @@ async function clearStock(databaseName: string, stockClearance: StockAdjustment)
         }
 
         await tenantPrisma.$transaction(async (tx) => {
-            // Fetch the stock balance
+            // Validate variant requirements
+            const item = await tx.item.findUnique({
+                where: { id: stockClearance.itemId, deleted: false },
+                select: { id: true, hasVariants: true, itemName: true }
+            });
+
+            if (!item) {
+                throw new NotFoundError(`Item with ID ${stockClearance.itemId} not found`);
+            }
+
+            // Validate variant rules
+            if (item.hasVariants && (stockClearance.itemVariantId === null || stockClearance.itemVariantId === undefined)) {
+                throw new RequestValidateError(
+                    `Item "${item.itemName}" has variants. You must specify itemVariantId to clear variant stock.`
+                );
+            }
+            if (!item.hasVariants && stockClearance.itemVariantId) {
+                throw new RequestValidateError(
+                    `Item "${item.itemName}" does not have variants. Remove itemVariantId from request.`
+                );
+            }
+
+            // Fetch the stock balance (with variant support)
             const stock = await tx.stockBalance.findFirst({
                 where: {
                     itemId: stockClearance.itemId,
                     outletId: stockClearance.outletId,
+                    itemVariantId: stockClearance.itemVariantId || null,  // Variant support
                     deleted: false
                 },
                 select: { id: true, availableQuantity: true, onHandQuantity: true, version: true }
             });
 
             if (!stock) {
-                throw new NotFoundError(`Stock not found for itemId ${stockClearance.itemId} and outletId ${stockClearance.outletId}`);
+                const variantInfo = stockClearance.itemVariantId ? ` and variantId ${stockClearance.itemVariantId}` : '';
+                throw new NotFoundError(`Stock not found for itemId ${stockClearance.itemId}${variantInfo} and outletId ${stockClearance.outletId}`);
             }
 
-            // Version check
-            // const currentVersion = stock.version || 1;
-            // if (currentVersion !== stockClearance.version) {
-            //     throw new VersionMismatchError(`Version mismatch for item ${stockClearance.itemId}`, [{
-            //         itemId: stockClearance.itemId,
-            //         expectedVersion: stockClearance.version,
-            //         foundVersion: currentVersion,
-            //     }]);
-            // }
-
-            // Fetch all active stock receipts for this item/outlet
+            // Fetch all active stock receipts for this item/outlet/variant
             const stockReceipts = await tx.stockReceipt.findMany({
                 where: {
                     itemId: stockClearance.itemId,
                     outletId: stockClearance.outletId,
+                    itemVariantId: stockClearance.itemVariantId || null,  // Variant support
                     quantity: { gt: 0 },
                     deleted: false,
                 },
@@ -372,10 +540,11 @@ async function clearStock(databaseName: string, stockClearance: StockAdjustment)
             const newQuantity = new Decimal(0);
             const deltaQuantity = newQuantity.sub(stock.availableQuantity);
 
-            // Create stock movement record
+            // Create stock movement record (with variant support)
             await tx.stockMovement.create({
                 data: {
                     itemId: stockClearance.itemId,
+                    itemVariantId: stockClearance.itemVariantId || null,  // Variant support
                     outletId: stockClearance.outletId,
                     previousAvailableQuantity,
                     previousOnHandQuantity,
@@ -420,6 +589,19 @@ async function clearStock(databaseName: string, stockClearance: StockAdjustment)
                     lastRestockDate: new Date(),
                 },
             });
+
+            // Touch parent stock's updatedAt for delta sync (variant support)
+            if (stockClearance.itemVariantId) {
+                await tx.stockBalance.updateMany({
+                    where: {
+                        itemId: stockClearance.itemId,
+                        outletId: stockClearance.outletId,
+                        itemVariantId: null,
+                        deleted: false
+                    },
+                    data: { updatedAt: new Date() }
+                });
+            }
         });
 
         return 1; // Always return 1 since we process one item at a time

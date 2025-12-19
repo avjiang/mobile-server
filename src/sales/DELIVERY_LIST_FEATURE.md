@@ -114,16 +114,22 @@ New Sale (salesType = "DELIVERY")
       {
         "itemName": "Nasi Goreng Special",
         "itemCode": "FD001",
+        "itemVariantId": null,
+        "variantSku": null,
+        "variantName": null,
         "quantity": 2,
         "price": 50000,
         "subtotalAmount": 100000
       },
       {
-        "itemName": "Es Teh Manis",
-        "itemCode": "BV002",
-        "quantity": 3,
-        "price": 15000,
-        "subtotalAmount": 45000
+        "itemName": "Samsung Galaxy S24",
+        "itemCode": "PH001",
+        "itemVariantId": 1000,
+        "variantSku": "PH001-GREEN-256GB",
+        "variantName": "Green - 256GB",
+        "quantity": 1,
+        "price": 12000000,
+        "subtotalAmount": 12000000
       }
     ]
   },
@@ -146,6 +152,9 @@ New Sale (salesType = "DELIVERY")
       {
         "itemName": "Ayam Bakar",
         "itemCode": "FD005",
+        "itemVariantId": 500,
+        "variantSku": "FD005-LARGE",
+        "variantName": "Large",
         "quantity": 1,
         "price": 75000,
         "subtotalAmount": 75000
@@ -633,7 +642,17 @@ Potential features for future versions:
 
 ## Document Version
 
-- **Version:** 1.0
-- **Date:** 2025-10-29
+- **Version:** 1.1
+- **Date:** 2025-12-19
 - **Author:** Development Team
 - **Status:** Implementation Ready
+
+### Changelog
+
+#### v1.1 (2025-12-19)
+- Added product variant support to delivery list response
+- `salesItems` now includes: `itemVariantId`, `variantSku`, `variantName`
+- See [DELIVERY_LIST_FRONTEND_GUIDE.md](DELIVERY_LIST_FRONTEND_GUIDE.md) for frontend integration
+
+#### v1.0 (2025-10-29)
+- Initial implementation

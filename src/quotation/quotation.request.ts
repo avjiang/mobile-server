@@ -4,6 +4,9 @@ import { Decimal as PrismaDecimal } from "../../prisma/client/generated/client/r
 interface QuotationItemInput {
     id?: number; // Add id for updates
     itemId: number;
+    itemVariantId?: number | null;
+    variantSku?: string | null;
+    variantName?: string | null;
     quantity: PrismaDecimal;
     unitPrice: PrismaDecimal;
     taxAmount?: PrismaDecimal;

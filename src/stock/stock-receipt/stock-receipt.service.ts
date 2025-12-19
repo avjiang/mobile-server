@@ -2,7 +2,7 @@ import { PrismaClient, StockReceipt } from "../../../prisma/client/generated/cli
 import { getTenantPrisma } from '../../db';
 import { StockReceiptInput, StockReceiptsRequestBody } from "./stock-receipt.request";
 
-let getItemStockReceipt = async (databaseName: string, itemId: number, outletId?: number) => {
+let getItemStockReceipt = async (databaseName: string, itemId: number, outletId?: number, itemVariantId?: number | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
     try {
         const whereCondition: any = {
@@ -12,9 +12,21 @@ let getItemStockReceipt = async (databaseName: string, itemId: number, outletId?
         if (outletId) {
             whereCondition.outletId = outletId
         }
+        // Only add itemVariantId filter if explicitly provided (including null)
+        if (itemVariantId !== undefined) {
+            whereCondition.itemVariantId = itemVariantId
+        }
 
         const stockReceipts = await tenantPrisma.stockReceipt.findMany({
             where: whereCondition,
+            include: {
+                itemVariant: {
+                    select: {
+                        variantSku: true,
+                        variantName: true,
+                    }
+                }
+            },
             orderBy: {
                 receiptDate: 'desc'
             }

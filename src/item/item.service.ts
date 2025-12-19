@@ -6,6 +6,7 @@ import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.res
 import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "./item.request"
+import SimpleCacheService from '../cache/simple-cache.service';
 
 /**
  * Convert string to Title Case to prevent duplicate attribute values
@@ -18,6 +19,143 @@ function toTitleCase(str: string): string {
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
+}
+
+/**
+ * Helper to process variant attributes with user-friendly error handling
+ * Handles: validation, upsert of attribute value, junction table management
+ */
+async function processVariantAttribute(
+    tx: any,
+    variantId: number,
+    attr: { definitionKey: string; value: string; displayValue?: string; sortOrder?: number }
+) {
+    // Validate input
+    if (!attr.value || typeof attr.value !== 'string' || attr.value.trim() === '') {
+        throw new BusinessLogicError(`Attribute value is required for ${attr.definitionKey || 'unknown attribute'}`);
+    }
+    if (!attr.definitionKey || typeof attr.definitionKey !== 'string') {
+        throw new BusinessLogicError('Attribute type (definitionKey) is required');
+    }
+
+    const normalizedValue = toTitleCase(attr.value.trim());
+    const normalizedDisplayValue = attr.displayValue
+        ? toTitleCase(attr.displayValue.trim())
+        : normalizedValue;
+
+    try {
+        // Upsert VariantAttributeValue (shared across items)
+        const attrValue = await tx.variantAttributeValue.upsert({
+            where: {
+                definitionKey_value: {
+                    definitionKey: attr.definitionKey,
+                    value: normalizedValue,
+                },
+            },
+            create: {
+                definitionKey: attr.definitionKey,
+                value: normalizedValue,
+                displayValue: normalizedDisplayValue,
+                sortOrder: attr.sortOrder || 0,
+            },
+            update: {},
+        });
+
+        // Check if junction already exists
+        const existingJunction = await tx.itemVariantAttribute.findUnique({
+            where: {
+                itemVariantId_variantAttributeValueId: {
+                    itemVariantId: variantId,
+                    variantAttributeValueId: attrValue.id,
+                },
+            },
+        });
+
+        if (existingJunction && !existingJunction.deleted) {
+            throw new BusinessLogicError(
+                `This variant already has the attribute "${attr.definitionKey}: ${normalizedValue}"`
+            );
+        }
+
+        if (existingJunction?.deleted) {
+            // Restore soft-deleted junction
+            await tx.itemVariantAttribute.update({
+                where: { id: existingJunction.id },
+                data: { deleted: false, deletedAt: null },
+            });
+        } else {
+            // Create new junction
+            await tx.itemVariantAttribute.create({
+                data: {
+                    itemVariantId: variantId,
+                    variantAttributeValueId: attrValue.id,
+                },
+            });
+        }
+
+        // Invalidate cache when new attribute is created
+        SimpleCacheService.invalidate('variant:attributes');
+
+        return attrValue;
+    } catch (error: any) {
+        // Re-throw BusinessLogicError as-is
+        if (error instanceof BusinessLogicError) {
+            throw error;
+        }
+        // Handle Prisma unique constraint errors
+        if (error.code === 'P2002') {
+            throw new BusinessLogicError(
+                `The attribute "${attr.definitionKey}: ${normalizedValue}" could not be added. Please try again.`
+            );
+        }
+        throw error;
+    }
+}
+
+/**
+ * Create StockBalance and StockMovement records for item variants
+ * Matches the pattern used for base item creation (lines 420-442)
+ * Uses batch operations for optimal performance
+ */
+async function createVariantStockRecords(
+    tx: any,
+    itemId: number,
+    variantIds: number[],
+    outletId: number = 1
+): Promise<void> {
+    if (variantIds.length === 0) return;
+
+    // Create StockBalance for each variant (batch insert)
+    await tx.stockBalance.createMany({
+        data: variantIds.map(variantId => ({
+            itemId,
+            outletId,
+            itemVariantId: variantId,
+            availableQuantity: 0,
+            onHandQuantity: 0,
+            reorderThreshold: null,
+            deleted: false,
+        })),
+        skipDuplicates: true,
+    });
+
+    // Create StockMovement for each variant (audit trail)
+    await tx.stockMovement.createMany({
+        data: variantIds.map(variantId => ({
+            itemId,
+            outletId,
+            itemVariantId: variantId,
+            previousAvailableQuantity: 0,
+            previousOnHandQuantity: 0,
+            availableQuantityDelta: 0,
+            onHandQuantityDelta: 0,
+            documentId: 0,
+            movementType: "Create Variant",
+            reason: "",
+            remark: "",
+            deleted: false,
+        })),
+    });
 }
 
 let getAll = async (
@@ -380,6 +518,8 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
 
                     // Create variants if provided
                     if (hasVariants && variants) {
+                        const createdVariantIds: number[] = [];
+
                         for (const variantData of variants) {
                             const { attributes, ...variantFields } = variantData;
 
@@ -400,42 +540,18 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                 },
                             });
 
-                            // Create variant attributes
+                            createdVariantIds.push(variant.id);
+
+                            // Create variant attributes using helper function
                             if (attributes && Array.isArray(attributes)) {
                                 for (const attr of attributes) {
-                                    // Auto-capitalize value to prevent duplicates (e.g., "Green" vs "green")
-                                    const normalizedValue = toTitleCase(attr.value.trim());
-                                    const normalizedDisplayValue = attr.displayValue
-                                        ? toTitleCase(attr.displayValue.trim())
-                                        : normalizedValue;
-
-                                    // Upsert VariantAttributeValue
-                                    const attrValue = await tx.variantAttributeValue.upsert({
-                                        where: {
-                                            definitionKey_value: {
-                                                definitionKey: attr.definitionKey,
-                                                value: normalizedValue,
-                                            },
-                                        },
-                                        create: {
-                                            definitionKey: attr.definitionKey,
-                                            value: normalizedValue,
-                                            displayValue: normalizedDisplayValue,
-                                            sortOrder: attr.sortOrder || 0,
-                                        },
-                                        update: {}, // No update needed if exists
-                                    });
-
-                                    // Create ItemVariantAttribute junction
-                                    await tx.itemVariantAttribute.create({
-                                        data: {
-                                            itemVariantId: variant.id,
-                                            variantAttributeValueId: attrValue.id,
-                                        },
-                                    });
+                                    await processVariantAttribute(tx, variant.id, attr);
                                 }
                             }
                         }
+
+                        // Create StockBalance and StockMovement for all variants (batch operation)
+                        await createVariantStockRecords(tx, createdItem.id, createdVariantIds);
                     }
 
                     return createdItem;
@@ -568,6 +684,37 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
 
             // Handle variants update/creation if provided
             if (variants && Array.isArray(variants)) {
+                // ===== Batch validate variant ownership (security) =====
+                // Performance: Single query validates ALL variant IDs at once
+                const variantIdsToValidate = variants
+                    .filter((v: any) => v.id !== undefined && v.id !== null)
+                    .map((v: any) => v.id);
+
+                if (variantIdsToValidate.length > 0) {
+                    const existingVariants = await tx.itemVariant.findMany({
+                        where: {
+                            id: { in: variantIdsToValidate },
+                            itemId: id,  // Must belong to THIS item
+                            deleted: false
+                        },
+                        select: { id: true }
+                    });
+                    const validVariantIds = new Set(existingVariants.map(v => v.id));
+
+                    // Check for invalid variant IDs
+                    const invalidIds = variantIdsToValidate.filter((vid: number) => !validVariantIds.has(vid));
+                    if (invalidIds.length > 0) {
+                        throw new Error(`Invalid variant IDs: ${invalidIds.join(', ')}. Variants do not belong to this item or are already deleted.`);
+                    }
+                }
+                // ===== END: Ownership validation =====
+
+                // Track if any variants were deleted (for hasVariants check later)
+                let variantDeleted = false;
+
+                // Track new variant IDs for stock record creation
+                const newVariantIds: number[] = [];
+
                 // Auto-flag hasVariants if not already set
                 if (!itemUpdate.hasVariants) {
                     await tx.item.update({
@@ -578,25 +725,105 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
 
                 // Process each variant
                 for (const variantData of variants) {
-                    const { id: variantId, attributes, ...variantFields } = variantData;
+                    const { id: variantId, attributes, removeAttributes, ...variantFields } = variantData;
 
                     if (variantId) {
-                        // Update existing variant
-                        await tx.itemVariant.update({
-                            where: { id: variantId },
-                            data: {
-                                variantSku: variantFields.variantSku,
-                                variantName: variantFields.variantName,
-                                cost: variantFields.cost,
-                                price: variantFields.price,
-                                image: variantFields.image,
-                                barcode: variantFields.barcode,
-                                weight: variantFields.weight,
-                                length: variantFields.length,
-                                width: variantFields.width,
-                                height: variantFields.height,
-                            },
-                        });
+                        // Check if variant should be deleted
+                        if (variantData.deleted === true) {
+                            variantDeleted = true;  // Track deletion for hasVariants check
+                            const deletionDate = new Date();
+
+                            // 1. Soft-delete ItemVariant
+                            await tx.itemVariant.update({
+                                where: { id: variantId },
+                                data: { deleted: true, deletedAt: deletionDate }
+                            });
+
+                            // 2. Soft-delete ItemVariantAttribute (junction table)
+                            await tx.itemVariantAttribute.updateMany({
+                                where: { itemVariantId: variantId, deleted: false },
+                                data: { deleted: true, deletedAt: deletionDate }
+                            });
+
+                            // 3. Soft-delete StockBalance for this variant
+                            await tx.stockBalance.updateMany({
+                                where: { itemVariantId: variantId, deleted: false },
+                                data: { deleted: true, deletedAt: deletionDate }
+                            });
+
+                            // 4. Soft-delete StockReceipt for this variant
+                            await tx.stockReceipt.updateMany({
+                                where: { itemVariantId: variantId, deleted: false },
+                                data: { deleted: true, deletedAt: deletionDate }
+                            });
+
+                            // 5. Soft-delete WarehouseStockBalance for this variant
+                            await tx.warehouseStockBalance.updateMany({
+                                where: { itemVariantId: variantId, deleted: false },
+                                data: { deleted: true, deletedAt: deletionDate }
+                            });
+
+                            // 6. Soft-delete WarehouseStockReceipt for this variant
+                            await tx.warehouseStockReceipt.updateMany({
+                                where: { itemVariantId: variantId, deleted: false },
+                                data: { deleted: true, deletedAt: deletionDate }
+                            });
+
+                            // DO NOT delete: StockMovement, StockSnapshot, WarehouseStockMovement (audit trail)
+                            // DO NOT delete: SalesItem, InvoiceItem, etc. (historical transactions)
+                        } else {
+                            // Update existing variant
+                            await tx.itemVariant.update({
+                                where: { id: variantId },
+                                data: {
+                                    variantSku: variantFields.variantSku,
+                                    variantName: variantFields.variantName,
+                                    cost: variantFields.cost,
+                                    price: variantFields.price,
+                                    image: variantFields.image,
+                                    barcode: variantFields.barcode,
+                                    weight: variantFields.weight,
+                                    length: variantFields.length,
+                                    width: variantFields.width,
+                                    height: variantFields.height,
+                                },
+                            });
+
+                            // Handle attribute REMOVAL for existing variants
+                            if (removeAttributes && Array.isArray(removeAttributes) && removeAttributes.length > 0) {
+                                // Find all ItemVariantAttribute records for this variant that match the definition keys
+                                const attributesToRemove = await tx.itemVariantAttribute.findMany({
+                                    where: {
+                                        itemVariantId: variantId,
+                                        deleted: false,
+                                        variantAttributeValue: {
+                                            definitionKey: { in: removeAttributes }
+                                        }
+                                    },
+                                    select: { id: true }
+                                });
+
+                                // Soft-delete them
+                                if (attributesToRemove.length > 0) {
+                                    await tx.itemVariantAttribute.updateMany({
+                                        where: {
+                                            id: { in: attributesToRemove.map(a => a.id) }
+                                        },
+                                        data: {
+                                            deleted: true,
+                                            deletedAt: new Date()
+                                        }
+                                    });
+                                }
+                            }
+
+                            // Handle attribute ADD/UPDATE for existing variants using helper function
+                            if (attributes && Array.isArray(attributes)) {
+                                for (const attr of attributes) {
+                                    await processVariantAttribute(tx, variantId, attr);
+                                }
+                            }
+                        }
                     } else {
                         // Create new variant
                         const variant = await tx.itemVariant.create({
@@ -615,49 +842,45 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                             },
                         });
 
-                        // Create variant attributes
+                        newVariantIds.push(variant.id);
+
+                        // Create variant attributes using helper function
                         if (attributes && Array.isArray(attributes)) {
                             for (const attr of attributes) {
-                                // Auto-capitalize value to prevent duplicates (e.g., "Green" vs "green")
-                                const normalizedValue = toTitleCase(attr.value.trim());
-                                const normalizedDisplayValue = attr.displayValue
-                                    ? toTitleCase(attr.displayValue.trim())
-                                    : normalizedValue;
-
-                                // Upsert VariantAttributeValue
-                                const attrValue = await tx.variantAttributeValue.upsert({
-                                    where: {
-                                        definitionKey_value: {
-                                            definitionKey: attr.definitionKey,
-                                            value: normalizedValue,
-                                        },
-                                    },
-                                    create: {
-                                        definitionKey: attr.definitionKey,
-                                        value: normalizedValue,
-                                        displayValue: normalizedDisplayValue,
-                                        sortOrder: attr.sortOrder || 0,
-                                    },
-                                    update: {},
-                                });
-
-                                // Create ItemVariantAttribute junction
-                                await tx.itemVariantAttribute.create({
-                                    data: {
-                                        itemVariantId: variant.id,
-                                        variantAttributeValueId: attrValue.id,
-                                    },
-                                });
+                                await processVariantAttribute(tx, variant.id, attr);
                             }
                         }
                     }
                 }
 
-                // Touch item's updatedAt so sync API picks up variant changes
-                await tx.item.update({
-                    where: { id },
-                    data: { updatedAt: new Date() },
-                });
+                // Create StockBalance and StockMovement for all new variants (batch operation)
+                if (newVariantIds.length > 0) {
+                    await createVariantStockRecords(tx, id, newVariantIds);
+                }
+
+                // ===== Reset hasVariants if all variants were deleted =====
+                // Performance: Only runs count query if at least one variant was deleted
+                if (variantDeleted) {
+                    const activeVariantCount = await tx.itemVariant.count({
+                        where: { itemId: id, deleted: false }
+                    });
+
+                    // Combine hasVariants reset with updatedAt touch in single query
+                    await tx.item.update({
+                        where: { id },
+                        data: {
+                            updatedAt: new Date(),
+                            ...(activeVariantCount === 0 ? { hasVariants: false } : {})
+                        }
+                    });
+                } else {
+                    // Just touch updatedAt for sync API
+                    await tx.item.update({
+                        where: { id },
+                        data: { updatedAt: new Date() },
+                    });
+                }
+                // ===== END: hasVariants reset =====
             }
 
             return itemUpdate;
@@ -892,6 +1115,82 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
     }
 }
 
+/**
+ * Get all variant attribute values with pagination and optional sync support
+ * Returns all unique attribute values that can be reused across items
+ */
+let getVariantAttributeValues = async (
+    databaseName: string,
+    request: { skip?: number; take?: number; lastSyncTimestamp?: string }
+): Promise<{ data: any[]; total: number; serverTimestamp: string }> => {
+    const tenantPrisma = getTenantPrisma(databaseName);
+    const { skip = 0, take = 100, lastSyncTimestamp } = request;
+
+    // Build cache key based on pagination params
+    const cacheKey = `variant:attributes:${databaseName}:${skip}:${take}:${lastSyncTimestamp || 'all'}`;
+
+    // Check cache first (skip cache for sync requests with timestamp)
+    if (!lastSyncTimestamp || lastSyncTimestamp === 'null') {
+        const cached = SimpleCacheService.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+    }
+
+    try {
+        // Build where clause for sync support
+        let where: any = { deleted: false };
+
+        if (lastSyncTimestamp && lastSyncTimestamp !== 'null') {
+            const lastSync = new Date(lastSyncTimestamp);
+            where = {
+                ...where,
+                OR: [
+                    { createdAt: { gte: lastSync } },
+                    { updatedAt: { gte: lastSync } },
+                ],
+            };
+        }
+
+        // Count total
+        const total = await tenantPrisma.variantAttributeValue.count({ where });
+
+        // Fetch paginated values
+        const values = await tenantPrisma.variantAttributeValue.findMany({
+            where,
+            select: {
+                id: true,
+                definitionKey: true,
+                value: true,
+                displayValue: true,
+                sortOrder: true,
+            },
+            skip,
+            take,
+            orderBy: [
+                { definitionKey: 'asc' },
+                { sortOrder: 'asc' },
+                { value: 'asc' },
+            ],
+        });
+
+        const result = {
+            data: values,
+            total,
+            serverTimestamp: new Date().toISOString(),
+        };
+
+        // Cache result (only for non-sync requests)
+        if (!lastSyncTimestamp || lastSyncTimestamp === 'null') {
+            SimpleCacheService.set(cacheKey, result);
+        }
+
+        return result;
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
 export = {
     getByIdRaw,
     getAll,
@@ -904,4 +1203,5 @@ export = {
     getLowStockItemCount,
     getLowStockItems,
     getAllByCategoryId,
+    getVariantAttributeValues,
 }

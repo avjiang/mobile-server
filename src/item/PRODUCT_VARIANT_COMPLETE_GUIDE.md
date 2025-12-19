@@ -1,8 +1,8 @@
 # Product Variant Feature - Complete Implementation Guide
 
-**Version:** 2.1
-**Last Updated:** 2025-11-17
-**Status:** ✅ **100% COMPLETE** - Sales service + Sync API + Stock Quantities fully integrated
+**Version:** 5.0
+**Last Updated:** 2025-12-19
+**Status:** ✅ **COMPLETE** - Sales + PO/DO/Invoice/Quotation
 
 ---
 
@@ -39,6 +39,10 @@ Product variants allow a single item (e.g., "Samsung Galaxy S24") to have multip
 ✅ **Backward Compatible** - Existing items without variants continue to work
 ✅ **Sales Integration** - Full support in sales, void, return, and refund operations
 ✅ **Performance Optimized** - Gzip compression + in-memory caching
+✅ **Variant Deletion** - Soft-delete variants with automatic stock cleanup
+✅ **Attribute Updates** - Add/remove attributes on existing variants
+✅ **Attribute Values API** - Fetch all previously used attribute values (paginated) ⭐ NEW!
+✅ **User-Friendly Errors** - Clear error messages for attribute operations ⭐ NEW!
 
 ---
 
@@ -76,6 +80,14 @@ Product variants allow a single item (e.g., "Samsung Galaxy S24") to have multip
   - `getAll()` - Returns paginated items with variants
   - `update()` - Updates items and adds/updates variants
   - Auto-flags `hasVariants = true` when variants exist
+  - **Auto-creates StockBalance and StockMovement for variants** (batch operation)
+
+- [x] Variant Stock Auto-Creation
+  - When variants are created via `createMany()` or `update()`, the following are auto-created:
+    - `StockBalance` with quantity = 0 (outlet 1)
+    - `StockMovement` with `movementType: "Create Variant"` (audit trail)
+  - Uses batch operations (`createMany`) for optimal performance
+  - 2 SQL queries regardless of variant count
 
 - [x] Variant Service ([src/variant/variant.service.ts](src/variant/variant.service.ts))
   - Internal helper service for variant operations
@@ -133,6 +145,187 @@ Product variants allow a single item (e.g., "Samsung Galaxy S24") to have multip
 - ✅ Frontend can display stock quantity for each variant
 - ✅ No performance degradation with variants
 - ✅ Item updates when variants change
+
+### ✅ Phase 6: Variant CRUD Operations (COMPLETE) ⭐ **NEW!**
+
+**Updated Functions in `item.service.ts`:**
+- [x] `update()` - Now supports full variant CRUD via item update endpoint
+  - **Delete variant**: Set `deleted: true` on variant
+  - **Add attributes**: Include `attributes` array on existing variant
+  - **Remove attributes**: Use `removeAttributes` array with definitionKeys
+
+**Variant Deletion Cascade:**
+When a variant is soft-deleted, these records are also soft-deleted:
+| Table | Action | Reason |
+|-------|--------|--------|
+| ItemVariant | ✅ Soft-delete | The variant itself |
+| ItemVariantAttribute | ✅ Soft-delete | Junction table |
+| StockBalance | ✅ Soft-delete | Invalid stock |
+| StockReceipt | ✅ Soft-delete | Prevent FIFO usage |
+| WarehouseStockBalance | ✅ Soft-delete | Invalid warehouse stock |
+| WarehouseStockReceipt | ✅ Soft-delete | Prevent FIFO usage |
+| StockMovement | ❌ KEEP | Audit trail |
+| StockSnapshot | ❌ KEEP | Historical EOD |
+| SalesItem, InvoiceItem, etc. | ❌ KEEP | Transaction history |
+
+**Request Examples:**
+
+Delete a variant:
+```json
+PUT /item/update
+{
+  "id": 123,
+  "variants": [{ "id": 1000, "deleted": true }]
+}
+```
+
+Add attributes to existing variant:
+```json
+PUT /item/update
+{
+  "id": 123,
+  "variants": [{
+    "id": 1000,
+    "attributes": [{ "definitionKey": "Color", "value": "Blue" }]
+  }]
+}
+```
+
+Remove attributes from variant:
+```json
+PUT /item/update
+{
+  "id": 123,
+  "variants": [{
+    "id": 1000,
+    "removeAttributes": ["Size", "Material"]
+  }]
+}
+```
+
+**Security & Data Integrity:**
+| Feature | Description |
+|---------|-------------|
+| ✅ Ownership Validation | Variant IDs are validated to belong to the item being updated. Invalid IDs throw error. |
+| ✅ hasVariants Auto-Reset | When all variants are deleted, `hasVariants` is automatically set to `false`. |
+| ✅ Batch Validation | Single query validates all variant IDs (no N+1). |
+| ✅ Audit Trail | StockMovement, SalesItem records preserved for history. |
+
+### ✅ Phase 7: Attribute Values API & Error Handling (COMPLETE) ⭐ **NEW!**
+
+**New Endpoint:**
+- [x] `GET /item/variant/attributes/values` - Paginated endpoint to fetch all attribute values
+  - Supports `skip`, `take`, `lastSyncTimestamp` parameters
+  - Returns all unique attribute values that can be reused across items
+  - Enables frontend dropdown to show previously added values
+
+**New Service Function in `item.service.ts`:**
+- [x] `getVariantAttributeValues()` - Fetches paginated attribute values
+  - Uses `SimpleCacheService` for 5-minute caching
+  - Cache automatically invalidated when new attributes are created
+  - Supports delta sync via `lastSyncTimestamp`
+
+**User-Friendly Error Messages:**
+- [x] `processVariantAttribute()` helper function centralized error handling
+  - Validates input before database operations
+  - Catches Prisma errors and returns readable messages
+  - Automatically invalidates cache when new attributes are created
+
+**Possible Error Messages:**
+| Scenario | Example Error Message |
+|----------|----------------------|
+| Duplicate attribute on variant | `This variant already has the attribute "Color: Green"` |
+| Empty/missing attribute value | `Attribute value is required for Color` |
+| Missing definitionKey | `Attribute type (definitionKey) is required` |
+| Generic database error | `The attribute "Color: Green" could not be added. Please try again.` |
+
+**cURL Examples:**
+```bash
+# Get all attribute values (first page)
+curl -X GET "http://localhost:8080/item/variant/attributes/values?skip=0&take=100" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Delta sync (only new/updated since timestamp)
+curl -X GET "http://localhost:8080/item/variant/attributes/values?skip=0&take=100&lastSyncTimestamp=2025-12-18T00:00:00.000Z" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response Example:**
+```json
+{
+    "data": [
+        { "id": 1, "definitionKey": "Color", "value": "Green", "displayValue": "Green", "sortOrder": 0 },
+        { "id": 2, "definitionKey": "Color", "value": "Blue", "displayValue": "Blue", "sortOrder": 0 },
+        { "id": 3, "definitionKey": "Size", "value": "S", "displayValue": "S", "sortOrder": 0 }
+    ],
+    "total": 50,
+    "serverTimestamp": "2025-12-18T10:30:00.000Z"
+}
+```
+
+**What This Means:**
+- ✅ Frontend can display previously used attribute values in dropdown
+- ✅ Users get clear error messages instead of raw Prisma errors
+- ✅ Attribute values are cached for better performance
+- ✅ Supports incremental sync for mobile apps
+
+### ✅ Phase 8: PO/DO/Invoice/Quotation Integration (COMPLETE)
+
+**Objective:** Extend variant support to Purchase Orders, Delivery Orders, Invoices, and Quotations.
+
+**Schema Changes (APPLIED):**
+All models now have full variant support:
+
+| Model | itemVariantId | variantSku | variantName | Status |
+|-------|:---:|:---:|:---:|:---:|
+| PurchaseOrderItem | ✅ | ✅ | ✅ | ✅ Complete |
+| DeliveryOrderItem | ✅ | ✅ | ✅ | ✅ Complete |
+| InvoiceItem | ✅ | ✅ | ✅ | ✅ Complete |
+| QuotationItem | ✅ | ✅ | ✅ | ✅ Complete |
+
+**Service Layer Changes:**
+
+| Service | Functions to Update |
+|---------|---------------------|
+| `purchase-order.service.ts` | `createMany()`, `update()`, `getById()`, `getAll()` |
+| `delivery-order.service.ts` | `createMany()`, `update()`, `getById()`, `getAll()`, `updateStockBalancesAndMovements()`, `reverseStockOperationsForCancellation()` |
+| `invoice.service.ts` | `createMany()`, `update()`, `getById()`, `getAll()`, `updateStockReceiptCosts()` |
+| `quotation.service.ts` | `createMany()`, `update()`, `getById()`, `getAll()` |
+
+**Delivery Order Stock Operations (FIXED):**
+
+When a delivery order is confirmed, stock is updated correctly for variants:
+
+| Operation | itemVariantId | Description |
+|-----------|:-------------:|-------------|
+| StockBalance query | ✅ | Uses composite key `itemId-itemVariantId` |
+| StockBalance update/create | ✅ | Creates variant-specific balance |
+| StockMovement | ✅ | Records variant ID in movement |
+| StockReceipt | ✅ | Records variant ID in receipt |
+| Cancellation reversal | ✅ | Reverses stock to correct variant |
+
+**Key Pattern:** Use composite keys for variant-aware lookups:
+```typescript
+// Composite key for variant support
+const lookupKey = `${itemId}-${itemVariantId || 'null'}`;
+```
+
+**Request Type Updates:**
+Add to `PurchaseOrderItemInput`, `DeliveryOrderItemInput`, `InvoiceItemInput`, `QuotationItemInput`:
+```typescript
+itemVariantId?: number | null;
+variantSku?: string | null;
+variantName?: string | null;
+```
+
+**Invoice Settlement:** No direct changes needed - settlements reference invoices by ID, not line items. Variant info is captured at InvoiceItem level.
+
+**What This Means:**
+- ✅ PO items will track which variant is being ordered
+- ✅ DO items will track which variant is being delivered
+- ✅ Invoice items will track which variant is being billed
+- ✅ Quotation items will track which variant is being quoted
+- ✅ Full audit trail from PO → DO → Invoice with variant info preserved
 
 ---
 
@@ -412,6 +605,74 @@ await tx.stockBalance.update({
           "displayValue": "Green"
         }
       ]
+    }
+  ]
+}
+```
+
+### Update Item with Variants ⭐ NEW!
+
+**Endpoint:** `PUT /item/update`
+
+> **Note:** Item ID must be in the request body, not the URL.
+
+**Add new variant:**
+```json
+{
+  "id": 200,
+  "variants": [
+    {
+      // No id = CREATE new variant
+      "variantSku": "SAMSUNG-S24-BLUE-512GB",
+      "variantName": "Blue - 512GB",
+      "cost": 10000000,
+      "price": 14000000,
+      "attributes": [
+        { "definitionKey": "Color", "value": "Blue" },
+        { "definitionKey": "Storage", "value": "512GB" }
+      ]
+    }
+  ]
+}
+```
+
+**Update existing variant + add attributes:**
+```json
+{
+  "id": 200,
+  "variants": [
+    {
+      "id": 1000,  // Existing variant ID
+      "price": 13000000,  // Update price
+      "attributes": [
+        { "definitionKey": "Material", "value": "Glass" }  // Add new attribute
+      ]
+    }
+  ]
+}
+```
+
+**Remove attributes from variant:**
+```json
+{
+  "id": 200,
+  "variants": [
+    {
+      "id": 1000,
+      "removeAttributes": ["Material", "Style"]  // Remove by definitionKey
+    }
+  ]
+}
+```
+
+**Delete variant:**
+```json
+{
+  "id": 200,
+  "variants": [
+    {
+      "id": 1000,
+      "deleted": true  // Soft-delete variant + related stock records
     }
   ]
 }
@@ -860,6 +1121,76 @@ File: [src/item/item.service.ts](src/item/item.service.ts)
 
 ---
 
+### Phase 4: Variant CRUD Operations (2025-12-17) ⭐ NEW!
+
+**Objective:** Add full CRUD support for variants including deletion and attribute management.
+
+#### Changes Made:
+
+**1. Variant Deletion Support**
+
+File: [src/item/item.service.ts](src/item/item.service.ts) (Lines 583-626)
+
+**Added:** Support for `deleted: true` flag on variants in update request.
+
+When a variant is soft-deleted:
+```typescript
+// 1. Soft-delete ItemVariant
+await tx.itemVariant.update({ where: { id: variantId }, data: { deleted: true, deletedAt } });
+
+// 2. Soft-delete ItemVariantAttribute (junction table)
+await tx.itemVariantAttribute.updateMany({ where: { itemVariantId: variantId }, data: { deleted: true } });
+
+// 3. Soft-delete StockBalance for this variant
+await tx.stockBalance.updateMany({ where: { itemVariantId: variantId }, data: { deleted: true } });
+
+// 4. Soft-delete StockReceipt for this variant
+await tx.stockReceipt.updateMany({ where: { itemVariantId: variantId }, data: { deleted: true } });
+
+// 5-6. Soft-delete WarehouseStockBalance/WarehouseStockReceipt
+// StockMovement, StockSnapshot, SalesItem etc. are KEPT for audit trail
+```
+
+**2. Attribute Addition for Existing Variants**
+
+File: [src/item/item.service.ts](src/item/item.service.ts) (Lines 672-723)
+
+**Added:** Process `attributes` array on existing variants (not just new variants).
+
+- Upserts `VariantAttributeValue` with auto-capitalization
+- Creates or restores `ItemVariantAttribute` junction records
+
+**3. Attribute Removal Support**
+
+File: [src/item/item.service.ts](src/item/item.service.ts) (Lines 644-670)
+
+**Added:** Support for `removeAttributes` array in variant update request.
+
+```typescript
+if (removeAttributes && Array.isArray(removeAttributes)) {
+  const attributesToRemove = await tx.itemVariantAttribute.findMany({
+    where: {
+      itemVariantId: variantId,
+      deleted: false,
+      variantAttributeValue: { definitionKey: { in: removeAttributes } }
+    }
+  });
+
+  await tx.itemVariantAttribute.updateMany({
+    where: { id: { in: attributesToRemove.map(a => a.id) } },
+    data: { deleted: true, deletedAt: new Date() }
+  });
+}
+```
+
+**Impact:**
+- ✅ Full CRUD operations for variants via single endpoint
+- ✅ Automatic cascade delete for stock records
+- ✅ Audit trail preserved (StockMovement, SalesItem kept)
+- ✅ Attribute management without recreating variant
+
+---
+
 ### Performance Metrics
 
 | Metric | Before | After | Improvement |
@@ -964,6 +1295,165 @@ File: [src/item/item.service.ts](src/item/item.service.ts)
 | **Query Optimization** | ✅ Complete | Single query, no N+1 problem |
 | **Bug Fixes** | ✅ Complete | Volume field removed, unused code deleted |
 | **TypeScript** | ✅ Passing | 2 pre-existing errors in other files |
+| **Variant Deletion** | ✅ Complete | Soft-delete with stock cascade |
+| **Attribute Updates** | ✅ Complete | Add/remove attributes on existing variants |
+| **PO Variant Support** | ✅ Complete | Purchase Order items with variant tracking |
+| **DO Variant Support** | ✅ Complete | Delivery Order items with variant tracking |
+| **Invoice Variant Support** | ✅ Complete | Invoice items with variant tracking |
+| **Quotation Variant Support** | ✅ Complete | Quotation items with variant tracking |
+
+---
+
+### Phase 5: PO/DO/Invoice/Quotation Integration (2025-12-19) ✅ COMPLETE
+
+**Objective:** Extend variant support to all order document types for complete procurement-to-invoice tracking.
+
+#### Why This Matters
+
+The current variant implementation tracks variants in:
+- ✅ Item management (create, update, delete variants)
+- ✅ Sales transactions (stock deduction, FIFO cost)
+- ✅ Stock operations (balance, receipts, movements)
+
+**Missing:** The procurement flow (PO → DO → Invoice) and quotations don't fully track variant information. This means:
+- Cannot see which variant was ordered in a PO
+- Cannot track which variant was delivered in a DO
+- Cannot bill for specific variants in Invoices
+- Cannot quote specific variants
+
+#### Data Model
+
+**Both `itemId` AND `itemVariantId` are stored:**
+
+```
+PurchaseOrderItem / DeliveryOrderItem / InvoiceItem / QuotationItem:
+├── itemId: 200              ← Parent item (e.g., "Samsung Galaxy S24")
+├── itemVariantId: 1000      ← Specific variant (e.g., "Green - 256GB")
+├── variantSku: "SAM-S24-GRN-256"
+├── variantName: "Green - 256GB"
+└── quantity, price, etc.
+```
+
+**For simple items (no variants):**
+```
+├── itemId: 50               ← Simple item (e.g., "USB Cable")
+├── itemVariantId: null      ← No variant
+└── quantity, price, etc.
+```
+
+#### Schema Migration Required
+
+```prisma
+// Add to PurchaseOrderItem, DeliveryOrderItem, InvoiceItem, QuotationItem:
+variantSku    String?  @map("VARIANT_SKU")
+variantName   String?  @map("VARIANT_NAME")
+```
+
+**Migration Command:**
+```bash
+npx prisma migrate dev --name add_variant_fields_to_order_items
+npx prisma generate
+```
+
+#### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `prisma/schema.prisma` | Add `variantSku`, `variantName` to 4 models |
+| `src/purchase_order/purchase-order.request.ts` | Add variant fields to `PurchaseOrderItemInput` |
+| `src/purchase_order/purchase-order.service.ts` | Composite keys, variant fields in CRUD |
+| `src/delivery_order/delivery-order.request.ts` | Add variant fields to `DeliveryOrderItemInput` |
+| `src/delivery_order/delivery-order.service.ts` | Composite keys, variant fields in CRUD + stock ops |
+| `src/invoice/invoice.request.ts` | Add variant fields to `InvoiceItemInput` |
+| `src/invoice/invoice.service.ts` | Composite keys, variant fields in CRUD |
+| `src/quotation/quotation.request.ts` | Add variant fields to `QuotationItemInput` |
+| `src/quotation/quotation.service.ts` | Composite keys, variant fields in CRUD |
+
+#### API Request Examples
+
+**Create Purchase Order with Variant:**
+```json
+POST /purchase-order/create
+{
+  "outletId": 1,
+  "supplierId": 5,
+  "purchaseOrderItems": [
+    {
+      "itemId": 200,
+      "itemVariantId": 1000,
+      "variantSku": "SAM-S24-GRN-256",
+      "variantName": "Green - 256GB",
+      "quantity": 10,
+      "unitPrice": 9000000
+    }
+  ]
+}
+```
+
+**Create Delivery Order with Variant:**
+```json
+POST /delivery-order/create
+{
+  "outletId": 1,
+  "purchaseOrderId": 50,
+  "deliveryOrderItems": [
+    {
+      "itemId": 200,
+      "itemVariantId": 1000,
+      "variantSku": "SAM-S24-GRN-256",
+      "variantName": "Green - 256GB",
+      "orderedQuantity": 10,
+      "receivedQuantity": 10,
+      "unitPrice": 9000000
+    }
+  ]
+}
+```
+
+**Create Invoice with Variant:**
+```json
+POST /invoice/create
+{
+  "outletId": 1,
+  "customerId": 100,
+  "invoiceItems": [
+    {
+      "itemId": 200,
+      "itemVariantId": 1000,
+      "variantSku": "SAM-S24-GRN-256",
+      "variantName": "Green - 256GB",
+      "quantity": 5,
+      "unitPrice": 12000000
+    }
+  ]
+}
+```
+
+**Create Quotation with Variant:**
+```json
+POST /quotation/create
+{
+  "outletId": 1,
+  "customerId": 100,
+  "quotationItems": [
+    {
+      "itemId": 200,
+      "itemVariantId": 1000,
+      "variantSku": "SAM-S24-GRN-256",
+      "variantName": "Green - 256GB",
+      "quantity": 5,
+      "unitPrice": 12000000
+    }
+  ]
+}
+```
+
+#### Backward Compatibility
+
+- All new fields are **optional** (`?` in Prisma, nullable)
+- Existing PO/DO/Invoice/Quotation records continue to work
+- `itemVariantId = null` for simple items (no variants)
+- No breaking changes to existing API contracts
 
 ---
 

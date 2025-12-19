@@ -3,6 +3,9 @@ import { Invoice, StockBalance } from "../../prisma/client/generated/client"
 interface InvoiceItemInput {
     id?: number; // Add id for updates
     itemId: number;
+    itemVariantId?: number | null;
+    variantSku?: string | null;
+    variantName?: string | null;
     quantity: number;
     unitPrice: number;
     taxAmount?: number;

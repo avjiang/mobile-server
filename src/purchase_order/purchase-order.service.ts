@@ -618,6 +618,9 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         data: purchaseOrderData.purchaseOrderItems.map((item) => ({
                             purchaseOrderId: newPurchaseOrder.id,
                             itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            variantSku: item.variantSku || null,
+                            variantName: item.variantName || null,
                             quantity: new Decimal(item.quantity),
                             unitPrice: new Decimal(item.unitPrice),
                             discountType: item.discountType || '',
@@ -881,6 +884,9 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                         data: updateData.purchaseOrderItems.map(item => ({
                             purchaseOrderId: id,
                             itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            variantSku: item.variantSku || null,
+                            variantName: item.variantName || null,
                             quantity: new Decimal(item.quantity),
                             unitPrice: new Decimal(item.unitPrice),
                             taxAmount: item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0),

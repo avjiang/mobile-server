@@ -27,12 +27,26 @@ let getStockChecksByItemIdAndOutlet = (req: AuthRequest, res: Response, next: Ne
 
     const outletId = parseInt(req.query.outletId as string)
     const itemId = req.query.itemId as string
+    const itemVariantId = req.query.itemVariantId as string | undefined
+
     if (!validator.isNumeric(itemId)) {
         throw new RequestValidateError('Item ID format incorrect')
     }
 
-    service.getStockChecksByItemIdAndOutlet(req.user.databaseName, parseInt(itemId), outletId)
-        .then((stockCheck: StockMovement[]) => sendResponse(res, stockCheck))
+    // Parse itemVariantId: "null" string means null, numeric string means number, undefined means don't filter
+    let parsedVariantId: number | null | undefined = undefined;
+    if (itemVariantId !== undefined) {
+        if (itemVariantId === 'null') {
+            parsedVariantId = null;
+        } else if (validator.isNumeric(itemVariantId)) {
+            parsedVariantId = parseInt(itemVariantId);
+        } else {
+            throw new RequestValidateError('Item Variant ID format incorrect');
+        }
+    }
+
+    service.getStockChecksByItemIdAndOutlet(req.user.databaseName, parseInt(itemId), outletId, parsedVariantId)
+        .then((stockCheck: any[]) => sendResponse(res, stockCheck))
         .catch(next)
 }
 

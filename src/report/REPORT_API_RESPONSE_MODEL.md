@@ -1,5 +1,32 @@
 # Report API Response Model Documentation
 
+---
+
+## Changelog
+
+### v1.1.0 (2025-12-15)
+**New Feature: Delivered Sales Support**
+
+- Added new `deliveredSales` section to response with full metrics:
+  - `count` - Number of delivered sales
+  - `totalAmount` - Total sales amount
+  - `paidAmount` - Total paid amount
+  - `profit` - Total profit (profitGains + profitLosses)
+  - `profitGains` - Sum of positive profits
+  - `profitLosses` - Sum of negative profits
+  - `changeGiven` - Total change given
+  - `details` - Array of individual delivered sales
+
+- Updated `SalesStatus` type to include `"Delivered"`
+- Delivered sales now included in:
+  - Top selling items calculations
+  - Payment breakdown calculations
+  - Session/outlet sales count
+
+**Migration:** Additive change only - existing fields unchanged. Frontend can optionally display the new `deliveredSales` section.
+
+---
+
 ## Overview
 This document describes the complete JSON response models for both `generateReport` (session-based) and `generateOutletReport` (outlet-based) APIs. These APIs have been updated to properly handle profit/loss calculations.
 
@@ -145,6 +172,30 @@ This document describes the complete JSON response models for both `generateRepo
         "customerName": string,
         "phoneNumber": string,
         "businessDate": string,
+        "remark": string
+      }
+    ]
+  },
+
+  // ===================
+  // DELIVERED SALES (NEW)
+  // ===================
+  "deliveredSales": {
+    "count": number,                     // Number of delivered sales
+    "totalAmount": number,               // Total sales amount
+    "paidAmount": number,                // Total paid amount
+    "profit": number,                    // Total profit = profitGains + profitLosses
+    "profitGains": number,               // Sum of positive profits
+    "profitLosses": number,              // Sum of negative profits (negative)
+    "changeGiven": number,               // Total change given
+    "details": [
+      {
+        "salesId": number,
+        "totalAmount": number,
+        "paidAmount": number,
+        "customerName": string,
+        "phoneNumber": string,
+        "businessDate": string,          // ISO date
         "remark": string
       }
     ]
@@ -478,6 +529,7 @@ data.mostLossItems.forEach(item => {
 - `mostLossItems` - Display loss-making items
 - `profitGains` / `profitLosses` in sales sections
 - `profitImpact`, `lostProfit`, `recoveredLoss` in returns/refunds
+- **`deliveredSales`** - New section for sales with "Delivered" status (includes count, amounts, profit breakdown, and details)
 
 ### Backward Compatibility:
 - All existing fields remain unchanged
@@ -509,7 +561,7 @@ Body: {
 ## Data Types Reference
 
 ```typescript
-type SalesStatus = "Completed" | "Partially Paid" | "Returned" | "Refunded" | "Voided";
+type SalesStatus = "Completed" | "Partially Paid" | "Delivered" | "Returned" | "Refunded" | "Voided";
 type StockStatus = "In Stock" | "Low Stock" | "Out of Stock";
 type PaymentMethod = string; // e.g., "Cash", "Card", "E-Wallet", etc.
 ```

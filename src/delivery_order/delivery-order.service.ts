@@ -198,6 +198,9 @@ let getById = async (id: number, databaseName: string) => {
                     select: {
                         id: true,
                         itemId: true,
+                        itemVariantId: true,
+                        variantSku: true,
+                        variantName: true,
                         orderedQuantity: true,
                         receivedQuantity: true,
                         unitPrice: true,
@@ -621,6 +624,9 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         data: deliveryOrderData.deliveryOrderItems.map((item) => ({
                             deliveryOrderId: newDeliveryOrder.id,
                             itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            variantSku: item.variantSku || null,
+                            variantName: item.variantName || null,
                             orderedQuantity: item.orderedQuantity,
                             receivedQuantity: item.receivedQuantity,
                             unitPrice: item.unitPrice,
@@ -663,23 +669,30 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
     const movementOperations = [];
     const receiptOperations = [];
 
-    // Get all current stock balances in one query
+    // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
         where: {
-            itemId: { in: items.map(item => item.itemId) },
-            outletId: deliveryOrder.outletId,
+            OR: items.map(item => ({
+                itemId: item.itemId,
+                itemVariantId: item.itemVariantId || null,
+                outletId: deliveryOrder.outletId,
+            })),
             deleted: false
         }
     });
 
+    // Use composite key for variant support: itemId-itemVariantId
     const stockBalanceMap = new Map();
     currentStockBalances.forEach((balance: any) => {
-        stockBalanceMap.set(balance.itemId, balance);
+        const key = `${balance.itemId}-${balance.itemVariantId || 'null'}`;
+        stockBalanceMap.set(key, balance);
     });
 
     for (const item of items) {
         if (item.receivedQuantity > 0) {
-            const currentBalance = stockBalanceMap.get(item.itemId);
+            // Use composite key for variant support
+            const balanceKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
+            const currentBalance = stockBalanceMap.get(balanceKey);
 
             // Convert to Decimal objects for proper arithmetic
             const previousAvailableQuantity = new Decimal(currentBalance?.availableQuantity || 0);
@@ -712,7 +725,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                     data: {
                         itemId: item.itemId,
                         outletId: deliveryOrder.outletId,
-                        itemVariantId: null,
+                        itemVariantId: item.itemVariantId || null,
                         availableQuantity: quantityDelta,
                         onHandQuantity: quantityDelta,
                         reorderThreshold: null,
@@ -725,6 +738,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             movementOperations.push({
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
+                itemVariantId: item.itemVariantId || null,
                 previousAvailableQuantity: previousAvailableQuantity,
                 previousOnHandQuantity: previousOnHandQuantity,
                 availableQuantityDelta: quantityDelta,
@@ -740,6 +754,7 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             receiptOperations.push({
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
+                itemVariantId: item.itemVariantId || null,
                 deliveryOrderId: deliveryOrder.id,
                 quantity: quantityDelta,
                 cost: perUnitCost,
@@ -759,23 +774,30 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
 const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string) => {
     const movementOperations = [];
 
-    // Get all current stock balances in one query
+    // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
         where: {
-            itemId: { in: items.map(item => item.itemId) },
-            outletId: deliveryOrder.outletId,
+            OR: items.map(item => ({
+                itemId: item.itemId,
+                itemVariantId: item.itemVariantId || null,
+                outletId: deliveryOrder.outletId,
+            })),
             deleted: false
         }
     });
 
+    // Use composite key for variant support: itemId-itemVariantId
     const stockBalanceMap = new Map();
     currentStockBalances.forEach((balance: any) => {
-        stockBalanceMap.set(balance.itemId, balance);
+        const key = `${balance.itemId}-${balance.itemVariantId || 'null'}`;
+        stockBalanceMap.set(key, balance);
     });
 
     for (const item of items) {
         if (item.receivedQuantity > 0) {
-            const currentBalance = stockBalanceMap.get(item.itemId);
+            // Use composite key for variant support
+            const balanceKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
+            const currentBalance = stockBalanceMap.get(balanceKey);
 
             if (currentBalance) {
                 // Convert to Decimal objects for proper arithmetic
@@ -805,6 +827,7 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                 movementOperations.push({
                     itemId: item.itemId,
                     outletId: deliveryOrder.outletId,
+                    itemVariantId: item.itemVariantId || null,
                     previousAvailableQuantity: previousAvailableQuantity,
                     previousOnHandQuantity: previousOnHandQuantity,
                     availableQuantityDelta: quantityDelta.neg(), // Negative delta for reversal
@@ -1056,6 +1079,9 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                             data: updateData.deliveryOrderItems.map(item => ({
                                 deliveryOrderId: id,
                                 itemId: item.itemId,
+                                itemVariantId: item.itemVariantId || null,
+                                variantSku: item.variantSku || null,
+                                variantName: item.variantName || null,
                                 orderedQuantity: item.orderedQuantity,
                                 receivedQuantity: item.receivedQuantity,
                                 unitPrice: item.unitPrice,
@@ -1378,6 +1404,9 @@ let getUnInvoicedDeliveryOrders = async (
                         select: {
                             id: true,
                             itemId: true,
+                            itemVariantId: true,
+                            variantSku: true,
+                            variantName: true,
                             orderedQuantity: true,
                             receivedQuantity: true,
                             unitPrice: true,

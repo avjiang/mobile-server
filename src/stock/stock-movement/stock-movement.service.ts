@@ -12,18 +12,30 @@ let getAllStockCheck = async (databaseName: string) => {
     }
 }
 
-let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: number, outletId: number) => {
+let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: number, outletId: number, itemVariantId?: number | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
     try {
+        const whereCondition: any = {
+            itemId: itemId,
+            outletId: outletId
+        }
+        // Only add itemVariantId filter if explicitly provided (including null)
+        if (itemVariantId !== undefined) {
+            whereCondition.itemVariantId = itemVariantId
+        }
+
         const stockMovements = await tenantPrisma.stockMovement.findMany({
-            where: {
-                itemId: itemId,
-                outletId: outletId
-            },
+            where: whereCondition,
             include: {
                 outlet: {
                     select: {
                         outletName: true
+                    }
+                },
+                itemVariant: {
+                    select: {
+                        variantSku: true,
+                        variantName: true,
                     }
                 }
             },

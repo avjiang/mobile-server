@@ -3,6 +3,9 @@ import { Decimal as PrismaDecimal } from "../../prisma/client/generated/client/r
 interface DeliveryOrderItemInput {
     id?: number; // Add id for updates
     itemId: number;
+    itemVariantId?: number | null;
+    variantSku?: string | null;
+    variantName?: string | null;
     orderedQuantity: number;
     receivedQuantity: number;
     unitPrice?: PrismaDecimal;

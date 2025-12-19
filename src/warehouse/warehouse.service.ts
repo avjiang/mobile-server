@@ -77,7 +77,7 @@ let getById = async (databaseName: string, warehouseId: number) => {
 };
 
 /**
- * Get warehouse stock balance
+ * Get warehouse stock balance (with variant support)
  */
 let getWarehouseStock = async (
     databaseName: string,
@@ -97,7 +97,7 @@ let getWarehouseStock = async (
             throw new NotFoundError("Warehouse not found");
         }
 
-        // Get stock balances with item details
+        // Get stock balances with item and variant details
         const stockBalances = await tenantPrisma.warehouseStockBalance.findMany({
             where: {
                 warehouseId,
@@ -112,7 +112,15 @@ let getWarehouseStock = async (
                         itemType: true,
                         unitOfMeasure: true,
                         cost: true,
-                        price: true
+                        price: true,
+                        hasVariants: true,
+                    }
+                },
+                itemVariant: {
+                    select: {
+                        id: true,
+                        variantSku: true,
+                        variantName: true,
                     }
                 }
             },
@@ -123,15 +131,63 @@ let getWarehouseStock = async (
             }
         });
 
-        const total = await tenantPrisma.warehouseStockBalance.count({
-            where: {
-                warehouseId,
-                deleted: false
+        // Group variant stocks under parent items by itemId
+        const stockMap = new Map<number, any>();
+
+        for (const stock of stockBalances) {
+            if (stock.itemVariantId === null) {
+                // This is a base item stock (no variant)
+                if (!stockMap.has(stock.itemId)) {
+                    const { itemVariant, ...stockData } = stock;
+                    stockMap.set(stock.itemId, {
+                        ...stockData,
+                        variants: stock.item?.hasVariants ? [] : null,
+                    });
+                } else {
+                    // Base stock already exists from variant, update it
+                    const existing = stockMap.get(stock.itemId);
+                    const { itemVariant, ...stockData } = stock;
+                    stockMap.set(stock.itemId, {
+                        ...stockData,
+                        variants: existing.variants,
+                    });
+                }
+            } else {
+                // This is a variant stock
+                if (!stockMap.has(stock.itemId)) {
+                    // Create placeholder for parent
+                    stockMap.set(stock.itemId, {
+                        id: null,
+                        itemId: stock.itemId,
+                        warehouseId: stock.warehouseId,
+                        availableQuantity: 0,
+                        onHandQuantity: 0,
+                        itemVariantId: null,
+                        deleted: false,
+                        version: 0,
+                        item: stock.item,
+                        variants: [],
+                    });
+                }
+
+                const parent = stockMap.get(stock.itemId);
+                if (!parent.variants) parent.variants = [];
+
+                // Add variant to parent's variants array
+                const { itemVariant, item, ...stockData } = stock;
+                parent.variants.push({
+                    ...stockData,
+                    variantSku: itemVariant?.variantSku,
+                    variantName: itemVariant?.variantName,
+                });
             }
-        });
+        }
+
+        // Count total unique items (not stock balance records)
+        const total = stockMap.size;
 
         return {
-            data: stockBalances,
+            data: Array.from(stockMap.values()),
             total,
             serverTimestamp: new Date().toISOString()
         };

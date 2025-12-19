@@ -170,7 +170,7 @@ if (!lastSyncTimestamp) {
     notificationTopics = await generateNotificationTopics(...);
 } else if (currentUserAffected) {
     // Returned topics if user affected (even for deleted devices!)
-    notificationTopics = await generateNotificationTopics(...);
+    notificationTopics = await generateNotificationTopics(...);`
 }
 ```
 

@@ -761,6 +761,9 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
                         data: quotationData.quotationItems.map((item) => ({
                             quotationId: newQuotation.id,
                             itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            variantSku: item.variantSku || null,
+                            variantName: item.variantName || null,
                             quantity: new Decimal(item.quantity),
                             unitPrice: new Decimal(item.unitPrice),
                             discountType: item.discountType || '',
@@ -1040,6 +1043,9 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
                             where: { id: incomingItem.id },
                             data: {
                                 itemId: incomingItem.itemId,
+                                itemVariantId: incomingItem.itemVariantId || null,
+                                variantSku: incomingItem.variantSku || null,
+                                variantName: incomingItem.variantName || null,
                                 quantity: new Decimal(incomingItem.quantity),
                                 unitPrice: new Decimal(incomingItem.unitPrice),
                                 taxAmount: incomingItem.taxAmount ? new Decimal(incomingItem.taxAmount) : new Decimal(0),
@@ -1066,6 +1072,9 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
                         data: newItems.map(item => ({
                             quotationId: id,
                             itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            variantSku: item.variantSku || null,
+                            variantName: item.variantName || null,
                             quantity: new Decimal(item.quantity),
                             unitPrice: new Decimal(item.unitPrice),
                             taxAmount: item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0),

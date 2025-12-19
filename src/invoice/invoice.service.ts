@@ -963,6 +963,9 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         data: invoiceData.invoiceItems.map((item) => ({
                             invoiceId: newInvoice.id,
                             itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            variantSku: item.variantSku || null,
+                            variantName: item.variantName || null,
                             quantity: item.quantity,
                             discountType: item.discountType || '',
                             discountAmount: item.discountAmount || 0,
@@ -1249,6 +1252,9 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                         await tx.invoiceItem.update({
                             where: { id: existingItem.id },
                             data: {
+                                itemVariantId: item.itemVariantId || null,
+                                variantSku: item.variantSku || null,
+                                variantName: item.variantName || null,
                                 quantity: item.quantity,
                                 discountType: item.discountType || '',
                                 discountAmount: item.discountAmount || 0,
@@ -1267,6 +1273,9 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                             data: itemsToCreate.map(item => ({
                                 invoiceId: id,
                                 itemId: item.itemId,
+                                itemVariantId: item.itemVariantId || null,
+                                variantSku: item.variantSku || null,
+                                variantName: item.variantName || null,
                                 quantity: item.quantity,
                                 discountType: item.discountType || '',
                                 discountAmount: item.discountAmount || 0,

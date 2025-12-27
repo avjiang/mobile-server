@@ -106,6 +106,16 @@ async function setup(): Promise<void> {
     const { seedPermissions } = await import('./permission_seed');
     await seedPermissions();
 
+    // Step 6: Seed subscription plans
+    console.log('\nStep 6: Seeding subscription plans...');
+    const { seedSubscriptionPlans } = await import('./subscription_plan_seed');
+    await seedSubscriptionPlans();
+
+    // Step 7: Seed subscription add-ons
+    console.log('\nStep 7: Seeding subscription add-ons...');
+    const { seedSubscriptionAddOns } = await import('./subscription_add_on_seed');
+    await seedSubscriptionAddOns();
+
     // Cleanup
     const { disconnectAllPrismaClients } = await import('../db');
     await disconnectAllPrismaClients();

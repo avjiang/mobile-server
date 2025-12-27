@@ -100,7 +100,9 @@
     "upgrade_db": "node dist/script/db_upgrade.js",
     "generate_prisma": "npx prisma generate --schema=prisma/client/schema.prisma && npx prisma generate --schema=prisma/global-client/schema.prisma",
     "seed_settings_definitions": "npx ts-node src/script/setting_definitions_seed.ts",
-    "seed_permissions": "npx ts-node src/script/permission_seed.ts"
+    "seed_permissions": "npx ts-node src/script/permission_seed.ts",
+    "seed_subscription_plans": "npx ts-node src/script/subscription_plan_seed.ts",
+    "seed_subscription_add_ons": "npx ts-node src/script/subscription_add_on_seed.ts"
   },
   "keywords": [],
   "author": "",

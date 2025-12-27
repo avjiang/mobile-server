@@ -46,18 +46,22 @@ The setup script performs the following steps:
 3. **Runs Migrations** - Applies all pending migrations to the global database
 4. **Seeds Setting Definitions** - Populates default system settings
 5. **Seeds Permissions** - Populates permission definitions
+6. **Seeds Subscription Plans** - Populates subscription plan options
+7. **Seeds Subscription Add-Ons** - Populates subscription add-on options
 
 ## Available Scripts
 
-| Script                              | Description                                        |
-| ----------------------------------- | -------------------------------------------------- |
-| `npm run setup`                     | Full setup for new developers                      |
-| `npm run dev`                       | Start development server with PM2                  |
-| `npm run build`                     | Compile TypeScript to JavaScript                   |
-| `npm run upgrade_db`                | Run migrations on all databases (global + tenants) |
-| `npm run generate_prisma`           | Regenerate Prisma clients                          |
-| `npm run seed_settings_definitions` | Seed setting definitions only                      |
-| `npm run seed_permissions`          | Seed permissions only                              |
+| Script                               | Description                                        |
+| ------------------------------------ | -------------------------------------------------- |
+| `npm run setup`                      | Full setup for new developers                      |
+| `npm run dev`                        | Start development server with PM2                  |
+| `npm run build`                      | Compile TypeScript to JavaScript                   |
+| `npm run upgrade_db`                 | Run migrations on all databases (global + tenants) |
+| `npm run generate_prisma`            | Regenerate Prisma clients                          |
+| `npm run seed_settings_definitions`  | Seed setting definitions only                      |
+| `npm run seed_permissions`           | Seed permissions only                              |
+| `npm run seed_subscription_plans`    | Seed subscription plans only                       |
+| `npm run seed_subscription_add_ons`  | Seed subscription add-ons only                     |
 
 ## Seeded Data Reference
 
@@ -99,6 +103,21 @@ The setup script performs the following steps:
 | Receive Notification             | Notifications       | Master permission to enable push notifications |
 | Manage Push Notification Devices | Devices             | Manage active push notification devices        |
 | Receive Inventory Notification   | Notifications       | Receive inventory related notification         |
+
+### Subscription Plans (2 plans)
+
+| Plan Name | Plan Type | Price   | Max Users | Max Devices | Description                               |
+| --------- | --------- | ------- | --------- | ----------- | ----------------------------------------- |
+| Basic     | Retail    | 250,000 | 2         | 0           | Basic plan for small retail businesses    |
+| Pro       | Retail    | 375,000 | 3         | 3           | Pro plan with push notification support   |
+
+### Subscription Add-Ons (3 add-ons)
+
+| Name                               | Type      | Price/Unit | Max Qty | Scope  | Description                               |
+| ---------------------------------- | --------- | ---------- | ------- | ------ | ----------------------------------------- |
+| Additional User                    | user      | 49,000     | 1       | outlet | Add extra user to an outlet subscription  |
+| Additional Push Notification Device| user      | 20,000     | 1       | tenant | Add extra push notification device        |
+| Extra Warehouse                    | warehouse | 149,000    | -       | tenant | Add extra warehouse for inventory         |
 
 ## Troubleshooting
 
@@ -175,6 +194,50 @@ Then run:
 
 ```bash
 npm run seed_permissions
+```
+
+### Adding New Subscription Plans
+
+Edit `src/script/subscription_plan_seed.ts` and add new entries to the `subscriptionPlans` array:
+
+```typescript
+{
+    planName: "Enterprise",
+    planType: "Retail",
+    price: 500000,
+    maxTransactions: null,
+    maxProducts: null,
+    maxUsers: 10,
+    maxDevices: 10,
+    description: "Enterprise plan for large businesses"
+}
+```
+
+Then run:
+
+```bash
+npm run seed_subscription_plans
+```
+
+### Adding New Subscription Add-Ons
+
+Edit `src/script/subscription_add_on_seed.ts` and add new entries to the `subscriptionAddOns` array:
+
+```typescript
+{
+    name: "Extra Feature",
+    addOnType: "feature",
+    pricePerUnit: 50000,
+    maxQuantity: null,
+    scope: "tenant",
+    description: "Description of the add-on"
+}
+```
+
+Then run:
+
+```bash
+npm run seed_subscription_add_ons
 ```
 
 ## Database Architecture

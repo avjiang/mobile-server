@@ -1,7 +1,7 @@
-import mysql from 'mysql';
+import * as mysql from 'mysql';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 

@@ -6,7 +6,8 @@
       "Bash(test:*)",
       "Bash(cat:*)",
       "Bash(mysql:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

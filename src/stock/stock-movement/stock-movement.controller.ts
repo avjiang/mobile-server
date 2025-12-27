@@ -102,5 +102,5 @@ let updateManyStockChecks = (req: NetworkRequest<UpdateStockChecksRequestBody>, 
 router.get("/", getAllStockCheck)
 router.get('/find', getStockChecksByItemIdAndOutlet)
 // router.post('/create', createManyStockChecks)
-router.put('/update', updateManyStockChecks)
+// router.put('/update', updateManyStockChecks)
 export = router

@@ -145,7 +145,7 @@ let removeStock = (req: AuthRequest, res: Response, next: NextFunction) => {
 router.get("/sync", getAllStock)
 router.get('/find', getStockByItemId)
 router.put('/adjustment', stockAdjustment)
-router.put('/update', updateManyStocks)
+// router.put('/update', updateManyStocks)
 router.post('/clear', clearStock)
 // router.delete('/:id', removeStock)
 export = router

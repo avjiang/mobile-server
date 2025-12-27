@@ -47,7 +47,7 @@ let updateStockReceipts = async (databaseName: string, requestBody: StockReceipt
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const updatePromises = requestBody.stockReceipts.map(async (stockReceiptData) => {
-            const { id, version, ...updateData } = stockReceiptData;
+            const { id, version, itemId, outletId, itemVariantId, ...updateData } = stockReceiptData;
 
             return await tenantPrisma.stockReceipt.update({
                 where: {

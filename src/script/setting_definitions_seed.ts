@@ -1,6 +1,4 @@
-import { getGlobalPrisma } from '../db';
-
-const globalPrisma = getGlobalPrisma()
+import { getGlobalPrisma, disconnectAllPrismaClients } from '../db';
 
 const settingDefinitions = [
     // ============================================
@@ -229,8 +227,10 @@ const settingDefinitions = [
     // }
 ];
 
-async function seed() {
-    console.log('🌱 Seeding setting definitions...');
+export async function seedSettingDefinitions(): Promise<void> {
+    const globalPrisma = getGlobalPrisma();
+
+    console.log('Seeding setting definitions...');
 
     for (const def of settingDefinitions) {
         await globalPrisma.settingDefinition.upsert({
@@ -240,7 +240,7 @@ async function seed() {
         });
     }
 
-    console.log(`✅ Successfully seeded ${settingDefinitions.length} setting definitions`);
+    console.log(`Successfully seeded ${settingDefinitions.length} setting definitions`);
 
     // Display summary
     const byScope = settingDefinitions.reduce((acc, def) => {
@@ -253,14 +253,17 @@ async function seed() {
         return acc;
     }, {} as Record<string, number>);
 
-    console.log('\n📊 Summary:');
+    console.log('\nSummary:');
     console.log('By Scope:', byScope);
     console.log('By Category:', byCategory);
 }
 
-seed()
-    .catch((error) => {
-        console.error('❌ Error seeding setting definitions:', error);
-        process.exit(1);
-    })
-    .finally(() => globalPrisma.$disconnect());
+// Run if executed directly
+if (require.main === module) {
+    seedSettingDefinitions()
+        .catch((error) => {
+            console.error('Error seeding setting definitions:', error);
+            process.exit(1);
+        })
+        .finally(() => disconnectAllPrismaClients());
+}

@@ -96,9 +96,11 @@
     "dev": "pm2 start ecosystem.config.js",
     "tunnel": "ngrok http --scheme=http --url=above-frog-capital.ngrok-free.app 8080",
     "start": "node dist/index.js",
+    "setup": "npx ts-node src/script/setup.ts",
     "upgrade_db": "node dist/script/db_upgrade.js",
     "generate_prisma": "npx prisma generate --schema=prisma/client/schema.prisma && npx prisma generate --schema=prisma/global-client/schema.prisma",
-    "seed_settings_definitions": "npx ts-node dist/script/setting_definitions_seed.js"
+    "seed_settings_definitions": "npx ts-node src/script/setting_definitions_seed.ts",
+    "seed_permissions": "npx ts-node src/script/permission_seed.ts"
   },
   "keywords": [],
   "author": "",

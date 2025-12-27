@@ -1,10 +1,23 @@
 import { plainToInstance } from "class-transformer";
-import { PrismaClient, Tenant, TenantUser, SubscriptionPlan } from "../../prisma/global-client/generated/global";
+import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, Prisma } from "../../prisma/global-client/generated/global";
 import { PrismaClient as TenantPrismaClient } from "../../prisma/client/generated/client";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { CreateTenantRequest } from "./admin.request";
 import bcrypt from "bcryptjs"
-import { TenantCostResponse, TenantCreationDto, TenantDto, TotalCostResponse } from "./admin.response";
+import {
+    TenantCostResponse,
+    TenantCreationDto,
+    TenantDto,
+    TotalCostResponse,
+    CostSnapshot,
+    TenantPaymentResponse,
+    RecordPaymentResponse,
+    PaymentListResponse,
+    AllPaymentsResponse,
+    TenantBillingSummaryResponse,
+    UpcomingPaymentsSummaryResponse,
+    UpcomingPaymentsResponse
+} from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
@@ -1770,6 +1783,626 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
     }
 };
 
+// ============================================
+// Payment Management - Helper Functions
+// ============================================
+
+const GRACE_PERIOD_DAYS = 7;
+
+/**
+ * Calculate subscription status with grace period
+ */
+const getSubscriptionStatus = (subscriptionValidUntil: Date): 'Active' | 'Grace' | 'Expired' => {
+    const now = new Date();
+    const validUntil = new Date(subscriptionValidUntil);
+    const graceEnd = new Date(validUntil);
+    graceEnd.setDate(graceEnd.getDate() + GRACE_PERIOD_DAYS);
+
+    if (now <= validUntil) return 'Active';
+    if (now <= graceEnd) return 'Grace';
+    return 'Expired';
+};
+
+/**
+ * Build cost snapshot from subscription data for payment record
+ */
+const buildCostSnapshot = (subscription: any): CostSnapshot => {
+    const basePlanCost = subscription.subscriptionPlan?.price || 0;
+    const addOns = (subscription.subscriptionAddOn || []).map((sa: any) => ({
+        addOnId: sa.addOn?.id || sa.addOnId,
+        name: sa.addOn?.name || 'Unknown',
+        quantity: sa.quantity,
+        pricePerUnit: sa.addOn?.pricePerUnit || 0,
+        totalCost: (sa.addOn?.pricePerUnit || 0) * sa.quantity
+    }));
+
+    const discounts: CostSnapshot['discounts'] = [];
+    if (subscription.discount && (!subscription.discount.endDate || new Date() <= subscription.discount.endDate)) {
+        const discountValue = subscription.discount.value;
+        let amountOff = 0;
+
+        if (subscription.discount.discountType === 'percentage') {
+            const addOnTotal = addOns.reduce((sum: number, a: any) => sum + a.totalCost, 0);
+            amountOff = (basePlanCost + addOnTotal) * (discountValue / 100);
+        } else if (subscription.discount.discountType === 'fixed') {
+            amountOff = discountValue;
+        }
+
+        discounts.push({
+            discountId: subscription.discount.id,
+            name: subscription.discount.name,
+            type: subscription.discount.discountType,
+            value: discountValue,
+            amountOff
+        });
+    }
+
+    const totalBeforeDiscount = basePlanCost + addOns.reduce((sum: number, a: any) => sum + a.totalCost, 0);
+    const totalDiscount = discounts.reduce((sum: number, d) => sum + d.amountOff, 0);
+    const totalAfterDiscount = Math.max(0, totalBeforeDiscount - totalDiscount);
+
+    return {
+        planName: subscription.subscriptionPlan?.planName || 'Unknown',
+        planId: subscription.subscriptionPlan?.id || 0,
+        basePlanCost,
+        addOns,
+        discounts,
+        totalBeforeDiscount,
+        totalDiscount,
+        totalAfterDiscount
+    };
+};
+
+/**
+ * Generate invoice number: INV-YYYYMM-XXXX
+ */
+const generateInvoiceNumber = async (tx: any): Promise<string> => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const prefix = `INV-${year}${month}-`;
+
+    // Get last invoice of this month
+    const lastInvoice = await tx.tenantPayment.findFirst({
+        where: { invoiceNumber: { startsWith: prefix } },
+        orderBy: { invoiceNumber: 'desc' }
+    });
+
+    let sequence = 1;
+    if (lastInvoice) {
+        const lastSeq = parseInt(lastInvoice.invoiceNumber.slice(-4));
+        sequence = lastSeq + 1;
+    }
+
+    return `${prefix}${sequence.toString().padStart(4, '0')}`;
+};
+
+// ============================================
+// Payment Management - Service Methods
+// ============================================
+
+/**
+ * Record payment and extend subscription
+ */
+const recordPayment = async (
+    tenantId: number,
+    outletId: number,
+    paymentData: {
+        amount: number;
+        paymentMethod: string;
+        referenceNumber?: string;
+        paymentDate: Date;
+        extensionMonths?: number;
+        notes?: string;
+        recordedBy?: number;
+    }
+): Promise<RecordPaymentResponse> => {
+    const extensionMonths = paymentData.extensionMonths || 1;
+
+    return await prisma.$transaction(async (tx) => {
+        // Step 1: Get outlet's subscription
+        const subscription = await tx.tenantSubscription.findFirst({
+            where: {
+                tenantId,
+                outletId,
+                status: { in: ['Active', 'active', 'trial', 'Grace', 'Expired'] }
+            },
+            include: {
+                subscriptionPlan: true,
+                subscriptionAddOn: {
+                    include: { addOn: true }
+                },
+                discount: true,
+                outlet: true
+            }
+        });
+
+        if (!subscription) {
+            throw new NotFoundError('No subscription found for this outlet');
+        }
+
+        // Step 2: Generate invoice number
+        const invoiceNumber = await generateInvoiceNumber(tx);
+
+        // Step 3: Calculate new dates
+        const now = new Date();
+        const currentValidUntil = new Date(subscription.subscriptionValidUntil);
+        const currentStatus = getSubscriptionStatus(currentValidUntil);
+
+        let periodFrom: Date;
+        if (currentStatus === 'Expired') {
+            // Past grace period - start from today
+            periodFrom = now;
+        } else {
+            // Active or Grace - extend from current valid date
+            periodFrom = currentValidUntil;
+        }
+
+        const periodTo = new Date(periodFrom);
+        periodTo.setMonth(periodTo.getMonth() + extensionMonths);
+
+        // Step 4: Build cost snapshot
+        const costSnapshot = buildCostSnapshot(subscription);
+
+        // Step 5: Create payment record
+        const payment = await tx.tenantPayment.create({
+            data: {
+                invoiceNumber,
+                tenantId,
+                outletId,
+                subscriptionId: subscription.id,
+                amount: paymentData.amount,
+                currency: 'IDR',
+                paymentMethod: paymentData.paymentMethod,
+                referenceNumber: paymentData.referenceNumber || null,
+                notes: paymentData.notes || null,
+                paymentDate: paymentData.paymentDate,
+                periodFrom,
+                periodTo,
+                previousValidUntil: currentValidUntil,
+                extensionMonths,
+                costSnapshot: costSnapshot as any,
+                recordedBy: paymentData.recordedBy || null
+            }
+        });
+
+        // Step 6: Update subscription
+        await tx.tenantSubscription.update({
+            where: { id: subscription.id },
+            data: {
+                subscriptionValidUntil: periodTo,
+                nextPaymentDate: periodTo,
+                status: 'Active'
+            }
+        });
+
+        // Build response
+        const paymentResponse: TenantPaymentResponse = {
+            id: payment.id,
+            invoiceNumber: payment.invoiceNumber,
+            tenantId: payment.tenantId,
+            outletId: payment.outletId,
+            outletName: subscription.outlet.outletName,
+            amount: payment.amount,
+            currency: payment.currency,
+            paymentMethod: payment.paymentMethod,
+            referenceNumber: payment.referenceNumber,
+            paymentDate: payment.paymentDate.toISOString(),
+            periodFrom: payment.periodFrom.toISOString(),
+            periodTo: payment.periodTo.toISOString(),
+            extensionMonths: payment.extensionMonths,
+            costSnapshot: payment.costSnapshot as unknown as CostSnapshot,
+            recordedAt: payment.recordedAt.toISOString()
+        };
+
+        return {
+            success: true,
+            message: `Payment recorded. Subscription extended to ${periodTo.toISOString().split('T')[0]}`,
+            payment: paymentResponse,
+            subscription: {
+                previousValidUntil: currentValidUntil.toISOString(),
+                newValidUntil: periodTo.toISOString(),
+                status: 'Active'
+            }
+        };
+    });
+};
+
+/**
+ * Get payment history for a tenant
+ */
+const getPaymentsByTenant = async (
+    tenantId: number,
+    options?: {
+        outletId?: number;
+        fromDate?: Date;
+        toDate?: Date;
+        limit?: number;
+        offset?: number;
+    }
+): Promise<PaymentListResponse> => {
+    const limit = Math.min(options?.limit || 50, 100);
+    const offset = options?.offset || 0;
+
+    const where: any = { tenantId };
+    if (options?.outletId) {
+        where.outletId = options.outletId;
+    }
+    if (options?.fromDate || options?.toDate) {
+        where.paymentDate = {};
+        if (options.fromDate) where.paymentDate.gte = options.fromDate;
+        if (options.toDate) where.paymentDate.lte = options.toDate;
+    }
+
+    const [payments, total] = await Promise.all([
+        prisma.tenantPayment.findMany({
+            where,
+            include: {
+                outlet: { select: { outletName: true } }
+            },
+            orderBy: { paymentDate: 'desc' },
+            take: limit,
+            skip: offset
+        }),
+        prisma.tenantPayment.count({ where })
+    ]);
+
+    return {
+        payments: payments.map(p => ({
+            id: p.id,
+            invoiceNumber: p.invoiceNumber,
+            tenantId: p.tenantId,
+            outletId: p.outletId,
+            outletName: p.outlet.outletName,
+            amount: p.amount,
+            currency: p.currency,
+            paymentMethod: p.paymentMethod,
+            referenceNumber: p.referenceNumber,
+            paymentDate: p.paymentDate.toISOString(),
+            periodFrom: p.periodFrom.toISOString(),
+            periodTo: p.periodTo.toISOString(),
+            extensionMonths: p.extensionMonths,
+            costSnapshot: p.costSnapshot as unknown as CostSnapshot,
+            recordedAt: p.recordedAt.toISOString()
+        })),
+        total,
+        limit,
+        offset
+    };
+};
+
+/**
+ * Get all payments (admin dashboard)
+ */
+const getAllPayments = async (
+    options: {
+        fromDate: Date;
+        toDate: Date;
+        tenantId?: number;
+        limit?: number;
+        offset?: number;
+    }
+): Promise<AllPaymentsResponse> => {
+    const limit = Math.min(options.limit || 50, 100);
+    const offset = options.offset || 0;
+
+    const where: any = {
+        paymentDate: {
+            gte: options.fromDate,
+            lte: options.toDate
+        }
+    };
+    if (options.tenantId) {
+        where.tenantId = options.tenantId;
+    }
+
+    const [payments, total] = await Promise.all([
+        prisma.tenantPayment.findMany({
+            where,
+            include: {
+                tenant: { select: { tenantName: true } },
+                outlet: { select: { outletName: true } }
+            },
+            orderBy: { paymentDate: 'desc' },
+            take: limit,
+            skip: offset
+        }),
+        prisma.tenantPayment.count({ where })
+    ]);
+
+    return {
+        payments: payments.map(p => ({
+            id: p.id,
+            invoiceNumber: p.invoiceNumber,
+            tenantId: p.tenantId,
+            tenantName: p.tenant.tenantName,
+            outletId: p.outletId,
+            outletName: p.outlet.outletName,
+            amount: p.amount,
+            currency: p.currency,
+            paymentMethod: p.paymentMethod,
+            referenceNumber: p.referenceNumber,
+            paymentDate: p.paymentDate.toISOString(),
+            periodFrom: p.periodFrom.toISOString(),
+            periodTo: p.periodTo.toISOString(),
+            extensionMonths: p.extensionMonths,
+            costSnapshot: p.costSnapshot as unknown as CostSnapshot,
+            recordedAt: p.recordedAt.toISOString()
+        })),
+        total,
+        limit,
+        offset
+    };
+};
+
+/**
+ * Get tenant billing summary (consolidated view across all outlets)
+ */
+const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingSummaryResponse> => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        include: {
+            tenantOutlets: {
+                where: { isActive: true },
+                include: {
+                    subscriptions: {
+                        where: { status: { in: ['Active', 'active', 'trial', 'Grace', 'Expired'] } },
+                        include: {
+                            subscriptionPlan: true,
+                            subscriptionAddOn: { include: { addOn: true } },
+                            discount: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!tenant) {
+        throw new NotFoundError('Tenant not found');
+    }
+
+    const now = new Date();
+    let totalMonthlyCost = 0;
+
+    const outlets = tenant.tenantOutlets.map(outlet => {
+        const subscription = outlet.subscriptions[0];
+        if (!subscription) {
+            return {
+                outletId: outlet.id,
+                outletName: outlet.outletName,
+                subscriptionStatus: 'None',
+                subscriptionValidUntil: '',
+                graceEndDate: '',
+                daysUntilExpiry: 0,
+                planName: 'None',
+                basePlanCost: 0,
+                addOns: [],
+                discounts: [],
+                outletTotalCost: 0
+            };
+        }
+
+        const validUntil = new Date(subscription.subscriptionValidUntil);
+        const graceEnd = new Date(validUntil);
+        graceEnd.setDate(graceEnd.getDate() + GRACE_PERIOD_DAYS);
+
+        const status = getSubscriptionStatus(validUntil);
+        const daysUntilExpiry = Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        const basePlanCost = subscription.subscriptionPlan.price;
+        const addOns = subscription.subscriptionAddOn.map(sa => ({
+            name: sa.addOn.name,
+            quantity: sa.quantity,
+            totalCost: sa.addOn.pricePerUnit * sa.quantity
+        }));
+
+        const discounts: Array<{ name: string; amount: number }> = [];
+        let totalDiscount = 0;
+        if (subscription.discount && (!subscription.discount.endDate || now <= subscription.discount.endDate)) {
+            const addOnTotal = addOns.reduce((sum, a) => sum + a.totalCost, 0);
+            let amount = 0;
+            if (subscription.discount.discountType === 'percentage') {
+                amount = (basePlanCost + addOnTotal) * (subscription.discount.value / 100);
+            } else {
+                amount = subscription.discount.value;
+            }
+            discounts.push({ name: subscription.discount.name, amount });
+            totalDiscount = amount;
+        }
+
+        const addOnTotal = addOns.reduce((sum, a) => sum + a.totalCost, 0);
+        const outletTotalCost = Math.max(0, basePlanCost + addOnTotal - totalDiscount);
+        totalMonthlyCost += outletTotalCost;
+
+        return {
+            outletId: outlet.id,
+            outletName: outlet.outletName,
+            subscriptionStatus: status,
+            subscriptionValidUntil: validUntil.toISOString(),
+            graceEndDate: graceEnd.toISOString(),
+            daysUntilExpiry,
+            planName: subscription.subscriptionPlan.planName,
+            basePlanCost,
+            addOns,
+            discounts,
+            outletTotalCost
+        };
+    });
+
+    return {
+        tenantId: tenant.id,
+        tenantName: tenant.tenantName,
+        totalMonthlyCost,
+        outlets
+    };
+};
+
+/**
+ * Get upcoming payments summary (counts by status)
+ */
+const getUpcomingPaymentsSummary = async (daysAhead: number = 30): Promise<UpcomingPaymentsSummaryResponse> => {
+    const now = new Date();
+    const futureDate = new Date(now);
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+
+    const graceStart = new Date(now);
+    graceStart.setDate(graceStart.getDate() - GRACE_PERIOD_DAYS);
+
+    // Raw SQL for performance
+    const results = await prisma.$queryRaw<Array<{
+        status: string;
+        tenantCount: bigint;
+        outletCount: bigint;
+    }>>`
+        SELECT
+            CASE
+                WHEN ts.SUBSCRIPTION_VALID_UNTIL >= NOW() THEN 'active'
+                WHEN ts.SUBSCRIPTION_VALID_UNTIL >= DATE_SUB(NOW(), INTERVAL ${GRACE_PERIOD_DAYS} DAY) THEN 'grace'
+                ELSE 'expired'
+            END as status,
+            COUNT(DISTINCT t.ID) as tenantCount,
+            COUNT(DISTINCT o.ID) as outletCount
+        FROM tenant t
+        JOIN tenant_outlet o ON t.ID = o.TENANT_ID AND o.IS_ACTIVE = true
+        JOIN tenant_subscription ts ON o.ID = ts.OUTLET_ID AND ts.STATUS IN ('Active', 'active', 'trial')
+        WHERE ts.SUBSCRIPTION_VALID_UNTIL <= ${futureDate}
+        GROUP BY status
+    `;
+
+    let activeExpiring = 0;
+    let graceExpiring = 0;
+    let expiredCount = 0;
+    let totalTenants = 0;
+    let totalOutlets = 0;
+
+    const tenantIds = new Set<number>();
+
+    for (const row of results) {
+        const outletNum = Number(row.outletCount);
+        totalOutlets += outletNum;
+
+        if (row.status === 'active') {
+            activeExpiring = outletNum;
+        } else if (row.status === 'grace') {
+            graceExpiring = outletNum;
+        } else {
+            expiredCount = outletNum;
+        }
+    }
+
+    // Get distinct tenant count
+    const tenantResult = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(DISTINCT t.ID) as count
+        FROM tenant t
+        JOIN tenant_outlet o ON t.ID = o.TENANT_ID AND o.IS_ACTIVE = true
+        JOIN tenant_subscription ts ON o.ID = ts.OUTLET_ID AND ts.STATUS IN ('Active', 'active', 'trial')
+        WHERE ts.SUBSCRIPTION_VALID_UNTIL <= ${futureDate}
+    `;
+    totalTenants = Number(tenantResult[0]?.count || 0);
+
+    return {
+        days: daysAhead,
+        summary: {
+            activeExpiring,
+            graceExpiring,
+            expiredCount,
+            totalTenants,
+            totalOutlets
+        }
+    };
+};
+
+/**
+ * Get upcoming payments (paginated list by tenant)
+ */
+const getUpcomingPayments = async (options: {
+    days?: number;
+    status?: 'active' | 'grace' | 'expired' | 'all';
+    limit?: number;
+    offset?: number;
+}): Promise<UpcomingPaymentsResponse> => {
+    const days = options.days || 30;
+    const status = options.status || 'all';
+    const limit = Math.min(options.limit || 50, 100);
+    const offset = options.offset || 0;
+
+    const now = new Date();
+    const futureDate = new Date(now);
+    futureDate.setDate(futureDate.getDate() + days);
+
+    let statusFilter = '';
+    if (status === 'active') {
+        statusFilter = 'AND ts.SUBSCRIPTION_VALID_UNTIL >= NOW()';
+    } else if (status === 'grace') {
+        statusFilter = `AND ts.SUBSCRIPTION_VALID_UNTIL < NOW() AND ts.SUBSCRIPTION_VALID_UNTIL >= DATE_SUB(NOW(), INTERVAL ${GRACE_PERIOD_DAYS} DAY)`;
+    } else if (status === 'expired') {
+        statusFilter = `AND ts.SUBSCRIPTION_VALID_UNTIL < DATE_SUB(NOW(), INTERVAL ${GRACE_PERIOD_DAYS} DAY)`;
+    }
+
+    // Get tenant summaries with pagination
+    const results = await prisma.$queryRaw<Array<{
+        tenantId: number;
+        tenantName: string;
+        outletCount: bigint;
+        totalMonthlyCost: number;
+        mostUrgentExpiry: Date;
+        mostUrgentStatus: string;
+    }>>`
+        SELECT
+            t.ID as tenantId,
+            t.TENANT_NAME as tenantName,
+            COUNT(DISTINCT o.ID) as outletCount,
+            COALESCE(SUM(
+                sp.PRICE + COALESCE((
+                    SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
+                    FROM tenant_subscription_add_on tsa
+                    JOIN subscription_add_on sa ON tsa.ADD_ON_ID = sa.ID
+                    WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
+                ), 0)
+            ), 0) as totalMonthlyCost,
+            MIN(ts.SUBSCRIPTION_VALID_UNTIL) as mostUrgentExpiry,
+            CASE
+                WHEN MIN(ts.SUBSCRIPTION_VALID_UNTIL) >= NOW() THEN 'Active'
+                WHEN MIN(ts.SUBSCRIPTION_VALID_UNTIL) >= DATE_SUB(NOW(), INTERVAL ${GRACE_PERIOD_DAYS} DAY) THEN 'Grace'
+                ELSE 'Expired'
+            END as mostUrgentStatus
+        FROM tenant t
+        JOIN tenant_outlet o ON t.ID = o.TENANT_ID AND o.IS_ACTIVE = true
+        JOIN tenant_subscription ts ON o.ID = ts.OUTLET_ID AND ts.STATUS IN ('Active', 'active', 'trial')
+        JOIN subscription_plan sp ON ts.SUBSCRIPTION_PLAN_ID = sp.ID
+        WHERE ts.SUBSCRIPTION_VALID_UNTIL <= ${futureDate}
+        ${Prisma.raw(statusFilter)}
+        GROUP BY t.ID, t.TENANT_NAME
+        ORDER BY mostUrgentExpiry ASC
+        LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    // Get total count
+    const countResult = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(DISTINCT t.ID) as count
+        FROM tenant t
+        JOIN tenant_outlet o ON t.ID = o.TENANT_ID AND o.IS_ACTIVE = true
+        JOIN tenant_subscription ts ON o.ID = ts.OUTLET_ID AND ts.STATUS IN ('Active', 'active', 'trial')
+        WHERE ts.SUBSCRIPTION_VALID_UNTIL <= ${futureDate}
+        ${Prisma.raw(statusFilter)}
+    `;
+
+    return {
+        upcomingPayments: results.map(r => ({
+            tenantId: r.tenantId,
+            tenantName: r.tenantName,
+            outletCount: Number(r.outletCount),
+            totalMonthlyCost: r.totalMonthlyCost,
+            mostUrgentExpiry: r.mostUrgentExpiry.toISOString(),
+            mostUrgentStatus: r.mostUrgentStatus
+        })),
+        totalCount: Number(countResult[0]?.count || 0),
+        limit,
+        offset
+    };
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -1782,5 +2415,12 @@ export = {
     createWarehouseForTenant,
     deleteWarehouseForTenant,
     getTenantWarehouses,
-    changeTenantPlan
+    changeTenantPlan,
+    // Payment Management
+    recordPayment,
+    getPaymentsByTenant,
+    getAllPayments,
+    getTenantBillingSummary,
+    getUpcomingPaymentsSummary,
+    getUpcomingPayments
 }

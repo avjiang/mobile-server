@@ -6,7 +6,17 @@ import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
 import { CreateTenantRequest } from "src/admin/admin.request"
-import { TenantCostResponse, TenantCreationDto, TotalCostResponse } from "./admin.response"
+import {
+    TenantCostResponse,
+    TenantCreationDto,
+    TotalCostResponse,
+    RecordPaymentResponse,
+    PaymentListResponse,
+    AllPaymentsResponse,
+    TenantBillingSummaryResponse,
+    UpcomingPaymentsSummaryResponse,
+    UpcomingPaymentsResponse
+} from "./admin.response"
 
 const router = express.Router()
 
@@ -293,6 +303,177 @@ let changeTenantPlan = (req: NetworkRequest<{ planName: string }>, res: Response
         .catch(next);
 };
 
+// ============================================
+// Payment Management Endpoints
+// ============================================
+
+/**
+ * POST /tenants/:tenantId/outlets/:outletId/payments
+ * Record payment and extend subscription
+ */
+let recordPayment = (req: NetworkRequest<{
+    amount: number;
+    paymentMethod: string;
+    paymentDate: string;
+    referenceNumber?: string;
+    extensionMonths?: number;
+    notes?: string;
+}>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('Tenant ID format incorrect');
+    }
+    if (!validator.isNumeric(req.params.outletId)) {
+        throw new RequestValidateError('Outlet ID format incorrect');
+    }
+    if (!req.body || !req.body.amount || !req.body.paymentMethod || !req.body.paymentDate) {
+        res.status(400).json({ error: 'Invalid request. amount, paymentMethod, and paymentDate are required.' });
+        return;
+    }
+    if (req.body.amount <= 0) {
+        res.status(400).json({ error: 'Invalid request. Amount must be a positive number.' });
+        return;
+    }
+
+    const tenantId: number = parseInt(req.params.tenantId);
+    const outletId: number = parseInt(req.params.outletId);
+    const { amount, paymentMethod, paymentDate, referenceNumber, extensionMonths, notes } = req.body;
+
+    service.recordPayment(tenantId, outletId, {
+        amount,
+        paymentMethod,
+        paymentDate: new Date(paymentDate),
+        referenceNumber,
+        extensionMonths: extensionMonths || 1,
+        notes
+    })
+        .then((response: RecordPaymentResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
+ * GET /tenants/:tenantId/payments
+ * Get payment history for a tenant (all outlets or filtered by outletId)
+ */
+let getTenantPayments = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('Tenant ID format incorrect');
+    }
+
+    const tenantId: number = parseInt(req.params.tenantId);
+    const outletId = req.query.outletId ? parseInt(req.query.outletId as string) : undefined;
+    const fromDate = req.query.from ? new Date(req.query.from as string) : undefined;
+    const toDate = req.query.to ? new Date(req.query.to as string) : undefined;
+    const limit = req.query.limit ? Math.min(parseInt(req.query.limit as string), 100) : 50;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+    service.getPaymentsByTenant(tenantId, { outletId, fromDate, toDate, limit, offset })
+        .then((response: PaymentListResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
+ * GET /payments
+ * Get all payments across tenants (admin dashboard)
+ * Requires from and to date range to prevent full table scan
+ */
+let getAllPayments = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!req.query.from || !req.query.to) {
+        res.status(400).json({ error: 'Invalid request. from and to date range are required.' });
+        return;
+    }
+
+    const tenantId = req.query.tenantId ? parseInt(req.query.tenantId as string) : undefined;
+    const fromDate = new Date(req.query.from as string);
+    const toDate = new Date(req.query.to as string);
+    const limit = req.query.limit ? Math.min(parseInt(req.query.limit as string), 100) : 50;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+    service.getAllPayments({ tenantId, fromDate, toDate, limit, offset })
+        .then((response: AllPaymentsResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
+ * GET /tenants/:tenantId/billing-summary
+ * Get consolidated billing summary for a tenant across all outlets
+ */
+let getTenantBillingSummary = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('Tenant ID format incorrect');
+    }
+
+    const tenantId: number = parseInt(req.params.tenantId);
+
+    service.getTenantBillingSummary(tenantId)
+        .then((response: TenantBillingSummaryResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
+ * GET /payments/upcoming/summary
+ * Get summary counts of upcoming payments by status
+ */
+let getUpcomingPaymentsSummary = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    const days = req.query.days ? parseInt(req.query.days as string) : 30;
+
+    service.getUpcomingPaymentsSummary(days)
+        .then((response: UpcomingPaymentsSummaryResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
+ * GET /payments/upcoming
+ * Get paginated list of upcoming payments (grouped by tenant)
+ */
+let getUpcomingPayments = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    const days = req.query.days ? parseInt(req.query.days as string) : 30;
+    const status = (req.query.status as string) || 'all';
+    const limit = req.query.limit ? Math.min(parseInt(req.query.limit as string), 100) : 50;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+    // Validate status parameter
+    if (!['active', 'grace', 'expired', 'all'].includes(status)) {
+        res.status(400).json({ error: 'Invalid status. Must be one of: active, grace, expired, all' });
+        return;
+    }
+
+    service.getUpcomingPayments({ days, status: status as 'active' | 'grace' | 'expired' | 'all', limit, offset })
+        .then((response: UpcomingPaymentsResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
 //routes
 router.get('/tenantDetails/:id', getTenantDetails)
 router.get('/getAllTenantSubscription', getAllTenantSubscription)
@@ -312,5 +493,13 @@ router.put('/tenants/:tenantId/changePlan', changeTenantPlan)
 router.post('/tenants/:tenantId/warehouses', createWarehouse)
 router.delete('/tenants/:tenantId/warehouses/:id', deleteWarehouse)
 router.get('/tenants/:tenantId/warehouses', getTenantWarehouses)
+
+// payment management routes
+router.post('/tenants/:tenantId/outlets/:outletId/payments', recordPayment)
+router.get('/tenants/:tenantId/payments', getTenantPayments)
+router.get('/payments', getAllPayments)
+router.get('/tenants/:tenantId/billing-summary', getTenantBillingSummary)
+router.get('/payments/upcoming/summary', getUpcomingPaymentsSummary)
+router.get('/payments/upcoming', getUpcomingPayments)
 
 export = router

@@ -52,6 +52,7 @@ model Tenant {
   tenantOutlets     TenantOutlet[]
   deviceAllocations PushyDeviceAllocation[]
   warehouses        TenantWarehouse[]
+  payments          TenantPayment[]
 
   @@index([tenantName]) // If you often search for tenants by name
   @@index([createdAt]) // For sorting or filtering tenants by creation date
@@ -75,6 +76,7 @@ model TenantSubscription {
   subscriptionPlan       SubscriptionPlan          @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
   subscriptionAddOn      TenantSubscriptionAddOn[]
   deviceAllocations      PushyDeviceAllocation[]
+  payments               TenantPayment[]
 
   @@index([status])
   @@index([nextPaymentDate])
@@ -105,6 +107,7 @@ model TenantOutlet {
   isActive      Boolean              @default(true) @map("IS_ACTIVE")
   tenant        Tenant               @relation(fields: [tenantId], references: [id])
   subscriptions TenantSubscription[]
+  payments      TenantPayment[]
 
   @@index([outletName])
   @@index([isActive])
@@ -278,4 +281,46 @@ model TenantWarehouse {
   @@index([isActive])
   @@index([deleted])
   @@map("tenant_warehouse")
+}
+
+// Payment history tracking
+model TenantPayment {
+  id             Int    @id @default(autoincrement()) @map("ID")
+  invoiceNumber  String @unique @map("INVOICE_NUMBER")
+  tenantId       Int    @map("TENANT_ID")
+  outletId       Int    @map("OUTLET_ID")
+  subscriptionId Int    @map("SUBSCRIPTION_ID")
+
+  // Payment Details
+  amount          Float   @map("AMOUNT")
+  currency        String  @default("IDR") @map("CURRENCY")
+  paymentMethod   String  @map("PAYMENT_METHOD")
+  referenceNumber String? @map("REFERENCE_NUMBER")
+  notes           String? @map("NOTES") @db.Text
+
+  // Dates & Extension
+  paymentDate        DateTime @map("PAYMENT_DATE")
+  periodFrom         DateTime @map("PERIOD_FROM")
+  periodTo           DateTime @map("PERIOD_TO")
+  previousValidUntil DateTime @map("PREVIOUS_VALID_UNTIL")
+  extensionMonths    Int      @default(1) @map("EXTENSION_MONTHS")
+
+  // Cost Snapshot (JSON)
+  costSnapshot Json @map("COST_SNAPSHOT")
+
+  // Audit
+  recordedBy Int?     @map("RECORDED_BY")
+  recordedAt DateTime @default(now()) @map("RECORDED_AT")
+
+  // Relations
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  outlet       TenantOutlet       @relation(fields: [outletId], references: [id])
+  subscription TenantSubscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId])
+  @@index([outletId])
+  @@index([invoiceNumber])
+  @@index([paymentDate])
+  @@index([periodFrom, periodTo])
+  @@map("tenant_payment")
 }

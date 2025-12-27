@@ -118,3 +118,125 @@ export interface TotalCostResponse {
         totalDiscount: number;
     }>;
 }
+
+// ============================================
+// Payment Management Response Types
+// ============================================
+
+// Cost snapshot stored with each payment for historical audit
+export interface CostSnapshot {
+    planName: string;
+    planId: number;
+    basePlanCost: number;
+    addOns: Array<{
+        addOnId: number;
+        name: string;
+        quantity: number;
+        pricePerUnit: number;
+        totalCost: number;
+    }>;
+    discounts: Array<{
+        discountId: number;
+        name: string;
+        type: string;
+        value: number;
+        amountOff: number;
+    }>;
+    totalBeforeDiscount: number;
+    totalDiscount: number;
+    totalAfterDiscount: number;
+}
+
+// Single payment record response
+export interface TenantPaymentResponse {
+    id: number;
+    invoiceNumber: string;
+    tenantId: number;
+    outletId: number;
+    outletName: string;
+    amount: number;
+    currency: string;
+    paymentMethod: string;
+    referenceNumber: string | null;
+    paymentDate: string;
+    periodFrom: string;
+    periodTo: string;
+    extensionMonths: number;
+    costSnapshot: CostSnapshot;
+    recordedAt: string;
+}
+
+// Response for recording a payment
+export interface RecordPaymentResponse {
+    success: boolean;
+    message: string;
+    payment: TenantPaymentResponse;
+    subscription: {
+        previousValidUntil: string;
+        newValidUntil: string;
+        status: string;
+    };
+}
+
+// Paginated payment list response
+export interface PaymentListResponse {
+    payments: TenantPaymentResponse[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+// All payments response (includes tenant name)
+export interface AllPaymentsResponse {
+    payments: Array<TenantPaymentResponse & { tenantName: string }>;
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+// Consolidated billing summary for a tenant
+export interface TenantBillingSummaryResponse {
+    tenantId: number;
+    tenantName: string;
+    totalMonthlyCost: number;
+    outlets: Array<{
+        outletId: number;
+        outletName: string;
+        subscriptionStatus: string;
+        subscriptionValidUntil: string;
+        graceEndDate: string;
+        daysUntilExpiry: number;
+        planName: string;
+        basePlanCost: number;
+        addOns: Array<{ name: string; quantity: number; totalCost: number }>;
+        discounts: Array<{ name: string; amount: number }>;
+        outletTotalCost: number;
+    }>;
+}
+
+// Upcoming payments summary counts
+export interface UpcomingPaymentsSummaryResponse {
+    days: number;
+    summary: {
+        activeExpiring: number;
+        graceExpiring: number;
+        expiredCount: number;
+        totalTenants: number;
+        totalOutlets: number;
+    };
+}
+
+// Upcoming payments paginated list
+export interface UpcomingPaymentsResponse {
+    upcomingPayments: Array<{
+        tenantId: number;
+        tenantName: string;
+        outletCount: number;
+        totalMonthlyCost: number;
+        mostUrgentExpiry: string;
+        mostUrgentStatus: string;
+    }>;
+    totalCount: number;
+    limit: number;
+    offset: number;
+}

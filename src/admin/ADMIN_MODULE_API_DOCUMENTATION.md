@@ -1,6 +1,35 @@
 # Admin Module API Documentation
 
-This document provides comprehensive documentation for all Admin Module endpoints, including tenant management, subscription plans, device quotas, and warehouse operations.
+This document provides comprehensive documentation for all Admin Module endpoints, including tenant management, subscription plans, device quotas, warehouse operations, and payment management.
+
+---
+
+## Changelog
+
+### v1.1.0 - Payment Management (2025-01-27)
+
+**New Features:**
+- Manual payment recording with invoice generation (INV-YYYYMM-XXXX format)
+- Payment history tracking per outlet with cost snapshots
+- Subscription extension (monthly/annual)
+- 7-day grace period for expired subscriptions
+- Upcoming payment reminders with Summary + Drill-down pattern
+- Consolidated billing summary across all outlets
+
+**New Endpoints:**
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/tenants/:tenantId/outlets/:outletId/payments` | POST | Record payment & extend subscription |
+| `/tenants/:tenantId/payments` | GET | Get tenant payment history |
+| `/payments` | GET | Get all payments (admin dashboard) |
+| `/tenants/:tenantId/billing-summary` | GET | Consolidated billing view |
+| `/payments/upcoming/summary` | GET | Summary counts by status |
+| `/payments/upcoming` | GET | Paginated list of expiring subscriptions |
+
+**New Database Table:**
+- `tenant_payment` - Stores payment records with cost snapshots (JSON)
+
+**Breaking Changes:** None
 
 ---
 
@@ -12,6 +41,7 @@ This document provides comprehensive documentation for all Admin Module endpoint
 4. [Device Quota Management](#4-device-quota-management)
 5. [Warehouse Management](#5-warehouse-management)
 6. [Subscription Plan Changes](#6-subscription-plan-changes)
+7. [Payment Management](#7-payment-management)
 
 ---
 
@@ -1181,6 +1211,564 @@ POST /api/admin/tenants/1/warehouses
 { "warehouseName": "Downtown Storage" }
 # Response: { "wasReactivated": true }  # ✅ Reactivated!
 # Cost: 149,000 IDR/month
+```
+
+---
+
+## 7. Payment Management
+
+This section covers manual payment recording, payment history, billing summaries, and upcoming payment reminders.
+
+### 7.1 Key Concepts
+
+#### Grace Period
+All subscriptions have a **7-day grace period** after expiration:
+- **Active:** Subscription is valid (`now <= subscriptionValidUntil`)
+- **Grace:** Subscription expired but within 7-day grace period (`validUntil < now <= validUntil + 7 days`)
+- **Expired:** Subscription fully expired, beyond grace period (`now > validUntil + 7 days`)
+
+#### Invoice Number Format
+Auto-generated format: `INV-YYYYMM-XXXX`
+- `YYYY` = Year
+- `MM` = Month
+- `XXXX` = Sequential number within that month (padded to 4 digits)
+- Example: `INV-202501-0001`, `INV-202501-0002`, etc.
+
+#### Cost Snapshot
+Each payment stores an immutable JSON snapshot of the subscription cost at payment time:
+```json
+{
+  "planName": "Pro",
+  "planId": 2,
+  "basePlanCost": 0,
+  "addOns": [
+    {
+      "addOnId": 1,
+      "name": "Additional User",
+      "quantity": 2,
+      "pricePerUnit": 49000,
+      "totalCost": 98000
+    }
+  ],
+  "discounts": [
+    {
+      "discountId": 1,
+      "name": "Early Bird Discount",
+      "type": "percentage",
+      "value": 10,
+      "amountOff": 9800
+    }
+  ],
+  "totalBeforeDiscount": 98000,
+  "totalDiscount": 9800,
+  "totalAfterDiscount": 88200
+}
+```
+
+---
+
+### 7.2 Record Payment
+
+**Endpoint:** `POST /api/admin/tenants/:tenantId/outlets/:outletId/payments`
+
+**Description:** Records a payment for an outlet's subscription and extends the subscription validity.
+
+**Authentication:** Required
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+| `outletId` | number | Outlet ID |
+
+**Request Body:**
+```json
+{
+  "amount": 298000,
+  "paymentMethod": "bank_transfer",
+  "referenceNumber": "TRF-123456789",
+  "paymentDate": "2025-01-27T10:00:00Z",
+  "extensionMonths": 1,
+  "notes": "January 2025 subscription"
+}
+```
+
+**Request Fields:**
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `amount` | number | Yes | - | Payment amount (must be positive) |
+| `paymentMethod` | string | Yes | - | Free-form: `bank_transfer`, `cash`, `e_wallet`, etc. |
+| `paymentDate` | datetime | Yes | - | When payment was made (ISO 8601) |
+| `referenceNumber` | string | No | null | Bank transfer reference or transaction ID |
+| `extensionMonths` | number | No | 1 | Months to extend (1=monthly, 12=annual) |
+| `notes` | string | No | null | Optional remarks |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Payment recorded. Subscription extended to 2025-02-27",
+  "payment": {
+    "id": 1,
+    "invoiceNumber": "INV-202501-0001",
+    "tenantId": 1,
+    "outletId": 1,
+    "outletName": "Main Outlet",
+    "amount": 298000,
+    "currency": "IDR",
+    "paymentMethod": "bank_transfer",
+    "referenceNumber": "TRF-123456789",
+    "paymentDate": "2025-01-27T10:00:00.000Z",
+    "periodFrom": "2025-01-27T00:00:00.000Z",
+    "periodTo": "2025-02-27T00:00:00.000Z",
+    "extensionMonths": 1,
+    "costSnapshot": {
+      "planName": "Pro",
+      "planId": 2,
+      "basePlanCost": 0,
+      "addOns": [
+        {
+          "addOnId": 1,
+          "name": "Additional User",
+          "quantity": 2,
+          "pricePerUnit": 49000,
+          "totalCost": 98000
+        },
+        {
+          "addOnId": 3,
+          "name": "Extra Warehouse",
+          "quantity": 1,
+          "pricePerUnit": 149000,
+          "totalCost": 149000
+        }
+      ],
+      "discounts": [],
+      "totalBeforeDiscount": 247000,
+      "totalDiscount": 0,
+      "totalAfterDiscount": 247000
+    },
+    "recordedAt": "2025-01-27T10:30:00.000Z"
+  },
+  "subscription": {
+    "previousValidUntil": "2025-01-27T00:00:00.000Z",
+    "newValidUntil": "2025-02-27T00:00:00.000Z",
+    "status": "Active"
+  }
+}
+```
+
+**Period Calculation Logic:**
+| Subscription State | `periodFrom` | `periodTo` |
+|--------------------|--------------|------------|
+| Active | Current `subscriptionValidUntil` | `periodFrom` + `extensionMonths` |
+| Grace | Current `subscriptionValidUntil` | `periodFrom` + `extensionMonths` |
+| Expired (past grace) | **Today** (no free months) | `periodFrom` + `extensionMonths` |
+
+**Notes:**
+- Amount is recorded as provided (allows manual overrides for negotiations)
+- Warning logged if amount doesn't match calculated cost
+- Subscription status automatically set to `Active` after payment
+- Cost snapshot captures current subscription state for historical audit
+
+---
+
+### 7.3 Get Tenant Payment History
+
+**Endpoint:** `GET /api/admin/tenants/:tenantId/payments`
+
+**Description:** Retrieves payment history for a tenant (all outlets or filtered by outlet).
+
+**Authentication:** Required
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `outletId` | number | No | - | Filter by specific outlet |
+| `from` | date | No | - | Start date filter (ISO 8601) |
+| `to` | date | No | - | End date filter (ISO 8601) |
+| `limit` | number | No | 50 | Max 100 |
+| `offset` | number | No | 0 | Pagination offset |
+
+**Example Requests:**
+```
+GET /api/admin/tenants/1/payments
+GET /api/admin/tenants/1/payments?outletId=1
+GET /api/admin/tenants/1/payments?from=2025-01-01&to=2025-12-31&limit=50&offset=0
+```
+
+**Response (Success - 200):**
+```json
+{
+  "payments": [
+    {
+      "id": 1,
+      "invoiceNumber": "INV-202501-0001",
+      "tenantId": 1,
+      "outletId": 1,
+      "outletName": "Main Outlet",
+      "amount": 298000,
+      "currency": "IDR",
+      "paymentMethod": "bank_transfer",
+      "referenceNumber": "TRF-123456789",
+      "paymentDate": "2025-01-27T10:00:00.000Z",
+      "periodFrom": "2025-01-27T00:00:00.000Z",
+      "periodTo": "2025-02-27T00:00:00.000Z",
+      "extensionMonths": 1,
+      "costSnapshot": { ... },
+      "recordedAt": "2025-01-27T10:30:00.000Z"
+    }
+  ],
+  "total": 12,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+---
+
+### 7.4 Get All Payments (Admin Dashboard)
+
+**Endpoint:** `GET /api/admin/payments`
+
+**Description:** Retrieves all payments across tenants. **Requires date range** to prevent full table scans.
+
+**Authentication:** Required
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `from` | date | **Yes** | - | Start date (required for performance) |
+| `to` | date | **Yes** | - | End date (required for performance) |
+| `tenantId` | number | No | - | Filter by tenant |
+| `limit` | number | No | 50 | Max 100 |
+| `offset` | number | No | 0 | Pagination offset |
+
+**Example Requests:**
+```
+GET /api/admin/payments?from=2025-01-01&to=2025-01-31
+GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
+```
+
+**Response (Success - 200):**
+```json
+{
+  "payments": [
+    {
+      "id": 1,
+      "invoiceNumber": "INV-202501-0001",
+      "tenantId": 1,
+      "tenantName": "Coffee Shop",
+      "outletId": 1,
+      "outletName": "Main Outlet",
+      "amount": 298000,
+      "currency": "IDR",
+      "paymentMethod": "bank_transfer",
+      "referenceNumber": "TRF-123456789",
+      "paymentDate": "2025-01-27T10:00:00.000Z",
+      "periodFrom": "2025-01-27T00:00:00.000Z",
+      "periodTo": "2025-02-27T00:00:00.000Z",
+      "extensionMonths": 1,
+      "costSnapshot": { ... },
+      "recordedAt": "2025-01-27T10:30:00.000Z"
+    },
+    {
+      "id": 2,
+      "invoiceNumber": "INV-202501-0002",
+      "tenantId": 2,
+      "tenantName": "Bakery House",
+      "outletId": 3,
+      "outletName": "Downtown Branch",
+      "amount": 149000,
+      "currency": "IDR",
+      "paymentMethod": "cash",
+      "referenceNumber": null,
+      "paymentDate": "2025-01-27T14:00:00.000Z",
+      "periodFrom": "2025-01-27T00:00:00.000Z",
+      "periodTo": "2025-02-27T00:00:00.000Z",
+      "extensionMonths": 1,
+      "costSnapshot": { ... },
+      "recordedAt": "2025-01-27T14:15:00.000Z"
+    }
+  ],
+  "total": 156,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Error Response (Missing date range):**
+```json
+{
+  "error": "Invalid request. from and to date range are required."
+}
+```
+
+---
+
+### 7.5 Get Tenant Billing Summary
+
+**Endpoint:** `GET /api/admin/tenants/:tenantId/billing-summary`
+
+**Description:** Retrieves consolidated billing view for a tenant across all outlets, including subscription status and expiry information.
+
+**Authentication:** Required
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+
+**Response (Success - 200):**
+```json
+{
+  "tenantId": 1,
+  "tenantName": "Coffee Shop",
+  "totalMonthlyCost": 447000,
+  "outlets": [
+    {
+      "outletId": 1,
+      "outletName": "Main Outlet",
+      "subscriptionStatus": "Active",
+      "subscriptionValidUntil": "2025-02-27T00:00:00.000Z",
+      "graceEndDate": "2025-03-06T00:00:00.000Z",
+      "daysUntilExpiry": 31,
+      "planName": "Pro",
+      "basePlanCost": 0,
+      "addOns": [
+        { "name": "Additional User", "quantity": 2, "totalCost": 98000 },
+        { "name": "Extra Warehouse", "quantity": 1, "totalCost": 149000 }
+      ],
+      "discounts": [],
+      "outletTotalCost": 247000
+    },
+    {
+      "outletId": 2,
+      "outletName": "Mall Branch",
+      "subscriptionStatus": "Grace",
+      "subscriptionValidUntil": "2025-01-25T00:00:00.000Z",
+      "graceEndDate": "2025-02-01T00:00:00.000Z",
+      "daysUntilExpiry": -2,
+      "planName": "Pro",
+      "basePlanCost": 0,
+      "addOns": [
+        { "name": "Additional User", "quantity": 1, "totalCost": 49000 }
+      ],
+      "discounts": [
+        { "name": "Early Bird Discount", "amount": 4900 }
+      ],
+      "outletTotalCost": 44100
+    }
+  ]
+}
+```
+
+**Notes:**
+- `subscriptionStatus`: `Active`, `Grace`, or `Expired`
+- `daysUntilExpiry`: Positive = days until expiry, Negative = days past expiry
+- `graceEndDate`: 7 days after `subscriptionValidUntil`
+- Use this endpoint for drill-down after getting upcoming payments summary
+
+---
+
+### 7.6 Get Upcoming Payments Summary
+
+**Endpoint:** `GET /api/admin/payments/upcoming/summary`
+
+**Description:** Quick overview of upcoming payments grouped by status. Use this for dashboard widgets.
+
+**Authentication:** Required
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `days` | number | No | 30 | Days ahead to look |
+
+**Example Request:**
+```
+GET /api/admin/payments/upcoming/summary
+GET /api/admin/payments/upcoming/summary?days=14
+```
+
+**Response (Success - 200):**
+```json
+{
+  "days": 30,
+  "summary": {
+    "activeExpiring": 450,
+    "graceExpiring": 200,
+    "expiredCount": 350,
+    "totalTenants": 120,
+    "totalOutlets": 1000
+  }
+}
+```
+
+**Summary Fields:**
+| Field | Description |
+|-------|-------------|
+| `activeExpiring` | Active subscriptions expiring within `days` |
+| `graceExpiring` | Subscriptions in grace period (already expired, within 7 days) |
+| `expiredCount` | Fully expired subscriptions (past grace period) |
+| `totalTenants` | Unique tenants with expiring/expired subscriptions |
+| `totalOutlets` | Total outlet count across all statuses |
+
+---
+
+### 7.7 Get Upcoming Payments (Paginated List)
+
+**Endpoint:** `GET /api/admin/payments/upcoming`
+
+**Description:** Paginated list of tenants with expiring subscriptions, sorted by most urgent first.
+
+**Authentication:** Required
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `days` | number | No | 30 | Days ahead to look |
+| `status` | string | No | all | Filter: `active`, `grace`, `expired`, `all` |
+| `limit` | number | No | 50 | Max 100 |
+| `offset` | number | No | 0 | Pagination offset |
+
+**Example Requests:**
+```
+GET /api/admin/payments/upcoming
+GET /api/admin/payments/upcoming?days=14&status=grace&limit=50&offset=0
+GET /api/admin/payments/upcoming?status=expired
+```
+
+**Response (Success - 200):**
+```json
+{
+  "upcomingPayments": [
+    {
+      "tenantId": 1,
+      "tenantName": "Coffee Shop",
+      "outletCount": 3,
+      "totalMonthlyCost": 447000,
+      "mostUrgentExpiry": "2025-02-01T00:00:00.000Z",
+      "mostUrgentStatus": "Grace"
+    },
+    {
+      "tenantId": 2,
+      "tenantName": "Bakery House",
+      "outletCount": 1,
+      "totalMonthlyCost": 149000,
+      "mostUrgentExpiry": "2025-02-05T00:00:00.000Z",
+      "mostUrgentStatus": "Active"
+    }
+  ],
+  "totalCount": 120,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Error Response (Invalid status):**
+```json
+{
+  "error": "Invalid status. Must be one of: active, grace, expired, all"
+}
+```
+
+**Drill-down Pattern:**
+1. Get summary counts: `GET /payments/upcoming/summary`
+2. Get paginated list: `GET /payments/upcoming?status=grace`
+3. Get tenant details: `GET /tenants/:tenantId/billing-summary`
+
+---
+
+### 7.8 Payment Use Cases
+
+#### Use Case 1: Record Monthly Payment
+
+```bash
+# Step 1: Check billing summary
+GET /api/admin/tenants/1/billing-summary
+# Response shows: outletTotalCost = 247000 IDR
+
+# Step 2: Record payment
+POST /api/admin/tenants/1/outlets/1/payments
+{
+  "amount": 247000,
+  "paymentMethod": "bank_transfer",
+  "referenceNumber": "TRF-202501-001",
+  "paymentDate": "2025-01-27T10:00:00Z",
+  "extensionMonths": 1
+}
+# Result:
+# - Invoice generated: INV-202501-0001
+# - Subscription extended by 1 month
+# - Status: Active
+```
+
+#### Use Case 2: Record Annual Payment (12 months)
+
+```bash
+POST /api/admin/tenants/1/outlets/1/payments
+{
+  "amount": 2964000,
+  "paymentMethod": "bank_transfer",
+  "referenceNumber": "TRF-ANNUAL-001",
+  "paymentDate": "2025-01-27T10:00:00Z",
+  "extensionMonths": 12,
+  "notes": "Annual subscription 2025"
+}
+# Result:
+# - Subscription extended by 12 months
+# - periodTo = periodFrom + 12 months
+```
+
+#### Use Case 3: Payment for Expired Subscription (Past Grace)
+
+```bash
+# Subscription expired on 2025-01-01, grace ended 2025-01-08
+# Current date: 2025-01-27 (19 days past expiry)
+
+POST /api/admin/tenants/1/outlets/1/payments
+{
+  "amount": 247000,
+  "paymentMethod": "cash",
+  "paymentDate": "2025-01-27T10:00:00Z"
+}
+# Result:
+# - periodFrom = 2025-01-27 (today, NOT the old expired date)
+# - periodTo = 2025-02-27
+# - No free months given for lapsed period
+# - Status restored to Active
+```
+
+#### Use Case 4: Dashboard - Check Upcoming Payments
+
+```bash
+# Step 1: Get summary for dashboard widget
+GET /api/admin/payments/upcoming/summary?days=30
+# Response: { summary: { activeExpiring: 45, graceExpiring: 12, expiredCount: 8 } }
+
+# Step 2: View grace period tenants (most urgent)
+GET /api/admin/payments/upcoming?status=grace&limit=10
+# Response: [{ tenantId: 1, tenantName: "Coffee Shop", mostUrgentStatus: "Grace" }]
+
+# Step 3: Drill down to specific tenant
+GET /api/admin/tenants/1/billing-summary
+# Response: Full outlet breakdown with expiry dates
+```
+
+#### Use Case 5: Generate Monthly Revenue Report
+
+```bash
+# Get all payments for January 2025
+GET /api/admin/payments?from=2025-01-01&to=2025-01-31
+
+# Response includes:
+# - All payments with tenant names
+# - Cost snapshots for historical accuracy
+# - Total count for pagination
 ```
 
 ---

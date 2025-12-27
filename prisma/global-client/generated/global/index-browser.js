@@ -288,9 +288,34 @@ exports.Prisma.TenantWarehouseScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.TenantPaymentScalarFieldEnum = {
+  id: 'id',
+  invoiceNumber: 'invoiceNumber',
+  tenantId: 'tenantId',
+  outletId: 'outletId',
+  subscriptionId: 'subscriptionId',
+  amount: 'amount',
+  currency: 'currency',
+  paymentMethod: 'paymentMethod',
+  referenceNumber: 'referenceNumber',
+  notes: 'notes',
+  paymentDate: 'paymentDate',
+  periodFrom: 'periodFrom',
+  periodTo: 'periodTo',
+  previousValidUntil: 'previousValidUntil',
+  extensionMonths: 'extensionMonths',
+  costSnapshot: 'costSnapshot',
+  recordedBy: 'recordedBy',
+  recordedAt: 'recordedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
+};
+
+exports.Prisma.JsonNullValueInput = {
+  JsonNull: Prisma.JsonNull
 };
 
 exports.Prisma.NullsOrder = {
@@ -382,6 +407,25 @@ exports.Prisma.TenantWarehouseOrderByRelevanceFieldEnum = {
   address: 'address'
 };
 
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+};
+
+exports.Prisma.TenantPaymentOrderByRelevanceFieldEnum = {
+  invoiceNumber: 'invoiceNumber',
+  currency: 'currency',
+  paymentMethod: 'paymentMethod',
+  referenceNumber: 'referenceNumber',
+  notes: 'notes'
+};
+
 
 exports.Prisma.ModelName = {
   SubscriptionPlan: 'SubscriptionPlan',
@@ -398,7 +442,8 @@ exports.Prisma.ModelName = {
   PushyDevice: 'PushyDevice',
   PushySubscription: 'PushySubscription',
   PushyDeviceAllocation: 'PushyDeviceAllocation',
-  TenantWarehouse: 'TenantWarehouse'
+  TenantWarehouse: 'TenantWarehouse',
+  TenantPayment: 'TenantPayment'
 };
 
 /**

@@ -88,6 +88,11 @@ export type PushyDeviceAllocation = $Result.DefaultSelection<Prisma.$PushyDevice
  * 
  */
 export type TenantWarehouse = $Result.DefaultSelection<Prisma.$TenantWarehousePayload>
+/**
+ * Model TenantPayment
+ * 
+ */
+export type TenantPayment = $Result.DefaultSelection<Prisma.$TenantPaymentPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -363,6 +368,16 @@ export class PrismaClient<
     * ```
     */
   get tenantWarehouse(): Prisma.TenantWarehouseDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.tenantPayment`: Exposes CRUD operations for the **TenantPayment** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more TenantPayments
+    * const tenantPayments = await prisma.tenantPayment.findMany()
+    * ```
+    */
+  get tenantPayment(): Prisma.TenantPaymentDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -817,7 +832,8 @@ export namespace Prisma {
     PushyDevice: 'PushyDevice',
     PushySubscription: 'PushySubscription',
     PushyDeviceAllocation: 'PushyDeviceAllocation',
-    TenantWarehouse: 'TenantWarehouse'
+    TenantWarehouse: 'TenantWarehouse',
+    TenantPayment: 'TenantPayment'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -836,7 +852,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation" | "tenantWarehouse"
+      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation" | "tenantWarehouse" | "tenantPayment"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1830,6 +1846,72 @@ export namespace Prisma {
           }
         }
       }
+      TenantPayment: {
+        payload: Prisma.$TenantPaymentPayload<ExtArgs>
+        fields: Prisma.TenantPaymentFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.TenantPaymentFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.TenantPaymentFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload>
+          }
+          findFirst: {
+            args: Prisma.TenantPaymentFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.TenantPaymentFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload>
+          }
+          findMany: {
+            args: Prisma.TenantPaymentFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload>[]
+          }
+          create: {
+            args: Prisma.TenantPaymentCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload>
+          }
+          createMany: {
+            args: Prisma.TenantPaymentCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.TenantPaymentDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload>
+          }
+          update: {
+            args: Prisma.TenantPaymentUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload>
+          }
+          deleteMany: {
+            args: Prisma.TenantPaymentDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.TenantPaymentUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.TenantPaymentUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantPaymentPayload>
+          }
+          aggregate: {
+            args: Prisma.TenantPaymentAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTenantPayment>
+          }
+          groupBy: {
+            args: Prisma.TenantPaymentGroupByArgs<ExtArgs>
+            result: $Utils.Optional<TenantPaymentGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.TenantPaymentCountArgs<ExtArgs>
+            result: $Utils.Optional<TenantPaymentCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1929,6 +2011,7 @@ export namespace Prisma {
     pushySubscription?: PushySubscriptionOmit
     pushyDeviceAllocation?: PushyDeviceAllocationOmit
     tenantWarehouse?: TenantWarehouseOmit
+    tenantPayment?: TenantPaymentOmit
   }
 
   /* Types for Logging */
@@ -2090,6 +2173,7 @@ export namespace Prisma {
     tenantOutlets: number
     deviceAllocations: number
     warehouses: number
+    payments: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2098,6 +2182,7 @@ export namespace Prisma {
     tenantOutlets?: boolean | TenantCountOutputTypeCountTenantOutletsArgs
     deviceAllocations?: boolean | TenantCountOutputTypeCountDeviceAllocationsArgs
     warehouses?: boolean | TenantCountOutputTypeCountWarehousesArgs
+    payments?: boolean | TenantCountOutputTypeCountPaymentsArgs
   }
 
   // Custom InputTypes
@@ -2146,6 +2231,13 @@ export namespace Prisma {
     where?: TenantWarehouseWhereInput
   }
 
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantPaymentWhereInput
+  }
+
 
   /**
    * Count Type TenantSubscriptionCountOutputType
@@ -2154,11 +2246,13 @@ export namespace Prisma {
   export type TenantSubscriptionCountOutputType = {
     subscriptionAddOn: number
     deviceAllocations: number
+    payments: number
   }
 
   export type TenantSubscriptionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subscriptionAddOn?: boolean | TenantSubscriptionCountOutputTypeCountSubscriptionAddOnArgs
     deviceAllocations?: boolean | TenantSubscriptionCountOutputTypeCountDeviceAllocationsArgs
+    payments?: boolean | TenantSubscriptionCountOutputTypeCountPaymentsArgs
   }
 
   // Custom InputTypes
@@ -2186,6 +2280,13 @@ export namespace Prisma {
     where?: PushyDeviceAllocationWhereInput
   }
 
+  /**
+   * TenantSubscriptionCountOutputType without action
+   */
+  export type TenantSubscriptionCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantPaymentWhereInput
+  }
+
 
   /**
    * Count Type TenantOutletCountOutputType
@@ -2193,10 +2294,12 @@ export namespace Prisma {
 
   export type TenantOutletCountOutputType = {
     subscriptions: number
+    payments: number
   }
 
   export type TenantOutletCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subscriptions?: boolean | TenantOutletCountOutputTypeCountSubscriptionsArgs
+    payments?: boolean | TenantOutletCountOutputTypeCountPaymentsArgs
   }
 
   // Custom InputTypes
@@ -2215,6 +2318,13 @@ export namespace Prisma {
    */
   export type TenantOutletCountOutputTypeCountSubscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TenantSubscriptionWhereInput
+  }
+
+  /**
+   * TenantOutletCountOutputType without action
+   */
+  export type TenantOutletCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantPaymentWhereInput
   }
 
 
@@ -4590,6 +4700,7 @@ export namespace Prisma {
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
     deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
     warehouses?: boolean | Tenant$warehousesArgs<ExtArgs>
+    payments?: boolean | Tenant$paymentsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4610,6 +4721,7 @@ export namespace Prisma {
     tenantOutlets?: boolean | Tenant$tenantOutletsArgs<ExtArgs>
     deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
     warehouses?: boolean | Tenant$warehousesArgs<ExtArgs>
+    payments?: boolean | Tenant$paymentsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4621,6 +4733,7 @@ export namespace Prisma {
       tenantOutlets: Prisma.$TenantOutletPayload<ExtArgs>[]
       deviceAllocations: Prisma.$PushyDeviceAllocationPayload<ExtArgs>[]
       warehouses: Prisma.$TenantWarehousePayload<ExtArgs>[]
+      payments: Prisma.$TenantPaymentPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -4973,6 +5086,7 @@ export namespace Prisma {
     tenantOutlets<T extends Tenant$tenantOutletsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$tenantOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     deviceAllocations<T extends Tenant$deviceAllocationsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$deviceAllocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     warehouses<T extends Tenant$warehousesArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$warehousesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    payments<T extends Tenant$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5470,6 +5584,30 @@ export namespace Prisma {
   }
 
   /**
+   * Tenant.payments
+   */
+  export type Tenant$paymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    where?: TenantPaymentWhereInput
+    orderBy?: TenantPaymentOrderByWithRelationInput | TenantPaymentOrderByWithRelationInput[]
+    cursor?: TenantPaymentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TenantPaymentScalarFieldEnum | TenantPaymentScalarFieldEnum[]
+  }
+
+  /**
    * Tenant without action
    */
   export type TenantDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5748,6 +5886,7 @@ export namespace Prisma {
     subscriptionPlan?: boolean | SubscriptionPlanDefaultArgs<ExtArgs>
     subscriptionAddOn?: boolean | TenantSubscription$subscriptionAddOnArgs<ExtArgs>
     deviceAllocations?: boolean | TenantSubscription$deviceAllocationsArgs<ExtArgs>
+    payments?: boolean | TenantSubscription$paymentsArgs<ExtArgs>
     _count?: boolean | TenantSubscriptionCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenantSubscription"]>
 
@@ -5774,6 +5913,7 @@ export namespace Prisma {
     subscriptionPlan?: boolean | SubscriptionPlanDefaultArgs<ExtArgs>
     subscriptionAddOn?: boolean | TenantSubscription$subscriptionAddOnArgs<ExtArgs>
     deviceAllocations?: boolean | TenantSubscription$deviceAllocationsArgs<ExtArgs>
+    payments?: boolean | TenantSubscription$paymentsArgs<ExtArgs>
     _count?: boolean | TenantSubscriptionCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -5786,6 +5926,7 @@ export namespace Prisma {
       subscriptionPlan: Prisma.$SubscriptionPlanPayload<ExtArgs>
       subscriptionAddOn: Prisma.$TenantSubscriptionAddOnPayload<ExtArgs>[]
       deviceAllocations: Prisma.$PushyDeviceAllocationPayload<ExtArgs>[]
+      payments: Prisma.$TenantPaymentPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -6144,6 +6285,7 @@ export namespace Prisma {
     subscriptionPlan<T extends SubscriptionPlanDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SubscriptionPlanDefaultArgs<ExtArgs>>): Prisma__SubscriptionPlanClient<$Result.GetResult<Prisma.$SubscriptionPlanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     subscriptionAddOn<T extends TenantSubscription$subscriptionAddOnArgs<ExtArgs> = {}>(args?: Subset<T, TenantSubscription$subscriptionAddOnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSubscriptionAddOnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     deviceAllocations<T extends TenantSubscription$deviceAllocationsArgs<ExtArgs> = {}>(args?: Subset<T, TenantSubscription$deviceAllocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    payments<T extends TenantSubscription$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, TenantSubscription$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6590,6 +6732,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PushyDeviceAllocationScalarFieldEnum | PushyDeviceAllocationScalarFieldEnum[]
+  }
+
+  /**
+   * TenantSubscription.payments
+   */
+  export type TenantSubscription$paymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    where?: TenantPaymentWhereInput
+    orderBy?: TenantPaymentOrderByWithRelationInput | TenantPaymentOrderByWithRelationInput[]
+    cursor?: TenantPaymentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TenantPaymentScalarFieldEnum | TenantPaymentScalarFieldEnum[]
   }
 
   /**
@@ -7791,6 +7957,7 @@ export namespace Prisma {
     isActive?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     subscriptions?: boolean | TenantOutlet$subscriptionsArgs<ExtArgs>
+    payments?: boolean | TenantOutlet$paymentsArgs<ExtArgs>
     _count?: boolean | TenantOutletCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenantOutlet"]>
 
@@ -7809,6 +7976,7 @@ export namespace Prisma {
   export type TenantOutletInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     subscriptions?: boolean | TenantOutlet$subscriptionsArgs<ExtArgs>
+    payments?: boolean | TenantOutlet$paymentsArgs<ExtArgs>
     _count?: boolean | TenantOutletCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -7817,6 +7985,7 @@ export namespace Prisma {
     objects: {
       tenant: Prisma.$TenantPayload<ExtArgs>
       subscriptions: Prisma.$TenantSubscriptionPayload<ExtArgs>[]
+      payments: Prisma.$TenantPaymentPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -8167,6 +8336,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     subscriptions<T extends TenantOutlet$subscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, TenantOutlet$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    payments<T extends TenantOutlet$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, TenantOutlet$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8566,6 +8736,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: TenantSubscriptionScalarFieldEnum | TenantSubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * TenantOutlet.payments
+   */
+  export type TenantOutlet$paymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    where?: TenantPaymentWhereInput
+    orderBy?: TenantPaymentOrderByWithRelationInput | TenantPaymentOrderByWithRelationInput[]
+    cursor?: TenantPaymentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TenantPaymentScalarFieldEnum | TenantPaymentScalarFieldEnum[]
   }
 
   /**
@@ -17728,6 +17922,1140 @@ export namespace Prisma {
 
 
   /**
+   * Model TenantPayment
+   */
+
+  export type AggregateTenantPayment = {
+    _count: TenantPaymentCountAggregateOutputType | null
+    _avg: TenantPaymentAvgAggregateOutputType | null
+    _sum: TenantPaymentSumAggregateOutputType | null
+    _min: TenantPaymentMinAggregateOutputType | null
+    _max: TenantPaymentMaxAggregateOutputType | null
+  }
+
+  export type TenantPaymentAvgAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    amount: number | null
+    extensionMonths: number | null
+    recordedBy: number | null
+  }
+
+  export type TenantPaymentSumAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    amount: number | null
+    extensionMonths: number | null
+    recordedBy: number | null
+  }
+
+  export type TenantPaymentMinAggregateOutputType = {
+    id: number | null
+    invoiceNumber: string | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    amount: number | null
+    currency: string | null
+    paymentMethod: string | null
+    referenceNumber: string | null
+    notes: string | null
+    paymentDate: Date | null
+    periodFrom: Date | null
+    periodTo: Date | null
+    previousValidUntil: Date | null
+    extensionMonths: number | null
+    recordedBy: number | null
+    recordedAt: Date | null
+  }
+
+  export type TenantPaymentMaxAggregateOutputType = {
+    id: number | null
+    invoiceNumber: string | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    amount: number | null
+    currency: string | null
+    paymentMethod: string | null
+    referenceNumber: string | null
+    notes: string | null
+    paymentDate: Date | null
+    periodFrom: Date | null
+    periodTo: Date | null
+    previousValidUntil: Date | null
+    extensionMonths: number | null
+    recordedBy: number | null
+    recordedAt: Date | null
+  }
+
+  export type TenantPaymentCountAggregateOutputType = {
+    id: number
+    invoiceNumber: number
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    amount: number
+    currency: number
+    paymentMethod: number
+    referenceNumber: number
+    notes: number
+    paymentDate: number
+    periodFrom: number
+    periodTo: number
+    previousValidUntil: number
+    extensionMonths: number
+    costSnapshot: number
+    recordedBy: number
+    recordedAt: number
+    _all: number
+  }
+
+
+  export type TenantPaymentAvgAggregateInputType = {
+    id?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    amount?: true
+    extensionMonths?: true
+    recordedBy?: true
+  }
+
+  export type TenantPaymentSumAggregateInputType = {
+    id?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    amount?: true
+    extensionMonths?: true
+    recordedBy?: true
+  }
+
+  export type TenantPaymentMinAggregateInputType = {
+    id?: true
+    invoiceNumber?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    amount?: true
+    currency?: true
+    paymentMethod?: true
+    referenceNumber?: true
+    notes?: true
+    paymentDate?: true
+    periodFrom?: true
+    periodTo?: true
+    previousValidUntil?: true
+    extensionMonths?: true
+    recordedBy?: true
+    recordedAt?: true
+  }
+
+  export type TenantPaymentMaxAggregateInputType = {
+    id?: true
+    invoiceNumber?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    amount?: true
+    currency?: true
+    paymentMethod?: true
+    referenceNumber?: true
+    notes?: true
+    paymentDate?: true
+    periodFrom?: true
+    periodTo?: true
+    previousValidUntil?: true
+    extensionMonths?: true
+    recordedBy?: true
+    recordedAt?: true
+  }
+
+  export type TenantPaymentCountAggregateInputType = {
+    id?: true
+    invoiceNumber?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    amount?: true
+    currency?: true
+    paymentMethod?: true
+    referenceNumber?: true
+    notes?: true
+    paymentDate?: true
+    periodFrom?: true
+    periodTo?: true
+    previousValidUntil?: true
+    extensionMonths?: true
+    costSnapshot?: true
+    recordedBy?: true
+    recordedAt?: true
+    _all?: true
+  }
+
+  export type TenantPaymentAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TenantPayment to aggregate.
+     */
+    where?: TenantPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantPayments to fetch.
+     */
+    orderBy?: TenantPaymentOrderByWithRelationInput | TenantPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: TenantPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantPayments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned TenantPayments
+    **/
+    _count?: true | TenantPaymentCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: TenantPaymentAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TenantPaymentSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: TenantPaymentMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: TenantPaymentMaxAggregateInputType
+  }
+
+  export type GetTenantPaymentAggregateType<T extends TenantPaymentAggregateArgs> = {
+        [P in keyof T & keyof AggregateTenantPayment]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateTenantPayment[P]>
+      : GetScalarType<T[P], AggregateTenantPayment[P]>
+  }
+
+
+
+
+  export type TenantPaymentGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantPaymentWhereInput
+    orderBy?: TenantPaymentOrderByWithAggregationInput | TenantPaymentOrderByWithAggregationInput[]
+    by: TenantPaymentScalarFieldEnum[] | TenantPaymentScalarFieldEnum
+    having?: TenantPaymentScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: TenantPaymentCountAggregateInputType | true
+    _avg?: TenantPaymentAvgAggregateInputType
+    _sum?: TenantPaymentSumAggregateInputType
+    _min?: TenantPaymentMinAggregateInputType
+    _max?: TenantPaymentMaxAggregateInputType
+  }
+
+  export type TenantPaymentGroupByOutputType = {
+    id: number
+    invoiceNumber: string
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    amount: number
+    currency: string
+    paymentMethod: string
+    referenceNumber: string | null
+    notes: string | null
+    paymentDate: Date
+    periodFrom: Date
+    periodTo: Date
+    previousValidUntil: Date
+    extensionMonths: number
+    costSnapshot: JsonValue
+    recordedBy: number | null
+    recordedAt: Date
+    _count: TenantPaymentCountAggregateOutputType | null
+    _avg: TenantPaymentAvgAggregateOutputType | null
+    _sum: TenantPaymentSumAggregateOutputType | null
+    _min: TenantPaymentMinAggregateOutputType | null
+    _max: TenantPaymentMaxAggregateOutputType | null
+  }
+
+  type GetTenantPaymentGroupByPayload<T extends TenantPaymentGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<TenantPaymentGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof TenantPaymentGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], TenantPaymentGroupByOutputType[P]>
+            : GetScalarType<T[P], TenantPaymentGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type TenantPaymentSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    invoiceNumber?: boolean
+    tenantId?: boolean
+    outletId?: boolean
+    subscriptionId?: boolean
+    amount?: boolean
+    currency?: boolean
+    paymentMethod?: boolean
+    referenceNumber?: boolean
+    notes?: boolean
+    paymentDate?: boolean
+    periodFrom?: boolean
+    periodTo?: boolean
+    previousValidUntil?: boolean
+    extensionMonths?: boolean
+    costSnapshot?: boolean
+    recordedBy?: boolean
+    recordedAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    outlet?: boolean | TenantOutletDefaultArgs<ExtArgs>
+    subscription?: boolean | TenantSubscriptionDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["tenantPayment"]>
+
+
+
+  export type TenantPaymentSelectScalar = {
+    id?: boolean
+    invoiceNumber?: boolean
+    tenantId?: boolean
+    outletId?: boolean
+    subscriptionId?: boolean
+    amount?: boolean
+    currency?: boolean
+    paymentMethod?: boolean
+    referenceNumber?: boolean
+    notes?: boolean
+    paymentDate?: boolean
+    periodFrom?: boolean
+    periodTo?: boolean
+    previousValidUntil?: boolean
+    extensionMonths?: boolean
+    costSnapshot?: boolean
+    recordedBy?: boolean
+    recordedAt?: boolean
+  }
+
+  export type TenantPaymentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "invoiceNumber" | "tenantId" | "outletId" | "subscriptionId" | "amount" | "currency" | "paymentMethod" | "referenceNumber" | "notes" | "paymentDate" | "periodFrom" | "periodTo" | "previousValidUntil" | "extensionMonths" | "costSnapshot" | "recordedBy" | "recordedAt", ExtArgs["result"]["tenantPayment"]>
+  export type TenantPaymentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    outlet?: boolean | TenantOutletDefaultArgs<ExtArgs>
+    subscription?: boolean | TenantSubscriptionDefaultArgs<ExtArgs>
+  }
+
+  export type $TenantPaymentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "TenantPayment"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+      outlet: Prisma.$TenantOutletPayload<ExtArgs>
+      subscription: Prisma.$TenantSubscriptionPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      invoiceNumber: string
+      tenantId: number
+      outletId: number
+      subscriptionId: number
+      amount: number
+      currency: string
+      paymentMethod: string
+      referenceNumber: string | null
+      notes: string | null
+      paymentDate: Date
+      periodFrom: Date
+      periodTo: Date
+      previousValidUntil: Date
+      extensionMonths: number
+      costSnapshot: Prisma.JsonValue
+      recordedBy: number | null
+      recordedAt: Date
+    }, ExtArgs["result"]["tenantPayment"]>
+    composites: {}
+  }
+
+  type TenantPaymentGetPayload<S extends boolean | null | undefined | TenantPaymentDefaultArgs> = $Result.GetResult<Prisma.$TenantPaymentPayload, S>
+
+  type TenantPaymentCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<TenantPaymentFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: TenantPaymentCountAggregateInputType | true
+    }
+
+  export interface TenantPaymentDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TenantPayment'], meta: { name: 'TenantPayment' } }
+    /**
+     * Find zero or one TenantPayment that matches the filter.
+     * @param {TenantPaymentFindUniqueArgs} args - Arguments to find a TenantPayment
+     * @example
+     * // Get one TenantPayment
+     * const tenantPayment = await prisma.tenantPayment.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends TenantPaymentFindUniqueArgs>(args: SelectSubset<T, TenantPaymentFindUniqueArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one TenantPayment that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {TenantPaymentFindUniqueOrThrowArgs} args - Arguments to find a TenantPayment
+     * @example
+     * // Get one TenantPayment
+     * const tenantPayment = await prisma.tenantPayment.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends TenantPaymentFindUniqueOrThrowArgs>(args: SelectSubset<T, TenantPaymentFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TenantPayment that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantPaymentFindFirstArgs} args - Arguments to find a TenantPayment
+     * @example
+     * // Get one TenantPayment
+     * const tenantPayment = await prisma.tenantPayment.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends TenantPaymentFindFirstArgs>(args?: SelectSubset<T, TenantPaymentFindFirstArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TenantPayment that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantPaymentFindFirstOrThrowArgs} args - Arguments to find a TenantPayment
+     * @example
+     * // Get one TenantPayment
+     * const tenantPayment = await prisma.tenantPayment.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends TenantPaymentFindFirstOrThrowArgs>(args?: SelectSubset<T, TenantPaymentFindFirstOrThrowArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more TenantPayments that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantPaymentFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all TenantPayments
+     * const tenantPayments = await prisma.tenantPayment.findMany()
+     * 
+     * // Get first 10 TenantPayments
+     * const tenantPayments = await prisma.tenantPayment.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const tenantPaymentWithIdOnly = await prisma.tenantPayment.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends TenantPaymentFindManyArgs>(args?: SelectSubset<T, TenantPaymentFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a TenantPayment.
+     * @param {TenantPaymentCreateArgs} args - Arguments to create a TenantPayment.
+     * @example
+     * // Create one TenantPayment
+     * const TenantPayment = await prisma.tenantPayment.create({
+     *   data: {
+     *     // ... data to create a TenantPayment
+     *   }
+     * })
+     * 
+     */
+    create<T extends TenantPaymentCreateArgs>(args: SelectSubset<T, TenantPaymentCreateArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many TenantPayments.
+     * @param {TenantPaymentCreateManyArgs} args - Arguments to create many TenantPayments.
+     * @example
+     * // Create many TenantPayments
+     * const tenantPayment = await prisma.tenantPayment.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends TenantPaymentCreateManyArgs>(args?: SelectSubset<T, TenantPaymentCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a TenantPayment.
+     * @param {TenantPaymentDeleteArgs} args - Arguments to delete one TenantPayment.
+     * @example
+     * // Delete one TenantPayment
+     * const TenantPayment = await prisma.tenantPayment.delete({
+     *   where: {
+     *     // ... filter to delete one TenantPayment
+     *   }
+     * })
+     * 
+     */
+    delete<T extends TenantPaymentDeleteArgs>(args: SelectSubset<T, TenantPaymentDeleteArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one TenantPayment.
+     * @param {TenantPaymentUpdateArgs} args - Arguments to update one TenantPayment.
+     * @example
+     * // Update one TenantPayment
+     * const tenantPayment = await prisma.tenantPayment.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends TenantPaymentUpdateArgs>(args: SelectSubset<T, TenantPaymentUpdateArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more TenantPayments.
+     * @param {TenantPaymentDeleteManyArgs} args - Arguments to filter TenantPayments to delete.
+     * @example
+     * // Delete a few TenantPayments
+     * const { count } = await prisma.tenantPayment.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends TenantPaymentDeleteManyArgs>(args?: SelectSubset<T, TenantPaymentDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more TenantPayments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantPaymentUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many TenantPayments
+     * const tenantPayment = await prisma.tenantPayment.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends TenantPaymentUpdateManyArgs>(args: SelectSubset<T, TenantPaymentUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one TenantPayment.
+     * @param {TenantPaymentUpsertArgs} args - Arguments to update or create a TenantPayment.
+     * @example
+     * // Update or create a TenantPayment
+     * const tenantPayment = await prisma.tenantPayment.upsert({
+     *   create: {
+     *     // ... data to create a TenantPayment
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the TenantPayment we want to update
+     *   }
+     * })
+     */
+    upsert<T extends TenantPaymentUpsertArgs>(args: SelectSubset<T, TenantPaymentUpsertArgs<ExtArgs>>): Prisma__TenantPaymentClient<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of TenantPayments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantPaymentCountArgs} args - Arguments to filter TenantPayments to count.
+     * @example
+     * // Count the number of TenantPayments
+     * const count = await prisma.tenantPayment.count({
+     *   where: {
+     *     // ... the filter for the TenantPayments we want to count
+     *   }
+     * })
+    **/
+    count<T extends TenantPaymentCountArgs>(
+      args?: Subset<T, TenantPaymentCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], TenantPaymentCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a TenantPayment.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantPaymentAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends TenantPaymentAggregateArgs>(args: Subset<T, TenantPaymentAggregateArgs>): Prisma.PrismaPromise<GetTenantPaymentAggregateType<T>>
+
+    /**
+     * Group by TenantPayment.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantPaymentGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends TenantPaymentGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: TenantPaymentGroupByArgs['orderBy'] }
+        : { orderBy?: TenantPaymentGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, TenantPaymentGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTenantPaymentGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the TenantPayment model
+   */
+  readonly fields: TenantPaymentFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for TenantPayment.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__TenantPaymentClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    outlet<T extends TenantOutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantOutletDefaultArgs<ExtArgs>>): Prisma__TenantOutletClient<$Result.GetResult<Prisma.$TenantOutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    subscription<T extends TenantSubscriptionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantSubscriptionDefaultArgs<ExtArgs>>): Prisma__TenantSubscriptionClient<$Result.GetResult<Prisma.$TenantSubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the TenantPayment model
+   */
+  interface TenantPaymentFieldRefs {
+    readonly id: FieldRef<"TenantPayment", 'Int'>
+    readonly invoiceNumber: FieldRef<"TenantPayment", 'String'>
+    readonly tenantId: FieldRef<"TenantPayment", 'Int'>
+    readonly outletId: FieldRef<"TenantPayment", 'Int'>
+    readonly subscriptionId: FieldRef<"TenantPayment", 'Int'>
+    readonly amount: FieldRef<"TenantPayment", 'Float'>
+    readonly currency: FieldRef<"TenantPayment", 'String'>
+    readonly paymentMethod: FieldRef<"TenantPayment", 'String'>
+    readonly referenceNumber: FieldRef<"TenantPayment", 'String'>
+    readonly notes: FieldRef<"TenantPayment", 'String'>
+    readonly paymentDate: FieldRef<"TenantPayment", 'DateTime'>
+    readonly periodFrom: FieldRef<"TenantPayment", 'DateTime'>
+    readonly periodTo: FieldRef<"TenantPayment", 'DateTime'>
+    readonly previousValidUntil: FieldRef<"TenantPayment", 'DateTime'>
+    readonly extensionMonths: FieldRef<"TenantPayment", 'Int'>
+    readonly costSnapshot: FieldRef<"TenantPayment", 'Json'>
+    readonly recordedBy: FieldRef<"TenantPayment", 'Int'>
+    readonly recordedAt: FieldRef<"TenantPayment", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * TenantPayment findUnique
+   */
+  export type TenantPaymentFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantPayment to fetch.
+     */
+    where: TenantPaymentWhereUniqueInput
+  }
+
+  /**
+   * TenantPayment findUniqueOrThrow
+   */
+  export type TenantPaymentFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantPayment to fetch.
+     */
+    where: TenantPaymentWhereUniqueInput
+  }
+
+  /**
+   * TenantPayment findFirst
+   */
+  export type TenantPaymentFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantPayment to fetch.
+     */
+    where?: TenantPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantPayments to fetch.
+     */
+    orderBy?: TenantPaymentOrderByWithRelationInput | TenantPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TenantPayments.
+     */
+    cursor?: TenantPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantPayments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TenantPayments.
+     */
+    distinct?: TenantPaymentScalarFieldEnum | TenantPaymentScalarFieldEnum[]
+  }
+
+  /**
+   * TenantPayment findFirstOrThrow
+   */
+  export type TenantPaymentFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantPayment to fetch.
+     */
+    where?: TenantPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantPayments to fetch.
+     */
+    orderBy?: TenantPaymentOrderByWithRelationInput | TenantPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TenantPayments.
+     */
+    cursor?: TenantPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantPayments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TenantPayments.
+     */
+    distinct?: TenantPaymentScalarFieldEnum | TenantPaymentScalarFieldEnum[]
+  }
+
+  /**
+   * TenantPayment findMany
+   */
+  export type TenantPaymentFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantPayments to fetch.
+     */
+    where?: TenantPaymentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantPayments to fetch.
+     */
+    orderBy?: TenantPaymentOrderByWithRelationInput | TenantPaymentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing TenantPayments.
+     */
+    cursor?: TenantPaymentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantPayments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantPayments.
+     */
+    skip?: number
+    distinct?: TenantPaymentScalarFieldEnum | TenantPaymentScalarFieldEnum[]
+  }
+
+  /**
+   * TenantPayment create
+   */
+  export type TenantPaymentCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * The data needed to create a TenantPayment.
+     */
+    data: XOR<TenantPaymentCreateInput, TenantPaymentUncheckedCreateInput>
+  }
+
+  /**
+   * TenantPayment createMany
+   */
+  export type TenantPaymentCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many TenantPayments.
+     */
+    data: TenantPaymentCreateManyInput | TenantPaymentCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TenantPayment update
+   */
+  export type TenantPaymentUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * The data needed to update a TenantPayment.
+     */
+    data: XOR<TenantPaymentUpdateInput, TenantPaymentUncheckedUpdateInput>
+    /**
+     * Choose, which TenantPayment to update.
+     */
+    where: TenantPaymentWhereUniqueInput
+  }
+
+  /**
+   * TenantPayment updateMany
+   */
+  export type TenantPaymentUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update TenantPayments.
+     */
+    data: XOR<TenantPaymentUpdateManyMutationInput, TenantPaymentUncheckedUpdateManyInput>
+    /**
+     * Filter which TenantPayments to update
+     */
+    where?: TenantPaymentWhereInput
+    /**
+     * Limit how many TenantPayments to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * TenantPayment upsert
+   */
+  export type TenantPaymentUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * The filter to search for the TenantPayment to update in case it exists.
+     */
+    where: TenantPaymentWhereUniqueInput
+    /**
+     * In case the TenantPayment found by the `where` argument doesn't exist, create a new TenantPayment with this data.
+     */
+    create: XOR<TenantPaymentCreateInput, TenantPaymentUncheckedCreateInput>
+    /**
+     * In case the TenantPayment was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<TenantPaymentUpdateInput, TenantPaymentUncheckedUpdateInput>
+  }
+
+  /**
+   * TenantPayment delete
+   */
+  export type TenantPaymentDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+    /**
+     * Filter which TenantPayment to delete.
+     */
+    where: TenantPaymentWhereUniqueInput
+  }
+
+  /**
+   * TenantPayment deleteMany
+   */
+  export type TenantPaymentDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TenantPayments to delete
+     */
+    where?: TenantPaymentWhereInput
+    /**
+     * Limit how many TenantPayments to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * TenantPayment without action
+   */
+  export type TenantPaymentDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantPayment
+     */
+    select?: TenantPaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantPayment
+     */
+    omit?: TenantPaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantPaymentInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -17954,12 +19282,43 @@ export namespace Prisma {
   export type TenantWarehouseScalarFieldEnum = (typeof TenantWarehouseScalarFieldEnum)[keyof typeof TenantWarehouseScalarFieldEnum]
 
 
+  export const TenantPaymentScalarFieldEnum: {
+    id: 'id',
+    invoiceNumber: 'invoiceNumber',
+    tenantId: 'tenantId',
+    outletId: 'outletId',
+    subscriptionId: 'subscriptionId',
+    amount: 'amount',
+    currency: 'currency',
+    paymentMethod: 'paymentMethod',
+    referenceNumber: 'referenceNumber',
+    notes: 'notes',
+    paymentDate: 'paymentDate',
+    periodFrom: 'periodFrom',
+    periodTo: 'periodTo',
+    previousValidUntil: 'previousValidUntil',
+    extensionMonths: 'extensionMonths',
+    costSnapshot: 'costSnapshot',
+    recordedBy: 'recordedBy',
+    recordedAt: 'recordedAt'
+  };
+
+  export type TenantPaymentScalarFieldEnum = (typeof TenantPaymentScalarFieldEnum)[keyof typeof TenantPaymentScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
   };
 
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
   export const NullsOrder: {
@@ -18096,6 +19455,34 @@ export namespace Prisma {
   export type TenantWarehouseOrderByRelevanceFieldEnum = (typeof TenantWarehouseOrderByRelevanceFieldEnum)[keyof typeof TenantWarehouseOrderByRelevanceFieldEnum]
 
 
+  export const JsonNullValueFilter: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull,
+    AnyNull: typeof AnyNull
+  };
+
+  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+  export const QueryMode: {
+    default: 'default',
+    insensitive: 'insensitive'
+  };
+
+  export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+  export const TenantPaymentOrderByRelevanceFieldEnum: {
+    invoiceNumber: 'invoiceNumber',
+    currency: 'currency',
+    paymentMethod: 'paymentMethod',
+    referenceNumber: 'referenceNumber',
+    notes: 'notes'
+  };
+
+  export type TenantPaymentOrderByRelevanceFieldEnum = (typeof TenantPaymentOrderByRelevanceFieldEnum)[keyof typeof TenantPaymentOrderByRelevanceFieldEnum]
+
+
   /**
    * Field references
    */
@@ -18133,6 +19520,20 @@ export namespace Prisma {
    * Reference to a field of type 'Boolean'
    */
   export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
+   * Reference to a field of type 'QueryMode'
+   */
+  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
   /**
    * Deep Input Types
@@ -18299,6 +19700,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletListRelationFilter
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
     warehouses?: TenantWarehouseListRelationFilter
+    payments?: TenantPaymentListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -18312,6 +19714,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletOrderByRelationAggregateInput
     deviceAllocations?: PushyDeviceAllocationOrderByRelationAggregateInput
     warehouses?: TenantWarehouseOrderByRelationAggregateInput
+    payments?: TenantPaymentOrderByRelationAggregateInput
     _relevance?: TenantOrderByRelevanceInput
   }
 
@@ -18329,6 +19732,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletListRelationFilter
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
     warehouses?: TenantWarehouseListRelationFilter
+    payments?: TenantPaymentListRelationFilter
   }, "id" | "databaseName">
 
   export type TenantOrderByWithAggregationInput = {
@@ -18375,6 +19779,7 @@ export namespace Prisma {
     subscriptionPlan?: XOR<SubscriptionPlanScalarRelationFilter, SubscriptionPlanWhereInput>
     subscriptionAddOn?: TenantSubscriptionAddOnListRelationFilter
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
+    payments?: TenantPaymentListRelationFilter
   }
 
   export type TenantSubscriptionOrderByWithRelationInput = {
@@ -18394,6 +19799,7 @@ export namespace Prisma {
     subscriptionPlan?: SubscriptionPlanOrderByWithRelationInput
     subscriptionAddOn?: TenantSubscriptionAddOnOrderByRelationAggregateInput
     deviceAllocations?: PushyDeviceAllocationOrderByRelationAggregateInput
+    payments?: TenantPaymentOrderByRelationAggregateInput
     _relevance?: TenantSubscriptionOrderByRelevanceInput
   }
 
@@ -18417,6 +19823,7 @@ export namespace Prisma {
     subscriptionPlan?: XOR<SubscriptionPlanScalarRelationFilter, SubscriptionPlanWhereInput>
     subscriptionAddOn?: TenantSubscriptionAddOnListRelationFilter
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
+    payments?: TenantPaymentListRelationFilter
   }, "id">
 
   export type TenantSubscriptionOrderByWithAggregationInput = {
@@ -18521,6 +19928,7 @@ export namespace Prisma {
     isActive?: BoolFilter<"TenantOutlet"> | boolean
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     subscriptions?: TenantSubscriptionListRelationFilter
+    payments?: TenantPaymentListRelationFilter
   }
 
   export type TenantOutletOrderByWithRelationInput = {
@@ -18532,6 +19940,7 @@ export namespace Prisma {
     isActive?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     subscriptions?: TenantSubscriptionOrderByRelationAggregateInput
+    payments?: TenantPaymentOrderByRelationAggregateInput
     _relevance?: TenantOutletOrderByRelevanceInput
   }
 
@@ -18547,6 +19956,7 @@ export namespace Prisma {
     isActive?: BoolFilter<"TenantOutlet"> | boolean
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     subscriptions?: TenantSubscriptionListRelationFilter
+    payments?: TenantPaymentListRelationFilter
   }, "id">
 
   export type TenantOutletOrderByWithAggregationInput = {
@@ -19291,6 +20701,135 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"TenantWarehouse"> | Date | string
   }
 
+  export type TenantPaymentWhereInput = {
+    AND?: TenantPaymentWhereInput | TenantPaymentWhereInput[]
+    OR?: TenantPaymentWhereInput[]
+    NOT?: TenantPaymentWhereInput | TenantPaymentWhereInput[]
+    id?: IntFilter<"TenantPayment"> | number
+    invoiceNumber?: StringFilter<"TenantPayment"> | string
+    tenantId?: IntFilter<"TenantPayment"> | number
+    outletId?: IntFilter<"TenantPayment"> | number
+    subscriptionId?: IntFilter<"TenantPayment"> | number
+    amount?: FloatFilter<"TenantPayment"> | number
+    currency?: StringFilter<"TenantPayment"> | string
+    paymentMethod?: StringFilter<"TenantPayment"> | string
+    referenceNumber?: StringNullableFilter<"TenantPayment"> | string | null
+    notes?: StringNullableFilter<"TenantPayment"> | string | null
+    paymentDate?: DateTimeFilter<"TenantPayment"> | Date | string
+    periodFrom?: DateTimeFilter<"TenantPayment"> | Date | string
+    periodTo?: DateTimeFilter<"TenantPayment"> | Date | string
+    previousValidUntil?: DateTimeFilter<"TenantPayment"> | Date | string
+    extensionMonths?: IntFilter<"TenantPayment"> | number
+    costSnapshot?: JsonFilter<"TenantPayment">
+    recordedBy?: IntNullableFilter<"TenantPayment"> | number | null
+    recordedAt?: DateTimeFilter<"TenantPayment"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    outlet?: XOR<TenantOutletScalarRelationFilter, TenantOutletWhereInput>
+    subscription?: XOR<TenantSubscriptionScalarRelationFilter, TenantSubscriptionWhereInput>
+  }
+
+  export type TenantPaymentOrderByWithRelationInput = {
+    id?: SortOrder
+    invoiceNumber?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    amount?: SortOrder
+    currency?: SortOrder
+    paymentMethod?: SortOrder
+    referenceNumber?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    paymentDate?: SortOrder
+    periodFrom?: SortOrder
+    periodTo?: SortOrder
+    previousValidUntil?: SortOrder
+    extensionMonths?: SortOrder
+    costSnapshot?: SortOrder
+    recordedBy?: SortOrderInput | SortOrder
+    recordedAt?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+    outlet?: TenantOutletOrderByWithRelationInput
+    subscription?: TenantSubscriptionOrderByWithRelationInput
+    _relevance?: TenantPaymentOrderByRelevanceInput
+  }
+
+  export type TenantPaymentWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    invoiceNumber?: string
+    AND?: TenantPaymentWhereInput | TenantPaymentWhereInput[]
+    OR?: TenantPaymentWhereInput[]
+    NOT?: TenantPaymentWhereInput | TenantPaymentWhereInput[]
+    tenantId?: IntFilter<"TenantPayment"> | number
+    outletId?: IntFilter<"TenantPayment"> | number
+    subscriptionId?: IntFilter<"TenantPayment"> | number
+    amount?: FloatFilter<"TenantPayment"> | number
+    currency?: StringFilter<"TenantPayment"> | string
+    paymentMethod?: StringFilter<"TenantPayment"> | string
+    referenceNumber?: StringNullableFilter<"TenantPayment"> | string | null
+    notes?: StringNullableFilter<"TenantPayment"> | string | null
+    paymentDate?: DateTimeFilter<"TenantPayment"> | Date | string
+    periodFrom?: DateTimeFilter<"TenantPayment"> | Date | string
+    periodTo?: DateTimeFilter<"TenantPayment"> | Date | string
+    previousValidUntil?: DateTimeFilter<"TenantPayment"> | Date | string
+    extensionMonths?: IntFilter<"TenantPayment"> | number
+    costSnapshot?: JsonFilter<"TenantPayment">
+    recordedBy?: IntNullableFilter<"TenantPayment"> | number | null
+    recordedAt?: DateTimeFilter<"TenantPayment"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    outlet?: XOR<TenantOutletScalarRelationFilter, TenantOutletWhereInput>
+    subscription?: XOR<TenantSubscriptionScalarRelationFilter, TenantSubscriptionWhereInput>
+  }, "id" | "invoiceNumber">
+
+  export type TenantPaymentOrderByWithAggregationInput = {
+    id?: SortOrder
+    invoiceNumber?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    amount?: SortOrder
+    currency?: SortOrder
+    paymentMethod?: SortOrder
+    referenceNumber?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    paymentDate?: SortOrder
+    periodFrom?: SortOrder
+    periodTo?: SortOrder
+    previousValidUntil?: SortOrder
+    extensionMonths?: SortOrder
+    costSnapshot?: SortOrder
+    recordedBy?: SortOrderInput | SortOrder
+    recordedAt?: SortOrder
+    _count?: TenantPaymentCountOrderByAggregateInput
+    _avg?: TenantPaymentAvgOrderByAggregateInput
+    _max?: TenantPaymentMaxOrderByAggregateInput
+    _min?: TenantPaymentMinOrderByAggregateInput
+    _sum?: TenantPaymentSumOrderByAggregateInput
+  }
+
+  export type TenantPaymentScalarWhereWithAggregatesInput = {
+    AND?: TenantPaymentScalarWhereWithAggregatesInput | TenantPaymentScalarWhereWithAggregatesInput[]
+    OR?: TenantPaymentScalarWhereWithAggregatesInput[]
+    NOT?: TenantPaymentScalarWhereWithAggregatesInput | TenantPaymentScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"TenantPayment"> | number
+    invoiceNumber?: StringWithAggregatesFilter<"TenantPayment"> | string
+    tenantId?: IntWithAggregatesFilter<"TenantPayment"> | number
+    outletId?: IntWithAggregatesFilter<"TenantPayment"> | number
+    subscriptionId?: IntWithAggregatesFilter<"TenantPayment"> | number
+    amount?: FloatWithAggregatesFilter<"TenantPayment"> | number
+    currency?: StringWithAggregatesFilter<"TenantPayment"> | string
+    paymentMethod?: StringWithAggregatesFilter<"TenantPayment"> | string
+    referenceNumber?: StringNullableWithAggregatesFilter<"TenantPayment"> | string | null
+    notes?: StringNullableWithAggregatesFilter<"TenantPayment"> | string | null
+    paymentDate?: DateTimeWithAggregatesFilter<"TenantPayment"> | Date | string
+    periodFrom?: DateTimeWithAggregatesFilter<"TenantPayment"> | Date | string
+    periodTo?: DateTimeWithAggregatesFilter<"TenantPayment"> | Date | string
+    previousValidUntil?: DateTimeWithAggregatesFilter<"TenantPayment"> | Date | string
+    extensionMonths?: IntWithAggregatesFilter<"TenantPayment"> | number
+    costSnapshot?: JsonWithAggregatesFilter<"TenantPayment">
+    recordedBy?: IntNullableWithAggregatesFilter<"TenantPayment"> | number | null
+    recordedAt?: DateTimeWithAggregatesFilter<"TenantPayment"> | Date | string
+  }
+
   export type SubscriptionPlanCreateInput = {
     planName: string
     planType?: string
@@ -19457,6 +20996,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -19470,6 +21010,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -19482,6 +21023,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -19495,6 +21037,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -19532,6 +21075,7 @@ export namespace Prisma {
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateInput = {
@@ -19547,6 +21091,7 @@ export namespace Prisma {
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUpdateInput = {
@@ -19561,6 +21106,7 @@ export namespace Prisma {
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateInput = {
@@ -19576,6 +21122,7 @@ export namespace Prisma {
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionCreateManyInput = {
@@ -19663,6 +21210,7 @@ export namespace Prisma {
     isActive?: boolean
     tenant: TenantCreateNestedOneWithoutTenantOutletsInput
     subscriptions?: TenantSubscriptionCreateNestedManyWithoutOutletInput
+    payments?: TenantPaymentCreateNestedManyWithoutOutletInput
   }
 
   export type TenantOutletUncheckedCreateInput = {
@@ -19673,6 +21221,7 @@ export namespace Prisma {
     createdAt?: Date | string
     isActive?: boolean
     subscriptions?: TenantSubscriptionUncheckedCreateNestedManyWithoutOutletInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type TenantOutletUpdateInput = {
@@ -19682,6 +21231,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     tenant?: TenantUpdateOneRequiredWithoutTenantOutletsNestedInput
     subscriptions?: TenantSubscriptionUpdateManyWithoutOutletNestedInput
+    payments?: TenantPaymentUpdateManyWithoutOutletNestedInput
   }
 
   export type TenantOutletUncheckedUpdateInput = {
@@ -19692,6 +21242,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     subscriptions?: TenantSubscriptionUncheckedUpdateManyWithoutOutletNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type TenantOutletCreateManyInput = {
@@ -20464,6 +22015,147 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type TenantPaymentCreateInput = {
+    invoiceNumber: string
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutPaymentsInput
+    outlet: TenantOutletCreateNestedOneWithoutPaymentsInput
+    subscription: TenantSubscriptionCreateNestedOneWithoutPaymentsInput
+  }
+
+  export type TenantPaymentUncheckedCreateInput = {
+    id?: number
+    invoiceNumber: string
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+  }
+
+  export type TenantPaymentUpdateInput = {
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutPaymentsNestedInput
+    outlet?: TenantOutletUpdateOneRequiredWithoutPaymentsNestedInput
+    subscription?: TenantSubscriptionUpdateOneRequiredWithoutPaymentsNestedInput
+  }
+
+  export type TenantPaymentUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantPaymentCreateManyInput = {
+    id?: number
+    invoiceNumber: string
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+  }
+
+  export type TenantPaymentUpdateManyMutationInput = {
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantPaymentUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -20779,6 +22471,12 @@ export namespace Prisma {
     none?: TenantWarehouseWhereInput
   }
 
+  export type TenantPaymentListRelationFilter = {
+    every?: TenantPaymentWhereInput
+    some?: TenantPaymentWhereInput
+    none?: TenantPaymentWhereInput
+  }
+
   export type TenantUserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -20792,6 +22490,10 @@ export namespace Prisma {
   }
 
   export type TenantWarehouseOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type TenantPaymentOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -21597,6 +23299,142 @@ export namespace Prisma {
     id?: SortOrder
     tenantId?: SortOrder
   }
+  export type JsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type TenantPaymentOrderByRelevanceInput = {
+    fields: TenantPaymentOrderByRelevanceFieldEnum | TenantPaymentOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type TenantPaymentCountOrderByAggregateInput = {
+    id?: SortOrder
+    invoiceNumber?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    amount?: SortOrder
+    currency?: SortOrder
+    paymentMethod?: SortOrder
+    referenceNumber?: SortOrder
+    notes?: SortOrder
+    paymentDate?: SortOrder
+    periodFrom?: SortOrder
+    periodTo?: SortOrder
+    previousValidUntil?: SortOrder
+    extensionMonths?: SortOrder
+    costSnapshot?: SortOrder
+    recordedBy?: SortOrder
+    recordedAt?: SortOrder
+  }
+
+  export type TenantPaymentAvgOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    amount?: SortOrder
+    extensionMonths?: SortOrder
+    recordedBy?: SortOrder
+  }
+
+  export type TenantPaymentMaxOrderByAggregateInput = {
+    id?: SortOrder
+    invoiceNumber?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    amount?: SortOrder
+    currency?: SortOrder
+    paymentMethod?: SortOrder
+    referenceNumber?: SortOrder
+    notes?: SortOrder
+    paymentDate?: SortOrder
+    periodFrom?: SortOrder
+    periodTo?: SortOrder
+    previousValidUntil?: SortOrder
+    extensionMonths?: SortOrder
+    recordedBy?: SortOrder
+    recordedAt?: SortOrder
+  }
+
+  export type TenantPaymentMinOrderByAggregateInput = {
+    id?: SortOrder
+    invoiceNumber?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    amount?: SortOrder
+    currency?: SortOrder
+    paymentMethod?: SortOrder
+    referenceNumber?: SortOrder
+    notes?: SortOrder
+    paymentDate?: SortOrder
+    periodFrom?: SortOrder
+    periodTo?: SortOrder
+    previousValidUntil?: SortOrder
+    extensionMonths?: SortOrder
+    recordedBy?: SortOrder
+    recordedAt?: SortOrder
+  }
+
+  export type TenantPaymentSumOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    amount?: SortOrder
+    extensionMonths?: SortOrder
+    recordedBy?: SortOrder
+  }
+  export type JsonWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedJsonFilter<$PrismaModel>
+    _max?: NestedJsonFilter<$PrismaModel>
+  }
 
   export type TenantSubscriptionCreateNestedManyWithoutSubscriptionPlanInput = {
     create?: XOR<TenantSubscriptionCreateWithoutSubscriptionPlanInput, TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput> | TenantSubscriptionCreateWithoutSubscriptionPlanInput[] | TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput[]
@@ -21749,6 +23587,13 @@ export namespace Prisma {
     connect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
   }
 
+  export type TenantPaymentCreateNestedManyWithoutTenantInput = {
+    create?: XOR<TenantPaymentCreateWithoutTenantInput, TenantPaymentUncheckedCreateWithoutTenantInput> | TenantPaymentCreateWithoutTenantInput[] | TenantPaymentUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutTenantInput | TenantPaymentCreateOrConnectWithoutTenantInput[]
+    createMany?: TenantPaymentCreateManyTenantInputEnvelope
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+  }
+
   export type TenantUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -21782,6 +23627,13 @@ export namespace Prisma {
     connectOrCreate?: TenantWarehouseCreateOrConnectWithoutTenantInput | TenantWarehouseCreateOrConnectWithoutTenantInput[]
     createMany?: TenantWarehouseCreateManyTenantInputEnvelope
     connect?: TenantWarehouseWhereUniqueInput | TenantWarehouseWhereUniqueInput[]
+  }
+
+  export type TenantPaymentUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<TenantPaymentCreateWithoutTenantInput, TenantPaymentUncheckedCreateWithoutTenantInput> | TenantPaymentCreateWithoutTenantInput[] | TenantPaymentUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutTenantInput | TenantPaymentCreateOrConnectWithoutTenantInput[]
+    createMany?: TenantPaymentCreateManyTenantInputEnvelope
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -21858,6 +23710,20 @@ export namespace Prisma {
     deleteMany?: TenantWarehouseScalarWhereInput | TenantWarehouseScalarWhereInput[]
   }
 
+  export type TenantPaymentUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<TenantPaymentCreateWithoutTenantInput, TenantPaymentUncheckedCreateWithoutTenantInput> | TenantPaymentCreateWithoutTenantInput[] | TenantPaymentUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutTenantInput | TenantPaymentCreateOrConnectWithoutTenantInput[]
+    upsert?: TenantPaymentUpsertWithWhereUniqueWithoutTenantInput | TenantPaymentUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: TenantPaymentCreateManyTenantInputEnvelope
+    set?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    disconnect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    delete?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    update?: TenantPaymentUpdateWithWhereUniqueWithoutTenantInput | TenantPaymentUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: TenantPaymentUpdateManyWithWhereWithoutTenantInput | TenantPaymentUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
+  }
+
   export type TenantUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -21928,6 +23794,20 @@ export namespace Prisma {
     deleteMany?: TenantWarehouseScalarWhereInput | TenantWarehouseScalarWhereInput[]
   }
 
+  export type TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<TenantPaymentCreateWithoutTenantInput, TenantPaymentUncheckedCreateWithoutTenantInput> | TenantPaymentCreateWithoutTenantInput[] | TenantPaymentUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutTenantInput | TenantPaymentCreateOrConnectWithoutTenantInput[]
+    upsert?: TenantPaymentUpsertWithWhereUniqueWithoutTenantInput | TenantPaymentUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: TenantPaymentCreateManyTenantInputEnvelope
+    set?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    disconnect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    delete?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    update?: TenantPaymentUpdateWithWhereUniqueWithoutTenantInput | TenantPaymentUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: TenantPaymentUpdateManyWithWhereWithoutTenantInput | TenantPaymentUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
+  }
+
   export type TenantOutletCreateNestedOneWithoutSubscriptionsInput = {
     create?: XOR<TenantOutletCreateWithoutSubscriptionsInput, TenantOutletUncheckedCreateWithoutSubscriptionsInput>
     connectOrCreate?: TenantOutletCreateOrConnectWithoutSubscriptionsInput
@@ -21966,6 +23846,13 @@ export namespace Prisma {
     connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
   }
 
+  export type TenantPaymentCreateNestedManyWithoutSubscriptionInput = {
+    create?: XOR<TenantPaymentCreateWithoutSubscriptionInput, TenantPaymentUncheckedCreateWithoutSubscriptionInput> | TenantPaymentCreateWithoutSubscriptionInput[] | TenantPaymentUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutSubscriptionInput | TenantPaymentCreateOrConnectWithoutSubscriptionInput[]
+    createMany?: TenantPaymentCreateManySubscriptionInputEnvelope
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+  }
+
   export type TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput = {
     create?: XOR<TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput, TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput> | TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput[] | TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput[]
     connectOrCreate?: TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput | TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput[]
@@ -21978,6 +23865,13 @@ export namespace Prisma {
     connectOrCreate?: PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput | PushyDeviceAllocationCreateOrConnectWithoutSubscriptionInput[]
     createMany?: PushyDeviceAllocationCreateManySubscriptionInputEnvelope
     connect?: PushyDeviceAllocationWhereUniqueInput | PushyDeviceAllocationWhereUniqueInput[]
+  }
+
+  export type TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput = {
+    create?: XOR<TenantPaymentCreateWithoutSubscriptionInput, TenantPaymentUncheckedCreateWithoutSubscriptionInput> | TenantPaymentCreateWithoutSubscriptionInput[] | TenantPaymentUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutSubscriptionInput | TenantPaymentCreateOrConnectWithoutSubscriptionInput[]
+    createMany?: TenantPaymentCreateManySubscriptionInputEnvelope
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
   }
 
   export type TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput = {
@@ -22042,6 +23936,20 @@ export namespace Prisma {
     deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
   }
 
+  export type TenantPaymentUpdateManyWithoutSubscriptionNestedInput = {
+    create?: XOR<TenantPaymentCreateWithoutSubscriptionInput, TenantPaymentUncheckedCreateWithoutSubscriptionInput> | TenantPaymentCreateWithoutSubscriptionInput[] | TenantPaymentUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutSubscriptionInput | TenantPaymentCreateOrConnectWithoutSubscriptionInput[]
+    upsert?: TenantPaymentUpsertWithWhereUniqueWithoutSubscriptionInput | TenantPaymentUpsertWithWhereUniqueWithoutSubscriptionInput[]
+    createMany?: TenantPaymentCreateManySubscriptionInputEnvelope
+    set?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    disconnect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    delete?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    update?: TenantPaymentUpdateWithWhereUniqueWithoutSubscriptionInput | TenantPaymentUpdateWithWhereUniqueWithoutSubscriptionInput[]
+    updateMany?: TenantPaymentUpdateManyWithWhereWithoutSubscriptionInput | TenantPaymentUpdateManyWithWhereWithoutSubscriptionInput[]
+    deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
+  }
+
   export type TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput = {
     create?: XOR<TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput, TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput> | TenantSubscriptionAddOnCreateWithoutTenantSubscriptionInput[] | TenantSubscriptionAddOnUncheckedCreateWithoutTenantSubscriptionInput[]
     connectOrCreate?: TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput | TenantSubscriptionAddOnCreateOrConnectWithoutTenantSubscriptionInput[]
@@ -22068,6 +23976,20 @@ export namespace Prisma {
     update?: PushyDeviceAllocationUpdateWithWhereUniqueWithoutSubscriptionInput | PushyDeviceAllocationUpdateWithWhereUniqueWithoutSubscriptionInput[]
     updateMany?: PushyDeviceAllocationUpdateManyWithWhereWithoutSubscriptionInput | PushyDeviceAllocationUpdateManyWithWhereWithoutSubscriptionInput[]
     deleteMany?: PushyDeviceAllocationScalarWhereInput | PushyDeviceAllocationScalarWhereInput[]
+  }
+
+  export type TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput = {
+    create?: XOR<TenantPaymentCreateWithoutSubscriptionInput, TenantPaymentUncheckedCreateWithoutSubscriptionInput> | TenantPaymentCreateWithoutSubscriptionInput[] | TenantPaymentUncheckedCreateWithoutSubscriptionInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutSubscriptionInput | TenantPaymentCreateOrConnectWithoutSubscriptionInput[]
+    upsert?: TenantPaymentUpsertWithWhereUniqueWithoutSubscriptionInput | TenantPaymentUpsertWithWhereUniqueWithoutSubscriptionInput[]
+    createMany?: TenantPaymentCreateManySubscriptionInputEnvelope
+    set?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    disconnect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    delete?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    update?: TenantPaymentUpdateWithWhereUniqueWithoutSubscriptionInput | TenantPaymentUpdateWithWhereUniqueWithoutSubscriptionInput[]
+    updateMany?: TenantPaymentUpdateManyWithWhereWithoutSubscriptionInput | TenantPaymentUpdateManyWithWhereWithoutSubscriptionInput[]
+    deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
   }
 
   export type TenantSubscriptionCreateNestedOneWithoutSubscriptionAddOnInput = {
@@ -22111,11 +24033,25 @@ export namespace Prisma {
     connect?: TenantSubscriptionWhereUniqueInput | TenantSubscriptionWhereUniqueInput[]
   }
 
+  export type TenantPaymentCreateNestedManyWithoutOutletInput = {
+    create?: XOR<TenantPaymentCreateWithoutOutletInput, TenantPaymentUncheckedCreateWithoutOutletInput> | TenantPaymentCreateWithoutOutletInput[] | TenantPaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutOutletInput | TenantPaymentCreateOrConnectWithoutOutletInput[]
+    createMany?: TenantPaymentCreateManyOutletInputEnvelope
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+  }
+
   export type TenantSubscriptionUncheckedCreateNestedManyWithoutOutletInput = {
     create?: XOR<TenantSubscriptionCreateWithoutOutletInput, TenantSubscriptionUncheckedCreateWithoutOutletInput> | TenantSubscriptionCreateWithoutOutletInput[] | TenantSubscriptionUncheckedCreateWithoutOutletInput[]
     connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutOutletInput | TenantSubscriptionCreateOrConnectWithoutOutletInput[]
     createMany?: TenantSubscriptionCreateManyOutletInputEnvelope
     connect?: TenantSubscriptionWhereUniqueInput | TenantSubscriptionWhereUniqueInput[]
+  }
+
+  export type TenantPaymentUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<TenantPaymentCreateWithoutOutletInput, TenantPaymentUncheckedCreateWithoutOutletInput> | TenantPaymentCreateWithoutOutletInput[] | TenantPaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutOutletInput | TenantPaymentCreateOrConnectWithoutOutletInput[]
+    createMany?: TenantPaymentCreateManyOutletInputEnvelope
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
   }
 
   export type BoolFieldUpdateOperationsInput = {
@@ -22144,6 +24080,20 @@ export namespace Prisma {
     deleteMany?: TenantSubscriptionScalarWhereInput | TenantSubscriptionScalarWhereInput[]
   }
 
+  export type TenantPaymentUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<TenantPaymentCreateWithoutOutletInput, TenantPaymentUncheckedCreateWithoutOutletInput> | TenantPaymentCreateWithoutOutletInput[] | TenantPaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutOutletInput | TenantPaymentCreateOrConnectWithoutOutletInput[]
+    upsert?: TenantPaymentUpsertWithWhereUniqueWithoutOutletInput | TenantPaymentUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: TenantPaymentCreateManyOutletInputEnvelope
+    set?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    disconnect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    delete?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    update?: TenantPaymentUpdateWithWhereUniqueWithoutOutletInput | TenantPaymentUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: TenantPaymentUpdateManyWithWhereWithoutOutletInput | TenantPaymentUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
+  }
+
   export type TenantSubscriptionUncheckedUpdateManyWithoutOutletNestedInput = {
     create?: XOR<TenantSubscriptionCreateWithoutOutletInput, TenantSubscriptionUncheckedCreateWithoutOutletInput> | TenantSubscriptionCreateWithoutOutletInput[] | TenantSubscriptionUncheckedCreateWithoutOutletInput[]
     connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutOutletInput | TenantSubscriptionCreateOrConnectWithoutOutletInput[]
@@ -22156,6 +24106,20 @@ export namespace Prisma {
     update?: TenantSubscriptionUpdateWithWhereUniqueWithoutOutletInput | TenantSubscriptionUpdateWithWhereUniqueWithoutOutletInput[]
     updateMany?: TenantSubscriptionUpdateManyWithWhereWithoutOutletInput | TenantSubscriptionUpdateManyWithWhereWithoutOutletInput[]
     deleteMany?: TenantSubscriptionScalarWhereInput | TenantSubscriptionScalarWhereInput[]
+  }
+
+  export type TenantPaymentUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<TenantPaymentCreateWithoutOutletInput, TenantPaymentUncheckedCreateWithoutOutletInput> | TenantPaymentCreateWithoutOutletInput[] | TenantPaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: TenantPaymentCreateOrConnectWithoutOutletInput | TenantPaymentCreateOrConnectWithoutOutletInput[]
+    upsert?: TenantPaymentUpsertWithWhereUniqueWithoutOutletInput | TenantPaymentUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: TenantPaymentCreateManyOutletInputEnvelope
+    set?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    disconnect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    delete?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+    update?: TenantPaymentUpdateWithWhereUniqueWithoutOutletInput | TenantPaymentUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: TenantPaymentUpdateManyWithWhereWithoutOutletInput | TenantPaymentUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
   }
 
   export type TenantSubscriptionCreateNestedManyWithoutDiscountInput = {
@@ -22422,6 +24386,48 @@ export namespace Prisma {
     update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutWarehousesInput, TenantUpdateWithoutWarehousesInput>, TenantUncheckedUpdateWithoutWarehousesInput>
   }
 
+  export type TenantCreateNestedOneWithoutPaymentsInput = {
+    create?: XOR<TenantCreateWithoutPaymentsInput, TenantUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutPaymentsInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type TenantOutletCreateNestedOneWithoutPaymentsInput = {
+    create?: XOR<TenantOutletCreateWithoutPaymentsInput, TenantOutletUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: TenantOutletCreateOrConnectWithoutPaymentsInput
+    connect?: TenantOutletWhereUniqueInput
+  }
+
+  export type TenantSubscriptionCreateNestedOneWithoutPaymentsInput = {
+    create?: XOR<TenantSubscriptionCreateWithoutPaymentsInput, TenantSubscriptionUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutPaymentsInput
+    connect?: TenantSubscriptionWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutPaymentsNestedInput = {
+    create?: XOR<TenantCreateWithoutPaymentsInput, TenantUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutPaymentsInput
+    upsert?: TenantUpsertWithoutPaymentsInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutPaymentsInput, TenantUpdateWithoutPaymentsInput>, TenantUncheckedUpdateWithoutPaymentsInput>
+  }
+
+  export type TenantOutletUpdateOneRequiredWithoutPaymentsNestedInput = {
+    create?: XOR<TenantOutletCreateWithoutPaymentsInput, TenantOutletUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: TenantOutletCreateOrConnectWithoutPaymentsInput
+    upsert?: TenantOutletUpsertWithoutPaymentsInput
+    connect?: TenantOutletWhereUniqueInput
+    update?: XOR<XOR<TenantOutletUpdateToOneWithWhereWithoutPaymentsInput, TenantOutletUpdateWithoutPaymentsInput>, TenantOutletUncheckedUpdateWithoutPaymentsInput>
+  }
+
+  export type TenantSubscriptionUpdateOneRequiredWithoutPaymentsNestedInput = {
+    create?: XOR<TenantSubscriptionCreateWithoutPaymentsInput, TenantSubscriptionUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutPaymentsInput
+    upsert?: TenantSubscriptionUpsertWithoutPaymentsInput
+    connect?: TenantSubscriptionWhereUniqueInput
+    update?: XOR<XOR<TenantSubscriptionUpdateToOneWithWhereWithoutPaymentsInput, TenantSubscriptionUpdateWithoutPaymentsInput>, TenantSubscriptionUncheckedUpdateWithoutPaymentsInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -22642,6 +24648,29 @@ export namespace Prisma {
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
+  export type NestedJsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type TenantSubscriptionCreateWithoutSubscriptionPlanInput = {
     status?: string
@@ -22654,6 +24683,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput = {
@@ -22668,6 +24698,7 @@ export namespace Prisma {
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput = {
@@ -22797,6 +24828,7 @@ export namespace Prisma {
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutTenantInput = {
@@ -22811,6 +24843,7 @@ export namespace Prisma {
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutTenantInput = {
@@ -22829,6 +24862,7 @@ export namespace Prisma {
     createdAt?: Date | string
     isActive?: boolean
     subscriptions?: TenantSubscriptionCreateNestedManyWithoutOutletInput
+    payments?: TenantPaymentCreateNestedManyWithoutOutletInput
   }
 
   export type TenantOutletUncheckedCreateWithoutTenantInput = {
@@ -22838,6 +24872,7 @@ export namespace Prisma {
     createdAt?: Date | string
     isActive?: boolean
     subscriptions?: TenantSubscriptionUncheckedCreateNestedManyWithoutOutletInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type TenantOutletCreateOrConnectWithoutTenantInput = {
@@ -22911,6 +24946,55 @@ export namespace Prisma {
 
   export type TenantWarehouseCreateManyTenantInputEnvelope = {
     data: TenantWarehouseCreateManyTenantInput | TenantWarehouseCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type TenantPaymentCreateWithoutTenantInput = {
+    invoiceNumber: string
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+    outlet: TenantOutletCreateNestedOneWithoutPaymentsInput
+    subscription: TenantSubscriptionCreateNestedOneWithoutPaymentsInput
+  }
+
+  export type TenantPaymentUncheckedCreateWithoutTenantInput = {
+    id?: number
+    invoiceNumber: string
+    outletId: number
+    subscriptionId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+  }
+
+  export type TenantPaymentCreateOrConnectWithoutTenantInput = {
+    where: TenantPaymentWhereUniqueInput
+    create: XOR<TenantPaymentCreateWithoutTenantInput, TenantPaymentUncheckedCreateWithoutTenantInput>
+  }
+
+  export type TenantPaymentCreateManyTenantInputEnvelope = {
+    data: TenantPaymentCreateManyTenantInput | TenantPaymentCreateManyTenantInput[]
     skipDuplicates?: boolean
   }
 
@@ -23049,12 +25133,53 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"TenantWarehouse"> | Date | string
   }
 
+  export type TenantPaymentUpsertWithWhereUniqueWithoutTenantInput = {
+    where: TenantPaymentWhereUniqueInput
+    update: XOR<TenantPaymentUpdateWithoutTenantInput, TenantPaymentUncheckedUpdateWithoutTenantInput>
+    create: XOR<TenantPaymentCreateWithoutTenantInput, TenantPaymentUncheckedCreateWithoutTenantInput>
+  }
+
+  export type TenantPaymentUpdateWithWhereUniqueWithoutTenantInput = {
+    where: TenantPaymentWhereUniqueInput
+    data: XOR<TenantPaymentUpdateWithoutTenantInput, TenantPaymentUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type TenantPaymentUpdateManyWithWhereWithoutTenantInput = {
+    where: TenantPaymentScalarWhereInput
+    data: XOR<TenantPaymentUpdateManyMutationInput, TenantPaymentUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type TenantPaymentScalarWhereInput = {
+    AND?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
+    OR?: TenantPaymentScalarWhereInput[]
+    NOT?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
+    id?: IntFilter<"TenantPayment"> | number
+    invoiceNumber?: StringFilter<"TenantPayment"> | string
+    tenantId?: IntFilter<"TenantPayment"> | number
+    outletId?: IntFilter<"TenantPayment"> | number
+    subscriptionId?: IntFilter<"TenantPayment"> | number
+    amount?: FloatFilter<"TenantPayment"> | number
+    currency?: StringFilter<"TenantPayment"> | string
+    paymentMethod?: StringFilter<"TenantPayment"> | string
+    referenceNumber?: StringNullableFilter<"TenantPayment"> | string | null
+    notes?: StringNullableFilter<"TenantPayment"> | string | null
+    paymentDate?: DateTimeFilter<"TenantPayment"> | Date | string
+    periodFrom?: DateTimeFilter<"TenantPayment"> | Date | string
+    periodTo?: DateTimeFilter<"TenantPayment"> | Date | string
+    previousValidUntil?: DateTimeFilter<"TenantPayment"> | Date | string
+    extensionMonths?: IntFilter<"TenantPayment"> | number
+    costSnapshot?: JsonFilter<"TenantPayment">
+    recordedBy?: IntNullableFilter<"TenantPayment"> | number | null
+    recordedAt?: DateTimeFilter<"TenantPayment"> | Date | string
+  }
+
   export type TenantOutletCreateWithoutSubscriptionsInput = {
     outletName: string
     address?: string | null
     createdAt?: Date | string
     isActive?: boolean
     tenant: TenantCreateNestedOneWithoutTenantOutletsInput
+    payments?: TenantPaymentCreateNestedManyWithoutOutletInput
   }
 
   export type TenantOutletUncheckedCreateWithoutSubscriptionsInput = {
@@ -23064,6 +25189,7 @@ export namespace Prisma {
     address?: string | null
     createdAt?: Date | string
     isActive?: boolean
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type TenantOutletCreateOrConnectWithoutSubscriptionsInput = {
@@ -23108,6 +25234,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSubscriptionInput = {
@@ -23120,6 +25247,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSubscriptionInput = {
@@ -23207,6 +25335,55 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type TenantPaymentCreateWithoutSubscriptionInput = {
+    invoiceNumber: string
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutPaymentsInput
+    outlet: TenantOutletCreateNestedOneWithoutPaymentsInput
+  }
+
+  export type TenantPaymentUncheckedCreateWithoutSubscriptionInput = {
+    id?: number
+    invoiceNumber: string
+    tenantId: number
+    outletId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+  }
+
+  export type TenantPaymentCreateOrConnectWithoutSubscriptionInput = {
+    where: TenantPaymentWhereUniqueInput
+    create: XOR<TenantPaymentCreateWithoutSubscriptionInput, TenantPaymentUncheckedCreateWithoutSubscriptionInput>
+  }
+
+  export type TenantPaymentCreateManySubscriptionInputEnvelope = {
+    data: TenantPaymentCreateManySubscriptionInput | TenantPaymentCreateManySubscriptionInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TenantOutletUpsertWithoutSubscriptionsInput = {
     update: XOR<TenantOutletUpdateWithoutSubscriptionsInput, TenantOutletUncheckedUpdateWithoutSubscriptionsInput>
     create: XOR<TenantOutletCreateWithoutSubscriptionsInput, TenantOutletUncheckedCreateWithoutSubscriptionsInput>
@@ -23224,6 +25401,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     tenant?: TenantUpdateOneRequiredWithoutTenantOutletsNestedInput
+    payments?: TenantPaymentUpdateManyWithoutOutletNestedInput
   }
 
   export type TenantOutletUncheckedUpdateWithoutSubscriptionsInput = {
@@ -23233,6 +25411,7 @@ export namespace Prisma {
     address?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    payments?: TenantPaymentUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type DiscountUpsertWithoutSubscriptionsInput = {
@@ -23289,6 +25468,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSubscriptionInput = {
@@ -23301,6 +25481,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SubscriptionPlanUpsertWithoutSubscriptionInput = {
@@ -23369,6 +25550,22 @@ export namespace Prisma {
     data: XOR<PushyDeviceAllocationUpdateManyMutationInput, PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionInput>
   }
 
+  export type TenantPaymentUpsertWithWhereUniqueWithoutSubscriptionInput = {
+    where: TenantPaymentWhereUniqueInput
+    update: XOR<TenantPaymentUpdateWithoutSubscriptionInput, TenantPaymentUncheckedUpdateWithoutSubscriptionInput>
+    create: XOR<TenantPaymentCreateWithoutSubscriptionInput, TenantPaymentUncheckedCreateWithoutSubscriptionInput>
+  }
+
+  export type TenantPaymentUpdateWithWhereUniqueWithoutSubscriptionInput = {
+    where: TenantPaymentWhereUniqueInput
+    data: XOR<TenantPaymentUpdateWithoutSubscriptionInput, TenantPaymentUncheckedUpdateWithoutSubscriptionInput>
+  }
+
+  export type TenantPaymentUpdateManyWithWhereWithoutSubscriptionInput = {
+    where: TenantPaymentScalarWhereInput
+    data: XOR<TenantPaymentUpdateManyMutationInput, TenantPaymentUncheckedUpdateManyWithoutSubscriptionInput>
+  }
+
   export type TenantSubscriptionCreateWithoutSubscriptionAddOnInput = {
     status?: string
     nextPaymentDate: Date | string
@@ -23380,6 +25577,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutSubscriptionAddOnInput = {
@@ -23394,6 +25592,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     discountId?: number | null
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutSubscriptionAddOnInput = {
@@ -23447,6 +25646,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutSubscriptionAddOnInput = {
@@ -23461,6 +25661,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type SubscriptionAddOnUpsertWithoutSubscriptionsInput = {
@@ -23502,6 +25703,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantOutletsInput = {
@@ -23514,6 +25716,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantOutletsInput = {
@@ -23532,6 +25735,7 @@ export namespace Prisma {
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutOutletInput = {
@@ -23546,6 +25750,7 @@ export namespace Prisma {
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutOutletInput = {
@@ -23555,6 +25760,55 @@ export namespace Prisma {
 
   export type TenantSubscriptionCreateManyOutletInputEnvelope = {
     data: TenantSubscriptionCreateManyOutletInput | TenantSubscriptionCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type TenantPaymentCreateWithoutOutletInput = {
+    invoiceNumber: string
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutPaymentsInput
+    subscription: TenantSubscriptionCreateNestedOneWithoutPaymentsInput
+  }
+
+  export type TenantPaymentUncheckedCreateWithoutOutletInput = {
+    id?: number
+    invoiceNumber: string
+    tenantId: number
+    subscriptionId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+  }
+
+  export type TenantPaymentCreateOrConnectWithoutOutletInput = {
+    where: TenantPaymentWhereUniqueInput
+    create: XOR<TenantPaymentCreateWithoutOutletInput, TenantPaymentUncheckedCreateWithoutOutletInput>
+  }
+
+  export type TenantPaymentCreateManyOutletInputEnvelope = {
+    data: TenantPaymentCreateManyOutletInput | TenantPaymentCreateManyOutletInput[]
     skipDuplicates?: boolean
   }
 
@@ -23578,6 +25832,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantOutletsInput = {
@@ -23590,6 +25845,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithWhereUniqueWithoutOutletInput = {
@@ -23608,6 +25864,22 @@ export namespace Prisma {
     data: XOR<TenantSubscriptionUpdateManyMutationInput, TenantSubscriptionUncheckedUpdateManyWithoutOutletInput>
   }
 
+  export type TenantPaymentUpsertWithWhereUniqueWithoutOutletInput = {
+    where: TenantPaymentWhereUniqueInput
+    update: XOR<TenantPaymentUpdateWithoutOutletInput, TenantPaymentUncheckedUpdateWithoutOutletInput>
+    create: XOR<TenantPaymentCreateWithoutOutletInput, TenantPaymentUncheckedCreateWithoutOutletInput>
+  }
+
+  export type TenantPaymentUpdateWithWhereUniqueWithoutOutletInput = {
+    where: TenantPaymentWhereUniqueInput
+    data: XOR<TenantPaymentUpdateWithoutOutletInput, TenantPaymentUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type TenantPaymentUpdateManyWithWhereWithoutOutletInput = {
+    where: TenantPaymentScalarWhereInput
+    data: XOR<TenantPaymentUpdateManyMutationInput, TenantPaymentUncheckedUpdateManyWithoutOutletInput>
+  }
+
   export type TenantSubscriptionCreateWithoutDiscountInput = {
     status?: string
     nextPaymentDate: Date | string
@@ -23619,6 +25891,7 @@ export namespace Prisma {
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutDiscountInput = {
@@ -23633,6 +25906,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutDiscountInput = {
@@ -23670,6 +25944,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantUsersInput = {
@@ -23682,6 +25957,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantUsersInput = {
@@ -23748,6 +26024,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantUsersInput = {
@@ -23760,6 +26037,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput = {
@@ -24067,6 +26345,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDeviceAllocationsInput = {
@@ -24079,6 +26358,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDeviceAllocationsInput = {
@@ -24097,6 +26377,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
     subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+    payments?: TenantPaymentCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionUncheckedCreateWithoutDeviceAllocationsInput = {
@@ -24111,6 +26392,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     discountId?: number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
 
   export type TenantSubscriptionCreateOrConnectWithoutDeviceAllocationsInput = {
@@ -24178,6 +26460,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDeviceAllocationsInput = {
@@ -24190,6 +26473,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithoutDeviceAllocationsInput = {
@@ -24214,6 +26498,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+    payments?: TenantPaymentUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutDeviceAllocationsInput = {
@@ -24228,6 +26513,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantCreateWithoutWarehousesInput = {
@@ -24239,6 +26525,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutWarehousesInput = {
@@ -24251,6 +26538,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutWarehousesInput = {
@@ -24278,6 +26566,7 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutWarehousesInput = {
@@ -24290,6 +26579,201 @@ export namespace Prisma {
     subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantCreateWithoutPaymentsInput = {
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutPaymentsInput = {
+    id?: number
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutPaymentsInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutPaymentsInput, TenantUncheckedCreateWithoutPaymentsInput>
+  }
+
+  export type TenantOutletCreateWithoutPaymentsInput = {
+    outletName: string
+    address?: string | null
+    createdAt?: Date | string
+    isActive?: boolean
+    tenant: TenantCreateNestedOneWithoutTenantOutletsInput
+    subscriptions?: TenantSubscriptionCreateNestedManyWithoutOutletInput
+  }
+
+  export type TenantOutletUncheckedCreateWithoutPaymentsInput = {
+    id?: number
+    tenantId: number
+    outletName: string
+    address?: string | null
+    createdAt?: Date | string
+    isActive?: boolean
+    subscriptions?: TenantSubscriptionUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type TenantOutletCreateOrConnectWithoutPaymentsInput = {
+    where: TenantOutletWhereUniqueInput
+    create: XOR<TenantOutletCreateWithoutPaymentsInput, TenantOutletUncheckedCreateWithoutPaymentsInput>
+  }
+
+  export type TenantSubscriptionCreateWithoutPaymentsInput = {
+    status?: string
+    nextPaymentDate: Date | string
+    subscriptionValidUntil: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
+    discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
+    tenant: TenantCreateNestedOneWithoutSubscriptionInput
+    subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
+    subscriptionAddOn?: TenantSubscriptionAddOnCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutSubscriptionInput
+  }
+
+  export type TenantSubscriptionUncheckedCreateWithoutPaymentsInput = {
+    id?: number
+    tenantId: number
+    outletId: number
+    subscriptionPlanId: number
+    status?: string
+    nextPaymentDate: Date | string
+    subscriptionValidUntil: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    discountId?: number | null
+    subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
+  }
+
+  export type TenantSubscriptionCreateOrConnectWithoutPaymentsInput = {
+    where: TenantSubscriptionWhereUniqueInput
+    create: XOR<TenantSubscriptionCreateWithoutPaymentsInput, TenantSubscriptionUncheckedCreateWithoutPaymentsInput>
+  }
+
+  export type TenantUpsertWithoutPaymentsInput = {
+    update: XOR<TenantUpdateWithoutPaymentsInput, TenantUncheckedUpdateWithoutPaymentsInput>
+    create: XOR<TenantCreateWithoutPaymentsInput, TenantUncheckedCreateWithoutPaymentsInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutPaymentsInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutPaymentsInput, TenantUncheckedUpdateWithoutPaymentsInput>
+  }
+
+  export type TenantUpdateWithoutPaymentsInput = {
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutPaymentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantOutletUpsertWithoutPaymentsInput = {
+    update: XOR<TenantOutletUpdateWithoutPaymentsInput, TenantOutletUncheckedUpdateWithoutPaymentsInput>
+    create: XOR<TenantOutletCreateWithoutPaymentsInput, TenantOutletUncheckedCreateWithoutPaymentsInput>
+    where?: TenantOutletWhereInput
+  }
+
+  export type TenantOutletUpdateToOneWithWhereWithoutPaymentsInput = {
+    where?: TenantOutletWhereInput
+    data: XOR<TenantOutletUpdateWithoutPaymentsInput, TenantOutletUncheckedUpdateWithoutPaymentsInput>
+  }
+
+  export type TenantOutletUpdateWithoutPaymentsInput = {
+    outletName?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    tenant?: TenantUpdateOneRequiredWithoutTenantOutletsNestedInput
+    subscriptions?: TenantSubscriptionUpdateManyWithoutOutletNestedInput
+  }
+
+  export type TenantOutletUncheckedUpdateWithoutPaymentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    address?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    subscriptions?: TenantSubscriptionUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
+  export type TenantSubscriptionUpsertWithoutPaymentsInput = {
+    update: XOR<TenantSubscriptionUpdateWithoutPaymentsInput, TenantSubscriptionUncheckedUpdateWithoutPaymentsInput>
+    create: XOR<TenantSubscriptionCreateWithoutPaymentsInput, TenantSubscriptionUncheckedCreateWithoutPaymentsInput>
+    where?: TenantSubscriptionWhereInput
+  }
+
+  export type TenantSubscriptionUpdateToOneWithWhereWithoutPaymentsInput = {
+    where?: TenantSubscriptionWhereInput
+    data: XOR<TenantSubscriptionUpdateWithoutPaymentsInput, TenantSubscriptionUncheckedUpdateWithoutPaymentsInput>
+  }
+
+  export type TenantSubscriptionUpdateWithoutPaymentsInput = {
+    status?: StringFieldUpdateOperationsInput | string
+    nextPaymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
+    discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
+    tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
+    subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
+    subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
+  }
+
+  export type TenantSubscriptionUncheckedUpdateWithoutPaymentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionPlanId?: IntFieldUpdateOperationsInput | number
+    status?: StringFieldUpdateOperationsInput | string
+    nextPaymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionCreateManySubscriptionPlanInput = {
@@ -24315,6 +26799,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutSubscriptionPlanInput = {
@@ -24329,6 +26814,7 @@ export namespace Prisma {
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutSubscriptionPlanInput = {
@@ -24417,6 +26903,26 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type TenantPaymentCreateManyTenantInput = {
+    id?: number
+    invoiceNumber: string
+    outletId: number
+    subscriptionId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
+  }
+
   export type TenantUserUpdateWithoutTenantInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: NullableStringFieldUpdateOperationsInput | string | null
@@ -24453,6 +26959,7 @@ export namespace Prisma {
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutTenantInput = {
@@ -24467,6 +26974,7 @@ export namespace Prisma {
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutTenantInput = {
@@ -24487,6 +26995,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     subscriptions?: TenantSubscriptionUpdateManyWithoutOutletNestedInput
+    payments?: TenantPaymentUpdateManyWithoutOutletNestedInput
   }
 
   export type TenantOutletUncheckedUpdateWithoutTenantInput = {
@@ -24496,6 +27005,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     subscriptions?: TenantSubscriptionUncheckedUpdateManyWithoutOutletNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type TenantOutletUncheckedUpdateManyWithoutTenantInput = {
@@ -24573,6 +27083,65 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type TenantPaymentUpdateWithoutTenantInput = {
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    outlet?: TenantOutletUpdateOneRequiredWithoutPaymentsNestedInput
+    subscription?: TenantSubscriptionUpdateOneRequiredWithoutPaymentsNestedInput
+  }
+
+  export type TenantPaymentUncheckedUpdateWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantPaymentUncheckedUpdateManyWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type TenantSubscriptionAddOnCreateManyTenantSubscriptionInput = {
     id?: number
     addOnId: number
@@ -24588,6 +27157,26 @@ export namespace Prisma {
     activatedAt?: Date | string
     expiresAt?: Date | string | null
     createdAt?: Date | string
+  }
+
+  export type TenantPaymentCreateManySubscriptionInput = {
+    id?: number
+    invoiceNumber: string
+    tenantId: number
+    outletId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
   }
 
   export type TenantSubscriptionAddOnUpdateWithoutTenantSubscriptionInput = {
@@ -24639,6 +27228,65 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type TenantPaymentUpdateWithoutSubscriptionInput = {
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutPaymentsNestedInput
+    outlet?: TenantOutletUpdateOneRequiredWithoutPaymentsNestedInput
+  }
+
+  export type TenantPaymentUncheckedUpdateWithoutSubscriptionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantPaymentUncheckedUpdateManyWithoutSubscriptionInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type TenantSubscriptionCreateManyOutletInput = {
     id?: number
     tenantId: number
@@ -24649,6 +27297,26 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+  }
+
+  export type TenantPaymentCreateManyOutletInput = {
+    id?: number
+    invoiceNumber: string
+    tenantId: number
+    subscriptionId: number
+    amount: number
+    currency?: string
+    paymentMethod: string
+    referenceNumber?: string | null
+    notes?: string | null
+    paymentDate: Date | string
+    periodFrom: Date | string
+    periodTo: Date | string
+    previousValidUntil: Date | string
+    extensionMonths?: number
+    costSnapshot: JsonNullValueInput | InputJsonValue
+    recordedBy?: number | null
+    recordedAt?: Date | string
   }
 
   export type TenantSubscriptionUpdateWithoutOutletInput = {
@@ -24662,6 +27330,7 @@ export namespace Prisma {
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutOutletInput = {
@@ -24676,6 +27345,7 @@ export namespace Prisma {
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutOutletInput = {
@@ -24688,6 +27358,65 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type TenantPaymentUpdateWithoutOutletInput = {
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutPaymentsNestedInput
+    subscription?: TenantSubscriptionUpdateOneRequiredWithoutPaymentsNestedInput
+  }
+
+  export type TenantPaymentUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    tenantId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantPaymentUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    tenantId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    amount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    referenceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodTo?: DateTimeFieldUpdateOperationsInput | Date | string
+    previousValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
+    extensionMonths?: IntFieldUpdateOperationsInput | number
+    costSnapshot?: JsonNullValueInput | InputJsonValue
+    recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TenantSubscriptionCreateManyDiscountInput = {
@@ -24713,6 +27442,7 @@ export namespace Prisma {
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionAddOn?: TenantSubscriptionAddOnUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateWithoutDiscountInput = {
@@ -24727,6 +27457,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
 
   export type TenantSubscriptionUncheckedUpdateManyWithoutDiscountInput = {

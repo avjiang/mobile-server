@@ -15,7 +15,8 @@ import {
     AllPaymentsResponse,
     TenantBillingSummaryResponse,
     UpcomingPaymentsSummaryResponse,
-    UpcomingPaymentsResponse
+    UpcomingPaymentsResponse,
+    TenantUsersResponse
 } from "./admin.response"
 
 const router = express.Router()
@@ -100,6 +101,28 @@ let deleteTenantUser = (req: AuthRequest, res: Response, next: NextFunction) => 
 
     service.deleteTenantUser(tenantId, userId)
         .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+}
+
+/**
+ * GET /tenants/:tenantId/users
+ * Get all users for a specific tenant
+ */
+let getTenantUsers = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('Tenant ID format incorrect');
+    }
+
+    const tenantId: number = parseInt(req.params.tenantId);
+    const includeDeleted = req.query.includeDeleted === 'true';
+
+    service.getTenantUsers(tenantId, includeDeleted)
+        .then((response: TenantUsersResponse) => {
             sendResponse(res, response);
         })
         .catch(next);
@@ -371,6 +394,7 @@ let getTenantPayments = (req: AuthRequest, res: Response, next: NextFunction) =>
     const outletId = req.query.outletId ? parseInt(req.query.outletId as string) : undefined;
     const fromDate = req.query.from ? new Date(req.query.from as string) : undefined;
     const toDate = req.query.to ? new Date(req.query.to as string) : undefined;
+    if (toDate) toDate.setHours(23, 59, 59, 999); // Include entire day
     const limit = req.query.limit ? Math.min(parseInt(req.query.limit as string), 100) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
@@ -398,6 +422,7 @@ let getAllPayments = (req: AuthRequest, res: Response, next: NextFunction) => {
     const tenantId = req.query.tenantId ? parseInt(req.query.tenantId as string) : undefined;
     const fromDate = new Date(req.query.from as string);
     const toDate = new Date(req.query.to as string);
+    toDate.setHours(23, 59, 59, 999); // Include entire day
     const limit = req.query.limit ? Math.min(parseInt(req.query.limit as string), 100) : 50;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
@@ -481,6 +506,7 @@ router.get('/tenantDevices/:tenantId', getTenantDevices)
 router.post('/signup', createTenant)
 router.post('/createTenantUser/:tenantId', createTenantUser)
 router.delete('/tenants/:tenantId/users/:userId', deleteTenantUser)
+router.get('/tenants/:tenantId/users', getTenantUsers)
 
 // device quota routes
 router.post('/addDeviceQuota/:tenantId', addDeviceQuotaForTenant)

@@ -16,7 +16,8 @@ import {
     AllPaymentsResponse,
     TenantBillingSummaryResponse,
     UpcomingPaymentsSummaryResponse,
-    UpcomingPaymentsResponse
+    UpcomingPaymentsResponse,
+    TenantUsersResponse
 } from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
@@ -2249,25 +2250,31 @@ const getUpcomingPaymentsSummary = async (daysAhead: number = 30): Promise<Upcom
     const graceStart = new Date(now);
     graceStart.setDate(graceStart.getDate() - GRACE_PERIOD_DAYS);
 
-    // Raw SQL for performance
+    // Raw SQL for performance - use subquery to avoid only_full_group_by issues
     const results = await prisma.$queryRaw<Array<{
         status: string;
         tenantCount: bigint;
         outletCount: bigint;
     }>>`
         SELECT
-            CASE
-                WHEN ts.SUBSCRIPTION_VALID_UNTIL >= NOW() THEN 'active'
-                WHEN ts.SUBSCRIPTION_VALID_UNTIL >= DATE_SUB(NOW(), INTERVAL ${GRACE_PERIOD_DAYS} DAY) THEN 'grace'
-                ELSE 'expired'
-            END as status,
-            COUNT(DISTINCT t.ID) as tenantCount,
-            COUNT(DISTINCT o.ID) as outletCount
-        FROM tenant t
-        JOIN tenant_outlet o ON t.ID = o.TENANT_ID AND o.IS_ACTIVE = true
-        JOIN tenant_subscription ts ON o.ID = ts.OUTLET_ID AND ts.STATUS IN ('Active', 'active', 'trial')
-        WHERE ts.SUBSCRIPTION_VALID_UNTIL <= ${futureDate}
-        GROUP BY status
+            sub.status,
+            COUNT(DISTINCT sub.tenantId) as tenantCount,
+            COUNT(DISTINCT sub.outletId) as outletCount
+        FROM (
+            SELECT
+                t.ID as tenantId,
+                o.ID as outletId,
+                CASE
+                    WHEN ts.SUBSCRIPTION_VALID_UNTIL >= NOW() THEN 'active'
+                    WHEN ts.SUBSCRIPTION_VALID_UNTIL >= DATE_SUB(NOW(), INTERVAL ${GRACE_PERIOD_DAYS} DAY) THEN 'grace'
+                    ELSE 'expired'
+                END as status
+            FROM tenant t
+            JOIN tenant_outlet o ON t.ID = o.TENANT_ID AND o.IS_ACTIVE = true
+            JOIN tenant_subscription ts ON o.ID = ts.OUTLET_ID AND ts.STATUS IN ('Active', 'active', 'trial')
+            WHERE ts.SUBSCRIPTION_VALID_UNTIL <= ${futureDate}
+        ) sub
+        GROUP BY sub.status
     `;
 
     let activeExpiring = 0;
@@ -2403,6 +2410,35 @@ const getUpcomingPayments = async (options: {
     };
 };
 
+/**
+ * Get all users for a tenant
+ */
+const getTenantUsers = async (tenantId: number, includeDeleted: boolean = false): Promise<TenantUsersResponse> => {
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) {
+        throw new Error('Tenant not found');
+    }
+
+    const where: any = { tenantId };
+    if (!includeDeleted) {
+        where.isDeleted = false;
+    }
+
+    const users = await prisma.tenantUser.findMany({
+        where,
+        select: { id: true, username: true, role: true, isDeleted: true },
+        orderBy: { id: 'asc' }
+    });
+
+    return {
+        tenantId,
+        tenantName: tenant.tenantName,
+        users,
+        total: users.length,
+        activeCount: users.filter(u => !u.isDeleted).length
+    };
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2422,5 +2458,7 @@ export = {
     getAllPayments,
     getTenantBillingSummary,
     getUpcomingPaymentsSummary,
-    getUpcomingPayments
+    getUpcomingPayments,
+    // User Management
+    getTenantUsers
 }

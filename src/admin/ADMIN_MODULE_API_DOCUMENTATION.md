@@ -6,9 +6,25 @@ This document provides comprehensive documentation for all Admin Module endpoint
 
 ## Changelog
 
+### v1.2.0 - User Management Enhancement (2025-01-06)
+
+**New Features:**
+
+- Get all users for a specific tenant with optional deleted filter
+
+**New Endpoints:**
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/tenants/:tenantId/users` | GET | Get all users for a tenant |
+
+**Breaking Changes:** None
+
+---
+
 ### v1.1.0 - Payment Management (2025-01-27)
 
 **New Features:**
+
 - Manual payment recording with invoice generation (INV-YYYYMM-XXXX format)
 - Payment history tracking per outlet with cost snapshots
 - Subscription extension (monthly/annual)
@@ -27,6 +43,7 @@ This document provides comprehensive documentation for all Admin Module endpoint
 | `/payments/upcoming` | GET | Paginated list of expiring subscriptions |
 
 **New Database Table:**
+
 - `tenant_payment` - Stores payment records with cost snapshots (JSON)
 
 **Breaking Changes:** None
@@ -48,6 +65,7 @@ This document provides comprehensive documentation for all Admin Module endpoint
 ## Base URL
 
 All endpoints are prefixed with:
+
 ```
 /api/admin
 ```
@@ -65,6 +83,7 @@ All endpoints are prefixed with:
 **Authentication:** Not required (public signup)
 
 **Request Body:**
+
 ```json
 {
   "tenant": {
@@ -81,6 +100,7 @@ All endpoints are prefixed with:
 | `tenant.plan` | string | Yes | Subscription plan name (`Basic`, `Pro`) |
 
 **Response (Success - 200):**
+
 ```json
 {
   "tenant": {
@@ -123,6 +143,7 @@ All endpoints are prefixed with:
 ```
 
 **Notes:**
+
 - Auto-generates database name from tenant name
 - Creates default owner user with username matching tenant name (lowercased, spaces replaced with `_`)
 - Creates "Main Outlet" by default
@@ -145,6 +166,7 @@ All endpoints are prefixed with:
 | `id` | number | Tenant ID |
 
 **Response (Success - 200):**
+
 ```json
 {
   "tenantId": 1,
@@ -187,9 +209,12 @@ All endpoints are prefixed with:
 ```
 
 **Pricing Summary:**
+
 - **Pro Plan Base:** 0 IDR/month
 - **Extra Warehouse:** 149,000 IDR/month per warehouse (first warehouse free)
 - **Extra Device:** 19,000 IDR/month per device (beyond plan limit)
+
+**See Also:** For payment status information (expiry dates, grace period), use [`/tenants/:tenantId/billing-summary`](#75-get-tenant-billing-summary) instead.
 
 ---
 
@@ -202,6 +227,7 @@ All endpoints are prefixed with:
 **Authentication:** Required
 
 **Response (Success - 200):**
+
 ```json
 {
   "totalRevenue": 1500000,
@@ -227,6 +253,7 @@ All endpoints are prefixed with:
 ```
 
 **Notes:**
+
 - Uses optimized raw SQL query for performance
 - Only includes tenants with active subscriptions
 - Automatically calculates percentage and fixed discounts
@@ -239,18 +266,18 @@ All endpoints are prefixed with:
 
 Current available plans:
 
-| Plan | Base Price | Max Users | Max Devices | Warehouses | Features |
-|------|------------|-----------|-------------|------------|----------|
-| **Basic** | 0 IDR | 2 free | 0 | Not supported | Basic POS |
-| **Pro** | 0 IDR | 3 free | 3 | 1 free, then 100k/month | Advanced POS + Warehouses + Push Notifications |
+| Plan      | Base Price | Max Users | Max Devices | Warehouses              | Features                                       |
+| --------- | ---------- | --------- | ----------- | ----------------------- | ---------------------------------------------- |
+| **Basic** | 0 IDR      | 2 free    | 0           | Not supported           | Basic POS                                      |
+| **Pro**   | 0 IDR      | 3 free    | 3           | 1 free, then 100k/month | Advanced POS + Warehouses + Push Notifications |
 
 ### 2.2 Add-on Pricing
 
-| Add-on ID | Name | Type | Price | Scope | Description |
-|-----------|------|------|-------|-------|-------------|
-| 1 | Extra User | user | Varies | outlet | Additional user slot |
-| 2 | Additional Push Notification Device | device | 19,000 IDR | tenant | Extra device beyond plan limit |
-| 3 | Extra Warehouse | warehouse | 149,000 IDR | tenant | Additional warehouse beyond first free |
+| Add-on ID | Name                                | Type      | Price       | Scope  | Description                            |
+| --------- | ----------------------------------- | --------- | ----------- | ------ | -------------------------------------- |
+| 1         | Extra User                          | user      | Varies      | outlet | Additional user slot                   |
+| 2         | Additional Push Notification Device | device    | 19,000 IDR  | tenant | Extra device beyond plan limit         |
+| 3         | Extra Warehouse                     | warehouse | 149,000 IDR | tenant | Additional warehouse beyond first free |
 
 ---
 
@@ -270,6 +297,7 @@ Current available plans:
 | `tenantId` | number | Tenant ID |
 
 **Request Body:**
+
 ```json
 {
   "username": "john_doe",
@@ -278,6 +306,7 @@ Current available plans:
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "tenantId": 1,
@@ -288,6 +317,7 @@ Current available plans:
 ```
 
 **Notes:**
+
 - Creates user in **both** global DB and tenant DB
 - Username must be globally unique
 - No roles assigned initially (admin assigns roles later)
@@ -295,7 +325,58 @@ Current available plans:
 
 ---
 
-### 3.2 Delete Tenant User
+### 3.2 Get Tenant Users
+
+**Endpoint:** `GET /api/admin/tenants/:tenantId/users`
+
+**Description:** Retrieves all users for a specific tenant. Optionally includes soft-deleted users.
+
+**Authentication:** Required
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+
+**Query Parameters:**
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `includeDeleted` | boolean | No | false | Include soft-deleted users |
+
+**Example Requests:**
+
+```
+GET /api/admin/tenants/1/users
+GET /api/admin/tenants/1/users?includeDeleted=true
+```
+
+**Response (Success - 200):**
+
+```json
+{
+  "tenantId": 1,
+  "tenantName": "My Coffee Shop",
+  "users": [
+    { "id": 1, "username": "owner", "role": "Owner", "isDeleted": false },
+    { "id": 2, "username": "cashier_01", "role": "Cashier", "isDeleted": false }
+  ],
+  "total": 2,
+  "activeCount": 2
+}
+```
+
+**Response Fields:**
+| Field | Description |
+|-------|-------------|
+| `tenantId` | The tenant ID |
+| `tenantName` | Name of the tenant |
+| `users` | Array of user objects |
+| `total` | Total count of users returned |
+| `activeCount` | Count of non-deleted users |
+
+---
+
+### 3.3 Delete Tenant User
 
 **Endpoint:** `DELETE /api/admin/tenants/:tenantId/users/:userId`
 
@@ -310,6 +391,7 @@ Current available plans:
 | `userId` | number | User ID (global tenant_user ID) |
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -321,6 +403,7 @@ Current available plans:
 ```
 
 **Error Response (Cannot delete owner):**
+
 ```json
 {
   "error": "Cannot delete the tenant owner"
@@ -328,6 +411,7 @@ Current available plans:
 ```
 
 **Error Response (User already deleted):**
+
 ```json
 {
   "error": "User is already deleted"
@@ -335,6 +419,7 @@ Current available plans:
 ```
 
 **Error Response (User not found):**
+
 ```json
 {
   "error": "User not found"
@@ -342,6 +427,7 @@ Current available plans:
 ```
 
 **Notes:**
+
 - Performs **soft delete** (sets `isDeleted = true` in global DB, `deleted = true` in tenant DB)
 - **Cannot delete the tenant Owner** - protected to prevent locking out the tenant
 - Automatically recalculates user add-on quantity based on remaining active users
@@ -377,15 +463,15 @@ DELETE /api/admin/tenants/1/users/4
 
 **Add-on Management Logic:**
 
-| Plan | Free Users | Total Active Users | Add-on Quantity | Action |
-|------|------------|-------------------|-----------------|---------|
-| Basic | 2 | 2 | 0 | No add-on needed |
-| Basic | 2 | 3 | 1 | Create/update add-on |
-| Basic | 2 | 1 (after delete) | 0 | Remove add-on |
-| Pro | 3 | 3 | 0 | No add-on needed |
-| Pro | 3 | 5 | 2 | Create/update add-on |
-| Pro | 3 | 4 (after delete) | 1 | Reduce add-on quantity |
-| Pro | 3 | 3 (after delete) | 0 | Remove add-on |
+| Plan  | Free Users | Total Active Users | Add-on Quantity | Action                 |
+| ----- | ---------- | ------------------ | --------------- | ---------------------- |
+| Basic | 2          | 2                  | 0               | No add-on needed       |
+| Basic | 2          | 3                  | 1               | Create/update add-on   |
+| Basic | 2          | 1 (after delete)   | 0               | Remove add-on          |
+| Pro   | 3          | 3                  | 0               | No add-on needed       |
+| Pro   | 3          | 5                  | 2               | Create/update add-on   |
+| Pro   | 3          | 4 (after delete)   | 1               | Reduce add-on quantity |
+| Pro   | 3          | 3 (after delete)   | 0               | Remove add-on          |
 
 ---
 
@@ -405,6 +491,7 @@ DELETE /api/admin/tenants/1/users/4
 | `tenantId` | number | Tenant ID |
 
 **Response (Success - 200):**
+
 ```json
 {
   "tenantId": 1,
@@ -455,6 +542,7 @@ DELETE /api/admin/tenants/1/users/4
 | `tenantId` | number | Tenant ID |
 
 **Request Body:**
+
 ```json
 {
   "quantity": 5
@@ -462,6 +550,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -474,6 +563,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Notes:**
+
 - Price: 19,000 IDR/month per device
 - Updates existing add-on or creates new one
 - Immediate effect - devices can be activated right away
@@ -494,6 +584,7 @@ DELETE /api/admin/tenants/1/users/4
 | `tenantId` | number | Tenant ID |
 
 **Request Body:**
+
 ```json
 {
   "quantity": 3
@@ -501,6 +592,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -537,6 +629,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Notes:**
+
 - Validates that reduction doesn't exceed current add-on quantity
 - Automatically deactivates oldest devices first (based on `lastActiveAt`)
 - Deallocates deactivated devices
@@ -560,6 +653,7 @@ DELETE /api/admin/tenants/1/users/4
 | `tenantId` | number | Tenant ID |
 
 **Request Body:**
+
 ```json
 {
   "warehouseName": "Downtown Warehouse",
@@ -586,6 +680,7 @@ DELETE /api/admin/tenants/1/users/4
 | `contactEmail` | string | No | Contact email |
 
 **Response (Success - 200 - New Creation):**
+
 ```json
 {
   "success": true,
@@ -614,6 +709,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Response (Success - 200 - Reactivation):**
+
 ```json
 {
   "success": true,
@@ -642,6 +738,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **For first warehouse:**
+
 ```json
 {
   "success": true,
@@ -658,6 +755,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Notes:**
+
 - **Smart Reactivation:** If a warehouse with the same name was previously deleted, it will be reactivated instead of creating a duplicate
 - When reactivating, warehouse data (address, phone, email) is updated with new values provided
 - Creates warehouse in **both** global and tenant databases (atomic transaction)
@@ -684,6 +782,7 @@ DELETE /api/admin/tenants/1/users/4
 | `id` | number | Warehouse ID (tenant DB ID) |
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -697,6 +796,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Error Response (Warehouse has stock):**
+
 ```json
 {
   "error": "Cannot delete warehouse with active stock. Please transfer or clear stock first."
@@ -704,6 +804,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Notes:**
+
 - Performs **soft delete** (sets `deleted = true`, `deletedAt = NOW()`)
 - Validates no active stock exists (`availableQuantity > 0`)
 - Updates warehouse add-on quantity automatically
@@ -726,6 +827,7 @@ DELETE /api/admin/tenants/1/users/4
 | `tenantId` | number | Tenant ID |
 
 **Response (Success - 200):**
+
 ```json
 {
   "data": [
@@ -757,6 +859,7 @@ DELETE /api/admin/tenants/1/users/4
 ```
 
 **Notes:**
+
 - Only returns non-deleted warehouses (`deleted = false`)
 - Sorted by creation date (newest first)
 - Returns data from **global** database
@@ -769,13 +872,14 @@ DELETE /api/admin/tenants/1/users/4
 
 The system uses **smart reactivation** to handle warehouse deletion and recreation:
 
-| Action | Behavior | Database State |
-|--------|----------|----------------|
-| **Create "Downtown Storage"** | Creates fresh warehouse | `deleted = false`, `isActive = true` |
-| **Delete "Downtown Storage"** | Soft-deletes warehouse | `deleted = true`, `isActive = false` |
+| Action                              | Behavior                           | Database State                       |
+| ----------------------------------- | ---------------------------------- | ------------------------------------ |
+| **Create "Downtown Storage"**       | Creates fresh warehouse            | `deleted = false`, `isActive = true` |
+| **Delete "Downtown Storage"**       | Soft-deletes warehouse             | `deleted = true`, `isActive = false` |
 | **Create "Downtown Storage" again** | **Reactivates** existing warehouse | `deleted = false`, `isActive = true` |
 
 **Key Benefits:**
+
 - ✅ No duplicate warehouse errors
 - ✅ Preserves warehouse ID and historical relationships
 - ✅ Updates warehouse data (address, contact info) on reactivation
@@ -783,6 +887,7 @@ The system uses **smart reactivation** to handle warehouse deletion and recreati
 - ✅ Supports unlimited create/delete cycles
 
 **Example Flow:**
+
 ```bash
 # Step 1: Create warehouse
 POST /api/admin/tenants/1/warehouses
@@ -806,6 +911,7 @@ Response: {
 ```
 
 **Plan Change Behavior:**
+
 - **Downgrade Pro → Basic:** ALL warehouses soft-deleted
 - **Upgrade Basic → Pro (1st time):** Creates "Main Warehouse"
 - **Upgrade Basic → Pro (after downgrade):** Reactivates "Main Warehouse"
@@ -829,6 +935,7 @@ Response: {
 | `tenantId` | number | Tenant ID |
 
 **Request Body:**
+
 ```json
 {
   "planName": "Pro"
@@ -845,6 +952,7 @@ Response: {
 #### **6.1.1 Upgrade: Basic → Pro (First Time)**
 
 **Request:**
+
 ```json
 {
   "planName": "Pro"
@@ -852,6 +960,7 @@ Response: {
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -874,6 +983,7 @@ Response: {
 ```
 
 **What Happens:**
+
 1. ✅ Creates "Main Warehouse" in both global and tenant databases
 2. ✅ First warehouse is **FREE** (no add-on charge)
 3. ✅ Updates subscription plan to Pro
@@ -887,6 +997,7 @@ Response: {
 **Scenario:** User previously had Pro plan, downgraded to Basic, now upgrading back to Pro.
 
 **Request:**
+
 ```json
 {
   "planName": "Pro"
@@ -894,6 +1005,7 @@ Response: {
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -916,6 +1028,7 @@ Response: {
 ```
 
 **What Happens:**
+
 1. ✅ **Reactivates** existing "Main Warehouse" (soft-deleted during previous downgrade)
 2. ✅ Sets `deleted = false`, `isActive = true`, `deletedAt = null`
 3. ✅ Preserves original warehouse ID and historical data
@@ -925,6 +1038,7 @@ Response: {
 7. ✅ Clears plan cache
 
 **Important Notes:**
+
 - **No duplicate warehouse error** - System intelligently reactivates instead of creating duplicate
 - **Data preserved** - Original warehouse ID and relationships maintained
 - **Supports unlimited cycles** - Basic → Pro → Basic → Pro works indefinitely
@@ -934,6 +1048,7 @@ Response: {
 #### **6.1.3 Downgrade: Pro → Basic**
 
 **Request:**
+
 ```json
 {
   "planName": "Basic"
@@ -941,6 +1056,7 @@ Response: {
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -962,6 +1078,7 @@ Response: {
 ```
 
 **What Happens:**
+
 1. ❌ **Deactivates ALL warehouses** in both global and tenant databases
 2. ❌ **Removes warehouse add-on** (ID 3) completely
 3. ❌ **Removes ALL device add-ons** (ID 2) - Basic plan has 0 device support
@@ -970,6 +1087,7 @@ Response: {
 6. ✅ Clears plan cache
 
 **Important Notes:**
+
 - **Warehouses:** All warehouses soft-deleted (`deleted = true`, `isActive = false`)
 - **Devices:** All device add-ons removed (Basic plan = 0 devices)
 - **Atomic:** Uses transactions - either all changes succeed or all rollback
@@ -981,6 +1099,7 @@ Response: {
 #### **6.1.4 Same Plan Error**
 
 **Request:**
+
 ```json
 {
   "planName": "Pro"
@@ -988,6 +1107,7 @@ Response: {
 ```
 
 **Response (Error - 400):**
+
 ```json
 {
   "error": "Tenant is already on 'Pro' plan"
@@ -999,6 +1119,7 @@ Response: {
 #### **6.1.5 Invalid Plan Error**
 
 **Request:**
+
 ```json
 {
   "planName": "Enterprise"
@@ -1006,6 +1127,7 @@ Response: {
 ```
 
 **Response (Error - 404):**
+
 ```json
 {
   "error": "Plan 'Enterprise' not found"
@@ -1016,10 +1138,10 @@ Response: {
 
 ## Plan Change Summary
 
-| Change | Warehouse Action | Device Action | Cost Impact |
-|--------|------------------|---------------|-------------|
-| **Basic → Pro** | Creates "Main Warehouse" (FREE) | No change | 0 IDR (first warehouse free) |
-| **Pro → Basic** | Deactivates ALL warehouses | Removes ALL device add-ons | Reduces to 0 IDR |
+| Change          | Warehouse Action                | Device Action              | Cost Impact                  |
+| --------------- | ------------------------------- | -------------------------- | ---------------------------- |
+| **Basic → Pro** | Creates "Main Warehouse" (FREE) | No change                  | 0 IDR (first warehouse free) |
+| **Pro → Basic** | Deactivates ALL warehouses      | Removes ALL device add-ons | Reduces to 0 IDR             |
 
 ---
 
@@ -1028,6 +1150,7 @@ Response: {
 All endpoints follow standard error response format:
 
 ### Validation Error (400)
+
 ```json
 {
   "error": "Invalid request. Both username and password are required."
@@ -1035,6 +1158,7 @@ All endpoints follow standard error response format:
 ```
 
 ### Not Found (404)
+
 ```json
 {
   "error": "Tenant not found"
@@ -1042,6 +1166,7 @@ All endpoints follow standard error response format:
 ```
 
 ### Unauthorized (401)
+
 ```json
 {
   "error": "User not authenticated"
@@ -1049,6 +1174,7 @@ All endpoints follow standard error response format:
 ```
 
 ### Internal Server Error (500)
+
 ```json
 {
   "error": "An unexpected error occurred. Please try again later."
@@ -1222,20 +1348,26 @@ This section covers manual payment recording, payment history, billing summaries
 ### 7.1 Key Concepts
 
 #### Grace Period
+
 All subscriptions have a **7-day grace period** after expiration:
+
 - **Active:** Subscription is valid (`now <= subscriptionValidUntil`)
 - **Grace:** Subscription expired but within 7-day grace period (`validUntil < now <= validUntil + 7 days`)
 - **Expired:** Subscription fully expired, beyond grace period (`now > validUntil + 7 days`)
 
 #### Invoice Number Format
+
 Auto-generated format: `INV-YYYYMM-XXXX`
+
 - `YYYY` = Year
 - `MM` = Month
 - `XXXX` = Sequential number within that month (padded to 4 digits)
 - Example: `INV-202501-0001`, `INV-202501-0002`, etc.
 
 #### Cost Snapshot
+
 Each payment stores an immutable JSON snapshot of the subscription cost at payment time:
+
 ```json
 {
   "planName": "Pro",
@@ -1282,6 +1414,7 @@ Each payment stores an immutable JSON snapshot of the subscription cost at payme
 | `outletId` | number | Outlet ID |
 
 **Request Body:**
+
 ```json
 {
   "amount": 298000,
@@ -1304,6 +1437,7 @@ Each payment stores an immutable JSON snapshot of the subscription cost at payme
 | `notes` | string | No | null | Optional remarks |
 
 **Response (Success - 200):**
+
 ```json
 {
   "success": true,
@@ -1365,6 +1499,7 @@ Each payment stores an immutable JSON snapshot of the subscription cost at payme
 | Expired (past grace) | **Today** (no free months) | `periodFrom` + `extensionMonths` |
 
 **Notes:**
+
 - Amount is recorded as provided (allows manual overrides for negotiations)
 - Warning logged if amount doesn't match calculated cost
 - Subscription status automatically set to `Active` after payment
@@ -1395,6 +1530,7 @@ Each payment stores an immutable JSON snapshot of the subscription cost at payme
 | `offset` | number | No | 0 | Pagination offset |
 
 **Example Requests:**
+
 ```
 GET /api/admin/tenants/1/payments
 GET /api/admin/tenants/1/payments?outletId=1
@@ -1402,6 +1538,7 @@ GET /api/admin/tenants/1/payments?from=2025-01-01&to=2025-12-31&limit=50&offset=
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "payments": [
@@ -1449,12 +1586,14 @@ GET /api/admin/tenants/1/payments?from=2025-01-01&to=2025-12-31&limit=50&offset=
 | `offset` | number | No | 0 | Pagination offset |
 
 **Example Requests:**
+
 ```
 GET /api/admin/payments?from=2025-01-01&to=2025-01-31
 GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "payments": [
@@ -1502,6 +1641,7 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 ```
 
 **Error Response (Missing date range):**
+
 ```json
 {
   "error": "Invalid request. from and to date range are required."
@@ -1524,6 +1664,7 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 | `tenantId` | number | Tenant ID |
 
 **Response (Success - 200):**
+
 ```json
 {
   "tenantId": 1,
@@ -1558,9 +1699,7 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
       "addOns": [
         { "name": "Additional User", "quantity": 1, "totalCost": 49000 }
       ],
-      "discounts": [
-        { "name": "Early Bird Discount", "amount": 4900 }
-      ],
+      "discounts": [{ "name": "Early Bird Discount", "amount": 4900 }],
       "outletTotalCost": 44100
     }
   ]
@@ -1568,10 +1707,30 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 ```
 
 **Notes:**
+
 - `subscriptionStatus`: `Active`, `Grace`, or `Expired`
 - `daysUntilExpiry`: Positive = days until expiry, Negative = days past expiry
 - `graceEndDate`: 7 days after `subscriptionValidUntil`
 - Use this endpoint for drill-down after getting upcoming payments summary
+- **Returns ALL outlets** regardless of payment status - filter client-side if needed
+
+**Comparison: `tenantDetails` vs `billing-summary`**
+
+| Aspect                    | `/tenantDetails/:id`       | `/billing-summary`           |
+| ------------------------- | -------------------------- | ---------------------------- |
+| **Purpose**               | Cost breakdown for pricing | Payment status tracking      |
+| **Focus**                 | What tenant **owes**       | When tenant **needs to pay** |
+| `subscriptionStatus`      | ❌                         | ✅ (Active/Grace/Expired)    |
+| `daysUntilExpiry`         | ❌                         | ✅                           |
+| `graceEndDate`            | ❌                         | ✅                           |
+| `totalCostBeforeDiscount` | ✅                         | ❌                           |
+| `totalDiscount`           | ✅                         | ❌                           |
+| Add-on details            | ✅ Full (IDs, per-unit)    | ✅ Simplified                |
+
+**When to use:**
+
+- **`tenantDetails`** → Pricing page, invoice breakdown, showing what they're paying for
+- **`billing-summary`** → Payment reminders, collection dashboard, checking who needs to pay
 
 ---
 
@@ -1589,12 +1748,14 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 | `days` | number | No | 30 | Days ahead to look |
 
 **Example Request:**
+
 ```
 GET /api/admin/payments/upcoming/summary
 GET /api/admin/payments/upcoming/summary?days=14
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "days": 30,
@@ -1636,6 +1797,7 @@ GET /api/admin/payments/upcoming/summary?days=14
 | `offset` | number | No | 0 | Pagination offset |
 
 **Example Requests:**
+
 ```
 GET /api/admin/payments/upcoming
 GET /api/admin/payments/upcoming?days=14&status=grace&limit=50&offset=0
@@ -1643,6 +1805,7 @@ GET /api/admin/payments/upcoming?status=expired
 ```
 
 **Response (Success - 200):**
+
 ```json
 {
   "upcomingPayments": [
@@ -1670,6 +1833,7 @@ GET /api/admin/payments/upcoming?status=expired
 ```
 
 **Error Response (Invalid status):**
+
 ```json
 {
   "error": "Invalid status. Must be one of: active, grace, expired, all"
@@ -1677,6 +1841,7 @@ GET /api/admin/payments/upcoming?status=expired
 ```
 
 **Drill-down Pattern:**
+
 1. Get summary counts: `GET /payments/upcoming/summary`
 2. Get paginated list: `GET /payments/upcoming?status=grace`
 3. Get tenant details: `GET /tenants/:tenantId/billing-summary`

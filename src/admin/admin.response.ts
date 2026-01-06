@@ -240,3 +240,21 @@ export interface UpcomingPaymentsResponse {
     limit: number;
     offset: number;
 }
+
+// ============================================
+// User Management Response Types
+// ============================================
+
+// Get all users for a tenant
+export interface TenantUsersResponse {
+    tenantId: number;
+    tenantName: string;
+    users: Array<{
+        id: number;
+        username: string;
+        role: string;
+        isDeleted: boolean;
+    }>;
+    total: number;
+    activeCount: number;
+}

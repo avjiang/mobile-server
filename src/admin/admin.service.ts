@@ -421,6 +421,8 @@ const getAllTenantCost = async () => {
             Array<{
                 tenantId: number;
                 tenantName: string;
+                createdAt: Date;
+                planName: string;
                 totalMonthlyCost: number;
                 totalCostBeforeDiscount: number;
                 totalDiscount: number;
@@ -429,6 +431,8 @@ const getAllTenantCost = async () => {
       SELECT 
         t.ID AS tenantId,
         t.TENANT_NAME AS tenantName,
+        t.CREATED_AT AS createdAt,
+        MAX(sp.PLAN_NAME) AS planName,
         COALESCE(SUM(
           -- Base plan cost + add-on cost - discounts
           sp.PRICE
@@ -551,6 +555,8 @@ const getAllTenantCost = async () => {
             tenants: results.map(tenant => ({
                 tenantId: tenant.tenantId,
                 tenantName: tenant.tenantName,
+                createdAt: tenant.createdAt,
+                planName: tenant.planName,
                 totalMonthlyCost: tenant.totalMonthlyCost,
                 totalCostBeforeDiscount: tenant.totalCostBeforeDiscount,
                 totalDiscount: tenant.totalDiscount,

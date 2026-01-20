@@ -113,6 +113,8 @@ export interface TotalCostResponse {
     tenants: Array<{
         tenantId: number;
         tenantName: string;
+        createdAt: Date;
+        planName: string;
         totalMonthlyCost: number;
         totalCostBeforeDiscount: number;
         totalDiscount: number;

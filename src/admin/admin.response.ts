@@ -100,6 +100,7 @@ export interface TenantCostResponse {
             status: string;
             subscriptionValidUntil: string;
         } | null;
+        lastPayment: TenantPaymentResponse | null;
     }>;
     totalMonthlyCost: number;
     totalCostBeforeDiscount: number;

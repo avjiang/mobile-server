@@ -338,6 +338,7 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
                 outletId: outlet.id,
                 outletName: outlet.outletName,
                 subscription: null,
+                lastPayment: null,
             };
             if (subscription) {
                 const basePlanCost = subscription.subscriptionPlan.price;
@@ -405,6 +406,42 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
                 response.totalCostBeforeDiscount += totalCostBeforeDiscount;
                 response.totalDiscount += discountAmount;
             }
+
+            // Fetch last payment for this outlet
+            const lastPayment = await prisma.tenantPayment.findFirst({
+                where: {
+                    tenantId: tenant.id,
+                    outletId: outlet.id
+                },
+                orderBy: {
+                    paymentDate: 'desc'
+                }
+            });
+
+            if (lastPayment) {
+                // Map to TenantPaymentResponse
+                const costSnapshot = lastPayment.costSnapshot as unknown as CostSnapshot; // Type assertion needed for JSON
+                outletData.lastPayment = {
+                    id: lastPayment.id,
+                    invoiceNumber: lastPayment.invoiceNumber,
+                    tenantId: lastPayment.tenantId,
+                    outletId: lastPayment.outletId,
+                    outletName: outlet.outletName,
+                    amount: lastPayment.amount,
+                    currency: lastPayment.currency,
+                    paymentMethod: lastPayment.paymentMethod,
+                    referenceNumber: lastPayment.referenceNumber,
+                    paymentDate: lastPayment.paymentDate.toISOString(),
+                    periodFrom: lastPayment.periodFrom.toISOString(),
+                    periodTo: lastPayment.periodTo.toISOString(),
+                    extensionMonths: lastPayment.extensionMonths,
+                    costSnapshot: costSnapshot,
+                    recordedAt: lastPayment.recordedAt.toISOString(),
+                };
+            } else {
+                outletData.lastPayment = null;
+            }
+
             response.outlets.push(outletData);
         }
         return response;
@@ -421,6 +458,8 @@ const getAllTenantCost = async () => {
             Array<{
                 tenantId: number;
                 tenantName: string;
+                createdAt: Date;
+                planName: string;
                 totalMonthlyCost: number;
                 totalCostBeforeDiscount: number;
                 totalDiscount: number;
@@ -429,6 +468,8 @@ const getAllTenantCost = async () => {
       SELECT 
         t.ID AS tenantId,
         t.TENANT_NAME AS tenantName,
+        t.CREATED_AT AS createdAt,
+        MAX(sp.PLAN_NAME) AS planName,
         COALESCE(SUM(
           -- Base plan cost + add-on cost - discounts
           sp.PRICE
@@ -551,6 +592,8 @@ const getAllTenantCost = async () => {
             tenants: results.map(tenant => ({
                 tenantId: tenant.tenantId,
                 tenantName: tenant.tenantName,
+                createdAt: tenant.createdAt,
+                planName: tenant.planName,
                 totalMonthlyCost: tenant.totalMonthlyCost,
                 totalCostBeforeDiscount: tenant.totalCostBeforeDiscount,
                 totalDiscount: tenant.totalDiscount,

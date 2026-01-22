@@ -100,6 +100,7 @@ export interface TenantCostResponse {
             status: string;
             subscriptionValidUntil: string;
         } | null;
+        lastPayment: TenantPaymentResponse | null;
     }>;
     totalMonthlyCost: number;
     totalCostBeforeDiscount: number;
@@ -113,6 +114,8 @@ export interface TotalCostResponse {
     tenants: Array<{
         tenantId: number;
         tenantName: string;
+        createdAt: Date;
+        planName: string;
         totalMonthlyCost: number;
         totalCostBeforeDiscount: number;
         totalDiscount: number;

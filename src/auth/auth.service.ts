@@ -52,7 +52,7 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
             }
 
             // Authentication successful so generate jwt & refresh tokens
-            const jwtToken = await generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
+            const { token: jwtToken, globalOutletId } = await generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
             const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
             const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
             const refreshToken = await generateRefreshToken(tenantUser, ipAddress)
@@ -65,7 +65,8 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 userId: customerUser?.id || 0,
                 notificationTopics: decodedToken.user?.notificationTopics,
                 planName: decodedToken.user?.planName,
-                databaseName: tenantUser?.tenant?.databaseName || ''
+                databaseName: tenantUser?.tenant?.databaseName || '',
+                globalOutletId
             }
             return response
         } catch (error) {
@@ -117,7 +118,7 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
         }
 
         // Generate new jwt
-        const jwtToken = await generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
+        const { token: jwtToken, globalOutletId } = await generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
         const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
         const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
         const response: TokenResponseBody = {
@@ -129,7 +130,8 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             userId: customerUser?.id || 0,
             notificationTopics: decodedToken.user?.notificationTopics,
             planName: decodedToken.user?.planName,
-            databaseName: tenantUser.tenant?.databaseName || ''
+            databaseName: tenantUser.tenant?.databaseName || '',
+            globalOutletId
         }
         return response
     }
@@ -191,7 +193,12 @@ let randomTokenString = () => {
     return crypto.randomBytes(40).toString('hex');
 }
 
-let getTenantPlanName = async (tenantId: number): Promise<string | null> => {
+interface TenantSubscriptionInfo {
+    planName: string | null;
+    globalOutletId: number | null;
+}
+
+let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscriptionInfo> => {
     try {
         const globalPrisma = getGlobalPrisma();
 
@@ -217,32 +224,33 @@ let getTenantPlanName = async (tenantId: number): Promise<string | null> => {
 
         // If no outlets found, return null
         if (!tenantOutlets || tenantOutlets.length === 0) {
-            return null;
+            return { planName: null, globalOutletId: null };
         }
 
         // Find the first active subscription across all outlets
         // Prioritize higher tier plans (Pro over Basic)
         let bestPlan: string | null = null;
+        let globalOutletId: number | null = null;
 
         for (const outlet of tenantOutlets) {
             for (const subscription of outlet.subscriptions) {
                 const planName = subscription.subscriptionPlan?.planName;
                 if (planName) {
-                    // If we find a Pro plan, return it immediately
-                    if (planName === 'Pro') {
-                        return 'Pro';
-                    }
-                    // Otherwise, keep the first plan we find
-                    if (!bestPlan) {
+                    // If we find a Pro plan, use it immediately
+                    if (planName === 'Pro' || !bestPlan) {
                         bestPlan = planName;
+                        globalOutletId = outlet.id;
+                        if (planName === 'Pro') break;
                     }
                 }
             }
+            if (bestPlan === 'Pro') break;
         }
-        return bestPlan;
+
+        return { planName: bestPlan, globalOutletId };
     } catch (error) {
-        console.error('Error getting tenant plan name:', error);
-        return null;
+        console.error('Error getting tenant subscription info:', error);
+        return { planName: null, globalOutletId: null };
     }
 }
 
@@ -384,9 +392,12 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
     // Get notification topics for the user (skip for avjiang)
     let notificationTopics: string[] = [];
     let planName: string | null = null;
+    let globalOutletId: number | null = null;
 
     if (tenantUser.username !== "avjiang") {
-        planName = await getTenantPlanName(tenantUser.tenantId);
+        const subscriptionInfo = await getTenantSubscriptionInfo(tenantUser.tenantId);
+        planName = subscriptionInfo.planName;
+        globalOutletId = subscriptionInfo.globalOutletId;
 
         if (planName === "Pro") {
             notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db);
@@ -404,7 +415,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         notificationTopics,
         planName
     }
-    return jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
+    const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
+    return { token, globalOutletId };
 }
 
 let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {

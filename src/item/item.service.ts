@@ -356,6 +356,7 @@ let getById = async (databaseName: string, id: number) => {
                     select: {
                         availableQuantity: true,
                         itemVariantId: true, // To match with variants
+                        reorderThreshold: true,
                     }
                 },
                 variants: {
@@ -386,6 +387,10 @@ let getById = async (databaseName: string, id: number) => {
             .filter(sb => sb.itemVariantId === null)
             .reduce((sum, sb) => sum + Number(sb.availableQuantity), 0);
 
+        // Get reorderThreshold from base item stock balance
+        const baseItemReorderThreshold = item.stockBalance
+            .find(sb => sb.itemVariantId === null)?.reorderThreshold ?? 0;
+
         // Transform variants to friendlier format with stock quantities
         const transformedVariants = item.variants?.map(variant => {
             // Calculate stock quantity for this variant
@@ -409,6 +414,7 @@ let getById = async (databaseName: string, id: number) => {
         const rawItemWithStock = {
             ...item,
             stockQuantity: baseItemStock,
+            reorderThreshold: Number(baseItemReorderThreshold),
             stockBalance: undefined, // Remove raw field
             variants: transformedVariants,
         };

@@ -3,7 +3,7 @@ const { getGlobalPrisma } = require('../db');
 
 const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
 const BASE_DEVICE_LIMIT = 3;
-const COST_PER_ADDITIONAL_DEVICE = 19000; // IDR 19,000 per month
+const COST_PER_ADDITIONAL_DEVICE = 20000; // IDR 20,000 per month
 
 interface DeviceLimitCheck {
   canAddDevice: boolean;

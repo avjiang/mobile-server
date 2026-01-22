@@ -210,9 +210,11 @@ All endpoints are prefixed with:
 
 **Pricing Summary:**
 
-- **Pro Plan Base:** 0 IDR/month
-- **Extra Warehouse:** 149,000 IDR/month per warehouse (first warehouse free)
-- **Extra Device:** 19,000 IDR/month per device (beyond plan limit)
+- **Basic Plan Base:** 275,000 IDR/month per outlet
+- **Pro Plan Base:** 400,000 IDR/month per outlet
+- **Extra User:** 50,000 IDR/month per user (beyond plan limit)
+- **Extra Warehouse:** 150,000 IDR/month per warehouse (first warehouse free, Pro only)
+- **Extra Device:** 20,000 IDR/month per device (beyond plan limit, Pro only)
 
 **See Also:** For payment status information (expiry dates, grace period), use [`/tenants/:tenantId/billing-summary`](#75-get-tenant-billing-summary) instead.
 
@@ -266,18 +268,18 @@ All endpoints are prefixed with:
 
 Current available plans:
 
-| Plan      | Base Price | Max Users | Max Devices | Warehouses              | Features                                       |
-| --------- | ---------- | --------- | ----------- | ----------------------- | ---------------------------------------------- |
-| **Basic** | 0 IDR      | 2 free    | 0           | Not supported           | Basic POS                                      |
-| **Pro**   | 0 IDR      | 3 free    | 3           | 1 free, then 100k/month | Advanced POS + Warehouses + Push Notifications |
+| Plan      | Base Price  | Max Users | Max Devices | Warehouses               | Features                                       |
+| --------- | ----------- | --------- | ----------- | ------------------------ | ---------------------------------------------- |
+| **Basic** | 275,000 IDR | 2 free    | 0           | Not supported            | Basic POS                                      |
+| **Pro**   | 400,000 IDR | 3 free    | 3           | 1 free, then 150k/month  | Advanced POS + Warehouses + Push Notifications |
 
 ### 2.2 Add-on Pricing
 
 | Add-on ID | Name                                | Type      | Price       | Scope  | Description                            |
 | --------- | ----------------------------------- | --------- | ----------- | ------ | -------------------------------------- |
-| 1         | Extra User                          | user      | Varies      | outlet | Additional user slot                   |
-| 2         | Additional Push Notification Device | device    | 19,000 IDR  | tenant | Extra device beyond plan limit         |
-| 3         | Extra Warehouse                     | warehouse | 149,000 IDR | tenant | Additional warehouse beyond first free |
+| 1         | Extra User                          | user      | 50,000 IDR  | tenant | Additional user slot (tenant-wide pool)|
+| 2         | Additional Push Notification Device | device    | 20,000 IDR  | tenant | Extra device beyond plan limit         |
+| 3         | Extra Warehouse                     | warehouse | 150,000 IDR | tenant | Additional warehouse beyond first free |
 
 ---
 
@@ -564,7 +566,7 @@ DELETE /api/admin/tenants/1/users/4
 
 **Notes:**
 
-- Price: 19,000 IDR/month per device
+- Price: 20,000 IDR/month per device
 - Updates existing add-on or creates new one
 - Immediate effect - devices can be activated right away
 
@@ -761,7 +763,7 @@ DELETE /api/admin/tenants/1/users/4
 - Creates warehouse in **both** global and tenant databases (atomic transaction)
 - Auto-generates `warehouseCode` from warehouse name (e.g., "Downtown Warehouse" → "DOWNTOWN_WAREHOUSE")
 - First warehouse: FREE
-- Additional warehouses: 149,000 IDR/month each
+- Additional warehouses: 150,000 IDR/month each
 - Automatically creates/updates warehouse add-on (ID 3)
 - `wasReactivated` flag indicates whether warehouse was created fresh or reactivated
 

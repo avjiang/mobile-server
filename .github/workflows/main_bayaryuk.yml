@@ -41,7 +41,7 @@ jobs:
         # excluding node_modules to let Azure install them on the server.
         run: |
           npm prune --production
-          zip -r release.zip . -x "node_modules/*" ".git/*"
+          zip -r release.zip . -x "node_modules/*" ".git/*" "tools/*"
 
       - name: Login to Azure
         uses: azure/login@v2

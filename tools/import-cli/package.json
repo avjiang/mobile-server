@@ -1,0 +1,34 @@
+{
+  "name": "import-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for bulk importing data to POS system",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "import-cli": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "validate": "node index.js validate",
+    "import:direct": "node index.js import --direct",
+    "import:api": "node index.js import",
+    "generate-template": "node scripts/generate-template.js"
+  },
+  "keywords": [
+    "import",
+    "cli",
+    "pos",
+    "excel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.0.0",
+    "axios": "^1.6.0",
+    "chalk": "^5.3.0",
+    "cli-progress": "^3.12.0",
+    "commander": "^12.0.0",
+    "dotenv": "^16.3.0",
+    "xlsx": "^0.18.5"
+  }
+}

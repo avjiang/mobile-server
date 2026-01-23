@@ -885,7 +885,7 @@ Push notification system using Pushy SDK for multi-tenant Flutter POS applicatio
 - **Backend uses database + 1-hour cache for plan checking** (95% query reduction)
 - **Hybrid Model**: Device limits calculated per outlet, but devices are tenant-wide pool
 - Each outlet subscription includes 3 devices (3 outlets = 9 total devices)
-- Additional devices: IDR 19,000/month per device (added to specific outlet subscription)
+- Additional devices: IDR 20,000/month per device (added to specific outlet subscription)
 - Clean approach: When plan changes, all refresh tokens are invalidated forcing re-login
 - **Cost Optimization**:
   - Check device eligibility BEFORE calling `pushy.register()` to avoid unnecessary billing
@@ -1989,7 +1989,7 @@ INSERT INTO permission (NAME, CATEGORY, DESCRIPTION) VALUES
 ```sql
 -- Add-on ID: 2
 INSERT INTO subscription_add_on (ID, NAME, ADD_ON_TYPE, PRICE_PER_UNIT, MAX_QUANTITY, SCOPE, DESCRIPTION) VALUES
-(2, 'Additional Push Notification Device', 'device', 19000.00, null, 'tenant', 'Additional push notification device slot (IDR 19,000/month per device)');
+(2, 'Additional Push Notification Device', 'device', 20000.00, null, 'tenant', 'Additional push notification device slot (IDR 20,000/month per device)');
 ```
 
 ## Device Lifecycle & Allocation
@@ -2345,7 +2345,7 @@ Success Response:
 Notes:
 - This endpoint adds device quota to the tenant's FIRST active subscription
 - If tenant already has device add-ons, quantity will be ADDED to existing
-- Each device add-on costs IDR 19,000/month
+- Each device add-on costs IDR 20,000/month
 - The quota is immediately available for device registration
 - Maximum device limit = (3 devices per outlet × number of outlets) + add-on quantity
 - Example: 1 outlet with 2 add-ons = 3 + 2 = 5 total devices
@@ -2790,7 +2790,7 @@ Device limit management (Singleton)
 
 - **Hybrid model**: Device limits calculated as sum of all outlet subscriptions
 - Each outlet subscription includes 3 devices
-- Additional device purchase (IDR 19,000/device/month) added to outlet subscription
+- Additional device purchase (IDR 20,000/device/month) added to outlet subscription
 - Devices are pooled at tenant level (can be used at any outlet)
 - Device allocation tracking
 

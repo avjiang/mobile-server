@@ -4,14 +4,14 @@ const subscriptionAddOns = [
     {
         name: "Additional User",
         addOnType: "user",
-        pricePerUnit: 49000,
+        pricePerUnit: 50000,
         maxQuantity: 1,
-        scope: "outlet",
-        description: "Add extra user to an outlet subscription"
+        scope: "tenant",
+        description: "Add extra user to tenant (tenant-wide pool)"
     },
     {
         name: "Additional Push Notification Device",
-        addOnType: "user",
+        addOnType: "device",
         pricePerUnit: 20000,
         maxQuantity: 1,
         scope: "tenant",
@@ -20,7 +20,7 @@ const subscriptionAddOns = [
     {
         name: "Extra Warehouse",
         addOnType: "warehouse",
-        pricePerUnit: 149000,
+        pricePerUnit: 150000,
         maxQuantity: null,
         scope: "tenant",
         description: "Add extra warehouse for inventory management"

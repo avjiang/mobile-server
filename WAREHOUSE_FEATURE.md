@@ -17,7 +17,7 @@ The warehouse management system allows tenants to manage inventory in dedicated 
 - FIFO costing per warehouse
 - Warehouse-sourced sales transactions
 - Automatic billing integration
-- First warehouse free, additional warehouses billed at 149,000 IDR/month
+- First warehouse free, additional warehouses billed at 150,000 IDR/month
 
 ---
 
@@ -46,22 +46,22 @@ The warehouse management system allows tenants to manage inventory in dedicated 
 | Warehouses | Billable | Monthly Cost (IDR) |
 |------------|----------|--------------------|
 | 1          | 0        | 0                  |
-| 2          | 1        | 149,000            |
-| 3          | 2        | 298,000            |
-| 5          | 4        | 596,000            |
+| 2          | 1        | 150,000            |
+| 3          | 2        | 300,000            |
+| 5          | 4        | 600,000            |
 
 ### Billing Logic
 
 ```typescript
 const totalWarehouses = count({ tenantId, isActive: true, deleted: false });
 const billableWarehouses = Math.max(0, totalWarehouses - 1);
-const monthlyCost = billableWarehouses * 149_000;
+const monthlyCost = billableWarehouses * 150_000;
 ```
 
 **Add-On Configuration:**
 - Add-On ID: `3`
 - Name: "Extra Warehouse"
-- Price Per Unit: 149,000 IDR
+- Price Per Unit: 150,000 IDR
 - Scope: Tenant-level
 - Quantity: Number of billable warehouses
 
@@ -521,7 +521,7 @@ All stock movements tracked:
 ### Warehouse Creation
 
 - First warehouse: **FREE** (no add-on created)
-- Second+ warehouse: **149,000 IDR/month each**
+- Second+ warehouse: **150,000 IDR/month each**
 - Warehouse code auto-generated: `WAREHOUSE_NAME.toUpperCase().replace(/\s+/g, '_')`
 - Tenant-scoped uniqueness
 
@@ -581,7 +581,7 @@ All stock movements tracked:
 - Total warehouses: 3 → 2
 - Billable count: 2 - 1 = 1
 - One of the remaining warehouses becomes the "free" one
-- Cost: 298,000 → 149,000 IDR
+- Cost: 300,000 → 150,000 IDR
 
 **Logic is count-based**, not flag-based (simpler, fewer edge cases).
 
@@ -600,7 +600,7 @@ All stock movements tracked:
 - [ ] Pro plan auto-creates "Main Warehouse"
 - [ ] Basic plan does NOT create warehouse
 - [ ] First warehouse is FREE (no add-on)
-- [ ] Second warehouse bills 100k IDR
+- [ ] Second warehouse bills 150k IDR
 
 ### Warehouse Deletion
 
@@ -641,7 +641,7 @@ All stock movements tracked:
 2. POS owner: `POST /admin/tenants/5/warehouses`
 3. System creates warehouse + updates billing
 4. Customer sees new warehouse in system
-5. **Cost:** Base plan + 149,000 IDR
+5. **Cost:** Base plan + 150,000 IDR
 
 ### Workflow 3: Basic → Pro Upgrade
 
@@ -669,7 +669,7 @@ All stock movements tracked:
 3. POS owner: `DELETE /admin/tenants/5/warehouses/3`
 4. System validates no stock remaining
 5. Soft deletes warehouse + updates billing
-6. **Cost reduced by:** 149,000 IDR/month
+6. **Cost reduced by:** 150,000 IDR/month
 
 ---
 
@@ -700,8 +700,8 @@ Follows existing pattern for users (ID 1) and devices (ID 2):
 -- subscription_add_on (predefined)
 ID | NAME              | PRICE_PER_UNIT
 1  | Extra User        | 50000
-2  | Extra Device      | 19000
-3  | Extra Warehouse   | 149000
+2  | Extra Device      | 20000
+3  | Extra Warehouse   | 150000
 
 -- tenant_subscription_add_on (usage tracking)
 TENANT_SUBSCRIPTION_ID | ADD_ON_ID | QUANTITY

@@ -6,8 +6,9 @@ export interface TokenResponseBody {
     globalTenantUserId: number,
     userId: number,
     notificationTopics?: string[],
-    planName?: string | null
-    databaseName?: string | null
+    planName?: string | null,
+    databaseName?: string | null,
+    globalOutletId?: number | null
 }
 
 export interface ValidateTokenResponseBody {

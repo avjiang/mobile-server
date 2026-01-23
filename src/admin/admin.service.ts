@@ -17,7 +17,8 @@ import {
     TenantBillingSummaryResponse,
     UpcomingPaymentsSummaryResponse,
     UpcomingPaymentsResponse,
-    TenantUsersResponse
+    TenantUsersResponse,
+    TenantOverviewResponse
 } from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
@@ -2482,6 +2483,49 @@ const getTenantUsers = async (tenantId: number, includeDeleted: boolean = false)
     };
 };
 
+const getTenantOverview = async (): Promise<TenantOverviewResponse> => {
+    try {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const totalTenantCount = await prisma.tenant.count();
+
+        // Active if at least one subscription is active/trial
+        const totalActiveTenantCount = await prisma.tenant.count({
+            where: {
+                subscription: {
+                    some: {
+                        status: { in: ['Active', 'active', 'trial'] }
+                    }
+                }
+            }
+        });
+
+        // Inactive if logic: "if all subscriptions status is expired, then consider inactive, else consider active"
+        // This is equivalent to Total - Active
+        const totalInactiveTenantCount = totalTenantCount - totalActiveTenantCount;
+
+        const totalTenantsCreatedThisMonth = await prisma.tenant.count({
+            where: {
+                createdAt: {
+                    gte: firstDayOfMonth
+                }
+            }
+        });
+
+        return {
+            totalTenantCount,
+            totalActiveTenantCount,
+            totalInactiveTenantCount,
+            totalTenantsCreatedThisMonth
+        };
+
+    } catch (error) {
+        console.error('Error getting tenant overview:', error);
+        throw error;
+    }
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2503,5 +2547,6 @@ export = {
     getUpcomingPaymentsSummary,
     getUpcomingPayments,
     // User Management
-    getTenantUsers
+    getTenantUsers,
+    getTenantOverview
 }

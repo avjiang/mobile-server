@@ -260,6 +260,37 @@ All endpoints are prefixed with:
 
 ---
 
+---
+
+### 1.4 Get Tenant Overview
+
+**Endpoint:** `GET /api/admin/tenantOverview`
+
+**Description:** Retrieves high-level tenant statistics including total counts, active/inactive status, and monthly growth.
+
+**Authentication:** Required
+
+**Response (Success - 200):**
+
+```json
+{
+  "totalTenantCount": 150,
+  "totalActiveTenantCount": 145,
+  "totalInactiveTenantCount": 5,
+  "totalTenantsCreatedThisMonth": 12
+}
+```
+
+**Response Fields:**
+| Field | Description |
+|-------|-------------|
+| `totalTenantCount` | Total number of tenants registered in the system |
+| `totalActiveTenantCount` | Tenants with at least one active subscription (Active, Trial) |
+| `totalInactiveTenantCount` | Tenants with no active subscriptions (all expired or none) |
+| `totalTenantsCreatedThisMonth` | Number of new tenants created since the 1st of the current month |
+
+---
+
 ## 2. Subscription & Billing
 
 ### 2.1 Subscription Plans

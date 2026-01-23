@@ -16,7 +16,8 @@ import {
     TenantBillingSummaryResponse,
     UpcomingPaymentsSummaryResponse,
     UpcomingPaymentsResponse,
-    TenantUsersResponse
+    TenantUsersResponse,
+    TenantOverviewResponse
 } from "./admin.response"
 
 const router = express.Router()
@@ -499,9 +500,26 @@ let getUpcomingPayments = (req: AuthRequest, res: Response, next: NextFunction) 
         .catch(next);
 };
 
+/**
+ * GET /tenantOverview
+ * Get tenant overview statistics
+ */
+let getTenantOverview = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    service.getTenantOverview()
+        .then((response: TenantOverviewResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
 //routes
 router.get('/tenantDetails/:id', getTenantDetails)
 router.get('/getAllTenantSubscription', getAllTenantSubscription)
+router.get('/tenantOverview', getTenantOverview)
 router.get('/tenantDevices/:tenantId', getTenantDevices)
 router.post('/signup', createTenant)
 router.post('/createTenantUser/:tenantId', createTenantUser)

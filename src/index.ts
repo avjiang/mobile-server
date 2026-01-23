@@ -65,6 +65,7 @@ app.use('/quotation', require('./quotation/quotation.controller'))
 app.use('/pushy', require('./pushy/device.controller'))
 app.use('/settings', require('./settings/settings.controller'))
 app.use('/warehouses', require('./warehouse/warehouse.controller'))
+app.use('/purchaseReturn', require('./purchase_return/purchase-return.controller'))
 
 // error middleware
 app.use(errorMiddleware)

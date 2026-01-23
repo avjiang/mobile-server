@@ -1252,6 +1252,42 @@ exports.Prisma.ItemVariantAttributeScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.PurchaseReturnScalarFieldEnum = {
+  id: 'id',
+  returnNumber: 'returnNumber',
+  invoiceId: 'invoiceId',
+  outletId: 'outletId',
+  supplierId: 'supplierId',
+  returnDate: 'returnDate',
+  status: 'status',
+  totalReturnAmount: 'totalReturnAmount',
+  remark: 'remark',
+  performedBy: 'performedBy',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.PurchaseReturnItemScalarFieldEnum = {
+  id: 'id',
+  purchaseReturnId: 'purchaseReturnId',
+  itemId: 'itemId',
+  itemVariantId: 'itemVariantId',
+  variantSku: 'variantSku',
+  variantName: 'variantName',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  returnReason: 'returnReason',
+  remark: 'remark',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1659,6 +1695,20 @@ exports.Prisma.ItemVariantOrderByRelevanceFieldEnum = {
   image: 'image',
   barcode: 'barcode'
 };
+
+exports.Prisma.PurchaseReturnOrderByRelevanceFieldEnum = {
+  returnNumber: 'returnNumber',
+  status: 'status',
+  remark: 'remark',
+  performedBy: 'performedBy'
+};
+
+exports.Prisma.PurchaseReturnItemOrderByRelevanceFieldEnum = {
+  variantSku: 'variantSku',
+  variantName: 'variantName',
+  returnReason: 'returnReason',
+  remark: 'remark'
+};
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   ORDERED: 'ORDERED',
   PREPARING: 'PREPARING',
@@ -1755,7 +1805,9 @@ exports.Prisma.ModelName = {
   WarehouseStockMovementArchive: 'WarehouseStockMovementArchive',
   VariantAttributeValue: 'VariantAttributeValue',
   ItemVariant: 'ItemVariant',
-  ItemVariantAttribute: 'ItemVariantAttribute'
+  ItemVariantAttribute: 'ItemVariantAttribute',
+  PurchaseReturn: 'PurchaseReturn',
+  PurchaseReturnItem: 'PurchaseReturnItem'
 };
 
 /**

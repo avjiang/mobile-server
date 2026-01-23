@@ -211,29 +211,30 @@ model Referral {
 }
 
 model Supplier {
-  id                      Int             @id @default(autoincrement()) @map("ID")
-  companyName             String          @unique @map("COMPANY_NAME")
-  companyStreet           String?         @map("COMPANY_STREET")
-  companyCity             String?         @map("COMPANY_CITY")
-  companyState            String?         @map("COMPANY_STATE")
-  companyPostalCode       String?         @map("COMPANY_POSTAL_CODE")
-  companyCountry          String?         @map("COMPANY_COUNTRY")
-  companyRegisterNumber   String?         @map("COMPANY_REGISTRATION_NUMBER")
-  personInChargeLastName  String?         @map("PERSON_IN_CHARGE_LAST_NAME")
-  personInChargeFirstName String?         @map("PERSON_IN_CHARGE_FIRST_NAME")
-  mobile                  String?         @map("MOBILE")
-  email                   String?         @map("EMAIL")
-  remark                  String?         @map("REMARK")
-  hasTax                  Boolean         @map("HAS_TAX")
-  deleted                 Boolean         @default(false) @map("IS_DELETED")
-  deletedAt               DateTime?       @map("DELETED_AT")
-  createdAt               DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt               DateTime?       @updatedAt @map("UPDATED_AT")
-  version                 Int?            @default(1) @map("VERSION")
+  id                      Int              @id @default(autoincrement()) @map("ID")
+  companyName             String           @unique @map("COMPANY_NAME")
+  companyStreet           String?          @map("COMPANY_STREET")
+  companyCity             String?          @map("COMPANY_CITY")
+  companyState            String?          @map("COMPANY_STATE")
+  companyPostalCode       String?          @map("COMPANY_POSTAL_CODE")
+  companyCountry          String?          @map("COMPANY_COUNTRY")
+  companyRegisterNumber   String?          @map("COMPANY_REGISTRATION_NUMBER")
+  personInChargeLastName  String?          @map("PERSON_IN_CHARGE_LAST_NAME")
+  personInChargeFirstName String?          @map("PERSON_IN_CHARGE_FIRST_NAME")
+  mobile                  String?          @map("MOBILE")
+  email                   String?          @map("EMAIL")
+  remark                  String?          @map("REMARK")
+  hasTax                  Boolean          @map("HAS_TAX")
+  deleted                 Boolean          @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?        @map("DELETED_AT")
+  createdAt               DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt               DateTime?        @updatedAt @map("UPDATED_AT")
+  version                 Int?             @default(1) @map("VERSION")
   items                   Item[]
   quotations              Quotation[]
   purchaseOrders          PurchaseOrder[]
   invoices                Invoice[]
+  purchaseReturns         PurchaseReturn[]
 
   @@index([companyName])
   @@map("supplier")
@@ -296,30 +297,31 @@ model Company {
 }
 
 model Outlet {
-  id             Int             @id @default(autoincrement()) @map("ID")
-  tenantOutletId Int             @map("TENANT_OUTLET_ID")
-  outletName     String          @map("OUTLET_NAME")
-  street         String          @default("") @map("STREET")
-  city           String          @default("") @map("CITY")
-  state          String          @default("") @map("STATE")
-  postalCode     String          @default("") @map("POSTAL_CODE")
-  country        String          @default("") @map("COUNTRY")
-  outletTel      String          @default("") @map("OUTLET_TEL")
-  outletEmail    String          @default("") @map("OUTLET_EMAIL")
-  deleted        Boolean         @default(false) @map("IS_DELETED")
-  deletedAt      DateTime?       @map("DELETED_AT")
-  createdAt      DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt      DateTime?       @updatedAt @map("UPDATED_AT")
-  version        Int?            @default(1) @map("VERSION")
-  stockBalances  StockBalance[]
-  stockMovements StockMovement[]
-  stockSnapshots StockSnapshot[]
-  stockReceipts  StockReceipt[]
-  settings       Setting[] // Outlet-specific settings
-  tables         Table[]
-  stations       Station[]
-  reservations   Reservation[]
-  waitlists      Waitlist[]
+  id              Int              @id @default(autoincrement()) @map("ID")
+  tenantOutletId  Int              @map("TENANT_OUTLET_ID")
+  outletName      String           @map("OUTLET_NAME")
+  street          String           @default("") @map("STREET")
+  city            String           @default("") @map("CITY")
+  state           String           @default("") @map("STATE")
+  postalCode      String           @default("") @map("POSTAL_CODE")
+  country         String           @default("") @map("COUNTRY")
+  outletTel       String           @default("") @map("OUTLET_TEL")
+  outletEmail     String           @default("") @map("OUTLET_EMAIL")
+  deleted         Boolean          @default(false) @map("IS_DELETED")
+  deletedAt       DateTime?        @map("DELETED_AT")
+  createdAt       DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt       DateTime?        @updatedAt @map("UPDATED_AT")
+  version         Int?             @default(1) @map("VERSION")
+  stockBalances   StockBalance[]
+  stockMovements  StockMovement[]
+  stockSnapshots  StockSnapshot[]
+  stockReceipts   StockReceipt[]
+  settings        Setting[] // Outlet-specific settings
+  tables          Table[]
+  stations        Station[]
+  reservations    Reservation[]
+  waitlists       Waitlist[]
+  purchaseReturns PurchaseReturn[]
 
   @@map("outlet")
 }
@@ -368,6 +370,7 @@ model Item {
   warehouseStockBalances  WarehouseStockBalance[]
   warehouseStockMovements WarehouseStockMovement[]
   warehouseStockReceipts  WarehouseStockReceipt[]
+  purchaseReturnItems     PurchaseReturnItem[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -557,6 +560,7 @@ model Invoice {
   invoiceItems        InvoiceItem[]
   deliveryOrders      DeliveryOrder[] // One-to-many relation with DeliveryOrder
   invoiceSettlement   InvoiceSettlement? @relation(fields: [invoiceSettlementId], references: [id])
+  purchaseReturns     PurchaseReturn[]
 
   @@index([purchaseOrderId])
   @@index([supplierId])
@@ -1654,6 +1658,7 @@ model ItemVariant {
   warehouseStockBalances  WarehouseStockBalance[]
   warehouseStockMovements WarehouseStockMovement[]
   warehouseStockReceipts  WarehouseStockReceipt[]
+  purchaseReturnItems     PurchaseReturnItem[]
 
   @@index([itemId])
   @@index([variantSku])
@@ -1678,4 +1683,60 @@ model ItemVariantAttribute {
   @@index([itemVariantId])
   @@index([variantAttributeValueId])
   @@map("item_variant_attribute")
+}
+
+model PurchaseReturn {
+  id                  Int                  @id @default(autoincrement()) @map("ID")
+  returnNumber        String               @unique @map("RETURN_NUMBER")
+  invoiceId           Int                  @map("INVOICE_ID")
+  outletId            Int                  @map("OUTLET_ID")
+  supplierId          Int                  @map("SUPPLIER_ID")
+  returnDate          DateTime             @map("RETURN_DATE")
+  status              String               @default("COMPLETED") @map("STATUS") // COMPLETED, CANCELLED
+  totalReturnAmount   Decimal?             @map("TOTAL_RETURN_AMOUNT") @db.Decimal(15, 4)
+  remark              String?              @default("") @map("REMARK")
+  performedBy         String?              @default("") @map("PERFORMED_BY")
+  deleted             Boolean              @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?            @map("DELETED_AT")
+  createdAt           DateTime?            @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?            @updatedAt @map("UPDATED_AT")
+  version             Int?                 @default(1) @map("VERSION")
+  invoice             Invoice              @relation(fields: [invoiceId], references: [id])
+  supplier            Supplier             @relation(fields: [supplierId], references: [id])
+  outlet              Outlet               @relation(fields: [outletId], references: [id])
+  purchaseReturnItems PurchaseReturnItem[]
+
+  @@index([invoiceId])
+  @@index([supplierId])
+  @@index([outletId])
+  @@index([returnDate])
+  @@index([status])
+  @@index([createdAt, updatedAt, deletedAt])
+  @@map("purchase_return")
+}
+
+model PurchaseReturnItem {
+  id               Int            @id @default(autoincrement()) @map("ID")
+  purchaseReturnId Int            @map("PURCHASE_RETURN_ID")
+  itemId           Int            @map("ITEM_ID")
+  itemVariantId    Int?           @map("ITEM_VARIANT_ID")
+  variantSku       String?        @map("VARIANT_SKU")
+  variantName      String?        @map("VARIANT_NAME")
+  quantity         Decimal        @map("QUANTITY") @db.Decimal(15, 4)
+  unitPrice        Decimal        @map("UNIT_PRICE") @db.Decimal(15, 4)
+  returnReason     String         @map("RETURN_REASON") // DEFECT, SPOILT, BROKEN, WRONG_ITEM, OTHER
+  remark           String?        @default("") @map("REMARK")
+  deleted          Boolean        @default(false) @map("IS_DELETED")
+  deletedAt        DateTime?      @map("DELETED_AT")
+  createdAt        DateTime?      @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime?      @updatedAt @map("UPDATED_AT")
+  version          Int?           @default(1) @map("VERSION")
+  purchaseReturn   PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
+  item             Item           @relation(fields: [itemId], references: [id])
+  itemVariant      ItemVariant?   @relation(fields: [itemVariantId], references: [id])
+
+  @@index([purchaseReturnId])
+  @@index([itemId])
+  @@index([itemVariantId])
+  @@map("purchase_return_item")
 }

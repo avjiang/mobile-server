@@ -234,6 +234,7 @@ model Supplier {
   quotations              Quotation[]
   purchaseOrders          PurchaseOrder[]
   invoices                Invoice[]
+  purchaseReturns         PurchaseReturn[]
 
   @@index([companyName])
   @@map("supplier")
@@ -315,11 +316,12 @@ model Outlet {
   stockMovements StockMovement[]
   stockSnapshots StockSnapshot[]
   stockReceipts  StockReceipt[]
-  settings       Setting[] // Outlet-specific settings
-  tables         Table[]
-  stations       Station[]
-  reservations   Reservation[]
-  waitlists      Waitlist[]
+  settings        Setting[] // Outlet-specific settings
+  tables          Table[]
+  stations        Station[]
+  reservations    Reservation[]
+  waitlists       Waitlist[]
+  purchaseReturns PurchaseReturn[]
 
   @@map("outlet")
 }
@@ -368,6 +370,7 @@ model Item {
   warehouseStockBalances  WarehouseStockBalance[]
   warehouseStockMovements WarehouseStockMovement[]
   warehouseStockReceipts  WarehouseStockReceipt[]
+  purchaseReturnItems     PurchaseReturnItem[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -557,6 +560,7 @@ model Invoice {
   invoiceItems        InvoiceItem[]
   deliveryOrders      DeliveryOrder[] // One-to-many relation with DeliveryOrder
   invoiceSettlement   InvoiceSettlement? @relation(fields: [invoiceSettlementId], references: [id])
+  purchaseReturns     PurchaseReturn[]
 
   @@index([purchaseOrderId])
   @@index([supplierId])
@@ -1654,6 +1658,7 @@ model ItemVariant {
   warehouseStockBalances  WarehouseStockBalance[]
   warehouseStockMovements WarehouseStockMovement[]
   warehouseStockReceipts  WarehouseStockReceipt[]
+  purchaseReturnItems     PurchaseReturnItem[]
 
   @@index([itemId])
   @@index([variantSku])
@@ -1678,4 +1683,60 @@ model ItemVariantAttribute {
   @@index([itemVariantId])
   @@index([variantAttributeValueId])
   @@map("item_variant_attribute")
+}
+
+model PurchaseReturn {
+  id                  Int                  @id @default(autoincrement()) @map("ID")
+  returnNumber        String               @unique @map("RETURN_NUMBER")
+  invoiceId           Int                  @map("INVOICE_ID")
+  outletId            Int                  @map("OUTLET_ID")
+  supplierId          Int                  @map("SUPPLIER_ID")
+  returnDate          DateTime             @map("RETURN_DATE")
+  status              String               @default("COMPLETED") @map("STATUS") // COMPLETED, CANCELLED
+  totalReturnAmount   Decimal?             @map("TOTAL_RETURN_AMOUNT") @db.Decimal(15, 4)
+  remark              String?              @default("") @map("REMARK")
+  performedBy         String?              @default("") @map("PERFORMED_BY")
+  deleted             Boolean              @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?            @map("DELETED_AT")
+  createdAt           DateTime?            @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?            @updatedAt @map("UPDATED_AT")
+  version             Int?                 @default(1) @map("VERSION")
+  invoice             Invoice              @relation(fields: [invoiceId], references: [id])
+  supplier            Supplier             @relation(fields: [supplierId], references: [id])
+  outlet              Outlet               @relation(fields: [outletId], references: [id])
+  purchaseReturnItems PurchaseReturnItem[]
+
+  @@index([invoiceId])
+  @@index([supplierId])
+  @@index([outletId])
+  @@index([returnDate])
+  @@index([status])
+  @@index([createdAt, updatedAt, deletedAt])
+  @@map("purchase_return")
+}
+
+model PurchaseReturnItem {
+  id               Int            @id @default(autoincrement()) @map("ID")
+  purchaseReturnId Int            @map("PURCHASE_RETURN_ID")
+  itemId           Int            @map("ITEM_ID")
+  itemVariantId    Int?           @map("ITEM_VARIANT_ID")
+  variantSku       String?        @map("VARIANT_SKU")
+  variantName      String?        @map("VARIANT_NAME")
+  quantity         Decimal        @map("QUANTITY") @db.Decimal(15, 4)
+  unitPrice        Decimal        @map("UNIT_PRICE") @db.Decimal(15, 4)
+  returnReason     String         @map("RETURN_REASON") // DEFECT, SPOILT, BROKEN, WRONG_ITEM, OTHER
+  remark           String?        @default("") @map("REMARK")
+  deleted          Boolean        @default(false) @map("IS_DELETED")
+  deletedAt        DateTime?      @map("DELETED_AT")
+  createdAt        DateTime?      @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime?      @updatedAt @map("UPDATED_AT")
+  version          Int?           @default(1) @map("VERSION")
+  purchaseReturn   PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
+  item             Item           @relation(fields: [itemId], references: [id])
+  itemVariant      ItemVariant?   @relation(fields: [itemVariantId], references: [id])
+
+  @@index([purchaseReturnId])
+  @@index([itemId])
+  @@index([itemVariantId])
+  @@map("purchase_return_item")
 }

@@ -506,6 +506,85 @@ DELETE /api/admin/tenants/1/users/4
 | Pro   | 3          | 4 (after delete)   | 1               | Reduce add-on quantity |
 | Pro   | 3          | 3 (after delete)   | 0               | Remove add-on          |
 
+
+### 3.4 Reset Tenant User Password (Change Password)
+
+**Endpoint:** `POST /api/admin/tenants/:tenantId/users/:userId/reset-password`
+
+**Description:** Manually changes a user's password. Requires verification of the current password.
+
+**Authentication:** Required
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+| `userId` | number | User ID (global tenant_user ID) |
+
+**Request Body:**
+
+```json
+{
+  "username": "john_doe",
+  "currentPassword": "OldPassword1!",
+  "newPassword": "NewSecurePassword2@"
+}
+```
+
+**Request Fields:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `username` | string | Yes | Username of the user |
+| `currentPassword` | string | Yes | Current password for validation |
+| `newPassword` | string | Yes | New password to set |
+
+**Response (Success - 200):**
+
+```json
+{
+  "success": true,
+  "message": "Password updated successfully"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: "Invalid username or password" (if username or current password mismatch checks)
+- `400 Bad Request`: "New password cannot be the same as the current password"
+
+---
+
+### 3.5 Forgot Tenant User Password (Force Reset)
+
+**Endpoint:** `POST /api/admin/tenants/:tenantId/users/:userId/forgot-password`
+
+**Description:** Force-resets a user's password. Generates and returns a random temporary password. Used when the current password is lost.
+
+**Authentication:** Required (Admin/Owner)
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+| `userId` | number | User ID (global tenant_user ID) |
+
+**Request Body:** None (Empty JSON `{}`)
+
+**Response (Success - 200):**
+
+```json
+{
+  "success": true,
+  "message": "Password reset successfully",
+  "temporaryPassword": "a1b2c3d4e5f6g7h8"
+}
+```
+
+**Notes:**
+
+- Updates password in **both** Global and Tenant databases.
+- Returns a raw password string that must be communicated to the user.
+- No email is sent (system currently lacks email integration).
+
 ---
 
 ## 4. Device Quota Management

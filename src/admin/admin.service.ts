@@ -2,8 +2,9 @@ import { plainToInstance } from "class-transformer";
 import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, Prisma } from "../../prisma/global-client/generated/global";
 import { PrismaClient as TenantPrismaClient } from "../../prisma/client/generated/client";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
-import { CreateTenantRequest } from "./admin.request";
+import { CreateTenantRequest, ResetPasswordRequest } from "./admin.request";
 import bcrypt from "bcryptjs"
+import crypto from "crypto";
 import {
     TenantCostResponse,
     TenantCreationDto,
@@ -2526,6 +2527,110 @@ const getTenantOverview = async (): Promise<TenantOverviewResponse> => {
     }
 };
 
+/**
+ * Updates password for a user in both Global DB and Tenant DB
+ */
+const updateUserPassword = async (tenantId: number, userId: number, newPassword: string) => {
+    // 1. Find tenant and ensure tenant DB is available
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true, databaseName: true },
+    });
+    if (!tenant) throw new NotFoundError('Tenant not found');
+    if (!tenant.databaseName) throw new NotFoundError('Tenant database not initialized');
+
+    // 2. Find user in global DB
+    const globalUser = await prisma.tenantUser.findUnique({
+        where: { id: userId },
+    });
+    if (!globalUser) throw new NotFoundError('User not found');
+    if (globalUser.tenantId !== tenantId) throw new RequestValidateError('User does not belong to this tenant');
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+
+    // 3. Update Global DB
+    await prisma.tenantUser.update({
+        where: { id: userId },
+        data: { password: hashedPassword }
+    });
+
+    // 4. Update Tenant DB
+    const tenantPrisma = getTenantPrisma(tenant.databaseName);
+    try {
+        const tenantUser = await tenantPrisma.user.findUnique({
+            where: { username: globalUser.username },
+        });
+
+        if (tenantUser) {
+            await tenantPrisma.user.update({
+                where: { id: tenantUser.id },
+                data: { password: hashedPassword }
+            });
+        } else {
+            console.warn(`User ${globalUser.username} not found in tenant DB ${tenant.databaseName}, skipping sync.`);
+        }
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
+/**
+ * Manually reset user password (Change Password)
+ * specific validation: username and current password must match
+ */
+const resetTenantUserPassword = async (tenantId: number, userId: number, request: ResetPasswordRequest) => {
+    // Fetch global user to validate credentials
+    const globalUser = await prisma.tenantUser.findUnique({
+        where: { id: userId },
+    });
+
+    if (!globalUser) throw new NotFoundError('User not found');
+    if (globalUser.tenantId !== tenantId) throw new RequestValidateError('User does not belong to this tenant');
+
+    // Validate Username
+    let credentialsValid = true;
+    if (globalUser.username !== request.username) {
+        credentialsValid = false;
+    }
+
+    // Validate New Password is different
+    if (request.currentPassword === request.newPassword) {
+        throw new RequestValidateError('New password cannot be the same as the current password');
+    }
+
+    // Validate Current Password
+    const currentHash = globalUser.password || '';
+    if (!bcrypt.compareSync(request.currentPassword, currentHash)) {
+        credentialsValid = false;
+    }
+
+    if (!credentialsValid) {
+        throw new RequestValidateError('Invalid username or password');
+    }
+
+    // Proceed to update
+    await updateUserPassword(tenantId, userId, request.newPassword);
+
+    return { success: true, message: 'Password updated successfully' };
+};
+
+/**
+ * Force reset user password (Forgot Password)
+ * Generates a random password and returns it
+ */
+const forgotTenantUserPassword = async (tenantId: number, userId: number) => {
+    // Generate secure random password
+    const newPassword = crypto.randomBytes(8).toString('hex'); // 16 chars
+
+    await updateUserPassword(tenantId, userId, newPassword);
+
+    return {
+        success: true,
+        message: 'Password reset successfully',
+        temporaryPassword: newPassword
+    };
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2548,5 +2653,7 @@ export = {
     getUpcomingPayments,
     // User Management
     getTenantUsers,
-    getTenantOverview
+    getTenantOverview,
+    resetTenantUserPassword,
+    forgotTenantUserPassword
 }

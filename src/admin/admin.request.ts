@@ -6,3 +6,9 @@ export interface CreateTenantRequest {
         plan: string;
     };
 }
+
+export interface ResetPasswordRequest {
+    username: string;
+    currentPassword: string;
+    newPassword: string;
+}

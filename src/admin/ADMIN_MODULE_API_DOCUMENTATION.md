@@ -507,53 +507,7 @@ DELETE /api/admin/tenants/1/users/4
 | Pro   | 3          | 3 (after delete)   | 0               | Remove add-on          |
 
 
-### 3.4 Reset Tenant User Password (Change Password)
-
-**Endpoint:** `POST /api/admin/tenants/:tenantId/users/:userId/reset-password`
-
-**Description:** Manually changes a user's password. Requires verification of the current password.
-
-**Authentication:** Required
-
-**URL Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tenantId` | number | Tenant ID |
-| `userId` | number | User ID (global tenant_user ID) |
-
-**Request Body:**
-
-```json
-{
-  "username": "john_doe",
-  "currentPassword": "OldPassword1!",
-  "newPassword": "NewSecurePassword2@"
-}
-```
-
-**Request Fields:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `username` | string | Yes | Username of the user |
-| `currentPassword` | string | Yes | Current password for validation |
-| `newPassword` | string | Yes | New password to set |
-
-**Response (Success - 200):**
-
-```json
-{
-  "success": true,
-  "message": "Password updated successfully"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: "Invalid username or password" (if username or current password mismatch checks)
-- `400 Bad Request`: "New password cannot be the same as the current password"
-
----
-
-### 3.5 Forgot Tenant User Password (Force Reset)
+### 3.4 Forgot Tenant User Password (Force Reset)
 
 **Endpoint:** `POST /api/admin/tenants/:tenantId/users/:userId/forgot-password`
 

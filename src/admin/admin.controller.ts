@@ -5,7 +5,7 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
-import { CreateTenantRequest, ResetPasswordRequest } from "src/admin/admin.request"
+import { CreateTenantRequest } from "src/admin/admin.request"
 import {
     TenantCostResponse,
     TenantCreationDto,
@@ -516,29 +516,7 @@ let getTenantOverview = (req: AuthRequest, res: Response, next: NextFunction) =>
         .catch(next);
 };
 
-// Reset Password (Change Password)
-let resetTenantUserPassword = (req: NetworkRequest<ResetPasswordRequest>, res: Response, next: NextFunction) => {
-    if (!req.user) throw new RequestValidateError('User not authenticated');
 
-    if (!validator.isNumeric(req.params.tenantId) || !validator.isNumeric(req.params.userId)) {
-        throw new RequestValidateError('ID format incorrect');
-    }
-
-    // Auto-validate request body presence
-    if (!req.body || !req.body.username || !req.body.currentPassword || !req.body.newPassword) {
-        res.status(400).json({ error: 'Invalid request. username, currentPassword, and newPassword are required.' });
-        return;
-    }
-
-    const tenantId = parseInt(req.params.tenantId);
-    const userId = parseInt(req.params.userId);
-
-    service.resetTenantUserPassword(tenantId, userId, req.body)
-        .then((response: any) => {
-            sendResponse(res, response);
-        })
-        .catch(next);
-}
 
 // Forgot Password (Force Reset)
 let forgotTenantUserPassword = (req: NetworkRequest<{}>, res: Response, next: NextFunction) => {
@@ -567,7 +545,7 @@ router.post('/signup', createTenant)
 router.post('/createTenantUser/:tenantId', createTenantUser)
 router.delete('/tenants/:tenantId/users/:userId', deleteTenantUser)
 router.get('/tenants/:tenantId/users', getTenantUsers)
-router.post('/tenants/:tenantId/users/:userId/reset-password', resetTenantUserPassword)
+
 router.post('/tenants/:tenantId/users/:userId/forgot-password', forgotTenantUserPassword)
 
 // device quota routes

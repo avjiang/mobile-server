@@ -7,7 +7,7 @@ import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
-import { UpdateUserRequestBody } from "./user.request"
+import { UpdateUserRequestBody, ResetPasswordRequest } from "./user.request"
 
 const router = express.Router()
 
@@ -54,8 +54,32 @@ const update = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+
+
+const resetPassword = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+
+    if (!req.body || !req.body.username || !req.body.currentPassword || !req.body.newPassword) {
+        throw new RequestValidateError('Invalid request. username, currentPassword, and newPassword are required.');
+    }
+
+    const userId: number = parseInt(req.params.id);
+    const tenantId = req.user.tenantId;
+
+    service.resetPassword(req.user.databaseName, tenantId, userId, req.body)
+        .then((result) => sendResponse(res, result))
+        .catch(next);
+}
+
 //routes
 router.get('/sync', getAll)
 router.get('/:id', getById)
+
 router.put('/update/:id', update)
+router.post('/:id/reset-password', resetPassword)
 export = router

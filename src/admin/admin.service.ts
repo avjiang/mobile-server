@@ -2,7 +2,7 @@ import { plainToInstance } from "class-transformer";
 import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, Prisma } from "../../prisma/global-client/generated/global";
 import { PrismaClient as TenantPrismaClient } from "../../prisma/client/generated/client";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
-import { CreateTenantRequest, ResetPasswordRequest } from "./admin.request";
+import { CreateTenantRequest } from "./admin.request";
 import bcrypt from "bcryptjs"
 import crypto from "crypto";
 import {
@@ -2574,45 +2574,7 @@ const updateUserPassword = async (tenantId: number, userId: number, newPassword:
     }
 };
 
-/**
- * Manually reset user password (Change Password)
- * specific validation: username and current password must match
- */
-const resetTenantUserPassword = async (tenantId: number, userId: number, request: ResetPasswordRequest) => {
-    // Fetch global user to validate credentials
-    const globalUser = await prisma.tenantUser.findUnique({
-        where: { id: userId },
-    });
 
-    if (!globalUser) throw new NotFoundError('User not found');
-    if (globalUser.tenantId !== tenantId) throw new RequestValidateError('User does not belong to this tenant');
-
-    // Validate Username
-    let credentialsValid = true;
-    if (globalUser.username !== request.username) {
-        credentialsValid = false;
-    }
-
-    // Validate New Password is different
-    if (request.currentPassword === request.newPassword) {
-        throw new RequestValidateError('New password cannot be the same as the current password');
-    }
-
-    // Validate Current Password
-    const currentHash = globalUser.password || '';
-    if (!bcrypt.compareSync(request.currentPassword, currentHash)) {
-        credentialsValid = false;
-    }
-
-    if (!credentialsValid) {
-        throw new RequestValidateError('Invalid username or password');
-    }
-
-    // Proceed to update
-    await updateUserPassword(tenantId, userId, request.newPassword);
-
-    return { success: true, message: 'Password updated successfully' };
-};
 
 /**
  * Force reset user password (Forgot Password)
@@ -2654,6 +2616,6 @@ export = {
     // User Management
     getTenantUsers,
     getTenantOverview,
-    resetTenantUserPassword,
+
     forgotTenantUserPassword
 }

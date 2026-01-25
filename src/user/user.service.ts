@@ -1,9 +1,10 @@
 import { PrismaClient } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
-import { getTenantPrisma } from '../db';
+import { getTenantPrisma, getGlobalPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
-import { UpdateUserRequestBody } from "./user.request";
+import { UpdateUserRequestBody, ResetPasswordRequest } from "./user.request";
 import NotificationService from '../pushy/notification.service';
+import bcrypt from "bcryptjs";
 
 let getAll = async (
     databaseName: string,
@@ -257,4 +258,65 @@ let update = async (databaseName: string, userId: number, updateData: UpdateUser
     }
 }
 
-export = { getAll, getById, update }
+let resetPassword = async (databaseName: string, tenantId: number, userId: number, request: ResetPasswordRequest) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const globalPrisma = getGlobalPrisma();
+
+    try {
+        // 1. Find Global User to validate credentials (primary source of truth for auth)
+        const globalUser = await globalPrisma.tenantUser.findFirst({
+            where: {
+                tenantId: tenantId,
+                username: request.username
+            }
+        });
+
+        if (!globalUser) {
+            throw new NotFoundError("User not found");
+        }
+
+        // 2. Find User in Tenant DB (to ensure consistency)
+        const tenantUser = await tenantPrisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!tenantUser || tenantUser.deleted) {
+            throw new NotFoundError("User");
+        }
+
+        // 3. Validate Request
+        if (tenantUser.username !== request.username) {
+            throw new RequestValidateError('Invalid username');
+        }
+
+        // Validate New Password
+        if (request.currentPassword === request.newPassword) {
+            throw new RequestValidateError('New password cannot be the same as the current password');
+        }
+
+        // Validate Current Password against GLOBAL user (same as admin implementation)
+        if (!globalUser.password || !bcrypt.compareSync(request.currentPassword, globalUser.password)) {
+            throw new RequestValidateError('Invalid password');
+        }
+
+        const hashedPassword = bcrypt.hashSync(request.newPassword, 10);
+
+        // 4. Update Global DB First
+        await globalPrisma.tenantUser.update({
+            where: { id: globalUser.id },
+            data: { password: hashedPassword }
+        });
+
+        // 5. Update Tenant DB
+        await tenantPrisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword, updatedAt: new Date(), version: { increment: 1 } }
+        });
+
+        return { success: true, message: 'Password updated successfully' };
+    } catch (error) {
+        throw error;
+    }
+}
+
+export = { getAll, getById, update, resetPassword }

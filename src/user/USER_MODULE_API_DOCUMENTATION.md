@@ -137,9 +137,9 @@ This document provides documentation for internal User Module endpoints.
 }
 ```
 
-### Reset Password (Change Password)
+### Change Password
 
-**Endpoint:** `POST /:id/reset-password`
+**Endpoint:** `POST /:id/change-password`
 
 **Description:** Allows a logged-in user to change their password.
 

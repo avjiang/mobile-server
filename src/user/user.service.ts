@@ -2,7 +2,7 @@ import { PrismaClient } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma, getGlobalPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
-import { UpdateUserRequestBody, ResetPasswordRequest } from "./user.request";
+import { UpdateUserRequestBody, ChangePasswordRequest } from "./user.request";
 import NotificationService from '../pushy/notification.service';
 import bcrypt from "bcryptjs";
 
@@ -258,7 +258,7 @@ let update = async (databaseName: string, userId: number, updateData: UpdateUser
     }
 }
 
-let resetPassword = async (databaseName: string, tenantId: number, userId: number, request: ResetPasswordRequest) => {
+let changePassword = async (databaseName: string, tenantId: number, userId: number, request: ChangePasswordRequest) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     const globalPrisma = getGlobalPrisma();
 
@@ -319,4 +319,4 @@ let resetPassword = async (databaseName: string, tenantId: number, userId: numbe
     }
 }
 
-export = { getAll, getById, update, resetPassword }
+export = { getAll, getById, update, changePassword }

@@ -21,7 +21,7 @@ export interface UpdateUserRequestBody {
     roles?: { id: number }[];
 }
 
-export interface ResetPasswordRequest {
+export interface ChangePasswordRequest {
     username: string;
     currentPassword: string;
     newPassword: string;

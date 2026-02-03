@@ -77,6 +77,18 @@ let getAll = async (
                                             { deletedAt: { gte: lastSync } }
                                         ]
                                     }
+                                },
+                                // Include invoices with modified purchase returns
+                                {
+                                    purchaseReturns: {
+                                        some: {
+                                            OR: [
+                                                { createdAt: { gte: lastSync } },
+                                                { updatedAt: { gte: lastSync } },
+                                                { deletedAt: { gte: lastSync } }
+                                            ]
+                                        }
+                                    }
                                 }
                             ]
                         }
@@ -152,10 +164,38 @@ let getAll = async (
             }
         });
 
+        // Batch fetch purchase returns for all invoices (minimal fields for summary)
+        const invoiceIds = invoiceData.map(inv => inv.id);
+        const purchaseReturns = invoiceIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+            : [];
+
         // Create lookup maps for O(1) access
         const deliveryOrderCountMap = new Map();
         deliveryOrderCounts.forEach(doc => {
             deliveryOrderCountMap.set(doc.purchaseOrderId, doc._count.id);
+        });
+
+        // Create invoice -> purchaseOrderId lookup for returns aggregation
+        const invoiceToPOMap = new Map<number, number>();
+        invoiceData.forEach(inv => {
+            if (inv.purchaseOrderId) invoiceToPOMap.set(inv.id, inv.purchaseOrderId);
+        });
+
+        // Create lookup map for purchase returns grouped by purchaseOrderId
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const poId = invoiceToPOMap.get(pr.invoiceId!);
+            if (poId) {
+                const existing = purchaseReturnMap.get(poId) || { count: 0, totalAmount: new Decimal(0) };
+                purchaseReturnMap.set(poId, {
+                    count: existing.count + 1,
+                    totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+                });
+            }
         });
 
         // Process invoice data to create count and settlement maps
@@ -164,16 +204,11 @@ let getAll = async (
 
         purchaseOrderIds.forEach(poId => {
             const poInvoices = invoiceData.filter(inv => inv.purchaseOrderId === poId);
-
-            // Count invoices
             invoiceCountMap.set(poId, poInvoices.length);
 
-            // Count settled invoices and unique settlements
             const settledInvoices = poInvoices.filter(inv => inv.invoiceSettlement);
             const uniqueSettlements = new Set(
-                settledInvoices
-                    .map(inv => inv.invoiceSettlement?.id)
-                    .filter(id => id !== undefined)
+                settledInvoices.map(inv => inv.invoiceSettlement?.id).filter(id => id !== undefined)
             );
 
             settlementInfoMap.set(poId, {
@@ -182,14 +217,12 @@ let getAll = async (
             });
         });
 
-        // Enrich purchase orders with counts and settlement info
+        // Enrich purchase orders with counts, settlement info, and purchase returns
         const enrichedPurchaseOrders = purchaseOrders.map(po => {
             const deliveryOrderCount = deliveryOrderCountMap.get(po.id) || 0;
             const invoiceCount = invoiceCountMap.get(po.id) || 0;
-            const settlementInfo = settlementInfoMap.get(po.id) || {
-                settledInvoiceCount: 0,
-                uniqueSettlementCount: 0
-            };
+            const settlementInfo = settlementInfoMap.get(po.id) || { settledInvoiceCount: 0, uniqueSettlementCount: 0 };
+            const returnData = purchaseReturnMap.get(po.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
                 ...po,
@@ -197,7 +230,11 @@ let getAll = async (
                 deliveryOrderCount,
                 invoiceCount,
                 settledInvoiceCount: settlementInfo.uniqueSettlementCount,
-                _count: undefined // Remove the _count field from response
+                // Purchase return summary
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
+                _count: undefined
             };
         });
 
@@ -266,7 +303,29 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                             OR: [
                                 { createdAt: { gte: lastSync } },
                                 { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
+                                { deletedAt: { gte: lastSync } },
+                                // Include invoices with modified settlements
+                                {
+                                    invoiceSettlement: {
+                                        OR: [
+                                            { createdAt: { gte: lastSync } },
+                                            { updatedAt: { gte: lastSync } },
+                                            { deletedAt: { gte: lastSync } }
+                                        ]
+                                    }
+                                },
+                                // Include invoices with modified purchase returns
+                                {
+                                    purchaseReturns: {
+                                        some: {
+                                            OR: [
+                                                { createdAt: { gte: lastSync } },
+                                                { updatedAt: { gte: lastSync } },
+                                                { deletedAt: { gte: lastSync } }
+                                            ]
+                                        }
+                                    }
+                                }
                             ]
                         }
                     }
@@ -342,10 +401,38 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             }
         });
 
+        // Batch fetch purchase returns for all invoices (minimal fields for summary)
+        const invoiceIds = invoiceData.map(inv => inv.id);
+        const purchaseReturns = invoiceIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+            : [];
+
         // Create lookup maps for O(1) access
         const deliveryOrderCountMap = new Map();
         deliveryOrderCounts.forEach(doc => {
             deliveryOrderCountMap.set(doc.purchaseOrderId, doc._count.id);
+        });
+
+        // Create invoice -> purchaseOrderId lookup for returns aggregation
+        const invoiceToPOMap = new Map<number, number>();
+        invoiceData.forEach(inv => {
+            if (inv.purchaseOrderId) invoiceToPOMap.set(inv.id, inv.purchaseOrderId);
+        });
+
+        // Create lookup map for purchase returns grouped by purchaseOrderId
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const poId = invoiceToPOMap.get(pr.invoiceId!);
+            if (poId) {
+                const existing = purchaseReturnMap.get(poId) || { count: 0, totalAmount: new Decimal(0) };
+                purchaseReturnMap.set(poId, {
+                    count: existing.count + 1,
+                    totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+                });
+            }
         });
 
         // Process invoice data to create count and settlement maps
@@ -354,16 +441,11 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
 
         purchaseOrderIds.forEach(poId => {
             const poInvoices = invoiceData.filter(inv => inv.purchaseOrderId === poId);
-
-            // Count invoices
             invoiceCountMap.set(poId, poInvoices.length);
 
-            // Count settled invoices and unique settlements
             const settledInvoices = poInvoices.filter(inv => inv.invoiceSettlement);
             const uniqueSettlements = new Set(
-                settledInvoices
-                    .map(inv => inv.invoiceSettlement?.id)
-                    .filter(id => id !== undefined)
+                settledInvoices.map(inv => inv.invoiceSettlement?.id).filter(id => id !== undefined)
             );
 
             settlementInfoMap.set(poId, {
@@ -372,14 +454,12 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             });
         });
 
-        // Enrich purchase orders with counts and settlement info
+        // Enrich purchase orders with counts, settlement info, and purchase returns
         const enrichedPurchaseOrders = purchaseOrders.map(po => {
             const deliveryOrderCount = deliveryOrderCountMap.get(po.id) || 0;
             const invoiceCount = invoiceCountMap.get(po.id) || 0;
-            const settlementInfo = settlementInfoMap.get(po.id) || {
-                settledInvoiceCount: 0,
-                uniqueSettlementCount: 0
-            };
+            const settlementInfo = settlementInfoMap.get(po.id) || { settledInvoiceCount: 0, uniqueSettlementCount: 0 };
+            const returnData = purchaseReturnMap.get(po.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
                 ...po,
@@ -387,7 +467,11 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 deliveryOrderCount,
                 invoiceCount,
                 settledInvoiceCount: settlementInfo.uniqueSettlementCount,
-                _count: undefined // Remove the _count field from response
+                // Purchase return summary
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
+                _count: undefined
             };
         });
 
@@ -448,7 +532,10 @@ let getById = async (id: number, databaseName: string) => {
             throw new NotFoundError("Purchase Order");
         }
 
-        // Extract and deduplicate invoice settlements
+        // Get invoice IDs for batch fetching purchase returns
+        const invoiceIds = purchaseOrder.invoices.map(inv => inv.id);
+
+        // Fetch settlements info and purchase returns in parallel
         const settlementMap = new Map();
         purchaseOrder.invoices.forEach(invoice => {
             if (invoice.invoiceSettlement) {
@@ -457,29 +544,37 @@ let getById = async (id: number, databaseName: string) => {
         });
         const invoiceSettlements = Array.from(settlementMap.values());
 
-        // For each settlement, get all linked invoices with minimal info
-        const enhancedSettlements = await Promise.all(
-            invoiceSettlements.map(async (settlement) => {
-                const invoices = await tenantPrisma.invoice.findMany({
-                    where: {
-                        invoiceSettlementId: settlement.id,
-                        deleted: false
-                    },
+        const [enhancedSettlements, purchaseReturns] = await Promise.all([
+            // Get all linked invoices for each settlement
+            Promise.all(
+                invoiceSettlements.map(async (settlement) => {
+                    const invoices = await tenantPrisma.invoice.findMany({
+                        where: { invoiceSettlementId: settlement.id, deleted: false },
+                        select: { id: true, invoiceNumber: true, subtotalAmount: true, totalAmount: true, status: true, taxInvoiceNumber: true }
+                    });
+                    return { ...settlement, invoices };
+                })
+            ),
+            // Batch fetch purchase returns for all invoices
+            invoiceIds.length > 0
+                ? tenantPrisma.purchaseReturn.findMany({
+                    where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
                     select: {
-                        id: true,
-                        invoiceNumber: true,
-                        subtotalAmount: true,
-                        totalAmount: true,
-                        status: true,
-                        taxInvoiceNumber: true,
+                        id: true, returnNumber: true, invoiceId: true, returnDate: true,
+                        status: true, totalReturnAmount: true, remark: true,
+                        purchaseReturnItems: {
+                            where: { deleted: false },
+                            select: { id: true, itemId: true, itemVariantId: true, quantity: true, unitPrice: true, returnReason: true }
+                        }
                     }
-                });
+                })
+                : Promise.resolve([])
+        ]);
 
-                return {
-                    ...settlement,
-                    invoices
-                };
-            })
+        // Calculate total return amount and count
+        const totalReturnAmount = purchaseReturns.reduce(
+            (sum, pr) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
+            new Decimal(0)
         );
 
         // Count settled invoices
@@ -491,15 +586,20 @@ let getById = async (id: number, databaseName: string) => {
             return invoiceWithoutSettlement;
         });
 
-        // Return purchase order with counts and restructured data
+        // Return purchase order with counts, settlements, and purchase returns
         return {
             ...purchaseOrder,
             invoices: invoicesWithoutSettlement,
             invoiceSettlements: enhancedSettlements,
+            purchaseReturns,
             itemCount: purchaseOrder.purchaseOrderItems.length,
             deliveryOrderCount: purchaseOrder.deliveryOrders.length,
             invoiceCount: purchaseOrder.invoices.length,
-            invoiceSettlementCount
+            invoiceSettlementCount,
+            // Purchase return summary
+            returnCount: purchaseReturns.length,
+            totalReturnAmount: totalReturnAmount.toFixed(4),
+            hasReturns: purchaseReturns.length > 0
         };
     }
     catch (error) {

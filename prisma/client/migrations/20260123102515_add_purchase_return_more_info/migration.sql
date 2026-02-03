@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `purchase_return` ADD COLUMN `INVOICE_SETTLEMENT_ID` INTEGER NULL;
+
+-- CreateIndex
+CREATE INDEX `purchase_return_INVOICE_SETTLEMENT_ID_idx` ON `purchase_return`(`INVOICE_SETTLEMENT_ID`);
+
+-- AddForeignKey
+ALTER TABLE `purchase_return` ADD CONSTRAINT `purchase_return_INVOICE_SETTLEMENT_ID_fkey` FOREIGN KEY (`INVOICE_SETTLEMENT_ID`) REFERENCES `invoice_settlement`(`ID`) ON DELETE SET NULL ON UPDATE CASCADE;

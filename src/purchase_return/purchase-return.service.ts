@@ -437,17 +437,21 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
             validationPromises.push(
                 tenantPrisma.invoice.findMany({
                     where: { id: { in: invoiceIds }, deleted: false },
-                    select: { id: true, status: true }
+                    select: { id: true, status: true, invoiceSettlementId: true }
                 }).then(invoices => ({
                     type: 'invoices',
                     existing: invoices.map(i => i.id),
                     requested: invoiceIds,
-                    statuses: invoices.reduce((acc, inv) => ({ ...acc, [inv.id]: inv.status }), {} as Record<number, string>)
+                    statuses: invoices.reduce((acc, inv) => ({ ...acc, [inv.id]: inv.status }), {} as Record<number, string>),
+                    settlementIds: invoices.reduce((acc, inv) => ({ ...acc, [inv.id]: inv.invoiceSettlementId }), {} as Record<number, number | null>)
                 }))
             );
         }
 
         const validationResults = await Promise.all(validationPromises);
+
+        // Extract settlementIds map for later use
+        let invoiceSettlementIds: Record<number, number | null> = {};
 
         for (const result of validationResults) {
             const existingIds = new Set(result.existing);
@@ -463,12 +467,19 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                 const statuses = result.statuses as Record<number, string>;
                 for (const invoiceId of result.requested) {
                     const status = statuses[invoiceId];
-                    if (status !== 'PAID') {
+                    if (status?.toUpperCase() !== 'PAID') {
                         throw new RequestValidateError(`Invoice with ID ${invoiceId} is not settled. Only PAID invoices can have returns.`);
                     }
                 }
+                // Extract settlementIds for use during creation
+                if ('settlementIds' in result) {
+                    invoiceSettlementIds = result.settlementIds as Record<number, number | null>;
+                }
             }
         }
+
+        // Validate return quantities don't exceed available quantities (invoice qty - already returned qty)
+        await validateReturnQuantities(tenantPrisma, purchaseReturns);
 
         // Use single transaction for all creations
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -485,11 +496,13 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                     }
                 }
 
-                // Create purchase return
+                // Create purchase return with auto-linked invoiceSettlementId
+                const settlementId = invoiceSettlementIds[purchaseReturnData.invoiceId] || null;
                 const newPurchaseReturn = await tx.purchaseReturn.create({
                     data: {
                         returnNumber: purchaseReturnData.returnNumber,
                         invoiceId: purchaseReturnData.invoiceId,
+                        invoiceSettlementId: settlementId,
                         outletId: purchaseReturnData.outletId,
                         supplierId: purchaseReturnData.supplierId,
                         returnDate: purchaseReturnData.returnDate ? new Date(purchaseReturnData.returnDate) : new Date(),
@@ -518,17 +531,32 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                         })),
                     });
 
+                    // Handle stock operations - reduce stock and get receipt mappings
+                    const stockReceiptIdMap = await reduceStockBalancesAndCreateMovements(
+                        tx,
+                        purchaseReturnData.purchaseReturnItems,
+                        newPurchaseReturn,
+                        purchaseReturnData.invoiceId,
+                        purchaseReturnData.performedBy || "SYSTEM"
+                    );
+
+                    // Fetch created items and update them with stockReceiptId
                     purchaseReturnItems = await tx.purchaseReturnItem.findMany({
                         where: { purchaseReturnId: newPurchaseReturn.id },
                     });
 
-                    // Handle stock operations - reduce stock
-                    await reduceStockBalancesAndCreateMovements(
-                        tx,
-                        purchaseReturnData.purchaseReturnItems,
-                        newPurchaseReturn,
-                        purchaseReturnData.performedBy || "SYSTEM"
-                    );
+                    // Update each PurchaseReturnItem with its corresponding stockReceiptId
+                    for (const prItem of purchaseReturnItems) {
+                        const itemKey = `${prItem.itemId}-${prItem.itemVariantId || 'null'}`;
+                        const stockReceiptId = stockReceiptIdMap.get(itemKey);
+                        if (stockReceiptId) {
+                            await tx.purchaseReturnItem.update({
+                                where: { id: prItem.id },
+                                data: { stockReceiptId: stockReceiptId }
+                            });
+                            prItem.stockReceiptId = stockReceiptId;
+                        }
+                    }
                 }
 
                 createdPurchaseReturns.push({
@@ -547,15 +575,181 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
     }
 }
 
+// Helper function to validate return quantities don't exceed available quantities
+// Fetches invoice items and existing returns in efficient batch queries
+const validateReturnQuantities = async (
+    prisma: PrismaClient,
+    purchaseReturns: PurchaseReturnInput[]
+): Promise<void> => {
+    // Get unique invoice IDs
+    const invoiceIds = [...new Set(purchaseReturns.map(pr => pr.invoiceId).filter(Boolean))];
+
+    if (invoiceIds.length === 0) return;
+
+    // Batch fetch: invoices with items and existing COMPLETED returns
+    const invoices = await prisma.invoice.findMany({
+        where: {
+            id: { in: invoiceIds },
+            deleted: false
+        },
+        select: {
+            id: true,
+            invoiceNumber: true,
+            invoiceItems: {
+                where: { deleted: false },
+                select: {
+                    id: true,
+                    itemId: true,
+                    itemVariantId: true,
+                    quantity: true
+                }
+            },
+            purchaseReturns: {
+                where: {
+                    status: 'COMPLETED',
+                    deleted: false
+                },
+                select: {
+                    id: true,
+                    purchaseReturnItems: {
+                        where: { deleted: false },
+                        select: {
+                            itemId: true,
+                            itemVariantId: true,
+                            quantity: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Build lookup maps for O(1) access
+    const invoiceMap = new Map<number, typeof invoices[0]>();
+    invoices.forEach(inv => invoiceMap.set(inv.id, inv));
+
+    // For each invoice, build a map of (itemId-variantId) -> { invoiceQty, alreadyReturnedQty }
+    const invoiceItemQuantityMap = new Map<number, Map<string, { invoiceQty: Decimal; alreadyReturned: Decimal; invoiceNumber: string }>>();
+
+    for (const invoice of invoices) {
+        const itemMap = new Map<string, { invoiceQty: Decimal; alreadyReturned: Decimal; invoiceNumber: string }>();
+
+        // Initialize with invoice item quantities
+        for (const item of invoice.invoiceItems) {
+            const key = `${item.itemId}-${item.itemVariantId || 'null'}`;
+            itemMap.set(key, {
+                invoiceQty: new Decimal(item.quantity),
+                alreadyReturned: new Decimal(0),
+                invoiceNumber: invoice.invoiceNumber
+            });
+        }
+
+        // Add up already returned quantities from existing COMPLETED returns
+        for (const pr of invoice.purchaseReturns) {
+            for (const prItem of pr.purchaseReturnItems) {
+                const key = `${prItem.itemId}-${prItem.itemVariantId || 'null'}`;
+                const existing = itemMap.get(key);
+                if (existing) {
+                    existing.alreadyReturned = existing.alreadyReturned.plus(new Decimal(prItem.quantity));
+                }
+            }
+        }
+
+        invoiceItemQuantityMap.set(invoice.id, itemMap);
+    }
+
+    // Validate each return request
+    const validationErrors: Array<{
+        itemId: number;
+        itemVariantId: number | null;
+        requestedQuantity: string;
+        availableQuantity: string;
+        previouslyReturned: string;
+        originalQuantity: string;
+        invoiceNumber: string;
+    }> = [];
+
+    for (const pr of purchaseReturns) {
+        const itemMap = invoiceItemQuantityMap.get(pr.invoiceId);
+        if (!itemMap) continue;
+
+        const invoice = invoiceMap.get(pr.invoiceId);
+        const invoiceNumber = invoice?.invoiceNumber || `ID:${pr.invoiceId}`;
+
+        for (const item of (pr.purchaseReturnItems || [])) {
+            const key = `${item.itemId}-${item.itemVariantId || 'null'}`;
+            const itemData = itemMap.get(key);
+
+            if (!itemData) {
+                // Item not found in invoice - this is an error
+                validationErrors.push({
+                    itemId: item.itemId,
+                    itemVariantId: item.itemVariantId || null,
+                    requestedQuantity: String(item.quantity),
+                    availableQuantity: '0',
+                    previouslyReturned: '0',
+                    originalQuantity: '0',
+                    invoiceNumber
+                });
+                continue;
+            }
+
+            const requestedQty = new Decimal(item.quantity);
+            const availableQty = itemData.invoiceQty.minus(itemData.alreadyReturned);
+
+            if (requestedQty.gt(availableQty)) {
+                validationErrors.push({
+                    itemId: item.itemId,
+                    itemVariantId: item.itemVariantId || null,
+                    requestedQuantity: requestedQty.toFixed(4),
+                    availableQuantity: availableQty.toFixed(4),
+                    previouslyReturned: itemData.alreadyReturned.toFixed(4),
+                    originalQuantity: itemData.invoiceQty.toFixed(4),
+                    invoiceNumber
+                });
+            }
+        }
+    }
+
+    if (validationErrors.length > 0) {
+        const errorDetails = validationErrors.map(e =>
+            `Item ${e.itemId}${e.itemVariantId ? ` (variant ${e.itemVariantId})` : ''}: ` +
+            `requested ${e.requestedQuantity}, available ${e.availableQuantity} ` +
+            `(invoice qty: ${e.originalQuantity}, already returned: ${e.previouslyReturned})`
+        ).join('; ');
+
+        throw new RequestValidateError(
+            `Return quantity exceeds available quantity for one or more items. ${errorDetails}`
+        );
+    }
+};
+
 // Helper function to reduce stock balances and create movements for returns
+// Returns a map of item key -> stockReceiptId for tracking
 const reduceStockBalancesAndCreateMovements = async (
     tx: Prisma.TransactionClient,
     items: any[],
     purchaseReturn: any,
+    invoiceId: number,
     performedBy: string
-) => {
+): Promise<Map<string, number>> => {
     const movementOperations = [];
-    const receiptOperations = [];
+    const stockReceiptIdMap = new Map<string, number>(); // itemId-itemVariantId -> stockReceiptId
+
+    // Get delivery orders linked to this invoice
+    const deliveryOrders = await tx.deliveryOrder.findMany({
+        where: {
+            invoiceId: invoiceId,
+            deleted: false
+        },
+        select: { id: true }
+    });
+
+    if (deliveryOrders.length === 0) {
+        throw new RequestValidateError(`No delivery orders found for invoice ID ${invoiceId}`);
+    }
+
+    const deliveryOrderIds = deliveryOrders.map(d => d.id);
 
     // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
@@ -576,9 +770,24 @@ const reduceStockBalancesAndCreateMovements = async (
         stockBalanceMap.set(key, balance);
     });
 
+    // Get all stock receipts for this invoice's delivery orders
+    const stockReceipts = await tx.stockReceipt.findMany({
+        where: {
+            deliveryOrderId: { in: deliveryOrderIds },
+            deleted: false
+        }
+    });
+
+    // Create a map for quick lookup: deliveryOrderId-itemId-itemVariantId -> receipt
+    const stockReceiptMap = new Map();
+    stockReceipts.forEach((receipt: any) => {
+        const key = `${receipt.deliveryOrderId}-${receipt.itemId}-${receipt.itemVariantId || 'null'}`;
+        stockReceiptMap.set(key, receipt);
+    });
+
     for (const item of items) {
-        const quantity = new Decimal(item.quantity);
-        if (quantity.gt(0)) {
+        const returnQuantity = new Decimal(item.quantity);
+        if (returnQuantity.gt(0)) {
             const balanceKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
             const currentBalance = stockBalanceMap.get(balanceKey);
 
@@ -591,13 +800,13 @@ const reduceStockBalancesAndCreateMovements = async (
             const previousOnHandQuantity = new Decimal(currentBalance.onHandQuantity);
 
             // Check if we have enough stock to return
-            if (previousAvailableQuantity.lt(quantity)) {
-                throw new RequestValidateError(`Insufficient stock for item ID ${item.itemId}. Available: ${previousAvailableQuantity}, Requested return: ${quantity}`);
+            if (previousAvailableQuantity.lt(returnQuantity)) {
+                throw new RequestValidateError(`Insufficient stock for item ID ${item.itemId}. Available: ${previousAvailableQuantity}, Requested return: ${returnQuantity}`);
             }
 
             // Reduce stock quantities
-            const newAvailableQuantity = previousAvailableQuantity.sub(quantity);
-            const newOnHandQuantity = previousOnHandQuantity.sub(quantity);
+            const newAvailableQuantity = previousAvailableQuantity.sub(returnQuantity);
+            const newOnHandQuantity = previousOnHandQuantity.sub(returnQuantity);
 
             // Update stock balance
             await tx.stockBalance.update({
@@ -616,8 +825,8 @@ const reduceStockBalancesAndCreateMovements = async (
                 itemVariantId: item.itemVariantId || null,
                 previousAvailableQuantity: previousAvailableQuantity,
                 previousOnHandQuantity: previousOnHandQuantity,
-                availableQuantityDelta: quantity.neg(), // Negative delta for return
-                onHandQuantityDelta: quantity.neg(), // Negative delta for return
+                availableQuantityDelta: returnQuantity.neg(), // Negative delta for return
+                onHandQuantityDelta: returnQuantity.neg(), // Negative delta for return
                 movementType: 'Purchase Return',
                 documentId: purchaseReturn.id,
                 reason: `Return from invoice - ${item.returnReason}`,
@@ -625,24 +834,54 @@ const reduceStockBalancesAndCreateMovements = async (
                 performedBy: performedBy
             });
 
-            // Prepare negative receipt for FIFO tracking
-            const unitPrice = new Decimal(item.unitPrice);
-            receiptOperations.push({
-                itemId: item.itemId,
-                outletId: purchaseReturn.outletId,
-                itemVariantId: item.itemVariantId || null,
-                quantity: quantity.neg(), // Negative quantity for return
-                cost: unitPrice,
-                receiptDate: new Date()
-            });
+            // Find the matching StockReceipt and either soft-delete or reduce quantity
+            let matchedReceipt: any = null;
+            for (const doId of deliveryOrderIds) {
+                const receiptKey = `${doId}-${item.itemId}-${item.itemVariantId || 'null'}`;
+                const receipt = stockReceiptMap.get(receiptKey);
+                if (receipt) {
+                    matchedReceipt = receipt;
+                    break;
+                }
+            }
+
+            if (matchedReceipt) {
+                const receiptQuantity = new Decimal(matchedReceipt.quantity);
+
+                // Store the receipt ID for this item
+                stockReceiptIdMap.set(balanceKey, matchedReceipt.id);
+
+                if (returnQuantity.gte(receiptQuantity)) {
+                    // Return quantity >= receipt quantity: soft-delete the receipt
+                    await tx.stockReceipt.update({
+                        where: { id: matchedReceipt.id },
+                        data: {
+                            deleted: true,
+                            deletedAt: new Date()
+                        }
+                    });
+                } else {
+                    // Return quantity < receipt quantity: reduce the receipt quantity
+                    const newReceiptQuantity = receiptQuantity.sub(returnQuantity);
+                    await tx.stockReceipt.update({
+                        where: { id: matchedReceipt.id },
+                        data: {
+                            quantity: newReceiptQuantity,
+                            updatedAt: new Date()
+                        }
+                    });
+                }
+            }
+            // If no matching receipt found, we skip receipt modification (edge case)
         }
     }
 
-    // Execute movements and receipts in batch
-    await Promise.all([
-        movementOperations.length > 0 ? tx.stockMovement.createMany({ data: movementOperations }) : Promise.resolve(),
-        receiptOperations.length > 0 ? tx.stockReceipt.createMany({ data: receiptOperations }) : Promise.resolve()
-    ]);
+    // Execute movements in batch
+    if (movementOperations.length > 0) {
+        await tx.stockMovement.createMany({ data: movementOperations });
+    }
+
+    return stockReceiptIdMap;
 };
 
 // Helper function to reverse stock operations when purchase return is cancelled
@@ -671,6 +910,24 @@ const reverseStockOperationsForCancellation = async (
     currentStockBalances.forEach((balance: any) => {
         const key = `${balance.itemId}-${balance.itemVariantId || 'null'}`;
         stockBalanceMap.set(key, balance);
+    });
+
+    // Get stockReceiptIds from items that have them
+    const stockReceiptIds = items
+        .filter(item => item.stockReceiptId)
+        .map(item => item.stockReceiptId);
+
+    // Fetch all affected stock receipts (including deleted ones)
+    const affectedReceipts = stockReceiptIds.length > 0 ? await tx.stockReceipt.findMany({
+        where: {
+            id: { in: stockReceiptIds }
+        }
+    }) : [];
+
+    // Create a map for quick lookup
+    const receiptMap = new Map();
+    affectedReceipts.forEach((receipt: any) => {
+        receiptMap.set(receipt.id, receipt);
     });
 
     for (const item of items) {
@@ -714,6 +971,36 @@ const reverseStockOperationsForCancellation = async (
                     performedBy: performedBy
                 });
             }
+
+            // Restore the StockReceipt if we have a reference
+            if (item.stockReceiptId) {
+                const receipt = receiptMap.get(item.stockReceiptId);
+                if (receipt) {
+                    if (receipt.deleted) {
+                        // Receipt was soft-deleted, un-delete and restore quantity
+                        await tx.stockReceipt.update({
+                            where: { id: receipt.id },
+                            data: {
+                                deleted: false,
+                                deletedAt: null,
+                                quantity: quantity, // Restore with the return quantity
+                                updatedAt: new Date()
+                            }
+                        });
+                    } else {
+                        // Receipt was reduced, add back the quantity
+                        const currentReceiptQty = new Decimal(receipt.quantity);
+                        const restoredQty = currentReceiptQty.add(quantity);
+                        await tx.stockReceipt.update({
+                            where: { id: receipt.id },
+                            data: {
+                                quantity: restoredQty,
+                                updatedAt: new Date()
+                            }
+                        });
+                    }
+                }
+            }
         }
     }
 
@@ -721,22 +1008,6 @@ const reverseStockOperationsForCancellation = async (
     if (movementOperations.length > 0) {
         await tx.stockMovement.createMany({ data: movementOperations });
     }
-
-    // Soft delete the negative stock receipts for this return
-    await tx.stockReceipt.updateMany({
-        where: {
-            outletId: purchaseReturn.outletId,
-            quantity: { lt: 0 }, // Only negative receipts (returns)
-            deleted: false,
-            // We can't directly filter by purchaseReturnId since StockReceipt doesn't have it
-            // So we'll delete receipts created around the same time with matching items
-            createdAt: { gte: new Date(purchaseReturn.createdAt) }
-        },
-        data: {
-            deleted: true,
-            deletedAt: new Date()
-        }
-    });
 };
 
 let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) => {
@@ -753,6 +1024,7 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
             select: {
                 id: true,
                 returnNumber: true,
+                outletId: true,
                 status: true,
                 version: true,
                 purchaseReturnItems: {
@@ -761,6 +1033,7 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
                         id: true,
                         itemId: true,
                         itemVariantId: true,
+                        stockReceiptId: true,
                         quantity: true,
                         unitPrice: true,
                         returnReason: true,
@@ -803,7 +1076,7 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
                 await reverseStockOperationsForCancellation(
                     tx,
                     existingPurchaseReturn.purchaseReturnItems,
-                    { ...updatedPurchaseReturn, outletId: existingPurchaseReturn.id },
+                    { ...updatedPurchaseReturn, outletId: existingPurchaseReturn.outletId },
                     updateData.performedBy || "SYSTEM"
                 );
             }

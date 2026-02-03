@@ -46,18 +46,6 @@ let getAll = async (
                         { deletedAt: { gte: lastSync } }
                     ]
                 },
-                // Quotation has purchase orders that were modified
-                {
-                    purchaseOrders: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                },
                 // Quotation has quotation items that were modified
                 {
                     quotationItems: {
@@ -70,53 +58,62 @@ let getAll = async (
                         }
                     }
                 },
-                // Quotation has delivery orders that were modified (through purchase orders)
+                // Quotation has purchase orders or their related entities modified
                 {
                     purchaseOrders: {
                         some: {
-                            deliveryOrders: {
-                                some: {
-                                    OR: [
-                                        { createdAt: { gte: lastSync } },
-                                        { updatedAt: { gte: lastSync } },
-                                        { deletedAt: { gte: lastSync } }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                },
-                // Quotation has invoices that were modified (through purchase orders)
-                {
-                    purchaseOrders: {
-                        some: {
-                            invoices: {
-                                some: {
-                                    OR: [
-                                        { createdAt: { gte: lastSync } },
-                                        { updatedAt: { gte: lastSync } },
-                                        { deletedAt: { gte: lastSync } }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                },
-                // Quotation has invoice settlements that were modified (through purchase orders -> invoices)
-                {
-                    purchaseOrders: {
-                        some: {
-                            invoices: {
-                                some: {
-                                    invoiceSettlement: {
-                                        OR: [
-                                            { createdAt: { gte: lastSync } },
-                                            { updatedAt: { gte: lastSync } },
-                                            { deletedAt: { gte: lastSync } }
-                                        ]
+                            OR: [
+                                // Purchase order itself was modified
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } },
+                                // Delivery orders were modified
+                                {
+                                    deliveryOrders: {
+                                        some: {
+                                            OR: [
+                                                { createdAt: { gte: lastSync } },
+                                                { updatedAt: { gte: lastSync } },
+                                                { deletedAt: { gte: lastSync } }
+                                            ]
+                                        }
+                                    }
+                                },
+                                // Invoices were modified
+                                {
+                                    invoices: {
+                                        some: {
+                                            OR: [
+                                                { createdAt: { gte: lastSync } },
+                                                { updatedAt: { gte: lastSync } },
+                                                { deletedAt: { gte: lastSync } },
+                                                // Invoice settlement was modified
+                                                {
+                                                    invoiceSettlement: {
+                                                        OR: [
+                                                            { createdAt: { gte: lastSync } },
+                                                            { updatedAt: { gte: lastSync } },
+                                                            { deletedAt: { gte: lastSync } }
+                                                        ]
+                                                    }
+                                                },
+                                                // Purchase returns were modified
+                                                {
+                                                    purchaseReturns: {
+                                                        some: {
+                                                            OR: [
+                                                                { createdAt: { gte: lastSync } },
+                                                                { updatedAt: { gte: lastSync } },
+                                                                { deletedAt: { gte: lastSync } }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
                                     }
                                 }
-                            }
+                            ]
                         }
                     }
                 }
@@ -164,64 +161,59 @@ let getAll = async (
         const [purchaseOrders, deliveryOrders, invoices] = await Promise.all([
             // Get purchase orders related to quotations
             tenantPrisma.purchaseOrder.findMany({
-                where: {
-                    quotationId: { in: quotationIds },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    quotationId: true,
-                    purchaseOrderNumber: true,
-                    status: true,
-                    totalAmount: true
-                },
+                where: { quotationId: { in: quotationIds }, deleted: false },
+                select: { id: true, quotationId: true, purchaseOrderNumber: true, status: true, totalAmount: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get delivery orders related to purchase orders
             tenantPrisma.deliveryOrder.findMany({
-                where: {
-                    purchaseOrder: {
-                        quotationId: { in: quotationIds },
-                        deleted: false
-                    },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    purchaseOrderId: true,
-                    trackingNumber: true,
-                    status: true
-                },
+                where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
+                select: { id: true, purchaseOrderId: true, trackingNumber: true, status: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get invoices related to purchase orders
             tenantPrisma.invoice.findMany({
-                where: {
-                    purchaseOrder: {
-                        quotationId: { in: quotationIds },
-                        deleted: false
-                    },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    purchaseOrderId: true,
-                    invoiceNumber: true,
-                    status: true,
-                    totalAmount: true,
-                    invoiceSettlementId: true
-                },
+                where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
+                select: { id: true, purchaseOrderId: true, invoiceNumber: true, status: true, totalAmount: true, invoiceSettlementId: true },
                 orderBy: { id: 'asc' }
             })
         ]);
 
-        // Enrich quotations with counts and related data
+        // Batch fetch purchase returns for all invoices (via invoice IDs)
+        const invoiceIds = invoices.map(inv => inv.id);
+        const purchaseReturns = invoiceIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+            : [];
+
+        // Create lookup maps for faster access
+        const poToQuotationMap = new Map<number, number>();
+        purchaseOrders.forEach(po => { if (po.quotationId) poToQuotationMap.set(po.id, po.quotationId); });
+
+        const invoiceToPOMap = new Map<number, number>();
+        invoices.forEach(inv => { if (inv.purchaseOrderId) invoiceToPOMap.set(inv.id, inv.purchaseOrderId); });
+
+        // Aggregate purchase returns by quotationId
+        const returnsByQuotationMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const poId = invoiceToPOMap.get(pr.invoiceId!);
+            const quotationId = poId ? poToQuotationMap.get(poId) : null;
+            if (quotationId) {
+                const existing = returnsByQuotationMap.get(quotationId) || { count: 0, totalAmount: new Decimal(0) };
+                returnsByQuotationMap.set(quotationId, {
+                    count: existing.count + 1,
+                    totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+                });
+            }
+        });
+
+        // Enrich quotations with counts, related data, and purchase returns
         const enrichedQuotations = quotations.map(q => {
             const relatedPOs = purchaseOrders.filter(po => po.quotationId === q.id);
-
-            // Calculate counts for this quotation
             let totalDeliveryOrderCount = 0;
             let totalInvoiceCount = 0;
             let totalSettlementCount = 0;
@@ -233,14 +225,13 @@ let getAll = async (
                 totalDeliveryOrderCount += relatedDOs.length;
                 totalInvoiceCount += relatedInvoices.length;
 
-                // Count unique settlements for this PO
                 const uniqueSettlements = new Set(
-                    relatedInvoices
-                        .map(inv => inv.invoiceSettlementId)
-                        .filter(id => id !== null)
+                    relatedInvoices.map(inv => inv.invoiceSettlementId).filter(id => id !== null)
                 );
                 totalSettlementCount += uniqueSettlements.size;
             });
+
+            const returnData = returnsByQuotationMap.get(q.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
                 ...q,
@@ -249,7 +240,11 @@ let getAll = async (
                 deliveryOrderCount: totalDeliveryOrderCount,
                 invoiceCount: totalInvoiceCount,
                 settlementCount: totalSettlementCount,
-                _count: undefined // Remove the _count field from response
+                // Purchase return summary
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
+                _count: undefined
             };
         });
 
@@ -303,18 +298,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                         { deletedAt: { gte: lastSync } }
                     ]
                 },
-                // Quotation has purchase orders that were modified
-                {
-                    purchaseOrders: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                },
                 // Quotation has quotation items that were modified
                 {
                     quotationItems: {
@@ -327,53 +310,62 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                         }
                     }
                 },
-                // Quotation has delivery orders that were modified (through purchase orders)
+                // Quotation has purchase orders or their related entities modified
                 {
                     purchaseOrders: {
                         some: {
-                            deliveryOrders: {
-                                some: {
-                                    OR: [
-                                        { createdAt: { gte: lastSync } },
-                                        { updatedAt: { gte: lastSync } },
-                                        { deletedAt: { gte: lastSync } }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                },
-                // Quotation has invoices that were modified (through purchase orders)
-                {
-                    purchaseOrders: {
-                        some: {
-                            invoices: {
-                                some: {
-                                    OR: [
-                                        { createdAt: { gte: lastSync } },
-                                        { updatedAt: { gte: lastSync } },
-                                        { deletedAt: { gte: lastSync } }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                },
-                // Quotation has invoice settlements that were modified (through purchase orders -> invoices)
-                {
-                    purchaseOrders: {
-                        some: {
-                            invoices: {
-                                some: {
-                                    invoiceSettlement: {
-                                        OR: [
-                                            { createdAt: { gte: lastSync } },
-                                            { updatedAt: { gte: lastSync } },
-                                            { deletedAt: { gte: lastSync } }
-                                        ]
+                            OR: [
+                                // Purchase order itself was modified
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } },
+                                // Delivery orders were modified
+                                {
+                                    deliveryOrders: {
+                                        some: {
+                                            OR: [
+                                                { createdAt: { gte: lastSync } },
+                                                { updatedAt: { gte: lastSync } },
+                                                { deletedAt: { gte: lastSync } }
+                                            ]
+                                        }
+                                    }
+                                },
+                                // Invoices were modified
+                                {
+                                    invoices: {
+                                        some: {
+                                            OR: [
+                                                { createdAt: { gte: lastSync } },
+                                                { updatedAt: { gte: lastSync } },
+                                                { deletedAt: { gte: lastSync } },
+                                                // Invoice settlement was modified
+                                                {
+                                                    invoiceSettlement: {
+                                                        OR: [
+                                                            { createdAt: { gte: lastSync } },
+                                                            { updatedAt: { gte: lastSync } },
+                                                            { deletedAt: { gte: lastSync } }
+                                                        ]
+                                                    }
+                                                },
+                                                // Purchase returns were modified
+                                                {
+                                                    purchaseReturns: {
+                                                        some: {
+                                                            OR: [
+                                                                { createdAt: { gte: lastSync } },
+                                                                { updatedAt: { gte: lastSync } },
+                                                                { deletedAt: { gte: lastSync } }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
                                     }
                                 }
-                            }
+                            ]
                         }
                     }
                 }
@@ -421,64 +413,59 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
         const [purchaseOrders, deliveryOrders, invoices] = await Promise.all([
             // Get purchase orders related to quotations
             tenantPrisma.purchaseOrder.findMany({
-                where: {
-                    quotationId: { in: quotationIds },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    quotationId: true,
-                    purchaseOrderNumber: true,
-                    status: true,
-                    totalAmount: true
-                },
+                where: { quotationId: { in: quotationIds }, deleted: false },
+                select: { id: true, quotationId: true, purchaseOrderNumber: true, status: true, totalAmount: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get delivery orders related to purchase orders
             tenantPrisma.deliveryOrder.findMany({
-                where: {
-                    purchaseOrder: {
-                        quotationId: { in: quotationIds },
-                        deleted: false
-                    },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    purchaseOrderId: true,
-                    trackingNumber: true,
-                    status: true
-                },
+                where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
+                select: { id: true, purchaseOrderId: true, trackingNumber: true, status: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get invoices related to purchase orders
             tenantPrisma.invoice.findMany({
-                where: {
-                    purchaseOrder: {
-                        quotationId: { in: quotationIds },
-                        deleted: false
-                    },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    purchaseOrderId: true,
-                    invoiceNumber: true,
-                    status: true,
-                    totalAmount: true,
-                    invoiceSettlementId: true
-                },
+                where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
+                select: { id: true, purchaseOrderId: true, invoiceNumber: true, status: true, totalAmount: true, invoiceSettlementId: true },
                 orderBy: { id: 'asc' }
             })
         ]);
 
-        // Enrich quotations with counts and related data
+        // Batch fetch purchase returns for all invoices (via invoice IDs)
+        const invoiceIds = invoices.map(inv => inv.id);
+        const purchaseReturns = invoiceIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+            : [];
+
+        // Create lookup maps for faster access
+        const poToQuotationMap = new Map<number, number>();
+        purchaseOrders.forEach(po => { if (po.quotationId) poToQuotationMap.set(po.id, po.quotationId); });
+
+        const invoiceToPOMap = new Map<number, number>();
+        invoices.forEach(inv => { if (inv.purchaseOrderId) invoiceToPOMap.set(inv.id, inv.purchaseOrderId); });
+
+        // Aggregate purchase returns by quotationId
+        const returnsByQuotationMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const poId = invoiceToPOMap.get(pr.invoiceId!);
+            const quotationId = poId ? poToQuotationMap.get(poId) : null;
+            if (quotationId) {
+                const existing = returnsByQuotationMap.get(quotationId) || { count: 0, totalAmount: new Decimal(0) };
+                returnsByQuotationMap.set(quotationId, {
+                    count: existing.count + 1,
+                    totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+                });
+            }
+        });
+
+        // Enrich quotations with counts, related data, and purchase returns
         const enrichedQuotations = quotations.map(q => {
             const relatedPOs = purchaseOrders.filter(po => po.quotationId === q.id);
-
-            // Calculate counts for this quotation
             let totalDeliveryOrderCount = 0;
             let totalInvoiceCount = 0;
             let totalSettlementCount = 0;
@@ -490,14 +477,13 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 totalDeliveryOrderCount += relatedDOs.length;
                 totalInvoiceCount += relatedInvoices.length;
 
-                // Count unique settlements for this PO
                 const uniqueSettlements = new Set(
-                    relatedInvoices
-                        .map(inv => inv.invoiceSettlementId)
-                        .filter(id => id !== null)
+                    relatedInvoices.map(inv => inv.invoiceSettlementId).filter(id => id !== null)
                 );
                 totalSettlementCount += uniqueSettlements.size;
             });
+
+            const returnData = returnsByQuotationMap.get(q.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
                 ...q,
@@ -506,7 +492,11 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 deliveryOrderCount: totalDeliveryOrderCount,
                 invoiceCount: totalInvoiceCount,
                 settlementCount: totalSettlementCount,
-                _count: undefined // Remove the _count field from response
+                // Purchase return summary
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
+                _count: undefined
             };
         });
 
@@ -584,6 +574,42 @@ let getById = async (id: number, databaseName: string) => {
             throw new NotFoundError("Quotation");
         }
 
+        // Collect all invoice IDs across all purchase orders for batch fetching returns
+        const allInvoiceIds: number[] = [];
+        quotation.purchaseOrders.forEach(po => {
+            po.invoices.forEach(inv => allInvoiceIds.push(inv.id));
+        });
+
+        // Batch fetch purchase returns for all invoices
+        const purchaseReturns = allInvoiceIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: allInvoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: {
+                    id: true, returnNumber: true, invoiceId: true, returnDate: true,
+                    status: true, totalReturnAmount: true, remark: true,
+                    purchaseReturnItems: {
+                        where: { deleted: false },
+                        select: { id: true, itemId: true, itemVariantId: true, quantity: true, unitPrice: true, returnReason: true }
+                    }
+                }
+            })
+            : [];
+
+        // Create lookup map for returns by invoiceId
+        const returnsByInvoiceMap = new Map<number, any[]>();
+        purchaseReturns.forEach(pr => {
+            if (pr.invoiceId) {
+                if (!returnsByInvoiceMap.has(pr.invoiceId)) returnsByInvoiceMap.set(pr.invoiceId, []);
+                returnsByInvoiceMap.get(pr.invoiceId)!.push(pr);
+            }
+        });
+
+        // Calculate total return amount
+        const totalReturnAmount = purchaseReturns.reduce(
+            (sum, pr) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
+            new Decimal(0)
+        );
+
         // Calculate counts and restructure purchase orders with extracted settlements
         const totalPurchaseOrderCount = quotation.purchaseOrders.length;
         let totalDeliveryOrderCount = 0;
@@ -599,49 +625,46 @@ let getById = async (id: number, databaseName: string) => {
                 // Extract unique invoice settlement IDs from this PO's invoices
                 const invoiceSettlementIds = new Set<number>();
                 po.invoices.forEach(inv => {
-                    if (inv.invoiceSettlementId) {
-                        invoiceSettlementIds.add(inv.invoiceSettlementId);
-                    }
+                    if (inv.invoiceSettlementId) invoiceSettlementIds.add(inv.invoiceSettlementId);
                 });
 
                 // Fetch invoice settlements for this PO with related invoices
                 const invoiceSettlements = invoiceSettlementIds.size > 0
                     ? await tenantPrisma.invoiceSettlement.findMany({
-                        where: {
-                            id: { in: Array.from(invoiceSettlementIds) },
-                            deleted: false
-                        },
+                        where: { id: { in: Array.from(invoiceSettlementIds) }, deleted: false },
                         orderBy: { id: 'asc' },
-                        include: {
-                            invoices: {
-                                where: {
-                                    deleted: false
-                                },
-                                orderBy: { id: 'asc' },
-                            }
-                        }
+                        include: { invoices: { where: { deleted: false }, orderBy: { id: 'asc' } } }
                     })
                     : [];
 
                 totalSettlementCount += invoiceSettlements.length;
 
-                // Return PO with settlements at the same level as invoices and delivery orders
-                return {
-                    ...po,
-                    invoiceSettlements
-                };
+                // Collect purchase returns for this PO's invoices
+                const poReturns: any[] = [];
+                po.invoices.forEach(inv => {
+                    const invReturns = returnsByInvoiceMap.get(inv.id) || [];
+                    poReturns.push(...invReturns);
+                });
+
+                // Return PO with settlements and purchase returns
+                return { ...po, invoiceSettlements, purchaseReturns: poReturns };
             })
         );
 
-        // Return quotation with counts and restructured purchase orders
+        // Return quotation with counts, restructured purchase orders, and purchase returns
         return {
             ...quotation,
             purchaseOrders: enrichedPurchaseOrders,
+            purchaseReturns,
             itemCount: quotation.quotationItems.length,
             purchaseOrderCount: totalPurchaseOrderCount,
             deliveryOrderCount: totalDeliveryOrderCount,
             invoiceCount: totalInvoiceCount,
-            settlementCount: totalSettlementCount
+            settlementCount: totalSettlementCount,
+            // Purchase return summary
+            returnCount: purchaseReturns.length,
+            totalReturnAmount: totalReturnAmount.toFixed(4),
+            hasReturns: purchaseReturns.length > 0
         };
     }
     catch (error) {

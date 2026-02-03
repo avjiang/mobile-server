@@ -417,27 +417,31 @@ model StockMovement {
 
 ```prisma
 model PurchaseReturn {
-  id                  Int                  @id @default(autoincrement())
-  returnNumber        String               @unique
-  invoiceId           Int                  // Linked to original invoice
-  outletId            Int
-  supplierId          Int
-  returnDate          DateTime
-  status              String               @default("COMPLETED") // COMPLETED, CANCELLED
-  totalReturnAmount   Decimal?             @db.Decimal(15, 4)
-  remark              String?
-  performedBy         String?
-  deleted             Boolean              @default(false)
-  deletedAt           DateTime?
-  createdAt           DateTime?            @default(now())
-  updatedAt           DateTime?            @updatedAt
-  version             Int?                 @default(1)
+  id                    Int                  @id @default(autoincrement())
+  returnNumber          String               @unique
+  invoiceId             Int                  // Linked to original invoice
+  invoiceSettlementId   Int?                 // Auto-populated from invoice on creation
+  outletId              Int
+  supplierId            Int
+  returnDate            DateTime
+  status                String               @default("COMPLETED") // COMPLETED, CANCELLED
+  totalReturnAmount     Decimal?             @db.Decimal(15, 4)
+  remark                String?
+  performedBy           String?
+  deleted               Boolean              @default(false)
+  deletedAt             DateTime?
+  createdAt             DateTime?            @default(now())
+  updatedAt             DateTime?            @updatedAt
+  version               Int?                 @default(1)
 
   // Relations
-  invoice             Invoice              @relation(fields: [invoiceId], references: [id])
-  supplier            Supplier             @relation(fields: [supplierId], references: [id])
-  outlet              Outlet               @relation(fields: [outletId], references: [id])
-  purchaseReturnItems PurchaseReturnItem[]
+  invoice               Invoice              @relation(fields: [invoiceId], references: [id])
+  invoiceSettlement     InvoiceSettlement?   @relation(fields: [invoiceSettlementId], references: [id])
+  supplier              Supplier             @relation(fields: [supplierId], references: [id])
+  outlet                Outlet               @relation(fields: [outletId], references: [id])
+  purchaseReturnItems   PurchaseReturnItem[]
+
+  @@index([invoiceSettlementId])
 }
 
 model PurchaseReturnItem {
@@ -445,6 +449,7 @@ model PurchaseReturnItem {
   purchaseReturnId Int
   itemId           Int
   itemVariantId    Int?
+  stockReceiptId   Int?           // Links to the StockReceipt affected by this return
   variantSku       String?
   variantName      String?
   quantity         Decimal        @db.Decimal(15, 4)  // Quantity being returned
@@ -461,6 +466,7 @@ model PurchaseReturnItem {
   purchaseReturn   PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
   item             Item           @relation(fields: [itemId], references: [id])
   itemVariant      ItemVariant?   @relation(fields: [itemVariantId], references: [id])
+  stockReceipt     StockReceipt?  @relation(fields: [stockReceiptId], references: [id])
 }
 ```
 
@@ -490,6 +496,53 @@ All sync endpoints return:
   "serverTimestamp": "2024-01-20T10:30:00.000Z"
 }
 ```
+
+### Batch Create Pattern (POST /\*/create)
+
+All `POST /*/create` endpoints follow a **batch create pattern**:
+
+- **Request**: Accepts an array of items to create (e.g., `{ "quotations": [...] }`)
+- **Response**: Returns an array of created records
+
+**Why arrays instead of single objects?**
+
+1. **Atomic batch operations**: All items in the request are processed within a single database transaction. Either all succeed or all fail - no partial creates.
+
+2. **Reduced HTTP overhead**: Create multiple records in one API call instead of multiple round-trips.
+
+3. **Consistent interface**: The same endpoint handles both single and bulk creates. For a single record, simply pass an array with one item.
+
+**Example - Single record create:**
+
+```json
+// Request
+{
+  "quotations": [{ "quotationNumber": "QT-001", ... }]
+}
+
+// Response
+[{ "id": 1, "quotationNumber": "QT-001", ... }]
+```
+
+**Example - Bulk create:**
+
+```json
+// Request
+{
+  "quotations": [
+    { "quotationNumber": "QT-001", ... },
+    { "quotationNumber": "QT-002", ... }
+  ]
+}
+
+// Response
+[
+  { "id": 1, "quotationNumber": "QT-001", ... },
+  { "id": 2, "quotationNumber": "QT-002", ... }
+]
+```
+
+**Frontend handling:** Always expect an array response. For single creates, access the first element: `response[0]`.
 
 ---
 
@@ -1281,6 +1334,8 @@ Gets invoices with status "Completed" that are ready for settlement.
       "unitPrice": "100.0000",
       "discountAmount": "200.0000",
       "subtotal": "4800.0000",
+      "returnedQuantity": "3.0000",
+      "remainingQuantity": "47.0000",
       "item": {
         "id": 100,
         "itemName": "Widget A"
@@ -1307,12 +1362,42 @@ Gets invoices with status "Completed" that are ready for settlement.
     "settlementAmount": "10600.0000",
     "status": "COMPLETED"
   },
+  "purchaseReturns": [
+    {
+      "id": 1,
+      "returnNumber": "RTN-2024-001",
+      "returnDate": "2024-03-15T00:00:00.000Z",
+      "status": "COMPLETED",
+      "totalReturnAmount": "300.0000",
+      "remark": "Defective items",
+      "purchaseReturnItems": [
+        {
+          "id": 1,
+          "itemId": 100,
+          "quantity": "3.0000",
+          "unitPrice": "100.0000",
+          "returnReason": "DEFECT"
+        }
+      ]
+    }
+  ],
+  "totalReturnAmount": "300.0000",
+  "netAmount": "5000.0000",
+  "returnCount": 1,
+  "hasFullyReturnedItems": false,
   "supplier": {
     "id": 3,
     "supplierName": "XYZ Supplier Ltd."
   }
 }
 ```
+
+> **Note:** The following fields are computed at query time (not stored in database):
+> - `totalReturnAmount` - Sum of all purchase returns for this invoice
+> - `netAmount` - `totalAmount` - `totalReturnAmount`
+> - `returnedQuantity` (per item) - Total quantity already returned for this item
+> - `remainingQuantity` (per item) - Available quantity for return (`quantity - returnedQuantity`)
+> - `hasFullyReturnedItems` - True if any item has `remainingQuantity <= 0`
 
 ### POST /invoice/create
 
@@ -1496,10 +1581,26 @@ Gets invoices with status "Completed" that are ready for settlement.
       "taxInvoiceNumber": "12345",
       "totalAmount": "5300.0000",
       "status": "PAID",
-      "purchaseOrder": {
-        "id": 5,
-        "purchaseOrderNumber": "PO-2024-001"
-      }
+      "purchaseReturns": [
+        {
+          "id": 1,
+          "returnNumber": "RTN-2024-001",
+          "returnDate": "2024-03-15T00:00:00.000Z",
+          "status": "COMPLETED",
+          "totalReturnAmount": "300.0000",
+          "purchaseReturnItems": [
+            {
+              "itemId": 100,
+              "quantity": "3.0000",
+              "unitPrice": "100.0000",
+              "returnReason": "DEFECT"
+            }
+          ]
+        }
+      ],
+      "totalReturnAmount": "300.0000",
+      "netAmount": "5000.0000",
+      "returnCount": 1
     },
     {
       "id": 2,
@@ -1507,10 +1608,20 @@ Gets invoices with status "Completed" that are ready for settlement.
       "taxInvoiceNumber": "12346",
       "totalAmount": "5300.0000",
       "status": "PAID",
-      "purchaseOrder": {
-        "id": 6,
-        "purchaseOrderNumber": "PO-2024-002"
-      }
+      "purchaseReturns": [],
+      "totalReturnAmount": "0.0000",
+      "netAmount": "5300.0000",
+      "returnCount": 0
+    }
+  ],
+  "purchaseReturns": [
+    {
+      "id": 1,
+      "returnNumber": "RTN-2024-001",
+      "invoiceId": 1,
+      "returnDate": "2024-03-15T00:00:00.000Z",
+      "status": "COMPLETED",
+      "totalReturnAmount": "300.0000"
     }
   ],
   "purchaseOrders": [
@@ -1529,9 +1640,16 @@ Gets invoices with status "Completed" that are ready for settlement.
   ],
   "deliveryOrders": [...],
   "purchaseOrderCount": 2,
-  "deliveryOrderCount": 4
+  "deliveryOrderCount": 4,
+  "totalReturnAmount": "300.0000",
+  "netSettlementAmount": "10300.0000",
+  "returnCount": 1
 }
 ```
+
+> **Note:** Purchase returns are linked to the settlement via `invoiceSettlementId` (auto-populated from invoice on creation). The `totalReturnAmount`, `netAmount`, and `netSettlementAmount` are computed at query time:
+> - Per invoice: `netAmount` = `totalAmount` - `totalReturnAmount`
+> - Settlement level: `netSettlementAmount` = `settlementAmount` - `totalReturnAmount`
 
 ### POST /invoiceSettlement/create
 
@@ -1858,6 +1976,29 @@ Create a new purchase return. Stock is automatically adjusted upon creation.
 
 **Note:** On successful creation, stock operations are performed automatically (see Stock Integration section).
 
+**Validation - Return Quantity Check:**
+
+The system validates that the requested return quantity does not exceed the available quantity for each item:
+
+```
+availableQuantity = invoiceItem.quantity - totalPreviouslyReturned
+if (requestedQuantity > availableQuantity) → REJECT
+```
+
+**Validation Error Response (HTTP 400):**
+
+```json
+{
+  "success": false,
+  "error": {
+    "name": "RequestValidateError",
+    "message": "Return quantity exceeds available quantity for one or more items. Item 100: requested 8.0000, available 7.0000 (invoice qty: 10.0000, already returned: 3.0000)"
+  }
+}
+```
+
+This prevents returning more items than were originally invoiced, even across multiple returns.
+
 ### PUT /purchaseReturn/update
 
 Update a purchase return (only remark and performedBy can be updated after creation).
@@ -2025,21 +2166,45 @@ StockMovement.create({
 });
 ```
 
-#### 3. StockReceipt Creation
+#### 3. StockReceipt Modification
 
+Instead of creating negative StockReceipt records (which would confuse users editing cost/capital), the system finds and modifies the **existing** StockReceipt created during delivery:
+
+**How it finds the receipt:**
+```
+Invoice → DeliveryOrders (via invoiceId) → StockReceipt (via deliveryOrderId + itemId + itemVariantId)
+```
+
+**Logic:**
 ```typescript
-// For each return item (negative quantity for FIFO tracking):
-StockReceipt.create({
-  data: {
+// Find matching StockReceipt
+const matchedReceipt = await tx.stockReceipt.findFirst({
+  where: {
+    deliveryOrderId: { in: deliveryOrderIds },
     itemId: item.itemId,
-    outletId: purchaseReturn.outletId,
-    itemVariantId: item.itemVariantId,
-    quantity: -item.quantity, // Negative quantity
-    cost: item.unitPrice,
-    receiptDate: purchaseReturn.returnDate,
+    itemVariantId: item.itemVariantId ?? null,
+    deleted: false,
   },
 });
+
+if (matchedReceipt) {
+  if (returnQuantity >= receiptQuantity) {
+    // Soft-delete the receipt (full return)
+    await tx.stockReceipt.update({
+      where: { id: matchedReceipt.id },
+      data: { deleted: true, deletedAt: new Date() },
+    });
+  } else {
+    // Reduce the receipt quantity (partial return)
+    await tx.stockReceipt.update({
+      where: { id: matchedReceipt.id },
+      data: { quantity: receiptQuantity - returnQuantity },
+    });
+  }
+}
 ```
+
+**Tracking:** The `stockReceiptId` is stored in `PurchaseReturnItem` to track which receipt was affected (used for cancellation reversal).
 
 ### Purchase Return Cancellation Reversal
 
@@ -2050,7 +2215,41 @@ When a purchase return is cancelled:
    - `movementType`: "Purchase Return Reversal"
    - Positive quantity deltas
    - `reason`: "Cancelled return {returnNumber}"
-3. **StockReceipt**: Soft deletes the negative receipt records
+3. **StockReceipt Restoration**: Using the stored `stockReceiptId`:
+   - **If receipt was soft-deleted**: Un-delete it (`deleted: false, deletedAt: null`) and restore original quantity
+   - **If receipt quantity was reduced**: Add back the return quantity
+
+### Purchase Return - Invoice Settlement Linkage
+
+Purchase returns are automatically linked to their corresponding Invoice Settlement for tracking and display purposes.
+
+#### How It Works
+
+1. **On Purchase Return Creation**:
+   - The system looks up the `invoiceSettlementId` from the linked invoice
+   - Automatically populates `invoiceSettlementId` on the purchase return
+   - No manual intervention required
+
+2. **Computed Fields** (calculated at query time, not stored):
+
+   | Field | Level | Description |
+   |-------|-------|-------------|
+   | `totalReturnAmount` | Invoice | Sum of all return amounts for the invoice |
+   | `netAmount` | Invoice | `totalAmount` - `totalReturnAmount` |
+   | `returnCount` | Invoice | Number of purchase returns for the invoice |
+   | `totalReturnAmount` | Settlement | Sum of all return amounts across all invoices |
+   | `netSettlementAmount` | Settlement | `settlementAmount` - `totalReturnAmount` |
+   | `returnCount` | Settlement | Total number of purchase returns in settlement |
+
+3. **Data Access**:
+   - `GET /invoice/:id` - Returns `purchaseReturns` array with computed totals
+   - `GET /invoiceSettlement/:id` - Returns `purchaseReturns` at both invoice and settlement level
+
+#### Performance Considerations
+
+- `invoiceSettlementId` is indexed for fast lookups
+- Purchase returns are fetched in a single query with the parent record
+- Computed totals use in-memory calculation (Decimal.js) to avoid additional queries
 
 ---
 
@@ -2132,12 +2331,14 @@ On Creation → COMPLETED (stock automatically adjusted)
 
 ### Business Rule Violations
 
-| Error                        | Cause                                       |
-| ---------------------------- | ------------------------------------------- |
-| `Cannot cancel delivered PO` | Attempting to cancel PO with deliveries     |
-| `Invoice already settled`    | Attempting to modify settled invoice        |
-| `Insufficient stock`         | Stock reversal would cause negative balance |
-| `Duplicate number`           | Attempting to create with existing number   |
+| Error                                    | Cause                                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------- |
+| `Cannot cancel delivered PO`             | Attempting to cancel PO with deliveries                               |
+| `Invoice already settled`                | Attempting to modify settled invoice                                  |
+| `Insufficient stock`                     | Stock reversal would cause negative balance                           |
+| `Duplicate number`                       | Attempting to create with existing number                             |
+| `Return quantity exceeds available qty`  | Return qty > (invoice item qty - already returned qty)                |
+| `Item not found in invoice`              | Return item doesn't exist in the original invoice                     |
 
 ---
 

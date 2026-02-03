@@ -58,24 +58,15 @@ let getAll = async (
                         }
                     }
                 },
-                // Delivery order has invoice that was modified
+                // Delivery order has invoice or its related entities modified
                 {
                     invoice: {
-                        AND: [
-                            {
-                                OR: [
-                                    { createdAt: { gte: lastSync } },
-                                    { updatedAt: { gte: lastSync } },
-                                    { deletedAt: { gte: lastSync } }
-                                ]
-                            }
-                        ]
-                    }
-                },
-                // Delivery order has invoice settlement that was modified
-                {
-                    invoice: {
-                        AND: [
+                        OR: [
+                            // Invoice itself was modified
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } },
+                            // Invoice settlement was modified
                             {
                                 invoiceSettlement: {
                                     OR: [
@@ -84,7 +75,29 @@ let getAll = async (
                                         { deletedAt: { gte: lastSync } }
                                     ]
                                 }
+                            },
+                            // Purchase returns were modified
+                            {
+                                purchaseReturns: {
+                                    some: {
+                                        OR: [
+                                            { createdAt: { gte: lastSync } },
+                                            { updatedAt: { gte: lastSync } },
+                                            { deletedAt: { gte: lastSync } }
+                                        ]
+                                    }
+                                }
                             }
+                        ]
+                    }
+                },
+                // Delivery order has purchase order that was modified
+                {
+                    purchaseOrder: {
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
                         ]
                     }
                 }
@@ -157,22 +170,50 @@ let getAll = async (
             })
         ]);
 
-        // Remove the batch invoice counting logic since we now get invoice directly
-        // Transform response to maintain backward compatibility
-        const enrichedDeliveryOrders = deliveryOrders.map(do_ => ({
-            ...do_,
-            itemCount: do_._count.deliveryOrderItems,
-            purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
-            purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
-            invoiceNumber: do_.invoice?.invoiceNumber || null,
-            invoiceDate: do_.invoice?.invoiceDate || null,
-            invoiceSettlementId: do_.invoice?.invoiceSettlement?.id || null,
-            invoiceSettlementNumber: do_.invoice?.invoiceSettlement?.settlementNumber || null,
-            invoiceSettlementDate: do_.invoice?.invoiceSettlement?.settlementDate || null,
-            _count: undefined,
-            purchaseOrder: undefined,
-            invoice: undefined
-        }));
+        // Batch fetch purchase returns for all invoices (minimal fields for summary)
+        const invoiceIds = deliveryOrders
+            .map(do_ => do_.invoiceId)
+            .filter((id): id is number => typeof id === 'number');
+
+        const purchaseReturns = invoiceIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+            : [];
+
+        // Create lookup map for purchase returns grouped by invoice ID
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const existing = purchaseReturnMap.get(pr.invoiceId!) || { count: 0, totalAmount: new Decimal(0) };
+            purchaseReturnMap.set(pr.invoiceId!, {
+                count: existing.count + 1,
+                totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+            });
+        });
+
+        // Transform response with purchase return summary
+        const enrichedDeliveryOrders = deliveryOrders.map(do_ => {
+            const returnData = do_.invoiceId ? purchaseReturnMap.get(do_.invoiceId) : null;
+            return {
+                ...do_,
+                itemCount: do_._count.deliveryOrderItems,
+                purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
+                purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
+                invoiceNumber: do_.invoice?.invoiceNumber || null,
+                invoiceDate: do_.invoice?.invoiceDate || null,
+                invoiceSettlementId: do_.invoice?.invoiceSettlement?.id || null,
+                invoiceSettlementNumber: do_.invoice?.invoiceSettlement?.settlementNumber || null,
+                invoiceSettlementDate: do_.invoice?.invoiceSettlement?.settlementDate || null,
+                // Purchase return summary
+                returnCount: returnData?.count || 0,
+                totalReturnAmount: returnData?.totalAmount.toFixed(4) || '0.0000',
+                hasReturns: (returnData?.count || 0) > 0,
+                _count: undefined,
+                purchaseOrder: undefined,
+                invoice: undefined
+            };
+        });
 
         return {
             deliveryOrders: enrichedDeliveryOrders,
@@ -216,6 +257,7 @@ let getById = async (id: number, databaseName: string) => {
                         id: true,
                         purchaseOrderNumber: true,
                         purchaseOrderDate: true,
+                        quotationId: true,
                         discountType: true,
                         discountAmount: true,
                         serviceChargeAmount: true,
@@ -251,6 +293,8 @@ let getById = async (id: number, databaseName: string) => {
                         invoiceNumber: true,
                         invoiceDate: true,
                         taxInvoiceNumber: true,
+                        purchaseOrderId: true,
+                        supplierId: true,
                         dueDate: true,
                         paymentDate: true,
                         subtotalAmount: true,
@@ -289,65 +333,69 @@ let getById = async (id: number, databaseName: string) => {
             throw new NotFoundError("Delivery Order");
         }
 
-        // Get invoiceSettlement with linked invoices if invoice exists
+        // Get invoiceSettlement and purchase returns in parallel if invoice exists
         let invoiceSettlement = null;
+        let purchaseReturns: any[] = [];
+        let totalReturnAmount = new Decimal(0);
+
         if (deliveryOrder.invoice?.id) {
-            const invoice = await tenantPrisma.invoice.findUnique({
-                where: { id: deliveryOrder.invoice.id },
-                select: {
-                    invoiceSettlement: {
-                        where: { deleted: false },
-                        select: {
-                            id: true,
-                            settlementNumber: true,
-                            settlementDate: true,
-                            settlementType: true,
-                            paymentMethod: true,
-                            settlementAmount: true,
-                            currency: true,
-                            exchangeRate: true,
-                            reference: true,
-                            remark: true,
-                            status: true,
-                            performedBy: true,
-                            totalRebateAmount: true,
-                            rebateReason: true,
-                            totalInvoiceCount: true,
-                            totalInvoiceAmount: true,
-                            createdAt: true,
-                            updatedAt: true
+            // Fetch settlement info and purchase returns in parallel
+            const [invoiceWithSettlement, invoicePurchaseReturns] = await Promise.all([
+                tenantPrisma.invoice.findUnique({
+                    where: { id: deliveryOrder.invoice.id },
+                    select: {
+                        invoiceSettlement: {
+                            where: { deleted: false },
+                            select: {
+                                id: true, settlementNumber: true, settlementDate: true,
+                                settlementType: true, paymentMethod: true, settlementAmount: true,
+                                currency: true, exchangeRate: true, reference: true, remark: true,
+                                status: true, performedBy: true, totalRebateAmount: true,
+                                rebateReason: true, totalInvoiceCount: true, totalInvoiceAmount: true,
+                                createdAt: true, updatedAt: true
+                            }
                         }
                     }
-                }
-            });
+                }),
+                tenantPrisma.purchaseReturn.findMany({
+                    where: { invoiceId: deliveryOrder.invoice.id, deleted: false, status: 'COMPLETED' },
+                    select: {
+                        id: true, returnNumber: true, returnDate: true, status: true,
+                        totalReturnAmount: true, remark: true,
+                        purchaseReturnItems: {
+                            where: { deleted: false },
+                            select: { id: true, itemId: true, itemVariantId: true, quantity: true, unitPrice: true, returnReason: true }
+                        }
+                    }
+                })
+            ]);
+
+            purchaseReturns = invoicePurchaseReturns;
+            totalReturnAmount = purchaseReturns.reduce(
+                (sum, pr) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
+                new Decimal(0)
+            );
 
             // If invoice settlement exists, get all linked invoices with minimal info
-            if (invoice?.invoiceSettlement) {
+            if (invoiceWithSettlement?.invoiceSettlement) {
                 const invoices = await tenantPrisma.invoice.findMany({
-                    where: {
-                        invoiceSettlementId: invoice.invoiceSettlement.id,
-                        deleted: false
-                    },
-                    select: {
-                        invoiceNumber: true,
-                        subtotalAmount: true,
-                        totalAmount: true,
-                        status: true,
-                        taxInvoiceNumber: true
-                    }
+                    where: { invoiceSettlementId: invoiceWithSettlement.invoiceSettlement.id, deleted: false },
+                    select: { id: true, invoiceNumber: true, subtotalAmount: true, totalAmount: true, status: true, taxInvoiceNumber: true }
                 });
 
-                invoiceSettlement = {
-                    ...invoice.invoiceSettlement,
-                    invoices
-                };
+                invoiceSettlement = { ...invoiceWithSettlement.invoiceSettlement, invoices };
             }
         }
 
-        // Transform the response to include enhanced invoiceSettlement
+        // Transform the response with purchase return summary
         const transformedResult = {
             ...deliveryOrder,
-            invoiceSettlement
+            invoiceSettlement,
+            // Purchase return summary
+            purchaseReturns,
+            returnCount: purchaseReturns.length,
+            totalReturnAmount: totalReturnAmount.toFixed(4),
+            hasReturns: purchaseReturns.length > 0
         };
 
         return transformedResult;
@@ -405,24 +453,15 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                         }
                     }
                 },
-                // Delivery order has invoice that was modified
+                // Delivery order has invoice or its related entities modified
                 {
                     invoice: {
-                        AND: [
-                            {
-                                OR: [
-                                    { createdAt: { gte: lastSync } },
-                                    { updatedAt: { gte: lastSync } },
-                                    { deletedAt: { gte: lastSync } }
-                                ]
-                            }
-                        ]
-                    }
-                },
-                // Delivery order has invoice settlement that was modified
-                {
-                    invoice: {
-                        AND: [
+                        OR: [
+                            // Invoice itself was modified
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } },
+                            // Invoice settlement was modified
                             {
                                 invoiceSettlement: {
                                     OR: [
@@ -431,7 +470,29 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                                         { deletedAt: { gte: lastSync } }
                                     ]
                                 }
+                            },
+                            // Purchase returns were modified
+                            {
+                                purchaseReturns: {
+                                    some: {
+                                        OR: [
+                                            { createdAt: { gte: lastSync } },
+                                            { updatedAt: { gte: lastSync } },
+                                            { deletedAt: { gte: lastSync } }
+                                        ]
+                                    }
+                                }
                             }
+                        ]
+                    }
+                },
+                // Delivery order has purchase order that was modified
+                {
+                    purchaseOrder: {
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
                         ]
                     }
                 }
@@ -504,22 +565,50 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             }
         });
 
-        // Remove batch invoice counting since we get invoice directly
-        // Enrich delivery orders with counts
-        const enrichedDeliveryOrders = deliveryOrders.map(do_ => ({
-            ...do_,
-            itemCount: do_._count.deliveryOrderItems,
-            purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
-            purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
-            invoiceNumber: do_.invoice?.invoiceNumber || null,
-            invoiceDate: do_.invoice?.invoiceDate || null,
-            invoiceSettlementId: do_.invoice?.invoiceSettlement?.id || null,
-            invoiceSettlementNumber: do_.invoice?.invoiceSettlement?.settlementNumber || null,
-            invoiceSettlementDate: do_.invoice?.invoiceSettlement?.settlementDate || null,
-            _count: undefined,
-            purchaseOrder: undefined,
-            invoice: undefined
-        }));
+        // Batch fetch purchase returns for all invoices (minimal fields for summary)
+        const invoiceIds = deliveryOrders
+            .map(do_ => do_.invoiceId)
+            .filter((id): id is number => typeof id === 'number');
+
+        const purchaseReturns = invoiceIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+            : [];
+
+        // Create lookup map for purchase returns grouped by invoice ID
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const existing = purchaseReturnMap.get(pr.invoiceId!) || { count: 0, totalAmount: new Decimal(0) };
+            purchaseReturnMap.set(pr.invoiceId!, {
+                count: existing.count + 1,
+                totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+            });
+        });
+
+        // Enrich delivery orders with purchase return summary
+        const enrichedDeliveryOrders = deliveryOrders.map(do_ => {
+            const returnData = do_.invoiceId ? purchaseReturnMap.get(do_.invoiceId) : null;
+            return {
+                ...do_,
+                itemCount: do_._count.deliveryOrderItems,
+                purchaseOrderNumber: do_.purchaseOrder?.purchaseOrderNumber || null,
+                purchaseOrderDate: do_.purchaseOrder?.purchaseOrderDate || null,
+                invoiceNumber: do_.invoice?.invoiceNumber || null,
+                invoiceDate: do_.invoice?.invoiceDate || null,
+                invoiceSettlementId: do_.invoice?.invoiceSettlement?.id || null,
+                invoiceSettlementNumber: do_.invoice?.invoiceSettlement?.settlementNumber || null,
+                invoiceSettlementDate: do_.invoice?.invoiceSettlement?.settlementDate || null,
+                // Purchase return summary
+                returnCount: returnData?.count || 0,
+                totalReturnAmount: returnData?.totalAmount.toFixed(4) || '0.0000',
+                hasReturns: (returnData?.count || 0) > 0,
+                _count: undefined,
+                purchaseOrder: undefined,
+                invoice: undefined
+            };
+        });
 
         return {
             deliveryOrders: enrichedDeliveryOrders,

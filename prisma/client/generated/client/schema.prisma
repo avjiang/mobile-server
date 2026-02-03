@@ -600,28 +600,29 @@ model InvoiceItem {
 }
 
 model InvoiceSettlement {
-  id                 Int       @id @default(autoincrement()) @map("ID")
-  settlementNumber   String    @unique @map("SETTLEMENT_NUMBER")
-  settlementDate     DateTime  @map("SETTLEMENT_DATE")
-  settlementType     String    @map("SETTLEMENT_TYPE")
-  paymentMethod      String?   @map("PAYMENT_METHOD")
-  settlementAmount   Decimal   @map("SETTLEMENT_AMOUNT") @db.Decimal(15, 4)
-  currency           String    @map("CURRENCY")
-  exchangeRate       Decimal?  @default(1) @map("EXCHANGE_RATE") @db.Decimal(15, 8)
-  reference          String?   @map("REFERENCE")
-  remark             String?   @default("") @map("REMARK")
-  status             String    @default("COMPLETED") @map("STATUS")
-  performedBy        String?   @default("") @map("PERFORMED_BY")
-  totalRebateAmount  Decimal   @default(0) @map("TOTAL_REBATE_AMOUNT") @db.Decimal(15, 4) // Total rebate given in this settlement
-  rebateReason       String?   @map("REBATE_REASON") // Reason for rebate (e.g., "EARLY_PAYMENT", "BULK_DISCOUNT", "PRICE_ADJUSTMENT")
-  totalInvoiceCount  Int       @default(0) @map("TOTAL_INVOICE_COUNT")
-  totalInvoiceAmount Decimal   @default(0) @map("TOTAL_INVOICE_AMOUNT") @db.Decimal(15, 4)
-  deleted            Boolean   @default(false) @map("IS_DELETED")
-  deletedAt          DateTime? @map("DELETED_AT")
-  createdAt          DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt          DateTime? @updatedAt @map("UPDATED_AT")
-  version            Int?      @default(1) @map("VERSION")
+  id                 Int              @id @default(autoincrement()) @map("ID")
+  settlementNumber   String           @unique @map("SETTLEMENT_NUMBER")
+  settlementDate     DateTime         @map("SETTLEMENT_DATE")
+  settlementType     String           @map("SETTLEMENT_TYPE")
+  paymentMethod      String?          @map("PAYMENT_METHOD")
+  settlementAmount   Decimal          @map("SETTLEMENT_AMOUNT") @db.Decimal(15, 4)
+  currency           String           @map("CURRENCY")
+  exchangeRate       Decimal?         @default(1) @map("EXCHANGE_RATE") @db.Decimal(15, 8)
+  reference          String?          @map("REFERENCE")
+  remark             String?          @default("") @map("REMARK")
+  status             String           @default("COMPLETED") @map("STATUS")
+  performedBy        String?          @default("") @map("PERFORMED_BY")
+  totalRebateAmount  Decimal          @default(0) @map("TOTAL_REBATE_AMOUNT") @db.Decimal(15, 4) // Total rebate given in this settlement
+  rebateReason       String?          @map("REBATE_REASON") // Reason for rebate (e.g., "EARLY_PAYMENT", "BULK_DISCOUNT", "PRICE_ADJUSTMENT")
+  totalInvoiceCount  Int              @default(0) @map("TOTAL_INVOICE_COUNT")
+  totalInvoiceAmount Decimal          @default(0) @map("TOTAL_INVOICE_AMOUNT") @db.Decimal(15, 4)
+  deleted            Boolean          @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?        @map("DELETED_AT")
+  createdAt          DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?        @updatedAt @map("UPDATED_AT")
+  version            Int?             @default(1) @map("VERSION")
   invoices           Invoice[]
+  purchaseReturns    PurchaseReturn[]
 
   @@index([settlementDate])
   @@index([settlementType])
@@ -967,23 +968,24 @@ model StockBalance {
 }
 
 model StockReceipt {
-  id              Int            @id @default(autoincrement()) @map("ID")
-  itemId          Int            @map("ITEM_ID")
-  outletId        Int            @map("OUTLET_ID")
-  itemVariantId   Int?           @map("ITEM_VARIANT_ID")
-  deliveryOrderId Int?           @map("DELIVERY_ORDER_ID") // Optional foreign key to DeliveryOrder
-  quantity        Decimal        @map("QUANTITY") @db.Decimal(15, 4)
-  cost            Decimal        @map("COST") @db.Decimal(15, 4) // Cost at the time of this receipt
-  receiptDate     DateTime       @default(now()) @map("RECEIPT_DATE")
-  createdAt       DateTime?      @default(now()) @map("CREATED_AT")
-  updatedAt       DateTime?      @updatedAt @map("UPDATED_AT")
-  deleted         Boolean        @default(false) @map("IS_DELETED")
-  deletedAt       DateTime?      @map("DELETED_AT")
-  version         Int?           @default(1) @map("VERSION")
-  item            Item           @relation(fields: [itemId], references: [id])
-  outlet          Outlet         @relation(fields: [outletId], references: [id])
-  itemVariant     ItemVariant?   @relation(fields: [itemVariantId], references: [id])
-  deliveryOrder   DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id])
+  id                  Int                  @id @default(autoincrement()) @map("ID")
+  itemId              Int                  @map("ITEM_ID")
+  outletId            Int                  @map("OUTLET_ID")
+  itemVariantId       Int?                 @map("ITEM_VARIANT_ID")
+  deliveryOrderId     Int?                 @map("DELIVERY_ORDER_ID") // Optional foreign key to DeliveryOrder
+  quantity            Decimal              @map("QUANTITY") @db.Decimal(15, 4)
+  cost                Decimal              @map("COST") @db.Decimal(15, 4) // Cost at the time of this receipt
+  receiptDate         DateTime             @default(now()) @map("RECEIPT_DATE")
+  createdAt           DateTime?            @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?            @updatedAt @map("UPDATED_AT")
+  deleted             Boolean              @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?            @map("DELETED_AT")
+  version             Int?                 @default(1) @map("VERSION")
+  item                Item                 @relation(fields: [itemId], references: [id])
+  outlet              Outlet               @relation(fields: [outletId], references: [id])
+  itemVariant         ItemVariant?         @relation(fields: [itemVariantId], references: [id])
+  deliveryOrder       DeliveryOrder?       @relation(fields: [deliveryOrderId], references: [id])
+  purchaseReturnItems PurchaseReturnItem[]
 
   @@index([deliveryOrderId])
   @@index([itemVariantId])
@@ -1689,6 +1691,7 @@ model PurchaseReturn {
   id                  Int                  @id @default(autoincrement()) @map("ID")
   returnNumber        String               @unique @map("RETURN_NUMBER")
   invoiceId           Int                  @map("INVOICE_ID")
+  invoiceSettlementId Int?                 @map("INVOICE_SETTLEMENT_ID")
   outletId            Int                  @map("OUTLET_ID")
   supplierId          Int                  @map("SUPPLIER_ID")
   returnDate          DateTime             @map("RETURN_DATE")
@@ -1702,11 +1705,13 @@ model PurchaseReturn {
   updatedAt           DateTime?            @updatedAt @map("UPDATED_AT")
   version             Int?                 @default(1) @map("VERSION")
   invoice             Invoice              @relation(fields: [invoiceId], references: [id])
+  invoiceSettlement   InvoiceSettlement?   @relation(fields: [invoiceSettlementId], references: [id])
   supplier            Supplier             @relation(fields: [supplierId], references: [id])
   outlet              Outlet               @relation(fields: [outletId], references: [id])
   purchaseReturnItems PurchaseReturnItem[]
 
   @@index([invoiceId])
+  @@index([invoiceSettlementId])
   @@index([supplierId])
   @@index([outletId])
   @@index([returnDate])
@@ -1720,6 +1725,7 @@ model PurchaseReturnItem {
   purchaseReturnId Int            @map("PURCHASE_RETURN_ID")
   itemId           Int            @map("ITEM_ID")
   itemVariantId    Int?           @map("ITEM_VARIANT_ID")
+  stockReceiptId   Int?           @map("STOCK_RECEIPT_ID") // Links to the StockReceipt affected by this return
   variantSku       String?        @map("VARIANT_SKU")
   variantName      String?        @map("VARIANT_NAME")
   quantity         Decimal        @map("QUANTITY") @db.Decimal(15, 4)
@@ -1734,9 +1740,11 @@ model PurchaseReturnItem {
   purchaseReturn   PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
   item             Item           @relation(fields: [itemId], references: [id])
   itemVariant      ItemVariant?   @relation(fields: [itemVariantId], references: [id])
+  stockReceipt     StockReceipt?  @relation(fields: [stockReceiptId], references: [id])
 
   @@index([purchaseReturnId])
   @@index([itemId])
   @@index([itemVariantId])
+  @@index([stockReceiptId])
   @@map("purchase_return_item")
 }

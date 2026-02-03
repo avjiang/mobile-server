@@ -5,6 +5,7 @@ import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateInvoiceSettlementRequestBody, InvoiceSettlementInput, SettlementSyncRequest } from "./invoice_settlement.request";
+import { Decimal } from 'decimal.js';
 
 class RequestValidateError extends Error {
     constructor(message: string) {
@@ -73,6 +74,34 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
                 { deletedAt: { gte: lastSync } },
+                // Purchase returns were modified (direct relation)
+                {
+                    purchaseReturns: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Invoices' purchase returns were modified
+                {
+                    invoices: {
+                        some: {
+                            purchaseReturns: {
+                                some: {
+                                    OR: [
+                                        { createdAt: { gte: lastSync } },
+                                        { updatedAt: { gte: lastSync } },
+                                        { deletedAt: { gte: lastSync } }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
             ],
         };
 
@@ -155,7 +184,15 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             }
         });
 
-        // Create lookup maps for purchase orders and delivery orders grouped by settlement ID
+        // Batch fetch purchase returns for all settlements (via invoiceSettlementId)
+        const purchaseReturns = settlementIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceSettlementId: { in: settlementIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceSettlementId: true, totalReturnAmount: true }
+            })
+            : [];
+
+        // Create lookup maps for O(1) access
         const purchaseOrdersMap = new Map<number, Map<number, any>>();
         const deliveryOrderCountMap = new Map<number, number>();
 
@@ -168,7 +205,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                     purchaseOrdersMap.set(settlementId, new Map());
                 }
                 const poMap = purchaseOrdersMap.get(settlementId)!;
-                // Use purchase order ID as key for deduplication
                 poMap.set(invoice.purchaseOrder.id, invoice.purchaseOrder);
             }
 
@@ -177,17 +213,38 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             deliveryOrderCountMap.set(settlementId, currentCount + invoice.deliveryOrders.length);
         });
 
-        // Enrich with invoice count, purchase orders array, and delivery order count
+        // Create lookup map for purchase returns grouped by settlement ID
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            if (pr.invoiceSettlementId) {
+                const existing = purchaseReturnMap.get(pr.invoiceSettlementId) || { count: 0, totalAmount: new Decimal(0) };
+                purchaseReturnMap.set(pr.invoiceSettlementId, {
+                    count: existing.count + 1,
+                    totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+                });
+            }
+        });
+
+        // Enrich with invoice count, purchase orders, delivery order count, and purchase returns
         const enrichedSettlements = settlements.map(settlement => {
             const poMap = purchaseOrdersMap.get(settlement.id);
             const purchaseOrders = poMap ? Array.from(poMap.values()) : [];
             const deliveryOrderCount = deliveryOrderCountMap.get(settlement.id) || 0;
+            const returnData = purchaseReturnMap.get(settlement.id) || { count: 0, totalAmount: new Decimal(0) };
+
+            // Calculate net settlement amount
+            const netSettlementAmount = new Decimal(settlement.settlementAmount || 0).minus(returnData.totalAmount);
 
             return {
                 ...settlement,
                 invoiceCount: settlement._count.invoices,
                 purchaseOrders: purchaseOrders,
                 deliveryOrderCount: deliveryOrderCount,
+                // Purchase return summary
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                netSettlementAmount: netSettlementAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
                 _count: undefined
             };
         });
@@ -218,6 +275,34 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
                 { deletedAt: { gte: lastSync } },
+                // Purchase returns were modified (direct relation)
+                {
+                    purchaseReturns: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Invoices' purchase returns were modified
+                {
+                    invoices: {
+                        some: {
+                            purchaseReturns: {
+                                some: {
+                                    OR: [
+                                        { createdAt: { gte: lastSync } },
+                                        { updatedAt: { gte: lastSync } },
+                                        { deletedAt: { gte: lastSync } }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
             ],
         };
 
@@ -314,7 +399,15 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
             }
         });
 
-        // Create lookup maps for purchase orders and delivery orders grouped by settlement ID
+        // Batch fetch purchase returns for all settlements (via invoiceSettlementId)
+        const purchaseReturns = settlementIds.length > 0
+            ? await tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceSettlementId: { in: settlementIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceSettlementId: true, totalReturnAmount: true }
+            })
+            : [];
+
+        // Create lookup maps for O(1) access
         const purchaseOrdersMap = new Map<number, Map<number, any>>();
         const deliveryOrderCountMap = new Map<number, number>();
 
@@ -327,7 +420,6 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
                     purchaseOrdersMap.set(settlementId, new Map());
                 }
                 const poMap = purchaseOrdersMap.get(settlementId)!;
-                // Use purchase order ID as key for deduplication
                 poMap.set(invoice.purchaseOrder.id, invoice.purchaseOrder);
             }
 
@@ -336,17 +428,38 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
             deliveryOrderCountMap.set(settlementId, currentCount + invoice.deliveryOrders.length);
         });
 
-        // Enrich with invoice count, purchase orders array, and delivery order count
+        // Create lookup map for purchase returns grouped by settlement ID
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            if (pr.invoiceSettlementId) {
+                const existing = purchaseReturnMap.get(pr.invoiceSettlementId) || { count: 0, totalAmount: new Decimal(0) };
+                purchaseReturnMap.set(pr.invoiceSettlementId, {
+                    count: existing.count + 1,
+                    totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+                });
+            }
+        });
+
+        // Enrich with invoice count, purchase orders, delivery order count, and purchase returns
         const enrichedSettlements = settlements.map(settlement => {
             const poMap = purchaseOrdersMap.get(settlement.id);
             const purchaseOrders = poMap ? Array.from(poMap.values()) : [];
             const deliveryOrderCount = deliveryOrderCountMap.get(settlement.id) || 0;
+            const returnData = purchaseReturnMap.get(settlement.id) || { count: 0, totalAmount: new Decimal(0) };
+
+            // Calculate net settlement amount
+            const netSettlementAmount = new Decimal(settlement.settlementAmount || 0).minus(returnData.totalAmount);
 
             return {
                 ...settlement,
                 invoiceCount: settlement._count.invoices,
                 purchaseOrders: purchaseOrders,
                 deliveryOrderCount: deliveryOrderCount,
+                // Purchase return summary
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                netSettlementAmount: netSettlementAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
                 _count: undefined
             };
         });
@@ -397,6 +510,7 @@ let getSettlementById = async (id: number, databaseName: string) => {
                                 taxAmount: true,
                                 discountAmount: true,
                                 discountType: true,
+                                quotationId: true,
                                 serviceChargeAmount: true,
                                 roundingAmount: true,
                                 currency: true,
@@ -444,6 +558,31 @@ let getSettlementById = async (id: number, databaseName: string) => {
                                     }
                                 }
                             }
+                        },
+                        purchaseReturns: {
+                            where: { deleted: false },
+                            select: {
+                                id: true,
+                                returnNumber: true,
+                                invoiceId: true,
+                                returnDate: true,
+                                status: true,
+                                totalReturnAmount: true,
+                                remark: true,
+                                performedBy: true,
+                                purchaseReturnItems: {
+                                    where: { deleted: false },
+                                    select: {
+                                        id: true,
+                                        itemId: true,
+                                        itemVariantId: true,
+                                        quantity: true,
+                                        unitPrice: true,
+                                        returnReason: true,
+                                        remark: true
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -472,20 +611,57 @@ let getSettlementById = async (id: number, databaseName: string) => {
         });
         const deliveryOrders = Array.from(deliveryOrderMap.values());
 
-        // Remove purchaseOrder and deliveryOrders from invoices to avoid duplication
-        const invoicesWithoutRelations = settlement.invoices.map(invoice => {
-            const { purchaseOrder, deliveryOrders, ...invoiceWithoutRelations } = invoice;
-            return invoiceWithoutRelations;
+        // Collect all detailed purchase returns from invoices (with items) for settlement-level response
+        const allPurchaseReturns: any[] = [];
+        settlement.invoices.forEach(invoice => {
+            const invoiceReturns = (invoice as any).purchaseReturns || [];
+            allPurchaseReturns.push(...invoiceReturns);
         });
 
+        // Remove purchaseOrder, deliveryOrders, and purchaseReturns from invoices to avoid duplication
+        // Also compute return totals per invoice
+        const invoicesWithoutRelations = settlement.invoices.map(invoice => {
+            const { purchaseOrder, deliveryOrders, purchaseReturns, ...invoiceWithoutRelations } = invoice as any;
+
+            // Calculate total return amount for this invoice
+            const invoiceReturnAmount = (purchaseReturns || []).reduce(
+                (sum: Decimal, pr: any) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
+                new Decimal(0)
+            );
+
+            // Calculate net amount for this invoice
+            const invoiceNetAmount = new Decimal(invoice.totalAmount || 0).minus(invoiceReturnAmount);
+
+            return {
+                ...invoiceWithoutRelations,
+                totalReturnAmount: invoiceReturnAmount.toFixed(4),
+                netAmount: invoiceNetAmount.toFixed(4),
+                returnCount: (purchaseReturns || []).length
+            };
+        });
+
+        // Calculate total returns for the entire settlement using detailed purchase returns
+        const totalSettlementReturnAmount = allPurchaseReturns.reduce(
+            (sum: Decimal, pr: any) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
+            new Decimal(0)
+        );
+
+        // Calculate net settlement amount
+        const netSettlementAmount = new Decimal(settlement.settlementAmount || 0).minus(totalSettlementReturnAmount);
+
         // Return settlement with counts and restructured data
+        // purchaseReturns at settlement level contains full details including items
         return {
             ...settlement,
             invoices: invoicesWithoutRelations,
             purchaseOrders,
             deliveryOrders,
+            purchaseReturns: allPurchaseReturns,
             purchaseOrderCount: purchaseOrders.length,
-            deliveryOrderCount: deliveryOrders.length
+            deliveryOrderCount: deliveryOrders.length,
+            totalReturnAmount: totalSettlementReturnAmount.toFixed(4),
+            netSettlementAmount: netSettlementAmount.toFixed(4),
+            returnCount: allPurchaseReturns.length
         };
     }
     catch (error) {
@@ -712,7 +888,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                             where: { id: invoice.id },
                             data: {
                                 invoiceSettlementId: newSettlement.id,
-                                status: 'PAID',
+                                status: 'Paid',
                                 paymentDate: settlementData.settlementDate,
                                 discountType: 'FIXED',
                                 discountAmount: invoiceRebate,
@@ -730,32 +906,28 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                         },
                         data: {
                             invoiceSettlementId: newSettlement.id,
-                            status: 'PAID',
+                            status: 'Paid',
                             paymentDate: settlementData.settlementDate
                         }
                     });
                 }
 
                 // Update individual invoices with their corresponding tax numbers
+                // Invoice status is already set to 'Paid' above when linked to settlement
                 for (let i = 0; i < sortedInvoiceIds.length; i++) {
                     const invoiceId = sortedInvoiceIds[i];
                     const taxNumber = sortedTaxNumbers[i];
 
-                    // Only update tax number if it's a valid positive number (not 0), convert to string for database
-                    const updateData: any = {};
-                    if (taxNumber !== null && taxNumber !== undefined && taxNumber !== 0 &&
-                        typeof taxNumber === 'number' && !isNaN(taxNumber) && taxNumber > 0) {
-                        updateData.taxInvoiceNumber = taxNumber.toString();
-                    } else {
-                        updateData.taxInvoiceNumber = ''; // Store empty string instead of null
-                    }
+                    // Only update tax invoice number (status already set to 'Paid')
+                    const taxInvoiceNumber = (taxNumber !== null && taxNumber !== undefined && taxNumber !== 0 &&
+                        typeof taxNumber === 'number' && !isNaN(taxNumber) && taxNumber > 0)
+                        ? taxNumber.toString()
+                        : ''; // Store empty string instead of null
 
-                    if (Object.keys(updateData).length > 0) {
-                        await tx.invoice.update({
-                            where: { id: invoiceId },
-                            data: updateData
-                        });
-                    }
+                    await tx.invoice.update({
+                        where: { id: invoiceId },
+                        data: { taxInvoiceNumber }
+                    });
                 }
 
                 // Fetch the complete settlement with related invoices
@@ -877,28 +1049,25 @@ let updateSettlement = async (settlement: InvoiceSettlementInput, databaseName: 
                 // Update settlement status based on tax number completeness
                 if (hasIncompleteTaxNumbers) {
                     cleanUpdateData.status = 'INCOMPLETE';
+                } else {
+                    cleanUpdateData.status = 'COMPLETED';
                 }
 
-                // Update individual invoices with their corresponding tax numbers and status
+                // Update individual invoices with their corresponding tax numbers
+                // Invoice status remains 'Paid' (already set when linked to settlement)
                 for (let i = 0; i < invoiceIds.length; i++) {
                     const invoiceId = invoiceIds[i];
                     const taxNumber = invoiceTaxNumbers[i];
 
-                    const invoiceUpdateData: any = {};
-
-                    // Handle tax invoice number - use empty string instead of null for non-nullable field
-                    if (taxNumber !== null && taxNumber !== undefined && taxNumber !== 0 &&
-                        typeof taxNumber === 'number' && !isNaN(taxNumber) && taxNumber > 0) {
-                        invoiceUpdateData.taxInvoiceNumber = taxNumber.toString();
-                        invoiceUpdateData.status = 'PAID'; // Valid tax number means complete
-                    } else {
-                        invoiceUpdateData.taxInvoiceNumber = ''; // Store empty string instead of null
-                        invoiceUpdateData.status = 'INCOMPLETE'; // Invalid/missing tax number means incomplete
-                    }
+                    // Only update tax invoice number (status stays as 'Paid')
+                    const taxInvoiceNumber = (taxNumber !== null && taxNumber !== undefined && taxNumber !== 0 &&
+                        typeof taxNumber === 'number' && !isNaN(taxNumber) && taxNumber > 0)
+                        ? taxNumber.toString()
+                        : ''; // Store empty string instead of null
 
                     await tx.invoice.update({
                         where: { id: invoiceId },
-                        data: invoiceUpdateData
+                        data: { taxInvoiceNumber }
                     });
                 }
             }

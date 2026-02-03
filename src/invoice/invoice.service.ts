@@ -222,13 +222,82 @@ let getAll = async (
         // Ensure outletId is a number
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
-        // Build query conditions
+        // Build query conditions - include related entity modifications for proper delta sync
         const where = {
             outletId: parsedOutletId,
             OR: [
+                // Invoice itself was modified
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
                 { deletedAt: { gte: lastSync } },
+                // Invoice items were modified
+                {
+                    invoiceItems: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Purchase order was modified
+                {
+                    purchaseOrder: {
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
+                        ]
+                    }
+                },
+                // Quotation (through purchase order) was modified
+                {
+                    purchaseOrder: {
+                        quotation: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Delivery orders were modified
+                {
+                    deliveryOrders: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Invoice settlement was modified
+                {
+                    invoiceSettlement: {
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
+                        ]
+                    }
+                },
+                // Purchase returns were modified
+                {
+                    purchaseReturns: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                }
             ],
         };
         // Count total matching records
@@ -250,61 +319,42 @@ let getAll = async (
             }
         });
 
-        // Batch fetch delivery orders for all invoices (if needed for additional data)
+        // Batch fetch all related data in parallel for better performance
         const invoiceIds = invoices.map(inv => inv.id);
+        const purchaseOrderIds = invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number');
+        const settlementIds = invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number');
 
-        // Batch fetch purchase order for each invoice
-        const purchaseOrders = await tenantPrisma.purchaseOrder.findMany({
-            where: {
-                id: { in: invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number') },
-                deleted: false
-            },
-            select: {
-                id: true,
-                purchaseOrderNumber: true,
-                purchaseOrderDate: true
-            }
-        });
-
-        // Batch fetch delivery orders for each invoice
-        const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
-            where: {
-                invoiceId: { in: invoiceIds },
-                deleted: false
-            },
-            select: {
-                id: true,
-                invoiceId: true,
-                deliveryDate: true,
-                trackingNumber: true
-            }
-        });
-
-        // Batch fetch invoice settlements for each invoice
-        const invoiceSettlements = await tenantPrisma.invoiceSettlement.findMany({
-            where: {
-                id: { in: invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number') },
-                deleted: false
-            },
-            select: {
-                id: true,
-                settlementNumber: true,
-                settlementDate: true,
-                settlementType: true,
-                paymentMethod: true,
-                settlementAmount: true,
-                currency: true,
-                status: true
-            }
-        });
+        const [purchaseOrders, deliveryOrders, invoiceSettlements, purchaseReturns] = await Promise.all([
+            // Batch fetch purchase orders
+            tenantPrisma.purchaseOrder.findMany({
+                where: { id: { in: purchaseOrderIds }, deleted: false },
+                select: { id: true, purchaseOrderNumber: true, purchaseOrderDate: true }
+            }),
+            // Batch fetch delivery orders
+            tenantPrisma.deliveryOrder.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false },
+                select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true }
+            }),
+            // Batch fetch invoice settlements
+            tenantPrisma.invoiceSettlement.findMany({
+                where: { id: { in: settlementIds }, deleted: false },
+                select: {
+                    id: true, settlementNumber: true, settlementDate: true,
+                    settlementType: true, paymentMethod: true, settlementAmount: true,
+                    currency: true, status: true
+                }
+            }),
+            // Batch fetch purchase returns (minimal fields for summary)
+            tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+        ]);
 
         // Create lookup maps for O(1) access
         const purchaseOrderMap = new Map();
-        purchaseOrders.forEach(po => {
-            purchaseOrderMap.set(po.id, po);
-        });
+        purchaseOrders.forEach(po => purchaseOrderMap.set(po.id, po));
 
-        // Create lookup map for delivery orders grouped by invoice ID
         const deliveryOrderMap = new Map<number, any[]>();
         deliveryOrders.forEach(do_ => {
             if (!deliveryOrderMap.has(do_.invoiceId!)) {
@@ -313,17 +363,25 @@ let getAll = async (
             deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
-        // Create lookup map for invoice settlements
         const invoiceSettlementMap = new Map();
-        invoiceSettlements.forEach(settlement => {
-            invoiceSettlementMap.set(settlement.id, settlement);
+        invoiceSettlements.forEach(settlement => invoiceSettlementMap.set(settlement.id, settlement));
+
+        // Create lookup map for purchase returns grouped by invoice ID
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const existing = purchaseReturnMap.get(pr.invoiceId!) || { count: 0, totalAmount: new Decimal(0) };
+            purchaseReturnMap.set(pr.invoiceId!, {
+                count: existing.count + 1,
+                totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+            });
         });
 
-        // Enrich invoices with purchase order and delivery order info
+        // Enrich invoices with all related data
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
             const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
             const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
+            const returnData = purchaseReturnMap.get(inv.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
                 ...inv,
@@ -346,7 +404,11 @@ let getAll = async (
                     currency: invoiceSettlement.currency,
                     status: invoiceSettlement.status
                 } : null,
-                _count: undefined // Remove the _count field from response
+                // Purchase return summary (minimal for list view)
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
+                _count: undefined
             };
         });
 
@@ -375,9 +437,6 @@ let getById = async (id: number, databaseName: string) => {
                     },
                 },
                 purchaseOrder: {
-                    where: {
-                        deleted: false
-                    },
                     select: {
                         id: true,
                         purchaseOrderNumber: true,
@@ -391,6 +450,8 @@ let getById = async (id: number, databaseName: string) => {
                         currency: true,
                         status: true,
                         remark: true,
+                        quotationId: true,
+                        deleted: true,
                         purchaseOrderItems: {
                             where: {
                                 deleted: false
@@ -411,9 +472,6 @@ let getById = async (id: number, databaseName: string) => {
                     }
                 },
                 invoiceSettlement: {
-                    where: {
-                        deleted: false
-                    },
                     select: {
                         id: true,
                         settlementNumber: true,
@@ -430,7 +488,32 @@ let getById = async (id: number, databaseName: string) => {
                         totalRebateAmount: true,
                         rebateReason: true,
                         totalInvoiceCount: true,
-                        totalInvoiceAmount: true
+                        totalInvoiceAmount: true,
+                        deleted: true
+                    }
+                },
+                purchaseReturns: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        returnNumber: true,
+                        returnDate: true,
+                        status: true,
+                        totalReturnAmount: true,
+                        remark: true,
+                        performedBy: true,
+                        purchaseReturnItems: {
+                            where: { deleted: false },
+                            select: {
+                                id: true,
+                                itemId: true,
+                                itemVariantId: true,
+                                quantity: true,
+                                unitPrice: true,
+                                returnReason: true,
+                                remark: true
+                            }
+                        }
                     }
                 }
             }
@@ -449,6 +532,7 @@ let getById = async (id: number, databaseName: string) => {
                     deleted: false
                 },
                 select: {
+                    id: true,
                     invoiceNumber: true,
                     subtotalAmount: true,
                     totalAmount: true,
@@ -463,9 +547,57 @@ let getById = async (id: number, databaseName: string) => {
             };
         }
 
+        // Calculate total return amount from all purchase returns
+        const totalReturnAmount = (invoice as any).purchaseReturns?.reduce(
+            (sum: Decimal, pr: any) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
+            new Decimal(0)
+        ) || new Decimal(0);
+
+        // Calculate net amount (invoice total - returns)
+        const netAmount = new Decimal(invoice.totalAmount || 0).minus(totalReturnAmount);
+
+        // Build a map of returned quantities per item (only from COMPLETED returns)
+        // Key: itemId-itemVariantId, Value: total returned quantity
+        const returnedQuantityMap = new Map<string, Decimal>();
+        const completedReturns = ((invoice as any).purchaseReturns || []).filter(
+            (pr: any) => pr.status === 'COMPLETED'
+        );
+
+        for (const pr of completedReturns) {
+            for (const item of (pr.purchaseReturnItems || [])) {
+                const key = `${item.itemId}-${item.itemVariantId || 'null'}`;
+                const currentTotal = returnedQuantityMap.get(key) || new Decimal(0);
+                returnedQuantityMap.set(key, currentTotal.plus(new Decimal(item.quantity || 0)));
+            }
+        }
+
+        // Enrich invoice items with return tracking fields
+        const enrichedInvoiceItems = invoice.invoiceItems.map((item: any) => {
+            const key = `${item.itemId}-${item.itemVariantId || 'null'}`;
+            const returnedQuantity = returnedQuantityMap.get(key) || new Decimal(0);
+            const originalQuantity = new Decimal(item.quantity || 0);
+            const remainingQuantity = originalQuantity.minus(returnedQuantity);
+
+            return {
+                ...item,
+                returnedQuantity: returnedQuantity.toFixed(4),
+                remainingQuantity: remainingQuantity.toFixed(4)
+            };
+        });
+
+        // Check if any item is fully returned
+        const hasFullyReturnedItems = enrichedInvoiceItems.some(
+            (item: any) => new Decimal(item.remainingQuantity).lte(0)
+        );
+
         return {
             ...invoice,
-            invoiceSettlement: enhancedInvoiceSettlement
+            invoiceItems: enrichedInvoiceItems,
+            invoiceSettlement: enhancedInvoiceSettlement,
+            totalReturnAmount: totalReturnAmount.toFixed(4),
+            netAmount: netAmount.toFixed(4),
+            returnCount: (invoice as any).purchaseReturns?.length || 0,
+            hasFullyReturnedItems
         };
     }
     catch (error) {
@@ -497,7 +629,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             throw new Error('Invalid date format');
         }
 
-        // Build query conditions with date range for invoices
+        // Build query conditions with date range for invoices - include related entity modifications for proper delta sync
         const where = {
             outletId: parsedOutletId,
             invoiceDate: {
@@ -505,9 +637,78 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 lte: parsedEndDate
             },
             OR: [
+                // Invoice itself was modified
                 { createdAt: { gte: lastSync } },
                 { updatedAt: { gte: lastSync } },
                 { deletedAt: { gte: lastSync } },
+                // Invoice items were modified
+                {
+                    invoiceItems: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Purchase order was modified
+                {
+                    purchaseOrder: {
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
+                        ]
+                    }
+                },
+                // Quotation (through purchase order) was modified
+                {
+                    purchaseOrder: {
+                        quotation: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Delivery orders were modified
+                {
+                    deliveryOrders: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                },
+                // Invoice settlement was modified
+                {
+                    invoiceSettlement: {
+                        OR: [
+                            { createdAt: { gte: lastSync } },
+                            { updatedAt: { gte: lastSync } },
+                            { deletedAt: { gte: lastSync } }
+                        ]
+                    }
+                },
+                // Purchase returns were modified
+                {
+                    purchaseReturns: {
+                        some: {
+                            OR: [
+                                { createdAt: { gte: lastSync } },
+                                { updatedAt: { gte: lastSync } },
+                                { deletedAt: { gte: lastSync } }
+                            ]
+                        }
+                    }
+                }
             ],
         };
 
@@ -530,61 +731,42 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             }
         });
 
-        // Batch fetch delivery orders for all invoices (if needed for additional data)
+        // Batch fetch all related data in parallel for better performance
         const invoiceIds = invoices.map(inv => inv.id);
+        const purchaseOrderIds = invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number');
+        const settlementIds = invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number');
 
-        // Batch fetch purchase order for each invoice
-        const purchaseOrders = await tenantPrisma.purchaseOrder.findMany({
-            where: {
-                id: { in: invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number') },
-                deleted: false
-            },
-            select: {
-                id: true,
-                purchaseOrderNumber: true,
-                purchaseOrderDate: true
-            }
-        });
-
-        // Batch fetch delivery orders for each invoice
-        const deliveryOrders = await tenantPrisma.deliveryOrder.findMany({
-            where: {
-                invoiceId: { in: invoiceIds },
-                deleted: false
-            },
-            select: {
-                id: true,
-                invoiceId: true,
-                deliveryDate: true,
-                trackingNumber: true
-            }
-        });
-
-        // Batch fetch invoice settlements for each invoice
-        const invoiceSettlements = await tenantPrisma.invoiceSettlement.findMany({
-            where: {
-                id: { in: invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number') },
-                deleted: false
-            },
-            select: {
-                id: true,
-                settlementNumber: true,
-                settlementDate: true,
-                settlementType: true,
-                paymentMethod: true,
-                settlementAmount: true,
-                currency: true,
-                status: true
-            }
-        });
+        const [purchaseOrders, deliveryOrders, invoiceSettlements, purchaseReturns] = await Promise.all([
+            // Batch fetch purchase orders
+            tenantPrisma.purchaseOrder.findMany({
+                where: { id: { in: purchaseOrderIds }, deleted: false },
+                select: { id: true, purchaseOrderNumber: true, purchaseOrderDate: true }
+            }),
+            // Batch fetch delivery orders
+            tenantPrisma.deliveryOrder.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false },
+                select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true }
+            }),
+            // Batch fetch invoice settlements
+            tenantPrisma.invoiceSettlement.findMany({
+                where: { id: { in: settlementIds }, deleted: false },
+                select: {
+                    id: true, settlementNumber: true, settlementDate: true,
+                    settlementType: true, paymentMethod: true, settlementAmount: true,
+                    currency: true, status: true
+                }
+            }),
+            // Batch fetch purchase returns (minimal fields for summary)
+            tenantPrisma.purchaseReturn.findMany({
+                where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
+                select: { id: true, invoiceId: true, totalReturnAmount: true }
+            })
+        ]);
 
         // Create lookup maps for O(1) access
         const purchaseOrderMap = new Map();
-        purchaseOrders.forEach(po => {
-            purchaseOrderMap.set(po.id, po);
-        });
+        purchaseOrders.forEach(po => purchaseOrderMap.set(po.id, po));
 
-        // Create lookup map for delivery orders grouped by invoice ID
         const deliveryOrderMap = new Map<number, any[]>();
         deliveryOrders.forEach(do_ => {
             if (!deliveryOrderMap.has(do_.invoiceId!)) {
@@ -593,17 +775,25 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
-        // Create lookup map for invoice settlements
         const invoiceSettlementMap = new Map();
-        invoiceSettlements.forEach(settlement => {
-            invoiceSettlementMap.set(settlement.id, settlement);
+        invoiceSettlements.forEach(settlement => invoiceSettlementMap.set(settlement.id, settlement));
+
+        // Create lookup map for purchase returns grouped by invoice ID
+        const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
+        purchaseReturns.forEach(pr => {
+            const existing = purchaseReturnMap.get(pr.invoiceId!) || { count: 0, totalAmount: new Decimal(0) };
+            purchaseReturnMap.set(pr.invoiceId!, {
+                count: existing.count + 1,
+                totalAmount: existing.totalAmount.plus(new Decimal(pr.totalReturnAmount || 0))
+            });
         });
 
-        // Enrich invoices with purchase order and delivery order info
+        // Enrich invoices with all related data
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
             const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
             const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
+            const returnData = purchaseReturnMap.get(inv.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
                 ...inv,
@@ -626,6 +816,10 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                     currency: invoiceSettlement.currency,
                     status: invoiceSettlement.status
                 } : null,
+                // Purchase return summary (minimal for list view)
+                returnCount: returnData.count,
+                totalReturnAmount: returnData.totalAmount.toFixed(4),
+                hasReturns: returnData.count > 0,
                 _count: undefined
             };
         });
@@ -1034,7 +1228,8 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                 outletId: true,
                 supplierId: true,
                 purchaseOrderId: true,
-                invoiceNumber: true
+                invoiceNumber: true,
+                invoiceSettlementId: true
             }
         });
 
@@ -1142,6 +1337,7 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
             });
 
             // Update main invoice
+            // Don't allow status change if invoice is linked to a settlement
             const updatedInvoice = await tx.invoice.update({
                 where: { id: id },
                 data: {
@@ -1156,7 +1352,7 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                     discountType: updateData.discountType,
                     totalAmount: updateData.totalAmount,
                     currency: updateData.currency || 'IDR',
-                    status: updateData.status,
+                    status: existingInvoice.invoiceSettlementId ? undefined : updateData.status,
                     invoiceDate: updateData.invoiceDate,
                     paymentDate: updateData.paymentDate,
                     dueDate: updateData.dueDate,

@@ -261,3 +261,10 @@ export interface TenantUsersResponse {
     total: number;
     activeCount: number;
 }
+
+export interface TenantOverviewResponse {
+    totalTenantCount: number;
+    totalActiveTenantCount: number;
+    totalInactiveTenantCount: number;
+    totalTenantsCreatedThisMonth: number;
+}

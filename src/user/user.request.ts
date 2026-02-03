@@ -20,3 +20,9 @@ export interface UpdateUserRequestBody {
     email?: string;
     roles?: { id: number }[];
 }
+
+export interface ChangePasswordRequest {
+    username: string;
+    currentPassword: string;
+    newPassword: string;
+}

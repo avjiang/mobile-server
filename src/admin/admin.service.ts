@@ -4,6 +4,7 @@ import { PrismaClient as TenantPrismaClient } from "../../prisma/client/generate
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { CreateTenantRequest } from "./admin.request";
 import bcrypt from "bcryptjs"
+import crypto from "crypto";
 import {
     TenantCostResponse,
     TenantCreationDto,
@@ -17,7 +18,8 @@ import {
     TenantBillingSummaryResponse,
     UpcomingPaymentsSummaryResponse,
     UpcomingPaymentsResponse,
-    TenantUsersResponse
+    TenantUsersResponse,
+    TenantOverviewResponse
 } from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
@@ -2482,6 +2484,115 @@ const getTenantUsers = async (tenantId: number, includeDeleted: boolean = false)
     };
 };
 
+const getTenantOverview = async (): Promise<TenantOverviewResponse> => {
+    try {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const totalTenantCount = await prisma.tenant.count();
+
+        // Active if at least one subscription is active/trial
+        const totalActiveTenantCount = await prisma.tenant.count({
+            where: {
+                subscription: {
+                    some: {
+                        status: { in: ['Active', 'active', 'trial'] }
+                    }
+                }
+            }
+        });
+
+        // Inactive if logic: "if all subscriptions status is expired, then consider inactive, else consider active"
+        // This is equivalent to Total - Active
+        const totalInactiveTenantCount = totalTenantCount - totalActiveTenantCount;
+
+        const totalTenantsCreatedThisMonth = await prisma.tenant.count({
+            where: {
+                createdAt: {
+                    gte: firstDayOfMonth
+                }
+            }
+        });
+
+        return {
+            totalTenantCount,
+            totalActiveTenantCount,
+            totalInactiveTenantCount,
+            totalTenantsCreatedThisMonth
+        };
+
+    } catch (error) {
+        console.error('Error getting tenant overview:', error);
+        throw error;
+    }
+};
+
+/**
+ * Updates password for a user in both Global DB and Tenant DB
+ */
+const updateUserPassword = async (tenantId: number, userId: number, newPassword: string) => {
+    // 1. Find tenant and ensure tenant DB is available
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true, databaseName: true },
+    });
+    if (!tenant) throw new NotFoundError('Tenant not found');
+    if (!tenant.databaseName) throw new NotFoundError('Tenant database not initialized');
+
+    // 2. Find user in global DB
+    const globalUser = await prisma.tenantUser.findUnique({
+        where: { id: userId },
+    });
+    if (!globalUser) throw new NotFoundError('User not found');
+    if (globalUser.tenantId !== tenantId) throw new RequestValidateError('User does not belong to this tenant');
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+
+    // 3. Update Global DB
+    await prisma.tenantUser.update({
+        where: { id: userId },
+        data: { password: hashedPassword }
+    });
+
+    // 4. Update Tenant DB
+    const tenantPrisma = getTenantPrisma(tenant.databaseName);
+    try {
+        const tenantUser = await tenantPrisma.user.findUnique({
+            where: { username: globalUser.username },
+        });
+
+        if (tenantUser) {
+            await tenantPrisma.user.update({
+                where: { id: tenantUser.id },
+                data: { password: hashedPassword }
+            });
+        } else {
+            console.warn(`User ${globalUser.username} not found in tenant DB ${tenant.databaseName}, skipping sync.`);
+        }
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
+
+
+/**
+ * Force reset user password (Forgot Password)
+ * Generates a random password and returns it
+ */
+const forgotTenantUserPassword = async (tenantId: number, userId: number) => {
+    // Generate secure random password
+    const newPassword = crypto.randomBytes(8).toString('hex'); // 16 chars
+
+    await updateUserPassword(tenantId, userId, newPassword);
+
+    return {
+        success: true,
+        message: 'Password reset successfully',
+        temporaryPassword: newPassword
+    };
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2503,5 +2614,8 @@ export = {
     getUpcomingPaymentsSummary,
     getUpcomingPayments,
     // User Management
-    getTenantUsers
+    getTenantUsers,
+    getTenantOverview,
+
+    forgotTenantUserPassword
 }

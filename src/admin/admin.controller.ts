@@ -16,7 +16,8 @@ import {
     TenantBillingSummaryResponse,
     UpcomingPaymentsSummaryResponse,
     UpcomingPaymentsResponse,
-    TenantUsersResponse
+    TenantUsersResponse,
+    TenantOverviewResponse
 } from "./admin.response"
 
 const router = express.Router()
@@ -499,14 +500,53 @@ let getUpcomingPayments = (req: AuthRequest, res: Response, next: NextFunction) 
         .catch(next);
 };
 
+/**
+ * GET /tenantOverview
+ * Get tenant overview statistics
+ */
+let getTenantOverview = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    service.getTenantOverview()
+        .then((response: TenantOverviewResponse) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+
+
+// Forgot Password (Force Reset)
+let forgotTenantUserPassword = (req: NetworkRequest<{}>, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError('User not authenticated');
+
+    if (!validator.isNumeric(req.params.tenantId) || !validator.isNumeric(req.params.userId)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+
+    const tenantId = parseInt(req.params.tenantId);
+    const userId = parseInt(req.params.userId);
+
+    service.forgotTenantUserPassword(tenantId, userId)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+}
+
 //routes
 router.get('/tenantDetails/:id', getTenantDetails)
 router.get('/getAllTenantSubscription', getAllTenantSubscription)
+router.get('/tenantOverview', getTenantOverview)
 router.get('/tenantDevices/:tenantId', getTenantDevices)
 router.post('/signup', createTenant)
 router.post('/createTenantUser/:tenantId', createTenantUser)
 router.delete('/tenants/:tenantId/users/:userId', deleteTenantUser)
 router.get('/tenants/:tenantId/users', getTenantUsers)
+
+router.post('/tenants/:tenantId/users/:userId/forgot-password', forgotTenantUserPassword)
 
 // device quota routes
 router.post('/addDeviceQuota/:tenantId', addDeviceQuotaForTenant)

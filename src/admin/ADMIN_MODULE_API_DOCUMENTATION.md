@@ -262,6 +262,37 @@ All endpoints are prefixed with:
 
 ---
 
+---
+
+### 1.4 Get Tenant Overview
+
+**Endpoint:** `GET /api/admin/tenantOverview`
+
+**Description:** Retrieves high-level tenant statistics including total counts, active/inactive status, and monthly growth.
+
+**Authentication:** Required
+
+**Response (Success - 200):**
+
+```json
+{
+  "totalTenantCount": 150,
+  "totalActiveTenantCount": 145,
+  "totalInactiveTenantCount": 5,
+  "totalTenantsCreatedThisMonth": 12
+}
+```
+
+**Response Fields:**
+| Field | Description |
+|-------|-------------|
+| `totalTenantCount` | Total number of tenants registered in the system |
+| `totalActiveTenantCount` | Tenants with at least one active subscription (Active, Trial) |
+| `totalInactiveTenantCount` | Tenants with no active subscriptions (all expired or none) |
+| `totalTenantsCreatedThisMonth` | Number of new tenants created since the 1st of the current month |
+
+---
+
 ## 2. Subscription & Billing
 
 ### 2.1 Subscription Plans
@@ -474,6 +505,39 @@ DELETE /api/admin/tenants/1/users/4
 | Pro   | 3          | 5                  | 2               | Create/update add-on   |
 | Pro   | 3          | 4 (after delete)   | 1               | Reduce add-on quantity |
 | Pro   | 3          | 3 (after delete)   | 0               | Remove add-on          |
+
+
+### 3.4 Forgot Tenant User Password (Force Reset)
+
+**Endpoint:** `POST /api/admin/tenants/:tenantId/users/:userId/forgot-password`
+
+**Description:** Force-resets a user's password. Generates and returns a random temporary password. Used when the current password is lost.
+
+**Authentication:** Required (Admin/Owner)
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+| `userId` | number | User ID (global tenant_user ID) |
+
+**Request Body:** None (Empty JSON `{}`)
+
+**Response (Success - 200):**
+
+```json
+{
+  "success": true,
+  "message": "Password reset successfully",
+  "temporaryPassword": "a1b2c3d4e5f6g7h8"
+}
+```
+
+**Notes:**
+
+- Updates password in **both** Global and Tenant databases.
+- Returns a raw password string that must be communicated to the user.
+- No email is sent (system currently lacks email integration).
 
 ---
 

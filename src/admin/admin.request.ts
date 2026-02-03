@@ -6,3 +6,5 @@ export interface CreateTenantRequest {
         plan: string;
     };
 }
+
+

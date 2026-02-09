@@ -102,7 +102,8 @@
     "seed_settings_definitions": "npx ts-node src/script/setting_definitions_seed.ts",
     "seed_permissions": "npx ts-node src/script/permission_seed.ts",
     "seed_subscription_plans": "npx ts-node src/script/subscription_plan_seed.ts",
-    "seed_subscription_add_ons": "npx ts-node src/script/subscription_add_on_seed.ts"
+    "seed_subscription_add_ons": "npx ts-node src/script/subscription_add_on_seed.ts",
+    "upgrade_db_test": "npx ts-node src/script/db_upgrade_test.ts"
   },
   "keywords": [],
   "author": "",

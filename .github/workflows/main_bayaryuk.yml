@@ -59,13 +59,13 @@ jobs:
 
           package: './release.zip'
 
-      - name: Wait for Azure to extract files
-        run: sleep 30 
+      # - name: Wait for Azure to extract files
+      #   run: sleep 30 
 
-      - name: Upgrade all tenant databases  
-        run: |
-          az webapp ssh \
-            --name BayarYuk \
-            --resource-group bayar-yuk \
-            --command "cd /home/site/wwwroot && npm run upgrade_db"
-        timeout-minutes: 15
+      # - name: Upgrade all tenant databases  
+      #   run: |
+      #     az webapp ssh \
+      #       --name BayarYuk \
+      #       --resource-group bayar-yuk \
+      #       --command "cd /home/site/wwwroot && npm run upgrade_db"
+      #   timeout-minutes: 15

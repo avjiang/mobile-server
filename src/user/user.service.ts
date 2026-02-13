@@ -223,7 +223,7 @@ let update = async (databaseName: string, userId: number, updateData: UpdateUser
             });
 
             // Return updated user with optimized select
-            return await prisma.user.findUnique({
+            const result = await prisma.user.findUnique({
                 where: { id: userId },
                 select: {
                     id: true,
@@ -249,6 +249,11 @@ let update = async (databaseName: string, userId: number, updateData: UpdateUser
                     }
                 }
             });
+
+            return {
+                ...result,
+                roleCount: result?.roles.length ?? 0
+            }
         });
 
         return updatedUser;

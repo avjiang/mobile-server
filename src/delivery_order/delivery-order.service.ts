@@ -405,15 +405,11 @@ let getById = async (id: number, databaseName: string) => {
     }
 }
 
-let getByDateRange = async (databaseName: string, request: SyncRequest & { startDate: string, endDate: string }) => {
+let getByDateRange = async (databaseName: string, request: { outletId?: string, skip?: number, take?: number, startDate: string, endDate: string }) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    const { outletId, skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+    const { outletId, skip = 0, take = 100, startDate, endDate } = request;
 
     try {
-        // Parse last sync timestamp or use a default (e.g., epoch start)
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
-
         // Ensure outletId is a number
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
@@ -436,67 +432,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            OR: [
-                // Delivery order itself was modified
-                { createdAt: { gte: lastSync } },
-                { updatedAt: { gte: lastSync } },
-                { deletedAt: { gte: lastSync } },
-                // Delivery order has delivery order items that were modified
-                {
-                    deliveryOrderItems: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                },
-                // Delivery order has invoice or its related entities modified
-                {
-                    invoice: {
-                        OR: [
-                            // Invoice itself was modified
-                            { createdAt: { gte: lastSync } },
-                            { updatedAt: { gte: lastSync } },
-                            { deletedAt: { gte: lastSync } },
-                            // Invoice settlement was modified
-                            {
-                                invoiceSettlement: {
-                                    OR: [
-                                        { createdAt: { gte: lastSync } },
-                                        { updatedAt: { gte: lastSync } },
-                                        { deletedAt: { gte: lastSync } }
-                                    ]
-                                }
-                            },
-                            // Purchase returns were modified
-                            {
-                                purchaseReturns: {
-                                    some: {
-                                        OR: [
-                                            { createdAt: { gte: lastSync } },
-                                            { updatedAt: { gte: lastSync } },
-                                            { deletedAt: { gte: lastSync } }
-                                        ]
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                },
-                // Delivery order has purchase order that was modified
-                {
-                    purchaseOrder: {
-                        OR: [
-                            { createdAt: { gte: lastSync } },
-                            { updatedAt: { gte: lastSync } },
-                            { deletedAt: { gte: lastSync } }
-                        ]
-                    }
-                }
-            ],
         };
 
         // Count total matching records
@@ -507,6 +442,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             where,
             skip,
             take,
+            orderBy: { id: 'asc' },
             select: {
                 id: true,
                 outletId: true,

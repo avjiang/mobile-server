@@ -41,7 +41,7 @@ const getAllByDateRange = (req: AuthRequest, res: Response, next: NextFunction) 
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    const { outletId, skip, take, lastSyncTimestamp, startDate, endDate } = req.query;
+    const { outletId, skip, take, startDate, endDate } = req.query;
 
     // Validate outletId
     if (!outletId || !validator.isNumeric(outletId as string)) {
@@ -66,12 +66,14 @@ const getAllByDateRange = (req: AuthRequest, res: Response, next: NextFunction) 
         throw new RequestValidateError(`Date validation error`);
     }
     const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
-    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+    const takeNum = Math.min(
+        take && validator.isNumeric(take as string) ? parseInt(take as string) : 100,
+        500
+    );
     const dateRangeRequest = {
         outletId: outletId as string,
         skip: skipNum,
         take: takeNum,
-        lastSyncTimestamp: lastSyncTimestamp as string,
         startDate: startDate as string,
         endDate: endDate as string
     };

@@ -258,15 +258,11 @@ let getAll = async (
     }
 };
 
-let getByDateRange = async (databaseName: string, request: SyncRequest & { startDate: string, endDate: string }) => {
+let getByDateRange = async (databaseName: string, request: { outletId?: string, skip?: number, take?: number, startDate: string, endDate: string }) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    const { outletId, skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+    const { outletId, skip = 0, take = 100, startDate, endDate } = request;
 
     try {
-        // Parse last sync timestamp or use a default (e.g., epoch start)
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
-
         // Ensure outletId is a number
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
@@ -289,87 +285,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            OR: [
-                // Quotation itself was modified
-                {
-                    OR: [
-                        { createdAt: { gte: lastSync } },
-                        { updatedAt: { gte: lastSync } },
-                        { deletedAt: { gte: lastSync } }
-                    ]
-                },
-                // Quotation has quotation items that were modified
-                {
-                    quotationItems: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                },
-                // Quotation has purchase orders or their related entities modified
-                {
-                    purchaseOrders: {
-                        some: {
-                            OR: [
-                                // Purchase order itself was modified
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } },
-                                // Delivery orders were modified
-                                {
-                                    deliveryOrders: {
-                                        some: {
-                                            OR: [
-                                                { createdAt: { gte: lastSync } },
-                                                { updatedAt: { gte: lastSync } },
-                                                { deletedAt: { gte: lastSync } }
-                                            ]
-                                        }
-                                    }
-                                },
-                                // Invoices were modified
-                                {
-                                    invoices: {
-                                        some: {
-                                            OR: [
-                                                { createdAt: { gte: lastSync } },
-                                                { updatedAt: { gte: lastSync } },
-                                                { deletedAt: { gte: lastSync } },
-                                                // Invoice settlement was modified
-                                                {
-                                                    invoiceSettlement: {
-                                                        OR: [
-                                                            { createdAt: { gte: lastSync } },
-                                                            { updatedAt: { gte: lastSync } },
-                                                            { deletedAt: { gte: lastSync } }
-                                                        ]
-                                                    }
-                                                },
-                                                // Purchase returns were modified
-                                                {
-                                                    purchaseReturns: {
-                                                        some: {
-                                                            OR: [
-                                                                { createdAt: { gte: lastSync } },
-                                                                { updatedAt: { gte: lastSync } },
-                                                                { deletedAt: { gte: lastSync } }
-                                                            ]
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            ],
         };
 
         // Use Promise.all for parallel execution

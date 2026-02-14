@@ -43,15 +43,11 @@ const getValidSettlementFields = (data: any) => {
     return filteredData;
 };
 
-let getByDateRange = async (databaseName: string, request: SyncRequest & { startDate: string, endDate: string }) => {
+let getByDateRange = async (databaseName: string, request: { skip?: number, take?: number, startDate: string, endDate: string }) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    const { skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+    const { skip = 0, take = 100, startDate, endDate } = request;
 
     try {
-        // Parse last sync timestamp or use a default (e.g., epoch start)
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
-
         // Parse and validate date range
         const parsedStartDate = new Date(startDate);
         parsedStartDate.setHours(0, 0, 0, 0); // Start of day
@@ -70,39 +66,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            OR: [
-                { createdAt: { gte: lastSync } },
-                { updatedAt: { gte: lastSync } },
-                { deletedAt: { gte: lastSync } },
-                // Purchase returns were modified (direct relation)
-                {
-                    purchaseReturns: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                },
-                // Invoices' purchase returns were modified
-                {
-                    invoices: {
-                        some: {
-                            purchaseReturns: {
-                                some: {
-                                    OR: [
-                                        { createdAt: { gte: lastSync } },
-                                        { updatedAt: { gte: lastSync } },
-                                        { deletedAt: { gte: lastSync } }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
-            ],
         };
 
         // Count total matching records
@@ -122,7 +85,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                     }
                 }
             },
-            orderBy: { settlementDate: 'desc' }
+            orderBy: [{ settlementDate: 'desc' }, { id: 'desc' }]
         });
 
         // Batch fetch invoices with purchase orders for all settlements

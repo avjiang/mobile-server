@@ -567,6 +567,7 @@ model Invoice {
   @@index([outletId])
   @@index([invoiceSettlementId])
   @@index([createdAt, updatedAt, deletedAt])
+  @@index([outletId, invoiceDate])
   @@map("invoice")
 }
 
@@ -665,6 +666,7 @@ model DeliveryOrder {
   @@index([purchaseOrderId])
   @@index([invoiceId, supplierId])
   @@index([createdAt, updatedAt, deletedAt])
+  @@index([outletId, deliveryDate])
   @@map("delivery_order")
 }
 
@@ -732,6 +734,7 @@ model Quotation {
   @@index([status])
   @@index([quotationDate])
   @@index([createdAt, updatedAt, deletedAt])
+  @@index([outletId, quotationDate])
   @@map("quotation")
 }
 
@@ -801,6 +804,7 @@ model PurchaseOrder {
   @@index([supplierId])
   @@index([outletId])
   @@index([createdAt, updatedAt, deletedAt])
+  @@index([outletId, purchaseOrderDate])
   @@map("purchase_order")
 }
 
@@ -1717,6 +1721,7 @@ model PurchaseReturn {
   @@index([returnDate])
   @@index([status])
   @@index([createdAt, updatedAt, deletedAt])
+  @@index([outletId, returnDate])
   @@map("purchase_return")
 }
 

@@ -213,14 +213,11 @@ let getById = async (id: number, databaseName: string) => {
     }
 }
 
-let getByDateRange = async (databaseName: string, request: PurchaseReturnSyncRequest & { startDate: string, endDate: string }) => {
+let getByDateRange = async (databaseName: string, request: { outletId?: string, skip?: number, take?: number, startDate: string, endDate: string }) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    const { outletId, skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+    const { outletId, skip = 0, take = 100, startDate, endDate } = request;
 
     try {
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
-
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
         const parsedStartDate = new Date(startDate);
@@ -238,22 +235,6 @@ let getByDateRange = async (databaseName: string, request: PurchaseReturnSyncReq
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            OR: [
-                { createdAt: { gte: lastSync } },
-                { updatedAt: { gte: lastSync } },
-                { deletedAt: { gte: lastSync } },
-                {
-                    purchaseReturnItems: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                }
-            ],
         };
 
         if (parsedOutletId) {
@@ -266,6 +247,7 @@ let getByDateRange = async (databaseName: string, request: PurchaseReturnSyncReq
                 where,
                 skip,
                 take,
+                orderBy: { id: 'asc' },
                 select: {
                     id: true,
                     returnNumber: true,

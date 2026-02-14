@@ -248,15 +248,11 @@ let getAll = async (
     }
 };
 
-let getByDateRange = async (databaseName: string, request: SyncRequest & { startDate: string, endDate: string }) => {
+let getByDateRange = async (databaseName: string, request: { outletId?: string, skip?: number, take?: number, startDate: string, endDate: string }) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    const { outletId, skip = 0, take = 100, lastSyncTimestamp, startDate, endDate } = request;
+    const { outletId, skip = 0, take = 100, startDate, endDate } = request;
 
     try {
-        // Parse last sync timestamp or use a default (e.g., epoch start)
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
-
         // Ensure outletId is a number
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
@@ -279,70 +275,6 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 gte: parsedStartDate,
                 lte: parsedEndDate
             },
-            OR: [
-                // Purchase order itself was modified
-                { createdAt: { gte: lastSync } },
-                { updatedAt: { gte: lastSync } },
-                { deletedAt: { gte: lastSync } },
-                // Purchase order has delivery orders that were modified
-                {
-                    deliveryOrders: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                },
-                // Purchase order has invoices that were modified
-                {
-                    invoices: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } },
-                                // Include invoices with modified settlements
-                                {
-                                    invoiceSettlement: {
-                                        OR: [
-                                            { createdAt: { gte: lastSync } },
-                                            { updatedAt: { gte: lastSync } },
-                                            { deletedAt: { gte: lastSync } }
-                                        ]
-                                    }
-                                },
-                                // Include invoices with modified purchase returns
-                                {
-                                    purchaseReturns: {
-                                        some: {
-                                            OR: [
-                                                { createdAt: { gte: lastSync } },
-                                                { updatedAt: { gte: lastSync } },
-                                                { deletedAt: { gte: lastSync } }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                },
-                // Purchase order has purchase order items that were modified
-                {
-                    purchaseOrderItems: {
-                        some: {
-                            OR: [
-                                { createdAt: { gte: lastSync } },
-                                { updatedAt: { gte: lastSync } },
-                                { deletedAt: { gte: lastSync } }
-                            ]
-                        }
-                    }
-                }
-            ],
         };
 
         // Count total matching records
@@ -353,6 +285,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             where,
             skip,
             take,
+            orderBy: { id: 'asc' },
             include: {
                 _count: {
                     select: {

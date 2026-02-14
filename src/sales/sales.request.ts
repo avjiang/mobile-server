@@ -43,6 +43,7 @@ export class CreateSalesRequest {
     @Expose() profitAmount: PrismaDecimal = new PrismaDecimal(0);
     @Expose() serviceChargeAmount: PrismaDecimal | undefined;
     @Expose() taxAmount: PrismaDecimal | undefined;
+    @Expose() isTaxInclusive: boolean | undefined;
     @Expose() roundingAmount: PrismaDecimal | undefined;
     @Expose() subtotalAmount: PrismaDecimal = new PrismaDecimal(0);
     @Expose() totalAmount: PrismaDecimal = new PrismaDecimal(0);

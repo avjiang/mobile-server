@@ -287,21 +287,44 @@ let batchUpdateSettings = async (
                 updated.push(updatedSetting);
             }
 
-            // Create new settings
+            // Upsert settings without an ID — match by unique scope
+            // Scope: [settingDefinitionId, tenantId, userId, outletId] per @@unique constraint
             for (const update of newUpdates) {
-                const newSetting = await tx.setting.create({
-                    data: {
+                const existingSetting = await tx.setting.findFirst({
+                    where: {
                         settingDefinitionId: update.settingDefinitionId!,
-                        tenantId: update.tenantId,
-                        userId: update.userId,
-                        outletId: update.outletId,
-                        value: update.value,
-                        createdAt: now,
-                        updatedAt: now,
-                        version: 1
+                        tenantId: update.tenantId ?? null,
+                        userId: update.userId ?? null,
+                        outletId: update.outletId ?? null,
+                        deleted: false
                     }
                 });
-                updated.push(newSetting);
+
+                if (existingSetting) {
+                    const updatedSetting = await tx.setting.update({
+                        where: { id: existingSetting.id },
+                        data: {
+                            value: update.value,
+                            updatedAt: now,
+                            version: { increment: 1 }
+                        }
+                    });
+                    updated.push(updatedSetting);
+                } else {
+                    const newSetting = await tx.setting.create({
+                        data: {
+                            settingDefinitionId: update.settingDefinitionId!,
+                            tenantId: update.tenantId,
+                            userId: update.userId,
+                            outletId: update.outletId,
+                            value: update.value,
+                            createdAt: now,
+                            updatedAt: now,
+                            version: 1
+                        }
+                    });
+                    updated.push(newSetting);
+                }
             }
 
             return updated;

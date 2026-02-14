@@ -1,8 +1,8 @@
 # Product Variant Feature - Complete Implementation Guide
 
-**Version:** 5.0
-**Last Updated:** 2025-12-19
-**Status:** ✅ **COMPLETE** - Sales + PO/DO/Invoice/Quotation
+**Version:** 6.0
+**Last Updated:** 2026-02-10
+**Status:** ✅ **COMPLETE** - Sales + PO/DO/Invoice/Quotation + Idempotent Updates + Variant Restore
 
 ---
 
@@ -41,8 +41,11 @@ Product variants allow a single item (e.g., "Samsung Galaxy S24") to have multip
 ✅ **Performance Optimized** - Gzip compression + in-memory caching
 ✅ **Variant Deletion** - Soft-delete variants with automatic stock cleanup
 ✅ **Attribute Updates** - Add/remove attributes on existing variants
-✅ **Attribute Values API** - Fetch all previously used attribute values (paginated) ⭐ NEW!
-✅ **User-Friendly Errors** - Clear error messages for attribute operations ⭐ NEW!
+✅ **Attribute Values API** - Fetch all previously used attribute values (paginated)
+✅ **User-Friendly Errors** - Clear error messages for attribute operations
+✅ **Idempotent Attribute Updates** - Re-sending existing attributes no longer throws errors ⭐ NEW!
+✅ **Variant Restore on Recreate** - Deleted variants are restored when recreated with same SKU ⭐ NEW!
+✅ **SKU Reuse Across Items** - Deleted variant SKUs can be reused on new items ⭐ NEW!
 
 ---
 
@@ -272,6 +275,37 @@ curl -X GET "http://localhost:8080/item/variant/attributes/values?skip=0&take=10
 ### ✅ Phase 8: PO/DO/Invoice/Quotation Integration (COMPLETE)
 
 **Objective:** Extend variant support to Purchase Orders, Delivery Orders, Invoices, and Quotations.
+
+*(See Phase 8 details in [Implementation Changelog](#implementation-changelog))*
+
+### ✅ Phase 9: Idempotent Updates & Variant Restore (COMPLETE) ⭐ NEW!
+
+**Objective:** Fix item update errors and handle variant delete/recreate lifecycle.
+
+**Bug Fixed:**
+- [x] `processVariantAttribute()` no longer throws error when re-sending existing attributes
+  - Before: Updating item name/price with variant data included would throw `"This variant already has the attribute..."`
+  - After: Silently skips existing attributes (idempotent)
+  - See [ITEM_UPDATE_GUIDE.md](ITEM_UPDATE_GUIDE.md) for frontend request patterns
+
+**Variant Restore Logic:**
+- [x] `update()` - Restores soft-deleted variants when recreated with same SKU on the same item
+  - Checks for soft-deleted variant with matching SKU on the same item
+  - If found: restores it (`deleted: false`), updates all fields, creates fresh StockBalance (qty=0)
+  - If not found: creates new variant as before
+
+- [x] `createMany()` - Frees up SKUs held by soft-deleted variants on other items
+  - Checks for soft-deleted variant with matching SKU globally
+  - If found: renames deleted variant's SKU to `_deleted_{id}_{originalSku}`
+  - Then creates the new variant normally
+
+**What This Means:**
+- ✅ Frontend can safely re-send variant data during item updates without errors
+- ✅ Users can delete a variant and recreate it with the same SKU
+- ✅ SKUs from deleted variants can be reused on new items
+- ✅ Restored variants get fresh stock (qty=0) while preserving historical audit trail
+
+---
 
 **Schema Changes (APPLIED):**
 All models now have full variant support:
@@ -1301,6 +1335,10 @@ if (removeAttributes && Array.isArray(removeAttributes)) {
 | **DO Variant Support** | ✅ Complete | Delivery Order items with variant tracking |
 | **Invoice Variant Support** | ✅ Complete | Invoice items with variant tracking |
 | **Quotation Variant Support** | ✅ Complete | Quotation items with variant tracking |
+| **Idempotent Attribute Updates** | ✅ Complete | Re-sending existing attributes skips silently |
+| **Variant Restore** | ✅ Complete | Deleted variants restored on same-SKU recreate |
+| **SKU Reuse** | ✅ Complete | Deleted variant SKUs freed for new items |
+| **Frontend Update Guide** | ✅ Complete | [ITEM_UPDATE_GUIDE.md](ITEM_UPDATE_GUIDE.md) |
 
 ---
 
@@ -1462,5 +1500,116 @@ POST /quotation/create
 **Queries Optimized:** 99.8% reduction
 **TypeScript Errors Fixed:** 8 errors
 **Breaking Changes:** None
+
+---
+
+### Phase 6: Idempotent Updates & Variant Restore (2026-02-10) ✅ COMPLETE
+
+**Objective:** Fix item update errors when frontend re-sends variant data, and handle variant delete/recreate lifecycle.
+
+#### Problem
+
+When frontend updated item-level fields (price, name, category) on an item with variants, the request included existing variant attribute data. `processVariantAttribute()` threw an error:
+
+```
+"This variant already has the attribute "Color: Hitam""
+```
+
+**Root Cause:** `processVariantAttribute()` treated all attributes as new additions and rejected duplicates, even during a simple item update.
+
+#### Changes Made
+
+**1. Idempotent Attribute Processing**
+
+File: [src/item/item.service.ts](src/item/item.service.ts) (Line 74)
+
+```typescript
+// BEFORE: Threw error on existing attribute
+if (existingJunction && !existingJunction.deleted) {
+    throw new BusinessLogicError(
+        `This variant already has the attribute "${attr.definitionKey}: ${normalizedValue}"`
+    );
+}
+
+// AFTER: Silently skip (idempotent)
+if (existingJunction && !existingJunction.deleted) {
+    return attrValue;  // Already exists, skip silently
+}
+```
+
+**2. Variant Restore in `update()`**
+
+File: [src/item/item.service.ts](src/item/item.service.ts) (Line 831)
+
+When creating a new variant via the update endpoint, the code now checks for a soft-deleted variant with the same SKU on the same item:
+
+```typescript
+// Check for soft-deleted variant with same SKU on this item
+const existingSoftDeleted = variantFields.variantSku
+    ? await tx.itemVariant.findFirst({
+        where: {
+            itemId: id,
+            variantSku: variantFields.variantSku,
+            deleted: true,
+        },
+    })
+    : null;
+
+if (existingSoftDeleted) {
+    // Restore: set deleted=false, update all fields
+    await tx.itemVariant.update({
+        where: { id: existingSoftDeleted.id },
+        data: { deleted: false, deletedAt: null, ...variantFields },
+    });
+    newVariantIds.push(existingSoftDeleted.id);
+} else {
+    // Create new variant (existing behavior)
+}
+```
+
+**What happens on restore:**
+| Record | Action |
+|--------|--------|
+| ItemVariant | Restored (`deleted: false`), fields updated |
+| Old StockBalance | Stays soft-deleted (old quantities preserved as history) |
+| New StockBalance | Created with qty=0 via `createVariantStockRecords` |
+| StockMovement | New "Create Variant" movement added |
+| Old StockReceipt | Stays soft-deleted (FIFO starts fresh) |
+| Attributes | Processed normally (restored or created) |
+
+**3. SKU Reuse in `createMany()`**
+
+File: [src/item/item.service.ts](src/item/item.service.ts) (Line 530)
+
+When creating a new item with a variant whose SKU is held by a soft-deleted variant on another item:
+
+```typescript
+// Free up SKU if held by a soft-deleted variant on another item
+if (variantFields.variantSku) {
+    const deletedWithSameSku = await tx.itemVariant.findFirst({
+        where: { variantSku: variantFields.variantSku, deleted: true },
+    });
+    if (deletedWithSameSku) {
+        await tx.itemVariant.update({
+            where: { id: deletedWithSameSku.id },
+            data: { variantSku: `_deleted_${deletedWithSameSku.id}_${deletedWithSameSku.variantSku}` },
+        });
+    }
+}
+```
+
+**4. Frontend Update Guide**
+
+Created [ITEM_UPDATE_GUIDE.md](ITEM_UPDATE_GUIDE.md) documenting correct request patterns for all item update scenarios (simple items, variant items, item-level vs variant-level updates).
+
+#### Impact
+
+- ✅ No more errors when frontend re-sends existing variant attributes
+- ✅ Deleted variants can be recreated with the same SKU
+- ✅ Variant SKUs can be reused across different items
+- ✅ TypeScript compilation: clean (no new errors)
+- ✅ No breaking changes
+
+---
 
 For questions or issues, create a GitHub issue or contact the backend team.

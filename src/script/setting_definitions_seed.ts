@@ -29,15 +29,48 @@ const settingDefinitions = [
             max: 100
         })
     },
-    // {
-    //     key: 'tax_inclusive',
-    //     category: 'Financial',
-    //     type: 'BOOLEAN',
-    //     defaultValue: 'true',
-    //     description: 'Whether prices include tax by default',
-    //     scope: 'OUTLET',
-    //     isRequired: false
-    // },
+    {
+        key: 'tax_inclusive',
+        category: 'Financial',
+        type: 'BOOLEAN',
+        defaultValue: 'true',
+        description: 'Whether prices include tax by default',
+        scope: 'OUTLET',
+        isRequired: false
+    },
+    {
+        key: 'service_charge_rate',
+        category: 'Financial',
+        type: 'DOUBLE',
+        defaultValue: '0',
+        description: 'Service charge rate percentage',
+        scope: 'OUTLET',
+        isRequired: false,
+        isReadOnly: false,
+        validationRules: '{"min": 0, "max": 100}',
+    },
+    {
+        key: 'service_charge_enabled',
+        category: 'Financial',
+        type: 'BOOLEAN',
+        defaultValue: 'false',
+        description: 'Enable service charge on transactions',
+        scope: 'OUTLET',
+        isRequired: false,
+        isReadOnly: false,
+        validationRules: null,
+    },
+    {
+        key: 'service_charge_applies_to',
+        category: 'Financial',
+        type: 'STRING',
+        defaultValue: 'all',
+        description: 'Sales types for service charge (all, walk_in, delivery)',
+        scope: 'OUTLET',
+        isRequired: false,
+        isReadOnly: false,
+        validationRules: '{"options": ["all", "walk_in", "delivery"]}',
+    },
     // {
     //     key: 'enable_discount',
     //     category: 'Financial',

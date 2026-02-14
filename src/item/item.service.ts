@@ -72,9 +72,7 @@ async function processVariantAttribute(
         });
 
         if (existingJunction && !existingJunction.deleted) {
-            throw new BusinessLogicError(
-                `This variant already has the attribute "${attr.definitionKey}: ${normalizedValue}"`
-            );
+            return attrValue;  // Already exists, skip silently (idempotent)
         }
 
         if (existingJunction?.deleted) {
@@ -529,6 +527,22 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         for (const variantData of variants) {
                             const { attributes, ...variantFields } = variantData;
 
+                            // Free up SKU if held by a soft-deleted variant on another item
+                            if (variantFields.variantSku) {
+                                const deletedWithSameSku = await tx.itemVariant.findFirst({
+                                    where: {
+                                        variantSku: variantFields.variantSku,
+                                        deleted: true,
+                                    },
+                                });
+                                if (deletedWithSameSku) {
+                                    await tx.itemVariant.update({
+                                        where: { id: deletedWithSameSku.id },
+                                        data: { variantSku: `_deleted_${deletedWithSameSku.id}_${deletedWithSameSku.variantSku}` },
+                                    });
+                                }
+                            }
+
                             // Create ItemVariant
                             const variant = await tx.itemVariant.create({
                                 data: {
@@ -831,29 +845,71 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                             }
                         }
                     } else {
-                        // Create new variant
-                        const variant = await tx.itemVariant.create({
-                            data: {
-                                itemId: id,
-                                variantSku: variantFields.variantSku,
-                                variantName: variantFields.variantName,
-                                cost: variantFields.cost,
-                                price: variantFields.price,
-                                image: variantFields.image,
-                                barcode: variantFields.barcode,
-                                weight: variantFields.weight,
-                                length: variantFields.length,
-                                width: variantFields.width,
-                                height: variantFields.height,
-                            },
-                        });
+                        // Check if a soft-deleted variant with the same SKU exists on this item
+                        const existingSoftDeleted = variantFields.variantSku
+                            ? await tx.itemVariant.findFirst({
+                                where: {
+                                    itemId: id,
+                                    variantSku: variantFields.variantSku,
+                                    deleted: true,
+                                },
+                            })
+                            : null;
 
-                        newVariantIds.push(variant.id);
+                        if (existingSoftDeleted) {
+                            // Restore the soft-deleted variant with updated fields
+                            // Use ?? null to reset optional fields not provided by frontend,
+                            // preventing old deleted values from carrying over
+                            await tx.itemVariant.update({
+                                where: { id: existingSoftDeleted.id },
+                                data: {
+                                    deleted: false,
+                                    deletedAt: null,
+                                    variantName: variantFields.variantName,
+                                    cost: variantFields.cost ?? null,
+                                    price: variantFields.price ?? null,
+                                    image: variantFields.image ?? null,
+                                    barcode: variantFields.barcode ?? null,
+                                    weight: variantFields.weight ?? null,
+                                    length: variantFields.length ?? null,
+                                    width: variantFields.width ?? null,
+                                    height: variantFields.height ?? null,
+                                },
+                            });
 
-                        // Create variant attributes using helper function
-                        if (attributes && Array.isArray(attributes)) {
-                            for (const attr of attributes) {
-                                await processVariantAttribute(tx, variant.id, attr);
+                            newVariantIds.push(existingSoftDeleted.id);
+
+                            // Process attributes (processVariantAttribute handles restoring soft-deleted junctions)
+                            if (attributes && Array.isArray(attributes)) {
+                                for (const attr of attributes) {
+                                    await processVariantAttribute(tx, existingSoftDeleted.id, attr);
+                                }
+                            }
+                        } else {
+                            // Create new variant
+                            const variant = await tx.itemVariant.create({
+                                data: {
+                                    itemId: id,
+                                    variantSku: variantFields.variantSku,
+                                    variantName: variantFields.variantName,
+                                    cost: variantFields.cost,
+                                    price: variantFields.price,
+                                    image: variantFields.image,
+                                    barcode: variantFields.barcode,
+                                    weight: variantFields.weight,
+                                    length: variantFields.length,
+                                    width: variantFields.width,
+                                    height: variantFields.height,
+                                },
+                            });
+
+                            newVariantIds.push(variant.id);
+
+                            // Create variant attributes using helper function
+                            if (attributes && Array.isArray(attributes)) {
+                                for (const attr of attributes) {
+                                    await processVariantAttribute(tx, variant.id, attr);
+                                }
                             }
                         }
                     }

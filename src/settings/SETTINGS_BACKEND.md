@@ -246,6 +246,63 @@ The `isReadOnly` field allows you to mark certain settings as **read-only**, pre
 
 ---
 
+## Predefined Setting Definitions
+
+These settings are seeded via [setting_definitions_seed.ts](../script/setting_definitions_seed.ts). Settings marked as **commented** are defined in the seed file but not currently active.
+
+### Financial Settings
+
+| Key | Type | Default | Scope | Required | Validation Rules | Status |
+|-----|------|---------|-------|----------|-----------------|--------|
+| `default_currency` | STRING | `IDR` | OUTLET | Yes | Options: `IDR`, `USD`, `SGD`, `MYR`, `THB`, `EUR`, `AUD` | Commented |
+| `tax_rate` | DOUBLE | `11` | OUTLET | Yes | Min: 0, Max: 100 | **Active** |
+| `tax_inclusive` | BOOLEAN | `true` | OUTLET | No | - | Commented |
+| `enable_discount` | BOOLEAN | `true` | OUTLET | No | - | Commented |
+| `payment_terms` | INT | `30` | TENANT | No | Min: 0, Max: 365 | Commented |
+
+### POS Settings
+
+| Key | Type | Default | Scope | Required | Validation Rules | Status |
+|-----|------|---------|-------|----------|-----------------|--------|
+| `auto_print_receipt` | BOOLEAN | `true` | OUTLET | No | - | **Active** |
+| `receipt_copies` | INT | `1` | OUTLET | No | Min: 1, Max: 5 | **Active** |
+| `enable_barcode_scanner` | BOOLEAN | `true` | OUTLET | No | - | Commented |
+| `pos_layout` | STRING | `grid` | USER | No | Options: `grid`, `list`, `compact` | Commented |
+
+### Inventory Settings
+
+| Key | Type | Default | Scope | Required | Validation Rules | Status |
+|-----|------|---------|-------|----------|-----------------|--------|
+| `low_stock_threshold` | INT | `10` | OUTLET | No | Min: 0, Max: 1000 | **Active** |
+| `enable_stock_alert` | BOOLEAN | `true` | OUTLET | No | - | Commented |
+| `auto_reorder` | BOOLEAN | `false` | OUTLET | No | - | Commented |
+
+### User Preference Settings
+
+| Key | Type | Default | Scope | Required | Validation Rules | Status |
+|-----|------|---------|-------|----------|-----------------|--------|
+| `language` | STRING | `en` | USER | No | Options: `en`, `id` | **Active** |
+| `theme` | STRING | `light` | USER | No | Options: `light`, `dark`, `auto` | Commented |
+| `notifications_enabled` | BOOLEAN | `true` | USER | No | - | Commented |
+| `date_format` | STRING | `DD/MM/YYYY` | USER | No | Options: `DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD` | **Active** |
+
+### System Settings
+
+| Key | Type | Default | Scope | Required | Validation Rules | Status |
+|-----|------|---------|-------|----------|-----------------|--------|
+| `company_name` | STRING | `My Company` | TENANT | Yes | - | **Active** |
+| `receipt_footer` | STRING | `Thank you for your business!` | TENANT | No | - | **Active** |
+| `invoice_prefix` | STRING | `INV` | TENANT | No | Pattern: `^[A-Z]{2,5}$` | Commented |
+
+### Summary
+
+- **Active settings:** 8 (seeded into the global database)
+- **Commented settings:** 11 (defined but not currently seeded)
+- **By scope:** TENANT (3), OUTLET (9), USER (7)
+- **By category:** Financial (5), POS (4), Inventory (3), User Preference (4), System (3)
+
+---
+
 ## API Endpoints
 
 ### 1. GET `/settings/sync` - Sync All Settings

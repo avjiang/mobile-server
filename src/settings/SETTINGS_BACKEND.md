@@ -432,12 +432,14 @@ Update or create multiple settings in a single request.
 
 **Request Schema:**
 - `settings` (array, required): Array of setting updates
-  - `id` (number, optional): Setting ID for updates. If provided, updates existing setting
-  - `settingDefinitionId` (number, required for new): Definition ID when creating new setting
+  - `id` (number, optional): Setting ID for updates. If provided, updates existing setting. If null/omitted, the backend will **upsert by scope** — matching on `[settingDefinitionId, tenantId, userId, outletId]` to find an existing record before creating a new one.
+  - `settingDefinitionId` (number, required when `id` is null): Definition ID when creating/upserting a setting
   - `value` (string, required): The new value
   - `outletId` (number, optional): Required if setting scope is OUTLET and creating new
   - `userId` (number, optional): Required if setting scope is USER and creating new
   - `tenantId` (number, optional): Tenant ID (usually auto-filled from auth)
+
+> **Note:** Clients should persist and send back the `id` returned from previous responses for optimal performance. The upsert-by-scope is a defensive fallback to prevent duplicate records when `id` is not available.
 
 **Response:**
 ```json
@@ -598,8 +600,10 @@ Promise<{
    - Throw error if validation fails
 
 6. **Execute in transaction:**
-   - Update existing settings (increment version)
-   - Create new settings (version = 1)
+   - Update existing settings by ID (increment version)
+   - For settings without ID: **upsert by scope** — check if a setting with the same `[settingDefinitionId, tenantId, userId, outletId]` already exists (and is not deleted):
+     - If found → update the existing record (increment version)
+     - If not found → create a new record (version = 1)
    - Return all updated/created settings
 
 7. **Return results with serverTimestamp**

@@ -2,7 +2,7 @@ import { Prisma, PrismaClient, PurchaseReturn } from "../../prisma/client/genera
 import { Decimal } from 'decimal.js';
 import { NotFoundError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
-import { CreatePurchaseReturnRequestBody, PurchaseReturnInput, PurchaseReturnSyncRequest } from "./purchase-return.request";
+import { CancelPurchaseReturnInput, CreatePurchaseReturnRequestBody, PurchaseReturnInput, PurchaseReturnSyncRequest } from "./purchase-return.request";
 
 class RequestValidateError extends Error {
     constructor(message: string) {
@@ -72,6 +72,9 @@ let getAll = async (
                     totalReturnAmount: true,
                     remark: true,
                     performedBy: true,
+                    cancelReason: true,
+                    cancelledBy: true,
+                    cancelledAt: true,
                     deleted: true,
                     deletedAt: true,
                     createdAt: true,
@@ -259,6 +262,9 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                     totalReturnAmount: true,
                     remark: true,
                     performedBy: true,
+                    cancelReason: true,
+                    cancelledBy: true,
+                    cancelledAt: true,
                     deleted: true,
                     deletedAt: true,
                     createdAt: true,
@@ -1001,6 +1007,10 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
             throw new RequestValidateError('Purchase return ID is required');
         }
 
+        if (updateData.status === 'CANCELLED') {
+            throw new RequestValidateError('Use the cancel endpoint to cancel a purchase return');
+        }
+
         const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
             where: { id: id, deleted: false },
             select: {
@@ -1103,7 +1113,7 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
     }
 }
 
-let deletePurchaseReturn = async (id: number, databaseName: string): Promise<string> => {
+let deletePurchaseReturn = async (id: number, databaseName: string, performedBy?: string): Promise<string> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
@@ -1131,7 +1141,7 @@ let deletePurchaseReturn = async (id: number, databaseName: string): Promise<str
                     tx,
                     existingPurchaseReturn.purchaseReturnItems,
                     existingPurchaseReturn,
-                    "SYSTEM"
+                    performedBy || "SYSTEM"
                 );
             }
 
@@ -1154,6 +1164,9 @@ let deletePurchaseReturn = async (id: number, databaseName: string): Promise<str
                     deleted: true,
                     deletedAt: new Date(),
                     status: 'CANCELLED',
+                    cancelledBy: performedBy || "SYSTEM",
+                    cancelledAt: new Date(),
+                    cancelReason: 'Deleted',
                     version: { increment: 1 }
                 }
             });
@@ -1166,4 +1179,102 @@ let deletePurchaseReturn = async (id: number, databaseName: string): Promise<str
     }
 }
 
-export = { getAll, getById, getByDateRange, getByInvoiceId, createMany, update, deletePurchaseReturn };
+let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
+            where: { id: id, deleted: false },
+            select: {
+                id: true,
+                returnNumber: true,
+                outletId: true,
+                status: true,
+                version: true,
+                purchaseReturnItems: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        itemId: true,
+                        itemVariantId: true,
+                        stockReceiptId: true,
+                        quantity: true,
+                        unitPrice: true,
+                        returnReason: true,
+                        remark: true
+                    }
+                }
+            }
+        });
+
+        if (!existingPurchaseReturn) {
+            throw new NotFoundError("Purchase Return");
+        }
+
+        if (existingPurchaseReturn.status === 'CANCELLED') {
+            throw new RequestValidateError('Purchase return is already cancelled');
+        }
+
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Update status to CANCELLED with audit fields
+            const updatedPurchaseReturn = await tx.purchaseReturn.update({
+                where: { id: id },
+                data: {
+                    status: 'CANCELLED',
+                    cancelledBy: cancelData.performedBy || "SYSTEM",
+                    cancelledAt: new Date(),
+                    cancelReason: cancelData.cancelReason || null,
+                    version: { increment: 1 }
+                }
+            });
+
+            // Reverse stock operations
+            if (existingPurchaseReturn.purchaseReturnItems.length > 0) {
+                await reverseStockOperationsForCancellation(
+                    tx,
+                    existingPurchaseReturn.purchaseReturnItems,
+                    { ...updatedPurchaseReturn, outletId: existingPurchaseReturn.outletId },
+                    cancelData.performedBy || "SYSTEM"
+                );
+            }
+
+            // Return updated record with full details
+            return await tx.purchaseReturn.findUnique({
+                where: { id: id },
+                include: {
+                    purchaseReturnItems: {
+                        where: { deleted: false },
+                        include: {
+                            item: {
+                                select: {
+                                    id: true,
+                                    itemName: true,
+                                    itemCode: true,
+                                    unitOfMeasure: true
+                                }
+                            }
+                        }
+                    },
+                    invoice: {
+                        select: {
+                            id: true,
+                            invoiceNumber: true
+                        }
+                    },
+                    supplier: {
+                        select: {
+                            id: true,
+                            companyName: true
+                        }
+                    }
+                }
+            });
+        });
+
+        return result;
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+export = { getAll, getById, getByDateRange, getByInvoiceId, createMany, update, cancel, deletePurchaseReturn };

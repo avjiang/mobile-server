@@ -112,8 +112,8 @@ let getAllStock = async (
             }
         }
 
-        // Count total matching records (by unique itemId-outletId pairs)
-        const total = stockMap.size;
+        // Count total matching records from DB (not just current page)
+        const total = await tenantPrisma.stockBalance.count({ where });
 
         return {
             stockBalances: Array.from(stockMap.values()),

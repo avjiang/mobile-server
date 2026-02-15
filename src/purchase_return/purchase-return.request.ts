@@ -30,6 +30,11 @@ export interface CreatePurchaseReturnRequestBody {
     purchaseReturns: PurchaseReturnInput[];
 }
 
+export interface CancelPurchaseReturnInput {
+    cancelReason?: string;
+    performedBy?: string;
+}
+
 export interface PurchaseReturnSyncRequest {
     outletId?: string;
     skip?: number;

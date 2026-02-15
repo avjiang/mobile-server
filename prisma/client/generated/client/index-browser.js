@@ -1264,6 +1264,9 @@ exports.Prisma.PurchaseReturnScalarFieldEnum = {
   totalReturnAmount: 'totalReturnAmount',
   remark: 'remark',
   performedBy: 'performedBy',
+  cancelReason: 'cancelReason',
+  cancelledBy: 'cancelledBy',
+  cancelledAt: 'cancelledAt',
   deleted: 'deleted',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
@@ -1702,7 +1705,9 @@ exports.Prisma.PurchaseReturnOrderByRelevanceFieldEnum = {
   returnNumber: 'returnNumber',
   status: 'status',
   remark: 'remark',
-  performedBy: 'performedBy'
+  performedBy: 'performedBy',
+  cancelReason: 'cancelReason',
+  cancelledBy: 'cancelledBy'
 };
 
 exports.Prisma.PurchaseReturnItemOrderByRelevanceFieldEnum = {

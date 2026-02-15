@@ -6,7 +6,7 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
-import { CreatePurchaseReturnRequestBody, PurchaseReturnInput } from "./purchase-return.request"
+import { CancelPurchaseReturnInput, CreatePurchaseReturnRequestBody, PurchaseReturnInput } from "./purchase-return.request"
 
 const router = express.Router()
 
@@ -143,6 +143,23 @@ let update = (req: NetworkRequest<PurchaseReturnInput>, res: Response, next: Nex
         .catch(next)
 }
 
+let cancelPurchaseReturn = (req: NetworkRequest<CancelPurchaseReturnInput>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    const purchaseReturnId: number = parseInt(req.params.id)
+    const cancelData: CancelPurchaseReturnInput = {
+        cancelReason: req.body?.cancelReason,
+        performedBy: req.body?.performedBy
+    }
+    service.cancel(purchaseReturnId, cancelData, req.user.databaseName)
+        .then((updatedPurchaseReturn: any) => sendResponse(res, updatedPurchaseReturn))
+        .catch(next)
+}
+
 let deletePurchaseReturn = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -151,7 +168,8 @@ let deletePurchaseReturn = (req: AuthRequest, res: Response, next: NextFunction)
         throw new RequestValidateError('ID format incorrect')
     }
     const purchaseReturnId: number = parseInt(req.params.id)
-    service.deletePurchaseReturn(purchaseReturnId, req.user.databaseName)
+    const performedBy = req.body?.performedBy || req.user.username || undefined
+    service.deletePurchaseReturn(purchaseReturnId, req.user.databaseName, performedBy)
         .then((message: string) => sendResponse(res, { message }))
         .catch(next)
 }
@@ -163,6 +181,7 @@ router.get('/byInvoice/:invoiceId', getByInvoiceId)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)
+router.put('/cancel/:id', cancelPurchaseReturn)
 router.delete('/:id', deletePurchaseReturn)
 
 export = router

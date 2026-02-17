@@ -324,3 +324,19 @@ model TenantPayment {
   @@index([periodFrom, periodTo])
   @@map("tenant_payment")
 }
+
+// App Version Control
+model AppVersion {
+  id            Int      @id @default(autoincrement()) @map("ID")
+  platform      String   @map("PLATFORM") // android, ios
+  minVersion    String   @map("MIN_VERSION")
+  latestVersion String   @map("LATEST_VERSION")
+  title         String?  @map("TITLE")
+  message       String?  @map("MESSAGE")
+  storeUrl      String?  @map("STORE_URL")
+  createdAt     DateTime @default(now()) @map("CREATED_AT")
+  updatedAt     DateTime @updatedAt @map("UPDATED_AT")
+
+  @@unique([platform])
+  @@map("app_version")
+}

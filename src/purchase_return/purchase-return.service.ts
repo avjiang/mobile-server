@@ -493,7 +493,7 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                         invoiceSettlementId: settlementId,
                         outletId: purchaseReturnData.outletId,
                         supplierId: purchaseReturnData.supplierId,
-                        returnDate: purchaseReturnData.returnDate ? new Date(purchaseReturnData.returnDate) : new Date(),
+                        returnDate: purchaseReturnData.returnDate,
                         status: 'COMPLETED', // Always start as COMPLETED
                         totalReturnAmount: totalReturnAmount,
                         remark: purchaseReturnData.remark || null,
@@ -1221,7 +1221,7 @@ let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseN
                 data: {
                     status: 'CANCELLED',
                     cancelledBy: cancelData.performedBy || "SYSTEM",
-                    cancelledAt: new Date(),
+                    cancelledAt: cancelData.cancelledAt ? new Date(cancelData.cancelledAt) : new Date(),
                     cancelReason: cancelData.cancelReason || null,
                     version: { increment: 1 }
                 }

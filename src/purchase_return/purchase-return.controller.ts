@@ -153,7 +153,8 @@ let cancelPurchaseReturn = (req: NetworkRequest<CancelPurchaseReturnInput>, res:
     const purchaseReturnId: number = parseInt(req.params.id)
     const cancelData: CancelPurchaseReturnInput = {
         cancelReason: req.body?.cancelReason,
-        performedBy: req.body?.performedBy
+        performedBy: req.body?.performedBy,
+        cancelledAt: req.body?.cancelledAt
     }
     service.cancel(purchaseReturnId, cancelData, req.user.databaseName)
         .then((updatedPurchaseReturn: any) => sendResponse(res, updatedPurchaseReturn))

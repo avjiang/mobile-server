@@ -97,7 +97,7 @@ All endpoints are prefixed with:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `tenant.tenantName` | string | Yes | Name of the tenant organization |
-| `tenant.plan` | string | Yes | Subscription plan name (`Basic`, `Pro`) |
+| `tenant.plan` | string | Yes | Subscription plan name (`Trial`, `Basic`, `Pro`) |
 
 **Response (Success - 200):**
 
@@ -301,6 +301,7 @@ Current available plans:
 
 | Plan      | Base Price  | Max Users | Max Devices | Warehouses               | Features                                       |
 | --------- | ----------- | --------- | ----------- | ------------------------ | ---------------------------------------------- |
+| **Trial** | 0 IDR       | 2 free    | 0           | Not supported            | Basic POS                                      |
 | **Basic** | 275,000 IDR | 2 free    | 0           | Not supported            | Basic POS                                      |
 | **Pro**   | 400,000 IDR | 3 free    | 3           | 1 free, then 150k/month  | Advanced POS + Warehouses + Push Notifications |
 
@@ -1011,7 +1012,7 @@ Response: {
 **Request Fields:**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `planName` | string | Yes | Target plan name (`Basic`, `Pro`) |
+| `planName` | string | Yes | Target plan name (`Trial`, `Basic`, `Pro`) |
 
 ---
 

@@ -106,7 +106,7 @@ All endpoints are prefixed with:
 | `globalTenantUserId` | number | User ID in global TenantUser table |
 | `userId` | number | User ID in tenant-specific database |
 | `notificationTopics` | string[] | Firebase Cloud Messaging topics (Pro plan only) |
-| `planName` | string | Subscription plan name (`Basic`, `Pro`) |
+| `planName` | string | Subscription plan name (`Trial`, `Basic`, `Pro`) |
 | `databaseName` | string | Tenant database name for API context |
 | `globalOutletId` | number | Outlet ID in global database |
 

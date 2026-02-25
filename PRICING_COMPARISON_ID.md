@@ -2,13 +2,13 @@
 
 ## Pilihan Paket
 
-|               |    **Basic**     |      **Pro**      |
-| ------------- | :--------------: | :---------------: |
-| **Harga**     | Rp 275.000/bulan | Rp 400.000/bulan  |
-|               |    per outlet    |    per outlet     |
-| **Pengguna**  |    2 termasuk    |    3 termasuk     |
-| **Perangkat** |        -         |    3 termasuk     |
-| **Gudang**    |        -         | 1 gratis termasuk |
+|               |    **Trial**     |    **Basic**     |      **Pro**      |
+| ------------- | :--------------: | :--------------: | :---------------: |
+| **Harga**     |    Rp 0/bulan    | Rp 275.000/bulan | Rp 400.000/bulan  |
+|               |    per outlet    |    per outlet    |    per outlet     |
+| **Pengguna**  |    2 termasuk    |    2 termasuk    |    3 termasuk     |
+| **Perangkat** |    0 termasuk    |    0 termasuk    |    3 termasuk     |
+| **Gudang**    |   -   |   -   |        -         | 1 gratis termasuk |
 
 ---
 
@@ -16,105 +16,105 @@
 
 ### Manajemen Penjualan
 
-| Fitur                                 | Basic | Pro |
+| Fitur                                 | Trial | Basic | Pro |
 | ------------------------------------- | :---: | :-: |
-| Transaksi tidak terbatas              |   ✓   |  ✓  |
-| Berbagai metode pembayaran            |   ✓   |  ✓  |
-| Pembayaran tunai                      |   ✓   |  ✓  |
-| Penjualan Panjar / sebagian (cicilan) |   ✓   |  ✓  |
-| Pembatalan penjualan                  |   ✓   |  ✓  |
-| Retur & pengembalian dana             |   ✓   |  ✓  |
-| Diskon (item & transaksi)             |   ✓   |  ✓  |
-| Manajemen pelanggan                   |   ✓   |  ✓  |
-| Pelacakan sesi penjualan              |   ✓   |  ✓  |
+| Transaksi tidak terbatas              |   ✓   |   ✓   |  ✓  |
+| Berbagai metode pembayaran            |   ✓   |   ✓   |  ✓  |
+| Pembayaran tunai                      |   ✓   |   ✓   |  ✓  |
+| Penjualan Panjar / sebagian (cicilan) |   ✓   |   ✓   |  ✓  |
+| Pembatalan penjualan                  |   ✓   |   ✓   |  ✓  |
+| Retur & pengembalian dana             |   ✓   |   ✓   |  ✓  |
+| Diskon (item & transaksi)             |   ✓   |   ✓   |  ✓  |
+| Manajemen pelanggan                   |   ✓   |   ✓   |  ✓  |
+| Pelacakan sesi penjualan              |   ✓   |   ✓   |  ✓  |
 
 ### Manajemen Pengiriman
 
-| Fitur                 | Basic | Pro |
+| Fitur                 | Trial | Basic | Pro |
 | --------------------- | :---: | :-: |
-| Daftar pengiriman     |   ✓   |  ✓  |
-| Konfirmasi pengiriman |   ✓   |  ✓  |
+| Daftar pengiriman     |   ✓   |   ✓   |  ✓  |
+| Konfirmasi pengiriman |   ✓   |   ✓   |  ✓  |
 
 ### Inventori & Stok
 
-| Fitur                          | Basic | Pro |
+| Fitur                          | Trial | Basic | Pro |
 | ------------------------------ | :---: | :-: |
-| Produk tidak terbatas          |   ✓   |  ✓  |
-| Kategori produk                |   ✓   |  ✓  |
-| Stok per outlet                |   ✓   |  ✓  |
-| Pelacakan stok waktu nyata     |   ✓   |  ✓  |
-| Notifikasi stok menipis        |   ✓   |  ✓  |
-| Notifikasi stok habis          |   ✓   |  ✓  |
-| Penyesuaian stok               |   ✓   |  ✓  |
-| Kalkulasi FIFO                 |   ✓   |  ✓  |
-| **Gudang terpusat**            |   -   |  ✓  |
-| **Transfer stok antar outlet** |   -   |  ✓  |
-| **Dukungan multi-gudang**      |   -   |  ✓  |
-| **Transfer gudang ke outlet**  |   -   |  ✓  |
+| Produk tidak terbatas          |   ✓   |   ✓   |  ✓  |
+| Kategori produk                |   ✓   |   ✓   |  ✓  |
+| Stok per outlet                |   ✓   |   ✓   |  ✓  |
+| Pelacakan stok waktu nyata     |   ✓   |   ✓   |  ✓  |
+| Notifikasi stok menipis        |   ✓   |   ✓   |  ✓  |
+| Notifikasi stok habis          |   ✓   |   ✓   |  ✓  |
+| Penyesuaian stok               |   ✓   |   ✓   |  ✓  |
+| Kalkulasi FIFO                 |   ✓   |   ✓   |  ✓  |
+| **Gudang terpusat**            |   -   |   -   |  ✓  |
+| **Transfer stok antar outlet** |   -   |   -   |  ✓  |
+| **Dukungan multi-gudang**      |   -   |   -   |  ✓  |
+| **Transfer gudang ke outlet**  |   -   |   -   |  ✓  |
 
 ### Pembelian
 
-| Fitur                  | Basic | Pro |
+| Fitur                  | Trial | Basic | Pro |
 | ---------------------- | :---: | :-: |
-| Manajemen pemasok      |   ✓   |  ✓  |
-| Penawaran harga        |   ✓   |  ✓  |
-| Pesanan Pembelian (PO) |   ✓   |  ✓  |
-| Surat Jalan (DO)       |   ✓   |  ✓  |
-| Faktur pembelian       |   ✓   |  ✓  |
-| Pelacakan pelunasan    |   ✓   |  ✓  |
+| Manajemen pemasok      |   ✓   |   ✓   |  ✓  |
+| Penawaran harga        |   ✓   |   ✓   |  ✓  |
+| Pesanan Pembelian (PO) |   ✓   |   ✓   |  ✓  |
+| Surat Jalan (DO)       |   ✓   |   ✓   |  ✓  |
+| Faktur pembelian       |   ✓   |   ✓   |  ✓  |
+| Pelacakan pelunasan    |   ✓   |   ✓   |  ✓  |
 
 ### Pengguna & Kontrol Akses
 
-| Fitur                        | Basic | Pro |
+| Fitur                        | Trial | Basic | Pro |
 | ---------------------------- | :---: | :-: |
-| Pengguna termasuk            |   2   |  3  |
-| Kontrol akses berbasis peran |   ✓   |  ✓  |
-| Peran kustom                 |   ✓   |  ✓  |
-| Manajemen izin akses         |   ✓   |  ✓  |
+| Pengguna termasuk            |   2   |   2   |  3  |
+| Kontrol akses berbasis peran |   ✓   |   ✓   |  ✓  |
+| Peran kustom                 |   ✓   |   ✓   |  ✓  |
+| Manajemen izin akses         |   ✓   |   ✓   |  ✓  |
 
 ### Notifikasi
 
-| Fitur                         | Basic | Pro |
+| Fitur                         | Trial | Basic | Pro |
 | ----------------------------- | :---: | :-: |
-| Dukungan notifikasi ke HP     |   -   |  ✓  |
-| Perangkat termasuk            |   -   |  3  |
-| Notifikasi penjualan          |   -   |  ✓  |
-| Notifikasi stok menipis ke HP |   -   |  ✓  |
-| Notifikasi stok habis ke HP   |   -   |  ✓  |
-| Notifikasi pengiriman         |   -   |  ✓  |
-| Notifikasi pembayaran         |   -   |  ✓  |
+| Dukungan notifikasi ke HP     |   -   |   -   |  ✓  |
+| Perangkat termasuk            |   0   |   0   |  3  |
+| Notifikasi penjualan          |   -   |   -   |  ✓  |
+| Notifikasi stok menipis ke HP |   -   |   -   |  ✓  |
+| Notifikasi stok habis ke HP   |   -   |   -   |  ✓  |
+| Notifikasi pengiriman         |   -   |   -   |  ✓  |
+| Notifikasi pembayaran         |   -   |   -   |  ✓  |
 
 ### Laporan & Analitik
 
-| Fitur                      | Basic | Pro |
+| Fitur                      | Trial | Basic | Pro |
 | -------------------------- | :---: | :-: |
-| Laporan sesi harian        |   ✓   |  ✓  |
-| Ringkasan penjualan        |   ✓   |  ✓  |
-| Analisis kategori terlaris |   ✓   |  ✓  |
-| Analisis keuntungan        |   ✓   |  ✓  |
-| Rincian pendapatan         |   ✓   |  ✓  |
-| Rincian metode pembayaran  |   ✓   |  ✓  |
-| Ekspor PDF                 |   ✓   |  ✓  |
+| Laporan sesi harian        |   ✓   |   ✓   |  ✓  |
+| Ringkasan penjualan        |   ✓   |   ✓   |  ✓  |
+| Analisis kategori terlaris |   ✓   |   ✓   |  ✓  |
+| Analisis keuntungan        |   ✓   |   ✓   |  ✓  |
+| Rincian pendapatan         |   ✓   |   ✓   |  ✓  |
+| Rincian metode pembayaran  |   ✓   |   ✓   |  ✓  |
+| Ekspor PDF                 |   ✓   |   ✓   |  ✓  |
 
 ### Dukungan Multi-Outlet
 
-| Fitur                        |    Basic     |      Pro      |
+| Fitur                        | Trial | Basic | Pro |
 | ---------------------------- | :----------: | :-----------: |
-| Beberapa outlet              | ✓ (terpisah) | ✓ (terhubung) |
-| Inventori per outlet         |      ✓       |       ✓       |
-| **Gudang terpusat**          |      -       |       ✓       |
-| **Visibilitas antar outlet** |      -       |       ✓       |
-| **Berbagi inventori**        |      -       |       ✓       |
+| Beberapa outlet              | ✓ (terpisah) | ✓ (terpisah) | ✓ (terhubung) |
+| Inventori per outlet         |   ✓   |   ✓   |       ✓       |
+| **Gudang terpusat**          |   -   |   -   |       ✓       |
+| **Visibilitas antar outlet** |   -   |   -   |       ✓       |
+| **Berbagi inventori**        |   -   |   -   |       ✓       |
 
 ---
 
 ## Tambahan Opsional
 
-| Tambahan             |           Harga           | Basic | Pro |
+| Tambahan             |           Harga           | Trial | Basic | Pro |
 | -------------------- | :-----------------------: | :---: | :-: |
-| Pengguna tambahan    | Rp 50.000/pengguna/bulan  |   ✓   |  ✓  |
-| Perangkat notifikasi | Rp 20.000/perangkat/bulan |   -   |  ✓  |
-| Gudang tambahan      |  Rp 150.000/gudang/bulan  |   -   |  ✓  |
+| Pengguna tambahan    | Rp 50.000/pengguna/bulan  |   ✓   |   ✓   |  ✓  |
+| Perangkat notifikasi | Rp 20.000/perangkat/bulan |   -   |   -   |  ✓  |
+| Gudang tambahan      |  Rp 150.000/gudang/bulan  |   -   |   -   |  ✓  |
 
 ---
 

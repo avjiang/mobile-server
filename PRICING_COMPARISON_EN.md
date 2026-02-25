@@ -2,13 +2,13 @@
 
 ## Plan Options
 
-|               |    **Basic**     |     **Pro**      |
-| ------------- | :--------------: | :--------------: |
-| **Price**     | Rp 275,000/month | Rp 400,000/month |
-|               |    per outlet    |    per outlet    |
-| **Users**     |    2 included    |    3 included    |
-| **Devices**   |        -         |    3 included    |
-| **Warehouse** |        -         | 1 free included  |
+|               |    **Trial**     |    **Basic**     |     **Pro**      |
+| ------------- | :--------------: | :--------------: | :--------------: |
+| **Price**     |    Rp 0/month    | Rp 275,000/month | Rp 400,000/month |
+|               |    per outlet    |    per outlet    |    per outlet    |
+| **Users**     |    2 included    |    2 included    |    3 included    |
+| **Devices**   |        0         |        0         |    3 included    |
+| **Warehouse** |        -         |        -         | 1 free included  |
 
 ---
 
@@ -16,106 +16,106 @@
 
 ### Sales Management
 
-| Feature                        | Basic | Pro |
-| ------------------------------ | :---: | :-: |
-| Unlimited transactions         |   ✓   |  ✓  |
-| Multiple payment methods       |   ✓   |  ✓  |
-| Cash payments                  |   ✓   |  ✓  |
-| Debt sales (installments)      |   ✓   |  ✓  |
-| Partial payments               |   ✓   |  ✓  |
-| Sales voiding                  |   ✓   |  ✓  |
-| Returns & refunds              |   ✓   |  ✓  |
-| Discounts (item & transaction) |   ✓   |  ✓  |
-| Customer management            |   ✓   |  ✓  |
-| Live sales session tracking    |   ✓   |  ✓  |
+| Feature                        | Trial | Basic | Pro |
+| ------------------------------ | :---: | :---: | :-: |
+| Unlimited transactions         |   ✓   |   ✓   |  ✓  |
+| Multiple payment methods       |   ✓   |   ✓   |  ✓  |
+| Cash payments                  |   ✓   |   ✓   |  ✓  |
+| Debt sales (installments)      |   ✓   |   ✓   |  ✓  |
+| Partial payments               |   ✓   |   ✓   |  ✓  |
+| Sales voiding                  |   ✓   |   ✓   |  ✓  |
+| Returns & refunds              |   ✓   |   ✓   |  ✓  |
+| Discounts (item & transaction) |   ✓   |   ✓   |  ✓  |
+| Customer management            |   ✓   |   ✓   |  ✓  |
+| Live sales session tracking    |   ✓   |   ✓   |  ✓  |
 
 ### Delivery Management
 
-| Feature                  | Basic | Pro |
-| ------------------------ | :---: | :-: |
-| Delivery list management |   ✓   |  ✓  |
-| Delivery confirmation    |   ✓   |  ✓  |
+| Feature                  | Trial | Basic | Pro |
+| ------------------------ | :---: | :---: | :-: |
+| Delivery list management |   ✓   |   ✓   |  ✓  |
+| Delivery confirmation    |   ✓   |   ✓   |  ✓  |
 
 ### Inventory & Stock
 
-| Feature                          | Basic | Pro |
-| -------------------------------- | :---: | :-: |
-| Unlimited products               |   ✓   |  ✓  |
-| Product categories               |   ✓   |  ✓  |
-| Stock per outlet                 |   ✓   |  ✓  |
-| Real-time stock tracking         |   ✓   |  ✓  |
-| Low stock alerts                 |   ✓   |  ✓  |
-| Out of stock alerts              |   ✓   |  ✓  |
-| Stock adjustments                |   ✓   |  ✓  |
-| FIFO costing                     |   ✓   |  ✓  |
-| **Centralized warehouse**        |   -   |  ✓  |
-| **Cross-outlet stock transfer**  |   -   |  ✓  |
-| **Multi-warehouse support**      |   -   |  ✓  |
-| **Warehouse-to-outlet transfer** |   -   |  ✓  |
+| Feature                          | Trial | Basic | Pro |
+| -------------------------------- | :---: | :---: | :-: |
+| Unlimited products               |   ✓   |   ✓   |  ✓  |
+| Product categories               |   ✓   |   ✓   |  ✓  |
+| Stock per outlet                 |   ✓   |   ✓   |  ✓  |
+| Real-time stock tracking         |   ✓   |   ✓   |  ✓  |
+| Low stock alerts                 |   ✓   |   ✓   |  ✓  |
+| Out of stock alerts              |   ✓   |   ✓   |  ✓  |
+| Stock adjustments                |   ✓   |   ✓   |  ✓  |
+| FIFO costing                     |   ✓   |   ✓   |  ✓  |
+| **Centralized warehouse**        |   -   |   -   |  ✓  |
+| **Cross-outlet stock transfer**  |   -   |   -   |  ✓  |
+| **Multi-warehouse support**      |   -   |   -   |  ✓  |
+| **Warehouse-to-outlet transfer** |   -   |   -   |  ✓  |
 
 ### Purchasing
 
-| Feature             | Basic | Pro |
-| ------------------- | :---: | :-: |
-| Supplier management |   ✓   |  ✓  |
-| Quotation           |   ✓   |  ✓  |
-| Purchase Order (PO) |   ✓   |  ✓  |
-| Delivery Order (DO) |   ✓   |  ✓  |
-| Purchase Invoice    |   ✓   |  ✓  |
-| Settlement tracking |   ✓   |  ✓  |
+| Feature             | Trial | Basic | Pro |
+| ------------------- | :---: | :---: | :-: |
+| Supplier management |   ✓   |   ✓   |  ✓  |
+| Quotation           |   ✓   |   ✓   |  ✓  |
+| Purchase Order (PO) |   ✓   |   ✓   |  ✓  |
+| Delivery Order (DO) |   ✓   |   ✓   |  ✓  |
+| Purchase Invoice    |   ✓   |   ✓   |  ✓  |
+| Settlement tracking |   ✓   |   ✓   |  ✓  |
 
 ### Users & Access Control
 
-| Feature                   | Basic | Pro |
-| ------------------------- | :---: | :-: |
-| Users included            |   2   |  3  |
-| Role-based access control |   ✓   |  ✓  |
-| Custom roles              |   ✓   |  ✓  |
-| Permission management     |   ✓   |  ✓  |
+| Feature                   | Trial | Basic | Pro |
+| ------------------------- | :---: | :---: | :-: |
+| Users included            |   2   |   2  |  3  |
+| Role-based access control |   ✓   |   ✓   |  ✓  |
+| Custom roles              |   ✓   |   ✓   |  ✓  |
+| Permission management     |   ✓   |   ✓   |  ✓  |
 
 ### Push Notifications
 
-| Feature                       | Basic | Pro |
-| ----------------------------- | :---: | :-: |
-| Push notification support     |   -   |  ✓  |
-| Devices included              |   -   |  3  |
-| Sales notifications           |   -   |  ✓  |
-| Low stock alerts to mobile    |   -   |  ✓  |
-| Out of stock alerts to mobile |   -   |  ✓  |
-| Delivery notifications        |   -   |  ✓  |
-| Payment notifications         |   -   |  ✓  |
+| Feature                       | Trial | Basic | Pro |
+| ----------------------------- | :---: | :---: | :-: |
+| Push notification support     |   -   |   -   |  ✓  |
+| Devices included              |   0   |   0   |  3  |
+| Sales notifications           |   -   |   -   |  ✓  |
+| Low stock alerts to mobile    |   -   |   -   |  ✓  |
+| Out of stock alerts to mobile |   -   |   -   |  ✓  |
+| Delivery notifications        |   -   |   -   |  ✓  |
+| Payment notifications         |   -   |   -   |  ✓  |
 
 ### Reports & Analytics
 
-| Feature                  | Basic | Pro |
-| ------------------------ | :---: | :-: |
-| Daily session reports    |   ✓   |  ✓  |
-| Sales summary            |   ✓   |  ✓  |
-| Top categories analysis  |   ✓   |  ✓  |
-| Profit analysis          |   ✓   |  ✓  |
-| Revenue breakdown        |   ✓   |  ✓  |
-| Payment method breakdown |   ✓   |  ✓  |
-| PDF export               |   ✓   |  ✓  |
+| Feature                  | Trial | Basic | Pro |
+| ------------------------ | :---: | :---: | :-: |
+| Daily session reports    |   ✓   |   ✓   |  ✓  |
+| Sales summary            |   ✓   |   ✓   |  ✓  |
+| Top categories analysis  |   ✓   |   ✓   |  ✓  |
+| Profit analysis          |   ✓   |   ✓   |  ✓  |
+| Revenue breakdown        |   ✓   |   ✓   |  ✓  |
+| Payment method breakdown |   ✓   |   ✓   |  ✓  |
+| PDF export               |   ✓   |   ✓   |  ✓  |
 
 ### Multi-Outlet Support
 
-| Feature                     |    Basic     |      Pro      |
+| Feature                     | Trial | Basic | Pro |
 | --------------------------- | :----------: | :-----------: |
-| Multiple outlets            | ✓ (isolated) | ✓ (connected) |
-| Outlet-level inventory      |      ✓       |       ✓       |
-| **Centralized warehouse**   |      -       |       ✓       |
-| **Cross-outlet visibility** |      -       |       ✓       |
-| **Inventory sharing**       |      -       |       ✓       |
+| Multiple outlets            | ✓ (isolated) | ✓ (isolated) | ✓ (connected) |
+| Outlet-level inventory      |   ✓   |   ✓   |       ✓       |
+| **Centralized warehouse**   |   -   |   -   |       ✓       |
+| **Cross-outlet visibility** |   -   |   -   |       ✓       |
+| **Inventory sharing**       |   -   |   -   |       ✓       |
 
 ---
 
 ## Add-Ons (Optional Extras)
 
-| Add-On                    |           Price            | Basic | Pro |
+| Add-On                    |           Price            | Trial | Basic | Pro |
 | ------------------------- | :------------------------: | :---: | :-: |
-| Extra user                |    Rp 50,000/user/month    |   ✓   |  ✓  |
-| Extra notification device |   Rp 20,000/device/month   |   -   |  ✓  |
-| Extra warehouse           | Rp 150,000/warehouse/month |   -   |  ✓  |
+| Extra user                |    Rp 50,000/user/month    |   ✓   |   ✓   |  ✓  |
+| Extra notification device |   Rp 20,000/device/month   |   -   |   -   |  ✓  |
+| Extra warehouse           | Rp 150,000/warehouse/month |   -   |   -   |  ✓  |
 
 ---
 

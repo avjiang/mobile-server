@@ -2,6 +2,16 @@ import { getGlobalPrisma, disconnectAllPrismaClients } from '../db';
 
 const subscriptionPlans = [
     {
+        planName: "Trial",
+        planType: "Retail",
+        price: 0,
+        maxTransactions: null,
+        maxProducts: null,
+        maxUsers: 2,
+        maxDevices: 0,
+        description: null
+    },
+    {
         planName: "Basic",
         planType: "Retail",
         price: 275000,

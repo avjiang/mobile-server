@@ -104,12 +104,13 @@ The setup script performs the following steps:
 | Manage Push Notification Devices | Devices             | Manage active push notification devices        |
 | Receive Inventory Notification   | Notifications       | Receive inventory related notification         |
 
-### Subscription Plans (2 plans)
+### Subscription Plans (3 plans)
 
 | Plan Name | Plan Type | Price   | Max Users | Max Devices | Description                               |
 | --------- | --------- | ------- | --------- | ----------- | ----------------------------------------- |
-| Basic     | Retail    | 250,000 | 2         | 0           | Basic plan for small retail businesses    |
-| Pro       | Retail    | 375,000 | 3         | 3           | Pro plan with push notification support   |
+| Trial     | Retail    | 0       | 2         | 0           | Trial plan                                |
+| Basic     | Retail    | 275,000 | 2         | 0           | Basic plan for small retail businesses    |
+| Pro       | Retail    | 400,000 | 3         | 3           | Pro plan with push notification support   |
 
 ### Subscription Add-Ons (3 add-ons)
 

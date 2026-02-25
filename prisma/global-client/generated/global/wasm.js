@@ -201,7 +201,6 @@ exports.Prisma.TenantUserScalarFieldEnum = {
 };
 
 exports.Prisma.RefreshTokenScalarFieldEnum = {
-  id: 'id',
   tenantUserId: 'tenantUserId',
   token: 'token',
   expired: 'expired',

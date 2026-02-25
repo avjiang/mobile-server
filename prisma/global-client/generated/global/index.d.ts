@@ -10862,17 +10862,14 @@ export namespace Prisma {
   }
 
   export type RefreshTokenAvgAggregateOutputType = {
-    id: number | null
     tenantUserId: number | null
   }
 
   export type RefreshTokenSumAggregateOutputType = {
-    id: number | null
     tenantUserId: number | null
   }
 
   export type RefreshTokenMinAggregateOutputType = {
-    id: number | null
     tenantUserId: number | null
     token: string | null
     expired: Date | null
@@ -10883,7 +10880,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenMaxAggregateOutputType = {
-    id: number | null
     tenantUserId: number | null
     token: string | null
     expired: Date | null
@@ -10894,7 +10890,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenCountAggregateOutputType = {
-    id: number
     tenantUserId: number
     token: number
     expired: number
@@ -10907,17 +10902,14 @@ export namespace Prisma {
 
 
   export type RefreshTokenAvgAggregateInputType = {
-    id?: true
     tenantUserId?: true
   }
 
   export type RefreshTokenSumAggregateInputType = {
-    id?: true
     tenantUserId?: true
   }
 
   export type RefreshTokenMinAggregateInputType = {
-    id?: true
     tenantUserId?: true
     token?: true
     expired?: true
@@ -10928,7 +10920,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenMaxAggregateInputType = {
-    id?: true
     tenantUserId?: true
     token?: true
     expired?: true
@@ -10939,7 +10930,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenCountAggregateInputType = {
-    id?: true
     tenantUserId?: true
     token?: true
     expired?: true
@@ -11037,7 +11027,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenGroupByOutputType = {
-    id: number
     tenantUserId: number
     token: string
     expired: Date | null
@@ -11067,7 +11056,6 @@ export namespace Prisma {
 
 
   export type RefreshTokenSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     tenantUserId?: boolean
     token?: boolean
     expired?: boolean
@@ -11080,7 +11068,6 @@ export namespace Prisma {
 
 
   export type RefreshTokenSelectScalar = {
-    id?: boolean
     tenantUserId?: boolean
     token?: boolean
     expired?: boolean
@@ -11090,13 +11077,12 @@ export namespace Prisma {
     deleted?: boolean
   }
 
-  export type RefreshTokenOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantUserId" | "token" | "expired" | "created" | "createdByIP" | "revoked" | "deleted", ExtArgs["result"]["refreshToken"]>
+  export type RefreshTokenOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"tenantUserId" | "token" | "expired" | "created" | "createdByIP" | "revoked" | "deleted", ExtArgs["result"]["refreshToken"]>
 
   export type $RefreshTokenPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "RefreshToken"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
-      id: number
       tenantUserId: number
       token: string
       expired: Date | null
@@ -11187,8 +11173,8 @@ export namespace Prisma {
      * // Get first 10 RefreshTokens
      * const refreshTokens = await prisma.refreshToken.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const refreshTokenWithIdOnly = await prisma.refreshToken.findMany({ select: { id: true } })
+     * // Only select the `tenantUserId`
+     * const refreshTokenWithTenantUserIdOnly = await prisma.refreshToken.findMany({ select: { tenantUserId: true } })
      * 
      */
     findMany<T extends RefreshTokenFindManyArgs>(args?: SelectSubset<T, RefreshTokenFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -11473,7 +11459,6 @@ export namespace Prisma {
    * Fields of the RefreshToken model
    */
   interface RefreshTokenFieldRefs {
-    readonly id: FieldRef<"RefreshToken", 'Int'>
     readonly tenantUserId: FieldRef<"RefreshToken", 'Int'>
     readonly token: FieldRef<"RefreshToken", 'String'>
     readonly expired: FieldRef<"RefreshToken", 'DateTime'>
@@ -19174,7 +19159,6 @@ export namespace Prisma {
 
 
   export const RefreshTokenScalarFieldEnum: {
-    id: 'id',
     tenantUserId: 'tenantUserId',
     token: 'token',
     expired: 'expired',
@@ -20133,7 +20117,6 @@ export namespace Prisma {
     AND?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
     OR?: RefreshTokenWhereInput[]
     NOT?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
-    id?: IntFilter<"RefreshToken"> | number
     tenantUserId?: IntFilter<"RefreshToken"> | number
     token?: StringFilter<"RefreshToken"> | string
     expired?: DateTimeNullableFilter<"RefreshToken"> | Date | string | null
@@ -20144,7 +20127,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenOrderByWithRelationInput = {
-    id?: SortOrder
     tenantUserId?: SortOrder
     token?: SortOrder
     expired?: SortOrderInput | SortOrder
@@ -20156,21 +20138,19 @@ export namespace Prisma {
   }
 
   export type RefreshTokenWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
+    token?: string
     AND?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
     OR?: RefreshTokenWhereInput[]
     NOT?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
     tenantUserId?: IntFilter<"RefreshToken"> | number
-    token?: StringFilter<"RefreshToken"> | string
     expired?: DateTimeNullableFilter<"RefreshToken"> | Date | string | null
     created?: DateTimeFilter<"RefreshToken"> | Date | string
     createdByIP?: StringNullableFilter<"RefreshToken"> | string | null
     revoked?: DateTimeNullableFilter<"RefreshToken"> | Date | string | null
     deleted?: BoolFilter<"RefreshToken"> | boolean
-  }, "id">
+  }, "token">
 
   export type RefreshTokenOrderByWithAggregationInput = {
-    id?: SortOrder
     tenantUserId?: SortOrder
     token?: SortOrder
     expired?: SortOrderInput | SortOrder
@@ -20189,7 +20169,6 @@ export namespace Prisma {
     AND?: RefreshTokenScalarWhereWithAggregatesInput | RefreshTokenScalarWhereWithAggregatesInput[]
     OR?: RefreshTokenScalarWhereWithAggregatesInput[]
     NOT?: RefreshTokenScalarWhereWithAggregatesInput | RefreshTokenScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"RefreshToken"> | number
     tenantUserId?: IntWithAggregatesFilter<"RefreshToken"> | number
     token?: StringWithAggregatesFilter<"RefreshToken"> | string
     expired?: DateTimeNullableWithAggregatesFilter<"RefreshToken"> | Date | string | null
@@ -21429,7 +21408,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenUncheckedCreateInput = {
-    id?: number
     tenantUserId: number
     token: string
     expired?: Date | string | null
@@ -21450,7 +21428,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tenantUserId?: IntFieldUpdateOperationsInput | number
     token?: StringFieldUpdateOperationsInput | string
     expired?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -21461,7 +21438,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenCreateManyInput = {
-    id?: number
     tenantUserId: number
     token: string
     expired?: Date | string | null
@@ -21482,7 +21458,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
     tenantUserId?: IntFieldUpdateOperationsInput | number
     token?: StringFieldUpdateOperationsInput | string
     expired?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -22880,7 +22855,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenCountOrderByAggregateInput = {
-    id?: SortOrder
     tenantUserId?: SortOrder
     token?: SortOrder
     expired?: SortOrder
@@ -22891,12 +22865,10 @@ export namespace Prisma {
   }
 
   export type RefreshTokenAvgOrderByAggregateInput = {
-    id?: SortOrder
     tenantUserId?: SortOrder
   }
 
   export type RefreshTokenMaxOrderByAggregateInput = {
-    id?: SortOrder
     tenantUserId?: SortOrder
     token?: SortOrder
     expired?: SortOrder
@@ -22907,7 +22879,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenMinOrderByAggregateInput = {
-    id?: SortOrder
     tenantUserId?: SortOrder
     token?: SortOrder
     expired?: SortOrder
@@ -22918,7 +22889,6 @@ export namespace Prisma {
   }
 
   export type RefreshTokenSumOrderByAggregateInput = {
-    id?: SortOrder
     tenantUserId?: SortOrder
   }
 

@@ -147,7 +147,7 @@ let revokeToken = async (req: RefreshTokenRequestBody) => {
         //revoke token
         const revokedRefreshToken = await prisma.refreshToken.update({
             where: {
-                id: refreshToken.id
+                token: refreshToken.token
             },
             data: {
                 revoked: new Date(),
@@ -423,7 +423,7 @@ let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {
     //create a refresh token that expires in 1 day
     try {
         var tokenExpiredDate = new Date()
-        tokenExpiredDate.setDate(tokenExpiredDate.getDate() + 1)
+        tokenExpiredDate.setDate(tokenExpiredDate.getDate() + 7)
 
         const refreshTokenObject = await prisma.refreshToken.create({
             data: {

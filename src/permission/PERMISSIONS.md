@@ -88,9 +88,12 @@ Permissions for managing push notification devices.
 
 ### Customer Management Permissions
 
-| ID | Name | Description |
-|----|------|-------------|
-| 10 | Manage Customers | Add, edit, and delete customers |
+| ID | Name | Description | Status |
+|----|------|-------------|--------|
+| 10 | ~~Manage Customers~~ | ~~Add, edit, and delete customers~~ | **DEPRECATED** (soft-deleted) |
+| 22 | Add Customer | Add new customers | Active |
+| 23 | Edit Customer | Edit existing customers | Active |
+| 24 | Delete Customer | Delete customers | Active |
 
 ### Outlet Management Permissions
 
@@ -162,7 +165,7 @@ Retrieve all permissions with pagination support.
       "version": 1
     }
   ],
-  "total": 21,
+  "total": 24,
   "serverTimestamp": "2025-11-06T14:16:00.000Z"
 }
 ```
@@ -224,6 +227,30 @@ router.post('/sales', requirePermission('Process Sales'), createSale);
 - Service: `src/permission/permission.service.ts`
 - Database Schema: `prisma/schema.prisma`
 
+## Migration Notes
+
+### v1.4 - Customer Permission Granularization
+
+The "Manage Customers" permission (ID 10) has been soft-deleted and replaced by three granular permissions:
+
+| Old Permission | New Permissions |
+|---------------|----------------|
+| Manage Customers (ID 10) | Add Customer (ID 22), Edit Customer (ID 23), Delete Customer (ID 24) |
+
+**Impact on Tenant Databases:**
+- Existing `role_permission` records referencing permission ID 10 become inert (the permission is soft-deleted in the global DB).
+- Roles that previously had "Manage Customers" will lose customer management access until the new granular permissions are assigned.
+- Tenant administrators must update their role configurations to assign the new granular permissions (IDs 22, 23, 24) to roles that previously had "Manage Customers" (ID 10).
+
+**Cleanup (Optional):**
+Stale `role_permission` records with `PERMISSION_ID = 10` can be soft-deleted in tenant databases:
+
+```sql
+UPDATE role_permission
+SET IS_DELETED = 1, DELETED_AT = NOW()
+WHERE PERMISSION_ID = 10 AND IS_DELETED = 0;
+```
+
 ## Change Log
 
 | Date | Version | Changes |
@@ -232,3 +259,4 @@ router.post('/sales', requirePermission('Process Sales'), createSale);
 | 2025-09-30 | 1.1 | Added notification permissions (IDs 18, 19) |
 | 2025-11-01 | 1.2 | Added device management permission (ID 20) |
 | 2025-11-05 | 1.3 | Added inventory notification permission (ID 21) |
+| 2026-02-27 | 1.4 | Deprecated "Manage Customers" (ID 10); added granular customer permissions: Add Customer (ID 22), Edit Customer (ID 23), Delete Customer (ID 24) |

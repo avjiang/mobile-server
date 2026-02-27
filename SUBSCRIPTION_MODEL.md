@@ -15,10 +15,11 @@ including pricing, features, billing logic, and technical implementation details
 
 ### Base Plans
 
-| Plan  | Price (IDR) | Price/Outlet/Month |
-| ----- | ----------- | ------------------ |
-| Basic | Rp 275,000  | Per outlet         |
-| Pro   | Rp 400,000  | Per outlet         |
+| Plan  | Price (IDR) | Price (IDR) | Price/Outlet/Month |
+| ----- | ----------- | ----------- | ------------------ |
+| Trial | Rp 0        | Rp 0        | Per outlet         |
+| Basic | Rp 275,000  | Rp 275,000  | Per outlet         |
+| Pro   | Rp 400,000  | Rp 400,000  | Per outlet         |
 
 ### Add-Ons
 
@@ -31,6 +32,41 @@ including pricing, features, billing logic, and technical implementation details
 ---
 
 ## Plan Details
+
+### Trial Plan (Rp 0/month/outlet)
+
+**Included:**
+
+- Unlimited sales management
+- Unlimited purchasing & inventory
+  - Quotation
+  - Purchase Order
+  - Delivery Order
+  - Invoice
+  - Settlement
+- Stock alerts in real-time
+- Customized role-based access control
+  - Cashier
+  - Manager
+  - Super Admin
+  - Custom roles
+- Daily session reports (PDF)
+  - Top categories
+  - Profit analysis
+  - Revenue breakdown
+  - Payment methods
+- Live sales session tracking
+- Delivery list management
+- Credit sales tracking (Partial/Full Payment)
+- **2 users included**
+
+**Not Included:**
+
+- Push notifications
+- Warehouse management
+- Cross-outlet inventory
+
+---
 
 ### Basic Plan (Rp 275,000/month/outlet)
 
@@ -139,36 +175,36 @@ Each outlet has its own subscription and is billed independently.
 
 ## Feature Comparison
 
-| Feature                       |     Basic      |       Pro       |
-| ----------------------------- | :------------: | :-------------: |
-| **Sales Management**          |                |                 |
-| Unlimited transactions        |      Yes       |       Yes       |
-| Multiple payment methods      |      Yes       |       Yes       |
-| Credit sales tracking         |      Yes       |       Yes       |
-| Delivery management           |      Yes       |       Yes       |
-| Sales voiding/returns/refunds |      Yes       |       Yes       |
-| **Inventory**                 |                |                 |
-| Outlet-level stock            |      Yes       |       Yes       |
-| Real-time stock alerts        |      Yes       |       Yes       |
-| Purchasing (PO, DO, Invoice)  |      Yes       |       Yes       |
-| Warehouse management          |       No       |       Yes       |
-| Cross-outlet inventory        |       No       |       Yes       |
-| FIFO costing                  |      Yes       |       Yes       |
-| **Users & Access**            |                |                 |
-| Role-based access control     |      Yes       |       Yes       |
-| Custom roles                  |      Yes       |       Yes       |
-| Users included                |       2        |        3        |
-| Extra user cost               |     Rp 50k     |     Rp 50k      |
-| **Notifications**             |                |                 |
-| Push notifications            |       No       |       Yes       |
-| Devices included              |       0        |        3        |
-| Extra device cost             |      N/A       |     Rp 20k      |
-| **Reports**                   |                |                 |
-| Daily session reports         |      Yes       |       Yes       |
-| PDF export                    |      Yes       |       Yes       |
-| **Multi-Outlet**              |                |                 |
-| Multiple outlets              | Yes (isolated) | Yes (connected) |
-| Centralized warehouse         |       No       |       Yes       |
+| Feature                       |     Trial      |     Basic      |       Pro       |
+| ----------------------------- | :------------: | :------------: | :-------------: |
+| **Sales Management**          |                |                |                 |
+| Unlimited transactions        |      Yes       |      Yes       |       Yes       |
+| Multiple payment methods      |      Yes       |      Yes       |       Yes       |
+| Credit sales tracking         |      Yes       |      Yes       |       Yes       |
+| Delivery management           |      Yes       |      Yes       |       Yes       |
+| Sales voiding/returns/refunds |      Yes       |      Yes       |       Yes       |
+| **Inventory**                 |                |                |                 |
+| Outlet-level stock            |      Yes       |      Yes       |       Yes       |
+| Real-time stock alerts        |      Yes       |      Yes       |       Yes       |
+| Purchasing (PO, DO, Invoice)  |      Yes       |      Yes       |       Yes       |
+| Warehouse management          |       No       |       No       |       Yes       |
+| Cross-outlet inventory        |       No       |       No       |       Yes       |
+| FIFO costing                  |      Yes       |      Yes       |       Yes       |
+| **Users & Access**            |                |                |                 |
+| Role-based access control     |      Yes       |      Yes       |       Yes       |
+| Custom roles                  |      Yes       |      Yes       |       Yes       |
+| Users included                |       2        |       2        |        3        |
+| Extra user cost               |     Rp 50k     |     Rp 50k     |     Rp 50k      |
+| **Notifications**             |                |                |                 |
+| Push notifications            |       No       |       No       |       Yes       |
+| Devices included              |       0        |       0        |        3        |
+| Extra device cost             |      N/A       |      N/A       |     Rp 20k      |
+| **Reports**                   |                |                |                 |
+| Daily session reports         |      Yes       |      Yes       |       Yes       |
+| PDF export                    |      Yes       |      Yes       |       Yes       |
+| **Multi-Outlet**              |                |                |                 |
+| Multiple outlets              | Yes (isolated) | Yes (isolated) | Yes (connected) |
+| Centralized warehouse         |       No       |       No       |       Yes       |
 
 ---
 
@@ -411,9 +447,9 @@ npx ts-node src/script/subscription_add_on_seed.ts
 
 ## Version History
 
-| Version | Date       | Changes               |
-| ------- | ---------- | --------------------- |
-| 1.0     | 2025-01-22 | Initial documentation |
+| Version | Date       | Date       | Changes               |
+| ------- | ---------- | ---------- | --------------------- |
+| 1.0     | 2025-01-22 | 2025-01-22 | Initial documentation |
 
 ---
 

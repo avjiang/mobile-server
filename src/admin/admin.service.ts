@@ -579,7 +579,7 @@ const getAllTenantCost = async () => {
       LEFT JOIN SUBSCRIPTION_PLAN sp ON ts.SUBSCRIPTION_PLAN_ID = sp.ID
       LEFT JOIN DISCOUNT d ON ts.DISCOUNT_ID = d.ID
       GROUP BY t.ID, t.TENANT_NAME
-      HAVING totalMonthlyCost > 0
+      HAVING totalMonthlyCost >= 0
     `;
         // Calculate total cost 
         const totalRevenue = results.reduce((sum, tenant) => sum + tenant.totalMonthlyCost, 0);

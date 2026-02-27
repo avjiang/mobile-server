@@ -1668,6 +1668,7 @@ model ItemVariant {
 
   @@index([itemId])
   @@index([variantSku])
+  @@index([barcode])
   @@index([deleted])
   @@map("item_variant")
 }

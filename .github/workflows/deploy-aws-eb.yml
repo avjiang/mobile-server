@@ -3,7 +3,7 @@ name: Deploy to AWS Elastic Beanstalk
 on:
   push:
     branches:
-      - feature/purchase-return-cancel # Temporary: change to main after testing
+      - main # Temporary: change to main after testing
 
 jobs:
   deploy-to-eb:

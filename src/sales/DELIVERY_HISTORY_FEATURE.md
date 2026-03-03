@@ -1,6 +1,7 @@
-# Delivery History - Frontend Integration Guide
+# Delivery History Feature - Implementation Documentation
 
 ## Overview
+
 This endpoint returns a **paginated list of delivered sales** (sales that have been confirmed as delivered). It allows the frontend to display delivery history filtered by the delivery confirmation date (`deliveredAt`).
 
 ---
@@ -57,9 +58,10 @@ Future<List<DeliveredSale>> fetchAllDeliveredSales({
       },
     );
 
-    final data = response.data;
-    total = data['total'];
-    final sales = (data['sales'] as List)
+    final responseData = response.data;
+    // NetworkResponse wrapper fields
+    total = responseData['total'];
+    final sales = (responseData['data'] as List)
         .map((e) => DeliveredSale.fromJson(e))
         .toList();
     allSales.addAll(sales);
@@ -74,14 +76,17 @@ Future<List<DeliveredSale>> fetchAllDeliveredSales({
 
 ## Response Schema
 
-**Top-Level Response:**
+The response is wrapped in the standard `NetworkResponse` format:
+
+**Top-Level Response (NetworkResponse):**
 | Field | Type | Description |
 |-------|------|-------------|
-| `sales` | array | Array of delivered sale objects |
+| `success` | boolean | Whether the request was successful |
+| `data` | array | Array of delivered sale objects |
 | `total` | number | Total number of matching records (for pagination) |
 | `serverTimestamp` | string (ISO datetime) | Server timestamp at the time of response |
 
-**Each Sale Object:**
+**Each Sale Object (inside `data` array):**
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | number | Sale ID |
@@ -120,14 +125,17 @@ Future<List<DeliveredSale>> fetchAllDeliveredSales({
 ## Sample Response
 
 **Request:**
+
 ```
 GET /sales/delivery/history?outletId=1&startDate=2025-10-29&endDate=2025-10-29&skip=0&take=100
 ```
 
 **Response (200):**
+
 ```json
 {
-  "sales": [
+  "success": true,
+  "data": [
     {
       "id": 1236,
       "businessDate": "2025-10-29T00:00:00.000Z",
@@ -214,7 +222,8 @@ When no delivered sales match the filters:
 
 ```json
 {
-  "sales": [],
+  "success": true,
+  "data": [],
   "total": 0,
   "serverTimestamp": "2025-10-30T02:00:00.000Z"
 }
@@ -226,18 +235,30 @@ When no delivered sales match the filters:
 
 A delivered sale can have one of these statuses:
 
-| Status | Meaning |
-|--------|---------|
-| `"Delivered"` | Sale was fully paid before delivery confirmation |
+| Status             | Meaning                                              |
+| ------------------ | ---------------------------------------------------- |
+| `"Delivered"`      | Sale was fully paid before delivery confirmation     |
 | `"Partially Paid"` | Sale was delivered but not fully paid (COD scenario) |
 
 > **Tip:** Use `paidAmount` vs `totalAmount` to show payment status regardless of the `status` field. If `paidAmount < totalAmount`, the customer still owes a balance.
 
 ---
 
+## Filter Logic
+
+A sale is included in delivery history if:
+
+- `salesType = "DELIVERY"`
+- `deliveredAt IS NOT NULL`
+- `deliveredAt` falls within `startDate` (start of day) to `endDate` (end of day)
+- `deleted = false`
+
+---
+
 ## Sorting
 
 Results are sorted by:
+
 1. `deliveredAt` descending (most recently delivered first)
 2. `id` descending (tie-breaker)
 
@@ -246,22 +267,33 @@ Results are sorted by:
 ## Error Responses
 
 **400 Bad Request - Missing Parameters:**
+
 ```json
 {
-  "message": "Valid outletId is required"
+  "success": false,
+  "error": {
+    "message": "Valid outletId is required"
+  }
 }
 ```
 
 ```json
 {
-  "message": "startDate and endDate are required"
+  "success": false,
+  "error": {
+    "message": "startDate and endDate are required"
+  }
 }
 ```
 
 **400 Bad Request - Invalid Date:**
+
 ```json
 {
-  "message": "Invalid date format"
+  "success": false,
+  "error": {
+    "message": "Invalid date format"
+  }
 }
 ```
 
@@ -269,19 +301,42 @@ Results are sorted by:
 
 ## Differences from Delivery List (`GET /sales/delivery/list`)
 
-| | Delivery List (Pending) | Delivery History (Completed) |
-|---|---|---|
-| **Endpoint** | `GET /sales/delivery/list` | `GET /sales/delivery/history` |
-| **Shows** | Sales waiting to be delivered | Sales already delivered |
-| **Filter field** | `businessDate` | `deliveredAt` |
-| **Pagination** | No (returns all) | Yes (`skip` / `take`) |
-| **Sort order** | `businessDate ASC` (oldest first) | `deliveredAt DESC` (newest first) |
-| **Extra fields** | - | `deliveredAt`, `deliveredBy`, `deliveryNotes` |
+|                       | Delivery List (Pending)                          | Delivery History (Completed)                  |
+| --------------------- | ------------------------------------------------ | --------------------------------------------- |
+| **Endpoint**          | `GET /sales/delivery/list`                       | `GET /sales/delivery/history`                 |
+| **Shows**             | Sales waiting to be delivered                    | Sales already delivered                       |
+| **Date filter field** | `businessDate`                                   | `deliveredAt`                                 |
+| **Date params**       | `businessDateFrom` / `businessDateTo` (optional) | `startDate` / `endDate` (required)            |
+| **Pagination**        | No (returns all)                                 | Yes (`skip` / `take`)                         |
+| **Sort order**        | `businessDate ASC` (oldest first)                | `deliveredAt DESC` (newest first)             |
+| **Extra fields**      | -                                                | `deliveredAt`, `deliveredBy`, `deliveryNotes` |
+| **Status filter**     | `Completed` or `Partially Paid` only             | Any (as long as `deliveredAt` is set)         |
+
+---
+
+## Code Changes Summary
+
+### Files Modified
+
+| File                            | Changes                                                           |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `src/sales/sales.service.ts`    | Add `getDeliveredList()` function, update exports                 |
+| `src/sales/sales.controller.ts` | Add `getDeliveredList` handler, add `GET /delivery/history` route |
+
+### New Functions
+
+**sales.service.ts:**
+
+- `getDeliveredList()` - Retrieves paginated delivered sales by `deliveredAt` date range
+
+**sales.controller.ts:**
+
+- `GET /sales/delivery/history` - Delivered sales history endpoint
 
 ---
 
 ## Document Version
 
 - **Version:** 1.0
-- **Date:** 2026-02-27
+- **Date:** 2026-03-02
 - **Status:** Implementation Ready

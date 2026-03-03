@@ -5,12 +5,8 @@ export interface OutletDetailsResponse {
     subscription: {
         planName: string;
         basePlanCost: number;
-        addOns: Array<{
-            name: string;
-            quantity: number;
-            pricePerUnit: number;
-            totalCost: number;
-        }>;
+        isCustomPrice: boolean;
+        standardPlanPrice: number;
         discounts: Array<{
             name: string;
             type: string;
@@ -23,4 +19,15 @@ export interface OutletDetailsResponse {
         status: string;
         subscriptionValidUntil: string;
     } | null;
+    addOns: Array<{
+        id: number;
+        name: string;
+        addOnType: string;
+        pricePerUnit: number;
+        maxQuantity: number | null;
+        scope: string;
+        description: string | null;
+        currentQuantity: number;
+    }>;
+    totalMonthlyCost: number;
 }

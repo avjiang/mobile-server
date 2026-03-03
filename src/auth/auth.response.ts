@@ -8,7 +8,8 @@ export interface TokenResponseBody {
     notificationTopics?: string[],
     planName?: string | null,
     databaseName?: string | null,
-    globalOutletId?: number | null
+    globalOutletId?: number | null,
+    loyaltyTier?: 'none' | 'basic' | 'advanced'
 }
 
 export interface ValidateTokenResponseBody {

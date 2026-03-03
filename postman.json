@@ -11,7 +11,7 @@
 			"name": "Authentication",
 			"item": [
 				{
-					"name": "Login Owner",
+					"name": "Login Admin",
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -1658,6 +1658,75 @@
 								"admin",
 								"reduceDeviceQuota",
 								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Advanced Loyalty Add-On",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{adminToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{basedUrl}}/admin/tenants/11/addons/loyalty",
+							"host": [
+								"{{basedUrl}}"
+							],
+							"path": [
+								"admin",
+								"tenants",
+								"11",
+								"addons",
+								"loyalty"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Advanced Loyalty Add-On",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{adminToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{basedUrl}}/admin/tenants/11/addons/loyalty",
+							"host": [
+								"{{basedUrl}}"
+							],
+							"path": [
+								"admin",
+								"tenants",
+								"11",
+								"addons",
+								"loyalty"
 							]
 						}
 					},
@@ -3842,6 +3911,56 @@
 								{
 									"key": "outletId",
 									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Delivered Sales History",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{basedUrl}}/sales/delivery/history?outletId=1&startDate=2025-01-01&endDate=2025-12-31&skip=0&take=100",
+							"host": [
+								"{{basedUrl}}"
+							],
+							"path": [
+								"sales",
+								"delivery",
+								"history"
+							],
+							"query": [
+								{
+									"key": "outletId",
+									"value": "1"
+								},
+								{
+									"key": "startDate",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-12-31"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								},
+								{
+									"key": "take",
+									"value": "100"
 								}
 							]
 						}
@@ -9923,6 +10042,40 @@
 					"response": []
 				},
 				{
+					"name": "Cancel Purchase Return",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cancelReason\": \"Customer changed their mind\",\n  \"performedBy\": \"user@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{basedUrl}}/purchaseReturn/cancel/1",
+							"host": [
+								"{{basedUrl}}"
+							],
+							"path": [
+								"purchaseReturn",
+								"cancel",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Delete Purchase Return",
 					"request": {
 						"method": "DELETE",
@@ -9933,6 +10086,15 @@
 								"type": "text"
 							}
 						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"performedBy\": \"user@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
 							"raw": "{{basedUrl}}/purchaseReturn/1",
 							"host": [

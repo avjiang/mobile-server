@@ -160,7 +160,9 @@ exports.Prisma.TenantSubscriptionScalarFieldEnum = {
   subscriptionValidUntil: 'subscriptionValidUntil',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  discountId: 'discountId'
+  discountId: 'discountId',
+  customPrice: 'customPrice',
+  customPriceNote: 'customPriceNote'
 };
 
 exports.Prisma.TenantSubscriptionAddOnScalarFieldEnum = {
@@ -308,6 +310,27 @@ exports.Prisma.TenantPaymentScalarFieldEnum = {
   recordedAt: 'recordedAt'
 };
 
+exports.Prisma.CustomPriceLogScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  outletId: 'outletId',
+  subscriptionId: 'subscriptionId',
+  previousPrice: 'previousPrice',
+  newPrice: 'newPrice',
+  note: 'note',
+  changedBy: 'changedBy',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.TenantAddOnScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  addOnId: 'addOnId',
+  quantity: 'quantity',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -342,7 +365,8 @@ exports.Prisma.TenantOrderByRelevanceFieldEnum = {
 };
 
 exports.Prisma.TenantSubscriptionOrderByRelevanceFieldEnum = {
-  status: 'status'
+  status: 'status',
+  customPriceNote: 'customPriceNote'
 };
 
 exports.Prisma.TenantOutletOrderByRelevanceFieldEnum = {
@@ -425,6 +449,10 @@ exports.Prisma.TenantPaymentOrderByRelevanceFieldEnum = {
   notes: 'notes'
 };
 
+exports.Prisma.CustomPriceLogOrderByRelevanceFieldEnum = {
+  note: 'note'
+};
+
 
 exports.Prisma.ModelName = {
   SubscriptionPlan: 'SubscriptionPlan',
@@ -442,7 +470,9 @@ exports.Prisma.ModelName = {
   PushySubscription: 'PushySubscription',
   PushyDeviceAllocation: 'PushyDeviceAllocation',
   TenantWarehouse: 'TenantWarehouse',
-  TenantPayment: 'TenantPayment'
+  TenantPayment: 'TenantPayment',
+  CustomPriceLog: 'CustomPriceLog',
+  TenantAddOn: 'TenantAddOn'
 };
 
 /**

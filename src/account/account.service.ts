@@ -23,9 +23,6 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
                     include: {
                         subscriptionPlan: { select: { planName: true, price: true } },
                         discount: true,
-                        subscriptionAddOn: {
-                            include: { addOn: { select: { name: true, pricePerUnit: true } } },
-                        },
                     },
                 },
             },
@@ -35,28 +32,42 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
             throw new NotFoundError('Outlet not found or unauthorized');
         }
 
+        // Fetch tenant's active add-ons with add-on details
+        const tenantAddOns = await prisma.tenantAddOn.findMany({
+            where: { tenantId },
+            include: { addOn: true },
+        });
+
         const subscription = outlet.subscriptions[0];
+        const totalAddOnCost = tenantAddOns.reduce((sum, ta) => sum + ta.addOn.pricePerUnit * ta.quantity, 0);
         const response: OutletDetailsResponse = {
             outletId: outlet.id,
             outletName: outlet.outletName,
             isActive: outlet.isActive,
             subscription: null,
+            addOns: tenantAddOns.map(ta => ({
+                id: ta.addOn.id,
+                name: ta.addOn.name,
+                addOnType: ta.addOn.addOnType,
+                pricePerUnit: ta.addOn.pricePerUnit,
+                maxQuantity: ta.addOn.maxQuantity,
+                scope: ta.addOn.scope,
+                description: ta.addOn.description,
+                currentQuantity: ta.quantity,
+            })),
+            totalMonthlyCost: totalAddOnCost,
         };
 
         if (subscription) {
-            const basePlanCost = subscription.subscriptionPlan.price;
-            const addOns = subscription.subscriptionAddOn.map(({ addOn, quantity }) => ({
-                name: addOn.name,
-                quantity,
-                pricePerUnit: addOn.pricePerUnit,
-                totalCost: addOn.pricePerUnit * quantity,
-            }));
+            const standardPlanPrice = subscription.subscriptionPlan.price;
+            const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+            const isCustomPrice = subscription.customPrice != null;
 
-            // Calculate discounts
+            // Calculate discounts (plan-level only; add-ons are tenant-level)
             const discounts: Array<{ name: string; type: string; value: number; amount: number }> = [];
             let discountAmount = 0;
 
-            // Promotional discount (percentage)
+            // Promotional discount (percentage on plan cost)
             if (
                 subscription.discount &&
                 subscription.discount.discountType === 'percentage' &&
@@ -64,14 +75,9 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
             ) {
                 const discountValue = subscription.discount.value / 100;
                 const appliesToPlan = subscription.discount.appliesTo.includes('plan');
-                const appliesToAddOns = subscription.discount.appliesTo.includes('add-on');
-
                 const planDiscount = appliesToPlan ? basePlanCost * discountValue : 0;
-                const addOnDiscount = appliesToAddOns
-                    ? addOns.reduce((sum, addOn) => sum + addOn.totalCost * discountValue, 0)
-                    : 0;
 
-                discountAmount = planDiscount + addOnDiscount;
+                discountAmount = planDiscount;
                 discounts.push({
                     name: subscription.discount.name,
                     type: subscription.discount.discountType,
@@ -80,7 +86,7 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
                 });
             }
 
-            // Fixed discount (apply if assigned to this subscription)
+            // Fixed discount
             if (
                 subscription.discount &&
                 subscription.discount.discountType === 'fixed' &&
@@ -88,7 +94,7 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
             ) {
                 const fixedDiscountAmount = Math.min(
                     subscription.discount.value,
-                    basePlanCost + addOns.reduce((sum, addOn) => sum + addOn.totalCost, 0)
+                    basePlanCost
                 );
                 discounts.push({
                     name: subscription.discount.name,
@@ -99,15 +105,15 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
                 discountAmount += fixedDiscountAmount;
             }
 
-            // Total cost for this outlet
-            const totalAddOnCost = addOns.reduce((sum, addOn) => sum + addOn.totalCost, 0);
-            const totalCostBeforeDiscount = basePlanCost + totalAddOnCost;
+            // Total cost for this outlet (plan only; add-ons at tenant level)
+            const totalCostBeforeDiscount = basePlanCost;
             const totalCost = Math.max(0, totalCostBeforeDiscount - discountAmount);
 
             response.subscription = {
                 planName: subscription.subscriptionPlan.planName,
                 basePlanCost,
-                addOns,
+                isCustomPrice,
+                standardPlanPrice,
                 discounts,
                 totalCost,
                 totalCostBeforeDiscount,
@@ -115,6 +121,7 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
                 status: subscription.status,
                 subscriptionValidUntil: subscription.subscriptionValidUntil.toISOString(),
             };
+            response.totalMonthlyCost += totalCost;
         }
         return response;
     } catch (error) {

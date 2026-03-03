@@ -13,13 +13,47 @@ let getAll = async (databaseName: string) => {
     }
 }
 
-let getById = async (databaseName: string, id: number) => {
+let getById = async (databaseName: string, id: number, loyaltyTier?: 'none' | 'basic' | 'advanced') => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        const includeLoyalty = loyaltyTier && loyaltyTier !== 'none';
+
         const customer = await tenantPrisma.customer.findUnique({
             where: {
                 id: id
-            }
+            },
+            ...(includeLoyalty ? {
+                include: {
+                    loyaltyAccounts: {
+                        where: { deleted: false },
+                        include: loyaltyTier === 'advanced' ? {
+                            loyaltyTier: true,
+                        } : undefined,
+                        take: 1,
+                    },
+                    ...(loyaltyTier === 'advanced' ? {
+                        customerSubscriptions: {
+                            where: { deleted: false, status: 'ACTIVE' },
+                            include: {
+                                subscriptionPackage: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        packageType: true,
+                                        discountPercentage: true,
+                                        discountAmount: true,
+                                        categories: {
+                                            select: {
+                                                categoryId: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    } : {}),
+                },
+            } : {}),
         })
         if (!customer) {
             throw new NotFoundError("Customer")

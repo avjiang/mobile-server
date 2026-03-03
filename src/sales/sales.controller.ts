@@ -155,7 +155,7 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
     service.completeNewSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         sales,
         payments
     )
@@ -259,7 +259,7 @@ const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) 
     if (sessionIdNum === undefined) {
         throw new RequestValidateError('sessionID is required and must be a number')
     }
-    service.getTotalSalesData(req.user.databaseName, sessionIdNum)
+    service.getTotalSalesData(req.user.databaseName, sessionIdNum, req.user.loyaltyTier)
         .then((salesData) => sendResponse(res, salesData))
         .catch(next)
 }
@@ -321,7 +321,7 @@ const addPaymentToPartiallyPaidSales = (req: NetworkRequest<AddPaymentRequest>, 
     service.addPaymentToPartiallyPaidSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId,
         payments
     )
@@ -340,7 +340,7 @@ const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     service.voidSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId
     )
         .then((sales: Sales) => sendResponse(res, sales))
@@ -358,7 +358,7 @@ const returnSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     service.returnSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId
     )
         .then((sales: Sales) => sendResponse(res, sales))
@@ -376,7 +376,7 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     service.refundSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId
     )
         .then((sales: Sales) => sendResponse(res, sales))
@@ -451,8 +451,8 @@ const getDeliveredList = (req: AuthRequest, res: Response, next: NextFunction) =
         throw new RequestValidateError('startDate and endDate are required');
     }
 
-    const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : undefined;
-    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : undefined;
+    const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
+    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
 
     service.getDeliveredList(
         req.user.databaseName,
@@ -464,7 +464,9 @@ const getDeliveredList = (req: AuthRequest, res: Response, next: NextFunction) =
             endDate: endDate as string,
         }
     )
-        .then((result) => sendResponse(res, result))
+        .then(({ data, total, serverTimestamp }) => {
+            sendResponse(res, { data, total, serverTimestamp });
+        })
         .catch(next);
 }
 
@@ -473,6 +475,12 @@ router.get('/getTotalSalesData', getTotalSalesData)
 router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
 router.get('/outlet', getAll)
 router.get('/dateRange', getAllByDateRange)
+
+// delivery list routes (must be before /:id to avoid route conflict)
+router.get('/delivery/list', getDeliveryList);
+router.get('/delivery/history', getDeliveredList);
+router.post('/delivery/confirm', confirmDeliveryBatch);
+
 router.get('/:id', getById)
 router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
@@ -482,10 +490,5 @@ router.put('/void/:id', voidSales)
 router.put('/return/:id', returnSales)
 router.put('/refund/:id', refundSales)
 router.delete('/:id', remove)
-
-// delivery list routes
-router.get('/delivery/list', getDeliveryList);
-router.get('/delivery/history', getDeliveredList);
-router.post('/delivery/confirm', confirmDeliveryBatch);
 
 export = router

@@ -27,7 +27,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const supplierId: number = parseInt(req.params.id)
-    service.getById(req.user.databaseName, supplierId)
+    service.getById(req.user.databaseName, supplierId, req.user.loyaltyTier)
         .then((customer: Customer) => sendResponse(res, customer))
         .catch(next)
 }

@@ -242,36 +242,38 @@ model Supplier {
 
 // Updated Customer model with promotion relations
 model Customer {
-  id             Int                 @id @default(autoincrement()) @map("ID")
-  salutation     String              @default("") @map("SALUTATION")
-  lastName       String              @map("LAST_NAME")
-  firstName      String              @map("FIRST_NAME")
-  mobile         String?             @map("MOBILE")
-  email          String?             @map("EMAIL")
-  gender         String?             @map("GENDER")
-  billStreet     String?             @map("BILL_STREET")
-  billCity       String?             @map("BILL_CITY")
-  billState      String?             @map("BILL_STATE")
-  billPostalCode String?             @map("BILL_POSTAL_CODE")
-  billCountry    String?             @map("BILL_COUNTRY")
-  billRemark     String?             @map("BILL_REMARK")
-  shipStreet     String?             @map("SHIP_STREET")
-  shipCity       String?             @map("SHIP_CITY")
-  shipState      String?             @map("SHIP_STATE")
-  shipPostalCode String?             @map("SHIP_POSTAL_CODE")
-  shipCountry    String?             @map("SHIP_COUNTRY")
-  shipRemark     String?             @map("SHIP_REMARK")
-  deleted        Boolean             @default(false) @map("IS_DELETED")
-  deletedAt      DateTime?           @map("DELETED_AT")
-  createdAt      DateTime?           @default(now()) @map("CREATED_AT")
-  updatedAt      DateTime?           @updatedAt @map("UPDATED_AT")
-  version        Int?                @default(1) @map("VERSION")
-  sales          Sales[]
-  promotions     PromotionCustomer[]
-  promotionUsage PromotionUsage[]
-  reservations   Reservation[]
-  waitlists      Waitlist[]
-  splitBills     SplitBill[]
+  id                    Int                    @id @default(autoincrement()) @map("ID")
+  salutation            String                 @default("") @map("SALUTATION")
+  lastName              String                 @map("LAST_NAME")
+  firstName             String                 @map("FIRST_NAME")
+  mobile                String?                @map("MOBILE")
+  email                 String?                @map("EMAIL")
+  gender                String?                @map("GENDER")
+  billStreet            String?                @map("BILL_STREET")
+  billCity              String?                @map("BILL_CITY")
+  billState             String?                @map("BILL_STATE")
+  billPostalCode        String?                @map("BILL_POSTAL_CODE")
+  billCountry           String?                @map("BILL_COUNTRY")
+  billRemark            String?                @map("BILL_REMARK")
+  shipStreet            String?                @map("SHIP_STREET")
+  shipCity              String?                @map("SHIP_CITY")
+  shipState             String?                @map("SHIP_STATE")
+  shipPostalCode        String?                @map("SHIP_POSTAL_CODE")
+  shipCountry           String?                @map("SHIP_COUNTRY")
+  shipRemark            String?                @map("SHIP_REMARK")
+  deleted               Boolean                @default(false) @map("IS_DELETED")
+  deletedAt             DateTime?              @map("DELETED_AT")
+  createdAt             DateTime?              @default(now()) @map("CREATED_AT")
+  updatedAt             DateTime?              @updatedAt @map("UPDATED_AT")
+  version               Int?                   @default(1) @map("VERSION")
+  sales                 Sales[]
+  promotions            PromotionCustomer[]
+  promotionUsage        PromotionUsage[]
+  reservations          Reservation[]
+  waitlists             Waitlist[]
+  splitBills            SplitBill[]
+  loyaltyAccounts       LoyaltyAccount[]
+  customerSubscriptions CustomerSubscription[]
 
   @@map("customer")
 }
@@ -382,82 +384,97 @@ model Item {
 }
 
 model Category {
-  id          Int       @id @default(autoincrement()) @map("ID")
-  name        String    @unique @map("NAME")
-  description String?   @default("") @map("DESCRIPTION")
-  parentId    Int?      @map("PARENT_ID")
-  image       String?   @default("") @map("IMAGE")
-  deleted     Boolean   @default(false) @map("IS_DELETED")
-  deletedAt   DateTime? @map("DELETED_AT")
-  createdAt   DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt   DateTime? @updatedAt @map("UPDATED_AT")
-  version     Int?      @default(1) @map("VERSION")
-  items       Item[]
+  id                            Int                           @id @default(autoincrement()) @map("ID")
+  name                          String                        @unique @map("NAME")
+  description                   String?                       @default("") @map("DESCRIPTION")
+  parentId                      Int?                          @map("PARENT_ID")
+  image                         String?                       @default("") @map("IMAGE")
+  deleted                       Boolean                       @default(false) @map("IS_DELETED")
+  deletedAt                     DateTime?                     @map("DELETED_AT")
+  createdAt                     DateTime?                     @default(now()) @map("CREATED_AT")
+  updatedAt                     DateTime?                     @updatedAt @map("UPDATED_AT")
+  version                       Int?                          @default(1) @map("VERSION")
+  items                         Item[]
+  subscriptionPackageCategories SubscriptionPackageCategory[]
 
   @@map("item_category")
 }
 
 model Sales {
-  id                      Int           @id @default(autoincrement()) @map("ID")
-  outletId                Int           @map("OUTLET_ID")
-  businessDate            DateTime      @map("BUSINESS_DATE")
-  salesType               String        @map("SALES_TYPE")
-  customerName            String?       @default("") @map("CUSTOMER_NAME")
-  customerId              Int?          @map("CUSTOMER_ID")
-  phoneNumber             String?       @default("") @map("PHONE_NUMBER")
-  billStreet              String        @default("") @map("BILL_STREET")
-  billCity                String        @default("") @map("BILL_CITY")
-  billState               String        @default("") @map("BILL_STATE")
-  billPostalCode          String        @default("") @map("BILL_POSTAL_CODE")
-  billCountry             String        @default("") @map("BILL_COUNTRY")
-  shipStreet              String        @default("") @map("SHIP_STREET")
-  shipCity                String        @default("") @map("SHIP_CITY")
-  shipState               String        @default("") @map("SHIP_STATE")
-  shipPostalCode          String        @default("") @map("SHIP_POSTAL_CODE")
-  shipCountry             String        @default("") @map("SHIP_COUNTRY")
-  totalItemDiscountAmount Decimal       @default(0) @map("TOTAL_ITEM_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
-  discountPercentage      Decimal       @default(0) @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
-  discountAmount          Decimal       @default(0) @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
-  profitAmount            Decimal       @map("PROFIT_AMOUNT") @db.Decimal(15, 4)
-  serviceChargeAmount     Decimal       @default(0) @map("SERVICE_CHARGE_AMOUNT") @db.Decimal(15, 4)
-  taxAmount               Decimal       @default(0) @map("TAX_AMOUNT") @db.Decimal(15, 4)
-  roundingAmount          Decimal       @default(0) @map("ROUNDING_AMOUNT") @db.Decimal(15, 4)
-  subtotalAmount          Decimal       @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
-  totalAmount             Decimal       @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
-  paidAmount              Decimal       @default(0) @map("PAID_AMOUNT") @db.Decimal(15, 4)
-  changeAmount            Decimal       @default(0) @map("CHANGE_AMOUNT") @db.Decimal(15, 4)
-  status                  String        @map("STATUS")
-  remark                  String        @default("") @map("REMARK")
-  completedSessionId      Int?          @map("COMPLETED_SESSION_ID")
-  sessionId               Int           @map("SESSION_ID")
-  eodId                   Int           @map("EOD_ID")
-  salesQuotationId        Int           @default(0) @map("SALES_QUOTATION_ID")
-  performedBy             String?       @default("") @map("PERFORMED_BY")
-  deleted                 Boolean       @default(false) @map("IS_DELETED")
-  deletedAt               DateTime?     @map("DELETED_AT")
-  createdAt               DateTime?     @default(now()) @map("CREATED_AT")
-  updatedAt               DateTime?     @updatedAt @map("UPDATED_AT")
-  version                 Int?          @default(1) @map("VERSION")
-  tableId                 Int?          @map("TABLE_ID")
-  orderStatus             String?       @map("ORDER_STATUS")
-  isTaxInclusive          Boolean?      @default(false) @map("IS_TAX_INCLUSIVE")
-  stockSourceType         String?       @map("STOCK_SOURCE_TYPE")
-  stockSourceOutletId     Int?          @map("STOCK_SOURCE_OUTLET_ID")
-  stockSourceWarehouseId  Int?          @map("STOCK_SOURCE_WAREHOUSE_ID")
-  deliveredAt             DateTime?     @map("DELIVERED_AT")
-  deliveredBy             String?       @map("DELIVERED_BY")
-  deliveryNotes           String?       @default("") @map("DELIVERY_NOTES")
-  salesItems              SalesItem[]
-  payments                Payment[]
-  registerLogs            RegisterLog[]
-  customer                Customer?     @relation(fields: [customerId], references: [id])
-  table                   Table?        @relation(fields: [tableId], references: [id])
+  id                           Int                   @id @default(autoincrement()) @map("ID")
+  outletId                     Int                   @map("OUTLET_ID")
+  businessDate                 DateTime              @map("BUSINESS_DATE")
+  salesType                    String                @map("SALES_TYPE")
+  customerName                 String?               @default("") @map("CUSTOMER_NAME")
+  customerId                   Int?                  @map("CUSTOMER_ID")
+  phoneNumber                  String?               @default("") @map("PHONE_NUMBER")
+  billStreet                   String                @default("") @map("BILL_STREET")
+  billCity                     String                @default("") @map("BILL_CITY")
+  billState                    String                @default("") @map("BILL_STATE")
+  billPostalCode               String                @default("") @map("BILL_POSTAL_CODE")
+  billCountry                  String                @default("") @map("BILL_COUNTRY")
+  shipStreet                   String                @default("") @map("SHIP_STREET")
+  shipCity                     String                @default("") @map("SHIP_CITY")
+  shipState                    String                @default("") @map("SHIP_STATE")
+  shipPostalCode               String                @default("") @map("SHIP_POSTAL_CODE")
+  shipCountry                  String                @default("") @map("SHIP_COUNTRY")
+  totalItemDiscountAmount      Decimal               @default(0) @map("TOTAL_ITEM_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  discountPercentage           Decimal               @default(0) @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
+  discountAmount               Decimal               @default(0) @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  profitAmount                 Decimal               @map("PROFIT_AMOUNT") @db.Decimal(15, 4)
+  serviceChargeAmount          Decimal               @default(0) @map("SERVICE_CHARGE_AMOUNT") @db.Decimal(15, 4)
+  taxAmount                    Decimal               @default(0) @map("TAX_AMOUNT") @db.Decimal(15, 4)
+  roundingAmount               Decimal               @default(0) @map("ROUNDING_AMOUNT") @db.Decimal(15, 4)
+  subtotalAmount               Decimal               @map("SUBTOTAL_AMOUNT") @db.Decimal(15, 4)
+  totalAmount                  Decimal               @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
+  paidAmount                   Decimal               @default(0) @map("PAID_AMOUNT") @db.Decimal(15, 4)
+  changeAmount                 Decimal               @default(0) @map("CHANGE_AMOUNT") @db.Decimal(15, 4)
+  status                       String                @map("STATUS")
+  remark                       String                @default("") @map("REMARK")
+  completedSessionId           Int?                  @map("COMPLETED_SESSION_ID")
+  sessionId                    Int                   @map("SESSION_ID")
+  eodId                        Int                   @map("EOD_ID")
+  salesQuotationId             Int                   @default(0) @map("SALES_QUOTATION_ID")
+  performedBy                  String?               @default("") @map("PERFORMED_BY")
+  deleted                      Boolean               @default(false) @map("IS_DELETED")
+  deletedAt                    DateTime?             @map("DELETED_AT")
+  createdAt                    DateTime?             @default(now()) @map("CREATED_AT")
+  updatedAt                    DateTime?             @updatedAt @map("UPDATED_AT")
+  version                      Int?                  @default(1) @map("VERSION")
+  tableId                      Int?                  @map("TABLE_ID")
+  orderStatus                  String?               @map("ORDER_STATUS")
+  isTaxInclusive               Boolean?              @default(false) @map("IS_TAX_INCLUSIVE")
+  stockSourceType              String?               @map("STOCK_SOURCE_TYPE")
+  stockSourceOutletId          Int?                  @map("STOCK_SOURCE_OUTLET_ID")
+  stockSourceWarehouseId       Int?                  @map("STOCK_SOURCE_WAREHOUSE_ID")
+  deliveredAt                  DateTime?             @map("DELIVERED_AT")
+  deliveredBy                  String?               @map("DELIVERED_BY")
+  deliveryNotes                String?               @default("") @map("DELIVERY_NOTES")
+  // Loyalty fields
+  loyaltyPointsEarned          Decimal?              @map("LOYALTY_POINTS_EARNED") @db.Decimal(15, 4)
+  loyaltyPointsRedeemed        Decimal?              @map("LOYALTY_POINTS_REDEEMED") @db.Decimal(15, 4)
+  loyaltyPointsRedemptionValue Decimal?              @map("LOYALTY_POINTS_REDEMPTION_VALUE") @db.Decimal(15, 4)
+  loyaltyTierDiscountPercent   Decimal?              @map("LOYALTY_TIER_DISCOUNT_PERCENT") @db.Decimal(15, 4)
+  loyaltyTierDiscountAmount    Decimal?              @map("LOYALTY_TIER_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  customerSubscriptionId       Int?                  @map("CUSTOMER_SUBSCRIPTION_ID")
+  subscriptionDiscountAmount   Decimal?              @map("SUBSCRIPTION_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  // Relations
+  salesItems                   SalesItem[]
+  payments                     Payment[]
+  registerLogs                 RegisterLog[]
+  customer                     Customer?             @relation(fields: [customerId], references: [id])
+  table                        Table?                @relation(fields: [tableId], references: [id])
+  loyaltyTransactions          LoyaltyTransaction[]
+  loyaltyPointBatches          LoyaltyPointBatch[]
+  subscriptionUsages           SubscriptionUsage[]
+  customerSubscription         CustomerSubscription? @relation(fields: [customerSubscriptionId], references: [id])
 
   @@index([businessDate])
   @@index([outletId])
   @@index([sessionId, completedSessionId])
   @@index([stockSourceType])
   @@index([stockSourceWarehouseId])
+  @@index([customerSubscriptionId])
   @@map("sales")
 }
 
@@ -1756,4 +1773,206 @@ model PurchaseReturnItem {
   @@index([itemVariantId])
   @@index([stockReceiptId])
   @@map("purchase_return_item")
+}
+
+// ============================================
+// Loyalty Program Models
+// ============================================
+
+model LoyaltyProgram {
+  id                Int              @id @default(autoincrement()) @map("ID")
+  name              String           @map("NAME")
+  pointsPerCurrency Decimal          @default(1) @map("POINTS_PER_CURRENCY") @db.Decimal(15, 4)
+  currencyPerPoint  Decimal          @default(1) @map("CURRENCY_PER_POINT") @db.Decimal(15, 4)
+  pointsExpiryDays  Int?             @map("POINTS_EXPIRY_DAYS")
+  minRedeemPoints   Decimal          @default(0) @map("MIN_REDEEM_POINTS") @db.Decimal(15, 4)
+  isActive          Boolean          @default(true) @map("IS_ACTIVE")
+  deleted           Boolean          @default(false) @map("IS_DELETED")
+  deletedAt         DateTime?        @map("DELETED_AT")
+  createdAt         DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?        @updatedAt @map("UPDATED_AT")
+  version           Int?             @default(1) @map("VERSION")
+  tiers             LoyaltyTier[]
+  accounts          LoyaltyAccount[]
+
+  @@map("loyalty_program")
+}
+
+model LoyaltyTier {
+  id                 Int              @id @default(autoincrement()) @map("ID")
+  loyaltyProgramId   Int              @map("LOYALTY_PROGRAM_ID")
+  name               String           @map("NAME")
+  minSpend           Decimal          @default(0) @map("MIN_SPEND") @db.Decimal(15, 4)
+  discountPercentage Decimal          @default(0) @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
+  pointsMultiplier   Decimal          @default(1) @map("POINTS_MULTIPLIER") @db.Decimal(15, 4)
+  sortOrder          Int              @default(0) @map("SORT_ORDER")
+  deleted            Boolean          @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?        @map("DELETED_AT")
+  createdAt          DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?        @updatedAt @map("UPDATED_AT")
+  version            Int?             @default(1) @map("VERSION")
+  loyaltyProgram     LoyaltyProgram   @relation(fields: [loyaltyProgramId], references: [id])
+  accounts           LoyaltyAccount[]
+
+  @@index([loyaltyProgramId])
+  @@map("loyalty_tier")
+}
+
+model LoyaltyAccount {
+  id               Int                  @id @default(autoincrement()) @map("ID")
+  customerId       Int                  @map("CUSTOMER_ID")
+  loyaltyProgramId Int                  @map("LOYALTY_PROGRAM_ID")
+  currentPoints    Decimal              @default(0) @map("CURRENT_POINTS") @db.Decimal(15, 4)
+  totalEarned      Decimal              @default(0) @map("TOTAL_EARNED") @db.Decimal(15, 4)
+  totalRedeemed    Decimal              @default(0) @map("TOTAL_REDEEMED") @db.Decimal(15, 4)
+  totalSpend       Decimal              @default(0) @map("TOTAL_SPEND") @db.Decimal(15, 4)
+  loyaltyTierId    Int?                 @map("LOYALTY_TIER_ID")
+  isManualTier     Boolean              @default(false) @map("IS_MANUAL_TIER")
+  joinedAt         DateTime             @default(now()) @map("JOINED_AT")
+  deleted          Boolean              @default(false) @map("IS_DELETED")
+  deletedAt        DateTime?            @map("DELETED_AT")
+  createdAt        DateTime?            @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime?            @updatedAt @map("UPDATED_AT")
+  version          Int?                 @default(1) @map("VERSION")
+  customer         Customer             @relation(fields: [customerId], references: [id])
+  loyaltyProgram   LoyaltyProgram       @relation(fields: [loyaltyProgramId], references: [id])
+  loyaltyTier      LoyaltyTier?         @relation(fields: [loyaltyTierId], references: [id])
+  transactions     LoyaltyTransaction[]
+  pointBatches     LoyaltyPointBatch[]
+
+  @@unique([customerId, loyaltyProgramId])
+  @@index([loyaltyTierId])
+  @@map("loyalty_account")
+}
+
+model LoyaltyPointBatch {
+  id               Int            @id @default(autoincrement()) @map("ID")
+  loyaltyAccountId Int            @map("LOYALTY_ACCOUNT_ID")
+  originalPoints   Decimal        @map("ORIGINAL_POINTS") @db.Decimal(15, 4)
+  remainingPoints  Decimal        @map("REMAINING_POINTS") @db.Decimal(15, 4)
+  expiresAt        DateTime?      @map("EXPIRES_AT")
+  earnedAt         DateTime       @default(now()) @map("EARNED_AT")
+  salesId          Int?           @map("SALES_ID")
+  deleted          Boolean        @default(false) @map("IS_DELETED")
+  deletedAt        DateTime?      @map("DELETED_AT")
+  createdAt        DateTime?      @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime?      @updatedAt @map("UPDATED_AT")
+  version          Int?           @default(1) @map("VERSION")
+  loyaltyAccount   LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id])
+  sale             Sales?         @relation(fields: [salesId], references: [id])
+
+  @@index([loyaltyAccountId, expiresAt])
+  @@index([expiresAt, remainingPoints])
+  @@index([salesId])
+  @@map("loyalty_point_batch")
+}
+
+model LoyaltyTransaction {
+  id               Int            @id @default(autoincrement()) @map("ID")
+  loyaltyAccountId Int            @map("LOYALTY_ACCOUNT_ID")
+  type             String         @map("TYPE") // EARN, REDEEM, EARN_REVERSAL, REDEEM_REVERSAL, ADJUST, EXPIRE
+  points           Decimal        @map("POINTS") @db.Decimal(15, 4)
+  balanceAfter     Decimal        @map("BALANCE_AFTER") @db.Decimal(15, 4)
+  salesId          Int?           @map("SALES_ID")
+  pointBatchId     Int?           @map("POINT_BATCH_ID")
+  description      String?        @map("DESCRIPTION")
+  performedBy      String?        @map("PERFORMED_BY")
+  deleted          Boolean        @default(false) @map("IS_DELETED")
+  deletedAt        DateTime?      @map("DELETED_AT")
+  createdAt        DateTime?      @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime?      @updatedAt @map("UPDATED_AT")
+  version          Int?           @default(1) @map("VERSION")
+  loyaltyAccount   LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id])
+  sale             Sales?         @relation(fields: [salesId], references: [id])
+
+  @@unique([salesId, type])
+  @@index([loyaltyAccountId, createdAt])
+  @@map("loyalty_transaction")
+}
+
+// ============================================
+// Subscription Package Models (Advanced Loyalty)
+// ============================================
+
+model SubscriptionPackage {
+  id                 Int                           @id @default(autoincrement()) @map("ID")
+  name               String                        @map("NAME")
+  packageType        String                        @map("PACKAGE_TYPE") // USAGE, TIME
+  price              Decimal                       @map("PRICE") @db.Decimal(15, 4)
+  totalQuota         Int?                          @map("TOTAL_QUOTA")
+  quotaUnit          String?                       @map("QUOTA_UNIT") // e.g., "sessions", "items"
+  durationDays       Int?                          @map("DURATION_DAYS")
+  discountPercentage Decimal?                      @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
+  discountAmount     Decimal?                      @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  validityDays       Int?                          @map("VALIDITY_DAYS")
+  isActive           Boolean                       @default(true) @map("IS_ACTIVE")
+  deleted            Boolean                       @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?                     @map("DELETED_AT")
+  createdAt          DateTime?                     @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?                     @updatedAt @map("UPDATED_AT")
+  version            Int?                          @default(1) @map("VERSION")
+  categories         SubscriptionPackageCategory[]
+  subscriptions      CustomerSubscription[]
+
+  @@map("subscription_package")
+}
+
+model SubscriptionPackageCategory {
+  id                    Int                 @id @default(autoincrement()) @map("ID")
+  subscriptionPackageId Int                 @map("SUBSCRIPTION_PACKAGE_ID")
+  categoryId            Int                 @map("CATEGORY_ID")
+  deleted               Boolean             @default(false) @map("IS_DELETED")
+  deletedAt             DateTime?           @map("DELETED_AT")
+  createdAt             DateTime?           @default(now()) @map("CREATED_AT")
+  updatedAt             DateTime?           @updatedAt @map("UPDATED_AT")
+  subscriptionPackage   SubscriptionPackage @relation(fields: [subscriptionPackageId], references: [id])
+  category              Category            @relation(fields: [categoryId], references: [id])
+
+  @@unique([subscriptionPackageId, categoryId])
+  @@map("subscription_package_category")
+}
+
+model CustomerSubscription {
+  id                    Int                 @id @default(autoincrement()) @map("ID")
+  customerId            Int                 @map("CUSTOMER_ID")
+  subscriptionPackageId Int                 @map("SUBSCRIPTION_PACKAGE_ID")
+  status                String              @default("ACTIVE") @map("STATUS") // ACTIVE, PAUSED, EXPIRED, CANCELLED
+  startDate             DateTime            @default(now()) @map("START_DATE")
+  endDate               DateTime?           @map("END_DATE")
+  remainingQuota        Int?                @map("REMAINING_QUOTA")
+  usedQuota             Int                 @default(0) @map("USED_QUOTA")
+  paidAmount            Decimal             @map("PAID_AMOUNT") @db.Decimal(15, 4)
+  packageSnapshot       Json?               @map("PACKAGE_SNAPSHOT")
+  deleted               Boolean             @default(false) @map("IS_DELETED")
+  deletedAt             DateTime?           @map("DELETED_AT")
+  createdAt             DateTime?           @default(now()) @map("CREATED_AT")
+  updatedAt             DateTime?           @updatedAt @map("UPDATED_AT")
+  version               Int?                @default(1) @map("VERSION")
+  customer              Customer            @relation(fields: [customerId], references: [id])
+  subscriptionPackage   SubscriptionPackage @relation(fields: [subscriptionPackageId], references: [id])
+  usages                SubscriptionUsage[]
+  sales                 Sales[]
+
+  @@index([customerId, status])
+  @@map("customer_subscription")
+}
+
+model SubscriptionUsage {
+  id                     Int                  @id @default(autoincrement()) @map("ID")
+  customerSubscriptionId Int                  @map("CUSTOMER_SUBSCRIPTION_ID")
+  salesId                Int                  @map("SALES_ID")
+  quantityUsed           Int                  @default(1) @map("QUANTITY_USED")
+  remainingAfter         Int                  @map("REMAINING_AFTER")
+  performedBy            String?              @map("PERFORMED_BY")
+  deleted                Boolean              @default(false) @map("IS_DELETED")
+  deletedAt              DateTime?            @map("DELETED_AT")
+  createdAt              DateTime?            @default(now()) @map("CREATED_AT")
+  updatedAt              DateTime?            @updatedAt @map("UPDATED_AT")
+  version                Int?                 @default(1) @map("VERSION")
+  customerSubscription   CustomerSubscription @relation(fields: [customerSubscriptionId], references: [id])
+  sale                   Sales                @relation(fields: [salesId], references: [id])
+
+  @@unique([salesId, customerSubscriptionId])
+  @@index([customerSubscriptionId, createdAt])
+  @@map("subscription_usage")
 }

@@ -14,7 +14,7 @@ const subscriptionPlans = [
     {
         planName: "Basic",
         planType: "Retail",
-        price: 275000,
+        price: 300000,
         maxTransactions: null,
         maxProducts: null,
         maxUsers: 2,
@@ -24,7 +24,7 @@ const subscriptionPlans = [
     {
         planName: "Pro",
         planType: "Retail",
-        price: 400000,
+        price: 450000,
         maxTransactions: null,
         maxProducts: null,
         maxUsers: 3,

@@ -1,4 +1,5 @@
 import { PrismaClient as GlobalPrismaClient } from '../../prisma/global-client/generated/global';
+import { ADD_ON_IDS } from '../constants/add-on-ids';
 const { getGlobalPrisma } = require('../db');
 
 const globalPrisma: GlobalPrismaClient = getGlobalPrisma();
@@ -24,7 +25,7 @@ interface DeviceAllocation {
 
 const checkDeviceLimit = async (tenantId: number): Promise<DeviceLimitCheck> => {
   try {
-    // Get all active outlets for this tenant
+    // Get all active outlets for this tenant (base device limit from plans)
     const tenantOutlets = await globalPrisma.tenantOutlet.findMany({
       where: {
         tenantId,
@@ -39,11 +40,6 @@ const checkDeviceLimit = async (tenantId: number): Promise<DeviceLimitCheck> => 
           },
           include: {
             subscriptionPlan: true,
-            subscriptionAddOn: {
-              include: {
-                addOn: true
-              }
-            }
           }
         }
       }
@@ -59,25 +55,20 @@ const checkDeviceLimit = async (tenantId: number): Promise<DeviceLimitCheck> => 
       };
     }
 
-    // Calculate total device limit across all outlet subscriptions
+    // Calculate base device limit from subscription plans
     let totalBaseDevices = 0;
-    let totalAdditionalDevices = 0;
-
-    const DEVICE_ADDON_ID = 2; // Push Notification Device add-on ID
-
     for (const outlet of tenantOutlets) {
       for (const subscription of outlet.subscriptions) {
-        // Add base devices from each outlet's subscription plan
         const basePlanLimit = subscription.subscriptionPlan?.maxDevices || BASE_DEVICE_LIMIT;
         totalBaseDevices += basePlanLimit;
-
-        // Add additional device add-ons for this subscription (filter by ID instead of name)
-        const additionalDevices = subscription.subscriptionAddOn
-          .filter(addon => addon.addOnId === DEVICE_ADDON_ID)
-          .reduce((sum, addon) => sum + addon.quantity, 0);
-        totalAdditionalDevices += additionalDevices;
       }
     }
+
+    // Get additional devices from tenant-level add-on
+    const deviceAddOn = await globalPrisma.tenantAddOn.findUnique({
+      where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } }
+    });
+    const totalAdditionalDevices = deviceAddOn?.quantity ?? 0;
 
     // Get current active device count for this tenant (tenant-wide pool)
     const currentDevices = await globalPrisma.pushyDeviceAllocation.count({
@@ -230,101 +221,21 @@ const getTenantDeviceStats = async (tenantId: number): Promise<any> => {
 const purchaseAdditionalDevice = async (
   tenantId: number,
   quantity: number = 1,
-  outletId?: number
 ): Promise<any> => {
   try {
-    // If outletId provided, add to specific outlet subscription
-    // Otherwise, find the first active subscription
-    let subscription;
-
-    if (outletId) {
-      subscription = await globalPrisma.tenantSubscription.findFirst({
-        where: {
-          tenantId,
-          outletId,
-          status: {
-            in: ['Active', 'active', 'trial']
-          }
-        }
-      });
-    } else {
-      // Default to first active subscription found
-      subscription = await globalPrisma.tenantSubscription.findFirst({
-        where: {
-          tenantId,
-          status: {
-            in: ['Active', 'active', 'trial']
-          }
-        }
-      });
-    }
-
-    if (!subscription) {
-      throw new Error('No active subscription found for the specified outlet');
-    }
-
-    // Find or create the additional device add-on
-    let addOn = await globalPrisma.subscriptionAddOn.findFirst({
-      where: {
-        name: 'Push Notification Device'
-      }
+    // Upsert device add-on at tenant level
+    const result = await globalPrisma.tenantAddOn.upsert({
+      where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } },
+      update: { quantity: { increment: quantity } },
+      create: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE, quantity }
     });
 
-    if (!addOn) {
-      addOn = await globalPrisma.subscriptionAddOn.create({
-        data: {
-          name: 'Push Notification Device',
-          addOnType: 'device',
-          pricePerUnit: COST_PER_ADDITIONAL_DEVICE,
-          maxQuantity: null, // unlimited
-          scope: 'tenant',
-          description: 'Additional push notification device slot (IDR 19,000/month per device)'
-        }
-      });
-    }
-
-    // Check if tenant subscription already has this add-on
-    const existingAddOn = await globalPrisma.tenantSubscriptionAddOn.findFirst({
-      where: {
-        tenantSubscriptionId: subscription.id,
-        addOnId: addOn.id
-      }
-    });
-
-    if (existingAddOn) {
-      // Update quantity
-      const updated = await globalPrisma.tenantSubscriptionAddOn.update({
-        where: {
-          id: existingAddOn.id
-        },
-        data: {
-          quantity: existingAddOn.quantity + quantity
-        }
-      });
-
-      return {
-        success: true,
-        message: `Added ${quantity} additional device slot(s)`,
-        totalAdditionalDevices: updated.quantity,
-        monthlyAdditionalCost: updated.quantity * COST_PER_ADDITIONAL_DEVICE
-      };
-    } else {
-      // Create new add-on usage
-      const created = await globalPrisma.tenantSubscriptionAddOn.create({
-        data: {
-          tenantSubscriptionId: subscription.id,
-          addOnId: addOn.id,
-          quantity
-        }
-      });
-
-      return {
-        success: true,
-        message: `Added ${quantity} additional device slot(s)`,
-        totalAdditionalDevices: created.quantity,
-        monthlyAdditionalCost: created.quantity * COST_PER_ADDITIONAL_DEVICE
-      };
-    }
+    return {
+      success: true,
+      message: `Added ${quantity} additional device slot(s)`,
+      totalAdditionalDevices: result.quantity,
+      monthlyAdditionalCost: result.quantity * COST_PER_ADDITIONAL_DEVICE
+    };
   } catch (error) {
     console.error('Error purchasing additional device:', error);
     throw error;
@@ -336,28 +247,9 @@ const removeAdditionalDevice = async (
   quantity: number = 1
 ): Promise<any> => {
   try {
-    const subscription = await globalPrisma.tenantSubscription.findFirst({
-      where: {
-        tenantId,
-        status: 'Active'
-      },
-      include: {
-        subscriptionAddOn: {
-          include: {
-            addOn: true
-          }
-        }
-      }
+    const deviceAddOn = await globalPrisma.tenantAddOn.findUnique({
+      where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } }
     });
-
-    if (!subscription) {
-      throw new Error('No active subscription found');
-    }
-
-    const DEVICE_ADDON_ID = 2; // Push Notification Device add-on ID
-    const deviceAddOn = subscription.subscriptionAddOn.find(
-      addon => addon.addOnId === DEVICE_ADDON_ID
-    );
 
     if (!deviceAddOn) {
       throw new Error('No additional device add-on found');
@@ -365,10 +257,8 @@ const removeAdditionalDevice = async (
 
     if (deviceAddOn.quantity <= quantity) {
       // Remove the add-on completely
-      await globalPrisma.tenantSubscriptionAddOn.delete({
-        where: {
-          id: deviceAddOn.id
-        }
+      await globalPrisma.tenantAddOn.delete({
+        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } }
       });
 
       return {
@@ -379,13 +269,9 @@ const removeAdditionalDevice = async (
       };
     } else {
       // Reduce quantity
-      const updated = await globalPrisma.tenantSubscriptionAddOn.update({
-        where: {
-          id: deviceAddOn.id
-        },
-        data: {
-          quantity: deviceAddOn.quantity - quantity
-        }
+      const updated = await globalPrisma.tenantAddOn.update({
+        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } },
+        data: { quantity: deviceAddOn.quantity - quantity }
       });
 
       return {

@@ -18,7 +18,8 @@ export interface UserInfo {
     tenantId: number,
     role: string,
     notificationTopics?: string[],
-    planName?: string | null
+    planName?: string | null,
+    loyaltyTier?: 'none' | 'basic' | 'advanced'
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {

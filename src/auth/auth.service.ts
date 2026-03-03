@@ -52,7 +52,7 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
             }
 
             // Authentication successful so generate jwt & refresh tokens
-            const { token: jwtToken, globalOutletId } = await generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
+            const { token: jwtToken, globalOutletId, loyaltyTier } = await generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
             const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
             const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
             const refreshToken = await generateRefreshToken(tenantUser, ipAddress)
@@ -66,7 +66,8 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 notificationTopics: decodedToken.user?.notificationTopics,
                 planName: decodedToken.user?.planName,
                 databaseName: tenantUser?.tenant?.databaseName || '',
-                globalOutletId
+                globalOutletId,
+                loyaltyTier
             }
             return response
         } catch (error) {
@@ -118,7 +119,7 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
         }
 
         // Generate new jwt
-        const { token: jwtToken, globalOutletId } = await generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
+        const { token: jwtToken, globalOutletId, loyaltyTier } = await generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
         const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
         const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
         const response: TokenResponseBody = {
@@ -131,7 +132,8 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             notificationTopics: decodedToken.user?.notificationTopics,
             planName: decodedToken.user?.planName,
             databaseName: tenantUser.tenant?.databaseName || '',
-            globalOutletId
+            globalOutletId,
+            loyaltyTier
         }
         return response
     }
@@ -196,6 +198,7 @@ let randomTokenString = () => {
 interface TenantSubscriptionInfo {
     planName: string | null;
     globalOutletId: number | null;
+    loyaltyTier: 'none' | 'basic' | 'advanced';
 }
 
 let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscriptionInfo> => {
@@ -224,7 +227,7 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
 
         // If no outlets found, return null
         if (!tenantOutlets || tenantOutlets.length === 0) {
-            return { planName: null, globalOutletId: null };
+            return { planName: null, globalOutletId: null, loyaltyTier: 'none' };
         }
 
         // Find the first active subscription across all outlets
@@ -247,10 +250,24 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
             if (bestPlan === 'Pro') break;
         }
 
-        return { planName: bestPlan, globalOutletId };
+        // Determine loyalty tier based on plan + add-on
+        let loyaltyTier: 'none' | 'basic' | 'advanced' = 'none';
+        if (bestPlan === 'Pro') {
+            loyaltyTier = 'basic'; // Pro plan gets basic loyalty
+
+            // Check if tenant has Advanced Loyalty add-on (ID 4)
+            const loyaltyAddOn = await globalPrisma.tenantAddOn.findUnique({
+                where: { tenantId_addOnId: { tenantId, addOnId: 4 } } // ADD_ON_IDS.ADVANCED_LOYALTY
+            });
+            if (loyaltyAddOn) {
+                loyaltyTier = 'advanced';
+            }
+        }
+
+        return { planName: bestPlan, globalOutletId, loyaltyTier };
     } catch (error) {
         console.error('Error getting tenant subscription info:', error);
-        return { planName: null, globalOutletId: null };
+        return { planName: null, globalOutletId: null, loyaltyTier: 'none' };
     }
 }
 
@@ -394,10 +411,13 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
     let planName: string | null = null;
     let globalOutletId: number | null = null;
 
+    let loyaltyTier: 'none' | 'basic' | 'advanced' = 'none';
+
     if (tenantUser.username !== "avjiang") {
         const subscriptionInfo = await getTenantSubscriptionInfo(tenantUser.tenantId);
         planName = subscriptionInfo.planName;
         globalOutletId = subscriptionInfo.globalOutletId;
+        loyaltyTier = subscriptionInfo.loyaltyTier;
 
         if (planName === "Pro") {
             notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db);
@@ -413,10 +433,11 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         tenantId: tenantUser.tenantId,
         role: tenantUser.username === "avjiang" ? "admin" : "user",
         notificationTopics,
-        planName
+        planName,
+        loyaltyTier
     }
     const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
-    return { token, globalOutletId };
+    return { token, globalOutletId, loyaltyTier };
 }
 
 let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {

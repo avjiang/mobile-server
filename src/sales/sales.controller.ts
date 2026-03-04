@@ -438,6 +438,36 @@ const confirmDeliveryBatch = (req: AuthRequest, res: Response, next: NextFunctio
         .catch(next);
 }
 
+const getDeliveredList = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { outletId, skip, take, startDate, endDate } = req.query;
+
+    if (!outletId || !validator.isNumeric(outletId as string)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+    if (!startDate || !endDate) {
+        throw new RequestValidateError('startDate and endDate are required');
+    }
+
+    const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : undefined;
+    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : undefined;
+
+    service.getDeliveredList(
+        req.user.databaseName,
+        {
+            outletId: outletId as string,
+            skip: skipNum,
+            take: takeNum,
+            startDate: startDate as string,
+            endDate: endDate as string,
+        }
+    )
+        .then((result) => sendResponse(res, result))
+        .catch(next);
+}
+
 // sales routes
 router.get('/getTotalSalesData', getTotalSalesData)
 router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
@@ -455,6 +485,7 @@ router.delete('/:id', remove)
 
 // delivery list routes
 router.get('/delivery/list', getDeliveryList);
+router.get('/delivery/history', getDeliveredList);
 router.post('/delivery/confirm', confirmDeliveryBatch);
 
 export = router

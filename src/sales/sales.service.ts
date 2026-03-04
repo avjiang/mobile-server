@@ -1699,6 +1699,94 @@ let getDeliveryList = async (
     }
 }
 
+let getDeliveredList = async (
+    databaseName: string,
+    request: { outletId?: string, skip?: number, take?: number, startDate: string, endDate: string }
+) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const { outletId, skip = 0, take = 100, startDate, endDate } = request;
+
+    try {
+        const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
+
+        const parsedStartDate = new Date(startDate);
+        parsedStartDate.setHours(0, 0, 0, 0);
+
+        const parsedEndDate = new Date(endDate);
+        parsedEndDate.setHours(23, 59, 59, 999);
+
+        if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+            throw new Error('Invalid date format');
+        }
+
+        const where = {
+            outletId: parsedOutletId,
+            salesType: 'DELIVERY',
+            deliveredAt: {
+                not: null,
+                gte: parsedStartDate,
+                lte: parsedEndDate,
+            },
+            deleted: false,
+        };
+
+        const [total, sales] = await Promise.all([
+            tenantPrisma.sales.count({ where }),
+            tenantPrisma.sales.findMany({
+                where,
+                skip,
+                take,
+                orderBy: [
+                    { deliveredAt: 'desc' },
+                    { id: 'desc' }
+                ],
+                select: {
+                    id: true,
+                    businessDate: true,
+                    customerName: true,
+                    phoneNumber: true,
+                    shipStreet: true,
+                    shipCity: true,
+                    shipState: true,
+                    shipPostalCode: true,
+                    shipCountry: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    status: true,
+                    remark: true,
+                    createdAt: true,
+                    deliveredAt: true,
+                    deliveredBy: true,
+                    deliveryNotes: true,
+                    salesItems: {
+                        select: {
+                            itemName: true,
+                            itemCode: true,
+                            itemVariantId: true,
+                            variantSku: true,
+                            variantName: true,
+                            quantity: true,
+                            price: true,
+                            subtotalAmount: true,
+                        },
+                        where: {
+                            deleted: false
+                        }
+                    }
+                }
+            })
+        ]);
+
+        return {
+            sales,
+            total,
+            serverTimestamp: new Date().toISOString(),
+        };
+    } catch (error) {
+        throw error;
+    }
+}
+
 let confirmDeliveryBatch = async (
     databaseName: string,
     tenantId: number,
@@ -1827,5 +1915,6 @@ export = {
     returnSales,
     refundSales,
     getDeliveryList,
+    getDeliveredList,
     confirmDeliveryBatch
 }

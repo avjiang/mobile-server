@@ -6,7 +6,7 @@ datasource db {
 generator client {
   provider      = "prisma-client-js"
   output        = "./generated/global"
-  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
 }
 
 model SubscriptionPlan {
@@ -152,16 +152,14 @@ model TenantUser {
 }
 
 model RefreshToken {
-  id           Int       @id @default(autoincrement()) @map("ID")
   tenantUserId Int       @map("TENANT_USER_ID")
-  token        String    @map("TOKEN")
+  token        String    @id @map("TOKEN")
   expired      DateTime? @map("EXPIRED_DATETIME")
   created      DateTime  @default(now()) @map("CREATED_DATETIME")
   createdByIP  String?   @map("CREATED_BY")
   revoked      DateTime? @map("REVOKED_DATETIME")
   deleted      Boolean   @default(false) @map("IS_DELETED")
 
-  @@index([token]) // If you look up by token value directly. If unique, @unique is better.
   @@index([expired])
   @@index([revoked])
   @@index([deleted])

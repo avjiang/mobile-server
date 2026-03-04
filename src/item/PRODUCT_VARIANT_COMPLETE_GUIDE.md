@@ -45,7 +45,8 @@ Product variants allow a single item (e.g., "Samsung Galaxy S24") to have multip
 ✅ **User-Friendly Errors** - Clear error messages for attribute operations
 ✅ **Idempotent Attribute Updates** - Re-sending existing attributes no longer throws errors ⭐ NEW!
 ✅ **Variant Restore on Recreate** - Deleted variants are restored when recreated with same SKU ⭐ NEW!
-✅ **SKU Reuse Across Items** - Deleted variant SKUs can be reused on new items ⭐ NEW!
+✅ **SKU Reuse Across Items** - Deleted variant SKUs can be reused on new items
+✅ **Barcode Uniqueness** - Server-enforced unique barcodes across all non-deleted variants and items (cross-table, indexed)
 
 ---
 
@@ -210,6 +211,7 @@ PUT /item/update
 | Feature | Description |
 |---------|-------------|
 | ✅ Ownership Validation | Variant IDs are validated to belong to the item being updated. Invalid IDs throw error. |
+| ✅ Barcode Uniqueness | Barcode values are validated for uniqueness across all non-deleted variants AND item alternate lookups (cross-table, create & update). |
 | ✅ hasVariants Auto-Reset | When all variants are deleted, `hasVariants` is automatically set to `false`. |
 | ✅ Batch Validation | Single query validates all variant IDs (no N+1). |
 | ✅ Audit Trail | StockMovement, SalesItem records preserved for history. |
@@ -427,6 +429,7 @@ model ItemVariant {
 
   @@index([itemId])
   @@index([variantSku])
+  @@index([barcode])
   @@map("item_variant")
 }
 ```
@@ -1338,6 +1341,7 @@ if (removeAttributes && Array.isArray(removeAttributes)) {
 | **Idempotent Attribute Updates** | ✅ Complete | Re-sending existing attributes skips silently |
 | **Variant Restore** | ✅ Complete | Deleted variants restored on same-SKU recreate |
 | **SKU Reuse** | ✅ Complete | Deleted variant SKUs freed for new items |
+| **Barcode Uniqueness** | ✅ Complete | Server-enforced unique barcodes with DB index (cross-table) |
 | **Frontend Update Guide** | ✅ Complete | [ITEM_UPDATE_GUIDE.md](ITEM_UPDATE_GUIDE.md) |
 
 ---

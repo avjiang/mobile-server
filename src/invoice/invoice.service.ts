@@ -547,11 +547,13 @@ let getById = async (id: number, databaseName: string) => {
             };
         }
 
-        // Calculate total return amount from all purchase returns
-        const totalReturnAmount = (invoice as any).purchaseReturns?.reduce(
-            (sum: Decimal, pr: any) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
-            new Decimal(0)
-        ) || new Decimal(0);
+        // Calculate total return amount from COMPLETED purchase returns only
+        const totalReturnAmount = (invoice as any).purchaseReturns
+            ?.filter((pr: any) => pr.status === 'COMPLETED')
+            .reduce(
+                (sum: Decimal, pr: any) => sum.plus(new Decimal(pr.totalReturnAmount || 0)),
+                new Decimal(0)
+            ) || new Decimal(0);
 
         // Calculate net amount (invoice total - returns)
         const netAmount = new Decimal(invoice.totalAmount || 0).minus(totalReturnAmount);

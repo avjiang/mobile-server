@@ -6,7 +6,7 @@ datasource db {
 generator client {
   provider      = "prisma-client-js"
   output        = "./generated/client"
-  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
 }
 
 enum SettingType {
@@ -211,25 +211,25 @@ model Referral {
 }
 
 model Supplier {
-  id                      Int             @id @default(autoincrement()) @map("ID")
-  companyName             String          @unique @map("COMPANY_NAME")
-  companyStreet           String?         @map("COMPANY_STREET")
-  companyCity             String?         @map("COMPANY_CITY")
-  companyState            String?         @map("COMPANY_STATE")
-  companyPostalCode       String?         @map("COMPANY_POSTAL_CODE")
-  companyCountry          String?         @map("COMPANY_COUNTRY")
-  companyRegisterNumber   String?         @map("COMPANY_REGISTRATION_NUMBER")
-  personInChargeLastName  String?         @map("PERSON_IN_CHARGE_LAST_NAME")
-  personInChargeFirstName String?         @map("PERSON_IN_CHARGE_FIRST_NAME")
-  mobile                  String?         @map("MOBILE")
-  email                   String?         @map("EMAIL")
-  remark                  String?         @map("REMARK")
-  hasTax                  Boolean         @map("HAS_TAX")
-  deleted                 Boolean         @default(false) @map("IS_DELETED")
-  deletedAt               DateTime?       @map("DELETED_AT")
-  createdAt               DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt               DateTime?       @updatedAt @map("UPDATED_AT")
-  version                 Int?            @default(1) @map("VERSION")
+  id                      Int              @id @default(autoincrement()) @map("ID")
+  companyName             String           @unique @map("COMPANY_NAME")
+  companyStreet           String?          @map("COMPANY_STREET")
+  companyCity             String?          @map("COMPANY_CITY")
+  companyState            String?          @map("COMPANY_STATE")
+  companyPostalCode       String?          @map("COMPANY_POSTAL_CODE")
+  companyCountry          String?          @map("COMPANY_COUNTRY")
+  companyRegisterNumber   String?          @map("COMPANY_REGISTRATION_NUMBER")
+  personInChargeLastName  String?          @map("PERSON_IN_CHARGE_LAST_NAME")
+  personInChargeFirstName String?          @map("PERSON_IN_CHARGE_FIRST_NAME")
+  mobile                  String?          @map("MOBILE")
+  email                   String?          @map("EMAIL")
+  remark                  String?          @map("REMARK")
+  hasTax                  Boolean          @map("HAS_TAX")
+  deleted                 Boolean          @default(false) @map("IS_DELETED")
+  deletedAt               DateTime?        @map("DELETED_AT")
+  createdAt               DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt               DateTime?        @updatedAt @map("UPDATED_AT")
+  version                 Int?             @default(1) @map("VERSION")
   items                   Item[]
   quotations              Quotation[]
   purchaseOrders          PurchaseOrder[]
@@ -297,25 +297,25 @@ model Company {
 }
 
 model Outlet {
-  id             Int             @id @default(autoincrement()) @map("ID")
-  tenantOutletId Int             @map("TENANT_OUTLET_ID")
-  outletName     String          @map("OUTLET_NAME")
-  street         String          @default("") @map("STREET")
-  city           String          @default("") @map("CITY")
-  state          String          @default("") @map("STATE")
-  postalCode     String          @default("") @map("POSTAL_CODE")
-  country        String          @default("") @map("COUNTRY")
-  outletTel      String          @default("") @map("OUTLET_TEL")
-  outletEmail    String          @default("") @map("OUTLET_EMAIL")
-  deleted        Boolean         @default(false) @map("IS_DELETED")
-  deletedAt      DateTime?       @map("DELETED_AT")
-  createdAt      DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt      DateTime?       @updatedAt @map("UPDATED_AT")
-  version        Int?            @default(1) @map("VERSION")
-  stockBalances  StockBalance[]
-  stockMovements StockMovement[]
-  stockSnapshots StockSnapshot[]
-  stockReceipts  StockReceipt[]
+  id              Int              @id @default(autoincrement()) @map("ID")
+  tenantOutletId  Int              @map("TENANT_OUTLET_ID")
+  outletName      String           @map("OUTLET_NAME")
+  street          String           @default("") @map("STREET")
+  city            String           @default("") @map("CITY")
+  state           String           @default("") @map("STATE")
+  postalCode      String           @default("") @map("POSTAL_CODE")
+  country         String           @default("") @map("COUNTRY")
+  outletTel       String           @default("") @map("OUTLET_TEL")
+  outletEmail     String           @default("") @map("OUTLET_EMAIL")
+  deleted         Boolean          @default(false) @map("IS_DELETED")
+  deletedAt       DateTime?        @map("DELETED_AT")
+  createdAt       DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt       DateTime?        @updatedAt @map("UPDATED_AT")
+  version         Int?             @default(1) @map("VERSION")
+  stockBalances   StockBalance[]
+  stockMovements  StockMovement[]
+  stockSnapshots  StockSnapshot[]
+  stockReceipts   StockReceipt[]
   settings        Setting[] // Outlet-specific settings
   tables          Table[]
   stations        Station[]
@@ -601,27 +601,27 @@ model InvoiceItem {
 }
 
 model InvoiceSettlement {
-  id                 Int       @id @default(autoincrement()) @map("ID")
-  settlementNumber   String    @unique @map("SETTLEMENT_NUMBER")
-  settlementDate     DateTime  @map("SETTLEMENT_DATE")
-  settlementType     String    @map("SETTLEMENT_TYPE")
-  paymentMethod      String?   @map("PAYMENT_METHOD")
-  settlementAmount   Decimal   @map("SETTLEMENT_AMOUNT") @db.Decimal(15, 4)
-  currency           String    @map("CURRENCY")
-  exchangeRate       Decimal?  @default(1) @map("EXCHANGE_RATE") @db.Decimal(15, 8)
-  reference          String?   @map("REFERENCE")
-  remark             String?   @default("") @map("REMARK")
-  status             String    @default("COMPLETED") @map("STATUS")
-  performedBy        String?   @default("") @map("PERFORMED_BY")
-  totalRebateAmount  Decimal   @default(0) @map("TOTAL_REBATE_AMOUNT") @db.Decimal(15, 4) // Total rebate given in this settlement
-  rebateReason       String?   @map("REBATE_REASON") // Reason for rebate (e.g., "EARLY_PAYMENT", "BULK_DISCOUNT", "PRICE_ADJUSTMENT")
-  totalInvoiceCount  Int       @default(0) @map("TOTAL_INVOICE_COUNT")
-  totalInvoiceAmount Decimal   @default(0) @map("TOTAL_INVOICE_AMOUNT") @db.Decimal(15, 4)
-  deleted            Boolean   @default(false) @map("IS_DELETED")
-  deletedAt          DateTime? @map("DELETED_AT")
-  createdAt          DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt          DateTime? @updatedAt @map("UPDATED_AT")
-  version            Int?      @default(1) @map("VERSION")
+  id                 Int              @id @default(autoincrement()) @map("ID")
+  settlementNumber   String           @unique @map("SETTLEMENT_NUMBER")
+  settlementDate     DateTime         @map("SETTLEMENT_DATE")
+  settlementType     String           @map("SETTLEMENT_TYPE")
+  paymentMethod      String?          @map("PAYMENT_METHOD")
+  settlementAmount   Decimal          @map("SETTLEMENT_AMOUNT") @db.Decimal(15, 4)
+  currency           String           @map("CURRENCY")
+  exchangeRate       Decimal?         @default(1) @map("EXCHANGE_RATE") @db.Decimal(15, 8)
+  reference          String?          @map("REFERENCE")
+  remark             String?          @default("") @map("REMARK")
+  status             String           @default("COMPLETED") @map("STATUS")
+  performedBy        String?          @default("") @map("PERFORMED_BY")
+  totalRebateAmount  Decimal          @default(0) @map("TOTAL_REBATE_AMOUNT") @db.Decimal(15, 4) // Total rebate given in this settlement
+  rebateReason       String?          @map("REBATE_REASON") // Reason for rebate (e.g., "EARLY_PAYMENT", "BULK_DISCOUNT", "PRICE_ADJUSTMENT")
+  totalInvoiceCount  Int              @default(0) @map("TOTAL_INVOICE_COUNT")
+  totalInvoiceAmount Decimal          @default(0) @map("TOTAL_INVOICE_AMOUNT") @db.Decimal(15, 4)
+  deleted            Boolean          @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?        @map("DELETED_AT")
+  createdAt          DateTime?        @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?        @updatedAt @map("UPDATED_AT")
+  version            Int?             @default(1) @map("VERSION")
   invoices           Invoice[]
   purchaseReturns    PurchaseReturn[]
 
@@ -1668,6 +1668,7 @@ model ItemVariant {
 
   @@index([itemId])
   @@index([variantSku])
+  @@index([barcode])
   @@index([deleted])
   @@map("item_variant")
 }
@@ -1692,30 +1693,30 @@ model ItemVariantAttribute {
 }
 
 model PurchaseReturn {
-  id                    Int                  @id @default(autoincrement()) @map("ID")
-  returnNumber          String               @unique @map("RETURN_NUMBER")
-  invoiceId             Int                  @map("INVOICE_ID")
-  invoiceSettlementId   Int?                 @map("INVOICE_SETTLEMENT_ID")
-  outletId              Int                  @map("OUTLET_ID")
-  supplierId            Int                  @map("SUPPLIER_ID")
-  returnDate            DateTime             @map("RETURN_DATE")
-  status                String               @default("COMPLETED") @map("STATUS") // COMPLETED, CANCELLED
-  totalReturnAmount     Decimal?             @map("TOTAL_RETURN_AMOUNT") @db.Decimal(15, 4)
-  remark                String?              @default("") @map("REMARK")
-  performedBy           String?              @default("") @map("PERFORMED_BY")
-  cancelReason          String?              @map("CANCEL_REASON")
-  cancelledBy           String?              @map("CANCELLED_BY")
-  cancelledAt           DateTime?            @map("CANCELLED_AT")
-  deleted               Boolean              @default(false) @map("IS_DELETED")
-  deletedAt             DateTime?            @map("DELETED_AT")
-  createdAt             DateTime?            @default(now()) @map("CREATED_AT")
-  updatedAt             DateTime?            @updatedAt @map("UPDATED_AT")
-  version               Int?                 @default(1) @map("VERSION")
-  invoice               Invoice              @relation(fields: [invoiceId], references: [id])
-  invoiceSettlement     InvoiceSettlement?   @relation(fields: [invoiceSettlementId], references: [id])
-  supplier              Supplier             @relation(fields: [supplierId], references: [id])
-  outlet                Outlet               @relation(fields: [outletId], references: [id])
-  purchaseReturnItems   PurchaseReturnItem[]
+  id                  Int                  @id @default(autoincrement()) @map("ID")
+  returnNumber        String               @unique @map("RETURN_NUMBER")
+  invoiceId           Int                  @map("INVOICE_ID")
+  invoiceSettlementId Int?                 @map("INVOICE_SETTLEMENT_ID")
+  outletId            Int                  @map("OUTLET_ID")
+  supplierId          Int                  @map("SUPPLIER_ID")
+  returnDate          DateTime             @map("RETURN_DATE")
+  status              String               @default("COMPLETED") @map("STATUS") // COMPLETED, CANCELLED
+  totalReturnAmount   Decimal?             @map("TOTAL_RETURN_AMOUNT") @db.Decimal(15, 4)
+  remark              String?              @default("") @map("REMARK")
+  performedBy         String?              @default("") @map("PERFORMED_BY")
+  cancelReason        String?              @map("CANCEL_REASON")
+  cancelledBy         String?              @map("CANCELLED_BY")
+  cancelledAt         DateTime?            @map("CANCELLED_AT")
+  deleted             Boolean              @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?            @map("DELETED_AT")
+  createdAt           DateTime?            @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?            @updatedAt @map("UPDATED_AT")
+  version             Int?                 @default(1) @map("VERSION")
+  invoice             Invoice              @relation(fields: [invoiceId], references: [id])
+  invoiceSettlement   InvoiceSettlement?   @relation(fields: [invoiceSettlementId], references: [id])
+  supplier            Supplier             @relation(fields: [supplierId], references: [id])
+  outlet              Outlet               @relation(fields: [outletId], references: [id])
+  purchaseReturnItems PurchaseReturnItem[]
 
   @@index([invoiceId])
   @@index([invoiceSettlementId])

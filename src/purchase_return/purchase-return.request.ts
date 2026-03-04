@@ -33,6 +33,7 @@ export interface CreatePurchaseReturnRequestBody {
 export interface CancelPurchaseReturnInput {
     cancelReason?: string;
     performedBy?: string;
+    cancelledAt?: Date | string;
 }
 
 export interface PurchaseReturnSyncRequest {

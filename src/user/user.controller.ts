@@ -79,7 +79,6 @@ const changePassword = (req: AuthRequest, res: Response, next: NextFunction) => 
 //routes
 router.get('/sync', getAll)
 router.get('/:id', getById)
-
 router.put('/update/:id', update)
 router.post('/:id/change-password', changePassword)
 export = router

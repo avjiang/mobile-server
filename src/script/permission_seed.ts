@@ -47,9 +47,19 @@ const permissions = [
         description: "View complete stock amount"
     },
     {
-        name: "Manage Customers",
-        category: "Customer Management",
-        description: "Add, edit, and delete customers"
+        name: "Add Client",
+        category: "Client Management",
+        description: "Add new clients"
+    },
+    {
+        name: "Edit Client",
+        category: "Client Management",
+        description: "Edit existing clients"
+    },
+    {
+        name: "Delete Client",
+        category: "Client Management",
+        description: "Delete clients"
     },
     {
         name: "Manage Outlets",

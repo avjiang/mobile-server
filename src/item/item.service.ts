@@ -451,6 +451,75 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                     ).join(', ');
                     throw new BusinessLogicError(`Items with alternate lookup already exist: ${duplicates}`);
                 }
+
+                // Cross-table check: alternateLookup must not exist as a variant barcode
+                const variantsWithSameBarcode = await tx.itemVariant.findMany({
+                    where: {
+                        barcode: { in: alternateLookups },
+                        deleted: false
+                    },
+                    select: {
+                        id: true,
+                        barcode: true,
+                        variantName: true,
+                        item: { select: { id: true, itemName: true } }
+                    }
+                });
+
+                if (variantsWithSameBarcode.length > 0) {
+                    const duplicates = variantsWithSameBarcode.map(v =>
+                        `"${v.barcode}" (Item ID: ${v.item.id}, Item: ${v.item.itemName}, Variant: ${v.variantName})`
+                    ).join(', ');
+                    throw new BusinessLogicError(`Barcode already used by variant: ${duplicates}`);
+                }
+            }
+
+            // Batch check all variant barcodes for uniqueness
+            const allBarcodes = itemBodyArray
+                .flatMap(item => (item as any).variants || [])
+                .map((v: any) => v.barcode)
+                .filter((barcode): barcode is string => barcode !== undefined && barcode !== null && barcode.trim() !== '');
+
+            if (allBarcodes.length > 0) {
+                const existingVariantsWithBarcode = await tx.itemVariant.findMany({
+                    where: {
+                        barcode: { in: allBarcodes },
+                        deleted: false
+                    },
+                    select: {
+                        id: true,
+                        barcode: true,
+                        variantName: true,
+                        item: { select: { id: true, itemName: true } }
+                    }
+                });
+
+                if (existingVariantsWithBarcode.length > 0) {
+                    const duplicates = existingVariantsWithBarcode.map(v =>
+                        `"${v.barcode}" (Item ID: ${v.item.id}, Item: ${v.item.itemName}, Variant: ${v.variantName})`
+                    ).join(', ');
+                    throw new BusinessLogicError(`Variants with barcode already exist: ${duplicates}`);
+                }
+
+                // Cross-table check: variant barcode must not exist as an item alternateLookup
+                const itemsWithSameLookup = await tx.item.findMany({
+                    where: {
+                        alternateLookUp: { in: allBarcodes },
+                        deleted: false
+                    },
+                    select: {
+                        id: true,
+                        itemName: true,
+                        alternateLookUp: true
+                    }
+                });
+
+                if (itemsWithSameLookup.length > 0) {
+                    const duplicates = itemsWithSameLookup.map(item =>
+                        `"${item.alternateLookUp}" (Item ID: ${item.id}, Item Name: ${item.itemName})`
+                    ).join(', ');
+                    throw new BusinessLogicError(`Barcode already used by item: ${duplicates}`);
+                }
             }
 
             // Create items with nested relations in parallel
@@ -614,6 +683,24 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 if (existingItem) {
                     throw new BusinessLogicError(`An item with alternate lookup "${updateData.alternateLookUp}" already exists (Item ID: ${existingItem.id}, Item Name: ${existingItem.itemName})`);
                 }
+
+                // Cross-table check: alternateLookUp must not exist as a variant barcode
+                const variantWithSameBarcode = await tx.itemVariant.findFirst({
+                    where: {
+                        barcode: updateData.alternateLookUp,
+                        deleted: false
+                    },
+                    select: {
+                        id: true,
+                        barcode: true,
+                        variantName: true,
+                        item: { select: { id: true, itemName: true } }
+                    }
+                });
+
+                if (variantWithSameBarcode) {
+                    throw new BusinessLogicError(`Barcode already used by variant: "${variantWithSameBarcode.barcode}" (Item ID: ${variantWithSameBarcode.item.id}, Item: ${variantWithSameBarcode.item.itemName}, Variant: ${variantWithSameBarcode.variantName})`);
+                }
             }
 
             // Prepare the item update data
@@ -728,6 +815,58 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                     }
                 }
                 // ===== END: Ownership validation =====
+
+                // ===== Batch validate barcode uniqueness =====
+                const barcodesToValidate = variants
+                    .filter((v: any) => !v.deleted && v.barcode !== undefined && v.barcode !== null && v.barcode.trim() !== '')
+                    .map((v: any) => ({ id: v.id || null, barcode: v.barcode as string }));
+
+                if (barcodesToValidate.length > 0) {
+                    const barcodeValues = barcodesToValidate.map(b => b.barcode);
+                    const variantIdsBeingUpdated = barcodesToValidate.filter(b => b.id !== null).map(b => b.id);
+
+                    const existingWithBarcode = await tx.itemVariant.findMany({
+                        where: {
+                            barcode: { in: barcodeValues },
+                            deleted: false,
+                            ...(variantIdsBeingUpdated.length > 0 ? { id: { notIn: variantIdsBeingUpdated } } : {})
+                        },
+                        select: {
+                            id: true,
+                            barcode: true,
+                            variantName: true,
+                            item: { select: { id: true, itemName: true } }
+                        }
+                    });
+
+                    if (existingWithBarcode.length > 0) {
+                        const duplicates = existingWithBarcode.map(v =>
+                            `"${v.barcode}" (Item ID: ${v.item.id}, Item: ${v.item.itemName}, Variant: ${v.variantName})`
+                        ).join(', ');
+                        throw new BusinessLogicError(`Variants with barcode already exist: ${duplicates}`);
+                    }
+
+                    // Cross-table check: variant barcode must not exist as an item alternateLookup
+                    const itemsWithSameLookup = await tx.item.findMany({
+                        where: {
+                            alternateLookUp: { in: barcodeValues },
+                            deleted: false
+                        },
+                        select: {
+                            id: true,
+                            itemName: true,
+                            alternateLookUp: true
+                        }
+                    });
+
+                    if (itemsWithSameLookup.length > 0) {
+                        const duplicates = itemsWithSameLookup.map(item =>
+                            `"${item.alternateLookUp}" (Item ID: ${item.id}, Item Name: ${item.itemName})`
+                        ).join(', ');
+                        throw new BusinessLogicError(`Barcode already used by item: ${duplicates}`);
+                    }
+                }
+                // ===== END: Barcode uniqueness validation =====
 
                 // Track if any variants were deleted (for hasVariants check later)
                 let variantDeleted = false;

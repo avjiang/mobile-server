@@ -1,0 +1,71 @@
+name: Deploy to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main # Temporary: change to main after testing
+
+jobs:
+  deploy-to-eb:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma clients
+        run: npm run generate_prisma
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Prune dev dependencies
+        run: npm prune --production
+
+      - name: Remove unnecessary Prisma engine binaries
+        run: |
+          find prisma -name "libquery_engine-darwin*" -delete
+          find prisma -name "libquery_engine-linux-musl*" -delete
+          find prisma -name "libquery_engine-debian-openssl-1.1.x*" -delete
+          find prisma -name "libquery_engine-debian-openssl-3.0.x*" -delete
+
+      - name: Write production config.json
+        run: |
+          echo '{"jwt_token_secret":"${{ secrets.JWT_TOKEN_SECRET }}"}' > config.json
+
+      - name: Create deployment package
+        run: |
+          zip -r deploy.zip \
+            dist/ \
+            node_modules/ \
+            prisma/client/generated/ \
+            prisma/global-client/generated/ \
+            prisma/client/schema.prisma \
+            prisma/global-client/schema.prisma \
+            package.json \
+            package-lock.json \
+            config.json \
+            Procfile \
+            .ebextensions/ \
+            .platform/
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: test-sample-server
+          environment_name: test-sample-server-prod
+          version_label: "test-sample-server-${{ github.sha }}-${{ github.run_number }}"
+          region: ap-southeast-1
+          deployment_package: deploy.zip
+          wait_for_environment_recovery: 120

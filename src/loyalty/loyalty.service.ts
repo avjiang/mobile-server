@@ -61,12 +61,43 @@ const toDecimalNumber = (val: any): number => {
     return typeof val === 'number' ? val : Number(val);
 };
 
+const bulkEnrollCustomers = async (db: string, programId: number) => {
+    const prisma = getTenantDb(db);
+    const [customers, enrolled] = await Promise.all([
+        prisma.customer.findMany({ where: { deleted: false }, select: { id: true } }),
+        prisma.loyaltyAccount.findMany({
+            where: { loyaltyProgramId: programId, deleted: false },
+            select: { customerId: true },
+        }),
+    ]);
+    const enrolledSet = new Set(enrolled.map((e: any) => e.customerId));
+    const unenrolled = customers.filter((c: any) => !enrolledSet.has(c.id));
+    if (unenrolled.length > 0) {
+        await prisma.loyaltyAccount.createMany({
+            data: unenrolled.map((c: any) => ({
+                customerId: c.id,
+                loyaltyProgramId: programId,
+            })),
+        });
+    }
+};
+
 // ============================================
 // Program CRUD
 // ============================================
 
 const getProgram = async (db: string): Promise<LoyaltyProgramResponse | null> => {
-    const program = await getCachedProgram(db);
+    // Return program regardless of isActive so frontend stays in update mode
+    const prisma = getTenantDb(db);
+    const program = await prisma.loyaltyProgram.findFirst({
+        where: { deleted: false },
+        include: {
+            tiers: {
+                where: { deleted: false },
+                orderBy: { sortOrder: 'asc' },
+            },
+        },
+    });
     if (!program) return null;
 
     return {
@@ -111,6 +142,11 @@ const createProgram = async (db: string, data: CreateProgramRequest): Promise<Lo
 
     invalidateProgramCache(db);
 
+    // Auto-enroll all existing customers (fire-and-forget)
+    bulkEnrollCustomers(db, program.id).catch(err =>
+        console.error('Bulk enroll on program create failed:', err)
+    );
+
     return {
         id: program.id,
         name: program.name,
@@ -126,6 +162,17 @@ const createProgram = async (db: string, data: CreateProgramRequest): Promise<Lo
 const updateProgram = async (db: string, programId: number, data: UpdateProgramRequest): Promise<LoyaltyProgramResponse> => {
     const prisma = getTenantDb(db);
 
+    // Read old state to detect activation/deactivation transitions
+    const oldProgram = data.isActive !== undefined
+        ? await prisma.loyaltyProgram.findUnique({
+            where: { id: programId },
+            select: { isActive: true, deactivatedAt: true },
+        })
+        : null;
+
+    const isDeactivating = data.isActive === false && oldProgram?.isActive === true;
+    const isReactivating = data.isActive === true && oldProgram?.isActive === false;
+
     const program = await prisma.loyaltyProgram.update({
         where: { id: programId },
         data: {
@@ -135,6 +182,8 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
             ...(data.pointsExpiryDays !== undefined && { pointsExpiryDays: data.pointsExpiryDays }),
             ...(data.minRedeemPoints !== undefined && { minRedeemPoints: data.minRedeemPoints }),
             ...(data.isActive !== undefined && { isActive: data.isActive }),
+            ...(isDeactivating && { deactivatedAt: new Date() }),
+            ...(isReactivating && { deactivatedAt: null }),
         },
         include: {
             tiers: {
@@ -145,6 +194,33 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
     });
 
     invalidateProgramCache(db);
+
+    // On reactivation: extend subscription endDates and point batch expiresAt by inactive days
+    if (isReactivating && oldProgram?.deactivatedAt) {
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
+        const daysInactive = Math.ceil((Date.now() - oldProgram.deactivatedAt.getTime()) / MS_PER_DAY);
+
+        if (daysInactive > 0) {
+            // Extend subscription endDates
+            prisma.$executeRaw`
+                UPDATE customer_subscription
+                SET END_DATE = DATE_ADD(END_DATE, INTERVAL ${daysInactive} DAY)
+                WHERE STATUS = 'ACTIVE' AND END_DATE IS NOT NULL AND IS_DELETED = false
+            `.catch(err => console.error('Extend subscription dates failed:', err));
+
+            // Extend point batch expiresAt
+            prisma.$executeRaw`
+                UPDATE loyalty_point_batch
+                SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY)
+                WHERE REMAINING_POINTS > 0 AND EXPIRES_AT IS NOT NULL AND IS_DELETED = false
+            `.catch(err => console.error('Extend point batch expiry failed:', err));
+        }
+
+        // Bulk enroll customers created during inactive period
+        bulkEnrollCustomers(db, program.id).catch(err =>
+            console.error('Bulk enroll on reactivation failed:', err)
+        );
+    }
 
     return {
         id: program.id,
@@ -267,6 +343,11 @@ const earnPoints = async (
         throw new RequestValidateError('Points must be positive');
     }
 
+    const program = await getCachedProgram(db);
+    if (!program) {
+        throw new RequestValidateError('Loyalty program is not active');
+    }
+
     return await prisma.$transaction(async (tx: any) => {
         const account = await tx.loyaltyAccount.findUnique({
             where: { id: accountId },
@@ -275,9 +356,8 @@ const earnPoints = async (
             throw new NotFoundError('Loyalty account');
         }
 
-        // Get program for expiry config
-        const program = await getCachedProgram(db);
-        const expiresAt = program?.pointsExpiryDays
+        // Get expiry config from program
+        const expiresAt = program.pointsExpiryDays
             ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
             : null;
 
@@ -341,6 +421,11 @@ const redeemPoints = async (
         throw new RequestValidateError('Points must be positive');
     }
 
+    const program = await getCachedProgram(db);
+    if (!program) {
+        throw new RequestValidateError('Loyalty program is not active');
+    }
+
     return await prisma.$transaction(async (tx: any) => {
         // Lock the account row
         const account = await tx.loyaltyAccount.findUnique({
@@ -356,8 +441,7 @@ const redeemPoints = async (
         }
 
         // Check minimum redemption
-        const program = await getCachedProgram(db);
-        const minRedeem = program ? toDecimalNumber(program.minRedeemPoints) : 0;
+        const minRedeem = toDecimalNumber(program.minRedeemPoints);
         if (data.points < minRedeem) {
             throw new RequestValidateError(`Minimum redemption is ${minRedeem} points`);
         }
@@ -437,6 +521,11 @@ const adjustPoints = async (
 
     if (data.points === 0) {
         throw new RequestValidateError('Points cannot be zero');
+    }
+
+    const program = await getCachedProgram(db);
+    if (!program) {
+        throw new RequestValidateError('Loyalty program is not active');
     }
 
     return await prisma.$transaction(async (tx: any) => {

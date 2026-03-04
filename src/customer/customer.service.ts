@@ -116,7 +116,7 @@ let getById = async (id: number, databaseName: string, loyaltyTier?: 'none' | 'b
     }
 }
 
-let createMany = async (customers: Customer[], databaseName: string) => {
+let createMany = async (customers: Customer[], databaseName: string, loyaltyTier?: 'none' | 'basic' | 'advanced') => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Collect non-empty emails and mobiles from incoming data
@@ -151,6 +151,27 @@ let createMany = async (customers: Customer[], databaseName: string) => {
                 lastName: { in: customers.map(c => c.lastName) },
             },
         });
+
+        // Auto-enroll new customers into active loyalty program
+        if (loyaltyTier && loyaltyTier !== 'none') {
+            try {
+                const program = await tenantPrisma.loyaltyProgram.findFirst({
+                    where: { deleted: false, isActive: true },
+                    select: { id: true },
+                });
+                if (program) {
+                    await tenantPrisma.loyaltyAccount.createMany({
+                        data: createdCustomers.map(c => ({
+                            customerId: c.id,
+                            loyaltyProgramId: program.id,
+                        })),
+                    });
+                }
+            } catch (err) {
+                console.error('Auto-enroll failed:', err);
+            }
+        }
+
         return createdCustomers;
     }
     catch (error) {

@@ -97,7 +97,20 @@ const formatSubscription = (sub: any): CustomerSubscriptionResponse => ({
 // ============================================
 
 const getPackages = async (db: string): Promise<SubscriptionPackageResponse[]> => {
-    const packages = await getCachedPackages(db);
+    // Return all packages regardless of isActive so frontend can show active/inactive badges
+    const prisma = getTenantDb(db);
+    const packages = await prisma.subscriptionPackage.findMany({
+        where: { deleted: false },
+        include: {
+            categories: {
+                where: { deleted: false },
+                include: {
+                    category: { select: { id: true, name: true } },
+                },
+            },
+        },
+        orderBy: { name: 'asc' },
+    });
     return packages.map(formatPackage);
 };
 

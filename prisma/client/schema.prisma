@@ -1789,6 +1789,7 @@ model LoyaltyProgram {
   pointsExpiryDays  Int?             @map("POINTS_EXPIRY_DAYS")
   minRedeemPoints   Decimal          @default(0) @map("MIN_REDEEM_POINTS") @db.Decimal(15, 4)
   isActive          Boolean          @default(true) @map("IS_ACTIVE")
+  deactivatedAt     DateTime?        @map("DEACTIVATED_AT")
   deleted           Boolean          @default(false) @map("IS_DELETED")
   deletedAt         DateTime?        @map("DELETED_AT")
   createdAt         DateTime?        @default(now()) @map("CREATED_AT")

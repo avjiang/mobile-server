@@ -1308,6 +1308,7 @@ exports.Prisma.LoyaltyProgramScalarFieldEnum = {
   pointsExpiryDays: 'pointsExpiryDays',
   minRedeemPoints: 'minRedeemPoints',
   isActive: 'isActive',
+  deactivatedAt: 'deactivatedAt',
   deleted: 'deleted',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',

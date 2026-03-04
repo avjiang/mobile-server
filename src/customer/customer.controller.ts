@@ -57,7 +57,7 @@ let createMany = (req: NetworkRequest<CreateCustomersRequestBody>, res: Response
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createMany(requestBody.customers, req.user.databaseName,)
+    service.createMany(requestBody.customers, req.user.databaseName, req.user.loyaltyTier)
         .then((createdCustomers: Customer[]) => {
             sendResponse(res, createdCustomers)
         })

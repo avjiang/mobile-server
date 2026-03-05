@@ -275,6 +275,10 @@ model Customer {
   loyaltyAccounts       LoyaltyAccount[]
   customerSubscriptions CustomerSubscription[]
 
+  @@index([version])
+  @@index([deleted, createdAt])
+  @@index([deleted, updatedAt])
+  @@index([deleted, deletedAt])
   @@map("customer")
 }
 

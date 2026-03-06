@@ -206,14 +206,14 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
                 UPDATE customer_subscription
                 SET END_DATE = DATE_ADD(END_DATE, INTERVAL ${daysInactive} DAY)
                 WHERE STATUS = 'ACTIVE' AND END_DATE IS NOT NULL AND IS_DELETED = false
-            `.catch(err => console.error('Extend subscription dates failed:', err));
+            `.catch((err: unknown) => console.error('Extend subscription dates failed:', err));
 
             // Extend point batch expiresAt
             prisma.$executeRaw`
                 UPDATE loyalty_point_batch
                 SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY)
                 WHERE REMAINING_POINTS > 0 AND EXPIRES_AT IS NOT NULL AND IS_DELETED = false
-            `.catch(err => console.error('Extend point batch expiry failed:', err));
+            `.catch((err: unknown) => console.error('Extend point batch expiry failed:', err));
         }
 
         // Bulk enroll customers created during inactive period

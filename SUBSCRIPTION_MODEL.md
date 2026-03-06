@@ -361,14 +361,14 @@ If `customPrice` is `null`, the standard plan price is used. If set, the custom 
 
 ### Business Rules
 
-| Rule | Behavior |
-|------|----------|
-| On plan change | Custom price is **auto-cleared** (reset to `null`). Admin must re-set if needed. |
-| Scope | Per-outlet subscription. Different outlets can have different custom prices. |
-| Validation | `customPrice` must be > 0 or `null`. Zero/negative rejected. |
-| Discounts | Discounts still apply on top of the custom price (replaces base price only). |
-| Add-ons | Add-on prices are NOT customizable. Only the base plan price can be overridden. |
-| Visibility | Tenants can see `isCustomPrice` flag and `standardPlanPrice` in their billing APIs. |
+| Rule           | Behavior                                                                            |
+| -------------- | ----------------------------------------------------------------------------------- |
+| On plan change | Custom price is **auto-cleared** (reset to `null`). Admin must re-set if needed.    |
+| Scope          | Per-outlet subscription. Different outlets can have different custom prices.        |
+| Validation     | `customPrice` must be > 0 or `null`. Zero/negative rejected.                        |
+| Discounts      | Discounts still apply on top of the custom price (replaces base price only).        |
+| Add-ons        | Add-on prices are NOT customizable. Only the base plan price can be overridden.     |
+| Visibility     | Tenants can see `isCustomPrice` flag and `standardPlanPrice` in their billing APIs. |
 
 ### Cost Calculation Flow
 
@@ -493,6 +493,7 @@ PUT /api/admin/tenants/:tenantId/outlets/:outletId/customPrice
 Set or clear custom price for a specific outlet subscription.
 
 **Request Body (set custom price):**
+
 ```json
 {
   "customPrice": 350000,
@@ -501,6 +502,7 @@ Set or clear custom price for a specific outlet subscription.
 ```
 
 **Request Body (revert to standard):**
+
 ```json
 {
   "customPrice": null
@@ -508,6 +510,7 @@ Set or clear custom price for a specific outlet subscription.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -569,9 +572,9 @@ npx ts-node src/script/subscription_add_on_seed.ts
 
 ## Version History
 
-| Version | Date       | Changes               |
-| ------- | ---------- | --------------------- |
-| 1.0     | 2025-01-22 | Initial documentation |
+| Version | Date       | Changes                                                     |
+| ------- | ---------- | ----------------------------------------------------------- |
+| 1.0     | 2025-01-22 | Initial documentation                                       |
 | 1.1     | 2026-03-02 | Added custom pricing capability (per-outlet price override) |
 
 ---

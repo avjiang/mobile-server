@@ -22,16 +22,12 @@ const updateVersion = async (platform: string, data: any) => {
         update: {
             minVersion: data.minVersion,
             latestVersion: data.latestVersion,
-            title: data.title,
-            message: data.message,
             storeUrl: data.storeUrl
         },
         create: {
             platform,
             minVersion: data.minVersion,
             latestVersion: data.latestVersion,
-            title: data.title,
-            message: data.message,
             storeUrl: data.storeUrl
         }
     });

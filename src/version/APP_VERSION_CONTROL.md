@@ -14,8 +14,6 @@ model AppVersion {
   platform      String   @unique @map("PLATFORM") // 'android' or 'ios'
   minVersion    String   @map("MIN_VERSION")      // Minimum demanded version
   latestVersion String   @map("LATEST_VERSION")   // Latest available version
-  title         String?  @map("TITLE")            // Title for update dialog
-  message       String?  @map("MESSAGE")          // Message for update dialog
   storeUrl      String?  @map("STORE_URL")        // URL to App Store / Play Store
   createdAt     DateTime @default(now()) @map("CREATED_AT")
   updatedAt     DateTime @updatedAt @map("UPDATED_AT")
@@ -42,8 +40,6 @@ Used by the mobile app to check for updates.
     "platform": "android",
     "minVersion": "1.0.0",
     "latestVersion": "1.2.0",
-    "title": "Update Available",
-    "message": "Please update to the latest version for new features.",
     "storeUrl": "https://play.google.com/store/apps/details?id=com.example.app",
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -79,8 +75,6 @@ Used by the admin panel to update version configurations.
   "platform": "android",
   "minVersion": "1.0.0",
   "latestVersion": "1.2.0",
-  "title": "Critical Update",
-  "message": "This update fixes critical bugs.",
   "storeUrl": "https://..."
 }
 ```

@@ -511,6 +511,8 @@ model SalesItem {
   updatedAt           DateTime?           @updatedAt @map("UPDATED_AT")
   version             Int?                @default(1) @map("VERSION")
   specialInstructions String?             @default("") @map("SPECIAL_INSTRUCTIONS")
+  stockConsumptionQty Decimal?            @map("STOCK_CONSUMPTION_QTY") @db.Decimal(15, 4)
+  unitOfMeasure       String?             @map("UNIT_OF_MEASURE")
   itemStatus          String?             @map("ITEM_STATUS")
   priority            String?             @map("PRIORITY") // e.g., "NORMAL", "RUSH"
   estimatedPrepTime   Int?                @map("ESTIMATED_PREP_TIME") // In minutes

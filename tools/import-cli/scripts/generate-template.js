@@ -56,8 +56,9 @@ const sheets = {
       'unitOfMeasure', 'barcode', 'hasTax', 'hasVariants', 'reorderThreshold'
     ],
     examples: [
-      ['Coca Cola 330ml', 'COC001', 'Beverages', 'ABC Supplies', 5000, 8000, 100, 1, '', '', 'Coca Cola', 'Cold drink', 'pcs', '8901234567890', 'TRUE', 'FALSE', 10],
-      ['Basic T-Shirt', 'TSHIRT001', 'Apparel', 'XYZ Trading', 45000, 80000, 0, 1, 'Clothing', '', 'Local Brand', 'Cotton t-shirt', 'pcs', '', 'FALSE', 'TRUE', 5],
+      ['Coca Cola 330ml', 'COC001', 'Beverages', 'ABC Supplies', 5000, 8000, 100, 1, '', '', 'Coca Cola', 'Cold drink', 'Piece', '8901234567890', 'TRUE', 'FALSE', 10],
+      ['Basic T-Shirt', 'TSHIRT001', 'Apparel', 'XYZ Trading', 45000, 80000, 0, 1, 'Clothing', '', 'Local Brand', 'Cotton t-shirt', 'Piece', '', 'FALSE', 'TRUE', 5],
+      ['Detergent', 'DET001', 'Supplies', 'ABC Supplies', 50000, 10000, 5000, 1, '', '', 'CleanBrand', 'Liquid detergent', 'Milliliter', '', 'FALSE', 'FALSE', 500],
     ],
     notes: [
       '* itemName (Required): Product name',
@@ -69,7 +70,10 @@ const sheets = {
       '* stockQuantity (Optional): Initial stock quantity. For items WITH variants, leave empty (set stock on variants instead)',
       '* outletId (Optional): Outlet ID for stock, defaults to 1',
       '* hasVariants (Optional): TRUE if this item has variants (sizes, colors, etc.)',
+      '* unitOfMeasure (Optional): Unit of measure for the item',
       '* Other fields are optional',
+      '',
+      'Valid unitOfMeasure values: Piece, Pair, Box, Meter, Dozen, Set, Pack, Milliliter, Liter, Gram, Kilogram',
       '',
       'TIP: Copy category name from Categories sheet column A and paste into categoryName column',
       'TIP: Copy supplier company name from Suppliers sheet column A and paste into supplierName column',

@@ -15,6 +15,19 @@ import {
 } from '../pushy/notification-messages';
 import loyaltyService from '../loyalty/loyalty.service';
 
+// Helper: calculate effective stock quantity for deduction/restoration
+// For consumption items: quantity * stockConsumptionQty (e.g., 3 orders × 50ml = 150ml)
+// For piece-based items (null): quantity as-is (e.g., 3 pieces)
+function getEffectiveStockQty(
+    quantity: Decimal,
+    stockConsumptionQty?: { toString(): string } | null
+): Decimal {
+    if (stockConsumptionQty != null) {
+        return quantity.times(new Decimal(stockConsumptionQty.toString()));
+    }
+    return quantity;
+}
+
 // Extended performedBy with loyaltyTier for loyalty integration
 interface PerformedBy {
     userId: number;
@@ -873,6 +886,7 @@ async function completeNewSales(
                                 itemName: true,
                                 itemCode: true,
                                 cost: true, // Fallback cost
+                                unitOfMeasure: true, // For consumption-based stock deduction
                             },
                         },
                     },
@@ -929,33 +943,65 @@ async function completeNewSales(
                 stockReceiptsByItem.get(lookupKey)!.push(receipt);
             });
 
-            // Validate stock availability and calculate FIFO costs in one pass
+            // Validate stockConsumptionQty values
+            for (const item of salesBody.salesItems) {
+                if (item.stockConsumptionQty != null) {
+                    const consumptionQty = new Decimal(item.stockConsumptionQty.toString());
+                    if (consumptionQty.lte(0)) {
+                        throw new BusinessLogicError(
+                            `Invalid stockConsumptionQty for item ${item.itemName || item.itemId}: must be a positive number`
+                        );
+                    }
+                }
+            }
+
+            // Aggregate effective stock quantities per unique item for validation
+            // This fixes a pre-existing bug where duplicate itemIds (consumption items)
+            // were each validated independently against the original balance
+            const aggregatedEffectiveQtyMap = new Map<string, Decimal>();
+            for (const item of salesBody.salesItems) {
+                const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
+                const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
+                const current = aggregatedEffectiveQtyMap.get(lookupKey) || new Decimal(0);
+                aggregatedEffectiveQtyMap.set(lookupKey, current.plus(effectiveQty));
+            }
+
+            // Validate stock availability using aggregated quantities
             const stockValidationErrors: string[] = [];
+            for (const [lookupKey, totalEffectiveQty] of aggregatedEffectiveQtyMap) {
+                const stockBalance = stockBalanceMap.get(lookupKey);
+                if (!stockBalance) {
+                    const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                    const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
+                    stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}${variantInfo}`);
+                    continue;
+                }
+                if (new Decimal(stockBalance.availableQuantity).lt(totalEffectiveQty)) {
+                    const variantInfo = stockBalance.itemVariantId ? ` (variant)` : '';
+                    stockValidationErrors.push(
+                        `Insufficient stock for ${stockBalance.item.itemName}${variantInfo} (${stockBalance.item.itemCode}). ` +
+                        `Available: ${stockBalance.availableQuantity}, Required: ${totalEffectiveQty}`
+                    );
+                }
+            }
+            if (stockValidationErrors.length > 0) {
+                throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
+            }
+
+            // Calculate FIFO costs for each sales item
+            // Receipt quantities are mutated in-memory so subsequent items with the same
+            // itemId see reduced quantities (fixes duplicate-item FIFO bug)
             const salesItemsWithFIFOCost: Array<typeof salesBody.salesItems[0] & {
                 usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[]
             }> = [];
 
             for (const item of salesBody.salesItems) {
                 const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
-                const stockBalance = stockBalanceMap.get(lookupKey);
-                if (!stockBalance) {
-                    const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
-                    stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}${variantInfo}`);
-                    continue;
-                }
+                const stockBalance = stockBalanceMap.get(lookupKey)!;
+                const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
 
-                if (new Decimal(stockBalance.availableQuantity).lt(item.quantity)) {
-                    const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
-                    stockValidationErrors.push(
-                        `Insufficient stock for ${stockBalance.item.itemName}${variantInfo} (${stockBalance.item.itemCode}). ` +
-                        `Available: ${stockBalance.availableQuantity}, Required: ${item.quantity}`
-                    );
-                    continue;
-                }
-
-                // Calculate FIFO cost
                 const itemReceipts = stockReceiptsByItem.get(lookupKey) || [];
-                let remainingQuantity = new Decimal(item.quantity);
+                let remainingQuantity = effectiveQty;
                 let usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
 
                 if (itemReceipts.length === 0) {
@@ -966,12 +1012,18 @@ async function completeNewSales(
                         cost: new Decimal(stockBalance.item.cost || 0)
                     });
                 } else {
-                    // Use FIFO
+                    // Use FIFO — receipt.quantity is mutated in-memory for subsequent items
                     for (const receipt of itemReceipts) {
                         if (remainingQuantity.lte(0)) break;
 
-                        const quantityToUse = Decimal.min(remainingQuantity, new Decimal(receipt.quantity));
+                        const availableInReceipt = new Decimal(receipt.quantity);
+                        if (availableInReceipt.lte(0)) continue;
+
+                        const quantityToUse = Decimal.min(remainingQuantity, availableInReceipt);
                         remainingQuantity = remainingQuantity.minus(quantityToUse);
+
+                        // Mutate receipt quantity in-memory for subsequent items with same itemId
+                        (receipt as any).quantity = availableInReceipt.minus(quantityToUse);
 
                         usedReceipts.push({
                             id: receipt.id,
@@ -994,10 +1046,6 @@ async function completeNewSales(
                 salesItemsWithFIFOCost.push({ ...item, usedReceipts });
             }
 
-            if (stockValidationErrors.length > 0) {
-                throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
-            }
-
             // Calculate payments and sales status
             const totalSalesAmount = new Decimal(salesBody.totalAmount);
             const totalPaymentAmount = payments.reduce((sum, payment) => sum.plus(new Decimal(payment.tenderedAmount)), new Decimal(0));
@@ -1007,62 +1055,130 @@ async function completeNewSales(
             // Calculate total profit and prepare sales item data
             let totalProfit = new Decimal(0);
             const salesItemData: any[] = [];
-            const stockReceiptUpdates: { id: number; newQuantity: Decimal }[] = [];
+            // Aggregate receipt updates by receipt ID to prevent duplicate updates
+            // when multiple sales items consume from the same receipt
+            const stockReceiptUpdateMap = new Map<number, Decimal>();
+
+            // Snapshot original receipt quantities before FIFO mutation
+            const originalReceiptQtyMap = new Map<number, Decimal>();
+            for (const receipt of stockReceipts) {
+                originalReceiptQtyMap.set(receipt.id, new Decimal(receipt.quantity));
+            }
 
             salesItemsWithFIFOCost.forEach((item) => {
-                const totalQuantity = new Decimal(item.quantity);
-                const discountPerUnit = (item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0)).dividedBy(totalQuantity);
-                const serviceChargePerUnit = (item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0)).dividedBy(totalQuantity);
-                const taxPerUnit = item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0);
+                const isConsumptionItem = item.stockConsumptionQty != null;
 
-                item.usedReceipts.forEach((receipt) => {
-                    const receiptQuantity = new Decimal(receipt.quantityUsed);
-                    const receiptCost = new Decimal(receipt.cost);
+                if (isConsumptionItem) {
+                    // ── Consumption items: single row with weighted-average cost ──
+                    const totalQuantity = new Decimal(item.quantity);
+                    const totalDiscount = item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0);
+                    const totalServiceCharge = item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0);
+                    const totalTax = item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0);
+                    const totalRevenue = new Decimal(item.price).times(totalQuantity);
+                    const totalPriceBeforeTax = new Decimal(item.priceBeforeTax).times(totalQuantity);
+                    const totalSubtotal = new Decimal(item.subtotalAmount);
 
-                    const revenueForQuantity = new Decimal(item.price).times(receiptQuantity);
-                    const costForQuantity = receiptCost.times(receiptQuantity);
-                    const totalDiscountForQuantity = discountPerUnit.times(receiptQuantity);
-                    const totalTaxForQuantity = taxPerUnit.times(receiptQuantity);
-                    const totalServiceChargeForQuantity = serviceChargePerUnit.times(receiptQuantity);
-                    const totalPriceBeforeTax = new Decimal(item.priceBeforeTax).times(receiptQuantity);
-                    const totalSubtotalForQuantity = (new Decimal(item.subtotalAmount).dividedBy(totalQuantity)).times(receiptQuantity);
+                    // Weighted-average cost from FIFO receipts (in stock units)
+                    let totalCost = new Decimal(0);
+                    for (const receipt of item.usedReceipts) {
+                        totalCost = totalCost.plus(new Decimal(receipt.cost).times(receipt.quantityUsed));
+                    }
 
-                    const profit = revenueForQuantity.minus(costForQuantity).minus(totalDiscountForQuantity).minus(totalServiceChargeForQuantity);
+                    const profit = totalRevenue.minus(totalCost).minus(totalDiscount).minus(totalServiceCharge);
                     totalProfit = totalProfit.plus(profit);
 
                     salesItemData.push({
                         itemId: item.itemId,
-                        itemVariantId: item.itemVariantId || null, // Variant support
+                        itemVariantId: item.itemVariantId || null,
                         itemName: item.itemName,
                         itemCode: item.itemCode,
-                        variantSku: item.variantSku || null, // Variant support
-                        variantName: item.variantName || null, // Variant support
+                        variantSku: item.variantSku || null,
+                        variantName: item.variantName || null,
                         itemBrand: item.itemBrand,
                         itemModel: item.itemModel,
-                        quantity: receiptQuantity,
-                        cost: costForQuantity,
-                        price: revenueForQuantity,
+                        quantity: totalQuantity,
+                        cost: totalCost,
+                        price: totalRevenue,
                         priceBeforeTax: totalPriceBeforeTax,
                         profit: profit,
                         discountPercentage: item.discountPercentage,
-                        discountAmount: totalDiscountForQuantity,
-                        serviceChargeAmount: totalServiceChargeForQuantity,
-                        taxAmount: totalTaxForQuantity,
-                        subtotalAmount: totalSubtotalForQuantity,
+                        discountAmount: totalDiscount,
+                        serviceChargeAmount: totalServiceCharge,
+                        taxAmount: totalTax,
+                        subtotalAmount: totalSubtotal,
                         remark: item.remark || '',
                         deleted: false,
+                        stockConsumptionQty: item.stockConsumptionQty,
+                        unitOfMeasure: item.unitOfMeasure || null,
                     });
 
-                    // Prepare stock receipt updates
-                    if (receipt.id !== -1) {
-                        const existingReceipt = stockReceipts.find(sr => sr.id === receipt.id);
-                        if (existingReceipt) {
-                            const newQuantity = new Decimal(existingReceipt.quantity).minus(new Decimal(receipt.quantityUsed));
-                            stockReceiptUpdates.push({ id: receipt.id, newQuantity });
+                    // Track receipt updates for consumption item
+                    for (const receipt of item.usedReceipts) {
+                        if (receipt.id !== -1) {
+                            const current = stockReceiptUpdateMap.get(receipt.id) || new Decimal(0);
+                            stockReceiptUpdateMap.set(receipt.id, current.plus(receipt.quantityUsed));
                         }
                     }
-                });
+                } else {
+                    // ── Piece-based items: existing multi-row FIFO split ──
+                    const totalQuantity = new Decimal(item.quantity);
+                    const discountPerUnit = (item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0)).dividedBy(totalQuantity);
+                    const serviceChargePerUnit = (item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0)).dividedBy(totalQuantity);
+                    const taxPerUnit = item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0);
+
+                    item.usedReceipts.forEach((receipt) => {
+                        const receiptQuantity = new Decimal(receipt.quantityUsed);
+                        const receiptCost = new Decimal(receipt.cost);
+
+                        const revenueForQuantity = new Decimal(item.price).times(receiptQuantity);
+                        const costForQuantity = receiptCost.times(receiptQuantity);
+                        const totalDiscountForQuantity = discountPerUnit.times(receiptQuantity);
+                        const totalTaxForQuantity = taxPerUnit.times(receiptQuantity);
+                        const totalServiceChargeForQuantity = serviceChargePerUnit.times(receiptQuantity);
+                        const totalPriceBeforeTax = new Decimal(item.priceBeforeTax).times(receiptQuantity);
+                        const totalSubtotalForQuantity = (new Decimal(item.subtotalAmount).dividedBy(totalQuantity)).times(receiptQuantity);
+
+                        const profit = revenueForQuantity.minus(costForQuantity).minus(totalDiscountForQuantity).minus(totalServiceChargeForQuantity);
+                        totalProfit = totalProfit.plus(profit);
+
+                        salesItemData.push({
+                            itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            itemName: item.itemName,
+                            itemCode: item.itemCode,
+                            variantSku: item.variantSku || null,
+                            variantName: item.variantName || null,
+                            itemBrand: item.itemBrand,
+                            itemModel: item.itemModel,
+                            quantity: receiptQuantity,
+                            cost: costForQuantity,
+                            price: revenueForQuantity,
+                            priceBeforeTax: totalPriceBeforeTax,
+                            profit: profit,
+                            discountPercentage: item.discountPercentage,
+                            discountAmount: totalDiscountForQuantity,
+                            serviceChargeAmount: totalServiceChargeForQuantity,
+                            taxAmount: totalTaxForQuantity,
+                            subtotalAmount: totalSubtotalForQuantity,
+                            remark: item.remark || '',
+                            deleted: false,
+                        });
+
+                        // Track receipt updates for piece-based item
+                        if (receipt.id !== -1) {
+                            const current = stockReceiptUpdateMap.get(receipt.id) || new Decimal(0);
+                            stockReceiptUpdateMap.set(receipt.id, current.plus(receipt.quantityUsed));
+                        }
+                    });
+                }
             });
+
+            // Convert aggregated receipt update map to final update list
+            const stockReceiptUpdates: { id: number; newQuantity: Decimal }[] = [];
+            for (const [receiptId, totalUsed] of stockReceiptUpdateMap) {
+                const originalQty = originalReceiptQtyMap.get(receiptId) || new Decimal(0);
+                stockReceiptUpdates.push({ id: receiptId, newQuantity: originalQty.minus(totalUsed) });
+            }
 
             // Create sales record
             const createdSales = await tx.sales.create({
@@ -1176,11 +1292,13 @@ async function completeNewSales(
             }
 
             // Prepare stock balance updates and movements (with variant support)
-            const stockUpdates = salesBody.salesItems.map(item => {
-                const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
+            // Aggregate per unique item to handle duplicate itemIds (consumption items)
+            const stockUpdates: any[] = [];
+            for (const [lookupKey, totalEffectiveQty] of aggregatedEffectiveQtyMap) {
                 const stockBalance = stockBalanceMap.get(lookupKey)!;
+                const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
                 const newAvailableQuantity = new Decimal(stockBalance.availableQuantity)
-                    .minus(new Decimal(item.quantity));
+                    .minus(totalEffectiveQty);
 
                 // Check reorder threshold
                 const reorderThreshold = stockBalance.reorderThreshold
@@ -1192,28 +1310,28 @@ async function completeNewSales(
                     new Decimal(stockBalance.availableQuantity).gt(reorderThreshold)
                     : false;
 
-                return {
-                    stockBalanceId: stockBalance.id, // Use actual stock balance ID
+                stockUpdates.push({
+                    stockBalanceId: stockBalance.id,
                     outletId: salesBody.outletId,
                     itemId: item.itemId,
-                    itemVariantId: item.itemVariantId || null, // Variant support
+                    itemVariantId: item.itemVariantId || null,
                     itemName: stockBalance.item.itemName,
                     itemCode: stockBalance.item.itemCode,
-                    variantName: item.variantName || null, // Variant support
-                    quantity: new Decimal(item.quantity),
+                    variantName: item.variantName || null,
+                    quantity: totalEffectiveQty,
                     previousAvailable: new Decimal(stockBalance.availableQuantity),
-                    previousOnHand: new Decimal(stockBalance.availableQuantity), // Assuming same as available
+                    previousOnHand: new Decimal(stockBalance.availableQuantity),
                     newAvailableQuantity: newAvailableQuantity,
                     reorderThreshold: reorderThreshold?.toNumber(),
-                    willBeOutOfStock: newAvailableQuantity.eq(0),
+                    willBeOutOfStock: newAvailableQuantity.lte(0),
                     needsReorder: needsReorder,
-                };
-            });
+                });
+            }
 
             // Store for notifications outside transaction
             stockUpdatesForNotification = stockUpdates;
 
-            // Batch update stock balances and create movements (optimized - no redundant queries)
+            // Batch update stock balances and create movements
             await Promise.all([
                 // Update stock balances directly using stored IDs
                 ...stockUpdates.map((update) =>
@@ -1228,11 +1346,11 @@ async function completeNewSales(
                     })
                 ),
 
-                // Batch create stock movements (with variant support)
+                // Batch create stock movements
                 tx.stockMovement.createMany({
                     data: stockUpdates.map(update => ({
                         itemId: update.itemId,
-                        itemVariantId: update.itemVariantId, // Variant support
+                        itemVariantId: update.itemVariantId,
                         outletId: update.outletId,
                         previousAvailableQuantity: update.previousAvailable.toNumber(),
                         previousOnHandQuantity: update.previousOnHand.toNumber(),
@@ -1858,11 +1976,16 @@ let voidSales = async (
             // Restore stock for each sales item (with variant support)
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
+                    const restoreQty = getEffectiveStockQty(
+                        new Decimal(salesItem.quantity),
+                        salesItem.stockConsumptionQty
+                    );
+
                     // Update Stock Balance - add back the quantities
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
                             itemId: salesItem.itemId,
-                            itemVariantId: salesItem.itemVariantId || null, // Variant support
+                            itemVariantId: salesItem.itemVariantId || null,
                             outletId: sales.outletId,
                             deleted: false,
                         },
@@ -1875,23 +1998,23 @@ let voidSales = async (
                             },
                             data: {
                                 availableQuantity: {
-                                    increment: salesItem.quantity,
+                                    increment: restoreQty.toNumber(),
                                 },
                                 onHandQuantity: {
-                                    increment: salesItem.quantity,
+                                    increment: restoreQty.toNumber(),
                                 },
                             },
                         });
-                        // Create Stock Movement record for the void (with variant support)
+                        // Create Stock Movement record for the void
                         await tx.stockMovement.create({
                             data: {
                                 itemId: salesItem.itemId,
-                                itemVariantId: salesItem.itemVariantId || null, // Variant support
+                                itemVariantId: salesItem.itemVariantId || null,
                                 outletId: sales.outletId,
                                 previousAvailableQuantity: stockBalance.availableQuantity.toNumber(),
                                 previousOnHandQuantity: stockBalance.onHandQuantity.toNumber(),
-                                availableQuantityDelta: salesItem.quantity.toNumber(),
-                                onHandQuantityDelta: salesItem.quantity.toNumber(),
+                                availableQuantityDelta: restoreQty.toNumber(),
+                                onHandQuantityDelta: restoreQty.toNumber(),
                                 movementType: 'Sales Void',
                                 documentId: salesId,
                                 reason: '',
@@ -1993,11 +2116,16 @@ let returnSales = async (
             // Restore stock for each sales item (with variant support)
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
+                    const restoreQty = getEffectiveStockQty(
+                        new Decimal(salesItem.quantity),
+                        salesItem.stockConsumptionQty
+                    );
+
                     // Update Stock Balance - add back the quantities
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
                             itemId: salesItem.itemId,
-                            itemVariantId: salesItem.itemVariantId || null, // Variant support
+                            itemVariantId: salesItem.itemVariantId || null,
                             outletId: sales.outletId,
                             deleted: false,
                         },
@@ -2010,24 +2138,24 @@ let returnSales = async (
                             },
                             data: {
                                 availableQuantity: {
-                                    increment: salesItem.quantity,
+                                    increment: restoreQty.toNumber(),
                                 },
                                 onHandQuantity: {
-                                    increment: salesItem.quantity,
+                                    increment: restoreQty.toNumber(),
                                 },
                             },
                         });
 
-                        // Create Stock Movement record for the return (with variant support)
+                        // Create Stock Movement record for the return
                         await tx.stockMovement.create({
                             data: {
                                 itemId: salesItem.itemId,
-                                itemVariantId: salesItem.itemVariantId || null, // Variant support
+                                itemVariantId: salesItem.itemVariantId || null,
                                 outletId: sales.outletId,
                                 previousAvailableQuantity: stockBalance.availableQuantity,
                                 previousOnHandQuantity: stockBalance.onHandQuantity,
-                                availableQuantityDelta: salesItem.quantity,
-                                onHandQuantityDelta: salesItem.quantity,
+                                availableQuantityDelta: restoreQty.toNumber(),
+                                onHandQuantityDelta: restoreQty.toNumber(),
                                 movementType: 'Sales Return',
                                 documentId: salesId,
                                 reason: '',
@@ -2129,11 +2257,16 @@ let refundSales = async (
             // Restore stock for each sales item (with variant support)
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
+                    const restoreQty = getEffectiveStockQty(
+                        new Decimal(salesItem.quantity),
+                        salesItem.stockConsumptionQty
+                    );
+
                     // Update Stock Balance - add back the quantities
                     const stockBalance = await tx.stockBalance.findFirst({
                         where: {
                             itemId: salesItem.itemId,
-                            itemVariantId: salesItem.itemVariantId || null, // Variant support
+                            itemVariantId: salesItem.itemVariantId || null,
                             outletId: sales.outletId,
                             deleted: false,
                         },
@@ -2145,24 +2278,24 @@ let refundSales = async (
                             },
                             data: {
                                 availableQuantity: {
-                                    increment: salesItem.quantity,
+                                    increment: restoreQty.toNumber(),
                                 },
                                 onHandQuantity: {
-                                    increment: salesItem.quantity,
+                                    increment: restoreQty.toNumber(),
                                 },
                             },
                         });
 
-                        // Create Stock Movement record for the refund (with variant support)
+                        // Create Stock Movement record for the refund
                         await tx.stockMovement.create({
                             data: {
                                 itemId: salesItem.itemId,
-                                itemVariantId: salesItem.itemVariantId || null, // Variant support
+                                itemVariantId: salesItem.itemVariantId || null,
                                 outletId: sales.outletId,
                                 previousAvailableQuantity: stockBalance.availableQuantity,
                                 previousOnHandQuantity: stockBalance.onHandQuantity,
-                                availableQuantityDelta: salesItem.quantity,
-                                onHandQuantityDelta: salesItem.quantity,
+                                availableQuantityDelta: restoreQty.toNumber(),
+                                onHandQuantityDelta: restoreQty.toNumber(),
                                 movementType: 'Sales Refund',
                                 documentId: salesId,
                                 reason: '',
@@ -2267,6 +2400,8 @@ let getDeliveryList = async (
                         quantity: true,
                         price: true,
                         subtotalAmount: true,
+                        stockConsumptionQty: true,
+                        unitOfMeasure: true,
                     },
                     where: {
                         deleted: false
@@ -2353,6 +2488,8 @@ let getDeliveredList = async (
                             quantity: true,
                             price: true,
                             subtotalAmount: true,
+                            stockConsumptionQty: true,
+                            unitOfMeasure: true,
                         },
                         where: {
                             deleted: false

@@ -1,7 +1,7 @@
 # Stock Module - Backend Documentation
 
-**Version:** 1.0
-**Last Updated:** 2025-12-18
+**Version:** 1.1
+**Last Updated:** 2026-03-06
 **Author:** Backend Team
 
 ---
@@ -32,14 +32,15 @@ The Stock module manages inventory tracking across outlets and warehouses. It pr
 
 ### Key Features
 
-| Feature            | Description                                 |
-| ------------------ | ------------------------------------------- |
-| Multi-outlet       | Stock tracked separately per outlet         |
-| Variant Support    | Items with variants track stock per variant |
-| FIFO Costing       | First-in-first-out cost calculation         |
-| Optimistic Locking | Version-based concurrency control           |
-| Delta Sync         | Efficient data synchronization              |
-| Audit Trail        | Complete history via StockMovement          |
+| Feature               | Description                                 |
+| --------------------- | ------------------------------------------- |
+| Multi-outlet          | Stock tracked separately per outlet         |
+| Variant Support       | Items with variants track stock per variant |
+| FIFO Costing          | First-in-first-out cost calculation         |
+| Optimistic Locking    | Version-based concurrency control           |
+| Delta Sync            | Efficient data synchronization              |
+| Audit Trail           | Complete history via StockMovement          |
+| Consumption Deduction | Volume/weight-based stock deduction for services |
 
 ---
 
@@ -588,6 +589,17 @@ Sales automatically deduct stock:
 // Updates StockBalance
 ```
 
+**Stock Deduction Formula:**
+
+```
+if salesItem.stockConsumptionQty IS NOT NULL:
+    stock -= salesItem.quantity * salesItem.stockConsumptionQty
+else:
+    stock -= salesItem.quantity    // standard piece-based behavior
+```
+
+This supports consumption-based items (e.g., detergent tracked in milliliters) where the stock deduction differs from the order quantity. See [docs/STOCK_CONSUMPTION_QTY.md](../../docs/STOCK_CONSUMPTION_QTY.md) for full details.
+
 **Movement Types from Sales:**
 
 - `Sales` - Stock deducted
@@ -731,6 +743,9 @@ await tenantPrisma.$transaction(async (tx) => {
 - [ ] Delta sync returns parent when variant changes
 - [ ] Validation errors for missing variant ID
 - [ ] Validation errors for invalid variant ID
+- [ ] Consumption-based sale deducts by quantity * stockConsumptionQty
+- [ ] Void/return/refund of consumption sale restores correct amount
+- [ ] Duplicate itemId entries (different stockConsumptionQty) validate and deduct correctly
 
 ---
 
@@ -739,6 +754,7 @@ await tenantPrisma.$transaction(async (tx) => {
 - [VARIANT_STOCK_API_GUIDE.md](./VARIANT_STOCK_API_GUIDE.md) - Frontend integration guide
 - [PRODUCT_VARIANT_COMPLETE_GUIDE.md](../item/PRODUCT_VARIANT_COMPLETE_GUIDE.md) - Variant feature documentation
 - [VARIANT_API_GUIDE.md](../item/VARIANT_API_GUIDE.md) - Item/Variant CRUD operations
+- [STOCK_CONSUMPTION_QTY.md](../../docs/STOCK_CONSUMPTION_QTY.md) - Consumption-based stock deduction API contract
 
 ---
 

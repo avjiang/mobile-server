@@ -34,7 +34,11 @@ app.use(cors({
 
 // auth route need to execute before authentication middleware
 // because we need to exclude few path like "\login" since login API doesn't require token to authenticate
-app.get('/', (req, res) => res.send('Hello World!'))
+const serverStartTime = new Date().toISOString();
+app.get('/', (req, res) => res.json({
+  version: require('../package.json').version,
+  startedAt: serverStartTime,
+}))
 app.use('/auth', require('./auth/auth.controller'))
 
 //authentication middleware

@@ -7,6 +7,26 @@ import axios from 'axios';
 import cliProgress from 'cli-progress';
 import chalk from 'chalk';
 
+// UOM normalization map: common variations → standardized English key
+const UOM_NORMALIZATION_MAP = {
+  'pcs': 'Piece', 'Pcs': 'Piece', 'PCS': 'Piece', 'piece': 'Piece', 'Buah': 'Piece', 'buah': 'Piece',
+  'pair': 'Pair', 'Pasang': 'Pair', 'pasang': 'Pair',
+  'box': 'Box', 'Kotak': 'Box', 'kotak': 'Box',
+  'meter': 'Meter', 'm': 'Meter', 'M': 'Meter',
+  'dozen': 'Dozen', 'Lusin': 'Dozen', 'lusin': 'Dozen',
+  'set': 'Set',
+  'pack': 'Pack', 'Paket': 'Pack', 'paket': 'Pack',
+  'kg': 'Kilogram', 'Kg': 'Kilogram', 'KG': 'Kilogram', 'kilogram': 'Kilogram',
+  'g': 'Gram', 'G': 'Gram', 'gram': 'Gram',
+  'l': 'Liter', 'L': 'Liter', 'liter': 'Liter',
+  'ml': 'Milliliter', 'ML': 'Milliliter', 'Ml': 'Milliliter', 'milliliter': 'Milliliter',
+};
+
+function normalizeUOM(value) {
+  if (!value) return '';
+  return UOM_NORMALIZATION_MAP[value] || value;
+}
+
 /**
  * Create an API client with authorization
  * @param {string} apiUrl - Base API URL
@@ -266,7 +286,7 @@ export async function importViaApi(data, options) {
               cost: parseFloat(item.cost) || 0,
               price: parseFloat(item.price) || 0,
               currency: item.currency || 'IDR',
-              unitOfMeasure: item.unitOfMeasure || '',
+              unitOfMeasure: normalizeUOM(item.unitOfMeasure),
               alternateLookup: item.barcode || '',
               hasTax: item.hasTax === true || item.hasTax === 'true',
               hasVariants: hasVariants,

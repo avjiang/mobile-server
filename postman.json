@@ -10629,6 +10629,924 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Loyalty",
+			"item": [
+				{
+					"name": "Program",
+					"item": [
+						{
+							"name": "Get Loyalty Program",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/program",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"program"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Loyalty Program",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"My Rewards\",\n    \"pointsPerCurrency\": 1,\n    \"currencyPerPoint\": 100,\n    \"pointsExpiryDays\": 365,\n    \"minRedeemPoints\": 100\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/program",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"program"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Loyalty Program",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"My Rewards Updated\",\n    \"pointsPerCurrency\": 2,\n    \"currencyPerPoint\": 50,\n    \"pointsExpiryDays\": 180,\n    \"minRedeemPoints\": 50,\n    \"isActive\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/program/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"program",
+										"1"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Enrollment & Account",
+					"item": [
+						{
+							"name": "Enroll Customer",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"customerId\": 42,\n    \"loyaltyProgramId\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/enroll",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"enroll"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Loyalty Account By Customer ID",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/account/customer/42",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"account",
+										"customer",
+										"42"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Points Operations",
+					"item": [
+						{
+							"name": "Earn Points",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"points\": 500,\n    \"description\": \"Welcome bonus\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/account/1/earn",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"account",
+										"1",
+										"earn"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Redeem Points",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"points\": 200,\n    \"description\": \"Manual redemption\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/account/1/redeem",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"account",
+										"1",
+										"redeem"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Adjust Points",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"points\": -50,\n    \"description\": \"Correction for duplicate earn\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/account/1/adjust",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"account",
+										"1",
+										"adjust"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Transaction History",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/account/1/transactions?cursor=0&limit=20",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"account",
+										"1",
+										"transactions"
+									],
+									"query": [
+										{
+											"key": "cursor",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "20"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Expiring Points",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/account/1/expiring?days=30",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"account",
+										"1",
+										"expiring"
+									],
+									"query": [
+										{
+											"key": "days",
+											"value": "30"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Tier Management (Advanced)",
+					"item": [
+						{
+							"name": "Create Tier",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"loyaltyProgramId\": 1,\n    \"name\": \"Gold\",\n    \"minSpend\": 2000000,\n    \"discountPercentage\": 5,\n    \"pointsMultiplier\": 1.5,\n    \"sortOrder\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/tier",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"tier"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Tier",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Gold Plus\",\n    \"minSpend\": 2500000,\n    \"discountPercentage\": 7,\n    \"pointsMultiplier\": 2,\n    \"sortOrder\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/tier/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"tier",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Tier",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/tier/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"tier",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Tiers By Program ID",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/tier/program/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"tier",
+										"program",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Manual Tier Assignment",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"loyaltyTierId\": 2,\n    \"isManualTier\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/loyalty/account/1/tier",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"loyalty",
+										"account",
+										"1",
+										"tier"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Subscription",
+			"item": [
+				{
+					"name": "Packages",
+					"item": [
+						{
+							"name": "Get All Packages",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/subscription/package",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"package"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Package By ID",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/subscription/package/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"package",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Package (USAGE)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"10-Session Wash Package\",\n    \"packageType\": \"USAGE\",\n    \"price\": 150000,\n    \"totalQuota\": 10,\n    \"quotaUnit\": \"sessions\",\n    \"validityDays\": 90,\n    \"categoryIds\": [\n        5\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/subscription/package",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"package"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Package (TIME)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Monthly Premium\",\n    \"packageType\": \"TIME\",\n    \"price\": 500000,\n    \"durationDays\": 30,\n    \"discountPercentage\": 10,\n    \"categoryIds\": [\n        5,\n        6\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/subscription/package",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"package"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Package",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"10-Session Wash Package Updated\",\n    \"price\": 180000,\n    \"totalQuota\": 12,\n    \"isActive\": true,\n    \"categoryIds\": [\n        5,\n        6\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/subscription/package/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"package",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Package",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/subscription/package/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"package",
+										"1"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Customer Subscriptions",
+					"item": [
+						{
+							"name": "Subscribe Customer",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"customerId\": 42,\n    \"subscriptionPackageId\": 1,\n    \"paidAmount\": 150000\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/subscription/subscribe",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"subscribe"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Customer Subscriptions",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/subscription/customer/42",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"customer",
+										"42"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Subscription By ID",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/subscription/subscription/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"subscription",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Cancel Subscription",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/subscription/cancel/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"cancel",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Record Subscription Usage",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"customerSubscriptionId\": 1,\n    \"salesId\": 789,\n    \"quantityUsed\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/subscription/usage",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"subscription",
+										"usage"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
 		}
 	],
 	"variable": [

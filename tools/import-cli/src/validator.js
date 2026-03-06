@@ -9,6 +9,12 @@ const VALID_ATTRIBUTE_TYPES = [
   'Weight', 'Length', 'Width', 'Height', 'Capacity'
 ];
 
+// Standardized UOM values (English capitalized full names)
+const VALID_UOM_VALUES = [
+  'Piece', 'Pair', 'Box', 'Meter', 'Dozen', 'Set', 'Pack',
+  'Milliliter', 'Liter', 'Gram', 'Kilogram'
+];
+
 /**
  * Validation result structure
  */
@@ -184,6 +190,11 @@ function validateItems(items, categoryNames, supplierNames, result) {
     // Warning: stockQuantity on item with variants
     if (item.hasVariants && !isEmpty(item.stockQuantity) && Number(item.stockQuantity) > 0) {
       result.addWarning('Items', row, 'stockQuantity', item.stockQuantity, 'Item has variants - stock should be set on variants instead');
+    }
+
+    // Validate unitOfMeasure if provided
+    if (!isEmpty(item.unitOfMeasure) && !VALID_UOM_VALUES.includes(item.unitOfMeasure)) {
+      result.addWarning('Items', row, 'unitOfMeasure', item.unitOfMeasure, `"${item.unitOfMeasure}" is not a standardized UOM value. Valid values: ${VALID_UOM_VALUES.join(', ')}. It will be auto-normalized if possible.`);
     }
   });
 

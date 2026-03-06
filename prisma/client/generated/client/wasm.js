@@ -422,6 +422,8 @@ exports.Prisma.SalesItemScalarFieldEnum = {
   updatedAt: 'updatedAt',
   version: 'version',
   specialInstructions: 'specialInstructions',
+  stockConsumptionQty: 'stockConsumptionQty',
+  unitOfMeasure: 'unitOfMeasure',
   itemStatus: 'itemStatus',
   priority: 'priority',
   estimatedPrepTime: 'estimatedPrepTime'
@@ -1597,6 +1599,7 @@ exports.Prisma.SalesItemOrderByRelevanceFieldEnum = {
   variantName: 'variantName',
   remark: 'remark',
   specialInstructions: 'specialInstructions',
+  unitOfMeasure: 'unitOfMeasure',
   itemStatus: 'itemStatus',
   priority: 'priority'
 };

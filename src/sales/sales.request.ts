@@ -98,6 +98,8 @@ export class CreateSalesItemRequest {
     @Expose() subtotalAmount: PrismaDecimal = new PrismaDecimal(0);
     @Expose() remark: string | undefined;
     @Expose() deleted: boolean | undefined;
+    @Expose() stockConsumptionQty?: PrismaDecimal;
+    @Expose() unitOfMeasure?: string;
 }
 
 export class CalculateSalesObject {

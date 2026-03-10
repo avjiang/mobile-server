@@ -89,6 +89,7 @@
     "util-deprecate": "^1.0.2",
     "utils-merge": "^1.0.1",
     "validator": "^13.11.0",
+    "prisma": "^6.7.0",
     "vary": "^1.1.2"
   },
   "scripts": {
@@ -120,7 +121,6 @@
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "eslint": "^8.50.0",
-    "prisma": "^6.7.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
     "typescript": "^5.7.3"

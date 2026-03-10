@@ -48,6 +48,7 @@ jobs:
             dist/ \
             node_modules/ \
             prisma/client/generated/ \
+            prisma/client/migrations/ \
             prisma/global-client/generated/ \
             prisma/client/schema.prisma \
             prisma/global-client/schema.prisma \

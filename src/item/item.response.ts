@@ -81,7 +81,13 @@ export class ItemDto {
     @Expose()
     deleted: boolean = false;
 
+    @Expose()
+    trackStock: boolean = true;
+
     @Expose({ name: 'stockQuantity' })
     @Transform(({ value, obj }) => value !== undefined ? value : (obj.stock?.availableQuantity ?? 0), { toClassOnly: true })
     stockQuantity: number = 0;
+
+    @Expose()
+    variants?: any[];
 }

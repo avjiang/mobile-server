@@ -316,6 +316,7 @@ exports.Prisma.ItemScalarFieldEnum = {
   taxRate: 'taxRate',
   supplierId: 'supplierId',
   hasVariants: 'hasVariants',
+  trackStock: 'trackStock',
   deleted: 'deleted',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',

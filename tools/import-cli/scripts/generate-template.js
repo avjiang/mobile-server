@@ -53,12 +53,13 @@ const sheets = {
       'itemName', 'itemCode', 'categoryName', 'supplierName',
       'cost', 'price', 'stockQuantity', 'outletId',
       'itemType', 'itemModel', 'itemBrand', 'itemDescription',
-      'unitOfMeasure', 'barcode', 'hasTax', 'hasVariants', 'reorderThreshold'
+      'unitOfMeasure', 'barcode', 'hasTax', 'hasVariants', 'trackStock', 'reorderThreshold'
     ],
     examples: [
-      ['Coca Cola 330ml', 'COC001', 'Beverages', 'ABC Supplies', 5000, 8000, 100, 1, '', '', 'Coca Cola', 'Cold drink', 'Piece', '8901234567890', 'TRUE', 'FALSE', 10],
-      ['Basic T-Shirt', 'TSHIRT001', 'Apparel', 'XYZ Trading', 45000, 80000, 0, 1, 'Clothing', '', 'Local Brand', 'Cotton t-shirt', 'Piece', '', 'FALSE', 'TRUE', 5],
-      ['Detergent', 'DET001', 'Supplies', 'ABC Supplies', 50000, 10000, 5000, 1, '', '', 'CleanBrand', 'Liquid detergent', 'Milliliter', '', 'FALSE', 'FALSE', 500],
+      ['Coca Cola 330ml', 'COC001', 'Beverages', 'ABC Supplies', 5000, 8000, 100, 1, '', '', 'Coca Cola', 'Cold drink', 'Piece', '8901234567890', 'TRUE', 'FALSE', 'TRUE', 10],
+      ['Basic T-Shirt', 'TSHIRT001', 'Apparel', 'XYZ Trading', 45000, 80000, 0, 1, 'Clothing', '', 'Local Brand', 'Cotton t-shirt', 'Piece', '', 'FALSE', 'TRUE', 'TRUE', 5],
+      ['Detergent', 'DET001', 'Supplies', 'ABC Supplies', 50000, 10000, 5000, 1, '', '', 'CleanBrand', 'Liquid detergent', 'Milliliter', '', 'FALSE', 'FALSE', 'TRUE', 500],
+      ['Folding + Ironing', 'SVC001', 'Services', 'ABC Supplies', 5000, 15000, 0, 1, 'Service', '', '', 'Laundry service', '', '', 'FALSE', 'FALSE', 'FALSE', 0],
     ],
     notes: [
       '* itemName (Required): Product name',
@@ -70,6 +71,7 @@ const sheets = {
       '* stockQuantity (Optional): Initial stock quantity. For items WITH variants, leave empty (set stock on variants instead)',
       '* outletId (Optional): Outlet ID for stock, defaults to 1',
       '* hasVariants (Optional): TRUE if this item has variants (sizes, colors, etc.)',
+      '* trackStock (Optional): TRUE (default) to track stock for this item. Set FALSE for service items that have no physical inventory (e.g. Folding + Ironing)',
       '* unitOfMeasure (Optional): Unit of measure for the item',
       '* Other fields are optional',
       '',

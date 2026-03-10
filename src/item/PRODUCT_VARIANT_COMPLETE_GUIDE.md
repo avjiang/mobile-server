@@ -88,10 +88,12 @@ Product variants allow a single item (e.g., "Samsung Galaxy S24") to have multip
 
 - [x] Variant Stock Auto-Creation
   - When variants are created via `createMany()` or `update()`, the following are auto-created:
-    - `StockBalance` with quantity = 0 (outlet 1)
-    - `StockMovement` with `movementType: "Create Variant"` (audit trail)
+    - `StockBalance` with quantity = `stockQuantity` per variant (or 0 if not provided), outlet 1
+    - `StockMovement` with `movementType: "Create Variant"`, delta = `stockQuantity` (or 0)
+    - `StockReceipt` when `cost > 0 AND stockQuantity > 0` (FIFO costing, `createMany()` only)
   - Uses batch operations (`createMany`) for optimal performance
-  - 2 SQL queries regardless of variant count
+  - 2-3 SQL queries regardless of variant count
+  - Initial stock per variant only supported during `createMany()` (variants added via `update()` start at 0)
 
 - [x] Variant Service ([src/variant/variant.service.ts](src/variant/variant.service.ts))
   - Internal helper service for variant operations
@@ -1576,8 +1578,8 @@ if (existingSoftDeleted) {
 |--------|--------|
 | ItemVariant | Restored (`deleted: false`), fields updated |
 | Old StockBalance | Stays soft-deleted (old quantities preserved as history) |
-| New StockBalance | Created with qty=0 via `createVariantStockRecords` |
-| StockMovement | New "Create Variant" movement added |
+| New StockBalance | Created via `createVariantStockRecords` (qty=0 for restored variants; initial qty supported during `createMany()`) |
+| StockMovement | New "Create Variant" movement added (delta matches initial qty) |
 | Old StockReceipt | Stays soft-deleted (FIFO starts fresh) |
 | Attributes | Processed normally (restored or created) |
 

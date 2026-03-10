@@ -220,52 +220,31 @@ let createTenant = async (body: CreateTenantRequest) => {
 
             // If tenant database setup fails, rollback the tenant creation in the main database
             if (createdTenantId !== null) {
+                let rollbackSucceeded = false;
                 try {
                     console.log(`Rolling back tenant creation for ID: ${createdTenantId}`);
                     await prisma.$transaction(async (tx) => {
-                        // Delete all tenant add-ons
-                        await tx.tenantAddOn.deleteMany({
-                            where: { tenantId: createdTenantId! }
-                        });
-                        // Delete all tenant subscriptions
-                        await tx.tenantSubscription.deleteMany({
-                            where: {
-                                tenantId: createdTenantId!
-                            }
-                        });
-                        // Delete all tenant warehouses
-                        await tx.tenantWarehouse.deleteMany({
-                            where: {
-                                tenantId: createdTenantId!
-                            }
-                        });
-                        // Delete all tenant outlets
-                        await tx.tenantOutlet.deleteMany({
-                            where: {
-                                tenantId: createdTenantId!
-                            }
-                        });
-                        // Delete all tenant users
-                        await tx.tenantUser.deleteMany({
-                            where: {
-                                tenantId: createdTenantId!
-                            }
-                        });
-                        // Finally, delete the tenant itself
-                        await tx.tenant.delete({
-                            where: {
-                                id: createdTenantId!
-                            }
-                        });
+                        await tx.tenantAddOn.deleteMany({ where: { tenantId: createdTenantId! } });
+                        await tx.tenantSubscription.deleteMany({ where: { tenantId: createdTenantId! } });
+                        await tx.tenantWarehouse.deleteMany({ where: { tenantId: createdTenantId! } });
+                        await tx.tenantOutlet.deleteMany({ where: { tenantId: createdTenantId! } });
+                        await tx.tenantUser.deleteMany({ where: { tenantId: createdTenantId! } });
+                        await tx.tenant.delete({ where: { id: createdTenantId! } });
                     });
-                    throw new Error("Failed to set up tenant database. Tenant creation has been rolled back.");
+                    rollbackSucceeded = true;
                 } catch (rollbackError) {
                     console.error('Error during rollback:', rollbackError);
+                }
+
+                const tenantDbErrorMessage = tenantDbError instanceof Error ? tenantDbError.message : tenantDbError;
+                if (rollbackSucceeded) {
+                    throw new Error(`Failed to set up tenant database: ${tenantDbErrorMessage}. Tenant creation has been rolled back.`);
+                } else {
                     throw new Error("Failed to set up tenant database AND failed to roll back. Manual intervention required.");
                 }
             } else {
                 console.error("Failed to set up tenant database");
-                throw new Error("Failed to set up tenant database")
+                throw new Error("Failed to set up tenant database");
             }
         }
     }

@@ -236,6 +236,7 @@ export async function importDirectToDB(data, options) {
           }
 
           const hasVariants = item.hasVariants === true || item.hasVariants === 'true' || item.hasVariants === 'TRUE';
+          const trackStock = item.trackStock === undefined || item.trackStock === '' ? true : (item.trackStock === true || item.trackStock === 'true' || item.trackStock === 'TRUE');
 
           const created = await prisma.item.create({
             data: {
@@ -254,15 +255,16 @@ export async function importDirectToDB(data, options) {
               alternateLookUp: item.barcode || '',
               hasTax: item.hasTax === true || item.hasTax === 'true',
               hasVariants: hasVariants,
+              trackStock: trackStock,
             }
           });
 
           itemCodeMap.set(item.itemCode.toLowerCase(), created);
           results.items.created++;
 
-          // Create stock records if item has stock and no variants
+          // Create stock records if item has stock, no variants, and tracks stock
           const stockQty = parseFloat(item.stockQuantity) || 0;
-          if (stockQty > 0 && !hasVariants) {
+          if (stockQty > 0 && !hasVariants && trackStock !== false) {
             const targetOutletId = parseInt(item.outletId) || outletId;
             await createStockRecords(prisma, created.id, null, targetOutletId, stockQty, parseFloat(item.cost) || 0, results);
           }

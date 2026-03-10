@@ -23,11 +23,12 @@ including pricing, features, billing logic, and technical implementation details
 
 ### Add-Ons
 
-| Add-On          | Price (IDR)          | Scope       | Availability |
-| --------------- | -------------------- | ----------- | ------------ |
-| Extra User      | Rp 50,000/user       | Tenant-wide | Basic & Pro  |
-| Extra Device    | Rp 20,000/device     | Tenant-wide | Pro only     |
-| Extra Warehouse | Rp 150,000/warehouse | Tenant-wide | Pro only     |
+| Add-On           | Price (IDR)          | Scope       | Availability |
+| ---------------- | -------------------- | ----------- | ------------ |
+| Extra User       | Rp 50,000/user       | Tenant-wide | Basic & Pro  |
+| Extra Device     | Rp 20,000/device     | Tenant-wide | Pro only     |
+| Extra Warehouse  | Rp 150,000/warehouse | Tenant-wide | Pro only     |
+| Advanced Loyalty | Rp 150,000/tenant    | Tenant-wide | Pro only     |
 
 ---
 
@@ -65,6 +66,7 @@ including pricing, features, billing logic, and technical implementation details
 - Push notifications
 - Warehouse management
 - Cross-outlet inventory
+- Loyalty program
 
 ---
 
@@ -100,6 +102,7 @@ including pricing, features, billing logic, and technical implementation details
 - Push notifications
 - Warehouse management
 - Cross-outlet inventory
+- Loyalty program
 
 **Add-ons Available:**
 
@@ -121,6 +124,14 @@ including pricing, features, billing logic, and technical implementation details
   - Inventory alerts (low stock, out of stock)
   - Delivery confirmations
   - Payment notifications
+- **Basic loyalty program (included)**
+  - Loyalty program configuration
+  - Customer enrollment & points balance
+  - Points earn/redeem during checkout
+  - Manual point adjustments
+  - Points expiry with FIFO batch deduction
+  - Transaction history
+  - Loyalty metrics in session reports
 - **3 users included**
 - **3 notification devices included**
 - **1 warehouse included (free)**
@@ -130,6 +141,7 @@ including pricing, features, billing logic, and technical implementation details
 - Extra User: Rp 50,000/user
 - Extra Device: Rp 20,000/device
 - Extra Warehouse: Rp 150,000/warehouse
+- Advanced Loyalty: Rp 150,000/tenant (unlocks tiers, multipliers, subscription packages)
 
 ---
 
@@ -202,6 +214,20 @@ Each outlet has its own subscription and is billed independently.
 | **Reports**                   |                |                |                 |
 | Daily session reports         |      Yes       |      Yes       |       Yes       |
 | PDF export                    |      Yes       |      Yes       |       Yes       |
+| **Loyalty**                   |                |                |                 |
+| Loyalty program settings      |       No       |       No       |       Yes       |
+| Customer enrollment           |       No       |       No       |       Yes       |
+| Points earn/redeem            |       No       |       No       |       Yes       |
+| Manual point adjustment       |       No       |       No       |       Yes       |
+| Points expiry (FIFO)          |       No       |       No       |       Yes       |
+| Transaction history           |       No       |       No       |       Yes       |
+| Membership tiers              |       No       |       No       | Add-on required |
+| Tier discounts in checkout    |       No       |       No       | Add-on required |
+| Points multipliers per tier   |       No       |       No       | Add-on required |
+| Auto tier upgrade (by spend)  |       No       |       No       | Add-on required |
+| Subscription packages         |       No       |       No       | Add-on required |
+| Customer subscriptions        |       No       |       No       | Add-on required |
+| Advanced Loyalty add-on cost  |      N/A       |      N/A       |     Rp 150k     |
 | **Multi-Outlet**              |                |                |                 |
 | Multiple outlets              | Yes (isolated) | Yes (isolated) | Yes (connected) |
 | Centralized warehouse         |       No       |       No       |       Yes       |
@@ -256,6 +282,75 @@ Each outlet has its own subscription and is billed independently.
 - Billable warehouses = Total warehouses - 1
 - Example: 4 warehouses = 3 billable = Rp 450,000/month
 
+### 4. Advanced Loyalty (ID: 4)
+
+| Property      | Value                                                                |
+| ------------- | -------------------------------------------------------------------- |
+| Price         | Rp 150,000/month                                                     |
+| Scope         | tenant                                                               |
+| Available For | Pro only                                                             |
+| Max Quantity  | 1                                                                    |
+| Add-on Type   | feature                                                              |
+| Description   | Advanced loyalty features: tiers, multipliers, subscription packages |
+
+**Loyalty Tier System:**
+
+The `loyaltyTier` field in the JWT token determines what loyalty features are available:
+
+| Tier       | Condition                  | Features                                                                                                             |
+| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `none`     | Trial or Basic plan        | No loyalty features                                                                                                  |
+| `basic`    | Pro plan (included)        | Program config, enrollment, points earn/redeem/adjust, expiry, transaction history                                   |
+| `advanced` | Pro plan + Advanced add-on | Everything in basic + membership tiers, tier discounts, points multipliers, auto tier upgrade, subscription packages |
+
+**Basic Loyalty Features (included with Pro):**
+
+- Loyalty program configuration (name, points rate, expiry, min redeem)
+- Customer enrollment (automatic or manual)
+- Points earn/redeem during checkout
+- Manual point adjustments with audit trail
+- Points expiry with FIFO batch deduction
+- Transaction history (cursor-paginated)
+- Loyalty metrics in session reports
+
+**Advanced Loyalty Features (requires add-on):**
+
+- **Membership tiers** — Define tiers with `minSpend`, `discountPercentage`, `pointsMultiplier`, `sortOrder`
+- **Tier discounts in checkout** — Automatic percentage discount based on customer's tier
+- **Points multipliers per tier** — Higher tiers earn points faster (e.g., Gold = 1.5x)
+- **Auto tier upgrade** — Customers automatically upgrade tiers based on `totalSpend`
+- **Manual tier assignment** — Lock a customer to a specific tier (prevents auto-upgrade)
+- **Subscription packages (USAGE type)** — Pre-paid quota packages (e.g., "10-Session Wash") linked to categories
+- **Subscription packages (TIME type)** — Duration-based discount packages with percentage or fixed amount discount
+- **Customer subscription management** — Subscribe, list, cancel, track usage
+
+**Discount Stacking Order (during checkout):**
+
+```
+1. Item discounts → subtotal
+2. Sales-level discount → discountAmount
+3. Service charge, tax, rounding → totalBeforeLoyalty
+4. Tier discount % → loyaltyTierDiscountAmount
+5. Subscription discount → subscriptionDiscountAmount
+6. Point redemption → loyaltyPointsRedemptionValue
+= Final totalAmount (what customer pays)
+```
+
+**Sales Integration:**
+
+- Points earned automatically on completed sales: `pointsEarned = totalAmount * pointsPerCurrency * tierMultiplier`
+- Points redeemed via FIFO deduction from oldest batch
+- Subscription quota deducted at sale time
+- On void/return/refund: earned points reversed, redeemed points restored, subscription quota restored
+
+**Billing Logic:**
+
+- Feature-type add-on (not quantity-based like users/devices)
+- Max quantity: 1 per tenant
+- Flat rate: Rp 150,000/month regardless of outlet count
+- Auto-removed on Pro → Basic downgrade
+- Loyalty data preserved when add-on is removed (features just become inaccessible)
+
 ---
 
 ## Plan Migration
@@ -269,13 +364,16 @@ Each outlet has its own subscription and is billed independently.
 3. Push notification support enabled
 4. User limit increases from 2 to 3 per outlet
 5. Device limit set to 3 per outlet
-6. **Custom prices are auto-cleared** on all outlets (logged to `custom_price_log`)
+6. Basic loyalty features become available (`loyaltyTier` → `basic`)
+7. **Custom prices are auto-cleared** on all outlets (logged to `custom_price_log`)
 
 **Customer Actions:**
 
 - Can immediately use warehouse features
 - Can start registering notification devices
 - Optionally migrate outlet stock to warehouse
+- Can set up loyalty program and start enrolling customers
+- Can optionally purchase Advanced Loyalty add-on for tiers & subscription packages
 
 ### Pro -> Basic Downgrade
 
@@ -283,9 +381,11 @@ Each outlet has its own subscription and is billed independently.
 
 1. All warehouses soft-deleted
 2. All device add-ons removed
-3. User limit decreases from 3 to 2 per outlet
-4. Push notifications disabled
-5. **Custom prices are auto-cleared** on all outlets (logged to `custom_price_log`)
+3. **Advanced Loyalty add-on removed** (if present)
+4. User limit decreases from 3 to 2 per outlet
+5. Push notifications disabled
+6. Loyalty features disabled (`loyaltyTier` → `none`)
+7. **Custom prices are auto-cleared** on all outlets (logged to `custom_price_log`)
 
 **Before Downgrade:**
 
@@ -295,7 +395,8 @@ Each outlet has its own subscription and is billed independently.
 **After Downgrade:**
 
 - Warehouse data preserved (soft delete)
-- Can upgrade again to restore warehouses
+- Loyalty data preserved (programs, tiers, accounts, transactions) but inaccessible
+- Can upgrade again to restore warehouses and loyalty access
 
 ---
 
@@ -317,8 +418,9 @@ Base Plan:                    Rp 450,000
 Extra Users (2):              Rp 100,000  (2 x 50,000)
 Extra Devices (3):            Rp  60,000  (3 x 20,000)
 Extra Warehouses (2):         Rp 300,000  (2 x 150,000)
+Advanced Loyalty:             Rp 150,000
 -----------------------------------------
-Total Monthly:                Rp 910,000
+Total Monthly:              Rp 1,060,000
 ```
 
 ### Example 3: Multi-Outlet Business (3 Pro Outlets)
@@ -339,8 +441,9 @@ Outlet 3 (Branch B):
 Tenant-Wide Add-ons:
   Extra Devices (5):          Rp 100,000  (5 x 20,000)
   Extra Warehouses (2):       Rp 300,000  (2 x 150,000)
+  Advanced Loyalty:           Rp 150,000
 -----------------------------------------
-Total Monthly:              Rp 1,900,000
+Total Monthly:              Rp 2,050,000
 ```
 
 ---
@@ -423,10 +526,11 @@ Tenant "Toko Maju" with 3 Pro outlets:
 **subscription_add_on**
 | Column | Type | Description |
 |--------|------|-------------|
-| id | INT | Primary key (1=user, 2=device, 3=warehouse) |
+| id | INT | Primary key (1=user, 2=device, 3=warehouse, 4=advanced loyalty) |
 | name | STRING | Add-on display name |
-| addOnType | STRING | "user", "device", "warehouse" |
+| addOnType | STRING | "user", "device", "warehouse", "feature" |
 | pricePerUnit | FLOAT | Price per unit (IDR) |
+| maxQuantity | INT? | Max allowed quantity (1 for Advanced Loyalty) |
 | scope | STRING | "outlet" or "tenant" |
 
 **tenant_subscription**
@@ -449,6 +553,17 @@ Tenant "Toko Maju" with 3 Pro outlets:
 | addOnId | INT | Add-on type |
 | quantity | INT | Number of add-ons |
 
+**tenant_add_on** (tracks which add-ons a tenant has)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| tenantId | INT | Tenant |
+| addOnId | INT | References subscription_add_on.id |
+| quantity | INT | Default 1 |
+| createdAt | DATETIME | When add-on was enabled |
+
+Composite unique key: `tenantId_addOnId`
+
 **custom_price_log** (audit table)
 | Column | Type | Description |
 |--------|------|-------------|
@@ -461,6 +576,98 @@ Tenant "Toko Maju" with 3 Pro outlets:
 | note | TEXT? | Reason for change |
 | changedBy | INT? | Admin user ID |
 | createdAt | DATETIME | Timestamp |
+
+### Tenant Database Tables (Loyalty)
+
+**loyalty_program**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| name | STRING | Program display name |
+| pointsPerCurrency | DECIMAL | Points earned per currency unit |
+| currencyPerPoint | DECIMAL | Currency value per point redeemed |
+| pointsExpiryDays | INT? | Days until points expire (`null` = never) |
+| minRedeemPoints | DECIMAL | Minimum points for redemption |
+| isActive | BOOLEAN | Whether program is active |
+| deactivatedAt | DATETIME? | When program was deactivated |
+
+**loyalty_tier** (Advanced Loyalty only)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| loyaltyProgramId | INT | Parent program |
+| name | STRING | Tier name (e.g., "Gold") |
+| minSpend | DECIMAL | Spend threshold to qualify |
+| discountPercentage | DECIMAL | Automatic checkout discount (e.g., 5%) |
+| pointsMultiplier | DECIMAL | Points earn multiplier (e.g., 1.5x) |
+| sortOrder | INT | Display ordering |
+
+**loyalty_account**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| customerId | INT | Linked customer (unique per program) |
+| loyaltyProgramId | INT | Parent program |
+| currentPoints | DECIMAL | Available point balance |
+| totalEarned | DECIMAL | Lifetime points earned |
+| totalRedeemed | DECIMAL | Lifetime points redeemed |
+| totalSpend | DECIMAL | Lifetime spend (for tier auto-upgrade) |
+| loyaltyTierId | INT? | Current tier (Advanced Loyalty only) |
+| isManualTier | BOOLEAN | Prevents auto-upgrade when true |
+| joinedAt | DATETIME | Enrollment date |
+
+**loyalty_point_batch**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| loyaltyAccountId | INT | Parent account |
+| originalPoints | DECIMAL | Points when batch was created |
+| remainingPoints | DECIMAL | Points remaining (decremented by FIFO) |
+| expiresAt | DATETIME? | Expiry date (`null` = never) |
+| earnedAt | DATETIME | When batch was earned (for FIFO ordering) |
+| salesId | INT? | Linked sale (for earn reversal) |
+
+**loyalty_transaction**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| loyaltyAccountId | INT | Parent account |
+| type | STRING | EARN, REDEEM, EARN_REVERSAL, REDEEM_REVERSAL, ADJUST, EXPIRE |
+| points | DECIMAL | Points affected |
+| balanceAfter | DECIMAL | Balance after transaction |
+| salesId | INT? | Linked sale |
+| description | STRING? | Audit description |
+| performedBy | STRING? | Username who performed action |
+| createdAt | DATETIME | Timestamp |
+
+**subscription_package** (Advanced Loyalty only)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| name | STRING | Package name |
+| packageType | STRING | "USAGE" or "TIME" |
+| price | DECIMAL | Purchase price |
+| totalQuota | INT? | For USAGE: total uses included |
+| quotaUnit | STRING? | For USAGE: unit label (e.g., "sessions") |
+| durationDays | INT? | For TIME: duration in days |
+| discountPercentage | DECIMAL? | For TIME: percentage discount |
+| discountAmount | DECIMAL? | For TIME: fixed amount discount |
+| validityDays | INT? | For USAGE: days until expiry |
+| isActive | BOOLEAN | Whether package is active |
+
+**customer_subscription** (Advanced Loyalty only)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| customerId | INT | Subscribed customer |
+| subscriptionPackageId | INT | Parent package |
+| status | STRING | ACTIVE, EXPIRED, CANCELLED |
+| startDate | DATETIME | Start date |
+| endDate | DATETIME? | End date |
+| remainingQuota | INT? | For USAGE: remaining uses |
+| usedQuota | INT | Total uses consumed |
+| paidAmount | DECIMAL | Amount paid |
+| packageSnapshot | JSON | Historical copy of package at time of purchase |
 
 ---
 
@@ -545,19 +752,98 @@ Body: { "planName": "Pro" }
 
 Upgrades or downgrades tenant plan. **Auto-clears custom price** on all outlets and logs the change.
 
+### Enable Advanced Loyalty
+
+```
+POST /api/admin/tenants/:tenantId/addAdvancedLoyalty
+```
+
+Enables the Advanced Loyalty add-on for a tenant. Requires Pro plan.
+Returns: `{ success, message, addOnId: 4, monthlyCost: 150000 }`
+
+### Remove Advanced Loyalty
+
+```
+DELETE /api/admin/tenants/:tenantId/removeAdvancedLoyalty
+```
+
+Removes the Advanced Loyalty add-on. Loyalty data is preserved but advanced features become inaccessible. JWT `loyaltyTier` downgrades to `basic` on next token refresh.
+
+### Loyalty Program
+
+```
+GET    /api/loyalty/program                        # Get program config (basic)
+POST   /api/loyalty/program                        # Create program (basic)
+PUT    /api/loyalty/program/:id                    # Update program (basic)
+```
+
+### Enrollment & Account
+
+```
+POST   /api/loyalty/enroll                          # Enroll customer (basic)
+GET    /api/loyalty/account/customer/:customerId    # Get account (basic)
+```
+
+### Points Operations
+
+```
+POST   /api/loyalty/account/:id/earn               # Earn points (basic)
+POST   /api/loyalty/account/:id/redeem             # Redeem points (basic)
+POST   /api/loyalty/account/:id/adjust             # Adjust points (basic)
+GET    /api/loyalty/account/:id/transactions       # Transaction history (basic)
+GET    /api/loyalty/account/:id/expiring?days=30   # Expiring points preview (basic)
+```
+
+### Tier Management (Advanced Loyalty only)
+
+```
+POST   /api/loyalty/tier                            # Create tier
+PUT    /api/loyalty/tier/:id                        # Update tier
+DELETE /api/loyalty/tier/:id                        # Delete tier
+GET    /api/loyalty/tier/program/:programId         # List tiers
+PUT    /api/loyalty/account/:id/tier                # Assign tier to customer
+```
+
+### Subscription Packages (Advanced Loyalty only)
+
+```
+GET    /api/subscription/package                    # List packages
+POST   /api/subscription/package                    # Create package
+GET    /api/subscription/package/:id                # Get package
+PUT    /api/subscription/package/:id                # Update package
+DELETE /api/subscription/package/:id                # Delete package
+```
+
+### Customer Subscriptions (Advanced Loyalty only)
+
+```
+POST   /api/subscription/subscribe                  # Subscribe customer
+GET    /api/subscription/customer/:customerId       # List subscriptions
+GET    /api/subscription/subscription/:id           # Get subscription
+PUT    /api/subscription/cancel/:id                 # Cancel subscription
+POST   /api/subscription/usage                      # Record usage (called from sales)
+```
+
 ---
 
 ## Technical Implementation
 
 ### Code Locations
 
-| Component               | File                                     |
-| ----------------------- | ---------------------------------------- |
-| Plan definitions        | `src/script/subscription_plan_seed.ts`   |
-| Add-on definitions      | `src/script/subscription_add_on_seed.ts` |
-| Device pricing constant | `src/pushy/device.service.ts`            |
-| Cost calculation        | `src/admin/admin.service.ts`             |
-| Plan change logic       | `src/admin/admin.service.ts`             |
+| Component               | File                                        |
+| ----------------------- | ------------------------------------------- |
+| Plan definitions        | `src/script/subscription_plan_seed.ts`      |
+| Add-on definitions      | `src/script/subscription_add_on_seed.ts`    |
+| Device pricing constant | `src/pushy/device.service.ts`               |
+| Cost calculation        | `src/admin/admin.service.ts`                |
+| Plan change logic       | `src/admin/admin.service.ts`                |
+| Add-on ID constants     | `src/constants/add-on-ids.ts`               |
+| Loyalty gate middleware | `src/middleware/loyalty-gate.middleware.ts` |
+| Loyalty service         | `src/loyalty/loyalty.service.ts`            |
+| Loyalty controller      | `src/loyalty/loyalty.controller.ts`         |
+| Subscription packages   | `src/subscription/subscription.service.ts`  |
+| Loyalty cache           | `src/cache/simple-cache.service.ts`         |
+| Sales loyalty logic     | `src/sales/sales.service.ts`                |
 
 ### Seed Scripts
 
@@ -576,6 +862,7 @@ npx ts-node src/script/subscription_add_on_seed.ts
 | ------- | ---------- | ----------------------------------------------------------- |
 | 1.0     | 2025-01-22 | Initial documentation                                       |
 | 1.1     | 2026-03-02 | Added custom pricing capability (per-outlet price override) |
+| 1.2     | 2026-03-07 | Added Advanced Loyalty add-on documentation                 |
 
 ---
 
@@ -584,3 +871,4 @@ npx ts-node src/script/subscription_add_on_seed.ts
 - [Admin Module API](src/admin/ADMIN_MODULE_API_DOCUMENTATION.md)
 - [Pushy Implementation](src/pushy/PUSHY_IMPLEMENTATION.md)
 - [Warehouse Feature](WAREHOUSE_FEATURE.md)
+- [Loyalty API Contract](docs/LOYALTY.md)

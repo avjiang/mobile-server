@@ -36,12 +36,18 @@ jobs:
       - name: Create app_offline.htm to stop the app
         run: echo "Site is updating..." > app_offline.htm
 
-      - name: Zip application for deployment
-        # This step prunes dev dependencies and zips the compiled code,
-        # excluding node_modules to let Azure install them on the server.
+      - name: Prune dev dependencies
+        run: npm prune --production
+
+      - name: Remove unnecessary Prisma engine binaries
         run: |
-          npm prune --production
-          zip -r release.zip . -x "node_modules/*" ".git/*" "tools/*"
+          find prisma -name "libquery_engine-darwin*" -delete
+          find prisma -name "libquery_engine-linux-musl*" -delete
+          find prisma -name "libquery_engine-linux-arm64*" -delete
+
+      - name: Zip application for deployment
+        run: |
+          zip -r release.zip . -x ".git/*" "tools/*" "src/*" ".github/*" ".claude/*"
 
       - name: Login to Azure
         uses: azure/login@v2

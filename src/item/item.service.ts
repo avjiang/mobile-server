@@ -119,41 +119,76 @@ async function createVariantStockRecords(
     tx: any,
     itemId: number,
     variantIds: number[],
-    outletId: number = 1
+    outletId: number = 1,
+    variantStockData?: Map<number, { stockQuantity: number; cost: number }>
 ): Promise<void> {
     if (variantIds.length === 0) return;
 
     // Create StockBalance for each variant (batch insert)
     await tx.stockBalance.createMany({
-        data: variantIds.map(variantId => ({
-            itemId,
-            outletId,
-            itemVariantId: variantId,
-            availableQuantity: 0,
-            onHandQuantity: 0,
-            reorderThreshold: null,
-            deleted: false,
-        })),
+        data: variantIds.map(variantId => {
+            const stockData = variantStockData?.get(variantId);
+            const qty = stockData?.stockQuantity || 0;
+            return {
+                itemId,
+                outletId,
+                itemVariantId: variantId,
+                availableQuantity: qty,
+                onHandQuantity: qty,
+                reorderThreshold: null,
+                deleted: false,
+            };
+        }),
         skipDuplicates: true,
     });
 
     // Create StockMovement for each variant (audit trail)
     await tx.stockMovement.createMany({
-        data: variantIds.map(variantId => ({
-            itemId,
-            outletId,
-            itemVariantId: variantId,
-            previousAvailableQuantity: 0,
-            previousOnHandQuantity: 0,
-            availableQuantityDelta: 0,
-            onHandQuantityDelta: 0,
-            documentId: 0,
-            movementType: "Create Variant",
-            reason: "",
-            remark: "",
-            deleted: false,
-        })),
+        data: variantIds.map(variantId => {
+            const stockData = variantStockData?.get(variantId);
+            const qty = stockData?.stockQuantity || 0;
+            return {
+                itemId,
+                outletId,
+                itemVariantId: variantId,
+                previousAvailableQuantity: 0,
+                previousOnHandQuantity: 0,
+                availableQuantityDelta: qty,
+                onHandQuantityDelta: qty,
+                documentId: 0,
+                movementType: "Create Variant",
+                reason: "",
+                remark: "",
+                deleted: false,
+            };
+        }),
     });
+
+    // Create StockReceipt for variants with initial stock and cost (FIFO costing)
+    if (variantStockData) {
+        const receiptData = variantIds
+            .filter(variantId => {
+                const stockData = variantStockData.get(variantId);
+                return stockData && stockData.cost > 0 && stockData.stockQuantity > 0;
+            })
+            .map(variantId => {
+                const stockData = variantStockData.get(variantId)!;
+                return {
+                    itemId,
+                    outletId,
+                    itemVariantId: variantId,
+                    quantity: stockData.stockQuantity,
+                    cost: stockData.cost,
+                    receiptDate: new Date(),
+                    deleted: false,
+                    version: 1,
+                };
+            });
+
+        if (receiptData.length > 0) {
+            await tx.stockReceipt.createMany({ data: receiptData });
+        }
+    }
 }
 
 let getAll = async (
@@ -530,35 +565,49 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                     // Auto-flag hasVariants if variants array exists
                     const hasVariants = variants && Array.isArray(variants) && variants.length > 0;
 
+                    const shouldTrackStock = (itemBody as any).trackStock !== false;
+
+                    // Validate: reject negative stock quantities
+                    if (stockQuantity !== undefined && stockQuantity < 0) {
+                        throw new BusinessLogicError(
+                            `Initial stock quantity cannot be negative for item "${itemWithoutId.itemName}"`
+                        );
+                    }
+
+                    // Base item stock should be 0 when variants handle stock individually
+                    const baseStockQuantity = hasVariants ? 0 : (stockQuantity || 0);
+
                     const createdItem = await tx.item.create({
                         data: {
                             ...itemWithoutId,
                             alternateLookUp: alternateLookup, // Map DTO field to Prisma field
                             cost: cost || 0, // Use provided cost or default to 0
                             hasVariants, // Auto-set based on variants array
-                            stockBalance: {
-                                create: {
-                                    outlet: { connect: { id: 1 } },
-                                    availableQuantity: stockQuantity || 0,
-                                    onHandQuantity: stockQuantity || 0,
-                                    deleted: false,
-                                    reorderThreshold: reorderThreshold || 0,
+                            ...(shouldTrackStock ? {
+                                stockBalance: {
+                                    create: {
+                                        outlet: { connect: { id: 1 } },
+                                        availableQuantity: baseStockQuantity,
+                                        onHandQuantity: baseStockQuantity,
+                                        deleted: false,
+                                        reorderThreshold: reorderThreshold || 0,
+                                    },
                                 },
-                            },
-                            stockMovements: {
-                                create: {
-                                    previousAvailableQuantity: 0,
-                                    previousOnHandQuantity: 0,
-                                    availableQuantityDelta: stockQuantity || 0,
-                                    onHandQuantityDelta: stockQuantity || 0,
-                                    documentId: 0,
-                                    movementType: "Create Item",
-                                    reason: "",
-                                    remark: "",
-                                    outletId: 1,
-                                    deleted: false,
+                                stockMovements: {
+                                    create: {
+                                        previousAvailableQuantity: 0,
+                                        previousOnHandQuantity: 0,
+                                        availableQuantityDelta: baseStockQuantity,
+                                        onHandQuantityDelta: baseStockQuantity,
+                                        documentId: 0,
+                                        movementType: "Create Item",
+                                        reason: "",
+                                        remark: "",
+                                        outletId: 1,
+                                        deleted: false,
+                                    },
                                 },
-                            },
+                            } : {}),
                             supplier: {
                                 connect: { id: supplierId },
                             },
@@ -574,13 +623,13 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         },
                     });
 
-                    // Create StockReceipt if cost is provided and stockQuantity > 0
-                    if (cost !== undefined && cost > 0 && stockQuantity > 0) {
+                    // Create StockReceipt if cost is provided and stockQuantity > 0 (only for stock-tracked simple items)
+                    if (shouldTrackStock && cost !== undefined && cost > 0 && baseStockQuantity > 0) {
                         await tx.stockReceipt.create({
                             data: {
                                 itemId: createdItem.id,
                                 outletId: 1,
-                                quantity: stockQuantity,
+                                quantity: baseStockQuantity,
                                 cost: cost,
                                 receiptDate: new Date(),
                                 deleted: false,
@@ -592,9 +641,17 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                     // Create variants if provided
                     if (hasVariants && variants) {
                         const createdVariantIds: number[] = [];
+                        const variantStockDataMap = new Map<number, { stockQuantity: number; cost: number }>();
 
                         for (const variantData of variants) {
-                            const { attributes, ...variantFields } = variantData;
+                            const { attributes, stockQuantity: variantStockQty, ...variantFields } = variantData;
+
+                            // Validate: reject negative stock quantities
+                            if (variantStockQty !== undefined && variantStockQty < 0) {
+                                throw new BusinessLogicError(
+                                    `Initial stock quantity cannot be negative for variant "${variantFields.variantSku || variantFields.variantName}"`
+                                );
+                            }
 
                             // Free up SKU if held by a soft-deleted variant on another item
                             if (variantFields.variantSku) {
@@ -631,6 +688,14 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
 
                             createdVariantIds.push(variant.id);
 
+                            // Track per-variant stock data for batch creation
+                            if (variantStockQty || variantFields.cost) {
+                                variantStockDataMap.set(variant.id, {
+                                    stockQuantity: variantStockQty || 0,
+                                    cost: variantFields.cost || 0,
+                                });
+                            }
+
                             // Create variant attributes using helper function
                             if (attributes && Array.isArray(attributes)) {
                                 for (const attr of attributes) {
@@ -639,8 +704,10 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                             }
                         }
 
-                        // Create StockBalance and StockMovement for all variants (batch operation)
-                        await createVariantStockRecords(tx, createdItem.id, createdVariantIds);
+                        // Create StockBalance, StockMovement, and StockReceipt for all variants (batch operation)
+                        if (shouldTrackStock) {
+                            await createVariantStockRecords(tx, createdItem.id, createdVariantIds, 1, variantStockDataMap);
+                        }
                     }
 
                     return createdItem;
@@ -648,12 +715,16 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
             );
         });
 
-        const response = createdItems.map((item, index) => ({
-            ...item,
-            stockBalanceId: item.stockBalance[0]?.id || null,
-            stockBalance: undefined,
-            stockQuantity: itemBodyArray[index].stockQuantity || 0,
-        }));
+        const response = createdItems.map((item, index) => {
+            const inputItem = itemBodyArray[index] as any;
+            const hasVariants = inputItem.variants && Array.isArray(inputItem.variants) && inputItem.variants.length > 0;
+            return {
+                ...item,
+                stockBalanceId: item.stockBalance[0]?.id || null,
+                stockBalance: undefined,
+                stockQuantity: hasVariants ? 0 : (inputItem.stockQuantity || 0),
+            };
+        });
 
         return response;
     } catch (error) {
@@ -1054,8 +1125,8 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                     }
                 }
 
-                // Create StockBalance and StockMovement for all new variants (batch operation)
-                if (newVariantIds.length > 0) {
+                // Create StockBalance and StockMovement for all new variants (only for stock-tracked items)
+                if (newVariantIds.length > 0 && itemUpdate.trackStock !== false) {
                     await createVariantStockRecords(tx, id, newVariantIds);
                 }
 

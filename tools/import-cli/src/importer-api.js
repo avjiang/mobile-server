@@ -273,6 +273,7 @@ export async function importViaApi(data, options) {
             }
 
             const hasVariants = item.hasVariants === true || item.hasVariants === 'true' || item.hasVariants === 'TRUE';
+            const trackStock = item.trackStock === undefined || item.trackStock === '' ? true : (item.trackStock === true || item.trackStock === 'true' || item.trackStock === 'TRUE');
 
             return {
               itemName: item.itemName,
@@ -290,6 +291,7 @@ export async function importViaApi(data, options) {
               alternateLookup: item.barcode || '',
               hasTax: item.hasTax === true || item.hasTax === 'true',
               hasVariants: hasVariants,
+              trackStock: trackStock,
               // Stock quantity for non-variant items
               stockQuantity: !hasVariants && item.stockQuantity ? parseFloat(item.stockQuantity) : 0,
               reorderThreshold: item.reorderThreshold ? parseFloat(item.reorderThreshold) : 0,

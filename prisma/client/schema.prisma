@@ -356,6 +356,7 @@ model Item {
   taxRate                 Float?                   @map("TAX_RATE")
   supplierId              Int                      @map("SUPPLIER_ID")
   hasVariants             Boolean                  @default(false) @map("HAS_VARIANTS")
+  trackStock              Boolean                  @default(true) @map("TRACK_STOCK")
   deleted                 Boolean                  @default(false) @map("IS_DELETED")
   deletedAt               DateTime?                @map("DELETED_AT")
   createdAt               DateTime?                @default(now()) @map("CREATED_AT")

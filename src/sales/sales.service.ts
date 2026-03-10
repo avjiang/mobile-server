@@ -864,7 +864,7 @@ async function completeNewSales(
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
             // Batch all initial queries
-            const [stockBalances, stockReceipts, customer] = await Promise.all([
+            const [stockBalances, stockReceipts, customer, itemTrackStockData] = await Promise.all([
                 // Get stock balances for validation (with variant support)
                 tx.stockBalance.findMany({
                     where: {
@@ -915,11 +915,17 @@ async function completeNewSales(
                     orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
                 }),
 
-                // Validate customer if provided    
+                // Validate customer if provided
                 salesBody.customerId ? tx.customer.findUnique({
                     where: { id: salesBody.customerId },
                     select: { id: true, deleted: true }
-                }) : null
+                }) : null,
+
+                // Fetch trackStock flag and cost for all items in the sale
+                tx.item.findMany({
+                    where: { id: { in: [...new Set(salesBody.salesItems.map(i => i.itemId))] } },
+                    select: { id: true, trackStock: true, cost: true }
+                })
             ]);
 
             // Validate customer
@@ -943,8 +949,17 @@ async function completeNewSales(
                 stockReceiptsByItem.get(lookupKey)!.push(receipt);
             });
 
-            // Validate stockConsumptionQty values
-            for (const item of salesBody.salesItems) {
+            // Build trackStock lookup map
+            const itemTrackStockMap = new Map(
+                itemTrackStockData.map((i: any) => [i.id, { trackStock: i.trackStock, cost: i.cost }])
+            );
+
+            // Split sales items into stock-tracked and non-stock-tracked groups
+            const stockItems = salesBody.salesItems.filter(i => itemTrackStockMap.get(i.itemId)?.trackStock !== false);
+            const nonStockItems = salesBody.salesItems.filter(i => itemTrackStockMap.get(i.itemId)?.trackStock === false);
+
+            // Validate stockConsumptionQty values (only for stock-tracked items)
+            for (const item of stockItems) {
                 if (item.stockConsumptionQty != null) {
                     const consumptionQty = new Decimal(item.stockConsumptionQty.toString());
                     if (consumptionQty.lte(0)) {
@@ -959,7 +974,7 @@ async function completeNewSales(
             // This fixes a pre-existing bug where duplicate itemIds (consumption items)
             // were each validated independently against the original balance
             const aggregatedEffectiveQtyMap = new Map<string, Decimal>();
-            for (const item of salesBody.salesItems) {
+            for (const item of stockItems) {
                 const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
                 const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
                 const current = aggregatedEffectiveQtyMap.get(lookupKey) || new Decimal(0);
@@ -988,6 +1003,13 @@ async function completeNewSales(
                 throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
             }
 
+            // Snapshot original receipt quantities BEFORE FIFO mutation
+            // (FIFO loop mutates receipt.quantity in-memory for duplicate-item handling)
+            const originalReceiptQtyMap = new Map<number, Decimal>();
+            for (const receipt of stockReceipts) {
+                originalReceiptQtyMap.set(receipt.id, new Decimal(receipt.quantity));
+            }
+
             // Calculate FIFO costs for each sales item
             // Receipt quantities are mutated in-memory so subsequent items with the same
             // itemId see reduced quantities (fixes duplicate-item FIFO bug)
@@ -995,7 +1017,7 @@ async function completeNewSales(
                 usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[]
             }> = [];
 
-            for (const item of salesBody.salesItems) {
+            for (const item of stockItems) {
                 const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
                 const stockBalance = stockBalanceMap.get(lookupKey)!;
                 const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
@@ -1059,12 +1081,6 @@ async function completeNewSales(
             // when multiple sales items consume from the same receipt
             const stockReceiptUpdateMap = new Map<number, Decimal>();
 
-            // Snapshot original receipt quantities before FIFO mutation
-            const originalReceiptQtyMap = new Map<number, Decimal>();
-            for (const receipt of stockReceipts) {
-                originalReceiptQtyMap.set(receipt.id, new Decimal(receipt.quantity));
-            }
-
             salesItemsWithFIFOCost.forEach((item) => {
                 const isConsumptionItem = item.stockConsumptionQty != null;
 
@@ -1124,7 +1140,7 @@ async function completeNewSales(
                     const totalQuantity = new Decimal(item.quantity);
                     const discountPerUnit = (item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0)).dividedBy(totalQuantity);
                     const serviceChargePerUnit = (item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0)).dividedBy(totalQuantity);
-                    const taxPerUnit = item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0);
+                    const taxPerUnit = (item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0)).dividedBy(totalQuantity);
 
                     item.usedReceipts.forEach((receipt) => {
                         const receiptQuantity = new Decimal(receipt.quantityUsed);
@@ -1172,6 +1188,42 @@ async function completeNewSales(
                     });
                 }
             });
+
+            // ── Non-stock items: use item.cost directly, no FIFO/stock operations ──
+            for (const item of nonStockItems) {
+                const itemInfo = itemTrackStockMap.get(item.itemId);
+                const qty = new Decimal(item.quantity);
+                const unitCost = new Decimal(itemInfo?.cost || 0);
+                const totalCost = unitCost.times(qty);
+                const totalRevenue = new Decimal(item.price).times(qty);
+                const totalDiscount = item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0);
+                const totalServiceCharge = item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0);
+                const profit = totalRevenue.minus(totalCost).minus(totalDiscount).minus(totalServiceCharge);
+                totalProfit = totalProfit.plus(profit);
+
+                salesItemData.push({
+                    itemId: item.itemId,
+                    itemVariantId: item.itemVariantId || null,
+                    itemName: item.itemName,
+                    itemCode: item.itemCode,
+                    variantSku: item.variantSku || null,
+                    variantName: item.variantName || null,
+                    itemBrand: item.itemBrand,
+                    itemModel: item.itemModel,
+                    quantity: qty,
+                    cost: totalCost,
+                    price: totalRevenue,
+                    priceBeforeTax: new Decimal(item.priceBeforeTax).times(qty),
+                    profit: profit,
+                    discountPercentage: item.discountPercentage,
+                    discountAmount: totalDiscount,
+                    serviceChargeAmount: totalServiceCharge,
+                    taxAmount: item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0),
+                    subtotalAmount: new Decimal(item.subtotalAmount),
+                    remark: item.remark || '',
+                    deleted: false,
+                });
+            }
 
             // Convert aggregated receipt update map to final update list
             const stockReceiptUpdates: { id: number; newQuantity: Decimal }[] = [];

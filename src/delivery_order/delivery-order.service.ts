@@ -694,6 +694,13 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
     const movementOperations = [];
     const receiptOperations = [];
 
+    // Fetch trackStock flags for all items (defensive guard for non-stock items)
+    const itemTrackStockData = await tx.item.findMany({
+        where: { id: { in: items.map((i: any) => i.itemId) } },
+        select: { id: true, trackStock: true }
+    });
+    const trackStockMap = new Map(itemTrackStockData.map((i: any) => [i.id, i.trackStock]));
+
     // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
         where: {
@@ -714,6 +721,9 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
     });
 
     for (const item of items) {
+        // Skip stock operations for non-stock-tracked items
+        if (trackStockMap.get(item.itemId) === false) continue;
+
         if (item.receivedQuantity > 0) {
             // Use composite key for variant support
             const balanceKey = `${item.itemId}-${item.itemVariantId || 'null'}`;

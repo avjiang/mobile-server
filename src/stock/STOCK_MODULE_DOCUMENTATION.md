@@ -32,14 +32,14 @@ The Stock module manages inventory tracking across outlets and warehouses. It pr
 
 ### Key Features
 
-| Feature               | Description                                 |
-| --------------------- | ------------------------------------------- |
-| Multi-outlet          | Stock tracked separately per outlet         |
-| Variant Support       | Items with variants track stock per variant |
-| FIFO Costing          | First-in-first-out cost calculation         |
-| Optimistic Locking    | Version-based concurrency control           |
-| Delta Sync            | Efficient data synchronization              |
-| Audit Trail           | Complete history via StockMovement          |
+| Feature               | Description                                      |
+| --------------------- | ------------------------------------------------ |
+| Multi-outlet          | Stock tracked separately per outlet              |
+| Variant Support       | Items with variants track stock per variant      |
+| FIFO Costing          | First-in-first-out cost calculation              |
+| Optimistic Locking    | Version-based concurrency control                |
+| Delta Sync            | Efficient data synchronization                   |
+| Audit Trail           | Complete history via StockMovement               |
 | Consumption Deduction | Volume/weight-based stock deduction for services |
 
 ---
@@ -73,11 +73,11 @@ src/stock/
 app.use("/stock", require("./stock/stock-balance/stock-balance.controller"));
 app.use(
   "/stockMovement",
-  require("./stock/stock-movement/stock-movement.controller")
+  require("./stock/stock-movement/stock-movement.controller"),
 );
 app.use(
   "/stockReceipt",
-  require("./stock/stock-receipt/stock-receipt.controller")
+  require("./stock/stock-receipt/stock-receipt.controller"),
 );
 app.use("/warehouses", require("./warehouse/warehouse.controller"));
 ```
@@ -290,13 +290,13 @@ Adjust stock quantities with full validation and FIFO tracking.
 // hasVariants=true requires itemVariantId
 if (item.hasVariants && !adjustment.itemVariantId) {
   throw new RequestValidateError(
-    `Item "${item.itemName}" has variants. You must specify itemVariantId.`
+    `Item "${item.itemName}" has variants. You must specify itemVariantId.`,
   );
 }
 // hasVariants=false rejects itemVariantId
 if (!item.hasVariants && adjustment.itemVariantId) {
   throw new RequestValidateError(
-    `Item "${item.itemName}" does not have variants. Remove itemVariantId.`
+    `Item "${item.itemName}" does not have variants. Remove itemVariantId.`,
   );
 }
 ```
@@ -312,7 +312,6 @@ Clear stock to zero with same variant validation.
 ### Key Concepts
 
 1. **Items without variants** (`hasVariants=false`)
-
    - Stock tracked at item level
    - `itemVariantId = null` in all stock tables
 
@@ -325,15 +324,17 @@ Clear stock to zero with same variant validation.
 
 When variants are created via Item API (`createMany()` or `update()`), the following are automatically created:
 
-| Record | Created? | Details |
-|--------|----------|---------|
-| StockBalance | YES | quantity = 0, outlet 1 |
-| StockMovement | YES | `movementType: "Create Variant"`, delta = 0 |
-| StockReceipt | NO | Created when stock is added via adjustment/delivery |
+| Record        | Created? | Details                                             |
+| ------------- | -------- | --------------------------------------------------- |
+| StockBalance  | YES      | quantity = `stockQuantity` (or 0 if not provided), outlet 1 |
+| StockMovement | YES      | `movementType: "Create Variant"`, delta = `stockQuantity` (or 0) |
+| StockReceipt  | Conditional | Created when `cost > 0 AND stockQuantity > 0` (FIFO costing) |
 
-**Implementation:** Uses batch operations for optimal performance (2 SQL queries regardless of variant count).
+**Implementation:** Uses batch operations for optimal performance (2-3 SQL queries regardless of variant count).
 
 **Location:** Helper function `createVariantStockRecords()` in [item.service.ts](../item/item.service.ts)
+
+**Note:** Initial stock + cost per variant is only supported during `createMany()`. Variants added via `update()` always start with quantity = 0 (use stock adjustment to set initial stock).
 
 ### Composite Key Pattern
 
@@ -406,12 +407,10 @@ This ensures delta sync returns the parent with all variants.
 ### How It Works
 
 1. **Stock Increase** (positive adjustment)
-
    - Creates new `StockReceipt` with quantity and cost
    - Multiple receipts for same item = different cost batches
 
 2. **Stock Decrease** (negative adjustment)
-
    - Deducts from oldest receipts first (FIFO)
    - Updates/deletes receipts as quantity is consumed
 
@@ -454,7 +453,7 @@ When deducting stock (e.g., for sales), calculate weighted average cost:
 // Example: Calculate FIFO cost for quantity sold
 function calculateFifoCost(
   receipts: StockReceipt[],
-  quantityToSell: Decimal
+  quantityToSell: Decimal,
 ): Decimal {
   let remaining = quantityToSell;
   let totalCost = new Decimal(0);
@@ -649,16 +648,17 @@ Delivery orders create stock receipts and update stock balances with full varian
 
 **Variant Support:**
 
-| Record | itemVariantId | Description |
-|--------|:-------------:|-------------|
-| StockBalance | ✅ | Query and create with variant ID |
-| StockMovement | ✅ | Records variant ID in audit trail |
-| StockReceipt | ✅ | Tracks FIFO cost per variant |
+| Record        | itemVariantId | Description                       |
+| ------------- | :-----------: | --------------------------------- |
+| StockBalance  |      ✅       | Query and create with variant ID  |
+| StockMovement |      ✅       | Records variant ID in audit trail |
+| StockReceipt  |      ✅       | Tracks FIFO cost per variant      |
 
 **Composite Key Pattern:**
+
 ```typescript
 // Variant-aware stock lookup
-const balanceKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
+const balanceKey = `${item.itemId}-${item.itemVariantId || "null"}`;
 const stockBalance = stockBalanceMap.get(balanceKey);
 ```
 
@@ -666,18 +666,18 @@ const stockBalance = stockBalanceMap.get(balanceKey);
 
 ## Movement Types
 
-| Type                    | Description                      | Stock Change |
-| ----------------------- | -------------------------------- | ------------ |
-| `Create Item`           | Base item created                | +/-          |
-| `Create Variant`        | Variant created                  | 0            |
-| `Stock Adjustment`      | Manual adjustment                | +/-          |
-| `Stock Clearance`       | Clear to zero                    | -            |
-| `Sales`                 | Sale completed                   | -            |
-| `Sales Void`            | Sale voided                      | +            |
-| `Sales Return`          | Items returned                   | +            |
-| `Sales Refund`          | Sale refunded                    | +            |
-| `Delivery Receipt`      | Delivery order confirmed         | +            |
-| `Delivery Cancellation` | Delivery order cancelled         | -            |
+| Type                    | Description              | Stock Change |
+| ----------------------- | ------------------------ | ------------ |
+| `Create Item`           | Base item created        | +/-          |
+| `Create Variant`        | Variant created          | 0            |
+| `Stock Adjustment`      | Manual adjustment        | +/-          |
+| `Stock Clearance`       | Clear to zero            | -            |
+| `Sales`                 | Sale completed           | -            |
+| `Sales Void`            | Sale voided              | +            |
+| `Sales Return`          | Items returned           | +            |
+| `Sales Refund`          | Sale refunded            | +            |
+| `Delivery Receipt`      | Delivery order confirmed | +            |
+| `Delivery Cancellation` | Delivery order cancelled | -            |
 
 ---
 
@@ -743,7 +743,7 @@ await tenantPrisma.$transaction(async (tx) => {
 - [ ] Delta sync returns parent when variant changes
 - [ ] Validation errors for missing variant ID
 - [ ] Validation errors for invalid variant ID
-- [ ] Consumption-based sale deducts by quantity * stockConsumptionQty
+- [ ] Consumption-based sale deducts by quantity \* stockConsumptionQty
 - [ ] Void/return/refund of consumption sale restores correct amount
 - [ ] Duplicate itemId entries (different stockConsumptionQty) validate and deduct correctly
 

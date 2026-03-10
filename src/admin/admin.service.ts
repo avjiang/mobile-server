@@ -156,10 +156,26 @@ let createTenant = async (body: CreateTenantRequest) => {
                 });
             }
 
+            // Split tenantName into firstName and lastName
+            const nameToSplit = tenant.tenantName.trim();
+            const lastSpaceIdx = nameToSplit.lastIndexOf(' ');
+            let firstName: string;
+            let lastName: string | null;
+
+            if (lastSpaceIdx === -1) {
+                firstName = nameToSplit;
+                lastName = "";
+            } else {
+                firstName = nameToSplit.substring(0, lastSpaceIdx).trim();
+                lastName = nameToSplit.substring(lastSpaceIdx + 1).trim();
+            }
+
             const newUser = await tenantPrisma.user.create({
                 data: {
                     username: username,
                     password: bcrypt.hashSync(username, 10),
+                    firstName: firstName,
+                    lastName: lastName,
                     roles: {
                         connect: [{ id: superAdminRole.id }]
                     }

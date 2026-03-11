@@ -76,14 +76,16 @@ let createTenant = async (body: CreateTenantRequest) => {
     try {
         const tenant = body.tenant;
 
-        // Find the subscription plan by name
+        // Find the subscription plan by name and type
+        const planType = tenant.planType || 'Retail';
         const subscriptionPlan = await prisma.subscriptionPlan.findFirst({
             where: {
-                planName: tenant.plan
+                planName: tenant.plan,
+                planType: planType
             }
         });
         if (!subscriptionPlan) {
-            throw new Error(`Subscription plan "${tenant.plan}" not found.`);
+            throw new Error(`Subscription plan "${tenant.plan}" (${planType}) not found.`);
         }
         // Generate a unique database name 
         const databaseName = `${tenant.tenantName.toLowerCase().replace(/\s/g, '_')}_db`;
@@ -1408,28 +1410,30 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
     let tenantPrisma: TenantPrismaClient | null = null;
 
     try {
-        // Step 1: Validate new plan exists and get tenant info in parallel
-        const [newPlan, tenant] = await Promise.all([
-            prisma.subscriptionPlan.findFirst({
-                where: { planName: newPlanName }
-            }),
+        // Step 1: Get current subscription to determine planType, and tenant info
+        const [{ primarySubscription: currentSubscription, tenantOutlets }, tenant] = await Promise.all([
+            getPrimarySubscription(tenantId),
             prisma.tenant.findUnique({
                 where: { id: tenantId },
                 select: { databaseName: true }
             })
         ]);
 
-        if (!newPlan) {
-            throw new NotFoundError(`Plan "${newPlanName}" not found`);
-        }
-
         if (!tenant || !tenant.databaseName) {
             throw new NotFoundError('Tenant database not found');
         }
 
-        // Step 2: Get primary subscription and current plan
-        const { primarySubscription: currentSubscription, tenantOutlets } = await getPrimarySubscription(tenantId);
         const currentPlanName = currentSubscription.subscriptionPlan.planName;
+        const currentPlanType = currentSubscription.subscriptionPlan.planType;
+
+        // Step 2: Validate new plan exists (same planType as current)
+        const newPlan = await prisma.subscriptionPlan.findFirst({
+            where: { planName: newPlanName, planType: currentPlanType }
+        });
+
+        if (!newPlan) {
+            throw new NotFoundError(`Plan "${newPlanName}" (${currentPlanType}) not found`);
+        }
 
         if (currentPlanName === newPlanName) {
             throw new RequestValidateError(`Tenant is already on "${newPlanName}" plan`);

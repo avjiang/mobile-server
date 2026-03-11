@@ -153,6 +153,21 @@ const settingDefinitions = [
     // },
 
     // ============================================
+    // PRINTER SETTINGS (USER scope)
+    // ============================================
+    {
+        key: 'auto_print_job_tag',
+        category: 'Printer',
+        type: 'BOOLEAN',
+        defaultValue: 'false',
+        description: 'Automatically print a job tag after each sale',
+        scope: 'USER',
+        isRequired: false,
+        isReadOnly: false,
+        validationRules: null
+    },
+
+    // ============================================
     // INVENTORY SETTINGS (OUTLET scope)
     // ============================================
     {

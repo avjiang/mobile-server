@@ -91,8 +91,10 @@ All endpoints are prefixed with:
   "userId": 3,
   "notificationTopics": ["tenant_1", "tenant_1_outlet_1_sales"],
   "planName": "Pro",
+  "planType": "Retail",
   "databaseName": "my_coffee_shop_db",
-  "globalOutletId": 1
+  "globalOutletId": 1,
+  "loyaltyTier": "basic"
 }
 ```
 
@@ -107,8 +109,10 @@ All endpoints are prefixed with:
 | `userId` | number | User ID in tenant-specific database |
 | `notificationTopics` | string[] | Firebase Cloud Messaging topics (Pro plan only) |
 | `planName` | string | Subscription plan name (`Trial`, `Basic`, `Pro`) |
+| `planType` | string | Business type (`Retail`, `F&B`, `Laundry`) |
 | `databaseName` | string | Tenant database name for API context |
 | `globalOutletId` | number | Outlet ID in global database |
+| `loyaltyTier` | string | Loyalty feature tier (`none`, `basic`, `advanced`) |
 
 **Error Response (400 - Invalid Credentials):**
 
@@ -151,9 +155,14 @@ All endpoints are prefixed with:
   "verified": true,
   "tenantUserId": 5,
   "userId": 3,
-  "username": "john_doe"
+  "username": "john_doe",
+  "planType": "Retail"
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `planType` | `string \| null` | Subscription plan type: `"Retail"`, `"F&B"`, or `"Laundry"` |
 
 **Error Response (401 - Invalid Token):**
 
@@ -193,8 +202,10 @@ All endpoints are prefixed with:
   "userId": 3,
   "notificationTopics": ["tenant_1", "tenant_1_outlet_1_sales"],
   "planName": "Pro",
+  "planType": "Retail",
   "databaseName": "my_coffee_shop_db",
-  "globalOutletId": 1
+  "globalOutletId": 1,
+  "loyaltyTier": "basic"
 }
 ```
 
@@ -337,8 +348,10 @@ interface TokenResponseBody {
   userId: number;
   notificationTopics?: string[];
   planName?: string | null;
+  planType?: string | null;
   databaseName?: string | null;
   globalOutletId?: number | null;
+  loyaltyTier?: 'none' | 'basic' | 'advanced';
 }
 
 // Token validation response
@@ -347,6 +360,7 @@ interface ValidateTokenResponseBody {
   tenantUserId: number;
   userId: number;
   username: string;
+  planType?: string | null;
 }
 ```
 
@@ -411,7 +425,9 @@ interface UserInfo {
   tenantId: number;         // Tenant ID
   role: string;             // "admin" or "user"
   notificationTopics?: string[];  // FCM topics (Pro plan only)
-  planName?: string | null; // Subscription plan name
+  planName?: string | null; // Subscription plan name ("Trial", "Basic", "Pro")
+  planType?: string | null; // Business type ("Retail", "F&B", "Laundry")
+  loyaltyTier?: 'none' | 'basic' | 'advanced'; // Loyalty feature tier
 }
 ```
 

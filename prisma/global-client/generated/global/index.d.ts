@@ -21833,10 +21833,11 @@ export namespace Prisma {
 
   export type SubscriptionPlanWhereUniqueInput = Prisma.AtLeast<{
     id?: number
-    planName?: string
+    planName_planType?: SubscriptionPlanPlanNamePlanTypeCompoundUniqueInput
     AND?: SubscriptionPlanWhereInput | SubscriptionPlanWhereInput[]
     OR?: SubscriptionPlanWhereInput[]
     NOT?: SubscriptionPlanWhereInput | SubscriptionPlanWhereInput[]
+    planName?: StringFilter<"SubscriptionPlan"> | string
     planType?: StringFilter<"SubscriptionPlan"> | string
     price?: FloatFilter<"SubscriptionPlan"> | number
     maxTransactions?: IntNullableFilter<"SubscriptionPlan"> | number | null
@@ -21845,7 +21846,7 @@ export namespace Prisma {
     maxDevices?: IntNullableFilter<"SubscriptionPlan"> | number | null
     description?: StringNullableFilter<"SubscriptionPlan"> | string | null
     subscription?: TenantSubscriptionListRelationFilter
-  }, "id" | "planName">
+  }, "id" | "planName_planType">
 
   export type SubscriptionPlanOrderByWithAggregationInput = {
     id?: SortOrder
@@ -24808,6 +24809,11 @@ export namespace Prisma {
     fields: SubscriptionPlanOrderByRelevanceFieldEnum | SubscriptionPlanOrderByRelevanceFieldEnum[]
     sort: SortOrder
     search: string
+  }
+
+  export type SubscriptionPlanPlanNamePlanTypeCompoundUniqueInput = {
+    planName: string
+    planType: string
   }
 
   export type SubscriptionPlanCountOrderByAggregateInput = {

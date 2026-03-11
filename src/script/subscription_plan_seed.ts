@@ -1,6 +1,7 @@
 import { getGlobalPrisma, disconnectAllPrismaClients } from '../db';
 
 const subscriptionPlans = [
+    // Retail plans
     {
         planName: "Trial",
         planType: "Retail",
@@ -30,7 +31,38 @@ const subscriptionPlans = [
         maxUsers: 3,
         maxDevices: 3,
         description: "Pro plan with push notification support"
-    }
+    },
+    // Laundry plans
+    {
+        planName: "Trial",
+        planType: "Laundry",
+        price: 0,
+        maxTransactions: null,
+        maxProducts: null,
+        maxUsers: 2,
+        maxDevices: 0,
+        description: null
+    },
+    {
+        planName: "Basic",
+        planType: "Laundry",
+        price: 300000,
+        maxTransactions: null,
+        maxProducts: null,
+        maxUsers: 2,
+        maxDevices: 0,
+        description: "Basic plan for laundry businesses"
+    },
+    {
+        planName: "Pro",
+        planType: "Laundry",
+        price: 450000,
+        maxTransactions: null,
+        maxProducts: null,
+        maxUsers: 3,
+        maxDevices: 3,
+        description: "Pro plan for laundry businesses with push notification support"
+    },
 ];
 
 export async function seedSubscriptionPlans(): Promise<void> {
@@ -40,9 +72,8 @@ export async function seedSubscriptionPlans(): Promise<void> {
 
     for (const plan of subscriptionPlans) {
         await globalPrisma.subscriptionPlan.upsert({
-            where: { planName: plan.planName },
+            where: { planName_planType: { planName: plan.planName, planType: plan.planType } },
             update: {
-                planType: plan.planType,
                 price: plan.price,
                 maxTransactions: plan.maxTransactions,
                 maxProducts: plan.maxProducts,
@@ -52,7 +83,7 @@ export async function seedSubscriptionPlans(): Promise<void> {
             },
             create: plan
         });
-        console.log(`  ✓ ${plan.planName}`);
+        console.log(`  ✓ ${plan.planName} (${plan.planType})`);
     }
 
     console.log(`Seeded ${subscriptionPlans.length} subscription plans.`);

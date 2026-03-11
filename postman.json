@@ -109,7 +109,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6MSwidXNlcm5hbWUiOiJ0ZXN0In0sImlhdCI6MTc0MDg2MDE3MiwiZXhwIjoxNzQwODYzNzcyfQ.MsMevk94oByQ2uimwh6WKMVtzUKtuzY8AcM5K5F2L9o\",\n        \"refreshToken\": \"7e5e0939fe3667b75c91a310a0f20ba867adf491421446c68434fb79c70a6845000d5c3273998901\"\n    }\n}"
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenExpiryDate\": \"2026-03-12T10:00:00.000Z\",\n        \"refreshToken\": \"7e5e0939fe3667b75c91a310a0f20ba8...\",\n        \"globalTenantId\": 1,\n        \"globalTenantUserId\": 1,\n        \"userId\": 1,\n        \"planName\": \"Basic\",\n        \"planType\": \"Retail\",\n        \"databaseName\": \"test_db\",\n        \"globalOutletId\": 1,\n        \"loyaltyTier\": \"none\"\n    }\n}"
 						},
 						{
 							"name": "success_v2",
@@ -181,7 +181,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InRlbmFudFVzZXJJZCI6MywidXNlcklkIjoxLCJ1c2VybmFtZSI6ImdveWFuZ19rYWtpIiwiZGF0YWJhc2VOYW1lIjoiZ295YW5nX2tha2lfZGIiLCJ0ZW5hbnRJZCI6M30sImlhdCI6MTc0Mzk2NjY3NywiZXhwIjoxNzQzOTcwMjc3fQ._hdbSoCMO9KwISqO3GLgRTnb0i8GyytP6Y8KdUTZwH4\",\n        \"refreshToken\": \"b6b1f110d29847ffd4ff24b37f88c447852f9d0245007ef49e82a65940cf7d3e7df31baf7957e26e\",\n        \"tenantId\": 3,\n        \"userId\": 1\n    }\n}"
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenExpiryDate\": \"2026-03-12T10:00:00.000Z\",\n        \"refreshToken\": \"b6b1f110d29847ffd4ff24b37f88c447...\",\n        \"globalTenantId\": 3,\n        \"globalTenantUserId\": 3,\n        \"userId\": 1,\n        \"planName\": \"Pro\",\n        \"planType\": \"Retail\",\n        \"databaseName\": \"goyang_kaki_db\",\n        \"globalOutletId\": 1,\n        \"loyaltyTier\": \"basic\"\n    }\n}"
 						}
 					],
 					"event": [
@@ -301,7 +301,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6MSwidXNlcm5hbWUiOiJ0ZXN0In0sImlhdCI6MTc0MDg2MDE3MiwiZXhwIjoxNzQwODYzNzcyfQ.MsMevk94oByQ2uimwh6WKMVtzUKtuzY8AcM5K5F2L9o\",\n        \"refreshToken\": \"7e5e0939fe3667b75c91a310a0f20ba867adf491421446c68434fb79c70a6845000d5c3273998901\"\n    }\n}"
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenExpiryDate\": \"2026-03-12T10:00:00.000Z\",\n        \"refreshToken\": \"7e5e0939fe3667b75c91a310a0f20ba8...\",\n        \"globalTenantId\": 1,\n        \"globalTenantUserId\": 1,\n        \"userId\": 1,\n        \"planName\": \"Basic\",\n        \"planType\": \"Retail\",\n        \"databaseName\": \"test_db\",\n        \"globalOutletId\": 1,\n        \"loyaltyTier\": \"none\"\n    }\n}"
 						},
 						{
 							"name": "success_v2",
@@ -373,7 +373,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InRlbmFudFVzZXJJZCI6MywidXNlcklkIjoxLCJ1c2VybmFtZSI6ImdveWFuZ19rYWtpIiwiZGF0YWJhc2VOYW1lIjoiZ295YW5nX2tha2lfZGIiLCJ0ZW5hbnRJZCI6M30sImlhdCI6MTc0Mzk2NjY3NywiZXhwIjoxNzQzOTcwMjc3fQ._hdbSoCMO9KwISqO3GLgRTnb0i8GyytP6Y8KdUTZwH4\",\n        \"refreshToken\": \"b6b1f110d29847ffd4ff24b37f88c447852f9d0245007ef49e82a65940cf7d3e7df31baf7957e26e\",\n        \"tenantId\": 3,\n        \"userId\": 1\n    }\n}"
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenExpiryDate\": \"2026-03-12T10:00:00.000Z\",\n        \"refreshToken\": \"b6b1f110d29847ffd4ff24b37f88c447...\",\n        \"globalTenantId\": 3,\n        \"globalTenantUserId\": 3,\n        \"userId\": 1,\n        \"planName\": \"Pro\",\n        \"planType\": \"Retail\",\n        \"databaseName\": \"goyang_kaki_db\",\n        \"globalOutletId\": 1,\n        \"loyaltyTier\": \"basic\"\n    }\n}"
 						}
 					],
 					"event": [
@@ -493,7 +493,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"verified\": true,\n        \"userId\": 1,\n        \"username\": \"test\"\n    }\n}"
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"verified\": true,\n        \"userId\": 1,\n        \"username\": \"test\",\n        \"planType\": \"Retail\"\n    }\n}"
 						},
 						{
 							"name": "failed",
@@ -716,7 +716,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6MSwidXNlcm5hbWUiOiJ0ZXN0In0sImlhdCI6MTc0MDg3ODYxMywiZXhwIjoxNzQwODgyMjEzfQ._K99PuRA8iDk8O9lr2DSAYL7Uphl_HLb6m-c7UDb6U4\",\n        \"refreshToken\": \"8059f13af8260ab703ffdfe560702838efede6898f77d1f031c9fa0d0e419a660dc7a4b71d71d5fc\"\n    }\n}"
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenExpiryDate\": \"2026-03-12T10:00:00.000Z\",\n        \"refreshToken\": \"8059f13af8260ab703ffdfe560702838...\",\n        \"globalTenantId\": 3,\n        \"globalTenantUserId\": 3,\n        \"userId\": 1,\n        \"planName\": \"Pro\",\n        \"planType\": \"Retail\",\n        \"databaseName\": \"goyang_kaki_db\",\n        \"globalOutletId\": 1,\n        \"loyaltyTier\": \"basic\"\n    }\n}"
 						},
 						{
 							"name": "failed",
@@ -1532,7 +1532,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"tenant\": {\n        \"tenantName\": \"Aneka Musik1\",\n        \"plan\": \"Basic\"\n    }\n}",
+							"raw": "{\n    \"tenant\": {\n        \"tenantName\": \"Aneka Musik1\",\n        \"plan\": \"Basic\",\n        \"planType\": \"Retail\"\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -10218,7 +10218,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InRlbmFudFVzZXJJZCI6MywidXNlcklkIjoxLCJ1c2VybmFtZSI6ImdveWFuZ19rYWtpIiwiZGF0YWJhc2VOYW1lIjoiZ295YW5nX2tha2lfZGIiLCJ0ZW5hbnRJZCI6M30sImlhdCI6MTc0Mzk2NjY3NywiZXhwIjoxNzQzOTcwMjc3fQ._hdbSoCMO9KwISqO3GLgRTnb0i8GyytP6Y8KdUTZwH4\",\n        \"refreshToken\": \"b6b1f110d29847ffd4ff24b37f88c447852f9d0245007ef49e82a65940cf7d3e7df31baf7957e26e\",\n        \"tenantId\": 3,\n        \"userId\": 1\n    }\n}"
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"tokenExpiryDate\": \"2026-03-12T10:00:00.000Z\",\n        \"refreshToken\": \"b6b1f110d29847ffd4ff24b37f88c447...\",\n        \"globalTenantId\": 3,\n        \"globalTenantUserId\": 3,\n        \"userId\": 1,\n        \"planName\": \"Pro\",\n        \"planType\": \"Retail\",\n        \"databaseName\": \"goyang_kaki_db\",\n        \"globalOutletId\": 1,\n        \"loyaltyTier\": \"basic\"\n    }\n}"
 						}
 					]
 				},

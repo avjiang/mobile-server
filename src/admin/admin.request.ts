@@ -4,6 +4,7 @@ export interface CreateTenantRequest {
     tenant: {
         tenantName: string;
         plan: string;
+        planType?: string; // "Retail" | "F&B" | "Laundry" — defaults to "Retail"
     };
 }
 

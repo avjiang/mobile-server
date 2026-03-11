@@ -6,6 +6,28 @@ This document provides comprehensive documentation for all Admin Module endpoint
 
 ## Changelog
 
+### v1.4.0 - Plan Type Support (2026-03-11)
+
+**New Features:**
+
+- **`planType` field** — Subscription plans now support business types: `"Retail"`, `"F&B"`, `"Laundry"`
+- **`planType` in JWT** — Added to `UserInfo` payload for middleware access
+- **`planType` in login/refresh response** — Returned alongside `planName`
+- **`planType` in signup** — Optional field (defaults to `"Retail"`)
+- **Composite unique key** — `subscription_plan` unique constraint changed from `PLAN_NAME` to `(PLAN_NAME, PLAN_TYPE)`
+
+**Affected Endpoints:**
+| Endpoint | Changes |
+|----------|---------|
+| `POST /signup` | New optional `planType` field in request body |
+| `PUT /tenants/:tenantId/changePlan` | Preserves tenant's `planType` when switching plans |
+| `POST /auth/login` | Response now includes `planType` |
+| `POST /auth/refresh-token` | Response now includes `planType` |
+
+**See:** [ADMIN_ENDPOINT_CHANGES.md](../../docs/ADMIN_ENDPOINT_CHANGES.md) for full details (sections 11-13).
+
+---
+
 ### v1.3.0 - Add-On Architecture Refactor & Loyalty (2026-03-02)
 
 **Breaking Changes:**
@@ -119,7 +141,8 @@ All endpoints are prefixed with:
 {
   "tenant": {
     "tenantName": "My Coffee Shop",
-    "plan": "Pro"
+    "plan": "Pro",
+    "planType": "Retail"
   }
 }
 ```
@@ -129,6 +152,7 @@ All endpoints are prefixed with:
 |-------|------|----------|-------------|
 | `tenant.tenantName` | string | Yes | Name of the tenant organization |
 | `tenant.plan` | string | Yes | Subscription plan name (`Trial`, `Basic`, `Pro`) |
+| `tenant.planType` | string | No | Business type: `"Retail"`, `"F&B"`, `"Laundry"`. Defaults to `"Retail"` |
 
 **Response (Success - 200):**
 

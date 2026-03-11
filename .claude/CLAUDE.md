@@ -125,6 +125,7 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 - Always update related documentation after making changes; if none exists, create it
 - Always be thorough — deep dive to check for missing pieces before considering something done
 - When compacting, always preserve the full list of modified files
+- When updating current endpoints or adding new ones, do not forget to always update the `postman.json`
 
 ## Verification Before Done
 

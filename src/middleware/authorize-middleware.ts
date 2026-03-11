@@ -19,6 +19,7 @@ export interface UserInfo {
     role: string,
     notificationTopics?: string[],
     planName?: string | null,
+    planType?: string | null,
     loyaltyTier?: 'none' | 'basic' | 'advanced'
 }
 

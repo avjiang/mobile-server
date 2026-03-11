@@ -334,7 +334,7 @@ When variants are created via Item API (`createMany()` or `update()`), the follo
 
 **Location:** Helper function `createVariantStockRecords()` in [item.service.ts](../item/item.service.ts)
 
-**Note:** Initial stock + cost per variant is only supported during `createMany()`. Variants added via `update()` always start with quantity = 0 (use stock adjustment to set initial stock).
+**Note:** Initial stock + cost per variant is supported during both `createMany()` and `update()` (new variants without an `id`). The frontend sends `stockQuantity` and `cost` on the variant payload, and the backend creates StockBalance, StockMovement, and StockReceipt accordingly.
 
 ### Composite Key Pattern
 
@@ -468,6 +468,21 @@ function calculateFifoCost(
   return totalCost;
 }
 ```
+
+### Cost Routing During Item Creation
+
+When items are created via `POST /item/create`, the `cost` field is routed based on `trackStock`:
+
+| `trackStock` | `Item.cost` / `ItemVariant.cost` | `StockReceipt.cost` |
+|---|---|---|
+| `true` | **0** — FIFO (StockReceipt) is the cost source of truth | Stored when `stockQuantity > 0 AND cost > 0` |
+| `false` | **Stored** — no FIFO, this is the only cost source | Not created |
+
+**Why `Item.cost = 0` for stock-tracked items?** Stock adjustments and delivery orders only create new StockReceipts — they never update `Item.cost`. Storing cost on `Item.cost` for stock-tracked items would become stale after the first adjustment. Setting it to 0 makes it clear that FIFO is the authoritative source.
+
+**Sale-time fallback:** If a stock-tracked item has zero remaining StockReceipts (all consumed), the sales service falls back to `Item.cost` (which is 0). This produces zero COGS rather than a stale cost.
+
+See [docs/ITEM_CREATION_STOCK_AND_COST.md](../../docs/ITEM_CREATION_STOCK_AND_COST.md) and [docs/COST_ROUTING_CLARIFICATION.md](../../docs/COST_ROUTING_CLARIFICATION.md) for full details.
 
 ---
 
@@ -669,7 +684,7 @@ const stockBalance = stockBalanceMap.get(balanceKey);
 | Type                    | Description              | Stock Change |
 | ----------------------- | ------------------------ | ------------ |
 | `Create Item`           | Base item created        | +/-          |
-| `Create Variant`        | Variant created          | 0            |
+| `Create Variant`        | Variant created          | 0/+          |
 | `Stock Adjustment`      | Manual adjustment        | +/-          |
 | `Stock Clearance`       | Clear to zero            | -            |
 | `Sales`                 | Sale completed           | -            |

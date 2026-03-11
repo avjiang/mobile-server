@@ -14,6 +14,9 @@ This document summarizes all breaking changes to admin-facing API responses resu
 6. **New `loyaltyTier` in JWT** — affects login/refresh responses
 7. **New permission categories** — Loyalty permissions added
 8. **Advanced Loyalty add-on management** — `POST/DELETE /admin/tenants/:tenantId/addons/loyalty`
+9. **New `planType` in login/refresh response and JWT** — `"Retail"` | `"F&B"` | `"Laundry"`
+10. **Signup accepts `planType`** — optional field, defaults to `"Retail"`
+11. **Schema: composite unique key** — `(planName, planType)` replaces `planName` unique on `subscription_plan`
 
 ---
 
@@ -462,6 +465,68 @@ Managed via `TenantAddOn` table (same as Extra User, Extra Device, Extra Warehou
 
 ---
 
+## 11. Login/Refresh Response — New `planType` Field
+
+Both `/auth/login` and `/auth/refresh-token` now return `planType` alongside `planName`:
+
+```json
+{
+  "...existing fields...",
+  "planName": "Pro",
+  "planType": "Retail",
+  "loyaltyTier": "basic"
+}
+```
+
+Supported values: `"Retail"` | `"F&B"` | `"Laundry"`
+
+The `planType` is also embedded in the JWT `UserInfo` payload for middleware access.
+
+---
+
+## 12. Signup Request — New `planType` Field
+
+`POST /admin/signup` now accepts an optional `planType` in the request body:
+
+### Before
+
+```json
+{
+  "tenant": {
+    "tenantName": "My Coffee Shop",
+    "plan": "Pro"
+  }
+}
+```
+
+### After
+
+```json
+{
+  "tenant": {
+    "tenantName": "My Coffee Shop",
+    "plan": "Pro",
+    "planType": "Retail"
+  }
+}
+```
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `tenant.planType` | string | No | `"Retail"` | Business type: `"Retail"`, `"F&B"`, or `"Laundry"` |
+
+If omitted, defaults to `"Retail"`.
+
+---
+
+## 13. Schema Change — Composite Unique Key on `SubscriptionPlan`
+
+The `subscription_plan` table unique constraint changed from `PLAN_NAME` alone to a composite of `(PLAN_NAME, PLAN_TYPE)`. This allows the same plan name (e.g., "Pro") to exist for different business types.
+
+The `changeTenantPlan` endpoint (`PUT /admin/tenants/:tenantId/changePlan`) now automatically preserves the tenant's `planType` when upgrading/downgrading — a Retail tenant stays Retail when changing from Basic to Pro.
+
+---
+
 ## Migration Checklist
 
 1. Run `npx prisma migrate dev` for tenant DB (new loyalty tables + Sales fields)
@@ -470,3 +535,7 @@ Managed via `TenantAddOn` table (same as Extra User, Extra Device, Extra Warehou
 4. Manually add Advanced Loyalty add-on record to `SubscriptionAddOn` table (ID 4)
 5. Admin dashboard: Update cost display components to read from `tenantAddOns` instead of per-outlet `addOns`
 6. Admin dashboard: Handle `loyaltyTier` display if applicable
+7. Run `npm run generate_prisma` to regenerate Prisma clients (for composite unique key)
+8. Run `npm run upgrade_db` to apply the `planName_planType` composite unique migration
+9. Run `npm run seed_subscription_plans` to re-seed plans with composite key
+10. Flutter client: Read new `planType` field from login/refresh response

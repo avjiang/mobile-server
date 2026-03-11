@@ -581,7 +581,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         data: {
                             ...itemWithoutId,
                             alternateLookUp: alternateLookup, // Map DTO field to Prisma field
-                            cost: cost || 0, // Use provided cost or default to 0
+                            cost: shouldTrackStock ? 0 : (cost || 0), // Stock-tracked: cost lives in StockReceipt (FIFO); non-stock: cost lives here
                             hasVariants, // Auto-set based on variants array
                             ...(shouldTrackStock ? {
                                 stockBalance: {
@@ -675,7 +675,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                     itemId: createdItem.id,
                                     variantSku: variantFields.variantSku,
                                     variantName: variantFields.variantName,
-                                    cost: variantFields.cost,
+                                    cost: shouldTrackStock ? 0 : (variantFields.cost || 0), // Stock-tracked: cost lives in StockReceipt (FIFO)
                                     price: variantFields.price,
                                     image: variantFields.image,
                                     barcode: variantFields.barcode,
@@ -738,7 +738,8 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Extract id, version, and relation fields from the item object
-        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, ...updateData } = item as any;
+        // stockQuantity is a virtual field (not a DB column) — must be extracted to prevent Prisma errors
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, ...updateData } = item as any;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Check if alternateLookUp is being updated and not empty
@@ -774,6 +775,16 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 }
             }
 
+            // Detect trackStock transition
+            const currentItem = await tx.item.findUnique({
+                where: { id },
+                select: { trackStock: true, cost: true, hasVariants: true }
+            });
+            const oldTrackStock = currentItem!.trackStock;
+            const newTrackStock = updateData.trackStock;
+            const turningOff = newTrackStock !== undefined && oldTrackStock === true && newTrackStock === false;
+            const turningOn = newTrackStock !== undefined && oldTrackStock === false && newTrackStock === true;
+
             // Prepare the item update data
             const itemUpdateData: any = {
                 ...updateData,
@@ -790,6 +801,11 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 updatedAt: new Date(),
             };
 
+            // Cost routing: when turning ON stock tracking, Item.cost must be 0 (FIFO is the cost source)
+            if (turningOn) {
+                itemUpdateData.cost = 0;
+            }
+
             // If item is being soft-deleted, add deletion fields
             if (deleted === true) {
                 itemUpdateData.deleted = true;
@@ -803,6 +819,92 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 },
                 data: itemUpdateData
             });
+
+            // ===== trackStock transition: ON → OFF =====
+            if (turningOff) {
+                const now = new Date();
+
+                // Soft-delete outlet StockReceipts
+                await tx.stockReceipt.updateMany({
+                    where: { itemId: id, deleted: false },
+                    data: { deleted: true, deletedAt: now }
+                });
+
+                // Soft-delete outlet StockBalances
+                await tx.stockBalance.updateMany({
+                    where: { itemId: id, deleted: false },
+                    data: { deleted: true, deletedAt: now, updatedAt: now }
+                });
+
+                // Soft-delete warehouse StockReceipts
+                await tx.warehouseStockReceipt.updateMany({
+                    where: { itemId: id, deleted: false },
+                    data: { deleted: true, deletedAt: now }
+                });
+
+                // Soft-delete warehouse StockBalances
+                await tx.warehouseStockBalance.updateMany({
+                    where: { itemId: id, deleted: false },
+                    data: { deleted: true, deletedAt: now, updatedAt: now }
+                });
+
+                // Audit trail
+                await tx.stockMovement.create({
+                    data: {
+                        itemId: id, outletId: 1,
+                        previousAvailableQuantity: 0, previousOnHandQuantity: 0,
+                        availableQuantityDelta: 0, onHandQuantityDelta: 0,
+                        documentId: 0,
+                        movementType: "Stock Tracking Disabled",
+                        reason: "trackStock changed from on to off",
+                        remark: "", deleted: false,
+                    }
+                });
+            }
+            // ===== END: trackStock ON → OFF =====
+
+            // ===== trackStock transition: OFF → ON (simple items) =====
+            if (turningOn && !currentItem!.hasVariants) {
+                const qty = stockQuantity || 0;
+
+                // Create StockBalance
+                await tx.stockBalance.create({
+                    data: {
+                        itemId: id, outletId: 1,
+                        availableQuantity: qty, onHandQuantity: qty,
+                        reorderThreshold: reorderThreshold || 0,
+                        deleted: false,
+                    }
+                });
+
+                // Audit trail
+                await tx.stockMovement.create({
+                    data: {
+                        itemId: id, outletId: 1,
+                        previousAvailableQuantity: 0, previousOnHandQuantity: 0,
+                        availableQuantityDelta: qty, onHandQuantityDelta: qty,
+                        documentId: 0,
+                        movementType: "Stock Tracking Enabled",
+                        reason: "trackStock changed from off to on",
+                        remark: "", deleted: false,
+                    }
+                });
+
+                // Create StockReceipt if cost > 0 AND qty > 0
+                // updateData.cost is the ORIGINAL frontend value (untouched by the zeroing of itemUpdateData.cost)
+                const originalCost = updateData.cost || 0;
+                if (originalCost > 0 && qty > 0) {
+                    await tx.stockReceipt.create({
+                        data: {
+                            itemId: id, outletId: 1,
+                            quantity: qty, cost: originalCost,
+                            receiptDate: new Date(),
+                            deleted: false, version: 1,
+                        }
+                    });
+                }
+            }
+            // ===== END: trackStock OFF → ON (simple items) =====
 
             // Update reorderThreshold in StockBalance if provided
             if (reorderThreshold !== undefined) {
@@ -942,8 +1044,9 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 // Track if any variants were deleted (for hasVariants check later)
                 let variantDeleted = false;
 
-                // Track new variant IDs for stock record creation
+                // Track new variant IDs and stock data for stock record creation
                 const newVariantIds: number[] = [];
+                const variantStockDataMap = new Map<number, { stockQuantity: number; cost: number }>();
 
                 // Auto-flag hasVariants if not already set
                 if (!itemUpdate.hasVariants) {
@@ -955,7 +1058,14 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
 
                 // Process each variant
                 for (const variantData of variants) {
-                    const { id: variantId, attributes, removeAttributes, ...variantFields } = variantData;
+                    const { id: variantId, attributes, removeAttributes, stockQuantity: variantStockQty, ...variantFields } = variantData;
+
+                    // Validate: reject negative stock quantities for new variants
+                    if (!variantId && variantStockQty !== undefined && variantStockQty < 0) {
+                        throw new BusinessLogicError(
+                            `Initial stock quantity cannot be negative for variant "${variantFields.variantSku || variantFields.variantName}"`
+                        );
+                    }
 
                     if (variantId) {
                         // Check if variant should be deleted
@@ -1008,7 +1118,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                                 data: {
                                     variantSku: variantFields.variantSku,
                                     variantName: variantFields.variantName,
-                                    cost: variantFields.cost,
+                                    cost: (itemUpdate.trackStock !== false) ? 0 : (variantFields.cost || 0),
                                     price: variantFields.price,
                                     image: variantFields.image,
                                     barcode: variantFields.barcode,
@@ -1076,7 +1186,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                                     deleted: false,
                                     deletedAt: null,
                                     variantName: variantFields.variantName,
-                                    cost: variantFields.cost ?? null,
+                                    cost: (itemUpdate.trackStock !== false) ? 0 : (variantFields.cost ?? null),
                                     price: variantFields.price ?? null,
                                     image: variantFields.image ?? null,
                                     barcode: variantFields.barcode ?? null,
@@ -1088,6 +1198,14 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                             });
 
                             newVariantIds.push(existingSoftDeleted.id);
+
+                            // Track per-variant stock data for batch creation
+                            if (variantStockQty || variantFields.cost) {
+                                variantStockDataMap.set(existingSoftDeleted.id, {
+                                    stockQuantity: variantStockQty || 0,
+                                    cost: variantFields.cost || 0,
+                                });
+                            }
 
                             // Process attributes (processVariantAttribute handles restoring soft-deleted junctions)
                             if (attributes && Array.isArray(attributes)) {
@@ -1102,7 +1220,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                                     itemId: id,
                                     variantSku: variantFields.variantSku,
                                     variantName: variantFields.variantName,
-                                    cost: variantFields.cost,
+                                    cost: (itemUpdate.trackStock !== false) ? 0 : (variantFields.cost || 0),
                                     price: variantFields.price,
                                     image: variantFields.image,
                                     barcode: variantFields.barcode,
@@ -1115,6 +1233,14 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
 
                             newVariantIds.push(variant.id);
 
+                            // Track per-variant stock data for batch creation
+                            if (variantStockQty || variantFields.cost) {
+                                variantStockDataMap.set(variant.id, {
+                                    stockQuantity: variantStockQty || 0,
+                                    cost: variantFields.cost || 0,
+                                });
+                            }
+
                             // Create variant attributes using helper function
                             if (attributes && Array.isArray(attributes)) {
                                 for (const attr of attributes) {
@@ -1125,10 +1251,64 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                     }
                 }
 
-                // Create StockBalance and StockMovement for all new variants (only for stock-tracked items)
-                if (newVariantIds.length > 0 && itemUpdate.trackStock !== false) {
-                    await createVariantStockRecords(tx, id, newVariantIds);
+                // Create StockBalance, StockMovement, and StockReceipt for all new variants (only for stock-tracked items)
+                // Skip when turningOn — step 6 below handles ALL variants during off→on transition
+                if (newVariantIds.length > 0 && itemUpdate.trackStock !== false && !turningOn) {
+                    await createVariantStockRecords(tx, id, newVariantIds, 1, variantStockDataMap);
                 }
+
+                // ===== trackStock transition: OFF → ON (variant items) =====
+                if (turningOn && currentItem!.hasVariants) {
+                    // Query ALL active variants (includes newly created ones from the loop above)
+                    const allActiveVariants = await tx.itemVariant.findMany({
+                        where: { itemId: id, deleted: false },
+                        select: { id: true }
+                    });
+
+                    // Build stock data map from variants array (for EXISTING variants with IDs)
+                    // New variants created during this update won't have v.id in the input → they get qty=0
+                    // This is correct by design: new variants via update always start at qty=0
+                    const variantStockDataMap = new Map<number, { stockQuantity: number; cost: number }>();
+                    if (variants && Array.isArray(variants)) {
+                        for (const v of variants) {
+                            if (v.id && v.stockQuantity !== undefined) {
+                                variantStockDataMap.set(v.id, {
+                                    stockQuantity: v.stockQuantity || 0,
+                                    cost: v.cost || 0,
+                                });
+                            }
+                        }
+                    }
+
+                    // Create StockBalance + StockMovement + StockReceipt for all variants
+                    await createVariantStockRecords(
+                        tx, id,
+                        allActiveVariants.map(v => v.id),
+                        1,
+                        variantStockDataMap
+                    );
+
+                    // Zero out ALL variant costs (FIFO is now the cost source)
+                    // This catches variants NOT in the update payload too
+                    await tx.itemVariant.updateMany({
+                        where: { itemId: id, deleted: false },
+                        data: { cost: 0 }
+                    });
+
+                    // Audit trail
+                    await tx.stockMovement.create({
+                        data: {
+                            itemId: id, outletId: 1,
+                            previousAvailableQuantity: 0, previousOnHandQuantity: 0,
+                            availableQuantityDelta: 0, onHandQuantityDelta: 0,
+                            documentId: 0,
+                            movementType: "Stock Tracking Enabled",
+                            reason: "trackStock changed from off to on",
+                            remark: "", deleted: false,
+                        }
+                    });
+                }
+                // ===== END: trackStock OFF → ON (variant items) =====
 
                 // ===== Reset hasVariants if all variants were deleted =====
                 // Performance: Only runs count query if at least one variant was deleted

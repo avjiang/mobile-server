@@ -90,10 +90,16 @@ Product variants allow a single item (e.g., "Samsung Galaxy S24") to have multip
   - When variants are created via `createMany()` or `update()`, the following are auto-created:
     - `StockBalance` with quantity = `stockQuantity` per variant (or 0 if not provided), outlet 1
     - `StockMovement` with `movementType: "Create Variant"`, delta = `stockQuantity` (or 0)
-    - `StockReceipt` when `cost > 0 AND stockQuantity > 0` (FIFO costing, `createMany()` only)
+    - `StockReceipt` when `cost > 0 AND stockQuantity > 0` (FIFO costing)
   - Uses batch operations (`createMany`) for optimal performance
   - 2-3 SQL queries regardless of variant count
-  - Initial stock per variant only supported during `createMany()` (variants added via `update()` start at 0)
+  - Initial stock + cost per variant supported during both `createMany()` and `update()` (new variants and restored soft-deleted variants)
+
+- [x] Variant Cost Routing
+  - `trackStock: true` → `ItemVariant.cost = 0` (FIFO via StockReceipt is the cost source of truth)
+  - `trackStock: false` → `ItemVariant.cost = cost` (stored directly, no FIFO)
+  - Same routing applies to parent `Item.cost`
+  - See [docs/COST_ROUTING_CLARIFICATION.md](../../docs/COST_ROUTING_CLARIFICATION.md) for full details
 
 - [x] Variant Service ([src/variant/variant.service.ts](src/variant/variant.service.ts))
   - Internal helper service for variant operations
@@ -295,7 +301,7 @@ curl -X GET "http://localhost:8080/item/variant/attributes/values?skip=0&take=10
 **Variant Restore Logic:**
 - [x] `update()` - Restores soft-deleted variants when recreated with same SKU on the same item
   - Checks for soft-deleted variant with matching SKU on the same item
-  - If found: restores it (`deleted: false`), updates all fields, creates fresh StockBalance (qty=0)
+  - If found: restores it (`deleted: false`), updates all fields, creates fresh StockBalance (with `stockQuantity` if provided, otherwise qty=0)
   - If not found: creates new variant as before
 
 - [x] `createMany()` - Frees up SKUs held by soft-deleted variants on other items
@@ -600,12 +606,14 @@ await tx.stockBalance.update({
   "price": 12000000,
   "cost": 9000000,
   "stockQuantity": 0,
+  "trackStock": true,
   "variants": [
     {
       "variantSku": "SAMSUNG-S24-GREEN-256GB",
       "variantName": "Green - 256GB",
       "cost": 9000000,
       "price": 12000000,
+      "stockQuantity": 10,
       "attributes": [
         {
           "definitionKey": "Color",
@@ -634,7 +642,7 @@ await tx.stockBalance.update({
       "id": 1000,
       "variantSku": "SAMSUNG-S24-GREEN-256GB",
       "variantName": "Green - 256GB",
-      "cost": "9000000.0000",
+      "cost": "0.0000", // 0 when trackStock=true (FIFO handles cost via StockReceipt)
       "price": "12000000.0000",
       "attributes": [
         {
@@ -1578,7 +1586,7 @@ if (existingSoftDeleted) {
 |--------|--------|
 | ItemVariant | Restored (`deleted: false`), fields updated |
 | Old StockBalance | Stays soft-deleted (old quantities preserved as history) |
-| New StockBalance | Created via `createVariantStockRecords` (qty=0 for restored variants; initial qty supported during `createMany()`) |
+| New StockBalance | Created via `createVariantStockRecords` (with `stockQuantity` if provided, otherwise qty=0; supported in both `createMany()` and `update()`) |
 | StockMovement | New "Create Variant" movement added (delta matches initial qty) |
 | Old StockReceipt | Stays soft-deleted (FIFO starts fresh) |
 | Attributes | Processed normally (restored or created) |

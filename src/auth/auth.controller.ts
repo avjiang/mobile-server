@@ -47,7 +47,8 @@ let validateToken = (req: NetworkRequest<TokenRequestBody>, res: Response, next:
                 verified: true,
                 tenantUserId: userInfo.tenantUserId,
                 userId: userInfo.userId,
-                username: userInfo.username
+                username: userInfo.username,
+                planType: userInfo.planType
             }
             sendResponse(res, response)
         })

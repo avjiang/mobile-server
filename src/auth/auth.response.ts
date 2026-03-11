@@ -7,6 +7,7 @@ export interface TokenResponseBody {
     userId: number,
     notificationTopics?: string[],
     planName?: string | null,
+    planType?: string | null,
     databaseName?: string | null,
     globalOutletId?: number | null,
     loyaltyTier?: 'none' | 'basic' | 'advanced'
@@ -16,5 +17,6 @@ export interface ValidateTokenResponseBody {
     verified: boolean,
     tenantUserId: number,
     userId: number,
-    username: string
+    username: string,
+    planType?: string | null
 }

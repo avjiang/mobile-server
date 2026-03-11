@@ -65,6 +65,7 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 userId: customerUser?.id || 0,
                 notificationTopics: decodedToken.user?.notificationTopics,
                 planName: decodedToken.user?.planName,
+                planType: decodedToken.user?.planType,
                 databaseName: tenantUser?.tenant?.databaseName || '',
                 globalOutletId,
                 loyaltyTier
@@ -131,6 +132,7 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             userId: customerUser?.id || 0,
             notificationTopics: decodedToken.user?.notificationTopics,
             planName: decodedToken.user?.planName,
+            planType: decodedToken.user?.planType,
             databaseName: tenantUser.tenant?.databaseName || '',
             globalOutletId,
             loyaltyTier
@@ -197,6 +199,7 @@ let randomTokenString = () => {
 
 interface TenantSubscriptionInfo {
     planName: string | null;
+    planType: string | null;
     globalOutletId: number | null;
     loyaltyTier: 'none' | 'basic' | 'advanced';
 }
@@ -227,21 +230,24 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
 
         // If no outlets found, return null
         if (!tenantOutlets || tenantOutlets.length === 0) {
-            return { planName: null, globalOutletId: null, loyaltyTier: 'none' };
+            return { planName: null, planType: null, globalOutletId: null, loyaltyTier: 'none' };
         }
 
         // Find the first active subscription across all outlets
         // Prioritize higher tier plans (Pro over Basic)
         let bestPlan: string | null = null;
+        let bestPlanType: string | null = null;
         let globalOutletId: number | null = null;
 
         for (const outlet of tenantOutlets) {
             for (const subscription of outlet.subscriptions) {
                 const planName = subscription.subscriptionPlan?.planName;
+                const planType = subscription.subscriptionPlan?.planType;
                 if (planName) {
                     // If we find a Pro plan, use it immediately
                     if (planName === 'Pro' || !bestPlan) {
                         bestPlan = planName;
+                        bestPlanType = planType ?? null;
                         globalOutletId = outlet.id;
                         if (planName === 'Pro') break;
                     }
@@ -264,10 +270,10 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
             }
         }
 
-        return { planName: bestPlan, globalOutletId, loyaltyTier };
+        return { planName: bestPlan, planType: bestPlanType, globalOutletId, loyaltyTier };
     } catch (error) {
         console.error('Error getting tenant subscription info:', error);
-        return { planName: null, globalOutletId: null, loyaltyTier: 'none' };
+        return { planName: null, planType: null, globalOutletId: null, loyaltyTier: 'none' };
     }
 }
 
@@ -409,6 +415,7 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
     // Get notification topics for the user (skip for avjiang)
     let notificationTopics: string[] = [];
     let planName: string | null = null;
+    let planType: string | null = null;
     let globalOutletId: number | null = null;
 
     let loyaltyTier: 'none' | 'basic' | 'advanced' = 'none';
@@ -416,6 +423,7 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
     if (tenantUser.username !== "avjiang") {
         const subscriptionInfo = await getTenantSubscriptionInfo(tenantUser.tenantId);
         planName = subscriptionInfo.planName;
+        planType = subscriptionInfo.planType;
         globalOutletId = subscriptionInfo.globalOutletId;
         loyaltyTier = subscriptionInfo.loyaltyTier;
 
@@ -434,6 +442,7 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         role: tenantUser.username === "avjiang" ? "admin" : "user",
         notificationTopics,
         planName,
+        planType,
         loyaltyTier
     }
     const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });

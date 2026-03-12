@@ -44,6 +44,7 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
             outletId: outlet.id,
             outletName: outlet.outletName,
             isActive: outlet.isActive,
+            serverTime: new Date().toISOString(),
             subscription: null,
             addOns: tenantAddOns.map(ta => ({
                 id: ta.addOn.id,

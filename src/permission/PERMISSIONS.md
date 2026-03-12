@@ -53,6 +53,9 @@ Permissions for receiving and managing push notifications.
 ### Devices
 Permissions for managing push notification devices.
 
+### Loyalty
+Permissions for managing the loyalty program, customer loyalty accounts, point adjustments, subscription packages, and customer subscriptions. These permissions are only relevant for tenants with `loyaltyTier` of `basic` or `advanced`.
+
 ## Complete Permission List
 
 ### Dashboard Permissions
@@ -128,6 +131,17 @@ Permissions for managing push notification devices.
 | ID | Name | Description |
 |----|------|-------------|
 | 20 | Manage Push Notification Devices | Manage active push notification devices |
+
+### Loyalty Permissions
+
+| ID | Name | Description |
+|----|------|-------------|
+| 25 | Manage Loyalty Program | Create and edit loyalty program settings and tiers |
+| 26 | View Loyalty Accounts | View customer loyalty balances and history |
+| 27 | Adjust Loyalty Points | Manually add or remove loyalty points |
+| 28 | Manage Subscription Packages | Create, edit, and delete subscription packages |
+| 29 | View Customer Subscriptions | View active customer subscriptions |
+| 30 | Manage Customer Subscriptions | Subscribe, cancel, and manage customer subscriptions |
 
 ## API Endpoints
 
@@ -260,3 +274,4 @@ WHERE PERMISSION_ID = 10 AND IS_DELETED = 0;
 | 2025-11-01 | 1.2 | Added device management permission (ID 20) |
 | 2025-11-05 | 1.3 | Added inventory notification permission (ID 21) |
 | 2026-02-27 | 1.4 | Deprecated "Manage Customers" (ID 10); added granular customer permissions: Add Customer (ID 22), Edit Customer (ID 23), Delete Customer (ID 24) |
+| 2026-03-02 | 1.5 | Added Loyalty permissions (IDs 25-30): Manage Loyalty Program, View Loyalty Accounts, Adjust Loyalty Points, Manage Subscription Packages, View Customer Subscriptions, Manage Customer Subscriptions |

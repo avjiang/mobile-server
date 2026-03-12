@@ -93,6 +93,16 @@ export type TenantWarehouse = $Result.DefaultSelection<Prisma.$TenantWarehousePa
  * 
  */
 export type TenantPayment = $Result.DefaultSelection<Prisma.$TenantPaymentPayload>
+/**
+ * Model CustomPriceLog
+ * 
+ */
+export type CustomPriceLog = $Result.DefaultSelection<Prisma.$CustomPriceLogPayload>
+/**
+ * Model TenantAddOn
+ * 
+ */
+export type TenantAddOn = $Result.DefaultSelection<Prisma.$TenantAddOnPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -378,6 +388,26 @@ export class PrismaClient<
     * ```
     */
   get tenantPayment(): Prisma.TenantPaymentDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.customPriceLog`: Exposes CRUD operations for the **CustomPriceLog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CustomPriceLogs
+    * const customPriceLogs = await prisma.customPriceLog.findMany()
+    * ```
+    */
+  get customPriceLog(): Prisma.CustomPriceLogDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.tenantAddOn`: Exposes CRUD operations for the **TenantAddOn** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more TenantAddOns
+    * const tenantAddOns = await prisma.tenantAddOn.findMany()
+    * ```
+    */
+  get tenantAddOn(): Prisma.TenantAddOnDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -833,7 +863,9 @@ export namespace Prisma {
     PushySubscription: 'PushySubscription',
     PushyDeviceAllocation: 'PushyDeviceAllocation',
     TenantWarehouse: 'TenantWarehouse',
-    TenantPayment: 'TenantPayment'
+    TenantPayment: 'TenantPayment',
+    CustomPriceLog: 'CustomPriceLog',
+    TenantAddOn: 'TenantAddOn'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -852,7 +884,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation" | "tenantWarehouse" | "tenantPayment"
+      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation" | "tenantWarehouse" | "tenantPayment" | "customPriceLog" | "tenantAddOn"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1912,6 +1944,138 @@ export namespace Prisma {
           }
         }
       }
+      CustomPriceLog: {
+        payload: Prisma.$CustomPriceLogPayload<ExtArgs>
+        fields: Prisma.CustomPriceLogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CustomPriceLogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CustomPriceLogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload>
+          }
+          findFirst: {
+            args: Prisma.CustomPriceLogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CustomPriceLogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload>
+          }
+          findMany: {
+            args: Prisma.CustomPriceLogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload>[]
+          }
+          create: {
+            args: Prisma.CustomPriceLogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload>
+          }
+          createMany: {
+            args: Prisma.CustomPriceLogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.CustomPriceLogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload>
+          }
+          update: {
+            args: Prisma.CustomPriceLogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload>
+          }
+          deleteMany: {
+            args: Prisma.CustomPriceLogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CustomPriceLogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CustomPriceLogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CustomPriceLogPayload>
+          }
+          aggregate: {
+            args: Prisma.CustomPriceLogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCustomPriceLog>
+          }
+          groupBy: {
+            args: Prisma.CustomPriceLogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CustomPriceLogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CustomPriceLogCountArgs<ExtArgs>
+            result: $Utils.Optional<CustomPriceLogCountAggregateOutputType> | number
+          }
+        }
+      }
+      TenantAddOn: {
+        payload: Prisma.$TenantAddOnPayload<ExtArgs>
+        fields: Prisma.TenantAddOnFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.TenantAddOnFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.TenantAddOnFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload>
+          }
+          findFirst: {
+            args: Prisma.TenantAddOnFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.TenantAddOnFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload>
+          }
+          findMany: {
+            args: Prisma.TenantAddOnFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload>[]
+          }
+          create: {
+            args: Prisma.TenantAddOnCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload>
+          }
+          createMany: {
+            args: Prisma.TenantAddOnCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.TenantAddOnDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload>
+          }
+          update: {
+            args: Prisma.TenantAddOnUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload>
+          }
+          deleteMany: {
+            args: Prisma.TenantAddOnDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.TenantAddOnUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.TenantAddOnUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$TenantAddOnPayload>
+          }
+          aggregate: {
+            args: Prisma.TenantAddOnAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTenantAddOn>
+          }
+          groupBy: {
+            args: Prisma.TenantAddOnGroupByArgs<ExtArgs>
+            result: $Utils.Optional<TenantAddOnGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.TenantAddOnCountArgs<ExtArgs>
+            result: $Utils.Optional<TenantAddOnCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2012,6 +2176,8 @@ export namespace Prisma {
     pushyDeviceAllocation?: PushyDeviceAllocationOmit
     tenantWarehouse?: TenantWarehouseOmit
     tenantPayment?: TenantPaymentOmit
+    customPriceLog?: CustomPriceLogOmit
+    tenantAddOn?: TenantAddOnOmit
   }
 
   /* Types for Logging */
@@ -2138,10 +2304,12 @@ export namespace Prisma {
 
   export type SubscriptionAddOnCountOutputType = {
     subscriptions: number
+    tenantAddOns: number
   }
 
   export type SubscriptionAddOnCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subscriptions?: boolean | SubscriptionAddOnCountOutputTypeCountSubscriptionsArgs
+    tenantAddOns?: boolean | SubscriptionAddOnCountOutputTypeCountTenantAddOnsArgs
   }
 
   // Custom InputTypes
@@ -2162,6 +2330,13 @@ export namespace Prisma {
     where?: TenantSubscriptionAddOnWhereInput
   }
 
+  /**
+   * SubscriptionAddOnCountOutputType without action
+   */
+  export type SubscriptionAddOnCountOutputTypeCountTenantAddOnsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantAddOnWhereInput
+  }
+
 
   /**
    * Count Type TenantCountOutputType
@@ -2174,6 +2349,7 @@ export namespace Prisma {
     deviceAllocations: number
     warehouses: number
     payments: number
+    tenantAddOns: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2183,6 +2359,7 @@ export namespace Prisma {
     deviceAllocations?: boolean | TenantCountOutputTypeCountDeviceAllocationsArgs
     warehouses?: boolean | TenantCountOutputTypeCountWarehousesArgs
     payments?: boolean | TenantCountOutputTypeCountPaymentsArgs
+    tenantAddOns?: boolean | TenantCountOutputTypeCountTenantAddOnsArgs
   }
 
   // Custom InputTypes
@@ -2236,6 +2413,13 @@ export namespace Prisma {
    */
   export type TenantCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TenantPaymentWhereInput
+  }
+
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountTenantAddOnsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantAddOnWhereInput
   }
 
 
@@ -3701,6 +3885,7 @@ export namespace Prisma {
     scope?: boolean
     description?: boolean
     subscriptions?: boolean | SubscriptionAddOn$subscriptionsArgs<ExtArgs>
+    tenantAddOns?: boolean | SubscriptionAddOn$tenantAddOnsArgs<ExtArgs>
     _count?: boolean | SubscriptionAddOnCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["subscriptionAddOn"]>
 
@@ -3719,6 +3904,7 @@ export namespace Prisma {
   export type SubscriptionAddOnOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "addOnType" | "pricePerUnit" | "maxQuantity" | "scope" | "description", ExtArgs["result"]["subscriptionAddOn"]>
   export type SubscriptionAddOnInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subscriptions?: boolean | SubscriptionAddOn$subscriptionsArgs<ExtArgs>
+    tenantAddOns?: boolean | SubscriptionAddOn$tenantAddOnsArgs<ExtArgs>
     _count?: boolean | SubscriptionAddOnCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -3726,6 +3912,7 @@ export namespace Prisma {
     name: "SubscriptionAddOn"
     objects: {
       subscriptions: Prisma.$TenantSubscriptionAddOnPayload<ExtArgs>[]
+      tenantAddOns: Prisma.$TenantAddOnPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -4076,6 +4263,7 @@ export namespace Prisma {
   export interface Prisma__SubscriptionAddOnClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     subscriptions<T extends SubscriptionAddOn$subscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, SubscriptionAddOn$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantSubscriptionAddOnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    tenantAddOns<T extends SubscriptionAddOn$tenantAddOnsArgs<ExtArgs> = {}>(args?: Subset<T, SubscriptionAddOn$tenantAddOnsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4479,6 +4667,30 @@ export namespace Prisma {
   }
 
   /**
+   * SubscriptionAddOn.tenantAddOns
+   */
+  export type SubscriptionAddOn$tenantAddOnsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    where?: TenantAddOnWhereInput
+    orderBy?: TenantAddOnOrderByWithRelationInput | TenantAddOnOrderByWithRelationInput[]
+    cursor?: TenantAddOnWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TenantAddOnScalarFieldEnum | TenantAddOnScalarFieldEnum[]
+  }
+
+  /**
    * SubscriptionAddOn without action
    */
   export type SubscriptionAddOnDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4701,6 +4913,7 @@ export namespace Prisma {
     deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
     warehouses?: boolean | Tenant$warehousesArgs<ExtArgs>
     payments?: boolean | Tenant$paymentsArgs<ExtArgs>
+    tenantAddOns?: boolean | Tenant$tenantAddOnsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4722,6 +4935,7 @@ export namespace Prisma {
     deviceAllocations?: boolean | Tenant$deviceAllocationsArgs<ExtArgs>
     warehouses?: boolean | Tenant$warehousesArgs<ExtArgs>
     payments?: boolean | Tenant$paymentsArgs<ExtArgs>
+    tenantAddOns?: boolean | Tenant$tenantAddOnsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4734,6 +4948,7 @@ export namespace Prisma {
       deviceAllocations: Prisma.$PushyDeviceAllocationPayload<ExtArgs>[]
       warehouses: Prisma.$TenantWarehousePayload<ExtArgs>[]
       payments: Prisma.$TenantPaymentPayload<ExtArgs>[]
+      tenantAddOns: Prisma.$TenantAddOnPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -5087,6 +5302,7 @@ export namespace Prisma {
     deviceAllocations<T extends Tenant$deviceAllocationsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$deviceAllocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PushyDeviceAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     warehouses<T extends Tenant$warehousesArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$warehousesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantWarehousePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     payments<T extends Tenant$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    tenantAddOns<T extends Tenant$tenantAddOnsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$tenantAddOnsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5608,6 +5824,30 @@ export namespace Prisma {
   }
 
   /**
+   * Tenant.tenantAddOns
+   */
+  export type Tenant$tenantAddOnsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    where?: TenantAddOnWhereInput
+    orderBy?: TenantAddOnOrderByWithRelationInput | TenantAddOnOrderByWithRelationInput[]
+    cursor?: TenantAddOnWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TenantAddOnScalarFieldEnum | TenantAddOnScalarFieldEnum[]
+  }
+
+  /**
    * Tenant without action
    */
   export type TenantDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5644,6 +5884,7 @@ export namespace Prisma {
     outletId: number | null
     subscriptionPlanId: number | null
     discountId: number | null
+    customPrice: number | null
   }
 
   export type TenantSubscriptionSumAggregateOutputType = {
@@ -5652,6 +5893,7 @@ export namespace Prisma {
     outletId: number | null
     subscriptionPlanId: number | null
     discountId: number | null
+    customPrice: number | null
   }
 
   export type TenantSubscriptionMinAggregateOutputType = {
@@ -5665,6 +5907,8 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     discountId: number | null
+    customPrice: number | null
+    customPriceNote: string | null
   }
 
   export type TenantSubscriptionMaxAggregateOutputType = {
@@ -5678,6 +5922,8 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     discountId: number | null
+    customPrice: number | null
+    customPriceNote: string | null
   }
 
   export type TenantSubscriptionCountAggregateOutputType = {
@@ -5691,6 +5937,8 @@ export namespace Prisma {
     createdAt: number
     updatedAt: number
     discountId: number
+    customPrice: number
+    customPriceNote: number
     _all: number
   }
 
@@ -5701,6 +5949,7 @@ export namespace Prisma {
     outletId?: true
     subscriptionPlanId?: true
     discountId?: true
+    customPrice?: true
   }
 
   export type TenantSubscriptionSumAggregateInputType = {
@@ -5709,6 +5958,7 @@ export namespace Prisma {
     outletId?: true
     subscriptionPlanId?: true
     discountId?: true
+    customPrice?: true
   }
 
   export type TenantSubscriptionMinAggregateInputType = {
@@ -5722,6 +5972,8 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     discountId?: true
+    customPrice?: true
+    customPriceNote?: true
   }
 
   export type TenantSubscriptionMaxAggregateInputType = {
@@ -5735,6 +5987,8 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     discountId?: true
+    customPrice?: true
+    customPriceNote?: true
   }
 
   export type TenantSubscriptionCountAggregateInputType = {
@@ -5748,6 +6002,8 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     discountId?: true
+    customPrice?: true
+    customPriceNote?: true
     _all?: true
   }
 
@@ -5848,6 +6104,8 @@ export namespace Prisma {
     createdAt: Date
     updatedAt: Date
     discountId: number | null
+    customPrice: number | null
+    customPriceNote: string | null
     _count: TenantSubscriptionCountAggregateOutputType | null
     _avg: TenantSubscriptionAvgAggregateOutputType | null
     _sum: TenantSubscriptionSumAggregateOutputType | null
@@ -5880,6 +6138,8 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     discountId?: boolean
+    customPrice?: boolean
+    customPriceNote?: boolean
     outlet?: boolean | TenantOutletDefaultArgs<ExtArgs>
     discount?: boolean | TenantSubscription$discountArgs<ExtArgs>
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -5903,9 +6163,11 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     discountId?: boolean
+    customPrice?: boolean
+    customPriceNote?: boolean
   }
 
-  export type TenantSubscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "outletId" | "subscriptionPlanId" | "status" | "nextPaymentDate" | "subscriptionValidUntil" | "createdAt" | "updatedAt" | "discountId", ExtArgs["result"]["tenantSubscription"]>
+  export type TenantSubscriptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "outletId" | "subscriptionPlanId" | "status" | "nextPaymentDate" | "subscriptionValidUntil" | "createdAt" | "updatedAt" | "discountId" | "customPrice" | "customPriceNote", ExtArgs["result"]["tenantSubscription"]>
   export type TenantSubscriptionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     outlet?: boolean | TenantOutletDefaultArgs<ExtArgs>
     discount?: boolean | TenantSubscription$discountArgs<ExtArgs>
@@ -5939,6 +6201,8 @@ export namespace Prisma {
       createdAt: Date
       updatedAt: Date
       discountId: number | null
+      customPrice: number | null
+      customPriceNote: string | null
     }, ExtArgs["result"]["tenantSubscription"]>
     composites: {}
   }
@@ -6325,6 +6589,8 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"TenantSubscription", 'DateTime'>
     readonly updatedAt: FieldRef<"TenantSubscription", 'DateTime'>
     readonly discountId: FieldRef<"TenantSubscription", 'Int'>
+    readonly customPrice: FieldRef<"TenantSubscription", 'Float'>
+    readonly customPriceNote: FieldRef<"TenantSubscription", 'String'>
   }
     
 
@@ -19041,6 +19307,1980 @@ export namespace Prisma {
 
 
   /**
+   * Model CustomPriceLog
+   */
+
+  export type AggregateCustomPriceLog = {
+    _count: CustomPriceLogCountAggregateOutputType | null
+    _avg: CustomPriceLogAvgAggregateOutputType | null
+    _sum: CustomPriceLogSumAggregateOutputType | null
+    _min: CustomPriceLogMinAggregateOutputType | null
+    _max: CustomPriceLogMaxAggregateOutputType | null
+  }
+
+  export type CustomPriceLogAvgAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    previousPrice: number | null
+    newPrice: number | null
+    changedBy: number | null
+  }
+
+  export type CustomPriceLogSumAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    previousPrice: number | null
+    newPrice: number | null
+    changedBy: number | null
+  }
+
+  export type CustomPriceLogMinAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    previousPrice: number | null
+    newPrice: number | null
+    note: string | null
+    changedBy: number | null
+    createdAt: Date | null
+  }
+
+  export type CustomPriceLogMaxAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    outletId: number | null
+    subscriptionId: number | null
+    previousPrice: number | null
+    newPrice: number | null
+    note: string | null
+    changedBy: number | null
+    createdAt: Date | null
+  }
+
+  export type CustomPriceLogCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    previousPrice: number
+    newPrice: number
+    note: number
+    changedBy: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type CustomPriceLogAvgAggregateInputType = {
+    id?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    previousPrice?: true
+    newPrice?: true
+    changedBy?: true
+  }
+
+  export type CustomPriceLogSumAggregateInputType = {
+    id?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    previousPrice?: true
+    newPrice?: true
+    changedBy?: true
+  }
+
+  export type CustomPriceLogMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    previousPrice?: true
+    newPrice?: true
+    note?: true
+    changedBy?: true
+    createdAt?: true
+  }
+
+  export type CustomPriceLogMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    previousPrice?: true
+    newPrice?: true
+    note?: true
+    changedBy?: true
+    createdAt?: true
+  }
+
+  export type CustomPriceLogCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    outletId?: true
+    subscriptionId?: true
+    previousPrice?: true
+    newPrice?: true
+    note?: true
+    changedBy?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type CustomPriceLogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CustomPriceLog to aggregate.
+     */
+    where?: CustomPriceLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomPriceLogs to fetch.
+     */
+    orderBy?: CustomPriceLogOrderByWithRelationInput | CustomPriceLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CustomPriceLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomPriceLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomPriceLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CustomPriceLogs
+    **/
+    _count?: true | CustomPriceLogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CustomPriceLogAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CustomPriceLogSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CustomPriceLogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CustomPriceLogMaxAggregateInputType
+  }
+
+  export type GetCustomPriceLogAggregateType<T extends CustomPriceLogAggregateArgs> = {
+        [P in keyof T & keyof AggregateCustomPriceLog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCustomPriceLog[P]>
+      : GetScalarType<T[P], AggregateCustomPriceLog[P]>
+  }
+
+
+
+
+  export type CustomPriceLogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CustomPriceLogWhereInput
+    orderBy?: CustomPriceLogOrderByWithAggregationInput | CustomPriceLogOrderByWithAggregationInput[]
+    by: CustomPriceLogScalarFieldEnum[] | CustomPriceLogScalarFieldEnum
+    having?: CustomPriceLogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CustomPriceLogCountAggregateInputType | true
+    _avg?: CustomPriceLogAvgAggregateInputType
+    _sum?: CustomPriceLogSumAggregateInputType
+    _min?: CustomPriceLogMinAggregateInputType
+    _max?: CustomPriceLogMaxAggregateInputType
+  }
+
+  export type CustomPriceLogGroupByOutputType = {
+    id: number
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    previousPrice: number | null
+    newPrice: number | null
+    note: string | null
+    changedBy: number | null
+    createdAt: Date
+    _count: CustomPriceLogCountAggregateOutputType | null
+    _avg: CustomPriceLogAvgAggregateOutputType | null
+    _sum: CustomPriceLogSumAggregateOutputType | null
+    _min: CustomPriceLogMinAggregateOutputType | null
+    _max: CustomPriceLogMaxAggregateOutputType | null
+  }
+
+  type GetCustomPriceLogGroupByPayload<T extends CustomPriceLogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CustomPriceLogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CustomPriceLogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CustomPriceLogGroupByOutputType[P]>
+            : GetScalarType<T[P], CustomPriceLogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CustomPriceLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    outletId?: boolean
+    subscriptionId?: boolean
+    previousPrice?: boolean
+    newPrice?: boolean
+    note?: boolean
+    changedBy?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["customPriceLog"]>
+
+
+
+  export type CustomPriceLogSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    outletId?: boolean
+    subscriptionId?: boolean
+    previousPrice?: boolean
+    newPrice?: boolean
+    note?: boolean
+    changedBy?: boolean
+    createdAt?: boolean
+  }
+
+  export type CustomPriceLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "outletId" | "subscriptionId" | "previousPrice" | "newPrice" | "note" | "changedBy" | "createdAt", ExtArgs["result"]["customPriceLog"]>
+
+  export type $CustomPriceLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CustomPriceLog"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      tenantId: number
+      outletId: number
+      subscriptionId: number
+      previousPrice: number | null
+      newPrice: number | null
+      note: string | null
+      changedBy: number | null
+      createdAt: Date
+    }, ExtArgs["result"]["customPriceLog"]>
+    composites: {}
+  }
+
+  type CustomPriceLogGetPayload<S extends boolean | null | undefined | CustomPriceLogDefaultArgs> = $Result.GetResult<Prisma.$CustomPriceLogPayload, S>
+
+  type CustomPriceLogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<CustomPriceLogFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: CustomPriceLogCountAggregateInputType | true
+    }
+
+  export interface CustomPriceLogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CustomPriceLog'], meta: { name: 'CustomPriceLog' } }
+    /**
+     * Find zero or one CustomPriceLog that matches the filter.
+     * @param {CustomPriceLogFindUniqueArgs} args - Arguments to find a CustomPriceLog
+     * @example
+     * // Get one CustomPriceLog
+     * const customPriceLog = await prisma.customPriceLog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CustomPriceLogFindUniqueArgs>(args: SelectSubset<T, CustomPriceLogFindUniqueArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one CustomPriceLog that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {CustomPriceLogFindUniqueOrThrowArgs} args - Arguments to find a CustomPriceLog
+     * @example
+     * // Get one CustomPriceLog
+     * const customPriceLog = await prisma.customPriceLog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CustomPriceLogFindUniqueOrThrowArgs>(args: SelectSubset<T, CustomPriceLogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CustomPriceLog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomPriceLogFindFirstArgs} args - Arguments to find a CustomPriceLog
+     * @example
+     * // Get one CustomPriceLog
+     * const customPriceLog = await prisma.customPriceLog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CustomPriceLogFindFirstArgs>(args?: SelectSubset<T, CustomPriceLogFindFirstArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CustomPriceLog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomPriceLogFindFirstOrThrowArgs} args - Arguments to find a CustomPriceLog
+     * @example
+     * // Get one CustomPriceLog
+     * const customPriceLog = await prisma.customPriceLog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CustomPriceLogFindFirstOrThrowArgs>(args?: SelectSubset<T, CustomPriceLogFindFirstOrThrowArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more CustomPriceLogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomPriceLogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CustomPriceLogs
+     * const customPriceLogs = await prisma.customPriceLog.findMany()
+     * 
+     * // Get first 10 CustomPriceLogs
+     * const customPriceLogs = await prisma.customPriceLog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const customPriceLogWithIdOnly = await prisma.customPriceLog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CustomPriceLogFindManyArgs>(args?: SelectSubset<T, CustomPriceLogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a CustomPriceLog.
+     * @param {CustomPriceLogCreateArgs} args - Arguments to create a CustomPriceLog.
+     * @example
+     * // Create one CustomPriceLog
+     * const CustomPriceLog = await prisma.customPriceLog.create({
+     *   data: {
+     *     // ... data to create a CustomPriceLog
+     *   }
+     * })
+     * 
+     */
+    create<T extends CustomPriceLogCreateArgs>(args: SelectSubset<T, CustomPriceLogCreateArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many CustomPriceLogs.
+     * @param {CustomPriceLogCreateManyArgs} args - Arguments to create many CustomPriceLogs.
+     * @example
+     * // Create many CustomPriceLogs
+     * const customPriceLog = await prisma.customPriceLog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CustomPriceLogCreateManyArgs>(args?: SelectSubset<T, CustomPriceLogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a CustomPriceLog.
+     * @param {CustomPriceLogDeleteArgs} args - Arguments to delete one CustomPriceLog.
+     * @example
+     * // Delete one CustomPriceLog
+     * const CustomPriceLog = await prisma.customPriceLog.delete({
+     *   where: {
+     *     // ... filter to delete one CustomPriceLog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CustomPriceLogDeleteArgs>(args: SelectSubset<T, CustomPriceLogDeleteArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one CustomPriceLog.
+     * @param {CustomPriceLogUpdateArgs} args - Arguments to update one CustomPriceLog.
+     * @example
+     * // Update one CustomPriceLog
+     * const customPriceLog = await prisma.customPriceLog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CustomPriceLogUpdateArgs>(args: SelectSubset<T, CustomPriceLogUpdateArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more CustomPriceLogs.
+     * @param {CustomPriceLogDeleteManyArgs} args - Arguments to filter CustomPriceLogs to delete.
+     * @example
+     * // Delete a few CustomPriceLogs
+     * const { count } = await prisma.customPriceLog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CustomPriceLogDeleteManyArgs>(args?: SelectSubset<T, CustomPriceLogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CustomPriceLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomPriceLogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CustomPriceLogs
+     * const customPriceLog = await prisma.customPriceLog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CustomPriceLogUpdateManyArgs>(args: SelectSubset<T, CustomPriceLogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CustomPriceLog.
+     * @param {CustomPriceLogUpsertArgs} args - Arguments to update or create a CustomPriceLog.
+     * @example
+     * // Update or create a CustomPriceLog
+     * const customPriceLog = await prisma.customPriceLog.upsert({
+     *   create: {
+     *     // ... data to create a CustomPriceLog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CustomPriceLog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CustomPriceLogUpsertArgs>(args: SelectSubset<T, CustomPriceLogUpsertArgs<ExtArgs>>): Prisma__CustomPriceLogClient<$Result.GetResult<Prisma.$CustomPriceLogPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of CustomPriceLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomPriceLogCountArgs} args - Arguments to filter CustomPriceLogs to count.
+     * @example
+     * // Count the number of CustomPriceLogs
+     * const count = await prisma.customPriceLog.count({
+     *   where: {
+     *     // ... the filter for the CustomPriceLogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends CustomPriceLogCountArgs>(
+      args?: Subset<T, CustomPriceLogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CustomPriceLogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CustomPriceLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomPriceLogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CustomPriceLogAggregateArgs>(args: Subset<T, CustomPriceLogAggregateArgs>): Prisma.PrismaPromise<GetCustomPriceLogAggregateType<T>>
+
+    /**
+     * Group by CustomPriceLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CustomPriceLogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CustomPriceLogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CustomPriceLogGroupByArgs['orderBy'] }
+        : { orderBy?: CustomPriceLogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CustomPriceLogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCustomPriceLogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CustomPriceLog model
+   */
+  readonly fields: CustomPriceLogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CustomPriceLog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CustomPriceLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CustomPriceLog model
+   */
+  interface CustomPriceLogFieldRefs {
+    readonly id: FieldRef<"CustomPriceLog", 'Int'>
+    readonly tenantId: FieldRef<"CustomPriceLog", 'Int'>
+    readonly outletId: FieldRef<"CustomPriceLog", 'Int'>
+    readonly subscriptionId: FieldRef<"CustomPriceLog", 'Int'>
+    readonly previousPrice: FieldRef<"CustomPriceLog", 'Float'>
+    readonly newPrice: FieldRef<"CustomPriceLog", 'Float'>
+    readonly note: FieldRef<"CustomPriceLog", 'String'>
+    readonly changedBy: FieldRef<"CustomPriceLog", 'Int'>
+    readonly createdAt: FieldRef<"CustomPriceLog", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CustomPriceLog findUnique
+   */
+  export type CustomPriceLogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * Filter, which CustomPriceLog to fetch.
+     */
+    where: CustomPriceLogWhereUniqueInput
+  }
+
+  /**
+   * CustomPriceLog findUniqueOrThrow
+   */
+  export type CustomPriceLogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * Filter, which CustomPriceLog to fetch.
+     */
+    where: CustomPriceLogWhereUniqueInput
+  }
+
+  /**
+   * CustomPriceLog findFirst
+   */
+  export type CustomPriceLogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * Filter, which CustomPriceLog to fetch.
+     */
+    where?: CustomPriceLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomPriceLogs to fetch.
+     */
+    orderBy?: CustomPriceLogOrderByWithRelationInput | CustomPriceLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CustomPriceLogs.
+     */
+    cursor?: CustomPriceLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomPriceLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomPriceLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CustomPriceLogs.
+     */
+    distinct?: CustomPriceLogScalarFieldEnum | CustomPriceLogScalarFieldEnum[]
+  }
+
+  /**
+   * CustomPriceLog findFirstOrThrow
+   */
+  export type CustomPriceLogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * Filter, which CustomPriceLog to fetch.
+     */
+    where?: CustomPriceLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomPriceLogs to fetch.
+     */
+    orderBy?: CustomPriceLogOrderByWithRelationInput | CustomPriceLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CustomPriceLogs.
+     */
+    cursor?: CustomPriceLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomPriceLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomPriceLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CustomPriceLogs.
+     */
+    distinct?: CustomPriceLogScalarFieldEnum | CustomPriceLogScalarFieldEnum[]
+  }
+
+  /**
+   * CustomPriceLog findMany
+   */
+  export type CustomPriceLogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * Filter, which CustomPriceLogs to fetch.
+     */
+    where?: CustomPriceLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CustomPriceLogs to fetch.
+     */
+    orderBy?: CustomPriceLogOrderByWithRelationInput | CustomPriceLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CustomPriceLogs.
+     */
+    cursor?: CustomPriceLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CustomPriceLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CustomPriceLogs.
+     */
+    skip?: number
+    distinct?: CustomPriceLogScalarFieldEnum | CustomPriceLogScalarFieldEnum[]
+  }
+
+  /**
+   * CustomPriceLog create
+   */
+  export type CustomPriceLogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * The data needed to create a CustomPriceLog.
+     */
+    data: XOR<CustomPriceLogCreateInput, CustomPriceLogUncheckedCreateInput>
+  }
+
+  /**
+   * CustomPriceLog createMany
+   */
+  export type CustomPriceLogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CustomPriceLogs.
+     */
+    data: CustomPriceLogCreateManyInput | CustomPriceLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CustomPriceLog update
+   */
+  export type CustomPriceLogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * The data needed to update a CustomPriceLog.
+     */
+    data: XOR<CustomPriceLogUpdateInput, CustomPriceLogUncheckedUpdateInput>
+    /**
+     * Choose, which CustomPriceLog to update.
+     */
+    where: CustomPriceLogWhereUniqueInput
+  }
+
+  /**
+   * CustomPriceLog updateMany
+   */
+  export type CustomPriceLogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CustomPriceLogs.
+     */
+    data: XOR<CustomPriceLogUpdateManyMutationInput, CustomPriceLogUncheckedUpdateManyInput>
+    /**
+     * Filter which CustomPriceLogs to update
+     */
+    where?: CustomPriceLogWhereInput
+    /**
+     * Limit how many CustomPriceLogs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * CustomPriceLog upsert
+   */
+  export type CustomPriceLogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * The filter to search for the CustomPriceLog to update in case it exists.
+     */
+    where: CustomPriceLogWhereUniqueInput
+    /**
+     * In case the CustomPriceLog found by the `where` argument doesn't exist, create a new CustomPriceLog with this data.
+     */
+    create: XOR<CustomPriceLogCreateInput, CustomPriceLogUncheckedCreateInput>
+    /**
+     * In case the CustomPriceLog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CustomPriceLogUpdateInput, CustomPriceLogUncheckedUpdateInput>
+  }
+
+  /**
+   * CustomPriceLog delete
+   */
+  export type CustomPriceLogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+    /**
+     * Filter which CustomPriceLog to delete.
+     */
+    where: CustomPriceLogWhereUniqueInput
+  }
+
+  /**
+   * CustomPriceLog deleteMany
+   */
+  export type CustomPriceLogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CustomPriceLogs to delete
+     */
+    where?: CustomPriceLogWhereInput
+    /**
+     * Limit how many CustomPriceLogs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * CustomPriceLog without action
+   */
+  export type CustomPriceLogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CustomPriceLog
+     */
+    select?: CustomPriceLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CustomPriceLog
+     */
+    omit?: CustomPriceLogOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model TenantAddOn
+   */
+
+  export type AggregateTenantAddOn = {
+    _count: TenantAddOnCountAggregateOutputType | null
+    _avg: TenantAddOnAvgAggregateOutputType | null
+    _sum: TenantAddOnSumAggregateOutputType | null
+    _min: TenantAddOnMinAggregateOutputType | null
+    _max: TenantAddOnMaxAggregateOutputType | null
+  }
+
+  export type TenantAddOnAvgAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    addOnId: number | null
+    quantity: number | null
+  }
+
+  export type TenantAddOnSumAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    addOnId: number | null
+    quantity: number | null
+  }
+
+  export type TenantAddOnMinAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    addOnId: number | null
+    quantity: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TenantAddOnMaxAggregateOutputType = {
+    id: number | null
+    tenantId: number | null
+    addOnId: number | null
+    quantity: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type TenantAddOnCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    addOnId: number
+    quantity: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type TenantAddOnAvgAggregateInputType = {
+    id?: true
+    tenantId?: true
+    addOnId?: true
+    quantity?: true
+  }
+
+  export type TenantAddOnSumAggregateInputType = {
+    id?: true
+    tenantId?: true
+    addOnId?: true
+    quantity?: true
+  }
+
+  export type TenantAddOnMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    addOnId?: true
+    quantity?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TenantAddOnMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    addOnId?: true
+    quantity?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type TenantAddOnCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    addOnId?: true
+    quantity?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type TenantAddOnAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TenantAddOn to aggregate.
+     */
+    where?: TenantAddOnWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantAddOns to fetch.
+     */
+    orderBy?: TenantAddOnOrderByWithRelationInput | TenantAddOnOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: TenantAddOnWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantAddOns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantAddOns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned TenantAddOns
+    **/
+    _count?: true | TenantAddOnCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: TenantAddOnAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TenantAddOnSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: TenantAddOnMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: TenantAddOnMaxAggregateInputType
+  }
+
+  export type GetTenantAddOnAggregateType<T extends TenantAddOnAggregateArgs> = {
+        [P in keyof T & keyof AggregateTenantAddOn]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateTenantAddOn[P]>
+      : GetScalarType<T[P], AggregateTenantAddOn[P]>
+  }
+
+
+
+
+  export type TenantAddOnGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TenantAddOnWhereInput
+    orderBy?: TenantAddOnOrderByWithAggregationInput | TenantAddOnOrderByWithAggregationInput[]
+    by: TenantAddOnScalarFieldEnum[] | TenantAddOnScalarFieldEnum
+    having?: TenantAddOnScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: TenantAddOnCountAggregateInputType | true
+    _avg?: TenantAddOnAvgAggregateInputType
+    _sum?: TenantAddOnSumAggregateInputType
+    _min?: TenantAddOnMinAggregateInputType
+    _max?: TenantAddOnMaxAggregateInputType
+  }
+
+  export type TenantAddOnGroupByOutputType = {
+    id: number
+    tenantId: number
+    addOnId: number
+    quantity: number
+    createdAt: Date
+    updatedAt: Date
+    _count: TenantAddOnCountAggregateOutputType | null
+    _avg: TenantAddOnAvgAggregateOutputType | null
+    _sum: TenantAddOnSumAggregateOutputType | null
+    _min: TenantAddOnMinAggregateOutputType | null
+    _max: TenantAddOnMaxAggregateOutputType | null
+  }
+
+  type GetTenantAddOnGroupByPayload<T extends TenantAddOnGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<TenantAddOnGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof TenantAddOnGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], TenantAddOnGroupByOutputType[P]>
+            : GetScalarType<T[P], TenantAddOnGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type TenantAddOnSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    addOnId?: boolean
+    quantity?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    addOn?: boolean | SubscriptionAddOnDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["tenantAddOn"]>
+
+
+
+  export type TenantAddOnSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    addOnId?: boolean
+    quantity?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type TenantAddOnOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "addOnId" | "quantity" | "createdAt" | "updatedAt", ExtArgs["result"]["tenantAddOn"]>
+  export type TenantAddOnInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    addOn?: boolean | SubscriptionAddOnDefaultArgs<ExtArgs>
+  }
+
+  export type $TenantAddOnPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "TenantAddOn"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+      addOn: Prisma.$SubscriptionAddOnPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      tenantId: number
+      addOnId: number
+      quantity: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["tenantAddOn"]>
+    composites: {}
+  }
+
+  type TenantAddOnGetPayload<S extends boolean | null | undefined | TenantAddOnDefaultArgs> = $Result.GetResult<Prisma.$TenantAddOnPayload, S>
+
+  type TenantAddOnCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<TenantAddOnFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: TenantAddOnCountAggregateInputType | true
+    }
+
+  export interface TenantAddOnDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TenantAddOn'], meta: { name: 'TenantAddOn' } }
+    /**
+     * Find zero or one TenantAddOn that matches the filter.
+     * @param {TenantAddOnFindUniqueArgs} args - Arguments to find a TenantAddOn
+     * @example
+     * // Get one TenantAddOn
+     * const tenantAddOn = await prisma.tenantAddOn.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends TenantAddOnFindUniqueArgs>(args: SelectSubset<T, TenantAddOnFindUniqueArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one TenantAddOn that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {TenantAddOnFindUniqueOrThrowArgs} args - Arguments to find a TenantAddOn
+     * @example
+     * // Get one TenantAddOn
+     * const tenantAddOn = await prisma.tenantAddOn.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends TenantAddOnFindUniqueOrThrowArgs>(args: SelectSubset<T, TenantAddOnFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TenantAddOn that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAddOnFindFirstArgs} args - Arguments to find a TenantAddOn
+     * @example
+     * // Get one TenantAddOn
+     * const tenantAddOn = await prisma.tenantAddOn.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends TenantAddOnFindFirstArgs>(args?: SelectSubset<T, TenantAddOnFindFirstArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first TenantAddOn that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAddOnFindFirstOrThrowArgs} args - Arguments to find a TenantAddOn
+     * @example
+     * // Get one TenantAddOn
+     * const tenantAddOn = await prisma.tenantAddOn.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends TenantAddOnFindFirstOrThrowArgs>(args?: SelectSubset<T, TenantAddOnFindFirstOrThrowArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more TenantAddOns that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAddOnFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all TenantAddOns
+     * const tenantAddOns = await prisma.tenantAddOn.findMany()
+     * 
+     * // Get first 10 TenantAddOns
+     * const tenantAddOns = await prisma.tenantAddOn.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const tenantAddOnWithIdOnly = await prisma.tenantAddOn.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends TenantAddOnFindManyArgs>(args?: SelectSubset<T, TenantAddOnFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a TenantAddOn.
+     * @param {TenantAddOnCreateArgs} args - Arguments to create a TenantAddOn.
+     * @example
+     * // Create one TenantAddOn
+     * const TenantAddOn = await prisma.tenantAddOn.create({
+     *   data: {
+     *     // ... data to create a TenantAddOn
+     *   }
+     * })
+     * 
+     */
+    create<T extends TenantAddOnCreateArgs>(args: SelectSubset<T, TenantAddOnCreateArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many TenantAddOns.
+     * @param {TenantAddOnCreateManyArgs} args - Arguments to create many TenantAddOns.
+     * @example
+     * // Create many TenantAddOns
+     * const tenantAddOn = await prisma.tenantAddOn.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends TenantAddOnCreateManyArgs>(args?: SelectSubset<T, TenantAddOnCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a TenantAddOn.
+     * @param {TenantAddOnDeleteArgs} args - Arguments to delete one TenantAddOn.
+     * @example
+     * // Delete one TenantAddOn
+     * const TenantAddOn = await prisma.tenantAddOn.delete({
+     *   where: {
+     *     // ... filter to delete one TenantAddOn
+     *   }
+     * })
+     * 
+     */
+    delete<T extends TenantAddOnDeleteArgs>(args: SelectSubset<T, TenantAddOnDeleteArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one TenantAddOn.
+     * @param {TenantAddOnUpdateArgs} args - Arguments to update one TenantAddOn.
+     * @example
+     * // Update one TenantAddOn
+     * const tenantAddOn = await prisma.tenantAddOn.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends TenantAddOnUpdateArgs>(args: SelectSubset<T, TenantAddOnUpdateArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more TenantAddOns.
+     * @param {TenantAddOnDeleteManyArgs} args - Arguments to filter TenantAddOns to delete.
+     * @example
+     * // Delete a few TenantAddOns
+     * const { count } = await prisma.tenantAddOn.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends TenantAddOnDeleteManyArgs>(args?: SelectSubset<T, TenantAddOnDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more TenantAddOns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAddOnUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many TenantAddOns
+     * const tenantAddOn = await prisma.tenantAddOn.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends TenantAddOnUpdateManyArgs>(args: SelectSubset<T, TenantAddOnUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one TenantAddOn.
+     * @param {TenantAddOnUpsertArgs} args - Arguments to update or create a TenantAddOn.
+     * @example
+     * // Update or create a TenantAddOn
+     * const tenantAddOn = await prisma.tenantAddOn.upsert({
+     *   create: {
+     *     // ... data to create a TenantAddOn
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the TenantAddOn we want to update
+     *   }
+     * })
+     */
+    upsert<T extends TenantAddOnUpsertArgs>(args: SelectSubset<T, TenantAddOnUpsertArgs<ExtArgs>>): Prisma__TenantAddOnClient<$Result.GetResult<Prisma.$TenantAddOnPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of TenantAddOns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAddOnCountArgs} args - Arguments to filter TenantAddOns to count.
+     * @example
+     * // Count the number of TenantAddOns
+     * const count = await prisma.tenantAddOn.count({
+     *   where: {
+     *     // ... the filter for the TenantAddOns we want to count
+     *   }
+     * })
+    **/
+    count<T extends TenantAddOnCountArgs>(
+      args?: Subset<T, TenantAddOnCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], TenantAddOnCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a TenantAddOn.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAddOnAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends TenantAddOnAggregateArgs>(args: Subset<T, TenantAddOnAggregateArgs>): Prisma.PrismaPromise<GetTenantAddOnAggregateType<T>>
+
+    /**
+     * Group by TenantAddOn.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {TenantAddOnGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends TenantAddOnGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: TenantAddOnGroupByArgs['orderBy'] }
+        : { orderBy?: TenantAddOnGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, TenantAddOnGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTenantAddOnGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the TenantAddOn model
+   */
+  readonly fields: TenantAddOnFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for TenantAddOn.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__TenantAddOnClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    addOn<T extends SubscriptionAddOnDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SubscriptionAddOnDefaultArgs<ExtArgs>>): Prisma__SubscriptionAddOnClient<$Result.GetResult<Prisma.$SubscriptionAddOnPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the TenantAddOn model
+   */
+  interface TenantAddOnFieldRefs {
+    readonly id: FieldRef<"TenantAddOn", 'Int'>
+    readonly tenantId: FieldRef<"TenantAddOn", 'Int'>
+    readonly addOnId: FieldRef<"TenantAddOn", 'Int'>
+    readonly quantity: FieldRef<"TenantAddOn", 'Int'>
+    readonly createdAt: FieldRef<"TenantAddOn", 'DateTime'>
+    readonly updatedAt: FieldRef<"TenantAddOn", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * TenantAddOn findUnique
+   */
+  export type TenantAddOnFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantAddOn to fetch.
+     */
+    where: TenantAddOnWhereUniqueInput
+  }
+
+  /**
+   * TenantAddOn findUniqueOrThrow
+   */
+  export type TenantAddOnFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantAddOn to fetch.
+     */
+    where: TenantAddOnWhereUniqueInput
+  }
+
+  /**
+   * TenantAddOn findFirst
+   */
+  export type TenantAddOnFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantAddOn to fetch.
+     */
+    where?: TenantAddOnWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantAddOns to fetch.
+     */
+    orderBy?: TenantAddOnOrderByWithRelationInput | TenantAddOnOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TenantAddOns.
+     */
+    cursor?: TenantAddOnWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantAddOns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantAddOns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TenantAddOns.
+     */
+    distinct?: TenantAddOnScalarFieldEnum | TenantAddOnScalarFieldEnum[]
+  }
+
+  /**
+   * TenantAddOn findFirstOrThrow
+   */
+  export type TenantAddOnFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantAddOn to fetch.
+     */
+    where?: TenantAddOnWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantAddOns to fetch.
+     */
+    orderBy?: TenantAddOnOrderByWithRelationInput | TenantAddOnOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for TenantAddOns.
+     */
+    cursor?: TenantAddOnWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantAddOns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantAddOns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of TenantAddOns.
+     */
+    distinct?: TenantAddOnScalarFieldEnum | TenantAddOnScalarFieldEnum[]
+  }
+
+  /**
+   * TenantAddOn findMany
+   */
+  export type TenantAddOnFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * Filter, which TenantAddOns to fetch.
+     */
+    where?: TenantAddOnWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of TenantAddOns to fetch.
+     */
+    orderBy?: TenantAddOnOrderByWithRelationInput | TenantAddOnOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing TenantAddOns.
+     */
+    cursor?: TenantAddOnWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` TenantAddOns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` TenantAddOns.
+     */
+    skip?: number
+    distinct?: TenantAddOnScalarFieldEnum | TenantAddOnScalarFieldEnum[]
+  }
+
+  /**
+   * TenantAddOn create
+   */
+  export type TenantAddOnCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * The data needed to create a TenantAddOn.
+     */
+    data: XOR<TenantAddOnCreateInput, TenantAddOnUncheckedCreateInput>
+  }
+
+  /**
+   * TenantAddOn createMany
+   */
+  export type TenantAddOnCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many TenantAddOns.
+     */
+    data: TenantAddOnCreateManyInput | TenantAddOnCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * TenantAddOn update
+   */
+  export type TenantAddOnUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * The data needed to update a TenantAddOn.
+     */
+    data: XOR<TenantAddOnUpdateInput, TenantAddOnUncheckedUpdateInput>
+    /**
+     * Choose, which TenantAddOn to update.
+     */
+    where: TenantAddOnWhereUniqueInput
+  }
+
+  /**
+   * TenantAddOn updateMany
+   */
+  export type TenantAddOnUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update TenantAddOns.
+     */
+    data: XOR<TenantAddOnUpdateManyMutationInput, TenantAddOnUncheckedUpdateManyInput>
+    /**
+     * Filter which TenantAddOns to update
+     */
+    where?: TenantAddOnWhereInput
+    /**
+     * Limit how many TenantAddOns to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * TenantAddOn upsert
+   */
+  export type TenantAddOnUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * The filter to search for the TenantAddOn to update in case it exists.
+     */
+    where: TenantAddOnWhereUniqueInput
+    /**
+     * In case the TenantAddOn found by the `where` argument doesn't exist, create a new TenantAddOn with this data.
+     */
+    create: XOR<TenantAddOnCreateInput, TenantAddOnUncheckedCreateInput>
+    /**
+     * In case the TenantAddOn was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<TenantAddOnUpdateInput, TenantAddOnUncheckedUpdateInput>
+  }
+
+  /**
+   * TenantAddOn delete
+   */
+  export type TenantAddOnDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+    /**
+     * Filter which TenantAddOn to delete.
+     */
+    where: TenantAddOnWhereUniqueInput
+  }
+
+  /**
+   * TenantAddOn deleteMany
+   */
+  export type TenantAddOnDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which TenantAddOns to delete
+     */
+    where?: TenantAddOnWhereInput
+    /**
+     * Limit how many TenantAddOns to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * TenantAddOn without action
+   */
+  export type TenantAddOnDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TenantAddOn
+     */
+    select?: TenantAddOnSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TenantAddOn
+     */
+    omit?: TenantAddOnOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TenantAddOnInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -19103,7 +21343,9 @@ export namespace Prisma {
     subscriptionValidUntil: 'subscriptionValidUntil',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
-    discountId: 'discountId'
+    discountId: 'discountId',
+    customPrice: 'customPrice',
+    customPriceNote: 'customPriceNote'
   };
 
   export type TenantSubscriptionScalarFieldEnum = (typeof TenantSubscriptionScalarFieldEnum)[keyof typeof TenantSubscriptionScalarFieldEnum]
@@ -19290,6 +21532,33 @@ export namespace Prisma {
   export type TenantPaymentScalarFieldEnum = (typeof TenantPaymentScalarFieldEnum)[keyof typeof TenantPaymentScalarFieldEnum]
 
 
+  export const CustomPriceLogScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    outletId: 'outletId',
+    subscriptionId: 'subscriptionId',
+    previousPrice: 'previousPrice',
+    newPrice: 'newPrice',
+    note: 'note',
+    changedBy: 'changedBy',
+    createdAt: 'createdAt'
+  };
+
+  export type CustomPriceLogScalarFieldEnum = (typeof CustomPriceLogScalarFieldEnum)[keyof typeof CustomPriceLogScalarFieldEnum]
+
+
+  export const TenantAddOnScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    addOnId: 'addOnId',
+    quantity: 'quantity',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type TenantAddOnScalarFieldEnum = (typeof TenantAddOnScalarFieldEnum)[keyof typeof TenantAddOnScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -19342,7 +21611,8 @@ export namespace Prisma {
 
 
   export const TenantSubscriptionOrderByRelevanceFieldEnum: {
-    status: 'status'
+    status: 'status',
+    customPriceNote: 'customPriceNote'
   };
 
   export type TenantSubscriptionOrderByRelevanceFieldEnum = (typeof TenantSubscriptionOrderByRelevanceFieldEnum)[keyof typeof TenantSubscriptionOrderByRelevanceFieldEnum]
@@ -19465,6 +21735,13 @@ export namespace Prisma {
   };
 
   export type TenantPaymentOrderByRelevanceFieldEnum = (typeof TenantPaymentOrderByRelevanceFieldEnum)[keyof typeof TenantPaymentOrderByRelevanceFieldEnum]
+
+
+  export const CustomPriceLogOrderByRelevanceFieldEnum: {
+    note: 'note'
+  };
+
+  export type CustomPriceLogOrderByRelevanceFieldEnum = (typeof CustomPriceLogOrderByRelevanceFieldEnum)[keyof typeof CustomPriceLogOrderByRelevanceFieldEnum]
 
 
   /**
@@ -19614,6 +21891,7 @@ export namespace Prisma {
     scope?: StringFilter<"SubscriptionAddOn"> | string
     description?: StringNullableFilter<"SubscriptionAddOn"> | string | null
     subscriptions?: TenantSubscriptionAddOnListRelationFilter
+    tenantAddOns?: TenantAddOnListRelationFilter
   }
 
   export type SubscriptionAddOnOrderByWithRelationInput = {
@@ -19625,6 +21903,7 @@ export namespace Prisma {
     scope?: SortOrder
     description?: SortOrderInput | SortOrder
     subscriptions?: TenantSubscriptionAddOnOrderByRelationAggregateInput
+    tenantAddOns?: TenantAddOnOrderByRelationAggregateInput
     _relevance?: SubscriptionAddOnOrderByRelevanceInput
   }
 
@@ -19640,6 +21919,7 @@ export namespace Prisma {
     scope?: StringFilter<"SubscriptionAddOn"> | string
     description?: StringNullableFilter<"SubscriptionAddOn"> | string | null
     subscriptions?: TenantSubscriptionAddOnListRelationFilter
+    tenantAddOns?: TenantAddOnListRelationFilter
   }, "id">
 
   export type SubscriptionAddOnOrderByWithAggregationInput = {
@@ -19685,6 +21965,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
     warehouses?: TenantWarehouseListRelationFilter
     payments?: TenantPaymentListRelationFilter
+    tenantAddOns?: TenantAddOnListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -19699,6 +21980,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationOrderByRelationAggregateInput
     warehouses?: TenantWarehouseOrderByRelationAggregateInput
     payments?: TenantPaymentOrderByRelationAggregateInput
+    tenantAddOns?: TenantAddOnOrderByRelationAggregateInput
     _relevance?: TenantOrderByRelevanceInput
   }
 
@@ -19717,6 +21999,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationListRelationFilter
     warehouses?: TenantWarehouseListRelationFilter
     payments?: TenantPaymentListRelationFilter
+    tenantAddOns?: TenantAddOnListRelationFilter
   }, "id" | "databaseName">
 
   export type TenantOrderByWithAggregationInput = {
@@ -19757,6 +22040,8 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"TenantSubscription"> | Date | string
     updatedAt?: DateTimeFilter<"TenantSubscription"> | Date | string
     discountId?: IntNullableFilter<"TenantSubscription"> | number | null
+    customPrice?: FloatNullableFilter<"TenantSubscription"> | number | null
+    customPriceNote?: StringNullableFilter<"TenantSubscription"> | string | null
     outlet?: XOR<TenantOutletScalarRelationFilter, TenantOutletWhereInput>
     discount?: XOR<DiscountNullableScalarRelationFilter, DiscountWhereInput> | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -19777,6 +22062,8 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     discountId?: SortOrderInput | SortOrder
+    customPrice?: SortOrderInput | SortOrder
+    customPriceNote?: SortOrderInput | SortOrder
     outlet?: TenantOutletOrderByWithRelationInput
     discount?: DiscountOrderByWithRelationInput
     tenant?: TenantOrderByWithRelationInput
@@ -19801,6 +22088,8 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"TenantSubscription"> | Date | string
     updatedAt?: DateTimeFilter<"TenantSubscription"> | Date | string
     discountId?: IntNullableFilter<"TenantSubscription"> | number | null
+    customPrice?: FloatNullableFilter<"TenantSubscription"> | number | null
+    customPriceNote?: StringNullableFilter<"TenantSubscription"> | string | null
     outlet?: XOR<TenantOutletScalarRelationFilter, TenantOutletWhereInput>
     discount?: XOR<DiscountNullableScalarRelationFilter, DiscountWhereInput> | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -19821,6 +22110,8 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     discountId?: SortOrderInput | SortOrder
+    customPrice?: SortOrderInput | SortOrder
+    customPriceNote?: SortOrderInput | SortOrder
     _count?: TenantSubscriptionCountOrderByAggregateInput
     _avg?: TenantSubscriptionAvgOrderByAggregateInput
     _max?: TenantSubscriptionMaxOrderByAggregateInput
@@ -19842,6 +22133,8 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"TenantSubscription"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"TenantSubscription"> | Date | string
     discountId?: IntNullableWithAggregatesFilter<"TenantSubscription"> | number | null
+    customPrice?: FloatNullableWithAggregatesFilter<"TenantSubscription"> | number | null
+    customPriceNote?: StringNullableWithAggregatesFilter<"TenantSubscription"> | string | null
   }
 
   export type TenantSubscriptionAddOnWhereInput = {
@@ -20809,6 +23102,147 @@ export namespace Prisma {
     recordedAt?: DateTimeWithAggregatesFilter<"TenantPayment"> | Date | string
   }
 
+  export type CustomPriceLogWhereInput = {
+    AND?: CustomPriceLogWhereInput | CustomPriceLogWhereInput[]
+    OR?: CustomPriceLogWhereInput[]
+    NOT?: CustomPriceLogWhereInput | CustomPriceLogWhereInput[]
+    id?: IntFilter<"CustomPriceLog"> | number
+    tenantId?: IntFilter<"CustomPriceLog"> | number
+    outletId?: IntFilter<"CustomPriceLog"> | number
+    subscriptionId?: IntFilter<"CustomPriceLog"> | number
+    previousPrice?: FloatNullableFilter<"CustomPriceLog"> | number | null
+    newPrice?: FloatNullableFilter<"CustomPriceLog"> | number | null
+    note?: StringNullableFilter<"CustomPriceLog"> | string | null
+    changedBy?: IntNullableFilter<"CustomPriceLog"> | number | null
+    createdAt?: DateTimeFilter<"CustomPriceLog"> | Date | string
+  }
+
+  export type CustomPriceLogOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    previousPrice?: SortOrderInput | SortOrder
+    newPrice?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    changedBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _relevance?: CustomPriceLogOrderByRelevanceInput
+  }
+
+  export type CustomPriceLogWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: CustomPriceLogWhereInput | CustomPriceLogWhereInput[]
+    OR?: CustomPriceLogWhereInput[]
+    NOT?: CustomPriceLogWhereInput | CustomPriceLogWhereInput[]
+    tenantId?: IntFilter<"CustomPriceLog"> | number
+    outletId?: IntFilter<"CustomPriceLog"> | number
+    subscriptionId?: IntFilter<"CustomPriceLog"> | number
+    previousPrice?: FloatNullableFilter<"CustomPriceLog"> | number | null
+    newPrice?: FloatNullableFilter<"CustomPriceLog"> | number | null
+    note?: StringNullableFilter<"CustomPriceLog"> | string | null
+    changedBy?: IntNullableFilter<"CustomPriceLog"> | number | null
+    createdAt?: DateTimeFilter<"CustomPriceLog"> | Date | string
+  }, "id">
+
+  export type CustomPriceLogOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    previousPrice?: SortOrderInput | SortOrder
+    newPrice?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    changedBy?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: CustomPriceLogCountOrderByAggregateInput
+    _avg?: CustomPriceLogAvgOrderByAggregateInput
+    _max?: CustomPriceLogMaxOrderByAggregateInput
+    _min?: CustomPriceLogMinOrderByAggregateInput
+    _sum?: CustomPriceLogSumOrderByAggregateInput
+  }
+
+  export type CustomPriceLogScalarWhereWithAggregatesInput = {
+    AND?: CustomPriceLogScalarWhereWithAggregatesInput | CustomPriceLogScalarWhereWithAggregatesInput[]
+    OR?: CustomPriceLogScalarWhereWithAggregatesInput[]
+    NOT?: CustomPriceLogScalarWhereWithAggregatesInput | CustomPriceLogScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"CustomPriceLog"> | number
+    tenantId?: IntWithAggregatesFilter<"CustomPriceLog"> | number
+    outletId?: IntWithAggregatesFilter<"CustomPriceLog"> | number
+    subscriptionId?: IntWithAggregatesFilter<"CustomPriceLog"> | number
+    previousPrice?: FloatNullableWithAggregatesFilter<"CustomPriceLog"> | number | null
+    newPrice?: FloatNullableWithAggregatesFilter<"CustomPriceLog"> | number | null
+    note?: StringNullableWithAggregatesFilter<"CustomPriceLog"> | string | null
+    changedBy?: IntNullableWithAggregatesFilter<"CustomPriceLog"> | number | null
+    createdAt?: DateTimeWithAggregatesFilter<"CustomPriceLog"> | Date | string
+  }
+
+  export type TenantAddOnWhereInput = {
+    AND?: TenantAddOnWhereInput | TenantAddOnWhereInput[]
+    OR?: TenantAddOnWhereInput[]
+    NOT?: TenantAddOnWhereInput | TenantAddOnWhereInput[]
+    id?: IntFilter<"TenantAddOn"> | number
+    tenantId?: IntFilter<"TenantAddOn"> | number
+    addOnId?: IntFilter<"TenantAddOn"> | number
+    quantity?: IntFilter<"TenantAddOn"> | number
+    createdAt?: DateTimeFilter<"TenantAddOn"> | Date | string
+    updatedAt?: DateTimeFilter<"TenantAddOn"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    addOn?: XOR<SubscriptionAddOnScalarRelationFilter, SubscriptionAddOnWhereInput>
+  }
+
+  export type TenantAddOnOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    addOnId?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+    addOn?: SubscriptionAddOnOrderByWithRelationInput
+  }
+
+  export type TenantAddOnWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    tenantId_addOnId?: TenantAddOnTenantIdAddOnIdCompoundUniqueInput
+    AND?: TenantAddOnWhereInput | TenantAddOnWhereInput[]
+    OR?: TenantAddOnWhereInput[]
+    NOT?: TenantAddOnWhereInput | TenantAddOnWhereInput[]
+    tenantId?: IntFilter<"TenantAddOn"> | number
+    addOnId?: IntFilter<"TenantAddOn"> | number
+    quantity?: IntFilter<"TenantAddOn"> | number
+    createdAt?: DateTimeFilter<"TenantAddOn"> | Date | string
+    updatedAt?: DateTimeFilter<"TenantAddOn"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    addOn?: XOR<SubscriptionAddOnScalarRelationFilter, SubscriptionAddOnWhereInput>
+  }, "id" | "tenantId_addOnId">
+
+  export type TenantAddOnOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    addOnId?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: TenantAddOnCountOrderByAggregateInput
+    _avg?: TenantAddOnAvgOrderByAggregateInput
+    _max?: TenantAddOnMaxOrderByAggregateInput
+    _min?: TenantAddOnMinOrderByAggregateInput
+    _sum?: TenantAddOnSumOrderByAggregateInput
+  }
+
+  export type TenantAddOnScalarWhereWithAggregatesInput = {
+    AND?: TenantAddOnScalarWhereWithAggregatesInput | TenantAddOnScalarWhereWithAggregatesInput[]
+    OR?: TenantAddOnScalarWhereWithAggregatesInput[]
+    NOT?: TenantAddOnScalarWhereWithAggregatesInput | TenantAddOnScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"TenantAddOn"> | number
+    tenantId?: IntWithAggregatesFilter<"TenantAddOn"> | number
+    addOnId?: IntWithAggregatesFilter<"TenantAddOn"> | number
+    quantity?: IntWithAggregatesFilter<"TenantAddOn"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"TenantAddOn"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"TenantAddOn"> | Date | string
+  }
+
   export type SubscriptionPlanCreateInput = {
     planName: string
     planType?: string
@@ -20902,6 +23336,7 @@ export namespace Prisma {
     scope?: string
     description?: string | null
     subscriptions?: TenantSubscriptionAddOnCreateNestedManyWithoutAddOnInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutAddOnInput
   }
 
   export type SubscriptionAddOnUncheckedCreateInput = {
@@ -20913,6 +23348,7 @@ export namespace Prisma {
     scope?: string
     description?: string | null
     subscriptions?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutAddOnInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutAddOnInput
   }
 
   export type SubscriptionAddOnUpdateInput = {
@@ -20923,6 +23359,7 @@ export namespace Prisma {
     scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptions?: TenantSubscriptionAddOnUpdateManyWithoutAddOnNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutAddOnNestedInput
   }
 
   export type SubscriptionAddOnUncheckedUpdateInput = {
@@ -20934,6 +23371,7 @@ export namespace Prisma {
     scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptions?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutAddOnNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutAddOnNestedInput
   }
 
   export type SubscriptionAddOnCreateManyInput = {
@@ -20976,6 +23414,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -20990,6 +23429,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -21003,6 +23443,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -21017,6 +23458,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -21048,6 +23490,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
@@ -21068,6 +23512,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
@@ -21079,6 +23525,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -21099,6 +23547,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
@@ -21115,6 +23565,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
   }
 
   export type TenantSubscriptionUpdateManyMutationInput = {
@@ -21123,6 +23575,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TenantSubscriptionUncheckedUpdateManyInput = {
@@ -21136,6 +23590,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TenantSubscriptionAddOnCreateInput = {
@@ -22131,6 +24587,145 @@ export namespace Prisma {
     recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CustomPriceLogCreateInput = {
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    previousPrice?: number | null
+    newPrice?: number | null
+    note?: string | null
+    changedBy?: number | null
+    createdAt?: Date | string
+  }
+
+  export type CustomPriceLogUncheckedCreateInput = {
+    id?: number
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    previousPrice?: number | null
+    newPrice?: number | null
+    note?: string | null
+    changedBy?: number | null
+    createdAt?: Date | string
+  }
+
+  export type CustomPriceLogUpdateInput = {
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    previousPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    newPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    changedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CustomPriceLogUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    previousPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    newPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    changedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CustomPriceLogCreateManyInput = {
+    id?: number
+    tenantId: number
+    outletId: number
+    subscriptionId: number
+    previousPrice?: number | null
+    newPrice?: number | null
+    note?: string | null
+    changedBy?: number | null
+    createdAt?: Date | string
+  }
+
+  export type CustomPriceLogUpdateManyMutationInput = {
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    previousPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    newPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    changedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CustomPriceLogUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    subscriptionId?: IntFieldUpdateOperationsInput | number
+    previousPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    newPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    changedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantAddOnCreateInput = {
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutTenantAddOnsInput
+    addOn: SubscriptionAddOnCreateNestedOneWithoutTenantAddOnsInput
+  }
+
+  export type TenantAddOnUncheckedCreateInput = {
+    id?: number
+    tenantId: number
+    addOnId: number
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantAddOnUpdateInput = {
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutTenantAddOnsNestedInput
+    addOn?: SubscriptionAddOnUpdateOneRequiredWithoutTenantAddOnsNestedInput
+  }
+
+  export type TenantAddOnUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    addOnId?: IntFieldUpdateOperationsInput | number
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantAddOnCreateManyInput = {
+    id?: number
+    tenantId: number
+    addOnId: number
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantAddOnUpdateManyMutationInput = {
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantAddOnUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    addOnId?: IntFieldUpdateOperationsInput | number
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -22359,7 +24954,17 @@ export namespace Prisma {
     none?: TenantSubscriptionAddOnWhereInput
   }
 
+  export type TenantAddOnListRelationFilter = {
+    every?: TenantAddOnWhereInput
+    some?: TenantAddOnWhereInput
+    none?: TenantAddOnWhereInput
+  }
+
   export type TenantSubscriptionAddOnOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type TenantAddOnOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -22524,6 +25129,17 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type TenantOutletScalarRelationFilter = {
     is?: TenantOutletWhereInput
     isNot?: TenantOutletWhereInput
@@ -22561,6 +25177,8 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     discountId?: SortOrder
+    customPrice?: SortOrder
+    customPriceNote?: SortOrder
   }
 
   export type TenantSubscriptionAvgOrderByAggregateInput = {
@@ -22569,6 +25187,7 @@ export namespace Prisma {
     outletId?: SortOrder
     subscriptionPlanId?: SortOrder
     discountId?: SortOrder
+    customPrice?: SortOrder
   }
 
   export type TenantSubscriptionMaxOrderByAggregateInput = {
@@ -22582,6 +25201,8 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     discountId?: SortOrder
+    customPrice?: SortOrder
+    customPriceNote?: SortOrder
   }
 
   export type TenantSubscriptionMinOrderByAggregateInput = {
@@ -22595,6 +25216,8 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     discountId?: SortOrder
+    customPrice?: SortOrder
+    customPriceNote?: SortOrder
   }
 
   export type TenantSubscriptionSumOrderByAggregateInput = {
@@ -22603,6 +25226,23 @@ export namespace Prisma {
     outletId?: SortOrder
     subscriptionPlanId?: SortOrder
     discountId?: SortOrder
+    customPrice?: SortOrder
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type TenantSubscriptionScalarRelationFilter = {
@@ -23406,6 +26046,114 @@ export namespace Prisma {
     _max?: NestedJsonFilter<$PrismaModel>
   }
 
+  export type CustomPriceLogOrderByRelevanceInput = {
+    fields: CustomPriceLogOrderByRelevanceFieldEnum | CustomPriceLogOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type CustomPriceLogCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    previousPrice?: SortOrder
+    newPrice?: SortOrder
+    note?: SortOrder
+    changedBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CustomPriceLogAvgOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    previousPrice?: SortOrder
+    newPrice?: SortOrder
+    changedBy?: SortOrder
+  }
+
+  export type CustomPriceLogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    previousPrice?: SortOrder
+    newPrice?: SortOrder
+    note?: SortOrder
+    changedBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CustomPriceLogMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    previousPrice?: SortOrder
+    newPrice?: SortOrder
+    note?: SortOrder
+    changedBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CustomPriceLogSumOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    outletId?: SortOrder
+    subscriptionId?: SortOrder
+    previousPrice?: SortOrder
+    newPrice?: SortOrder
+    changedBy?: SortOrder
+  }
+
+  export type TenantAddOnTenantIdAddOnIdCompoundUniqueInput = {
+    tenantId: number
+    addOnId: number
+  }
+
+  export type TenantAddOnCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    addOnId?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantAddOnAvgOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    addOnId?: SortOrder
+    quantity?: SortOrder
+  }
+
+  export type TenantAddOnMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    addOnId?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantAddOnMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    addOnId?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TenantAddOnSumOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    addOnId?: SortOrder
+    quantity?: SortOrder
+  }
+
   export type TenantSubscriptionCreateNestedManyWithoutSubscriptionPlanInput = {
     create?: XOR<TenantSubscriptionCreateWithoutSubscriptionPlanInput, TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput> | TenantSubscriptionCreateWithoutSubscriptionPlanInput[] | TenantSubscriptionUncheckedCreateWithoutSubscriptionPlanInput[]
     connectOrCreate?: TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput | TenantSubscriptionCreateOrConnectWithoutSubscriptionPlanInput[]
@@ -23487,11 +26235,25 @@ export namespace Prisma {
     connect?: TenantSubscriptionAddOnWhereUniqueInput | TenantSubscriptionAddOnWhereUniqueInput[]
   }
 
+  export type TenantAddOnCreateNestedManyWithoutAddOnInput = {
+    create?: XOR<TenantAddOnCreateWithoutAddOnInput, TenantAddOnUncheckedCreateWithoutAddOnInput> | TenantAddOnCreateWithoutAddOnInput[] | TenantAddOnUncheckedCreateWithoutAddOnInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutAddOnInput | TenantAddOnCreateOrConnectWithoutAddOnInput[]
+    createMany?: TenantAddOnCreateManyAddOnInputEnvelope
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+  }
+
   export type TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutAddOnInput = {
     create?: XOR<TenantSubscriptionAddOnCreateWithoutAddOnInput, TenantSubscriptionAddOnUncheckedCreateWithoutAddOnInput> | TenantSubscriptionAddOnCreateWithoutAddOnInput[] | TenantSubscriptionAddOnUncheckedCreateWithoutAddOnInput[]
     connectOrCreate?: TenantSubscriptionAddOnCreateOrConnectWithoutAddOnInput | TenantSubscriptionAddOnCreateOrConnectWithoutAddOnInput[]
     createMany?: TenantSubscriptionAddOnCreateManyAddOnInputEnvelope
     connect?: TenantSubscriptionAddOnWhereUniqueInput | TenantSubscriptionAddOnWhereUniqueInput[]
+  }
+
+  export type TenantAddOnUncheckedCreateNestedManyWithoutAddOnInput = {
+    create?: XOR<TenantAddOnCreateWithoutAddOnInput, TenantAddOnUncheckedCreateWithoutAddOnInput> | TenantAddOnCreateWithoutAddOnInput[] | TenantAddOnUncheckedCreateWithoutAddOnInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutAddOnInput | TenantAddOnCreateOrConnectWithoutAddOnInput[]
+    createMany?: TenantAddOnCreateManyAddOnInputEnvelope
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
   }
 
   export type TenantSubscriptionAddOnUpdateManyWithoutAddOnNestedInput = {
@@ -23508,6 +26270,20 @@ export namespace Prisma {
     deleteMany?: TenantSubscriptionAddOnScalarWhereInput | TenantSubscriptionAddOnScalarWhereInput[]
   }
 
+  export type TenantAddOnUpdateManyWithoutAddOnNestedInput = {
+    create?: XOR<TenantAddOnCreateWithoutAddOnInput, TenantAddOnUncheckedCreateWithoutAddOnInput> | TenantAddOnCreateWithoutAddOnInput[] | TenantAddOnUncheckedCreateWithoutAddOnInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutAddOnInput | TenantAddOnCreateOrConnectWithoutAddOnInput[]
+    upsert?: TenantAddOnUpsertWithWhereUniqueWithoutAddOnInput | TenantAddOnUpsertWithWhereUniqueWithoutAddOnInput[]
+    createMany?: TenantAddOnCreateManyAddOnInputEnvelope
+    set?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    disconnect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    delete?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    update?: TenantAddOnUpdateWithWhereUniqueWithoutAddOnInput | TenantAddOnUpdateWithWhereUniqueWithoutAddOnInput[]
+    updateMany?: TenantAddOnUpdateManyWithWhereWithoutAddOnInput | TenantAddOnUpdateManyWithWhereWithoutAddOnInput[]
+    deleteMany?: TenantAddOnScalarWhereInput | TenantAddOnScalarWhereInput[]
+  }
+
   export type TenantSubscriptionAddOnUncheckedUpdateManyWithoutAddOnNestedInput = {
     create?: XOR<TenantSubscriptionAddOnCreateWithoutAddOnInput, TenantSubscriptionAddOnUncheckedCreateWithoutAddOnInput> | TenantSubscriptionAddOnCreateWithoutAddOnInput[] | TenantSubscriptionAddOnUncheckedCreateWithoutAddOnInput[]
     connectOrCreate?: TenantSubscriptionAddOnCreateOrConnectWithoutAddOnInput | TenantSubscriptionAddOnCreateOrConnectWithoutAddOnInput[]
@@ -23520,6 +26296,20 @@ export namespace Prisma {
     update?: TenantSubscriptionAddOnUpdateWithWhereUniqueWithoutAddOnInput | TenantSubscriptionAddOnUpdateWithWhereUniqueWithoutAddOnInput[]
     updateMany?: TenantSubscriptionAddOnUpdateManyWithWhereWithoutAddOnInput | TenantSubscriptionAddOnUpdateManyWithWhereWithoutAddOnInput[]
     deleteMany?: TenantSubscriptionAddOnScalarWhereInput | TenantSubscriptionAddOnScalarWhereInput[]
+  }
+
+  export type TenantAddOnUncheckedUpdateManyWithoutAddOnNestedInput = {
+    create?: XOR<TenantAddOnCreateWithoutAddOnInput, TenantAddOnUncheckedCreateWithoutAddOnInput> | TenantAddOnCreateWithoutAddOnInput[] | TenantAddOnUncheckedCreateWithoutAddOnInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutAddOnInput | TenantAddOnCreateOrConnectWithoutAddOnInput[]
+    upsert?: TenantAddOnUpsertWithWhereUniqueWithoutAddOnInput | TenantAddOnUpsertWithWhereUniqueWithoutAddOnInput[]
+    createMany?: TenantAddOnCreateManyAddOnInputEnvelope
+    set?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    disconnect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    delete?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    update?: TenantAddOnUpdateWithWhereUniqueWithoutAddOnInput | TenantAddOnUpdateWithWhereUniqueWithoutAddOnInput[]
+    updateMany?: TenantAddOnUpdateManyWithWhereWithoutAddOnInput | TenantAddOnUpdateManyWithWhereWithoutAddOnInput[]
+    deleteMany?: TenantAddOnScalarWhereInput | TenantAddOnScalarWhereInput[]
   }
 
   export type TenantUserCreateNestedManyWithoutTenantInput = {
@@ -23564,6 +26354,13 @@ export namespace Prisma {
     connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
   }
 
+  export type TenantAddOnCreateNestedManyWithoutTenantInput = {
+    create?: XOR<TenantAddOnCreateWithoutTenantInput, TenantAddOnUncheckedCreateWithoutTenantInput> | TenantAddOnCreateWithoutTenantInput[] | TenantAddOnUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutTenantInput | TenantAddOnCreateOrConnectWithoutTenantInput[]
+    createMany?: TenantAddOnCreateManyTenantInputEnvelope
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+  }
+
   export type TenantUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -23604,6 +26401,13 @@ export namespace Prisma {
     connectOrCreate?: TenantPaymentCreateOrConnectWithoutTenantInput | TenantPaymentCreateOrConnectWithoutTenantInput[]
     createMany?: TenantPaymentCreateManyTenantInputEnvelope
     connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+  }
+
+  export type TenantAddOnUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<TenantAddOnCreateWithoutTenantInput, TenantAddOnUncheckedCreateWithoutTenantInput> | TenantAddOnCreateWithoutTenantInput[] | TenantAddOnUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutTenantInput | TenantAddOnCreateOrConnectWithoutTenantInput[]
+    createMany?: TenantAddOnCreateManyTenantInputEnvelope
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -23694,6 +26498,20 @@ export namespace Prisma {
     deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
   }
 
+  export type TenantAddOnUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<TenantAddOnCreateWithoutTenantInput, TenantAddOnUncheckedCreateWithoutTenantInput> | TenantAddOnCreateWithoutTenantInput[] | TenantAddOnUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutTenantInput | TenantAddOnCreateOrConnectWithoutTenantInput[]
+    upsert?: TenantAddOnUpsertWithWhereUniqueWithoutTenantInput | TenantAddOnUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: TenantAddOnCreateManyTenantInputEnvelope
+    set?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    disconnect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    delete?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    update?: TenantAddOnUpdateWithWhereUniqueWithoutTenantInput | TenantAddOnUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: TenantAddOnUpdateManyWithWhereWithoutTenantInput | TenantAddOnUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: TenantAddOnScalarWhereInput | TenantAddOnScalarWhereInput[]
+  }
+
   export type TenantUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<TenantUserCreateWithoutTenantInput, TenantUserUncheckedCreateWithoutTenantInput> | TenantUserCreateWithoutTenantInput[] | TenantUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: TenantUserCreateOrConnectWithoutTenantInput | TenantUserCreateOrConnectWithoutTenantInput[]
@@ -23778,6 +26596,20 @@ export namespace Prisma {
     deleteMany?: TenantPaymentScalarWhereInput | TenantPaymentScalarWhereInput[]
   }
 
+  export type TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<TenantAddOnCreateWithoutTenantInput, TenantAddOnUncheckedCreateWithoutTenantInput> | TenantAddOnCreateWithoutTenantInput[] | TenantAddOnUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: TenantAddOnCreateOrConnectWithoutTenantInput | TenantAddOnCreateOrConnectWithoutTenantInput[]
+    upsert?: TenantAddOnUpsertWithWhereUniqueWithoutTenantInput | TenantAddOnUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: TenantAddOnCreateManyTenantInputEnvelope
+    set?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    disconnect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    delete?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    connect?: TenantAddOnWhereUniqueInput | TenantAddOnWhereUniqueInput[]
+    update?: TenantAddOnUpdateWithWhereUniqueWithoutTenantInput | TenantAddOnUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: TenantAddOnUpdateManyWithWhereWithoutTenantInput | TenantAddOnUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: TenantAddOnScalarWhereInput | TenantAddOnScalarWhereInput[]
+  }
+
   export type TenantOutletCreateNestedOneWithoutSubscriptionsInput = {
     create?: XOR<TenantOutletCreateWithoutSubscriptionsInput, TenantOutletUncheckedCreateWithoutSubscriptionsInput>
     connectOrCreate?: TenantOutletCreateOrConnectWithoutSubscriptionsInput
@@ -23842,6 +26674,14 @@ export namespace Prisma {
     connectOrCreate?: TenantPaymentCreateOrConnectWithoutSubscriptionInput | TenantPaymentCreateOrConnectWithoutSubscriptionInput[]
     createMany?: TenantPaymentCreateManySubscriptionInputEnvelope
     connect?: TenantPaymentWhereUniqueInput | TenantPaymentWhereUniqueInput[]
+  }
+
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput = {
@@ -24398,6 +27238,34 @@ export namespace Prisma {
     update?: XOR<XOR<TenantSubscriptionUpdateToOneWithWhereWithoutPaymentsInput, TenantSubscriptionUpdateWithoutPaymentsInput>, TenantSubscriptionUncheckedUpdateWithoutPaymentsInput>
   }
 
+  export type TenantCreateNestedOneWithoutTenantAddOnsInput = {
+    create?: XOR<TenantCreateWithoutTenantAddOnsInput, TenantUncheckedCreateWithoutTenantAddOnsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutTenantAddOnsInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type SubscriptionAddOnCreateNestedOneWithoutTenantAddOnsInput = {
+    create?: XOR<SubscriptionAddOnCreateWithoutTenantAddOnsInput, SubscriptionAddOnUncheckedCreateWithoutTenantAddOnsInput>
+    connectOrCreate?: SubscriptionAddOnCreateOrConnectWithoutTenantAddOnsInput
+    connect?: SubscriptionAddOnWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutTenantAddOnsNestedInput = {
+    create?: XOR<TenantCreateWithoutTenantAddOnsInput, TenantUncheckedCreateWithoutTenantAddOnsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutTenantAddOnsInput
+    upsert?: TenantUpsertWithoutTenantAddOnsInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutTenantAddOnsInput, TenantUpdateWithoutTenantAddOnsInput>, TenantUncheckedUpdateWithoutTenantAddOnsInput>
+  }
+
+  export type SubscriptionAddOnUpdateOneRequiredWithoutTenantAddOnsNestedInput = {
+    create?: XOR<SubscriptionAddOnCreateWithoutTenantAddOnsInput, SubscriptionAddOnUncheckedCreateWithoutTenantAddOnsInput>
+    connectOrCreate?: SubscriptionAddOnCreateOrConnectWithoutTenantAddOnsInput
+    upsert?: SubscriptionAddOnUpsertWithoutTenantAddOnsInput
+    connect?: SubscriptionAddOnWhereUniqueInput
+    update?: XOR<XOR<SubscriptionAddOnUpdateToOneWithWhereWithoutTenantAddOnsInput, SubscriptionAddOnUpdateWithoutTenantAddOnsInput>, SubscriptionAddOnUncheckedUpdateWithoutTenantAddOnsInput>
+  }
+
   export type NestedIntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -24581,6 +27449,22 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
   export type NestedBoolFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
     not?: NestedBoolFilter<$PrismaModel> | boolean
@@ -24648,6 +27532,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
@@ -24666,6 +27552,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
@@ -24711,6 +27599,8 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"TenantSubscription"> | Date | string
     updatedAt?: DateTimeFilter<"TenantSubscription"> | Date | string
     discountId?: IntNullableFilter<"TenantSubscription"> | number | null
+    customPrice?: FloatNullableFilter<"TenantSubscription"> | number | null
+    customPriceNote?: StringNullableFilter<"TenantSubscription"> | string | null
   }
 
   export type TenantSubscriptionAddOnCreateWithoutAddOnInput = {
@@ -24731,6 +27621,31 @@ export namespace Prisma {
 
   export type TenantSubscriptionAddOnCreateManyAddOnInputEnvelope = {
     data: TenantSubscriptionAddOnCreateManyAddOnInput | TenantSubscriptionAddOnCreateManyAddOnInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type TenantAddOnCreateWithoutAddOnInput = {
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutTenantAddOnsInput
+  }
+
+  export type TenantAddOnUncheckedCreateWithoutAddOnInput = {
+    id?: number
+    tenantId: number
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantAddOnCreateOrConnectWithoutAddOnInput = {
+    where: TenantAddOnWhereUniqueInput
+    create: XOR<TenantAddOnCreateWithoutAddOnInput, TenantAddOnUncheckedCreateWithoutAddOnInput>
+  }
+
+  export type TenantAddOnCreateManyAddOnInputEnvelope = {
+    data: TenantAddOnCreateManyAddOnInput | TenantAddOnCreateManyAddOnInput[]
     skipDuplicates?: boolean
   }
 
@@ -24758,6 +27673,34 @@ export namespace Prisma {
     tenantSubscriptionId?: IntFilter<"TenantSubscriptionAddOn"> | number
     addOnId?: IntFilter<"TenantSubscriptionAddOn"> | number
     quantity?: IntFilter<"TenantSubscriptionAddOn"> | number
+  }
+
+  export type TenantAddOnUpsertWithWhereUniqueWithoutAddOnInput = {
+    where: TenantAddOnWhereUniqueInput
+    update: XOR<TenantAddOnUpdateWithoutAddOnInput, TenantAddOnUncheckedUpdateWithoutAddOnInput>
+    create: XOR<TenantAddOnCreateWithoutAddOnInput, TenantAddOnUncheckedCreateWithoutAddOnInput>
+  }
+
+  export type TenantAddOnUpdateWithWhereUniqueWithoutAddOnInput = {
+    where: TenantAddOnWhereUniqueInput
+    data: XOR<TenantAddOnUpdateWithoutAddOnInput, TenantAddOnUncheckedUpdateWithoutAddOnInput>
+  }
+
+  export type TenantAddOnUpdateManyWithWhereWithoutAddOnInput = {
+    where: TenantAddOnScalarWhereInput
+    data: XOR<TenantAddOnUpdateManyMutationInput, TenantAddOnUncheckedUpdateManyWithoutAddOnInput>
+  }
+
+  export type TenantAddOnScalarWhereInput = {
+    AND?: TenantAddOnScalarWhereInput | TenantAddOnScalarWhereInput[]
+    OR?: TenantAddOnScalarWhereInput[]
+    NOT?: TenantAddOnScalarWhereInput | TenantAddOnScalarWhereInput[]
+    id?: IntFilter<"TenantAddOn"> | number
+    tenantId?: IntFilter<"TenantAddOn"> | number
+    addOnId?: IntFilter<"TenantAddOn"> | number
+    quantity?: IntFilter<"TenantAddOn"> | number
+    createdAt?: DateTimeFilter<"TenantAddOn"> | Date | string
+    updatedAt?: DateTimeFilter<"TenantAddOn"> | Date | string
   }
 
   export type TenantUserCreateWithoutTenantInput = {
@@ -24793,6 +27736,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
@@ -24811,6 +27756,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
@@ -24965,6 +27912,31 @@ export namespace Prisma {
 
   export type TenantPaymentCreateManyTenantInputEnvelope = {
     data: TenantPaymentCreateManyTenantInput | TenantPaymentCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type TenantAddOnCreateWithoutTenantInput = {
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    addOn: SubscriptionAddOnCreateNestedOneWithoutTenantAddOnsInput
+  }
+
+  export type TenantAddOnUncheckedCreateWithoutTenantInput = {
+    id?: number
+    addOnId: number
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TenantAddOnCreateOrConnectWithoutTenantInput = {
+    where: TenantAddOnWhereUniqueInput
+    create: XOR<TenantAddOnCreateWithoutTenantInput, TenantAddOnUncheckedCreateWithoutTenantInput>
+  }
+
+  export type TenantAddOnCreateManyTenantInputEnvelope = {
+    data: TenantAddOnCreateManyTenantInput | TenantAddOnCreateManyTenantInput[]
     skipDuplicates?: boolean
   }
 
@@ -25143,6 +28115,22 @@ export namespace Prisma {
     recordedAt?: DateTimeFilter<"TenantPayment"> | Date | string
   }
 
+  export type TenantAddOnUpsertWithWhereUniqueWithoutTenantInput = {
+    where: TenantAddOnWhereUniqueInput
+    update: XOR<TenantAddOnUpdateWithoutTenantInput, TenantAddOnUncheckedUpdateWithoutTenantInput>
+    create: XOR<TenantAddOnCreateWithoutTenantInput, TenantAddOnUncheckedCreateWithoutTenantInput>
+  }
+
+  export type TenantAddOnUpdateWithWhereUniqueWithoutTenantInput = {
+    where: TenantAddOnWhereUniqueInput
+    data: XOR<TenantAddOnUpdateWithoutTenantInput, TenantAddOnUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type TenantAddOnUpdateManyWithWhereWithoutTenantInput = {
+    where: TenantAddOnScalarWhereInput
+    data: XOR<TenantAddOnUpdateManyMutationInput, TenantAddOnUncheckedUpdateManyWithoutTenantInput>
+  }
+
   export type TenantOutletCreateWithoutSubscriptionsInput = {
     outletName: string
     address?: string | null
@@ -25205,6 +28193,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSubscriptionInput = {
@@ -25218,6 +28207,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSubscriptionInput = {
@@ -25439,6 +28429,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSubscriptionInput = {
@@ -25452,6 +28443,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SubscriptionPlanUpsertWithoutSubscriptionInput = {
@@ -25542,6 +28534,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
@@ -25561,6 +28555,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
@@ -25577,6 +28573,7 @@ export namespace Prisma {
     maxQuantity?: number | null
     scope?: string
     description?: string | null
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutAddOnInput
   }
 
   export type SubscriptionAddOnUncheckedCreateWithoutSubscriptionsInput = {
@@ -25587,6 +28584,7 @@ export namespace Prisma {
     maxQuantity?: number | null
     scope?: string
     description?: string | null
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutAddOnInput
   }
 
   export type SubscriptionAddOnCreateOrConnectWithoutSubscriptionsInput = {
@@ -25611,6 +28609,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -25630,6 +28630,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
@@ -25652,6 +28654,7 @@ export namespace Prisma {
     maxQuantity?: NullableIntFieldUpdateOperationsInput | number | null
     scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    tenantAddOns?: TenantAddOnUpdateManyWithoutAddOnNestedInput
   }
 
   export type SubscriptionAddOnUncheckedUpdateWithoutSubscriptionsInput = {
@@ -25662,6 +28665,7 @@ export namespace Prisma {
     maxQuantity?: NullableIntFieldUpdateOperationsInput | number | null
     scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutAddOnNestedInput
   }
 
   export type TenantCreateWithoutTenantOutletsInput = {
@@ -25674,6 +28678,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantOutletsInput = {
@@ -25687,6 +28692,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantOutletsInput = {
@@ -25700,6 +28706,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
@@ -25718,6 +28726,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
@@ -25803,6 +28813,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantOutletsInput = {
@@ -25816,6 +28827,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithWhereUniqueWithoutOutletInput = {
@@ -25856,6 +28868,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
     subscriptionPlan: SubscriptionPlanCreateNestedOneWithoutSubscriptionInput
@@ -25874,6 +28888,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
@@ -25915,6 +28931,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutTenantUsersInput = {
@@ -25928,6 +28945,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutTenantUsersInput = {
@@ -25995,6 +29013,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutTenantUsersInput = {
@@ -26008,6 +29027,7 @@ export namespace Prisma {
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PushyDeviceUpsertWithWhereUniqueWithoutTenantUserInput = {
@@ -26316,6 +29336,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDeviceAllocationsInput = {
@@ -26329,6 +29350,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDeviceAllocationsInput = {
@@ -26342,6 +29364,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
@@ -26361,6 +29385,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutSubscriptionInput
   }
@@ -26431,6 +29457,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDeviceAllocationsInput = {
@@ -26444,6 +29471,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantSubscriptionUpsertWithoutDeviceAllocationsInput = {
@@ -26463,6 +29491,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -26482,6 +29512,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
   }
@@ -26496,6 +29528,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutWarehousesInput = {
@@ -26509,6 +29542,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutWarehousesInput = {
@@ -26537,6 +29571,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutWarehousesInput = {
@@ -26550,6 +29585,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutPaymentsInput = {
@@ -26562,6 +29598,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutPaymentsInput = {
@@ -26575,6 +29612,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
     warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+    tenantAddOns?: TenantAddOnUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutPaymentsInput = {
@@ -26612,6 +29650,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
     outlet: TenantOutletCreateNestedOneWithoutSubscriptionsInput
     discount?: DiscountCreateNestedOneWithoutSubscriptionsInput
     tenant: TenantCreateNestedOneWithoutSubscriptionInput
@@ -26631,6 +29671,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutTenantSubscriptionInput
     deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutSubscriptionInput
   }
@@ -26661,6 +29703,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutPaymentsInput = {
@@ -26674,6 +29717,7 @@ export namespace Prisma {
     tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
     warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+    tenantAddOns?: TenantAddOnUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantOutletUpsertWithoutPaymentsInput = {
@@ -26723,6 +29767,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -26742,8 +29788,138 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
+  }
+
+  export type TenantCreateWithoutTenantAddOnsInput = {
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutTenantAddOnsInput = {
+    id?: number
+    tenantName: string
+    databaseName?: string | null
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    tenantUsers?: TenantUserUncheckedCreateNestedManyWithoutTenantInput
+    subscription?: TenantSubscriptionUncheckedCreateNestedManyWithoutTenantInput
+    tenantOutlets?: TenantOutletUncheckedCreateNestedManyWithoutTenantInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedCreateNestedManyWithoutTenantInput
+    warehouses?: TenantWarehouseUncheckedCreateNestedManyWithoutTenantInput
+    payments?: TenantPaymentUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutTenantAddOnsInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutTenantAddOnsInput, TenantUncheckedCreateWithoutTenantAddOnsInput>
+  }
+
+  export type SubscriptionAddOnCreateWithoutTenantAddOnsInput = {
+    name: string
+    addOnType: string
+    pricePerUnit: number
+    maxQuantity?: number | null
+    scope?: string
+    description?: string | null
+    subscriptions?: TenantSubscriptionAddOnCreateNestedManyWithoutAddOnInput
+  }
+
+  export type SubscriptionAddOnUncheckedCreateWithoutTenantAddOnsInput = {
+    id?: number
+    name: string
+    addOnType: string
+    pricePerUnit: number
+    maxQuantity?: number | null
+    scope?: string
+    description?: string | null
+    subscriptions?: TenantSubscriptionAddOnUncheckedCreateNestedManyWithoutAddOnInput
+  }
+
+  export type SubscriptionAddOnCreateOrConnectWithoutTenantAddOnsInput = {
+    where: SubscriptionAddOnWhereUniqueInput
+    create: XOR<SubscriptionAddOnCreateWithoutTenantAddOnsInput, SubscriptionAddOnUncheckedCreateWithoutTenantAddOnsInput>
+  }
+
+  export type TenantUpsertWithoutTenantAddOnsInput = {
+    update: XOR<TenantUpdateWithoutTenantAddOnsInput, TenantUncheckedUpdateWithoutTenantAddOnsInput>
+    create: XOR<TenantCreateWithoutTenantAddOnsInput, TenantUncheckedCreateWithoutTenantAddOnsInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutTenantAddOnsInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutTenantAddOnsInput, TenantUncheckedUpdateWithoutTenantAddOnsInput>
+  }
+
+  export type TenantUpdateWithoutTenantAddOnsInput = {
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutTenantAddOnsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantName?: StringFieldUpdateOperationsInput | string
+    databaseName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenantUsers?: TenantUserUncheckedUpdateManyWithoutTenantNestedInput
+    subscription?: TenantSubscriptionUncheckedUpdateManyWithoutTenantNestedInput
+    tenantOutlets?: TenantOutletUncheckedUpdateManyWithoutTenantNestedInput
+    deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutTenantNestedInput
+    warehouses?: TenantWarehouseUncheckedUpdateManyWithoutTenantNestedInput
+    payments?: TenantPaymentUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type SubscriptionAddOnUpsertWithoutTenantAddOnsInput = {
+    update: XOR<SubscriptionAddOnUpdateWithoutTenantAddOnsInput, SubscriptionAddOnUncheckedUpdateWithoutTenantAddOnsInput>
+    create: XOR<SubscriptionAddOnCreateWithoutTenantAddOnsInput, SubscriptionAddOnUncheckedCreateWithoutTenantAddOnsInput>
+    where?: SubscriptionAddOnWhereInput
+  }
+
+  export type SubscriptionAddOnUpdateToOneWithWhereWithoutTenantAddOnsInput = {
+    where?: SubscriptionAddOnWhereInput
+    data: XOR<SubscriptionAddOnUpdateWithoutTenantAddOnsInput, SubscriptionAddOnUncheckedUpdateWithoutTenantAddOnsInput>
+  }
+
+  export type SubscriptionAddOnUpdateWithoutTenantAddOnsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    addOnType?: StringFieldUpdateOperationsInput | string
+    pricePerUnit?: FloatFieldUpdateOperationsInput | number
+    maxQuantity?: NullableIntFieldUpdateOperationsInput | number | null
+    scope?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    subscriptions?: TenantSubscriptionAddOnUpdateManyWithoutAddOnNestedInput
+  }
+
+  export type SubscriptionAddOnUncheckedUpdateWithoutTenantAddOnsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    addOnType?: StringFieldUpdateOperationsInput | string
+    pricePerUnit?: FloatFieldUpdateOperationsInput | number
+    maxQuantity?: NullableIntFieldUpdateOperationsInput | number | null
+    scope?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    subscriptions?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutAddOnNestedInput
   }
 
   export type TenantSubscriptionCreateManySubscriptionPlanInput = {
@@ -26756,6 +29932,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
   }
 
   export type TenantSubscriptionUpdateWithoutSubscriptionPlanInput = {
@@ -26764,6 +29942,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -26782,6 +29962,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
@@ -26797,12 +29979,22 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TenantSubscriptionAddOnCreateManyAddOnInput = {
     id?: number
     tenantSubscriptionId: number
     quantity?: number
+  }
+
+  export type TenantAddOnCreateManyAddOnInput = {
+    id?: number
+    tenantId: number
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TenantSubscriptionAddOnUpdateWithoutAddOnInput = {
@@ -26820,6 +30012,29 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     tenantSubscriptionId?: IntFieldUpdateOperationsInput | number
     quantity?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type TenantAddOnUpdateWithoutAddOnInput = {
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutTenantAddOnsNestedInput
+  }
+
+  export type TenantAddOnUncheckedUpdateWithoutAddOnInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantAddOnUncheckedUpdateManyWithoutAddOnInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: IntFieldUpdateOperationsInput | number
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TenantUserCreateManyTenantInput = {
@@ -26840,6 +30055,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
   }
 
   export type TenantOutletCreateManyTenantInput = {
@@ -26893,6 +30110,14 @@ export namespace Prisma {
     recordedAt?: Date | string
   }
 
+  export type TenantAddOnCreateManyTenantInput = {
+    id?: number
+    addOnId: number
+    quantity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type TenantUserUpdateWithoutTenantInput = {
     username?: StringFieldUpdateOperationsInput | string
     password?: NullableStringFieldUpdateOperationsInput | string | null
@@ -26924,6 +30149,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -26942,6 +30169,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
@@ -26957,6 +30186,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TenantOutletUpdateWithoutTenantInput = {
@@ -27110,6 +30341,29 @@ export namespace Prisma {
     costSnapshot?: JsonNullValueInput | InputJsonValue
     recordedBy?: NullableIntFieldUpdateOperationsInput | number | null
     recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantAddOnUpdateWithoutTenantInput = {
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    addOn?: SubscriptionAddOnUpdateOneRequiredWithoutTenantAddOnsNestedInput
+  }
+
+  export type TenantAddOnUncheckedUpdateWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    addOnId?: IntFieldUpdateOperationsInput | number
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TenantAddOnUncheckedUpdateManyWithoutTenantInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    addOnId?: IntFieldUpdateOperationsInput | number
+    quantity?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TenantSubscriptionAddOnCreateManyTenantSubscriptionInput = {
@@ -27267,6 +30521,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     discountId?: number | null
+    customPrice?: number | null
+    customPriceNote?: string | null
   }
 
   export type TenantPaymentCreateManyOutletInput = {
@@ -27295,6 +30551,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     discount?: DiscountUpdateOneWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -27313,6 +30571,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
@@ -27328,6 +30588,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     discountId?: NullableIntFieldUpdateOperationsInput | number | null
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TenantPaymentUpdateWithoutOutletInput = {
@@ -27399,6 +30661,8 @@ export namespace Prisma {
     subscriptionValidUntil: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    customPrice?: number | null
+    customPriceNote?: string | null
   }
 
   export type TenantSubscriptionUpdateWithoutDiscountInput = {
@@ -27407,6 +30671,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     outlet?: TenantOutletUpdateOneRequiredWithoutSubscriptionsNestedInput
     tenant?: TenantUpdateOneRequiredWithoutSubscriptionNestedInput
     subscriptionPlan?: SubscriptionPlanUpdateOneRequiredWithoutSubscriptionNestedInput
@@ -27425,6 +30691,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionAddOn?: TenantSubscriptionAddOnUncheckedUpdateManyWithoutTenantSubscriptionNestedInput
     deviceAllocations?: PushyDeviceAllocationUncheckedUpdateManyWithoutSubscriptionNestedInput
     payments?: TenantPaymentUncheckedUpdateManyWithoutSubscriptionNestedInput
@@ -27440,6 +30708,8 @@ export namespace Prisma {
     subscriptionValidUntil?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    customPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    customPriceNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PushyDeviceCreateManyTenantUserInput = {

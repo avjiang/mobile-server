@@ -26,6 +26,7 @@ The settings system uses a **dual-database architecture**:
 2. **Tenant Databases** - Stores actual setting values (data)
 
 This separation ensures:
+
 - Setting definitions are shared across all tenants
 - No tenant database migrations needed when adding new settings
 - Centralized definition management
@@ -38,25 +39,26 @@ This separation ensures:
 
 Stores the **definition/schema** for all settings.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ID` | INT | Primary key |
-| `KEY` | STRING | Unique setting identifier (e.g., "default_currency") |
-| `CATEGORY` | STRING | Grouping (e.g., "Financial", "POS", "User Preference") |
-| `TYPE` | STRING | Data type: "INT", "DOUBLE", "STRING", "BOOLEAN", "JSON" |
-| `DEFAULT_VALUE` | STRING | Default value if not customized |
-| `DESCRIPTION` | STRING | Human-readable description |
-| `SCOPE` | STRING | Where it applies: "TENANT", "OUTLET", "USER" |
-| `IS_REQUIRED` | BOOLEAN | Whether setting must have a value |
-| `IS_READ_ONLY` | BOOLEAN | Whether setting cannot be modified by users (default: false) |
-| `VALIDATION_RULES` | TEXT (JSON) | Validation rules: `{min, max, options, pattern}` |
-| `VERSION` | INT | For versioning and cache invalidation |
-| `CREATED_AT` | DATETIME | Creation timestamp |
-| `UPDATED_AT` | DATETIME | Last update timestamp |
-| `IS_DELETED` | BOOLEAN | Soft delete flag |
-| `DELETED_AT` | DATETIME | Deletion timestamp |
+| Field              | Type        | Description                                                  |
+| ------------------ | ----------- | ------------------------------------------------------------ |
+| `ID`               | INT         | Primary key                                                  |
+| `KEY`              | STRING      | Unique setting identifier (e.g., "default_currency")         |
+| `CATEGORY`         | STRING      | Grouping (e.g., "Financial", "POS", "User Preference")       |
+| `TYPE`             | STRING      | Data type: "INT", "DOUBLE", "STRING", "BOOLEAN", "JSON"      |
+| `DEFAULT_VALUE`    | STRING      | Default value if not customized                              |
+| `DESCRIPTION`      | STRING      | Human-readable description                                   |
+| `SCOPE`            | STRING      | Where it applies: "TENANT", "OUTLET", "USER"                 |
+| `IS_REQUIRED`      | BOOLEAN     | Whether setting must have a value                            |
+| `IS_READ_ONLY`     | BOOLEAN     | Whether setting cannot be modified by users (default: false) |
+| `VALIDATION_RULES` | TEXT (JSON) | Validation rules: `{min, max, options, pattern}`             |
+| `VERSION`          | INT         | For versioning and cache invalidation                        |
+| `CREATED_AT`       | DATETIME    | Creation timestamp                                           |
+| `UPDATED_AT`       | DATETIME    | Last update timestamp                                        |
+| `IS_DELETED`       | BOOLEAN     | Soft delete flag                                             |
+| `DELETED_AT`       | DATETIME    | Deletion timestamp                                           |
 
 **Prisma Model:**
+
 ```prisma
 model SettingDefinition {
   id              Int       @id @default(autoincrement()) @map("ID")
@@ -82,6 +84,7 @@ model SettingDefinition {
 ```
 
 **Example Record:**
+
 ```json
 {
   "ID": 1,
@@ -103,21 +106,22 @@ model SettingDefinition {
 
 Stores the **actual values** for settings, scoped to tenant/outlet/user.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ID` | INT | Primary key |
-| `SETTING_DEFINITION_ID` | INT | References `setting_definition.ID` (no FK) |
-| `TENANT_ID` | INT | Tenant scope (nullable) |
-| `OUTLET_ID` | INT | Outlet scope (nullable) |
-| `USER_ID` | INT | User scope (nullable) |
-| `VALUE` | STRING | The actual setting value |
-| `VERSION` | INT | For optimistic locking |
-| `CREATED_AT` | DATETIME | Creation timestamp |
-| `UPDATED_AT` | DATETIME | Last update timestamp |
-| `IS_DELETED` | BOOLEAN | Soft delete flag |
-| `DELETED_AT` | DATETIME | Deletion timestamp |
+| Field                   | Type     | Description                                |
+| ----------------------- | -------- | ------------------------------------------ |
+| `ID`                    | INT      | Primary key                                |
+| `SETTING_DEFINITION_ID` | INT      | References `setting_definition.ID` (no FK) |
+| `TENANT_ID`             | INT      | Tenant scope (nullable)                    |
+| `OUTLET_ID`             | INT      | Outlet scope (nullable)                    |
+| `USER_ID`               | INT      | User scope (nullable)                      |
+| `VALUE`                 | STRING   | The actual setting value                   |
+| `VERSION`               | INT      | For optimistic locking                     |
+| `CREATED_AT`            | DATETIME | Creation timestamp                         |
+| `UPDATED_AT`            | DATETIME | Last update timestamp                      |
+| `IS_DELETED`            | BOOLEAN  | Soft delete flag                           |
+| `DELETED_AT`            | DATETIME | Deletion timestamp                         |
 
 **Prisma Model:**
+
 ```prisma
 model Setting {
   id                  Int       @id @default(autoincrement()) @map("ID")
@@ -141,6 +145,7 @@ model Setting {
 ```
 
 **Example Record:**
+
 ```json
 {
   "ID": 42,
@@ -165,24 +170,30 @@ The `VALIDATION_RULES` column stores JSON-formatted validation constraints.
 #### Available Rule Types
 
 1. **`options`** - Allowed values list (for dropdowns)
+
    ```json
-   {"options": ["IDR", "USD", "SGD", "MYR", "THB"]}
+   { "options": ["IDR", "USD", "SGD", "MYR", "THB"] }
    ```
+
    - Value must be one of the listed options
    - Used for: currencies, languages, themes, layouts
 
 2. **`min` / `max`** - Numeric range (for numbers)
+
    ```json
-   {"min": 0, "max": 100}
+   { "min": 0, "max": 100 }
    ```
+
    - Value must be within the specified range
    - Works for INT and DOUBLE types
    - Used for: percentages, quantities, thresholds
 
 3. **`pattern`** - Regex validation (for text patterns)
+
    ```json
-   {"pattern": "^[A-Z]{2,5}$"}
+   { "pattern": "^[A-Z]{2,5}$" }
    ```
+
    - Value must match the regular expression
    - Used for: codes, prefixes, formatted text
 
@@ -191,23 +202,23 @@ The `VALIDATION_RULES` column stores JSON-formatted validation constraints.
 
 #### Validation Examples
 
-| Setting | Type | Validation Rules | What It Validates |
-|---------|------|-----------------|-------------------|
-| `default_currency` | STRING | `{"options":["IDR","USD","SGD"]}` | Must be IDR, USD, or SGD |
-| `tax_rate` | DOUBLE | `{"min":0,"max":100}` | Must be between 0-100 (decimals allowed) |
-| `receipt_copies` | INT | `{"min":1,"max":5}` | Must be between 1-5 (whole numbers only) |
-| `invoice_prefix` | STRING | `{"pattern":"^[A-Z]{2,5}$"}` | 2-5 uppercase letters only |
-| `tax_inclusive` | BOOLEAN | `null` | No additional validation |
+| Setting            | Type    | Validation Rules                  | What It Validates                        |
+| ------------------ | ------- | --------------------------------- | ---------------------------------------- |
+| `default_currency` | STRING  | `{"options":["IDR","USD","SGD"]}` | Must be IDR, USD, or SGD                 |
+| `tax_rate`         | DOUBLE  | `{"min":0,"max":100}`             | Must be between 0-100 (decimals allowed) |
+| `receipt_copies`   | INT     | `{"min":1,"max":5}`               | Must be between 1-5 (whole numbers only) |
+| `invoice_prefix`   | STRING  | `{"pattern":"^[A-Z]{2,5}$"}`      | 2-5 uppercase letters only               |
+| `tax_inclusive`    | BOOLEAN | `null`                            | No additional validation                 |
 
 ---
 
 ### Setting Scopes
 
-| Scope | Description | Example Use Cases | Required Parameters |
-|-------|-------------|-------------------|---------------------|
-| **TENANT** | Company-wide setting | Company name, invoice prefix, payment terms | `tenantId` (auto-filled from auth) |
-| **OUTLET** | Store/location-specific | Currency, tax rate, POS settings | `outletId` |
-| **USER** | Individual user preference | Language, theme, date format | `userId` |
+| Scope      | Description                | Example Use Cases                           | Required Parameters                |
+| ---------- | -------------------------- | ------------------------------------------- | ---------------------------------- |
+| **TENANT** | Company-wide setting       | Company name, invoice prefix, payment terms | `tenantId` (auto-filled from auth) |
+| **OUTLET** | Store/location-specific    | Currency, tax rate, service charge          | `outletId`                         |
+| **USER**   | Individual user preference | Language, date format, print settings       | `userId`                           |
 
 **Important:** The scope is defined in the setting definition, not in the request. The API automatically applies settings to the correct scope.
 
@@ -218,12 +229,14 @@ The `VALIDATION_RULES` column stores JSON-formatted validation constraints.
 The `isReadOnly` field allows you to mark certain settings as **read-only**, preventing users from modifying them through the API.
 
 **Use Cases:**
+
 - **System-managed settings**: Settings that should only be changed by system administrators or automated processes
 - **Calculated values**: Settings derived from other data that shouldn't be manually edited
 - **License restrictions**: Settings controlled by subscription plan or license type
 - **Safety-critical settings**: Configuration that could break functionality if incorrectly modified
 
 **Example:**
+
 ```json
 {
   "key": "subscription_plan",
@@ -237,6 +250,7 @@ The `isReadOnly` field allows you to mark certain settings as **read-only**, pre
 ```
 
 **Behavior:**
+
 - Read-only settings can be retrieved via `GET /settings/sync`
 - Attempts to update read-only settings via `PUT /settings/batchUpdate` will be **rejected with validation error**
 - Only system-level operations (direct database access or admin tools) can modify read-only settings
@@ -252,54 +266,59 @@ These settings are seeded via [setting_definitions_seed.ts](../script/setting_de
 
 ### Financial Settings
 
-| Key | Type | Default | Scope | Required | Validation Rules | Status |
-|-----|------|---------|-------|----------|-----------------|--------|
-| `default_currency` | STRING | `IDR` | OUTLET | Yes | Options: `IDR`, `USD`, `SGD`, `MYR`, `THB`, `EUR`, `AUD` | Commented |
-| `tax_rate` | DOUBLE | `11` | OUTLET | Yes | Min: 0, Max: 100 | **Active** |
-| `tax_inclusive` | BOOLEAN | `true` | OUTLET | No | - | Commented |
-| `enable_discount` | BOOLEAN | `true` | OUTLET | No | - | Commented |
-| `payment_terms` | INT | `30` | TENANT | No | Min: 0, Max: 365 | Commented |
+| Key                         | Type    | Default | Scope  | Required | Validation Rules                                         | Status     |
+| --------------------------- | ------- | ------- | ------ | -------- | -------------------------------------------------------- | ---------- |
+| `default_currency`          | STRING  | `IDR`   | OUTLET | Yes      | Options: `IDR`, `USD`, `SGD`, `MYR`, `THB`, `EUR`, `AUD` | Commented  |
+| `tax_rate`                  | DOUBLE  | `11`    | OUTLET | Yes      | Min: 0, Max: 100                                         | **Active** |
+| `tax_inclusive`             | BOOLEAN | `true`  | OUTLET | No       | -                                                        | **Active** |
+| `service_charge_rate`       | DOUBLE  | `0`     | OUTLET | No       | Min: 0, Max: 100                                         | **Active** |
+| `service_charge_enabled`    | BOOLEAN | `false` | OUTLET | No       | -                                                        | **Active** |
+| `service_charge_applies_to` | STRING  | `all`   | OUTLET | No       | Options: `all`, `walk_in`, `delivery`                    | **Active** |
+| `enable_discount`           | BOOLEAN | `true`  | OUTLET | No       | -                                                        | Commented  |
+| `payment_terms`             | INT     | `30`    | TENANT | No       | Min: 0, Max: 365                                         | Commented  |
 
 ### POS Settings
 
-| Key | Type | Default | Scope | Required | Validation Rules | Status |
-|-----|------|---------|-------|----------|-----------------|--------|
-| `auto_print_receipt` | BOOLEAN | `true` | OUTLET | No | - | **Active** |
-| `receipt_copies` | INT | `1` | OUTLET | No | Min: 1, Max: 5 | **Active** |
-| `enable_barcode_scanner` | BOOLEAN | `true` | OUTLET | No | - | Commented |
-| `pos_layout` | STRING | `grid` | USER | No | Options: `grid`, `list`, `compact` | Commented |
+| Key                      | Type    | Default | Scope  | Required | Validation Rules                   | Status                 |
+| ------------------------ | ------- | ------- | ------ | -------- | ---------------------------------- | ---------------------- |
+| `auto_print_receipt`     | BOOLEAN | `true`  | USER   | No       | -                                  | **Active**             |
+| `receipt_copies`         | INT     | `1`     | USER   | No       | Min: 1, Max: 5                     | **Active**             |
+| `connected_printer`      | STRING  | `null`  | USER   | No       | -                                  | **Active** (read-only) |
+| `enable_barcode_scanner` | BOOLEAN | `true`  | OUTLET | No       | -                                  | Commented              |
+| `pos_layout`             | STRING  | `grid`  | USER   | No       | Options: `grid`, `list`, `compact` | Commented              |
 
 ### Inventory Settings
 
-| Key | Type | Default | Scope | Required | Validation Rules | Status |
-|-----|------|---------|-------|----------|-----------------|--------|
-| `low_stock_threshold` | INT | `10` | OUTLET | No | Min: 0, Max: 1000 | **Active** |
-| `enable_stock_alert` | BOOLEAN | `true` | OUTLET | No | - | Commented |
-| `auto_reorder` | BOOLEAN | `false` | OUTLET | No | - | Commented |
+| Key                   | Type    | Default | Scope  | Required | Validation Rules  | Status     |
+| --------------------- | ------- | ------- | ------ | -------- | ----------------- | ---------- |
+| `low_stock_threshold` | INT     | `10`    | OUTLET | No       | Min: 0, Max: 1000 | **Active** |
+| `enable_stock_alert`  | BOOLEAN | `true`  | OUTLET | No       | -                 | Commented  |
+| `auto_reorder`        | BOOLEAN | `false` | OUTLET | No       | -                 | Commented  |
 
 ### User Preference Settings
 
-| Key | Type | Default | Scope | Required | Validation Rules | Status |
-|-----|------|---------|-------|----------|-----------------|--------|
-| `language` | STRING | `en` | USER | No | Options: `en`, `id` | **Active** |
-| `theme` | STRING | `light` | USER | No | Options: `light`, `dark`, `auto` | Commented |
-| `notifications_enabled` | BOOLEAN | `true` | USER | No | - | Commented |
-| `date_format` | STRING | `DD/MM/YYYY` | USER | No | Options: `DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD` | **Active** |
+| Key                     | Type    | Default      | Scope | Required | Validation Rules                                  | Status                 |
+| ----------------------- | ------- | ------------ | ----- | -------- | ------------------------------------------------- | ---------------------- |
+| `language`              | STRING  | `en`         | USER  | No       | Options: `en`, `id`                               | **Active**             |
+| `is_pushy_registered`   | BOOLEAN | `false`      | USER  | No       | -                                                 | **Active** (read-only) |
+| `theme`                 | STRING  | `light`      | USER  | No       | Options: `light`, `dark`, `auto`                  | Commented              |
+| `notifications_enabled` | BOOLEAN | `true`       | USER  | No       | -                                                 | Commented              |
+| `date_format`           | STRING  | `DD/MM/YYYY` | USER  | No       | Options: `DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD` | **Active**             |
 
 ### System Settings
 
-| Key | Type | Default | Scope | Required | Validation Rules | Status |
-|-----|------|---------|-------|----------|-----------------|--------|
-| `company_name` | STRING | `My Company` | TENANT | Yes | - | **Active** |
-| `receipt_footer` | STRING | `Thank you for your business!` | TENANT | No | - | **Active** |
-| `invoice_prefix` | STRING | `INV` | TENANT | No | Pattern: `^[A-Z]{2,5}$` | Commented |
+| Key              | Type   | Default                        | Scope  | Required | Validation Rules        | Status     |
+| ---------------- | ------ | ------------------------------ | ------ | -------- | ----------------------- | ---------- |
+| `company_name`   | STRING | `My Company`                   | TENANT | Yes      | -                       | **Active** |
+| `receipt_footer` | STRING | `Thank you for your business!` | TENANT | No       | -                       | **Active** |
+| `invoice_prefix` | STRING | `INV`                          | TENANT | No       | Pattern: `^[A-Z]{2,5}$` | Commented  |
 
 ### Summary
 
-- **Active settings:** 8 (seeded into the global database)
-- **Commented settings:** 11 (defined but not currently seeded)
-- **By scope:** TENANT (3), OUTLET (9), USER (7)
-- **By category:** Financial (5), POS (4), Inventory (3), User Preference (4), System (3)
+- **Active settings:** 14 (seeded into the global database)
+- **Commented settings:** 10 (defined but not currently seeded)
+- **By scope:** TENANT (4), OUTLET (11), USER (9)
+- **By category:** Financial (8), POS (5), Inventory (3), User Preference (5), System (3)
 
 ---
 
@@ -312,6 +331,7 @@ Fetch all settings with delta sync support for efficient synchronization.
 **Authentication:** Required (Bearer token)
 
 **Query Parameters:**
+
 - `lastSyncTimestamp` (optional, string): ISO timestamp for delta sync. Use `null` or omit for initial sync
 - `outletId` (optional, number): Filter by outlet
 - `userId` (optional, number): Filter by user
@@ -319,6 +339,7 @@ Fetch all settings with delta sync support for efficient synchronization.
 - `take` (optional, number): Pagination limit (default: 100)
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -342,18 +363,23 @@ Fetch all settings with delta sync support for efficient synchronization.
 ```
 
 **Initial Sync Example:**
+
 ```bash
 GET /settings/sync?lastSyncTimestamp=null
 ```
+
 Returns all settings changed since epoch (all settings).
 
 **Delta Sync Example:**
+
 ```bash
 GET /settings/sync?lastSyncTimestamp=2025-01-15T10:00:00Z
 ```
+
 Returns only settings created/updated/deleted since the timestamp.
 
 **Filter Examples:**
+
 ```bash
 # Get all outlet settings for outlet 5
 GET /settings/sync?outletId=5
@@ -374,11 +400,13 @@ Fetch all setting definitions with delta sync support.
 **Authentication:** Required (Bearer token)
 
 **Query Parameters:**
+
 - `lastSyncTimestamp` (optional, string): ISO timestamp for delta sync
 - `skip` (optional, number): Pagination offset (default: 0)
 - `take` (optional, number): Pagination limit (default: 100)
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -414,6 +442,7 @@ Update or create multiple settings in a single request.
 **Authentication:** Required (Bearer token)
 
 **Request Body:**
+
 ```json
 {
   "settings": [
@@ -431,6 +460,7 @@ Update or create multiple settings in a single request.
 ```
 
 **Request Schema:**
+
 - `settings` (array, required): Array of setting updates
   - `id` (number, optional): Setting ID for updates. If provided, updates existing setting. If null/omitted, the backend will **upsert by scope** — matching on `[settingDefinitionId, tenantId, userId, outletId]` to find an existing record before creating a new one.
   - `settingDefinitionId` (number, required when `id` is null): Definition ID when creating/upserting a setting
@@ -442,6 +472,7 @@ Update or create multiple settings in a single request.
 > **Note:** Clients should persist and send back the `id` returned from previous responses for optimal performance. The upsert-by-scope is a defensive fallback to prevent duplicate records when `id` is not available.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -464,11 +495,13 @@ Update or create multiple settings in a single request.
 ```
 
 **Validation:**
+
 - Type validation (e.g., INT must be a number, DOUBLE allows decimals)
 - Custom rules (e.g., options, min/max, regex)
 - Scope validation (e.g., OUTLET settings require `outletId` for new settings)
 
 **Error Examples:**
+
 ```json
 {
   "error": "Value must be one of: IDR, USD, SGD for setting 'default_currency'"
@@ -507,20 +540,23 @@ src/settings/
 Fetches settings with delta sync support.
 
 **Parameters:**
+
 - `databaseName` (string): Tenant database name
 - `tenantId` (number): Tenant ID
 - `request` (SyncSettingsRequest): Request parameters
 
 **Returns:**
+
 ```typescript
 Promise<{
   settings: Setting[];
   total: number;
   serverTimestamp: string;
-}>
+}>;
 ```
 
 **Logic:**
+
 1. Parse `lastSyncTimestamp` (defaults to epoch if not provided)
 2. Build query with OR conditions:
    - `createdAt >= lastSync`
@@ -537,20 +573,23 @@ Promise<{
 Fetches setting definitions with delta sync support.
 
 **Parameters:**
+
 - `lastSyncTimestamp` (string, optional): ISO timestamp
 - `skip` (number): Pagination offset
 - `take` (number): Pagination limit
 
 **Returns:**
+
 ```typescript
 Promise<{
   definitions: SettingDefinition[];
   total: number;
   serverTimestamp: string;
-}>
+}>;
 ```
 
 **Logic:**
+
 1. Parse `lastSyncTimestamp` (defaults to epoch if not provided)
 2. Build query with OR conditions (same as settings)
 3. Count total matching records
@@ -563,19 +602,22 @@ Promise<{
 Batch update or create settings with validation.
 
 **Parameters:**
+
 - `databaseName` (string): Tenant database name
 - `tenantId` (number): Tenant ID
 - `updates` (UpdateSettingRequest[]): Array of setting updates
 
 **Returns:**
+
 ```typescript
 Promise<{
   updated: Setting[];
   serverTimestamp: string;
-}>
+}>;
 ```
 
 **Logic:**
+
 1. **Separate updates:**
    - Existing settings (have `id`)
    - New settings (no `id` or `id` is null)
@@ -615,6 +657,7 @@ Promise<{
 Validates a setting value against its definition.
 
 **Parameters:**
+
 - `definition` (SettingDefinition): The setting definition
 - `value` (string): The value to validate
 
@@ -709,6 +752,7 @@ INSERT INTO setting_definition (
 ```
 
 Or if using a seed script:
+
 ```typescript
 {
   key: 'enable_loyalty_program',
@@ -724,6 +768,7 @@ Or if using a seed script:
 ```
 
 2. **Run seed script** (if using):
+
 ```bash
 npx ts-node prisma/global-client/seeds/setting-definitions.ts
 ```
@@ -731,6 +776,7 @@ npx ts-node prisma/global-client/seeds/setting-definitions.ts
 3. **Done!** All tenants can now use this setting without any database migration.
 
 4. **Clients will receive it** on next sync:
+
 ```bash
 GET /settings/definition/sync?lastSyncTimestamp=<last_sync>
 ```
@@ -742,6 +788,7 @@ GET /settings/definition/sync?lastSyncTimestamp=<last_sync>
 ### Use Case 1: Change Outlet Currency
 
 **Request:**
+
 ```bash
 PUT /settings/batchUpdate
 Content-Type: application/json
@@ -759,6 +806,7 @@ Authorization: Bearer <token>
 ```
 
 **What Happens:**
+
 1. Service validates that value "USD" is in the allowed options
 2. Creates or updates setting for outlet 5
 3. Returns updated setting with serverTimestamp
@@ -769,6 +817,7 @@ Authorization: Bearer <token>
 ### Use Case 2: Set Tax Rate with Decimal
 
 **Request:**
+
 ```bash
 PUT /settings/batchUpdate
 Content-Type: application/json
@@ -786,6 +835,7 @@ Authorization: Bearer <token>
 ```
 
 **What Happens:**
+
 1. Service validates that "10.5" is a valid DOUBLE
 2. Service validates that 10.5 is between min/max (if specified)
 3. Creates or updates tax_rate setting for outlet 5
@@ -798,6 +848,7 @@ Authorization: Bearer <token>
 ### Use Case 3: Batch Update Multiple Settings
 
 **Request:**
+
 ```bash
 PUT /settings/batchUpdate
 Content-Type: application/json
@@ -823,6 +874,7 @@ Authorization: Bearer <token>
 ```
 
 **What Happens:**
+
 1. Updates setting ID 42 (existing) with value "USD"
 2. Updates setting ID 43 (existing) with value "10.5"
 3. Creates new setting for definition ID 3, user 10, value "true"
@@ -930,6 +982,7 @@ curl -X PUT \
 ### Why Include Deleted Records?
 
 Settings with `deletedAt >= lastSyncTimestamp` are included so clients can:
+
 - Remove deleted settings from local storage
 - Update UI to reflect deletions
 - Maintain sync consistency
@@ -937,6 +990,7 @@ Settings with `deletedAt >= lastSyncTimestamp` are included so clients can:
 ### Handling Clock Skew
 
 The server always returns `serverTimestamp` in the response. Clients should:
+
 - Use the **server's timestamp**, not the client's clock
 - Store the exact `serverTimestamp` value returned
 - Send this value in the next sync request
@@ -950,6 +1004,7 @@ This prevents issues with clock differences between client and server.
 ### Issue: New field not appearing in API response
 
 **Symptoms:**
+
 - Added new field to `setting_definition` schema (e.g., `isReadOnly`)
 - Ran migration and Prisma generate successfully
 - Field exists in database
@@ -959,7 +1014,9 @@ This prevents issues with clock differences between client and server.
 The Node.js server has the old Prisma client loaded in memory from before the schema change.
 
 **Solution:**
+
 1. **Restart the server** - This is the most common fix!
+
    ```bash
    # Stop your current server (Ctrl+C or kill the process)
    # Then restart
@@ -967,6 +1024,7 @@ The Node.js server has the old Prisma client loaded in memory from before the sc
    ```
 
 2. **Verify the steps were completed:**
+
    ```bash
    # 1. Check migration was applied
    npx prisma migrate status --schema=prisma/global-client/schema.prisma
@@ -989,11 +1047,13 @@ The Node.js server has the old Prisma client loaded in memory from before the sc
 ### Issue: Settings not syncing
 
 **Possible Causes:**
+
 1. Client not sending `lastSyncTimestamp`
 2. Client using wrong timestamp format
 3. Server clock skew
 
 **Solution:**
+
 1. Verify `lastSyncTimestamp` is in ISO 8601 format: `2025-01-15T10:00:00Z`
 2. Check server logs for errors
 3. Try initial sync with `lastSyncTimestamp=null`
@@ -1003,11 +1063,13 @@ The Node.js server has the old Prisma client loaded in memory from before the sc
 ### Issue: Validation error when updating setting
 
 **Possible Causes:**
+
 1. Value doesn't match validation rules
 2. Value doesn't match type
 3. Missing required scope parameters
 
 **Solution:**
+
 1. Check `validationRules` in the definition:
    ```sql
    SELECT * FROM setting_definition WHERE KEY = 'your_setting_key';
@@ -1021,11 +1083,13 @@ The Node.js server has the old Prisma client loaded in memory from before the sc
 ### Issue: Setting definition not found
 
 **Possible Causes:**
+
 1. Definition not seeded in global database
 2. Wrong setting key
 3. Definition soft-deleted
 
 **Solution:**
+
 1. Verify definition exists:
    ```sql
    SELECT * FROM setting_definition WHERE KEY = 'your_setting_key' AND IS_DELETED = 0;
@@ -1040,6 +1104,7 @@ The Node.js server has the old Prisma client loaded in memory from before the sc
 **Problem:** Setting is defined as `INT` but client wants to store decimal value like `10.5`.
 
 **Solution:**
+
 1. Update the definition type to `DOUBLE`:
    ```sql
    UPDATE setting_definition
@@ -1124,6 +1189,7 @@ curl -H "Authorization: Bearer <token>" \
 ### For Questions or Issues
 
 Please refer to:
+
 - Service implementation: [settings.service.ts](src/settings/settings.service.ts)
 - Controller implementation: [settings.controller.ts](src/settings/settings.controller.ts)
 - Request interfaces: [settings.request.ts](src/settings/settings.request.ts)

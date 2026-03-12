@@ -22,6 +22,7 @@ import {
     TenantOverviewResponse
 } from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
+import { ADD_ON_IDS } from "../constants/add-on-ids";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -43,7 +44,6 @@ const getPrimarySubscription = async (tenantId: number, tx: any = prisma) => {
                 },
                 include: {
                     subscriptionPlan: true,
-                    subscriptionAddOn: true
                 }
             }
         }
@@ -223,13 +223,9 @@ let createTenant = async (body: CreateTenantRequest) => {
                 try {
                     console.log(`Rolling back tenant creation for ID: ${createdTenantId}`);
                     await prisma.$transaction(async (tx) => {
-                        // Delete all tenant subscription add-ons
-                        await tx.tenantSubscriptionAddOn.deleteMany({
-                            where: {
-                                tenantSubscription: {
-                                    tenantId: createdTenantId!
-                                }
-                            }
+                        // Delete all tenant add-ons
+                        await tx.tenantAddOn.deleteMany({
+                            where: { tenantId: createdTenantId! }
                         });
                         // Delete all tenant subscriptions
                         await tx.tenantSubscription.deleteMany({
@@ -286,6 +282,9 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
             include: {
+                tenantAddOns: {
+                    include: { addOn: true }
+                },
                 tenantOutlets: {
                     where: { isActive: true },
                     include: {
@@ -294,9 +293,6 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
                             include: {
                                 subscriptionPlan: true,
                                 discount: true,
-                                subscriptionAddOn: {
-                                    include: { addOn: true },
-                                },
                             },
                         },
                     },
@@ -308,13 +304,25 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
         }
         // Calculate outlet count
         const outletCount = tenant.tenantOutlets.length;
+
+        // Build tenant-level add-ons
+        const tenantAddOns = tenant.tenantAddOns.map(({ addOn, quantity }) => ({
+            name: addOn.name,
+            quantity,
+            pricePerUnit: addOn.pricePerUnit,
+            totalCost: addOn.pricePerUnit * quantity,
+        }));
+        const totalAddOnCost = tenantAddOns.reduce((sum, a) => sum + a.totalCost, 0);
+
         const response: TenantCostResponse = {
             tenantId: tenant.id,
             tenantName: tenant.tenantName,
             outletCount,
+            tenantAddOns,
+            totalAddOnCost,
             outlets: [],
-            totalMonthlyCost: 0,
-            totalCostBeforeDiscount: 0,
+            totalMonthlyCost: totalAddOnCost,
+            totalCostBeforeDiscount: totalAddOnCost,
             totalDiscount: 0,
         };
         // Track fixed discount application
@@ -343,18 +351,16 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
                 lastPayment: null,
             };
             if (subscription) {
-                const basePlanCost = subscription.subscriptionPlan.price;
-                const addOns = subscription.subscriptionAddOn.map(({ addOn, quantity }) => ({
-                    name: addOn.name,
-                    quantity,
-                    pricePerUnit: addOn.pricePerUnit,
-                    totalCost: addOn.pricePerUnit * quantity,
-                }));
-                // Calculate discounts
-                const discounts: Array<{ name: string; type: string; value: number; amount: number }> = [];
+                const standardPlanPrice = subscription.subscriptionPlan.price;
+                const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+                const isCustomPrice = subscription.customPrice != null;
+                const customPriceNote = subscription.customPriceNote ?? "";
 
-                // Promotional discount (percentage)
+                // Calculate discounts (plan-level only; add-ons are tenant-level)
+                const discounts: Array<{ name: string; type: string; value: number; amount: number }> = [];
                 let discountAmount = 0;
+
+                // Promotional discount (percentage on plan cost)
                 if (
                     subscription.discount &&
                     subscription.discount.discountType === 'percentage' &&
@@ -362,13 +368,8 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
                 ) {
                     const discountValue = subscription.discount.value / 100;
                     const appliesToPlan = subscription.discount.appliesTo.includes('plan');
-                    const appliesToAddOns = subscription.discount.appliesTo.includes('add-on');
-
                     const planDiscount = appliesToPlan ? basePlanCost * discountValue : 0;
-                    const addOnDiscount = appliesToAddOns
-                        ? addOns.reduce((sum, addOn) => sum + addOn.totalCost * discountValue, 0)
-                        : 0;
-                    discountAmount = planDiscount + addOnDiscount;
+                    discountAmount = planDiscount;
                     discounts.push({
                         name: subscription.discount.name,
                         type: subscription.discount.discountType,
@@ -376,9 +377,10 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
                         amount: discountAmount,
                     });
                 }
-                // Fixed discount (apply to first outlet)
+
+                // Fixed discount (apply to first outlet's plan cost)
                 if (remainingFixedDiscount > 0) {
-                    const fixedAmount = Math.min(remainingFixedDiscount, basePlanCost + addOns.reduce((sum, addOn) => sum + addOn.totalCost, 0));
+                    const fixedAmount = Math.min(remainingFixedDiscount, basePlanCost);
                     discounts.push({
                         name: fixedDiscountName,
                         type: fixedDiscountType,
@@ -388,15 +390,17 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
                     discountAmount += fixedAmount;
                     remainingFixedDiscount -= fixedAmount;
                 }
-                // Total cost for this outlet
-                const totalAddOnCost = addOns.reduce((sum, addOn) => sum + addOn.totalCost, 0);
-                const totalCostBeforeDiscount = basePlanCost + totalAddOnCost;
+
+                // Total cost for this outlet (plan only; add-ons at tenant level)
+                const totalCostBeforeDiscount = basePlanCost;
                 const totalCost = Math.max(0, totalCostBeforeDiscount - discountAmount);
 
                 outletData.subscription = {
                     planName: subscription.subscriptionPlan.planName,
                     basePlanCost,
-                    addOns,
+                    isCustomPrice,
+                    standardPlanPrice,
+                    customPriceNote,
                     discounts,
                     totalCost,
                     totalCostBeforeDiscount,
@@ -467,111 +471,71 @@ const getAllTenantCost = async () => {
                 totalDiscount: number;
             }>
         >`
-      SELECT 
+      SELECT
         t.ID AS tenantId,
         t.TENANT_NAME AS tenantName,
         t.CREATED_AT AS createdAt,
         MAX(sp.PLAN_NAME) AS planName,
+        -- totalMonthlyCost = plan costs - discounts + tenant add-on costs
         COALESCE(SUM(
-          -- Base plan cost + add-on cost - discounts
-          sp.PRICE
-          + COALESCE((
-            SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
-            FROM TENANT_SUBSCRIPTION_ADD_ON tsa
-            LEFT JOIN SUBSCRIPTION_ADD_ON sa ON tsa.ADD_ON_ID = sa.ID
-            WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
-          ), 0)
-          - COALESCE((
-            CASE
+          GREATEST(0,
+            COALESCE(ts.CUSTOM_PRICE, sp.PRICE)
+            - COALESCE(CASE
               WHEN d.DISCOUNT_TYPE = 'percentage'
               AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
-              THEN (
-                (sp.PRICE * (CASE WHEN d.APPLIES_TO LIKE '%plan%' THEN d.VALUE ELSE 0 END)
-                + COALESCE((
-                  SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
-                  FROM TENANT_SUBSCRIPTION_ADD_ON tsa
-                  LEFT JOIN SUBSCRIPTION_ADD_ON sa ON tsa.ADD_ON_ID = sa.ID
-                  WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
-                ), 0) * (CASE WHEN d.APPLIES_TO LIKE '%add-on%' THEN d.VALUE ELSE 0 END)
-                ) / 100
-              )
+              AND d.APPLIES_TO LIKE '%plan%'
+              THEN COALESCE(ts.CUSTOM_PRICE, sp.PRICE) * d.VALUE / 100
               ELSE 0
-            END
-          ), 0)
-          - COALESCE((
-            CASE
+            END, 0)
+            - COALESCE(CASE
               WHEN d.DISCOUNT_TYPE = 'fixed'
               AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
               AND ts.ID = (
-                SELECT MIN(ts2.ID)
-                FROM TENANT_SUBSCRIPTION ts2
+                SELECT MIN(ts2.ID) FROM TENANT_SUBSCRIPTION ts2
                 JOIN TENANT_OUTLET o2 ON ts2.OUTLET_ID = o2.ID
-                WHERE o2.TENANT_ID = t.ID
-                AND o2.IS_ACTIVE = true
-                AND ts2.STATUS IN ('active', 'trial')
-                AND ts2.DISCOUNT_ID = d.ID
+                WHERE o2.TENANT_ID = t.ID AND o2.IS_ACTIVE = true
+                AND ts2.STATUS IN ('active', 'trial') AND ts2.DISCOUNT_ID = d.ID
               )
-              THEN LEAST(d.VALUE, sp.PRICE + COALESCE((
-                SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
-                FROM TENANT_SUBSCRIPTION_ADD_ON tsa
-                LEFT JOIN SUBSCRIPTION_ADD_ON sa ON tsa.ADD_ON_ID = sa.ID
-                WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
-              ), 0))
+              THEN LEAST(d.VALUE, COALESCE(ts.CUSTOM_PRICE, sp.PRICE))
               ELSE 0
-            END
-          ), 0)
+            END, 0)
+          )
+        ), 0)
+        + COALESCE((
+          SELECT SUM(ta.QUANTITY * sa.PRICE_PER_UNIT)
+          FROM tenant_add_on ta
+          JOIN SUBSCRIPTION_ADD_ON sa ON ta.ADD_ON_ID = sa.ID
+          WHERE ta.TENANT_ID = t.ID
         ), 0) AS totalMonthlyCost,
-        COALESCE(SUM(
-          -- Base plan cost + add-on cost (before discounts)
-          sp.PRICE
-          + COALESCE((
-            SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
-            FROM TENANT_SUBSCRIPTION_ADD_ON tsa
-            LEFT JOIN SUBSCRIPTION_ADD_ON sa ON tsa.ADD_ON_ID = sa.ID
-            WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
-          ), 0)
+        -- totalCostBeforeDiscount = plan costs + tenant add-on costs
+        COALESCE(SUM(COALESCE(ts.CUSTOM_PRICE, sp.PRICE)), 0)
+        + COALESCE((
+          SELECT SUM(ta.QUANTITY * sa.PRICE_PER_UNIT)
+          FROM tenant_add_on ta
+          JOIN SUBSCRIPTION_ADD_ON sa ON ta.ADD_ON_ID = sa.ID
+          WHERE ta.TENANT_ID = t.ID
         ), 0) AS totalCostBeforeDiscount,
+        -- totalDiscount (plan discounts only)
         COALESCE(SUM(
-          -- Total discounts (percentage + fixed)
-          COALESCE((
-            CASE
-              WHEN d.DISCOUNT_TYPE = 'percentage'
-              AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
-              THEN (
-                (sp.PRICE * (CASE WHEN d.APPLIES_TO LIKE '%plan%' THEN d.VALUE ELSE 0 END)
-                + COALESCE((
-                  SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
-                  FROM TENANT_SUBSCRIPTION_ADD_ON tsa
-                  LEFT JOIN SUBSCRIPTION_ADD_ON sa ON tsa.ADD_ON_ID = sa.ID
-                  WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
-                ), 0) * (CASE WHEN d.APPLIES_TO LIKE '%add-on%' THEN d.VALUE ELSE 0 END)
-                ) / 100
-              )
-              ELSE 0
-            END
-          ), 0)
-          + COALESCE((
-            CASE
-              WHEN d.DISCOUNT_TYPE = 'fixed'
-              AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
-              AND ts.ID = (
-                SELECT MIN(ts2.ID)
-                FROM TENANT_SUBSCRIPTION ts2
-                JOIN TENANT_OUTLET o2 ON ts2.OUTLET_ID = o2.ID
-                WHERE o2.TENANT_ID = t.ID
-                AND o2.IS_ACTIVE = true
-                AND ts2.STATUS IN ('active', 'trial')
-                AND ts2.DISCOUNT_ID = d.ID
-              )
-              THEN LEAST(d.VALUE, sp.PRICE + COALESCE((
-                SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
-                FROM TENANT_SUBSCRIPTION_ADD_ON tsa
-                LEFT JOIN SUBSCRIPTION_ADD_ON sa ON tsa.ADD_ON_ID = sa.ID
-                WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
-              ), 0))
-              ELSE 0
-            END
-          ), 0)
+          COALESCE(CASE
+            WHEN d.DISCOUNT_TYPE = 'percentage'
+            AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
+            AND d.APPLIES_TO LIKE '%plan%'
+            THEN COALESCE(ts.CUSTOM_PRICE, sp.PRICE) * d.VALUE / 100
+            ELSE 0
+          END, 0)
+          + COALESCE(CASE
+            WHEN d.DISCOUNT_TYPE = 'fixed'
+            AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
+            AND ts.ID = (
+              SELECT MIN(ts2.ID) FROM TENANT_SUBSCRIPTION ts2
+              JOIN TENANT_OUTLET o2 ON ts2.OUTLET_ID = o2.ID
+              WHERE o2.TENANT_ID = t.ID AND o2.IS_ACTIVE = true
+              AND ts2.STATUS IN ('active', 'trial') AND ts2.DISCOUNT_ID = d.ID
+            )
+            THEN LEAST(d.VALUE, COALESCE(ts.CUSTOM_PRICE, sp.PRICE))
+            ELSE 0
+          END, 0)
         ), 0) AS totalDiscount
       FROM TENANT t
       LEFT JOIN TENANT_OUTLET o ON t.ID = o.TENANT_ID AND o.IS_ACTIVE = true
@@ -673,10 +637,9 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
         });
         createdTenantDbUserId = createdUser.id;
 
-        // --- Begin: Subscription add-on logic for user overage ---
+        // --- Begin: Tenant add-on logic for user overage ---
         // HYBRID MODEL: User limits are calculated as sum of all outlet subscriptions
-        // This matches the device limit logic - each outlet contributes to the total pool
-        const { primarySubscription, tenantOutlets } = await getPrimarySubscription(tenantId);
+        const { tenantOutlets } = await getPrimarySubscription(tenantId);
 
         // Calculate total user limit across all outlet subscriptions
         let totalMaxUsers = 0;
@@ -699,39 +662,16 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
             const overage = Math.max(0, currentUserCount - totalMaxUsers);
 
             if (overage > 0) {
-                const addOnId = 1; // Add-on for extra user
-                // Attach add-on to the primary subscription
-                const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
+                await prisma.tenantAddOn.upsert({
                     where: {
-                        tenantSubscriptionId_addOnId: {
-                            tenantSubscriptionId: primarySubscription.id,
-                            addOnId,
-                        }
-                    }
+                        tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER }
+                    },
+                    update: { quantity: overage },
+                    create: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER, quantity: overage }
                 });
-
-                if (!existingAddOn) {
-                    await prisma.tenantSubscriptionAddOn.create({
-                        data: {
-                            tenantSubscriptionId: primarySubscription.id,
-                            addOnId,
-                            quantity: overage,
-                        }
-                    });
-                } else if (existingAddOn.quantity < overage) {
-                    await prisma.tenantSubscriptionAddOn.update({
-                        where: {
-                            tenantSubscriptionId_addOnId: {
-                                tenantSubscriptionId: primarySubscription.id,
-                                addOnId,
-                            }
-                        },
-                        data: { quantity: overage }
-                    });
-                }
             }
         }
-        // --- End: Subscription add-on logic for user overage ---
+        // --- End: Tenant add-on logic for user overage ---
 
         await tenantPrisma.$disconnect();
 
@@ -826,8 +766,8 @@ const deleteTenantUser = async (tenantId: number, userId: number) => {
             });
         }
 
-        // Step 3: Recalculate user add-on (similar to createTenantUser logic)
-        const { primarySubscription, tenantOutlets } = await getPrimarySubscription(tenantId);
+        // Step 3: Recalculate user add-on
+        const { tenantOutlets } = await getPrimarySubscription(tenantId);
 
         // Calculate total user limit across all outlet subscriptions
         let totalMaxUsers = 0;
@@ -849,40 +789,22 @@ const deleteTenantUser = async (tenantId: number, userId: number) => {
             // Calculate new overage
             const overage = Math.max(0, currentUserCount - totalMaxUsers);
 
-            const addOnId = 1; // Add-on for extra user
-
-            // Get existing add-on
-            const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
-                where: {
-                    tenantSubscriptionId_addOnId: {
-                        tenantSubscriptionId: primarySubscription.id,
-                        addOnId,
-                    }
-                }
+            const existingAddOn = await prisma.tenantAddOn.findUnique({
+                where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER } }
             });
 
             if (overage === 0) {
                 // No overage, remove add-on if it exists
                 if (existingAddOn) {
-                    await prisma.tenantSubscriptionAddOn.delete({
-                        where: {
-                            tenantSubscriptionId_addOnId: {
-                                tenantSubscriptionId: primarySubscription.id,
-                                addOnId,
-                            }
-                        }
+                    await prisma.tenantAddOn.delete({
+                        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER } }
                     });
                 }
             } else {
                 // Still have overage, update quantity
                 if (existingAddOn && existingAddOn.quantity > overage) {
-                    await prisma.tenantSubscriptionAddOn.update({
-                        where: {
-                            tenantSubscriptionId_addOnId: {
-                                tenantSubscriptionId: primarySubscription.id,
-                                addOnId,
-                            }
-                        },
+                    await prisma.tenantAddOn.update({
+                        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER } },
                         data: { quantity: overage }
                     });
                 }
@@ -934,60 +856,23 @@ const addDeviceQuotaForTenant = async (tenantId: number, quantity: number) => {
         throw new RequestValidateError('Quantity must be a positive number');
     }
 
-    const { primarySubscription } = await getPrimarySubscription(tenantId);
-    const addOnId = 2; // Push Notification Device add-on
+    // Validate tenant has Pro plan (devices only available on Pro)
+    await getPrimarySubscription(tenantId);
 
-    // Check existing add-on
-    const existingAddOn = await prisma.tenantSubscriptionAddOn.findUnique({
-        where: {
-            tenantSubscriptionId_addOnId: {
-                tenantSubscriptionId: primarySubscription.id,
-                addOnId
-            }
-        }
+    // Upsert tenant add-on
+    const addOn = await prisma.tenantAddOn.upsert({
+        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } },
+        update: { quantity: { increment: quantity } },
+        create: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE, quantity }
     });
 
-    if (existingAddOn) {
-        // Update quantity (add to existing)
-        const updatedAddOn = await prisma.tenantSubscriptionAddOn.update({
-            where: {
-                tenantSubscriptionId_addOnId: {
-                    tenantSubscriptionId: primarySubscription.id,
-                    addOnId
-                }
-            },
-            data: {
-                quantity: existingAddOn.quantity + quantity
-            }
-        });
-
-        return {
-            success: true,
-            message: `Added ${quantity} device quota. Total add-on devices: ${updatedAddOn.quantity}`,
-            tenantId,
-            addOnQuantity: updatedAddOn.quantity,
-            monthlyCost: updatedAddOn.quantity * 19000,
-            subscriptionId: primarySubscription.id
-        };
-    } else {
-        // Create new add-on
-        const newAddOn = await prisma.tenantSubscriptionAddOn.create({
-            data: {
-                tenantSubscriptionId: primarySubscription.id,
-                addOnId,
-                quantity
-            }
-        });
-
-        return {
-            success: true,
-            message: `Added ${quantity} device quota`,
-            tenantId,
-            addOnQuantity: newAddOn.quantity,
-            monthlyCost: newAddOn.quantity * 19000,
-            subscriptionId: primarySubscription.id
-        };
-    }
+    return {
+        success: true,
+        message: `Added ${quantity} device quota. Total add-on devices: ${addOn.quantity}`,
+        tenantId,
+        addOnQuantity: addOn.quantity,
+        monthlyCost: addOn.quantity * 20000
+    };
 };
 
 // Reduce device quota for a tenant (called by provider/owner)
@@ -999,14 +884,10 @@ const reduceDeviceQuotaForTenant = async (tenantId: number, quantityToReduce: nu
 
     const deviceLimitService = require('../pushy/device.service');
 
-    // Step 1: Get primary subscription with add-ons
-    const { primarySubscription } = await getPrimarySubscription(tenantId);
-
-    // Step 2: Find the device add-on to reduce
-    const addOnId = 2; // Push Notification Device add-on
-    const deviceAddOn = primarySubscription.subscriptionAddOn.find(
-        (addon: any) => addon.addOnId === addOnId
-    );
+    // Step 1: Find the device add-on
+    const deviceAddOn = await prisma.tenantAddOn.findUnique({
+        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } }
+    });
 
     if (!deviceAddOn) {
         throw new NotFoundError('No device add-on found to reduce');
@@ -1018,31 +899,17 @@ const reduceDeviceQuotaForTenant = async (tenantId: number, quantityToReduce: nu
         );
     }
 
-    // Step 3: Reduce the add-on quantity
+    // Step 2: Reduce the add-on quantity
     const newQuantity = deviceAddOn.quantity - quantityToReduce;
 
     if (newQuantity === 0) {
-        // Remove add-on completely
-        await prisma.tenantSubscriptionAddOn.delete({
-            where: {
-                tenantSubscriptionId_addOnId: {
-                    tenantSubscriptionId: primarySubscription.id,
-                    addOnId
-                }
-            }
+        await prisma.tenantAddOn.delete({
+            where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } }
         });
     } else {
-        // Update quantity
-        await prisma.tenantSubscriptionAddOn.update({
-            where: {
-                tenantSubscriptionId_addOnId: {
-                    tenantSubscriptionId: primarySubscription.id,
-                    addOnId
-                }
-            },
-            data: {
-                quantity: newQuantity
-            }
+        await prisma.tenantAddOn.update({
+            where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } },
+            data: { quantity: newQuantity }
         });
     }
 
@@ -1102,8 +969,7 @@ const reduceDeviceQuotaForTenant = async (tenantId: number, quantityToReduce: nu
             : `Reduced ${quantityToReduce} device quota.`,
         tenantId,
         addOnQuantity: newQuantity,
-        monthlyCost: newQuantity * 19000,
-        subscriptionId: primarySubscription.id,
+        monthlyCost: newQuantity * 20000,
         quota: {
             previous: newMaxAllowed + quantityToReduce,
             current: newMaxAllowed
@@ -1309,10 +1175,7 @@ let createWarehouseForTenant = async (
                     });
                 }
 
-                // Step 3: Handle warehouse add-on billing (matches user/device pattern)
-                // Get primary subscription using helper (pass transaction context)
-                const { primarySubscription } = await getPrimarySubscription(tenantId, globalTx);
-
+                // Step 3: Handle warehouse add-on billing (tenant-level)
                 // Count total active warehouses (including this new one)
                 const totalWarehouses = await globalTx.tenantWarehouse.count({
                     where: {
@@ -1329,39 +1192,14 @@ let createWarehouseForTenant = async (
                 let monthlyCost = 0;
 
                 if (billableWarehouses > 0) {
-                    // Update or create warehouse add-on (Add-on ID 3)
-                    const warehouseAddOnId = 3; // "Extra Warehouse" add-on
-
-                    const existingAddOn = await globalTx.tenantSubscriptionAddOn.findUnique({
-                        where: {
-                            tenantSubscriptionId_addOnId: {
-                                tenantSubscriptionId: primarySubscription.id,
-                                addOnId: warehouseAddOnId,
-                            }
-                        }
+                    // Upsert warehouse add-on at tenant level
+                    await globalTx.tenantAddOn.upsert({
+                        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_WAREHOUSE } },
+                        update: { quantity: billableWarehouses },
+                        create: { tenantId, addOnId: ADD_ON_IDS.EXTRA_WAREHOUSE, quantity: billableWarehouses }
                     });
 
-                    if (!existingAddOn) {
-                        await globalTx.tenantSubscriptionAddOn.create({
-                            data: {
-                                tenantSubscriptionId: primarySubscription.id,
-                                addOnId: warehouseAddOnId,
-                                quantity: billableWarehouses,
-                            }
-                        });
-                    } else {
-                        await globalTx.tenantSubscriptionAddOn.update({
-                            where: {
-                                tenantSubscriptionId_addOnId: {
-                                    tenantSubscriptionId: primarySubscription.id,
-                                    addOnId: warehouseAddOnId,
-                                }
-                            },
-                            data: { quantity: billableWarehouses }
-                        });
-                    }
-
-                    monthlyCost = billableWarehouses * 149_000; // 149k IDR per warehouse
+                    monthlyCost = billableWarehouses * 150_000; // 150k IDR per warehouse
                 } else {
                     isFreeWarehouse = true;
                 }
@@ -1374,7 +1212,6 @@ let createWarehouseForTenant = async (
                     billableWarehouses,
                     totalWarehouses,
                     monthlyCost,
-                    addOnAttachedTo: primarySubscription.id
                 };
             });
         });
@@ -1451,10 +1288,7 @@ let deleteWarehouseForTenant = async (
                     }
                 });
 
-                // Step 5: Update warehouse add-on quantity
-                // Get primary subscription using helper (pass transaction context)
-                const { primarySubscription } = await getPrimarySubscription(tenantId, globalTx);
-
+                // Step 5: Update warehouse add-on quantity (tenant-level)
                 // Recalculate total active warehouses (excluding the one we just deleted)
                 const totalWarehouses = await globalTx.tenantWarehouse.count({
                     where: {
@@ -1467,55 +1301,21 @@ let deleteWarehouseForTenant = async (
                 // Calculate billable warehouses (first one is free)
                 const billableWarehouses = Math.max(0, totalWarehouses - 1);
 
-                // Update or delete warehouse add-on (Add-on ID 3)
-                const warehouseAddOnId = 3; // "Extra Warehouse" add-on
-
-                const existingAddOn = await globalTx.tenantSubscriptionAddOn.findUnique({
-                    where: {
-                        tenantSubscriptionId_addOnId: {
-                            tenantSubscriptionId: primarySubscription.id,
-                            addOnId: warehouseAddOnId,
-                        }
-                    }
-                });
-
                 if (billableWarehouses === 0) {
                     // No billable warehouses left, remove add-on
-                    if (existingAddOn) {
-                        await globalTx.tenantSubscriptionAddOn.delete({
-                            where: {
-                                tenantSubscriptionId_addOnId: {
-                                    tenantSubscriptionId: primarySubscription.id,
-                                    addOnId: warehouseAddOnId,
-                                }
-                            }
-                        });
-                    }
+                    await globalTx.tenantAddOn.deleteMany({
+                        where: { tenantId, addOnId: ADD_ON_IDS.EXTRA_WAREHOUSE }
+                    });
                 } else {
-                    // Still have billable warehouses, update quantity
-                    if (existingAddOn) {
-                        await globalTx.tenantSubscriptionAddOn.update({
-                            where: {
-                                tenantSubscriptionId_addOnId: {
-                                    tenantSubscriptionId: primarySubscription.id,
-                                    addOnId: warehouseAddOnId,
-                                }
-                            },
-                            data: { quantity: billableWarehouses }
-                        });
-                    } else {
-                        // Shouldn't happen, but create if missing
-                        await globalTx.tenantSubscriptionAddOn.create({
-                            data: {
-                                tenantSubscriptionId: primarySubscription.id,
-                                addOnId: warehouseAddOnId,
-                                quantity: billableWarehouses,
-                            }
-                        });
-                    }
+                    // Still have billable warehouses, upsert quantity
+                    await globalTx.tenantAddOn.upsert({
+                        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_WAREHOUSE } },
+                        update: { quantity: billableWarehouses },
+                        create: { tenantId, addOnId: ADD_ON_IDS.EXTRA_WAREHOUSE, quantity: billableWarehouses }
+                    });
                 }
 
-                const monthlyCost = billableWarehouses * 149_000; // 149k IDR per warehouse
+                const monthlyCost = billableWarehouses * 150_000; // 150k IDR per warehouse
 
                 return {
                     deletedWarehouse: warehouse,
@@ -1563,13 +1363,9 @@ let getTenantWarehouses = async (tenantId: number) => {
  */
 const handleDowngradeToBasic = async (
     tenantId: number,
-    primarySubscription: any,
     globalTx: any,
     tenantPrisma: any
 ) => {
-    const warehouseAddOnId = 3; // "Extra Warehouse" add-on
-    const deviceAddOnId = 2; // "Push Notification Device" add-on
-
     // Step 1: Count warehouses before deactivation
     const warehouseCount = await globalTx.tenantWarehouse.count({
         where: {
@@ -1604,27 +1400,23 @@ const handleDowngradeToBasic = async (
         }
     });
 
-    // Step 4: Remove warehouse add-on (ID 3)
-    const warehouseAddOnDeleted = await globalTx.tenantSubscriptionAddOn.deleteMany({
+    // Step 4: Remove all tenant-level add-ons (warehouse, device, loyalty)
+    const addOnDeleteResult = await globalTx.tenantAddOn.deleteMany({
         where: {
-            tenantSubscriptionId: primarySubscription.id,
-            addOnId: warehouseAddOnId
-        }
-    });
-
-    // Step 5: Remove ALL device add-ons (ID 2) - Basic plan has 0 device support
-    const deviceAddOnDeleted = await globalTx.tenantSubscriptionAddOn.deleteMany({
-        where: {
-            tenantSubscriptionId: primarySubscription.id,
-            addOnId: deviceAddOnId
+            tenantId,
+            addOnId: {
+                in: [
+                    ADD_ON_IDS.EXTRA_WAREHOUSE,
+                    ADD_ON_IDS.EXTRA_DEVICE,
+                    ADD_ON_IDS.ADVANCED_LOYALTY
+                ]
+            }
         }
     });
 
     return {
         warehousesDeactivated: warehouseCount,
-        warehouseAddOnRemoved: warehouseAddOnDeleted.count > 0,
-        deviceAddOnRemoved: deviceAddOnDeleted.count > 0,
-        deviceAddOnCount: deviceAddOnDeleted.count
+        addOnsRemoved: addOnDeleteResult.count,
     };
 };
 
@@ -1683,7 +1475,6 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
             downgradeResult = await prisma.$transaction(async (globalTx) => {
                 return await handleDowngradeToBasic(
                     tenantId,
-                    currentSubscription,
                     globalTx,
                     tenantPrisma!
                 );
@@ -1770,14 +1561,31 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
             });
         }
 
-        // Step 6: Update all outlet subscriptions to new plan
+        // Step 6: Update all outlet subscriptions to new plan (clear custom price on plan change)
         const updatedSubscriptions = [];
         for (const outlet of tenantOutlets) {
             for (const subscription of outlet.subscriptions) {
+                // Log custom price clearing if one existed
+                if (subscription.customPrice != null) {
+                    await prisma.customPriceLog.create({
+                        data: {
+                            tenantId,
+                            outletId: subscription.outletId,
+                            subscriptionId: subscription.id,
+                            previousPrice: subscription.customPrice,
+                            newPrice: null,
+                            note: `Auto-cleared: Plan changed from ${currentPlanName} to ${newPlanName}`,
+                            changedBy: null
+                        }
+                    });
+                }
+
                 const updated = await prisma.tenantSubscription.update({
                     where: { id: subscription.id },
                     data: {
-                        subscriptionPlanId: newPlan.id
+                        subscriptionPlanId: newPlan.id,
+                        customPrice: null,
+                        customPriceNote: null,
                     },
                     include: {
                         subscriptionPlan: true
@@ -1852,14 +1660,18 @@ const getSubscriptionStatus = (subscriptionValidUntil: Date): 'Active' | 'Grace'
 /**
  * Build cost snapshot from subscription data for payment record
  */
-const buildCostSnapshot = (subscription: any): CostSnapshot => {
-    const basePlanCost = subscription.subscriptionPlan?.price || 0;
-    const addOns = (subscription.subscriptionAddOn || []).map((sa: any) => ({
-        addOnId: sa.addOn?.id || sa.addOnId,
-        name: sa.addOn?.name || 'Unknown',
-        quantity: sa.quantity,
-        pricePerUnit: sa.addOn?.pricePerUnit || 0,
-        totalCost: (sa.addOn?.pricePerUnit || 0) * sa.quantity
+const buildCostSnapshot = (subscription: any, tenantAddOns: any[]): CostSnapshot => {
+    const standardPlanPrice = subscription.subscriptionPlan?.price || 0;
+    const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+    const isCustomPrice = subscription.customPrice != null;
+
+    // Add-ons from tenant-level (not per-subscription)
+    const addOns = tenantAddOns.map((ta: any) => ({
+        addOnId: ta.addOn?.id || ta.addOnId,
+        name: ta.addOn?.name || 'Unknown',
+        quantity: ta.quantity,
+        pricePerUnit: ta.addOn?.pricePerUnit || 0,
+        totalCost: (ta.addOn?.pricePerUnit || 0) * ta.quantity
     }));
 
     const discounts: CostSnapshot['discounts'] = [];
@@ -1868,10 +1680,9 @@ const buildCostSnapshot = (subscription: any): CostSnapshot => {
         let amountOff = 0;
 
         if (subscription.discount.discountType === 'percentage') {
-            const addOnTotal = addOns.reduce((sum: number, a: any) => sum + a.totalCost, 0);
-            amountOff = (basePlanCost + addOnTotal) * (discountValue / 100);
+            amountOff = basePlanCost * (discountValue / 100);
         } else if (subscription.discount.discountType === 'fixed') {
-            amountOff = discountValue;
+            amountOff = Math.min(discountValue, basePlanCost);
         }
 
         discounts.push({
@@ -1883,7 +1694,8 @@ const buildCostSnapshot = (subscription: any): CostSnapshot => {
         });
     }
 
-    const totalBeforeDiscount = basePlanCost + addOns.reduce((sum: number, a: any) => sum + a.totalCost, 0);
+    const addOnTotal = addOns.reduce((sum: number, a: any) => sum + a.totalCost, 0);
+    const totalBeforeDiscount = basePlanCost + addOnTotal;
     const totalDiscount = discounts.reduce((sum: number, d) => sum + d.amountOff, 0);
     const totalAfterDiscount = Math.max(0, totalBeforeDiscount - totalDiscount);
 
@@ -1891,6 +1703,9 @@ const buildCostSnapshot = (subscription: any): CostSnapshot => {
         planName: subscription.subscriptionPlan?.planName || 'Unknown',
         planId: subscription.subscriptionPlan?.id || 0,
         basePlanCost,
+        isCustomPrice,
+        standardPlanPrice,
+        customPriceNote: subscription.customPriceNote || undefined,
         addOns,
         discounts,
         totalBeforeDiscount,
@@ -1946,22 +1761,25 @@ const recordPayment = async (
     const extensionMonths = paymentData.extensionMonths || 1;
 
     return await prisma.$transaction(async (tx) => {
-        // Step 1: Get outlet's subscription
-        const subscription = await tx.tenantSubscription.findFirst({
-            where: {
-                tenantId,
-                outletId,
-                status: { in: ['Active', 'active', 'trial', 'Grace', 'Expired'] }
-            },
-            include: {
-                subscriptionPlan: true,
-                subscriptionAddOn: {
-                    include: { addOn: true }
+        // Step 1: Get outlet's subscription and tenant add-ons
+        const [subscription, tenantAddOns] = await Promise.all([
+            tx.tenantSubscription.findFirst({
+                where: {
+                    tenantId,
+                    outletId,
+                    status: { in: ['Active', 'active', 'trial', 'Grace', 'Expired'] }
                 },
-                discount: true,
-                outlet: true
-            }
-        });
+                include: {
+                    subscriptionPlan: true,
+                    discount: true,
+                    outlet: true
+                }
+            }),
+            tx.tenantAddOn.findMany({
+                where: { tenantId },
+                include: { addOn: true }
+            })
+        ]);
 
         if (!subscription) {
             throw new NotFoundError('No subscription found for this outlet');
@@ -1987,8 +1805,8 @@ const recordPayment = async (
         const periodTo = new Date(periodFrom);
         periodTo.setMonth(periodTo.getMonth() + extensionMonths);
 
-        // Step 4: Build cost snapshot
-        const costSnapshot = buildCostSnapshot(subscription);
+        // Step 4: Build cost snapshot (includes tenant-level add-ons)
+        const costSnapshot = buildCostSnapshot(subscription, tenantAddOns);
 
         // Step 5: Create payment record
         const payment = await tx.tenantPayment.create({
@@ -2188,6 +2006,9 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
     const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
         include: {
+            tenantAddOns: {
+                include: { addOn: true }
+            },
             tenantOutlets: {
                 where: { isActive: true },
                 include: {
@@ -2195,7 +2016,6 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
                         where: { status: { in: ['Active', 'active', 'trial', 'Grace', 'Expired'] } },
                         include: {
                             subscriptionPlan: true,
-                            subscriptionAddOn: { include: { addOn: true } },
                             discount: true
                         }
                     }
@@ -2208,8 +2028,17 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
         throw new NotFoundError('Tenant not found');
     }
 
+    // Build tenant-level add-ons
+    const tenantAddOns = tenant.tenantAddOns.map(({ addOn, quantity }) => ({
+        name: addOn.name,
+        quantity,
+        pricePerUnit: addOn.pricePerUnit,
+        totalCost: addOn.pricePerUnit * quantity,
+    }));
+    const totalAddOnCost = tenantAddOns.reduce((sum, a) => sum + a.totalCost, 0);
+
     const now = new Date();
-    let totalMonthlyCost = 0;
+    let totalMonthlyCost = totalAddOnCost;
 
     const outlets = tenant.tenantOutlets.map(outlet => {
         const subscription = outlet.subscriptions[0];
@@ -2223,8 +2052,10 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
                 daysUntilExpiry: 0,
                 planName: 'None',
                 basePlanCost: 0,
-                addOns: [],
-                discounts: [],
+                isCustomPrice: false,
+                standardPlanPrice: 0,
+                customPriceNote: '',
+                discounts: [] as Array<{ name: string; amount: number }>,
                 outletTotalCost: 0
             };
         }
@@ -2236,29 +2067,25 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
         const status = getSubscriptionStatus(validUntil);
         const daysUntilExpiry = Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-        const basePlanCost = subscription.subscriptionPlan.price;
-        const addOns = subscription.subscriptionAddOn.map(sa => ({
-            name: sa.addOn.name,
-            quantity: sa.quantity,
-            totalCost: sa.addOn.pricePerUnit * sa.quantity
-        }));
+        const standardPlanPrice = subscription.subscriptionPlan.price;
+        const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+        const isCustomPrice = subscription.customPrice != null;
+        const customPriceNote = subscription.customPriceNote ?? "";
 
         const discounts: Array<{ name: string; amount: number }> = [];
         let totalDiscount = 0;
         if (subscription.discount && (!subscription.discount.endDate || now <= subscription.discount.endDate)) {
-            const addOnTotal = addOns.reduce((sum, a) => sum + a.totalCost, 0);
             let amount = 0;
             if (subscription.discount.discountType === 'percentage') {
-                amount = (basePlanCost + addOnTotal) * (subscription.discount.value / 100);
+                amount = basePlanCost * (subscription.discount.value / 100);
             } else {
-                amount = subscription.discount.value;
+                amount = Math.min(subscription.discount.value, basePlanCost);
             }
             discounts.push({ name: subscription.discount.name, amount });
             totalDiscount = amount;
         }
 
-        const addOnTotal = addOns.reduce((sum, a) => sum + a.totalCost, 0);
-        const outletTotalCost = Math.max(0, basePlanCost + addOnTotal - totalDiscount);
+        const outletTotalCost = Math.max(0, basePlanCost - totalDiscount);
         totalMonthlyCost += outletTotalCost;
 
         return {
@@ -2270,7 +2097,9 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
             daysUntilExpiry,
             planName: subscription.subscriptionPlan.planName,
             basePlanCost,
-            addOns,
+            isCustomPrice,
+            standardPlanPrice,
+            customPriceNote,
             discounts,
             outletTotalCost
         };
@@ -2280,6 +2109,8 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
         tenantId: tenant.id,
         tenantName: tenant.tenantName,
         totalMonthlyCost,
+        tenantAddOns,
+        totalAddOnCost,
         outlets
     };
 };
@@ -2405,13 +2236,12 @@ const getUpcomingPayments = async (options: {
             t.ID as tenantId,
             t.TENANT_NAME as tenantName,
             COUNT(DISTINCT o.ID) as outletCount,
-            COALESCE(SUM(
-                sp.PRICE + COALESCE((
-                    SELECT SUM(tsa.QUANTITY * sa.PRICE_PER_UNIT)
-                    FROM tenant_subscription_add_on tsa
-                    JOIN subscription_add_on sa ON tsa.ADD_ON_ID = sa.ID
-                    WHERE tsa.TENANT_SUBSCRIPTION_ID = ts.ID
-                ), 0)
+            COALESCE(SUM(COALESCE(ts.CUSTOM_PRICE, sp.PRICE)), 0)
+            + COALESCE((
+                SELECT SUM(ta.QUANTITY * sa.PRICE_PER_UNIT)
+                FROM tenant_add_on ta
+                JOIN subscription_add_on sa ON ta.ADD_ON_ID = sa.ID
+                WHERE ta.TENANT_ID = t.ID
             ), 0) as totalMonthlyCost,
             MIN(ts.SUBSCRIPTION_VALID_UNTIL) as mostUrgentExpiry,
             CASE
@@ -2593,6 +2423,130 @@ const forgotTenantUserPassword = async (tenantId: number, userId: number) => {
     };
 };
 
+// ============================================
+// Custom Pricing
+// ============================================
+
+/**
+ * Set or clear custom price for a specific outlet subscription
+ */
+const setCustomPrice = async (
+    tenantId: number,
+    outletId: number,
+    customPrice: number | null,
+    customPriceNote: string | undefined,
+    changedBy: number | undefined
+) => {
+    // 1. Find the active subscription for this tenant+outlet
+    const subscription = await prisma.tenantSubscription.findFirst({
+        where: {
+            tenantId,
+            outletId,
+            status: { in: ['Active', 'active', 'trial'] }
+        },
+        include: { subscriptionPlan: true, outlet: true }
+    });
+
+    if (!subscription) {
+        throw new NotFoundError('Subscription not found for this outlet');
+    }
+
+    // 2. Validate
+    if (customPrice !== null && customPrice <= 0) {
+        throw new RequestValidateError('Custom price must be a positive number or null');
+    }
+
+    // 3. Log the change to audit table
+    await prisma.customPriceLog.create({
+        data: {
+            tenantId,
+            outletId,
+            subscriptionId: subscription.id,
+            previousPrice: subscription.customPrice,
+            newPrice: customPrice,
+            note: customPriceNote || (customPrice === null
+                ? 'Reverted to standard plan price'
+                : `Custom price set to ${customPrice}`),
+            changedBy: changedBy || null
+        }
+    });
+
+    // 4. Update subscription
+    const updated = await prisma.tenantSubscription.update({
+        where: { id: subscription.id },
+        data: {
+            customPrice,
+            customPriceNote: customPrice !== null ? (customPriceNote || null) : null
+        },
+        include: { subscriptionPlan: true }
+    });
+
+    return {
+        success: true,
+        message: customPrice !== null
+            ? `Custom price set to Rp ${customPrice.toLocaleString()} for outlet ${subscription.outlet.outletName}`
+            : `Reverted to standard plan price for outlet ${subscription.outlet.outletName}`,
+        subscription: {
+            id: updated.id,
+            outletId,
+            planName: updated.subscriptionPlan.planName,
+            standardPlanPrice: updated.subscriptionPlan.price,
+            customPrice: updated.customPrice,
+            customPriceNote: updated.customPriceNote,
+            effectivePrice: updated.customPrice ?? updated.subscriptionPlan.price
+        }
+    };
+};
+
+// Add Advanced Loyalty add-on for a tenant
+const addAdvancedLoyalty = async (tenantId: number) => {
+    // Validate tenant has Pro plan (loyalty is only available on Pro)
+    const { primarySubscription } = await getPrimarySubscription(tenantId);
+    if (primarySubscription.subscriptionPlan?.planName !== 'Pro') {
+        throw new RequestValidateError('Advanced Loyalty is only available on the Pro plan');
+    }
+
+    // Check if already has the add-on
+    const existing = await prisma.tenantAddOn.findUnique({
+        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.ADVANCED_LOYALTY } }
+    });
+    if (existing) {
+        throw new RequestValidateError('Tenant already has the Advanced Loyalty add-on');
+    }
+
+    await prisma.tenantAddOn.create({
+        data: { tenantId, addOnId: ADD_ON_IDS.ADVANCED_LOYALTY, quantity: 1 }
+    });
+
+    return {
+        success: true,
+        message: 'Advanced Loyalty add-on enabled',
+        tenantId,
+        addOnId: ADD_ON_IDS.ADVANCED_LOYALTY,
+        monthlyCost: 150000
+    };
+};
+
+// Remove Advanced Loyalty add-on for a tenant
+const removeAdvancedLoyalty = async (tenantId: number) => {
+    const existing = await prisma.tenantAddOn.findUnique({
+        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.ADVANCED_LOYALTY } }
+    });
+    if (!existing) {
+        throw new NotFoundError('Advanced Loyalty add-on not found for this tenant');
+    }
+
+    await prisma.tenantAddOn.delete({
+        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.ADVANCED_LOYALTY } }
+    });
+
+    return {
+        success: true,
+        message: 'Advanced Loyalty add-on removed',
+        tenantId
+    };
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2613,9 +2567,14 @@ export = {
     getTenantBillingSummary,
     getUpcomingPaymentsSummary,
     getUpcomingPayments,
+    // Custom Pricing
+    setCustomPrice,
     // User Management
     getTenantUsers,
     getTenantOverview,
 
-    forgotTenantUserPassword
+    forgotTenantUserPassword,
+    // Advanced Loyalty Add-On
+    addAdvancedLoyalty,
+    removeAdvancedLoyalty
 }

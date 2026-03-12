@@ -24,6 +24,14 @@ const subscriptionAddOns = [
         maxQuantity: null,
         scope: "tenant",
         description: "Add extra warehouse for inventory management"
+    },
+    {
+        name: "Advanced Loyalty",
+        addOnType: "feature",
+        pricePerUnit: 150000,
+        maxQuantity: 1,
+        scope: "tenant",
+        description: "Advanced loyalty features: tiers, multipliers, subscription packages"
     }
 ];
 

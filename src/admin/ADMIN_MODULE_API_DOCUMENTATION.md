@@ -6,6 +6,36 @@ This document provides comprehensive documentation for all Admin Module endpoint
 
 ## Changelog
 
+### v1.3.0 - Add-On Architecture Refactor & Loyalty (2026-03-02)
+
+**Breaking Changes:**
+
+- **Add-ons moved from per-outlet to per-tenant** — `tenantAddOns` array at top level replaces per-outlet `subscription.addOns`
+- **Cost responses restructured** — `totalAddOnCost` added, discounts apply to plan costs only
+- **Custom pricing support** — `isCustomPrice`, `standardPlanPrice`, `customPriceNote` added to all cost/billing endpoints
+- **Cost snapshot updated** — Now includes custom pricing fields for historical audit
+
+**New Features:**
+
+- Custom price override per outlet with admin notes
+- Advanced Loyalty add-on (ID 4) — feature-type tenant add-on
+- Add/Remove Advanced Loyalty endpoints (`POST/DELETE /tenants/:tenantId/addons/loyalty`)
+- `loyaltyTier` field in JWT (`none` | `basic` | `advanced`)
+- 6 new Loyalty permissions
+
+**Affected Endpoints:**
+| Endpoint | Changes |
+|----------|---------|
+| `GET /tenantDetails/:id` | New structure: `tenantAddOns` at top level, custom pricing fields |
+| `GET /getAllTenantSubscription` | SQL rewritten for tenant-level add-ons + custom pricing |
+| `GET /tenants/:tenantId/billing-summary` | `tenantAddOns` at top level, custom pricing fields per outlet |
+| `GET /account/outlet/:id` | `addOns` array + `totalMonthlyCost` added |
+| Cost Snapshot (payments) | Custom pricing fields added |
+
+**See:** [ADMIN_ENDPOINT_CHANGES.md](../../docs/ADMIN_ENDPOINT_CHANGES.md) for full before/after JSON comparisons.
+
+---
+
 ### v1.2.0 - User Management Enhancement (2025-01-06)
 
 **New Features:**
@@ -55,10 +85,11 @@ This document provides comprehensive documentation for all Admin Module endpoint
 1. [Tenant Management](#1-tenant-management)
 2. [Subscription & Billing](#2-subscription--billing)
 3. [User Management](#3-user-management)
-4. [Device Quota Management](#4-device-quota-management)
-5. [Warehouse Management](#5-warehouse-management)
-6. [Subscription Plan Changes](#6-subscription-plan-changes)
-7. [Payment Management](#7-payment-management)
+4. [Advanced Loyalty Add-On](#4-advanced-loyalty-add-on)
+5. [Device Quota Management](#5-device-quota-management)
+6. [Warehouse Management](#6-warehouse-management)
+7. [Subscription Plan Changes](#7-subscription-plan-changes)
+8. [Payment Management](#8-payment-management)
 
 ---
 
@@ -172,51 +203,60 @@ All endpoints are prefixed with:
   "tenantId": 1,
   "tenantName": "My Coffee Shop",
   "outletCount": 1,
+  "tenantAddOns": [
+    { "name": "Extra Device", "quantity": 2, "pricePerUnit": 20000, "totalCost": 40000 },
+    { "name": "Extra Warehouse", "quantity": 1, "pricePerUnit": 150000, "totalCost": 150000 }
+  ],
+  "totalAddOnCost": 190000,
   "outlets": [
     {
       "outletId": 1,
       "outletName": "Main Outlet",
       "subscription": {
         "planName": "Pro",
-        "basePlanCost": 0,
-        "addOns": [
-          {
-            "name": "Extra Warehouse",
-            "quantity": 2,
-            "pricePerUnit": 190000,
-            "totalCost": 200000
-          },
-          {
-            "name": "Additional Push Notification Device",
-            "quantity": 5,
-            "pricePerUnit": 19000,
-            "totalCost": 95000
-          }
+        "basePlanCost": 450000,
+        "isCustomPrice": false,
+        "standardPlanPrice": 450000,
+        "customPriceNote": "",
+        "discounts": [
+          { "name": "Early Bird", "type": "percentage", "value": 10, "amount": 45000 }
         ],
-        "discounts": [],
-        "totalCost": 295000,
-        "totalCostBeforeDiscount": 295000,
-        "totalDiscount": 0,
+        "totalCost": 405000,
+        "totalCostBeforeDiscount": 450000,
+        "totalDiscount": 45000,
         "status": "Active",
-        "subscriptionValidUntil": "2025-11-27T10:00:00.000Z"
-      }
+        "subscriptionValidUntil": "2026-04-01T00:00:00.000Z"
+      },
+      "lastPayment": null
     }
   ],
-  "totalMonthlyCost": 295000,
-  "totalCostBeforeDiscount": 295000,
-  "totalDiscount": 0
+  "totalMonthlyCost": 595000,
+  "totalCostBeforeDiscount": 640000,
+  "totalDiscount": 45000
 }
 ```
 
+**Response Fields:**
+| Field | Description |
+|-------|-------------|
+| `tenantAddOns` | Tenant-level add-ons (no longer inside per-outlet subscription) |
+| `totalAddOnCost` | Sum of all tenant add-on costs |
+| `isCustomPrice` | `true` if this outlet has a custom price override |
+| `standardPlanPrice` | The original plan price before any custom override |
+| `customPriceNote` | Admin note for why custom price was applied (empty string if none) |
+| `basePlanCost` | Effective price: `customPrice` if set, otherwise `standardPlanPrice` |
+| `totalMonthlyCost` | Sum of all outlet plan costs (after discounts) + tenant add-on costs |
+
 **Pricing Summary:**
 
-- **Basic Plan Base:** 275,000 IDR/month per outlet
-- **Pro Plan Base:** 400,000 IDR/month per outlet
+- **Basic Plan Base:** 300,000 IDR/month per outlet
+- **Pro Plan Base:** 450,000 IDR/month per outlet
 - **Extra User:** 50,000 IDR/month per user (beyond plan limit)
 - **Extra Warehouse:** 150,000 IDR/month per warehouse (first warehouse free, Pro only)
 - **Extra Device:** 20,000 IDR/month per device (beyond plan limit, Pro only)
+- **Advanced Loyalty:** 150,000 IDR/month per tenant (feature add-on)
 
-**See Also:** For payment status information (expiry dates, grace period), use [`/tenants/:tenantId/billing-summary`](#75-get-tenant-billing-summary) instead.
+**See Also:** For payment status information (expiry dates, grace period), use [`/tenants/:tenantId/billing-summary`](#85-get-tenant-billing-summary) instead.
 
 ---
 
@@ -302,8 +342,8 @@ Current available plans:
 | Plan      | Base Price  | Max Users | Max Devices | Warehouses               | Features                                       |
 | --------- | ----------- | --------- | ----------- | ------------------------ | ---------------------------------------------- |
 | **Trial** | 0 IDR       | 2 free    | 0           | Not supported            | Basic POS                                      |
-| **Basic** | 275,000 IDR | 2 free    | 0           | Not supported            | Basic POS                                      |
-| **Pro**   | 400,000 IDR | 3 free    | 3           | 1 free, then 150k/month  | Advanced POS + Warehouses + Push Notifications |
+| **Basic** | 300,000 IDR | 2 free    | 0           | Not supported            | Basic POS                                      |
+| **Pro**   | 450,000 IDR | 3 free    | 3           | 1 free, then 150k/month  | Advanced POS + Warehouses + Push Notifications |
 
 ### 2.2 Add-on Pricing
 
@@ -312,6 +352,7 @@ Current available plans:
 | 1         | Extra User                          | user      | 50,000 IDR  | tenant | Additional user slot (tenant-wide pool)|
 | 2         | Additional Push Notification Device | device    | 20,000 IDR  | tenant | Extra device beyond plan limit         |
 | 3         | Extra Warehouse                     | warehouse | 150,000 IDR | tenant | Additional warehouse beyond first free |
+| 4         | Advanced Loyalty                    | feature   | 150,000 IDR | tenant | Enables advanced loyalty tier features |
 
 ---
 
@@ -542,9 +583,93 @@ DELETE /api/admin/tenants/1/users/4
 
 ---
 
-## 4. Device Quota Management
+## 4. Advanced Loyalty Add-On
 
-### 4.1 Get Tenant Devices
+### 4.1 Add Advanced Loyalty
+
+**Endpoint:** `POST /api/admin/tenants/:tenantId/addons/loyalty`
+
+**Description:** Enables the Advanced Loyalty add-on for a tenant. Requires Pro plan. This is a feature flag add-on (quantity is always 1).
+
+**Authentication:** Required
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+
+**Request Body:** None
+
+**Response (Success - 200):**
+
+```json
+{
+  "success": true,
+  "message": "Advanced Loyalty add-on enabled",
+  "tenantId": 1,
+  "addOnId": 4,
+  "monthlyCost": 150000
+}
+```
+
+**Error Responses:**
+
+| Status | Message | When |
+|--------|---------|------|
+| 400 | "Advanced Loyalty is only available on the Pro plan" | Tenant is on Basic/Trial |
+| 400 | "Tenant already has the Advanced Loyalty add-on" | Add-on already active |
+| 404 | "No active subscription found for tenant" | Tenant has no active subscription |
+
+**Notes:**
+
+- After adding, the tenant's next login/refresh will return `loyaltyTier: "advanced"` in the JWT
+- Cost (150,000 IDR/month) appears automatically in `tenantAddOns` on all cost endpoints
+- No request body needed — it's a binary toggle (on/off), not quantity-based
+
+---
+
+### 4.2 Remove Advanced Loyalty
+
+**Endpoint:** `DELETE /api/admin/tenants/:tenantId/addons/loyalty`
+
+**Description:** Removes the Advanced Loyalty add-on from a tenant. Tenant reverts to basic loyalty (points only, no tiers/subscriptions).
+
+**Authentication:** Required
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tenantId` | number | Tenant ID |
+
+**Request Body:** None
+
+**Response (Success - 200):**
+
+```json
+{
+  "success": true,
+  "message": "Advanced Loyalty add-on removed",
+  "tenantId": 1
+}
+```
+
+**Error Response:**
+
+| Status | Message | When |
+|--------|---------|------|
+| 404 | "Advanced Loyalty add-on not found for this tenant" | Add-on not active |
+
+**Notes:**
+
+- After removing, the tenant's next login/refresh will return `loyaltyTier: "basic"` (if still on Pro plan)
+- Existing loyalty data (tiers, subscription packages, customer subscriptions) is NOT deleted — it's just inaccessible via the API until the add-on is re-enabled
+- This add-on is also automatically removed when downgrading from Pro to Basic
+
+---
+
+## 5. Device Quota Management
+
+### 5.1 Get Tenant Devices
 
 **Endpoint:** `GET /api/admin/tenantDevices/:tenantId`
 
@@ -595,7 +720,7 @@ DELETE /api/admin/tenants/1/users/4
 
 ---
 
-### 4.2 Add Device Quota
+### 5.2 Add Device Quota
 
 **Endpoint:** `POST /api/admin/addDeviceQuota/:tenantId`
 
@@ -637,7 +762,7 @@ DELETE /api/admin/tenants/1/users/4
 
 ---
 
-### 4.3 Reduce Device Quota
+### 5.3 Reduce Device Quota
 
 **Endpoint:** `POST /api/admin/reduceDeviceQuota/:tenantId`
 
@@ -704,9 +829,9 @@ DELETE /api/admin/tenants/1/users/4
 
 ---
 
-## 5. Warehouse Management
+## 6. Warehouse Management
 
-### 5.1 Create Warehouse
+### 6.1 Create Warehouse
 
 **Endpoint:** `POST /api/admin/tenants/:tenantId/warehouses`
 
@@ -834,7 +959,7 @@ DELETE /api/admin/tenants/1/users/4
 
 ---
 
-### 5.2 Delete Warehouse
+### 6.2 Delete Warehouse
 
 **Endpoint:** `DELETE /api/admin/tenants/:tenantId/warehouses/:id`
 
@@ -880,7 +1005,7 @@ DELETE /api/admin/tenants/1/users/4
 
 ---
 
-### 5.3 Get All Warehouses
+### 6.3 Get All Warehouses
 
 **Endpoint:** `GET /api/admin/tenants/:tenantId/warehouses`
 
@@ -933,7 +1058,7 @@ DELETE /api/admin/tenants/1/users/4
 
 ---
 
-### 5.4 Warehouse Lifecycle & Reactivation
+### 6.4 Warehouse Lifecycle & Reactivation
 
 **Understanding Warehouse Reactivation:**
 
@@ -986,9 +1111,9 @@ Response: {
 
 ---
 
-## 6. Subscription Plan Changes
+## 7. Subscription Plan Changes
 
-### 6.1 Change Tenant Plan (Upgrade/Downgrade)
+### 7.1 Change Tenant Plan (Upgrade/Downgrade)
 
 **Endpoint:** `PUT /api/admin/tenants/:tenantId/changePlan`
 
@@ -1016,7 +1141,7 @@ Response: {
 
 ---
 
-#### **6.1.1 Upgrade: Basic → Pro (First Time)**
+#### **7.1.1 Upgrade: Basic → Pro (First Time)**
 
 **Request:**
 
@@ -1059,7 +1184,7 @@ Response: {
 
 ---
 
-#### **6.1.2 Upgrade: Basic → Pro (After Previous Downgrade)**
+#### **7.1.2 Upgrade: Basic → Pro (After Previous Downgrade)**
 
 **Scenario:** User previously had Pro plan, downgraded to Basic, now upgrading back to Pro.
 
@@ -1112,7 +1237,7 @@ Response: {
 
 ---
 
-#### **6.1.3 Downgrade: Pro → Basic**
+#### **7.1.3 Downgrade: Pro → Basic**
 
 **Request:**
 
@@ -1163,7 +1288,7 @@ Response: {
 
 ---
 
-#### **6.1.4 Same Plan Error**
+#### **7.1.4 Same Plan Error**
 
 **Request:**
 
@@ -1183,7 +1308,7 @@ Response: {
 
 ---
 
-#### **6.1.5 Invalid Plan Error**
+#### **7.1.5 Invalid Plan Error**
 
 **Request:**
 
@@ -1408,11 +1533,11 @@ POST /api/admin/tenants/1/warehouses
 
 ---
 
-## 7. Payment Management
+## 8. Payment Management
 
 This section covers manual payment recording, payment history, billing summaries, and upcoming payment reminders.
 
-### 7.1 Key Concepts
+### 8.1 Key Concepts
 
 #### Grace Period
 
@@ -1439,34 +1564,46 @@ Each payment stores an immutable JSON snapshot of the subscription cost at payme
 {
   "planName": "Pro",
   "planId": 2,
-  "basePlanCost": 0,
+  "basePlanCost": 450000,
+  "isCustomPrice": false,
+  "standardPlanPrice": 450000,
+  "customPriceNote": "",
   "addOns": [
     {
-      "addOnId": 1,
-      "name": "Additional User",
+      "addOnId": 2,
+      "name": "Extra Device",
       "quantity": 2,
-      "pricePerUnit": 49000,
-      "totalCost": 98000
+      "pricePerUnit": 20000,
+      "totalCost": 40000
+    },
+    {
+      "addOnId": 4,
+      "name": "Advanced Loyalty",
+      "quantity": 1,
+      "pricePerUnit": 150000,
+      "totalCost": 150000
     }
   ],
   "discounts": [
     {
       "discountId": 1,
-      "name": "Early Bird Discount",
+      "name": "Early Bird",
       "type": "percentage",
       "value": 10,
-      "amountOff": 9800
+      "amountOff": 45000
     }
   ],
-  "totalBeforeDiscount": 98000,
-  "totalDiscount": 9800,
-  "totalAfterDiscount": 88200
+  "totalBeforeDiscount": 640000,
+  "totalDiscount": 45000,
+  "totalAfterDiscount": 595000
 }
 ```
 
+**Note:** Add-ons in the cost snapshot are sourced from the tenant-level `TenantAddOn` table, not per-outlet. Custom pricing fields (`isCustomPrice`, `standardPlanPrice`, `customPriceNote`) are included for historical audit.
+
 ---
 
-### 7.2 Record Payment
+### 8.2 Record Payment
 
 **Endpoint:** `POST /api/admin/tenants/:tenantId/outlets/:outletId/payments`
 
@@ -1574,7 +1711,7 @@ Each payment stores an immutable JSON snapshot of the subscription cost at payme
 
 ---
 
-### 7.3 Get Tenant Payment History
+### 8.3 Get Tenant Payment History
 
 **Endpoint:** `GET /api/admin/tenants/:tenantId/payments`
 
@@ -1635,7 +1772,7 @@ GET /api/admin/tenants/1/payments?from=2025-01-01&to=2025-12-31&limit=50&offset=
 
 ---
 
-### 7.4 Get All Payments (Admin Dashboard)
+### 8.4 Get All Payments (Admin Dashboard)
 
 **Endpoint:** `GET /api/admin/payments`
 
@@ -1717,7 +1854,7 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 
 ---
 
-### 7.5 Get Tenant Billing Summary
+### 8.5 Get Tenant Billing Summary
 
 **Endpoint:** `GET /api/admin/tenants/:tenantId/billing-summary`
 
@@ -1736,38 +1873,42 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 {
   "tenantId": 1,
   "tenantName": "Coffee Shop",
-  "totalMonthlyCost": 447000,
+  "totalMonthlyCost": 745000,
+  "tenantAddOns": [
+    { "name": "Extra Device", "quantity": 2, "pricePerUnit": 20000, "totalCost": 40000 },
+    { "name": "Advanced Loyalty", "quantity": 1, "pricePerUnit": 150000, "totalCost": 150000 }
+  ],
+  "totalAddOnCost": 190000,
   "outlets": [
     {
       "outletId": 1,
       "outletName": "Main Outlet",
-      "subscriptionStatus": "Active",
-      "subscriptionValidUntil": "2025-02-27T00:00:00.000Z",
-      "graceEndDate": "2025-03-06T00:00:00.000Z",
-      "daysUntilExpiry": 31,
       "planName": "Pro",
-      "basePlanCost": 0,
-      "addOns": [
-        { "name": "Additional User", "quantity": 2, "totalCost": 98000 },
-        { "name": "Extra Warehouse", "quantity": 1, "totalCost": 149000 }
-      ],
-      "discounts": [],
-      "outletTotalCost": 247000
+      "basePlanCost": 450000,
+      "isCustomPrice": false,
+      "standardPlanPrice": 450000,
+      "customPriceNote": "",
+      "discounts": [{ "name": "Early Bird", "amount": 45000 }],
+      "outletTotalCost": 405000,
+      "subscriptionStatus": "Active",
+      "subscriptionValidUntil": "2026-04-01T00:00:00.000Z",
+      "graceEndDate": "2026-04-08T00:00:00.000Z",
+      "daysUntilExpiry": 30
     },
     {
       "outletId": 2,
       "outletName": "Mall Branch",
-      "subscriptionStatus": "Grace",
-      "subscriptionValidUntil": "2025-01-25T00:00:00.000Z",
-      "graceEndDate": "2025-02-01T00:00:00.000Z",
-      "daysUntilExpiry": -2,
       "planName": "Pro",
-      "basePlanCost": 0,
-      "addOns": [
-        { "name": "Additional User", "quantity": 1, "totalCost": 49000 }
-      ],
-      "discounts": [{ "name": "Early Bird Discount", "amount": 4900 }],
-      "outletTotalCost": 44100
+      "basePlanCost": 450000,
+      "isCustomPrice": false,
+      "standardPlanPrice": 450000,
+      "customPriceNote": "",
+      "discounts": [],
+      "outletTotalCost": 450000,
+      "subscriptionStatus": "Grace",
+      "subscriptionValidUntil": "2026-03-01T00:00:00.000Z",
+      "graceEndDate": "2026-03-08T00:00:00.000Z",
+      "daysUntilExpiry": -2
     }
   ]
 }
@@ -1775,6 +1916,8 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 
 **Notes:**
 
+- `tenantAddOns` is now at the top level (no longer inside per-outlet)
+- `isCustomPrice`, `standardPlanPrice`, `customPriceNote` added to each outlet
 - `subscriptionStatus`: `Active`, `Grace`, or `Expired`
 - `daysUntilExpiry`: Positive = days until expiry, Negative = days past expiry
 - `graceEndDate`: 7 days after `subscriptionValidUntil`
@@ -1792,7 +1935,8 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 | `graceEndDate`            | ❌                         | ✅                           |
 | `totalCostBeforeDiscount` | ✅                         | ❌                           |
 | `totalDiscount`           | ✅                         | ❌                           |
-| Add-on details            | ✅ Full (IDs, per-unit)    | ✅ Simplified                |
+| Custom pricing fields     | ✅                         | ✅                           |
+| Add-on details            | ✅ Tenant-level            | ✅ Tenant-level              |
 
 **When to use:**
 
@@ -1801,7 +1945,7 @@ GET /api/admin/payments?from=2025-01-01&to=2025-12-31&tenantId=1&limit=50
 
 ---
 
-### 7.6 Get Upcoming Payments Summary
+### 8.6 Get Upcoming Payments Summary
 
 **Endpoint:** `GET /api/admin/payments/upcoming/summary`
 
@@ -1847,7 +1991,7 @@ GET /api/admin/payments/upcoming/summary?days=14
 
 ---
 
-### 7.7 Get Upcoming Payments (Paginated List)
+### 8.7 Get Upcoming Payments (Paginated List)
 
 **Endpoint:** `GET /api/admin/payments/upcoming`
 
@@ -1915,7 +2059,7 @@ GET /api/admin/payments/upcoming?status=expired
 
 ---
 
-### 7.8 Payment Use Cases
+### 8.8 Payment Use Cases
 
 #### Use Case 1: Record Monthly Payment
 

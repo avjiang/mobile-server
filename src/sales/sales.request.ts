@@ -56,6 +56,14 @@ export class CreateSalesRequest {
     @Expose() salesQuotationId: number | undefined;
     @Expose() performedBy: string = "";
     @Expose() deleted: boolean | undefined;
+    // Loyalty fields (optional — only sent when loyalty is enabled)
+    @Expose() loyaltyPointsToRedeem?: number;
+    @Expose() loyaltyPointsRedemptionValue?: number;
+    @Expose() loyaltyTierDiscountPercentage?: number;
+    @Expose() loyaltyTierDiscountAmount?: number;
+    @Expose() customerSubscriptionId?: number;
+    @Expose() subscriptionQuantityUsed?: number;
+    @Expose() subscriptionDiscountAmount?: number;
     @Expose()
     @Type(() => CreateSalesItemRequest)
     salesItems: CreateSalesItemRequest[] = [];

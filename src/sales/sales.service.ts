@@ -1,6 +1,6 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "../../prisma/client/generated/client"
 import { Decimal } from 'decimal.js';
-import { BusinessLogicError, NotFoundError } from "../api-helpers/error"
+import { BusinessLogicError, NotFoundError, InsufficientPointsError, TierMismatchError, SubscriptionExpiredError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
 import { SyncRequest } from "src/item/item.request";
@@ -13,6 +13,14 @@ import {
     getOutOfStockTitle,
     getLowStockTitle
 } from '../pushy/notification-messages';
+import loyaltyService from '../loyalty/loyalty.service';
+
+// Extended performedBy with loyaltyTier for loyalty integration
+interface PerformedBy {
+    userId: number;
+    username: string;
+    loyaltyTier?: 'none' | 'basic' | 'advanced';
+}
 
 // Helper function to send sales notifications (non-blocking)
 async function sendSalesNotification(
@@ -74,6 +82,417 @@ async function sendInventoryNotification(
         // Log error but don't fail the transaction
         console.error('Failed to send inventory notification:', error);
     });
+}
+
+// ============================================
+// Loyalty Integration Helpers
+// ============================================
+
+/**
+ * Process loyalty earn/redeem/subscription within a sales transaction.
+ * Called inside $transaction for completeNewSales when status = "Completed".
+ * Returns loyalty data to store on the Sales record.
+ */
+async function processLoyaltyForSale(
+    tx: any,
+    db: string,
+    salesId: number,
+    customerId: number,
+    totalAmount: Decimal,
+    salesBody: CreateSalesRequest,
+    performedBy: PerformedBy
+): Promise<{
+    loyaltyPointsEarned: Decimal;
+    loyaltyPointsRedeemed: Decimal;
+    loyaltyPointsRedemptionValue: Decimal;
+    loyaltyTierDiscountPercent: Decimal;
+    loyaltyTierDiscountAmount: Decimal;
+    customerSubscriptionId: number | null;
+    subscriptionDiscountAmount: Decimal;
+    loyaltyAccountId: number | null;
+}> {
+    const zero = new Decimal(0);
+    const result = {
+        loyaltyPointsEarned: zero,
+        loyaltyPointsRedeemed: zero,
+        loyaltyPointsRedemptionValue: zero,
+        loyaltyTierDiscountPercent: zero,
+        loyaltyTierDiscountAmount: zero,
+        customerSubscriptionId: null as number | null,
+        subscriptionDiscountAmount: zero,
+        loyaltyAccountId: null as number | null,
+    };
+
+    // Find loyalty account for this customer
+    const account = await tx.loyaltyAccount.findFirst({
+        where: { customerId, deleted: false },
+        include: performedBy.loyaltyTier === 'advanced' ? { loyaltyTier: true } : undefined,
+    });
+
+    if (!account) return result; // Customer not enrolled — skip loyalty entirely
+    result.loyaltyAccountId = account.id;
+
+    const program = await loyaltyService.getCachedProgram(db);
+    if (!program || !program.isActive) return result;
+
+    const toNum = loyaltyService.toDecimalNumber;
+
+    // 1. VALIDATE tier discount (advanced only)
+    if (performedBy.loyaltyTier === 'advanced' && salesBody.loyaltyTierDiscountPercentage && salesBody.loyaltyTierDiscountPercentage > 0) {
+        const tier = (account as any).loyaltyTier;
+        if (!tier || toNum(tier.discountPercentage) !== salesBody.loyaltyTierDiscountPercentage) {
+            throw new TierMismatchError(
+                `Tier discount mismatch: requested ${salesBody.loyaltyTierDiscountPercentage}%, actual ${tier ? toNum(tier.discountPercentage) : 0}%`
+            );
+        }
+        result.loyaltyTierDiscountPercent = new Decimal(salesBody.loyaltyTierDiscountPercentage);
+        result.loyaltyTierDiscountAmount = new Decimal(salesBody.loyaltyTierDiscountAmount || 0);
+    }
+
+    // 2. VALIDATE + EXECUTE point redemption
+    const pointsToRedeem = salesBody.loyaltyPointsToRedeem || 0;
+    if (pointsToRedeem > 0) {
+        const currentPoints = toNum(account.currentPoints);
+        if (currentPoints < pointsToRedeem) {
+            throw new InsufficientPointsError(currentPoints, pointsToRedeem);
+        }
+
+        const minRedeem = toNum(program.minRedeemPoints);
+        if (pointsToRedeem < minRedeem) {
+            throw new BusinessLogicError(`Minimum redemption is ${minRedeem} points`);
+        }
+
+        // FIFO deduction from point batches
+        let remaining = pointsToRedeem;
+        const batches = await tx.loyaltyPointBatch.findMany({
+            where: {
+                loyaltyAccountId: account.id,
+                remainingPoints: { gt: 0 },
+                deleted: false,
+            },
+            orderBy: [
+                { expiresAt: { sort: 'asc', nulls: 'last' } },
+                { earnedAt: 'asc' },
+            ],
+        });
+
+        for (const batch of batches) {
+            if (remaining <= 0) break;
+            const batchRemaining = toNum(batch.remainingPoints);
+            const deduct = Math.min(remaining, batchRemaining);
+            await tx.loyaltyPointBatch.update({
+                where: { id: batch.id },
+                data: { remainingPoints: batchRemaining - deduct },
+            });
+            remaining -= deduct;
+        }
+
+        // Update account totals
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: {
+                currentPoints: { decrement: pointsToRedeem },
+                totalRedeemed: { increment: pointsToRedeem },
+            },
+        });
+
+        const updatedAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
+        const newBalance = toNum(updatedAccount.currentPoints);
+
+        // Create REDEEM transaction
+        await tx.loyaltyTransaction.create({
+            data: {
+                loyaltyAccountId: account.id,
+                type: 'REDEEM',
+                points: -pointsToRedeem,
+                balanceAfter: newBalance,
+                salesId,
+                description: `Redeemed in sale #${salesId}`,
+                performedBy: performedBy.username,
+            },
+        });
+
+        result.loyaltyPointsRedeemed = new Decimal(pointsToRedeem);
+        result.loyaltyPointsRedemptionValue = new Decimal(salesBody.loyaltyPointsRedemptionValue || 0);
+    }
+
+    // 3. VALIDATE + EXECUTE subscription usage (advanced only)
+    if (performedBy.loyaltyTier === 'advanced' && salesBody.customerSubscriptionId) {
+        const subscription = await tx.customerSubscription.findUnique({
+            where: { id: salesBody.customerSubscriptionId },
+            include: {
+                subscriptionPackage: {
+                    include: {
+                        categories: {
+                            where: { deleted: false },
+                            select: { categoryId: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!subscription || subscription.deleted) {
+            throw new BusinessLogicError('Customer subscription not found');
+        }
+        if (subscription.status !== 'ACTIVE') {
+            throw new SubscriptionExpiredError();
+        }
+        if (subscription.customerId !== customerId) {
+            throw new BusinessLogicError('Subscription does not belong to this customer');
+        }
+
+        const quantityUsed = salesBody.subscriptionQuantityUsed || 1;
+
+        // For USAGE packages, check and deduct quota
+        if (subscription.subscriptionPackage.packageType === 'USAGE') {
+            if (subscription.remainingQuota === null || subscription.remainingQuota < quantityUsed) {
+                throw new BusinessLogicError(
+                    `Insufficient subscription quota. Remaining: ${subscription.remainingQuota ?? 0}`
+                );
+            }
+
+            await tx.customerSubscription.update({
+                where: { id: subscription.id, version: subscription.version },
+                data: {
+                    remainingQuota: { decrement: quantityUsed },
+                    usedQuota: { increment: quantityUsed },
+                    version: { increment: 1 },
+                },
+            });
+
+            // Check if quota depleted
+            if ((subscription.remainingQuota - quantityUsed) <= 0) {
+                await tx.customerSubscription.update({
+                    where: { id: subscription.id },
+                    data: { status: 'EXPIRED' },
+                });
+            }
+        } else {
+            // TIME package — just track usage
+            await tx.customerSubscription.update({
+                where: { id: subscription.id },
+                data: {
+                    usedQuota: { increment: quantityUsed },
+                    version: { increment: 1 },
+                },
+            });
+        }
+
+        // Create usage record
+        await tx.subscriptionUsage.create({
+            data: {
+                customerSubscriptionId: subscription.id,
+                salesId,
+                quantityUsed,
+                remainingAfter: subscription.subscriptionPackage.packageType === 'USAGE'
+                    ? (subscription.remainingQuota ?? 0) - quantityUsed
+                    : -1,
+                performedBy: performedBy.username,
+            },
+        });
+
+        result.customerSubscriptionId = subscription.id;
+        result.subscriptionDiscountAmount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+    }
+
+    // 4. EARN points on finalTotalAmount (after ALL discounts)
+    if (totalAmount.gt(0)) {
+        let pointsMultiplier = 1.0;
+        if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
+            pointsMultiplier = toNum((account as any).loyaltyTier.pointsMultiplier);
+        }
+        const pointsEarned = totalAmount.toNumber() * toNum(program.pointsPerCurrency) * pointsMultiplier;
+
+        if (pointsEarned > 0) {
+            const expiresAt = program.pointsExpiryDays
+                ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
+                : null;
+
+            // Create point batch
+            await tx.loyaltyPointBatch.create({
+                data: {
+                    loyaltyAccountId: account.id,
+                    originalPoints: pointsEarned,
+                    remainingPoints: pointsEarned,
+                    expiresAt,
+                    salesId,
+                },
+            });
+
+            // Update account totals
+            await tx.loyaltyAccount.update({
+                where: { id: account.id },
+                data: {
+                    currentPoints: { increment: pointsEarned },
+                    totalEarned: { increment: pointsEarned },
+                    totalSpend: { increment: totalAmount.toNumber() },
+                },
+            });
+
+            const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
+            const finalBalance = toNum(finalAccount.currentPoints);
+
+            // Create EARN transaction
+            await tx.loyaltyTransaction.create({
+                data: {
+                    loyaltyAccountId: account.id,
+                    type: 'EARN',
+                    points: pointsEarned,
+                    balanceAfter: finalBalance,
+                    salesId,
+                    description: `Earned from sale #${salesId}`,
+                    performedBy: performedBy.username,
+                },
+            });
+
+            result.loyaltyPointsEarned = new Decimal(pointsEarned);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Reverse loyalty operations when a sale is voided/returned/refunded.
+ * Called inside $transaction for void/return/refund.
+ */
+async function reverseLoyaltyForSale(
+    tx: any,
+    sale: any,
+    performedBy: PerformedBy
+): Promise<void> {
+    if (!sale.customerId) return;
+
+    const toNum = loyaltyService.toDecimalNumber;
+
+    // Find loyalty account
+    const account = await tx.loyaltyAccount.findFirst({
+        where: { customerId: sale.customerId, deleted: false },
+    });
+    if (!account) return;
+
+    // 1. Reverse EARNED points
+    const pointsEarned = sale.loyaltyPointsEarned ? new Decimal(sale.loyaltyPointsEarned).toNumber() : 0;
+    if (pointsEarned > 0) {
+        // Find the point batch for this sale and deduct
+        const earnBatch = await tx.loyaltyPointBatch.findFirst({
+            where: { loyaltyAccountId: account.id, salesId: sale.id, deleted: false },
+        });
+
+        if (earnBatch) {
+            const remainingInBatch = toNum(earnBatch.remainingPoints);
+            // Deduct remaining (may be less than original if partially spent)
+            await tx.loyaltyPointBatch.update({
+                where: { id: earnBatch.id },
+                data: { remainingPoints: 0, deleted: true, deletedAt: new Date() },
+            });
+
+            // Decrement account.currentPoints by whatever was still remaining
+            await tx.loyaltyAccount.update({
+                where: { id: account.id },
+                data: {
+                    currentPoints: { decrement: Math.max(remainingInBatch, 0) },
+                    totalSpend: { decrement: new Decimal(sale.totalAmount).toNumber() },
+                },
+            });
+        }
+
+        const updatedAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
+
+        // Create EARN_REVERSAL transaction (idempotent check)
+        const existingReversal = await tx.loyaltyTransaction.findFirst({
+            where: { salesId: sale.id, type: 'EARN_REVERSAL', deleted: false },
+        });
+        if (!existingReversal) {
+            await tx.loyaltyTransaction.create({
+                data: {
+                    loyaltyAccountId: account.id,
+                    type: 'EARN_REVERSAL',
+                    points: -pointsEarned,
+                    balanceAfter: toNum(updatedAccount?.currentPoints ?? 0),
+                    salesId: sale.id,
+                    description: `Earn reversed for sale #${sale.id}`,
+                    performedBy: performedBy.username,
+                },
+            });
+        }
+    }
+
+    // 2. Restore REDEEMED points
+    const pointsRedeemed = sale.loyaltyPointsRedeemed ? new Decimal(sale.loyaltyPointsRedeemed).toNumber() : 0;
+    if (pointsRedeemed > 0) {
+        // Create a NEW point batch for restored points (no expiry — restored points don't expire)
+        await tx.loyaltyPointBatch.create({
+            data: {
+                loyaltyAccountId: account.id,
+                originalPoints: pointsRedeemed,
+                remainingPoints: pointsRedeemed,
+                expiresAt: null,
+            },
+        });
+
+        // Increment account.currentPoints
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: {
+                currentPoints: { increment: pointsRedeemed },
+            },
+        });
+
+        const updatedAccount2 = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
+
+        // Create REDEEM_REVERSAL transaction (idempotent check)
+        const existingRedeemReversal = await tx.loyaltyTransaction.findFirst({
+            where: { salesId: sale.id, type: 'REDEEM_REVERSAL', deleted: false },
+        });
+        if (!existingRedeemReversal) {
+            await tx.loyaltyTransaction.create({
+                data: {
+                    loyaltyAccountId: account.id,
+                    type: 'REDEEM_REVERSAL',
+                    points: pointsRedeemed,
+                    balanceAfter: toNum(updatedAccount2?.currentPoints ?? 0),
+                    salesId: sale.id,
+                    description: `Redeem restored for sale #${sale.id}`,
+                    performedBy: performedBy.username,
+                },
+            });
+        }
+    }
+
+    // 3. Restore subscription quota (advanced only)
+    if (sale.customerSubscriptionId) {
+        const subscription = await tx.customerSubscription.findUnique({
+            where: { id: sale.customerSubscriptionId },
+            include: { subscriptionPackage: true },
+        });
+
+        if (subscription && subscription.subscriptionPackage.packageType === 'USAGE') {
+            // Find original usage record to get quantity
+            const usageRecord = await tx.subscriptionUsage.findFirst({
+                where: { salesId: sale.id, customerSubscriptionId: subscription.id, deleted: false },
+            });
+            const quantityToRestore = usageRecord?.quantityUsed ?? 1;
+
+            await tx.customerSubscription.update({
+                where: { id: subscription.id },
+                data: {
+                    remainingQuota: { increment: quantityToRestore },
+                    usedQuota: { decrement: quantityToRestore },
+                    ...(subscription.status === 'EXPIRED' ? { status: 'ACTIVE' } : {}),
+                },
+            });
+
+            // Create negative usage record for audit
+            if (usageRecord) {
+                await tx.subscriptionUsage.update({
+                    where: { id: usageRecord.id },
+                    data: { deleted: true, deletedAt: new Date() },
+                });
+            }
+        }
+    }
 }
 
 let getAll = async (databaseName: string, request: SyncRequest) => {
@@ -420,7 +839,7 @@ let getById = async (databaseName: string, id: number) => {
 async function completeNewSales(
     databaseName: string,
     tenantId: number,
-    performedBy: { userId: number, username: string },
+    performedBy: PerformedBy,
     salesBody: CreateSalesRequest,
     payments: Payment[]
 ) {
@@ -702,6 +1121,41 @@ async function completeNewSales(
                     salesId: createdSales.id,
                 }))
             });
+
+            // ── Loyalty Block ──
+            const isFullyPaid = salesStatus === 'Completed';
+            if (isFullyPaid && performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && salesBody.customerId) {
+                const loyaltyResult = await processLoyaltyForSale(
+                    tx, databaseName, createdSales.id, salesBody.customerId,
+                    totalSalesAmount, salesBody, performedBy
+                );
+
+                // Update sales record with loyalty data
+                await tx.sales.update({
+                    where: { id: createdSales.id },
+                    data: {
+                        loyaltyPointsEarned: loyaltyResult.loyaltyPointsEarned,
+                        loyaltyPointsRedeemed: loyaltyResult.loyaltyPointsRedeemed,
+                        loyaltyPointsRedemptionValue: loyaltyResult.loyaltyPointsRedemptionValue,
+                        loyaltyTierDiscountPercent: loyaltyResult.loyaltyTierDiscountPercent,
+                        loyaltyTierDiscountAmount: loyaltyResult.loyaltyTierDiscountAmount,
+                        customerSubscriptionId: loyaltyResult.customerSubscriptionId,
+                        subscriptionDiscountAmount: loyaltyResult.subscriptionDiscountAmount,
+                    },
+                });
+
+                // Fire-and-forget: check tier auto-upgrade (advanced only)
+                if (performedBy.loyaltyTier === 'advanced' && loyaltyResult.loyaltyAccountId) {
+                    const accountIdForTier = loyaltyResult.loyaltyAccountId;
+                    // Post-transaction, non-blocking
+                    setImmediate(() => {
+                        loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
+                            console.error('Tier auto-upgrade check failed:', err)
+                        );
+                    });
+                }
+            }
+            // ── End Loyalty Block ──
 
             // Batch update stock receipts (parallel execution for performance)
             if (stockReceiptUpdates.length > 0) {
@@ -1049,9 +1503,11 @@ let remove = async (databaseName: string, id: number) => {
     }
 }
 
-let getTotalSalesData = async (databaseName: string, sessionID: number) => {
+let getTotalSalesData = async (databaseName: string, sessionID: number, loyaltyTier?: 'none' | 'basic' | 'advanced') => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        const includeLoyalty = loyaltyTier && loyaltyTier !== 'none';
+
         // Fetch all sales for the session with minimal fields (single query)
         const allSales = await tenantPrisma.sales.findMany({
             where: {
@@ -1063,7 +1519,14 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
                 totalAmount: true,
                 paidAmount: true,
                 profitAmount: true,
-                changeAmount: true
+                changeAmount: true,
+                // Conditionally include loyalty fields (0 extra cost — same query)
+                ...(includeLoyalty ? {
+                    loyaltyPointsEarned: true,
+                    loyaltyPointsRedeemed: true,
+                    loyaltyTierDiscountAmount: true,
+                    customerSubscriptionId: true,
+                } : {}),
             }
         });
 
@@ -1110,6 +1573,29 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
 
         const outstandingAmount = partiallyPaidTotalAmount.minus(partiallyPaidPaidAmount);
 
+        // Loyalty metrics (only computed if loyalty is enabled)
+        let loyaltyMetrics = undefined;
+        if (includeLoyalty) {
+            let totalPointsEarned = new Decimal(0);
+            let totalPointsRedeemed = new Decimal(0);
+            let totalLoyaltyDiscount = new Decimal(0);
+            let subscriptionUsageCount = 0;
+
+            activeSales.forEach((sale: any) => {
+                if (sale.loyaltyPointsEarned) totalPointsEarned = totalPointsEarned.plus(sale.loyaltyPointsEarned);
+                if (sale.loyaltyPointsRedeemed) totalPointsRedeemed = totalPointsRedeemed.plus(sale.loyaltyPointsRedeemed);
+                if (sale.loyaltyTierDiscountAmount) totalLoyaltyDiscount = totalLoyaltyDiscount.plus(sale.loyaltyTierDiscountAmount);
+                if (sale.customerSubscriptionId) subscriptionUsageCount++;
+            });
+
+            loyaltyMetrics = {
+                totalLoyaltyPointsEarned: totalPointsEarned,
+                totalLoyaltyPointsRedeemed: totalPointsRedeemed,
+                totalLoyaltyDiscountAmount: totalLoyaltyDiscount,
+                totalSubscriptionUsages: subscriptionUsageCount,
+            };
+        }
+
         return {
             // Summary metrics
             salesCount: activeSales.length,
@@ -1132,6 +1618,9 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
                 returned: returnedSales.length,
                 refunded: refundedSales.length,
             },
+
+            // Loyalty metrics (only present when loyalty is enabled)
+            ...(loyaltyMetrics ? { loyaltyMetrics } : {}),
         };
     }
     catch (error) {
@@ -1142,7 +1631,7 @@ let getTotalSalesData = async (databaseName: string, sessionID: number) => {
 let addPaymentToPartiallyPaidSales = async (
     databaseName: string,
     tenantId: number,
-    performedBy: { userId: number, username: string },
+    performedBy: PerformedBy,
     salesId: number,
     payments: Payment[]
 ) => {
@@ -1203,6 +1692,81 @@ let addPaymentToPartiallyPaidSales = async (
                 }
             });
 
+            // ── Loyalty Earn on Completion ──
+            if (isFullyPaid && performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
+                const toNum = loyaltyService.toDecimalNumber;
+                const account = await tx.loyaltyAccount.findFirst({
+                    where: { customerId: sales.customerId, deleted: false },
+                    include: performedBy.loyaltyTier === 'advanced' ? { loyaltyTier: true } : undefined,
+                });
+
+                if (account) {
+                    const program = await loyaltyService.getCachedProgram(databaseName);
+                    if (program && program.isActive) {
+                        const saleTotal = new Decimal(sales.totalAmount);
+                        let pointsMultiplier = 1.0;
+                        if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
+                            pointsMultiplier = toNum((account as any).loyaltyTier.pointsMultiplier);
+                        }
+                        const pointsEarned = saleTotal.toNumber() * toNum(program.pointsPerCurrency) * pointsMultiplier;
+
+                        if (pointsEarned > 0) {
+                            const expiresAt = program.pointsExpiryDays
+                                ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
+                                : null;
+
+                            await tx.loyaltyPointBatch.create({
+                                data: {
+                                    loyaltyAccountId: account.id,
+                                    originalPoints: pointsEarned,
+                                    remainingPoints: pointsEarned,
+                                    expiresAt,
+                                    salesId,
+                                },
+                            });
+
+                            await tx.loyaltyAccount.update({
+                                where: { id: account.id },
+                                data: {
+                                    currentPoints: { increment: pointsEarned },
+                                    totalEarned: { increment: pointsEarned },
+                                    totalSpend: { increment: saleTotal.toNumber() },
+                                },
+                            });
+
+                            const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
+
+                            await tx.loyaltyTransaction.create({
+                                data: {
+                                    loyaltyAccountId: account.id,
+                                    type: 'EARN',
+                                    points: pointsEarned,
+                                    balanceAfter: toNum(finalAccount?.currentPoints ?? 0),
+                                    salesId,
+                                    description: `Earned from completed sale #${salesId}`,
+                                    performedBy: performedBy.username,
+                                },
+                            });
+
+                            await tx.sales.update({
+                                where: { id: salesId },
+                                data: { loyaltyPointsEarned: pointsEarned },
+                            });
+
+                            // Fire-and-forget tier upgrade check
+                            if (performedBy.loyaltyTier === 'advanced') {
+                                setImmediate(() => {
+                                    loyaltyService.checkTierUpgrade(databaseName, account.id).catch(err =>
+                                        console.error('Tier auto-upgrade check failed:', err)
+                                    );
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            // ── End Loyalty Earn ──
+
             return { updatedSales, totalNewPaymentAmount, remainingAmount };
         });
 
@@ -1244,7 +1808,7 @@ let addPaymentToPartiallyPaidSales = async (
 let voidSales = async (
     databaseName: string,
     tenantId: number,
-    performedBy: { userId: number, username: string },
+    performedBy: PerformedBy,
     salesId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -1337,6 +1901,13 @@ let voidSales = async (
                     }
                 })
             );
+
+            // ── Loyalty Reversal ──
+            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
+                await reverseLoyaltyForSale(tx, sales, performedBy);
+            }
+            // ── End Loyalty Reversal ──
+
             return updatedSales;
         });
 
@@ -1372,7 +1943,7 @@ let voidSales = async (
 let returnSales = async (
     databaseName: string,
     tenantId: number,
-    performedBy: { userId: number, username: string },
+    performedBy: PerformedBy,
     salesId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -1466,6 +2037,13 @@ let returnSales = async (
                     }
                 })
             );
+
+            // ── Loyalty Reversal ──
+            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
+                await reverseLoyaltyForSale(tx, sales, performedBy);
+            }
+            // ── End Loyalty Reversal ──
+
             return updatedSales;
         });
 
@@ -1501,7 +2079,7 @@ let returnSales = async (
 let refundSales = async (
     databaseName: string,
     tenantId: number,
-    performedBy: { userId: number, username: string },
+    performedBy: PerformedBy,
     salesId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -1594,6 +2172,13 @@ let refundSales = async (
                     }
                 })
             );
+
+            // ── Loyalty Reversal ──
+            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
+                await reverseLoyaltyForSale(tx, sales, performedBy);
+            }
+            // ── End Loyalty Reversal ──
+
             return updatedSales;
         });
 
@@ -1710,10 +2295,10 @@ let getDeliveredList = async (
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
         const parsedStartDate = new Date(startDate);
-        parsedStartDate.setHours(0, 0, 0, 0);
+        parsedStartDate.setUTCHours(0, 0, 0, 0);
 
         const parsedEndDate = new Date(endDate);
-        parsedEndDate.setHours(23, 59, 59, 999);
+        parsedEndDate.setUTCHours(23, 59, 59, 999);
 
         if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
             throw new Error('Invalid date format');
@@ -1778,7 +2363,7 @@ let getDeliveredList = async (
         ]);
 
         return {
-            sales,
+            data: sales,
             total,
             serverTimestamp: new Date().toISOString(),
         };

@@ -95,7 +95,7 @@ const settingDefinitions = [
     // },
 
     // ============================================
-    // POS SETTINGS (OUTLET scope)
+    // POS SETTINGS (USER scope)
     // ============================================
     {
         key: 'auto_print_receipt',
@@ -103,7 +103,7 @@ const settingDefinitions = [
         type: 'BOOLEAN',
         defaultValue: 'true',
         description: 'Automatically print receipt after sale',
-        scope: 'OUTLET',
+        scope: 'USER',
         isRequired: false
     },
     {
@@ -112,12 +112,23 @@ const settingDefinitions = [
         type: 'INT',
         defaultValue: '1',
         description: 'Number of receipt copies to print',
-        scope: 'OUTLET',
+        scope: 'USER',
         isRequired: false,
         validationRules: JSON.stringify({
             min: 1,
             max: 5
         })
+    },
+    {
+        key: 'connected_printer',
+        category: 'POS',
+        type: 'STRING',
+        defaultValue: null,
+        description: 'Connected Bluetooth printer name',
+        scope: 'USER',
+        isRequired: false,
+        isReadOnly: true,
+        validationRules: null
     },
     // {
     //     key: 'enable_barcode_scanner',
@@ -212,6 +223,17 @@ const settingDefinitions = [
     //     scope: 'USER',
     //     isRequired: false
     // },
+    {
+        key: 'is_pushy_registered',
+        category: 'User Preference',
+        type: 'BOOLEAN',
+        defaultValue: 'false',
+        description: 'Push notification registration status',
+        scope: 'USER',
+        isRequired: false,
+        isReadOnly: true,
+        validationRules: null
+    },
     {
         key: 'date_format',
         category: 'User Preference',

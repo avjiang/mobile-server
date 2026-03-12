@@ -518,6 +518,33 @@ let getTenantOverview = (req: AuthRequest, res: Response, next: NextFunction) =>
 
 
 
+/**
+ * PUT /tenants/:tenantId/outlets/:outletId/customPrice
+ * Set or clear custom price for a specific outlet subscription
+ */
+let setCustomPrice = (req: NetworkRequest<{
+    customPrice: number | null;
+    customPriceNote?: string;
+}>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('Tenant ID format incorrect');
+    }
+    if (!validator.isNumeric(req.params.outletId)) {
+        throw new RequestValidateError('Outlet ID format incorrect');
+    }
+
+    const tenantId = parseInt(req.params.tenantId);
+    const outletId = parseInt(req.params.outletId);
+    const { customPrice, customPriceNote } = req.body;
+
+    service.setCustomPrice(tenantId, outletId, customPrice, customPriceNote, req.user.tenantUserId)
+        .then((response: any) => { sendResponse(res, response); })
+        .catch(next);
+};
+
 // Forgot Password (Force Reset)
 let forgotTenantUserPassword = (req: NetworkRequest<{}>, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError('User not authenticated');
@@ -530,6 +557,40 @@ let forgotTenantUserPassword = (req: NetworkRequest<{}>, res: Response, next: Ne
     const userId = parseInt(req.params.userId);
 
     service.forgotTenantUserPassword(tenantId, userId)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+}
+
+// Provider/Owner: Add Advanced Loyalty add-on for tenant
+let addAdvancedLoyalty = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    const tenantId: number = parseInt(req.params.tenantId);
+
+    service.addAdvancedLoyalty(tenantId)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+}
+
+// Provider/Owner: Remove Advanced Loyalty add-on for tenant
+let removeAdvancedLoyalty = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.tenantId)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    const tenantId: number = parseInt(req.params.tenantId);
+
+    service.removeAdvancedLoyalty(tenantId)
         .then((response: any) => {
             sendResponse(res, response);
         })
@@ -559,6 +620,13 @@ router.put('/tenants/:tenantId/changePlan', changeTenantPlan)
 router.post('/tenants/:tenantId/warehouses', createWarehouse)
 router.delete('/tenants/:tenantId/warehouses/:id', deleteWarehouse)
 router.get('/tenants/:tenantId/warehouses', getTenantWarehouses)
+
+// advanced loyalty add-on routes
+router.post('/tenants/:tenantId/addons/loyalty', addAdvancedLoyalty)
+router.delete('/tenants/:tenantId/addons/loyalty', removeAdvancedLoyalty)
+
+// custom pricing routes
+router.put('/tenants/:tenantId/outlets/:outletId/customPrice', setCustomPrice)
 
 // payment management routes
 router.post('/tenants/:tenantId/outlets/:outletId/payments', recordPayment)

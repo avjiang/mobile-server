@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `loyalty_program` ADD COLUMN `DEACTIVATED_AT` DATETIME(3) NULL;

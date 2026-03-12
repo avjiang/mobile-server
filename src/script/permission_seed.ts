@@ -115,6 +115,37 @@ const permissions = [
         name: "Receive Inventory Notification",
         category: "Notifications",
         description: "Receive inventory related notification"
+    },
+    // Loyalty permissions
+    {
+        name: "Manage Loyalty Program",
+        category: "Loyalty",
+        description: "Create and edit loyalty program settings and tiers"
+    },
+    {
+        name: "View Loyalty Accounts",
+        category: "Loyalty",
+        description: "View customer loyalty balances and history"
+    },
+    {
+        name: "Adjust Loyalty Points",
+        category: "Loyalty",
+        description: "Manually add or remove loyalty points"
+    },
+    {
+        name: "Manage Subscription Packages",
+        category: "Loyalty",
+        description: "Create, edit, and delete subscription packages"
+    },
+    {
+        name: "View Customer Subscriptions",
+        category: "Loyalty",
+        description: "View active customer subscriptions"
+    },
+    {
+        name: "Manage Customer Subscriptions",
+        category: "Loyalty",
+        description: "Subscribe, cancel, and manage customer subscriptions"
     }
 ];
 

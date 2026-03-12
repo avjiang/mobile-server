@@ -66,3 +66,28 @@ export class BusinessLogicError extends BaseError {
         super(400, message)
     }
 }
+
+// Loyalty-specific errors
+export class InsufficientPointsError extends BaseError {
+    constructor(available: number, requested: number) {
+        super(400, `Insufficient loyalty points. Available: ${available}, Requested: ${requested}`);
+    }
+}
+
+export class TierMismatchError extends BaseError {
+    constructor(message: string = 'Loyalty tier discount mismatch') {
+        super(400, message);
+    }
+}
+
+export class SubscriptionExpiredError extends BaseError {
+    constructor(message: string = 'Customer subscription is expired or inactive') {
+        super(400, message);
+    }
+}
+
+export class LoyaltyNotEnabledError extends BaseError {
+    constructor() {
+        super(403, 'Loyalty features are not enabled for this tenant');
+    }
+}

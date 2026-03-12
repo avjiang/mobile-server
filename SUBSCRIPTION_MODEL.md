@@ -18,8 +18,8 @@ including pricing, features, billing logic, and technical implementation details
 | Plan  | Price (IDR) | Price (IDR) | Price/Outlet/Month |
 | ----- | ----------- | ----------- | ------------------ |
 | Trial | Rp 0        | Rp 0        | Per outlet         |
-| Basic | Rp 275,000  | Rp 275,000  | Per outlet         |
-| Pro   | Rp 400,000  | Rp 400,000  | Per outlet         |
+| Basic | Rp 300,000  | Rp 300,000  | Per outlet         |
+| Pro   | Rp 450,000  | Rp 450,000  | Per outlet         |
 
 ### Add-Ons
 
@@ -68,7 +68,7 @@ including pricing, features, billing logic, and technical implementation details
 
 ---
 
-### Basic Plan (Rp 275,000/month/outlet)
+### Basic Plan (Rp 300,000/month/outlet)
 
 **Included:**
 
@@ -107,7 +107,7 @@ including pricing, features, billing logic, and technical implementation details
 
 ---
 
-### Pro Plan (Rp 400,000/month/outlet)
+### Pro Plan (Rp 450,000/month/outlet)
 
 **Includes everything in Basic, plus:**
 
@@ -269,6 +269,7 @@ Each outlet has its own subscription and is billed independently.
 3. Push notification support enabled
 4. User limit increases from 2 to 3 per outlet
 5. Device limit set to 3 per outlet
+6. **Custom prices are auto-cleared** on all outlets (logged to `custom_price_log`)
 
 **Customer Actions:**
 
@@ -284,6 +285,7 @@ Each outlet has its own subscription and is billed independently.
 2. All device add-ons removed
 3. User limit decreases from 3 to 2 per outlet
 4. Push notifications disabled
+5. **Custom prices are auto-cleared** on all outlets (logged to `custom_price_log`)
 
 **Before Downgrade:**
 
@@ -302,43 +304,105 @@ Each outlet has its own subscription and is billed independently.
 ### Example 1: Single Basic Outlet
 
 ```
-Base Plan:                    Rp 275,000
+Base Plan:                    Rp 300,000
 Extra Users (0):              Rp       0
 -----------------------------------------
-Total Monthly:                Rp 275,000
+Total Monthly:                Rp 300,000
 ```
 
 ### Example 2: Single Pro Outlet with Add-ons
 
 ```
-Base Plan:                    Rp 400,000
+Base Plan:                    Rp 450,000
 Extra Users (2):              Rp 100,000  (2 x 50,000)
 Extra Devices (3):            Rp  60,000  (3 x 20,000)
 Extra Warehouses (2):         Rp 300,000  (2 x 150,000)
 -----------------------------------------
-Total Monthly:                Rp 860,000
+Total Monthly:                Rp 910,000
 ```
 
 ### Example 3: Multi-Outlet Business (3 Pro Outlets)
 
 ```
 Outlet 1 (Main):
-  Base Plan:                  Rp 400,000
+  Base Plan:                  Rp 450,000
   Extra Users (1):            Rp  50,000
 
 Outlet 2 (Branch A):
-  Base Plan:                  Rp 400,000
+  Base Plan:                  Rp 450,000
   Extra Users (0):            Rp       0
 
 Outlet 3 (Branch B):
-  Base Plan:                  Rp 400,000
+  Base Plan:                  Rp 450,000
   Extra Users (2):            Rp 100,000
 
 Tenant-Wide Add-ons:
   Extra Devices (5):          Rp 100,000  (5 x 20,000)
   Extra Warehouses (2):       Rp 300,000  (2 x 150,000)
 -----------------------------------------
-Total Monthly:              Rp 1,750,000
+Total Monthly:              Rp 1,900,000
+```
+
+---
+
+## Custom Pricing
+
+### Overview
+
+Admin can override the standard plan price for any specific outlet subscription. This enables negotiated rates, promotional pricing, and per-outlet price adjustments while maintaining a full audit trail.
+
+### Key Principle
+
+```
+Effective Price = subscription.customPrice ?? subscription.subscriptionPlan.price
+```
+
+If `customPrice` is `null`, the standard plan price is used. If set, the custom price takes precedence.
+
+### Business Rules
+
+| Rule           | Behavior                                                                            |
+| -------------- | ----------------------------------------------------------------------------------- |
+| On plan change | Custom price is **auto-cleared** (reset to `null`). Admin must re-set if needed.    |
+| Scope          | Per-outlet subscription. Different outlets can have different custom prices.        |
+| Validation     | `customPrice` must be > 0 or `null`. Zero/negative rejected.                        |
+| Discounts      | Discounts still apply on top of the custom price (replaces base price only).        |
+| Add-ons        | Add-on prices are NOT customizable. Only the base plan price can be overridden.     |
+| Visibility     | Tenants can see `isCustomPrice` flag and `standardPlanPrice` in their billing APIs. |
+
+### Cost Calculation Flow
+
+```
+basePlanCost = customPrice ?? subscriptionPlan.price
+         |
+  + addOnCosts (unchanged)
+         |
+  - discounts (applied on effective base price)
+         |
+  = outletTotalCost
+```
+
+### Audit Trail
+
+Two layers of audit:
+
+1. **`custom_price_log` table** — tracks every change to `customPrice` (set, changed, cleared, auto-cleared on plan change)
+2. **Payment cost snapshots** — each payment freezes `isCustomPrice`, `standardPlanPrice`, and `customPriceNote` at time of payment
+
+### Example: Multi-Outlet Mixed Pricing
+
+```
+Tenant "Toko Maju" with 3 Pro outlets:
+
+  Outlet 1 (Main):     customPrice = 350,000    <- Negotiated rate
+  Outlet 2 (Branch A): customPrice = null        <- Standard Rp 450,000
+  Outlet 3 (Branch B): customPrice = 400,000    <- Partial discount
+
+  Billing Summary:
+    Outlet 1: Rp 350,000 (custom)
+    Outlet 2: Rp 450,000 (standard)
+    Outlet 3: Rp 400,000 (custom)
+    Total:    Rp 1,200,000/month
 ```
 
 ---
@@ -374,6 +438,8 @@ Total Monthly:              Rp 1,750,000
 | subscriptionPlanId | INT | Current plan |
 | status | STRING | Active, Grace, Expired |
 | subscriptionValidUntil | DATETIME | Expiry date |
+| customPrice | FLOAT? | Override base plan price. `null` = use standard plan price |
+| customPriceNote | TEXT? | Admin-entered reason for the custom price |
 
 **tenant_subscription_add_on**
 | Column | Type | Description |
@@ -382,6 +448,19 @@ Total Monthly:              Rp 1,750,000
 | subscriptionId | INT | Parent subscription |
 | addOnId | INT | Add-on type |
 | quantity | INT | Number of add-ons |
+
+**custom_price_log** (audit table)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INT | Primary key |
+| tenantId | INT | Tenant |
+| outletId | INT | Outlet |
+| subscriptionId | INT | Subscription |
+| previousPrice | FLOAT? | Price before change (`null` if was standard) |
+| newPrice | FLOAT? | New price (`null` if reverting to standard) |
+| note | TEXT? | Reason for change |
+| changedBy | INT? | Admin user ID |
+| createdAt | DATETIME | Timestamp |
 
 ---
 
@@ -394,6 +473,7 @@ GET /api/admin/tenantDetails/:tenantId
 ```
 
 Returns detailed cost breakdown including base plan, add-ons, and discounts.
+Response includes `isCustomPrice` and `standardPlanPrice` per outlet.
 
 ### Get Billing Summary
 
@@ -402,6 +482,50 @@ GET /api/admin/tenants/:tenantId/billing-summary
 ```
 
 Returns subscription status, expiry dates, and per-outlet costs.
+Response includes `isCustomPrice` and `standardPlanPrice` per outlet.
+
+### Set Custom Price
+
+```
+PUT /api/admin/tenants/:tenantId/outlets/:outletId/customPrice
+```
+
+Set or clear custom price for a specific outlet subscription.
+
+**Request Body (set custom price):**
+
+```json
+{
+  "customPrice": 350000,
+  "customPriceNote": "Early adopter negotiated rate"
+}
+```
+
+**Request Body (revert to standard):**
+
+```json
+{
+  "customPrice": null
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Custom price set to Rp 350,000 for outlet Main Outlet",
+  "subscription": {
+    "id": 1,
+    "outletId": 5,
+    "planName": "Pro",
+    "standardPlanPrice": 450000,
+    "customPrice": 350000,
+    "customPriceNote": "Early adopter negotiated rate",
+    "effectivePrice": 350000
+  }
+}
+```
 
 ### Record Payment
 
@@ -410,6 +534,7 @@ POST /api/admin/tenants/:tenantId/outlets/:outletId/payments
 ```
 
 Records payment and extends subscription.
+Cost snapshot includes `isCustomPrice`, `standardPlanPrice`, `customPriceNote` audit fields.
 
 ### Change Plan
 
@@ -418,7 +543,7 @@ PUT /api/admin/tenants/:tenantId/changePlan
 Body: { "planName": "Pro" }
 ```
 
-Upgrades or downgrades tenant plan.
+Upgrades or downgrades tenant plan. **Auto-clears custom price** on all outlets and logs the change.
 
 ---
 
@@ -447,9 +572,10 @@ npx ts-node src/script/subscription_add_on_seed.ts
 
 ## Version History
 
-| Version | Date       | Date       | Changes               |
-| ------- | ---------- | ---------- | --------------------- |
-| 1.0     | 2025-01-22 | 2025-01-22 | Initial documentation |
+| Version | Date       | Changes                                                     |
+| ------- | ---------- | ----------------------------------------------------------- |
+| 1.0     | 2025-01-22 | Initial documentation                                       |
+| 1.1     | 2026-03-02 | Added custom pricing capability (per-outlet price override) |
 
 ---
 

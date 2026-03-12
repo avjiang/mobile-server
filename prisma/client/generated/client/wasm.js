@@ -385,7 +385,14 @@ exports.Prisma.SalesScalarFieldEnum = {
   stockSourceWarehouseId: 'stockSourceWarehouseId',
   deliveredAt: 'deliveredAt',
   deliveredBy: 'deliveredBy',
-  deliveryNotes: 'deliveryNotes'
+  deliveryNotes: 'deliveryNotes',
+  loyaltyPointsEarned: 'loyaltyPointsEarned',
+  loyaltyPointsRedeemed: 'loyaltyPointsRedeemed',
+  loyaltyPointsRedemptionValue: 'loyaltyPointsRedemptionValue',
+  loyaltyTierDiscountPercent: 'loyaltyTierDiscountPercent',
+  loyaltyTierDiscountAmount: 'loyaltyTierDiscountAmount',
+  customerSubscriptionId: 'customerSubscriptionId',
+  subscriptionDiscountAmount: 'subscriptionDiscountAmount'
 };
 
 exports.Prisma.SalesItemScalarFieldEnum = {
@@ -1293,9 +1300,156 @@ exports.Prisma.PurchaseReturnItemScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.LoyaltyProgramScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  pointsPerCurrency: 'pointsPerCurrency',
+  currencyPerPoint: 'currencyPerPoint',
+  pointsExpiryDays: 'pointsExpiryDays',
+  minRedeemPoints: 'minRedeemPoints',
+  isActive: 'isActive',
+  deactivatedAt: 'deactivatedAt',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.LoyaltyTierScalarFieldEnum = {
+  id: 'id',
+  loyaltyProgramId: 'loyaltyProgramId',
+  name: 'name',
+  minSpend: 'minSpend',
+  discountPercentage: 'discountPercentage',
+  pointsMultiplier: 'pointsMultiplier',
+  sortOrder: 'sortOrder',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.LoyaltyAccountScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  loyaltyProgramId: 'loyaltyProgramId',
+  currentPoints: 'currentPoints',
+  totalEarned: 'totalEarned',
+  totalRedeemed: 'totalRedeemed',
+  totalSpend: 'totalSpend',
+  loyaltyTierId: 'loyaltyTierId',
+  isManualTier: 'isManualTier',
+  joinedAt: 'joinedAt',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.LoyaltyPointBatchScalarFieldEnum = {
+  id: 'id',
+  loyaltyAccountId: 'loyaltyAccountId',
+  originalPoints: 'originalPoints',
+  remainingPoints: 'remainingPoints',
+  expiresAt: 'expiresAt',
+  earnedAt: 'earnedAt',
+  salesId: 'salesId',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.LoyaltyTransactionScalarFieldEnum = {
+  id: 'id',
+  loyaltyAccountId: 'loyaltyAccountId',
+  type: 'type',
+  points: 'points',
+  balanceAfter: 'balanceAfter',
+  salesId: 'salesId',
+  pointBatchId: 'pointBatchId',
+  description: 'description',
+  performedBy: 'performedBy',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.SubscriptionPackageScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  packageType: 'packageType',
+  price: 'price',
+  totalQuota: 'totalQuota',
+  quotaUnit: 'quotaUnit',
+  durationDays: 'durationDays',
+  discountPercentage: 'discountPercentage',
+  discountAmount: 'discountAmount',
+  validityDays: 'validityDays',
+  isActive: 'isActive',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.SubscriptionPackageCategoryScalarFieldEnum = {
+  id: 'id',
+  subscriptionPackageId: 'subscriptionPackageId',
+  categoryId: 'categoryId',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CustomerSubscriptionScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  subscriptionPackageId: 'subscriptionPackageId',
+  status: 'status',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  remainingQuota: 'remainingQuota',
+  usedQuota: 'usedQuota',
+  paidAmount: 'paidAmount',
+  packageSnapshot: 'packageSnapshot',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.SubscriptionUsageScalarFieldEnum = {
+  id: 'id',
+  customerSubscriptionId: 'customerSubscriptionId',
+  salesId: 'salesId',
+  quantityUsed: 'quantityUsed',
+  remainingAfter: 'remainingAfter',
+  performedBy: 'performedBy',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
+};
+
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
 };
 
 exports.Prisma.NullsOrder = {
@@ -1716,6 +1870,45 @@ exports.Prisma.PurchaseReturnItemOrderByRelevanceFieldEnum = {
   returnReason: 'returnReason',
   remark: 'remark'
 };
+
+exports.Prisma.LoyaltyProgramOrderByRelevanceFieldEnum = {
+  name: 'name'
+};
+
+exports.Prisma.LoyaltyTierOrderByRelevanceFieldEnum = {
+  name: 'name'
+};
+
+exports.Prisma.LoyaltyTransactionOrderByRelevanceFieldEnum = {
+  type: 'type',
+  description: 'description',
+  performedBy: 'performedBy'
+};
+
+exports.Prisma.SubscriptionPackageOrderByRelevanceFieldEnum = {
+  name: 'name',
+  packageType: 'packageType',
+  quotaUnit: 'quotaUnit'
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+};
+
+exports.Prisma.CustomerSubscriptionOrderByRelevanceFieldEnum = {
+  status: 'status'
+};
+
+exports.Prisma.SubscriptionUsageOrderByRelevanceFieldEnum = {
+  performedBy: 'performedBy'
+};
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   ORDERED: 'ORDERED',
   PREPARING: 'PREPARING',
@@ -1814,7 +2007,16 @@ exports.Prisma.ModelName = {
   ItemVariant: 'ItemVariant',
   ItemVariantAttribute: 'ItemVariantAttribute',
   PurchaseReturn: 'PurchaseReturn',
-  PurchaseReturnItem: 'PurchaseReturnItem'
+  PurchaseReturnItem: 'PurchaseReturnItem',
+  LoyaltyProgram: 'LoyaltyProgram',
+  LoyaltyTier: 'LoyaltyTier',
+  LoyaltyAccount: 'LoyaltyAccount',
+  LoyaltyPointBatch: 'LoyaltyPointBatch',
+  LoyaltyTransaction: 'LoyaltyTransaction',
+  SubscriptionPackage: 'SubscriptionPackage',
+  SubscriptionPackageCategory: 'SubscriptionPackageCategory',
+  CustomerSubscription: 'CustomerSubscription',
+  SubscriptionUsage: 'SubscriptionUsage'
 };
 
 /**

@@ -34,6 +34,7 @@ model SubscriptionAddOn {
   scope         String                    @default("outlet") @map("SCOPE")
   description   String?                   @map("DESCRIPTION")
   subscriptions TenantSubscriptionAddOn[]
+  tenantAddOns  TenantAddOn[]
 
   @@index([name]) // If frequently searching by add-on name
   @@index([addOnType]) // If filtering by add-on type
@@ -53,6 +54,7 @@ model Tenant {
   deviceAllocations PushyDeviceAllocation[]
   warehouses        TenantWarehouse[]
   payments          TenantPayment[]
+  tenantAddOns      TenantAddOn[]
 
   @@index([tenantName]) // If you often search for tenants by name
   @@index([createdAt]) // For sorting or filtering tenants by creation date
@@ -70,6 +72,8 @@ model TenantSubscription {
   createdAt              DateTime                  @default(now()) @map("CREATED_AT")
   updatedAt              DateTime                  @updatedAt @map("UPDATED_AT")
   discountId             Int?                      @map("DISCOUNT_ID")
+  customPrice            Float?                    @map("CUSTOM_PRICE")
+  customPriceNote        String?                   @map("CUSTOM_PRICE_NOTE") @db.Text
   outlet                 TenantOutlet              @relation(fields: [outletId], references: [id])
   discount               Discount?                 @relation(fields: [discountId], references: [id])
   tenant                 Tenant                    @relation(fields: [tenantId], references: [id])
@@ -335,4 +339,35 @@ model AppVersion {
 
   @@unique([platform])
   @@map("app_version")
+}
+
+model CustomPriceLog {
+  id               Int      @id @default(autoincrement()) @map("ID")
+  tenantId         Int      @map("TENANT_ID")
+  outletId         Int      @map("OUTLET_ID")
+  subscriptionId   Int      @map("TENANT_SUBSCRIPTION_ID")
+  previousPrice    Float?   @map("PREVIOUS_PRICE")
+  newPrice         Float?   @map("NEW_PRICE")
+  note             String?  @map("NOTE") @db.Text
+  changedBy        Int?     @map("CHANGED_BY")
+  createdAt        DateTime @default(now()) @map("CREATED_AT")
+
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@map("custom_price_log")
+}
+
+model TenantAddOn {
+  id        Int               @id @default(autoincrement()) @map("ID")
+  tenantId  Int               @map("TENANT_ID")
+  addOnId   Int               @map("ADD_ON_ID")
+  quantity  Int               @default(1) @map("QUANTITY")
+  createdAt DateTime          @default(now()) @map("CREATED_AT")
+  updatedAt DateTime          @updatedAt @map("UPDATED_AT")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id])
+  addOn     SubscriptionAddOn @relation(fields: [addOnId], references: [id])
+
+  @@unique([tenantId, addOnId])
+  @@index([tenantId])
+  @@map("tenant_add_on")
 }

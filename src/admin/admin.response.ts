@@ -76,18 +76,22 @@ export interface TenantCostResponse {
     tenantId: number;
     tenantName: string;
     outletCount: number;
+    tenantAddOns: Array<{
+        name: string;
+        quantity: number;
+        pricePerUnit: number;
+        totalCost: number;
+    }>;
+    totalAddOnCost: number;
     outlets: Array<{
         outletId: number;
         outletName: string;
         subscription: {
             planName: string;
             basePlanCost: number;
-            addOns: Array<{
-                name: string;
-                quantity: number;
-                pricePerUnit: number;
-                totalCost: number;
-            }>;
+            isCustomPrice: boolean;
+            standardPlanPrice: number;
+            customPriceNote: string;
             discounts: Array<{
                 name: string;
                 type: string;
@@ -131,6 +135,9 @@ export interface CostSnapshot {
     planName: string;
     planId: number;
     basePlanCost: number;
+    isCustomPrice?: boolean;
+    standardPlanPrice?: number;
+    customPriceNote?: string;
     addOns: Array<{
         addOnId: number;
         name: string;
@@ -202,6 +209,13 @@ export interface TenantBillingSummaryResponse {
     tenantId: number;
     tenantName: string;
     totalMonthlyCost: number;
+    tenantAddOns: Array<{
+        name: string;
+        quantity: number;
+        pricePerUnit: number;
+        totalCost: number;
+    }>;
+    totalAddOnCost: number;
     outlets: Array<{
         outletId: number;
         outletName: string;
@@ -211,7 +225,9 @@ export interface TenantBillingSummaryResponse {
         daysUntilExpiry: number;
         planName: string;
         basePlanCost: number;
-        addOns: Array<{ name: string; quantity: number; totalCost: number }>;
+        isCustomPrice: boolean;
+        standardPlanPrice: number;
+        customPriceNote: string;
         discounts: Array<{ name: string; amount: number }>;
         outletTotalCost: number;
     }>;

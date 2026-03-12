@@ -6,6 +6,7 @@ import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
+// import { initCronJobs } from './cron/cron-manager';
 const app = express()
 const port = process.env.PORT || 8080;
 
@@ -68,12 +69,15 @@ app.use('/pushy', require('./pushy/device.controller'))
 app.use('/settings', require('./settings/settings.controller'))
 app.use('/warehouses', require('./warehouse/warehouse.controller'))
 app.use('/purchaseReturn', require('./purchase_return/purchase-return.controller'))
+app.use('/loyalty', require('./loyalty/loyalty.controller'))
+app.use('/subscription', require('./subscription-package/subscription-package.controller'))
 
 // error middleware
 app.use(errorMiddleware)
 
 const server = app.listen(port, () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
+  // initCronJobs(); // Uncomment when loyalty feature is live
 });
 
 server.on('error', (err) => {

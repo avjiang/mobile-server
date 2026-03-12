@@ -25,7 +25,8 @@
       "WebFetch(domain:cloudpricecheck.com)",
       "WebFetch(domain:www.hyperglance.com)",
       "WebFetch(domain:blog.blazingcdn.com)",
-      "WebFetch(domain:prices.azure.com)"
+      "WebFetch(domain:prices.azure.com)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

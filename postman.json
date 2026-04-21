@@ -11547,6 +11547,289 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "Voucher",
+			"item": [
+				{
+					"name": "Reward Rules",
+					"item": [
+						{
+							"name": "Get All Reward Rules",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/voucher/rules",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"rules"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Reward Rule (PERCENTAGE)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Spend RM 1,000 Reward\",\n    \"spendThreshold\": 1000,\n    \"isRepeatable\": false,\n    \"discountType\": \"PERCENTAGE\",\n    \"discountPercentage\": 10,\n    \"expiryDays\": 30\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/voucher/rule",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"rule"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Reward Rule (FIXED, Repeatable)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Every RM 500 Reward\",\n    \"spendThreshold\": 500,\n    \"isRepeatable\": true,\n    \"discountType\": \"FIXED\",\n    \"discountAmount\": 25,\n    \"expiryDays\": 14,\n    \"minPurchaseAmount\": 100\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/voucher/rule",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"rule"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Reward Rule",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Rule Name\",\n    \"isActive\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/voucher/rule/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"rule",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Reward Rule",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/voucher/rule/1",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"rule",
+										"1"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Vouchers",
+					"item": [
+						{
+							"name": "Get Customer Vouchers (Active)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/voucher/customer/1?status=ACTIVE",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"customer",
+										"1"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "ACTIVE"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Customer Vouchers (All)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{basedUrl}}/voucher/customer/1?status=ALL",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"customer",
+										"1"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "ALL"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Issue Voucher (Manual)",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{userToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"customerId\": 1,\n    \"discountType\": \"FIXED\",\n    \"discountAmount\": 50,\n    \"expiryDays\": 30,\n    \"label\": \"Customer appreciation gift\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{basedUrl}}/voucher/issue",
+									"host": [
+										"{{basedUrl}}"
+									],
+									"path": [
+										"voucher",
+										"issue"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
 		}
 	],
 	"variable": [

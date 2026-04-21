@@ -14,6 +14,7 @@ import {
     getLowStockTitle
 } from '../pushy/notification-messages';
 import loyaltyService from '../loyalty/loyalty.service';
+import voucherService from '../voucher/voucher.service';
 
 // Helper: calculate effective stock quantity for deduction/restoration
 // For consumption items: quantity * stockConsumptionQty (e.g., 3 orders × 50ml = 150ml)
@@ -123,6 +124,9 @@ async function processLoyaltyForSale(
     customerSubscriptionId: number | null;
     subscriptionDiscountAmount: Decimal;
     loyaltyAccountId: number | null;
+    voucherId: number | null;
+    voucherDiscountPercentage: Decimal;
+    voucherDiscountAmount: Decimal;
 }> {
     const zero = new Decimal(0);
     const result = {
@@ -134,6 +138,9 @@ async function processLoyaltyForSale(
         customerSubscriptionId: null as number | null,
         subscriptionDiscountAmount: zero,
         loyaltyAccountId: null as number | null,
+        voucherId: null as number | null,
+        voucherDiscountPercentage: zero,
+        voucherDiscountAmount: zero,
     };
 
     // Find loyalty account for this customer
@@ -150,8 +157,20 @@ async function processLoyaltyForSale(
 
     const toNum = loyaltyService.toDecimalNumber;
 
-    // 1. VALIDATE tier discount (advanced only)
-    if (performedBy.loyaltyTier === 'advanced' && salesBody.loyaltyTierDiscountPercentage && salesBody.loyaltyTierDiscountPercentage > 0) {
+    // 0. VALIDATE voucher (if present — runs BEFORE tier discount)
+    if (salesBody.voucherId) {
+        const voucherResult = await voucherService.validateAndRedeemVoucher(
+            tx, salesBody.voucherId, customerId, salesId, totalAmount,
+            salesBody.voucherDiscountPercentage, salesBody.voucherDiscountAmount,
+        );
+        result.voucherId = voucherResult.voucherId;
+        result.voucherDiscountPercentage = voucherResult.voucherDiscountPercentage;
+        result.voucherDiscountAmount = voucherResult.voucherDiscountAmount;
+        // Skip tier discount — voucher and tier are mutually exclusive
+    }
+
+    // 1. VALIDATE tier discount (advanced only) — skipped if voucher was applied
+    else if (performedBy.loyaltyTier === 'advanced' && salesBody.loyaltyTierDiscountPercentage && salesBody.loyaltyTierDiscountPercentage > 0) {
         const tier = (account as any).loyaltyTier;
         if (!tier || toNum(tier.discountPercentage) !== salesBody.loyaltyTierDiscountPercentage) {
             throw new TierMismatchError(
@@ -474,6 +493,11 @@ async function reverseLoyaltyForSale(
         }
     }
 
+    // 2b. Restore voucher (if sale used one)
+    if (sale.voucherId) {
+        await voucherService.restoreVoucherForSale(tx, sale.id);
+    }
+
     // 3. Restore subscription quota (advanced only)
     if (sale.customerSubscriptionId) {
         const subscription = await tx.customerSubscription.findUnique({
@@ -567,6 +591,18 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                 totalItemDiscountAmount: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Loyalty fields
+                loyaltyPointsEarned: true,
+                loyaltyPointsRedeemed: true,
+                loyaltyPointsRedemptionValue: true,
+                loyaltyTierDiscountPercent: true,
+                loyaltyTierDiscountAmount: true,
+                customerSubscriptionId: true,
+                subscriptionDiscountAmount: true,
+                // Voucher fields
+                voucherId: true,
+                voucherDiscountPercentage: true,
+                voucherDiscountAmount: true,
                 payments: {
                     select: {
                         method: true
@@ -604,6 +640,18 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             totalItems: sale.salesItems.length,
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Loyalty fields
+            loyaltyPointsEarned: sale.loyaltyPointsEarned,
+            loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
+            loyaltyPointsRedemptionValue: sale.loyaltyPointsRedemptionValue,
+            loyaltyTierDiscountPercent: sale.loyaltyTierDiscountPercent,
+            loyaltyTierDiscountAmount: sale.loyaltyTierDiscountAmount,
+            customerSubscriptionId: sale.customerSubscriptionId,
+            subscriptionDiscountAmount: sale.subscriptionDiscountAmount,
+            // Voucher fields
+            voucherId: sale.voucherId,
+            voucherDiscountPercentage: sale.voucherDiscountPercentage,
+            voucherDiscountAmount: sale.voucherDiscountAmount,
             payments: sale.payments || [],
         }));
 
@@ -679,6 +727,18 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 remark: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Loyalty fields
+                loyaltyPointsEarned: true,
+                loyaltyPointsRedeemed: true,
+                loyaltyPointsRedemptionValue: true,
+                loyaltyTierDiscountPercent: true,
+                loyaltyTierDiscountAmount: true,
+                customerSubscriptionId: true,
+                subscriptionDiscountAmount: true,
+                // Voucher fields
+                voucherId: true,
+                voucherDiscountPercentage: true,
+                voucherDiscountAmount: true,
                 payments: {
                     select: {
                         method: true
@@ -712,6 +772,18 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             totalItems: sale.salesItems.length,
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Loyalty fields
+            loyaltyPointsEarned: sale.loyaltyPointsEarned,
+            loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
+            loyaltyPointsRedemptionValue: sale.loyaltyPointsRedemptionValue,
+            loyaltyTierDiscountPercent: sale.loyaltyTierDiscountPercent,
+            loyaltyTierDiscountAmount: sale.loyaltyTierDiscountAmount,
+            customerSubscriptionId: sale.customerSubscriptionId,
+            subscriptionDiscountAmount: sale.subscriptionDiscountAmount,
+            // Voucher fields
+            voucherId: sale.voucherId,
+            voucherDiscountPercentage: sale.voucherDiscountPercentage,
+            voucherDiscountAmount: sale.voucherDiscountAmount,
             payments: sale.payments || []
         }));
 
@@ -1298,7 +1370,7 @@ async function completeNewSales(
                     totalSalesAmount, salesBody, performedBy
                 );
 
-                // Update sales record with loyalty data
+                // Update sales record with loyalty + voucher data
                 await tx.sales.update({
                     where: { id: createdSales.id },
                     data: {
@@ -1309,6 +1381,9 @@ async function completeNewSales(
                         loyaltyTierDiscountAmount: loyaltyResult.loyaltyTierDiscountAmount,
                         customerSubscriptionId: loyaltyResult.customerSubscriptionId,
                         subscriptionDiscountAmount: loyaltyResult.subscriptionDiscountAmount,
+                        voucherId: loyaltyResult.voucherId,
+                        voucherDiscountPercentage: loyaltyResult.voucherDiscountPercentage,
+                        voucherDiscountAmount: loyaltyResult.voucherDiscountAmount,
                     },
                 });
 
@@ -1319,6 +1394,16 @@ async function completeNewSales(
                     setImmediate(() => {
                         loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
                             console.error('Tier auto-upgrade check failed:', err)
+                        );
+                    });
+                }
+
+                // Fire-and-forget: check voucher milestones
+                if (loyaltyResult.loyaltyAccountId && salesBody.customerId) {
+                    const custId = salesBody.customerId;
+                    setImmediate(() => {
+                        voucherService.checkMilestones(databaseName, custId).catch(err =>
+                            console.error('Voucher milestone check failed:', err)
                         );
                     });
                 }
@@ -1696,6 +1781,7 @@ let getTotalSalesData = async (databaseName: string, sessionID: number, loyaltyT
                     loyaltyPointsRedeemed: true,
                     loyaltyTierDiscountAmount: true,
                     customerSubscriptionId: true,
+                    voucherDiscountAmount: true,
                 } : {}),
             }
         });
@@ -1749,12 +1835,14 @@ let getTotalSalesData = async (databaseName: string, sessionID: number, loyaltyT
             let totalPointsEarned = new Decimal(0);
             let totalPointsRedeemed = new Decimal(0);
             let totalLoyaltyDiscount = new Decimal(0);
+            let totalVoucherDiscount = new Decimal(0);
             let subscriptionUsageCount = 0;
 
             activeSales.forEach((sale: any) => {
                 if (sale.loyaltyPointsEarned) totalPointsEarned = totalPointsEarned.plus(sale.loyaltyPointsEarned);
                 if (sale.loyaltyPointsRedeemed) totalPointsRedeemed = totalPointsRedeemed.plus(sale.loyaltyPointsRedeemed);
                 if (sale.loyaltyTierDiscountAmount) totalLoyaltyDiscount = totalLoyaltyDiscount.plus(sale.loyaltyTierDiscountAmount);
+                if (sale.voucherDiscountAmount) totalVoucherDiscount = totalVoucherDiscount.plus(sale.voucherDiscountAmount);
                 if (sale.customerSubscriptionId) subscriptionUsageCount++;
             });
 
@@ -1762,6 +1850,7 @@ let getTotalSalesData = async (databaseName: string, sessionID: number, loyaltyT
                 totalLoyaltyPointsEarned: totalPointsEarned,
                 totalLoyaltyPointsRedeemed: totalPointsRedeemed,
                 totalLoyaltyDiscountAmount: totalLoyaltyDiscount,
+                totalVoucherDiscountAmount: totalVoucherDiscount,
                 totalSubscriptionUsages: subscriptionUsageCount,
             };
         }
@@ -1931,6 +2020,13 @@ let addPaymentToPartiallyPaidSales = async (
                                     );
                                 });
                             }
+
+                            // Fire-and-forget: check voucher milestones
+                            setImmediate(() => {
+                                voucherService.checkMilestones(databaseName, sales.customerId!).catch(err =>
+                                    console.error('Voucher milestone check failed:', err)
+                                );
+                            });
                         }
                     }
                 }

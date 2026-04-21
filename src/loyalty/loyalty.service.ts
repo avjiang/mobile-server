@@ -214,6 +214,13 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
                 SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY)
                 WHERE REMAINING_POINTS > 0 AND EXPIRES_AT IS NOT NULL AND IS_DELETED = false
             `.catch((err: unknown) => console.error('Extend point batch expiry failed:', err));
+
+            // Extend voucher expiresAt
+            prisma.$executeRaw`
+                UPDATE voucher
+                SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY)
+                WHERE STATUS = 'ACTIVE' AND EXPIRES_AT IS NOT NULL AND IS_DELETED = false
+            `.catch((err: unknown) => console.error('Extend voucher expiry failed:', err));
         }
 
         // Bulk enroll customers created during inactive period

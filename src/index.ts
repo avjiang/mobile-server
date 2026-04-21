@@ -4,6 +4,7 @@ import cors from 'cors'
 import compression from 'compression'
 import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
+import idempotencyMiddleware from './middleware/idempotency-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
 // import { initCronJobs } from './cron/cron-manager';
@@ -44,6 +45,10 @@ app.use('/auth', require('./auth/auth.controller'))
 //authentication middleware
 app.use(authorizeMiddleware)
 
+// Dedupe retries of the same write (clientIdempotencyKey from Flutter outbox).
+// Must run after auth so we know which tenant DB to query.
+app.use(idempotencyMiddleware)
+
 // all api routes that need authorize should place here
 app.use('/admin', require('./admin/admin.controller'))
 app.use('/account', require('./account/account.controller'))
@@ -73,6 +78,7 @@ app.use('/warehouses', require('./warehouse/warehouse.controller'))
 app.use('/purchaseReturn', require('./purchase_return/purchase-return.controller'))
 app.use('/loyalty', require('./loyalty/loyalty.controller'))
 app.use('/subscription', require('./subscription-package/subscription-package.controller'))
+app.use('/voucher', require('./voucher/voucher.controller'))
 
 // error middleware
 app.use(errorMiddleware)

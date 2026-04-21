@@ -64,6 +64,10 @@ export class CreateSalesRequest {
     @Expose() customerSubscriptionId?: number;
     @Expose() subscriptionQuantityUsed?: number;
     @Expose() subscriptionDiscountAmount?: number;
+    // Voucher fields (optional — only sent when voucher is applied)
+    @Expose() voucherId?: number;
+    @Expose() voucherDiscountPercentage?: number;
+    @Expose() voucherDiscountAmount?: number;
     @Expose()
     @Type(() => CreateSalesItemRequest)
     salesItems: CreateSalesItemRequest[] = [];

@@ -8,6 +8,7 @@
 import cron from 'node-cron';
 import { processPointExpiry } from './loyalty-expiry.cron';
 import { processSubscriptionExpiry } from './subscription-expiry.cron';
+import { processIdempotencyCleanup } from './idempotency-cleanup.cron';
 
 function initCronJobs(): void {
     console.log('[Cron] Initializing cron jobs...');
@@ -30,7 +31,16 @@ function initCronJobs(): void {
         }
     });
 
-    console.log('[Cron] Cron jobs initialized: point-expiry (2:00 AM), subscription-expiry (2:30 AM)');
+    // Idempotency record cleanup — daily at 3:00 AM
+    cron.schedule('0 3 * * *', async () => {
+        try {
+            await processIdempotencyCleanup();
+        } catch (error) {
+            console.error('[Cron] Unhandled error in idempotency cleanup:', error);
+        }
+    });
+
+    console.log('[Cron] Cron jobs initialized: point-expiry (2:00 AM), subscription-expiry (2:30 AM), idempotency-cleanup (3:00 AM)');
 }
 
 export { initCronJobs };

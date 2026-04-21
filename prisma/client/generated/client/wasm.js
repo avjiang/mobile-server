@@ -393,7 +393,10 @@ exports.Prisma.SalesScalarFieldEnum = {
   loyaltyTierDiscountPercent: 'loyaltyTierDiscountPercent',
   loyaltyTierDiscountAmount: 'loyaltyTierDiscountAmount',
   customerSubscriptionId: 'customerSubscriptionId',
-  subscriptionDiscountAmount: 'subscriptionDiscountAmount'
+  subscriptionDiscountAmount: 'subscriptionDiscountAmount',
+  voucherId: 'voucherId',
+  voucherDiscountPercentage: 'voucherDiscountPercentage',
+  voucherDiscountAmount: 'voucherDiscountAmount'
 };
 
 exports.Prisma.SalesItemScalarFieldEnum = {
@@ -1445,6 +1448,57 @@ exports.Prisma.SubscriptionUsageScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.RewardRuleScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  triggerType: 'triggerType',
+  spendThreshold: 'spendThreshold',
+  isRepeatable: 'isRepeatable',
+  discountType: 'discountType',
+  discountPercentage: 'discountPercentage',
+  discountAmount: 'discountAmount',
+  expiryDays: 'expiryDays',
+  minPurchaseAmount: 'minPurchaseAmount',
+  isActive: 'isActive',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.VoucherScalarFieldEnum = {
+  id: 'id',
+  rewardRuleId: 'rewardRuleId',
+  customerId: 'customerId',
+  loyaltyAccountId: 'loyaltyAccountId',
+  discountType: 'discountType',
+  discountPercentage: 'discountPercentage',
+  discountAmount: 'discountAmount',
+  minPurchaseAmount: 'minPurchaseAmount',
+  status: 'status',
+  milestoneSpendSnapshot: 'milestoneSpendSnapshot',
+  label: 'label',
+  expiresAt: 'expiresAt',
+  redeemedAt: 'redeemedAt',
+  redeemedInSalesId: 'redeemedInSalesId',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
+exports.Prisma.IdempotencyRecordScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  endpoint: 'endpoint',
+  userId: 'userId',
+  responseStatus: 'responseStatus',
+  responseBody: 'responseBody',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1913,6 +1967,24 @@ exports.Prisma.CustomerSubscriptionOrderByRelevanceFieldEnum = {
 exports.Prisma.SubscriptionUsageOrderByRelevanceFieldEnum = {
   performedBy: 'performedBy'
 };
+
+exports.Prisma.RewardRuleOrderByRelevanceFieldEnum = {
+  name: 'name',
+  triggerType: 'triggerType',
+  discountType: 'discountType'
+};
+
+exports.Prisma.VoucherOrderByRelevanceFieldEnum = {
+  discountType: 'discountType',
+  status: 'status',
+  label: 'label'
+};
+
+exports.Prisma.IdempotencyRecordOrderByRelevanceFieldEnum = {
+  key: 'key',
+  endpoint: 'endpoint',
+  responseBody: 'responseBody'
+};
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   ORDERED: 'ORDERED',
   PREPARING: 'PREPARING',
@@ -2020,7 +2092,10 @@ exports.Prisma.ModelName = {
   SubscriptionPackage: 'SubscriptionPackage',
   SubscriptionPackageCategory: 'SubscriptionPackageCategory',
   CustomerSubscription: 'CustomerSubscription',
-  SubscriptionUsage: 'SubscriptionUsage'
+  SubscriptionUsage: 'SubscriptionUsage',
+  RewardRule: 'RewardRule',
+  Voucher: 'Voucher',
+  IdempotencyRecord: 'IdempotencyRecord'
 };
 
 /**

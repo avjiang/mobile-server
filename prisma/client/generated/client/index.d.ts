@@ -378,6 +378,29 @@ export type CustomerSubscription = $Result.DefaultSelection<Prisma.$CustomerSubs
  * 
  */
 export type SubscriptionUsage = $Result.DefaultSelection<Prisma.$SubscriptionUsagePayload>
+/**
+ * Model RewardRule
+ * 
+ */
+export type RewardRule = $Result.DefaultSelection<Prisma.$RewardRulePayload>
+/**
+ * Model Voucher
+ * 
+ */
+export type Voucher = $Result.DefaultSelection<Prisma.$VoucherPayload>
+/**
+ * Model IdempotencyRecord
+ * Dedupe write requests that retry after the server already accepted the
+ * original. The Flutter outbox sends `clientIdempotencyKey` on every retry
+ * of the same queued write; the idempotency middleware looks up
+ * `(endpoint, key)` here and replays the stored response instead of
+ * re-executing the handler.
+ * 
+ * One row per (endpoint, clientIdempotencyKey). Records expire after 24h
+ * via a cron task — the FE outbox gives up far earlier than that (max
+ * retry count × max backoff ≈ 1.5h).
+ */
+export type IdempotencyRecord = $Result.DefaultSelection<Prisma.$IdempotencyRecordPayload>
 
 /**
  * Enums
@@ -1379,6 +1402,36 @@ export class PrismaClient<
     * ```
     */
   get subscriptionUsage(): Prisma.SubscriptionUsageDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.rewardRule`: Exposes CRUD operations for the **RewardRule** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RewardRules
+    * const rewardRules = await prisma.rewardRule.findMany()
+    * ```
+    */
+  get rewardRule(): Prisma.RewardRuleDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.voucher`: Exposes CRUD operations for the **Voucher** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Vouchers
+    * const vouchers = await prisma.voucher.findMany()
+    * ```
+    */
+  get voucher(): Prisma.VoucherDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.idempotencyRecord`: Exposes CRUD operations for the **IdempotencyRecord** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more IdempotencyRecords
+    * const idempotencyRecords = await prisma.idempotencyRecord.findMany()
+    * ```
+    */
+  get idempotencyRecord(): Prisma.IdempotencyRecordDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1891,7 +1944,10 @@ export namespace Prisma {
     SubscriptionPackage: 'SubscriptionPackage',
     SubscriptionPackageCategory: 'SubscriptionPackageCategory',
     CustomerSubscription: 'CustomerSubscription',
-    SubscriptionUsage: 'SubscriptionUsage'
+    SubscriptionUsage: 'SubscriptionUsage',
+    RewardRule: 'RewardRule',
+    Voucher: 'Voucher',
+    IdempotencyRecord: 'IdempotencyRecord'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1910,7 +1966,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "role" | "rolePermission" | "notificationPreference" | "user" | "overrideLog" | "setting" | "referral" | "supplier" | "customer" | "company" | "outlet" | "item" | "category" | "sales" | "salesItem" | "salesItemModifier" | "invoice" | "invoiceItem" | "invoiceSettlement" | "deliveryOrder" | "deliveryOrderItem" | "quotation" | "quotationItem" | "purchaseOrder" | "purchaseOrderItem" | "payment" | "registerLog" | "cardInfo" | "session" | "declaration" | "stockBalance" | "stockReceipt" | "stockReceiptArchive" | "stockMovement" | "stockMovementArchive" | "stockSnapshot" | "menuProfileOutlet" | "menuProfile" | "menuCategory" | "menuItem" | "menuItemModifierGroup" | "menuItemModifier" | "table" | "recipe" | "station" | "reservation" | "orderRouting" | "waitlist" | "splitBill" | "promotion" | "promotionItem" | "promotionCustomer" | "promotionUsage" | "registeredDevice" | "warehouse" | "warehouseStockBalance" | "warehouseStockReceipt" | "warehouseStockMovement" | "warehouseStockMovementArchive" | "variantAttributeValue" | "itemVariant" | "itemVariantAttribute" | "purchaseReturn" | "purchaseReturnItem" | "loyaltyProgram" | "loyaltyTier" | "loyaltyAccount" | "loyaltyPointBatch" | "loyaltyTransaction" | "subscriptionPackage" | "subscriptionPackageCategory" | "customerSubscription" | "subscriptionUsage"
+      modelProps: "role" | "rolePermission" | "notificationPreference" | "user" | "overrideLog" | "setting" | "referral" | "supplier" | "customer" | "company" | "outlet" | "item" | "category" | "sales" | "salesItem" | "salesItemModifier" | "invoice" | "invoiceItem" | "invoiceSettlement" | "deliveryOrder" | "deliveryOrderItem" | "quotation" | "quotationItem" | "purchaseOrder" | "purchaseOrderItem" | "payment" | "registerLog" | "cardInfo" | "session" | "declaration" | "stockBalance" | "stockReceipt" | "stockReceiptArchive" | "stockMovement" | "stockMovementArchive" | "stockSnapshot" | "menuProfileOutlet" | "menuProfile" | "menuCategory" | "menuItem" | "menuItemModifierGroup" | "menuItemModifier" | "table" | "recipe" | "station" | "reservation" | "orderRouting" | "waitlist" | "splitBill" | "promotion" | "promotionItem" | "promotionCustomer" | "promotionUsage" | "registeredDevice" | "warehouse" | "warehouseStockBalance" | "warehouseStockReceipt" | "warehouseStockMovement" | "warehouseStockMovementArchive" | "variantAttributeValue" | "itemVariant" | "itemVariantAttribute" | "purchaseReturn" | "purchaseReturnItem" | "loyaltyProgram" | "loyaltyTier" | "loyaltyAccount" | "loyaltyPointBatch" | "loyaltyTransaction" | "subscriptionPackage" | "subscriptionPackageCategory" | "customerSubscription" | "subscriptionUsage" | "rewardRule" | "voucher" | "idempotencyRecord"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -6732,6 +6788,204 @@ export namespace Prisma {
           }
         }
       }
+      RewardRule: {
+        payload: Prisma.$RewardRulePayload<ExtArgs>
+        fields: Prisma.RewardRuleFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RewardRuleFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RewardRuleFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload>
+          }
+          findFirst: {
+            args: Prisma.RewardRuleFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RewardRuleFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload>
+          }
+          findMany: {
+            args: Prisma.RewardRuleFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload>[]
+          }
+          create: {
+            args: Prisma.RewardRuleCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload>
+          }
+          createMany: {
+            args: Prisma.RewardRuleCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.RewardRuleDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload>
+          }
+          update: {
+            args: Prisma.RewardRuleUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload>
+          }
+          deleteMany: {
+            args: Prisma.RewardRuleDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RewardRuleUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RewardRuleUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RewardRulePayload>
+          }
+          aggregate: {
+            args: Prisma.RewardRuleAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRewardRule>
+          }
+          groupBy: {
+            args: Prisma.RewardRuleGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RewardRuleGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RewardRuleCountArgs<ExtArgs>
+            result: $Utils.Optional<RewardRuleCountAggregateOutputType> | number
+          }
+        }
+      }
+      Voucher: {
+        payload: Prisma.$VoucherPayload<ExtArgs>
+        fields: Prisma.VoucherFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VoucherFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VoucherFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload>
+          }
+          findFirst: {
+            args: Prisma.VoucherFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VoucherFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload>
+          }
+          findMany: {
+            args: Prisma.VoucherFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload>[]
+          }
+          create: {
+            args: Prisma.VoucherCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload>
+          }
+          createMany: {
+            args: Prisma.VoucherCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.VoucherDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload>
+          }
+          update: {
+            args: Prisma.VoucherUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload>
+          }
+          deleteMany: {
+            args: Prisma.VoucherDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VoucherUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VoucherUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VoucherPayload>
+          }
+          aggregate: {
+            args: Prisma.VoucherAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVoucher>
+          }
+          groupBy: {
+            args: Prisma.VoucherGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VoucherGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VoucherCountArgs<ExtArgs>
+            result: $Utils.Optional<VoucherCountAggregateOutputType> | number
+          }
+        }
+      }
+      IdempotencyRecord: {
+        payload: Prisma.$IdempotencyRecordPayload<ExtArgs>
+        fields: Prisma.IdempotencyRecordFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.IdempotencyRecordFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.IdempotencyRecordFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload>
+          }
+          findFirst: {
+            args: Prisma.IdempotencyRecordFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.IdempotencyRecordFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload>
+          }
+          findMany: {
+            args: Prisma.IdempotencyRecordFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload>[]
+          }
+          create: {
+            args: Prisma.IdempotencyRecordCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload>
+          }
+          createMany: {
+            args: Prisma.IdempotencyRecordCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.IdempotencyRecordDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload>
+          }
+          update: {
+            args: Prisma.IdempotencyRecordUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload>
+          }
+          deleteMany: {
+            args: Prisma.IdempotencyRecordDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.IdempotencyRecordUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.IdempotencyRecordUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$IdempotencyRecordPayload>
+          }
+          aggregate: {
+            args: Prisma.IdempotencyRecordAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateIdempotencyRecord>
+          }
+          groupBy: {
+            args: Prisma.IdempotencyRecordGroupByArgs<ExtArgs>
+            result: $Utils.Optional<IdempotencyRecordGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.IdempotencyRecordCountArgs<ExtArgs>
+            result: $Utils.Optional<IdempotencyRecordCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -6889,6 +7143,9 @@ export namespace Prisma {
     subscriptionPackageCategory?: SubscriptionPackageCategoryOmit
     customerSubscription?: CustomerSubscriptionOmit
     subscriptionUsage?: SubscriptionUsageOmit
+    rewardRule?: RewardRuleOmit
+    voucher?: VoucherOmit
+    idempotencyRecord?: IdempotencyRecordOmit
   }
 
   /* Types for Logging */
@@ -7147,6 +7404,7 @@ export namespace Prisma {
     splitBills: number
     loyaltyAccounts: number
     customerSubscriptions: number
+    vouchers: number
   }
 
   export type CustomerCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7158,6 +7416,7 @@ export namespace Prisma {
     splitBills?: boolean | CustomerCountOutputTypeCountSplitBillsArgs
     loyaltyAccounts?: boolean | CustomerCountOutputTypeCountLoyaltyAccountsArgs
     customerSubscriptions?: boolean | CustomerCountOutputTypeCountCustomerSubscriptionsArgs
+    vouchers?: boolean | CustomerCountOutputTypeCountVouchersArgs
   }
 
   // Custom InputTypes
@@ -7225,6 +7484,13 @@ export namespace Prisma {
    */
   export type CustomerCountOutputTypeCountCustomerSubscriptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CustomerSubscriptionWhereInput
+  }
+
+  /**
+   * CustomerCountOutputType without action
+   */
+  export type CustomerCountOutputTypeCountVouchersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VoucherWhereInput
   }
 
 
@@ -8630,11 +8896,13 @@ export namespace Prisma {
   export type LoyaltyAccountCountOutputType = {
     transactions: number
     pointBatches: number
+    vouchers: number
   }
 
   export type LoyaltyAccountCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     transactions?: boolean | LoyaltyAccountCountOutputTypeCountTransactionsArgs
     pointBatches?: boolean | LoyaltyAccountCountOutputTypeCountPointBatchesArgs
+    vouchers?: boolean | LoyaltyAccountCountOutputTypeCountVouchersArgs
   }
 
   // Custom InputTypes
@@ -8660,6 +8928,13 @@ export namespace Prisma {
    */
   export type LoyaltyAccountCountOutputTypeCountPointBatchesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: LoyaltyPointBatchWhereInput
+  }
+
+  /**
+   * LoyaltyAccountCountOutputType without action
+   */
+  export type LoyaltyAccountCountOutputTypeCountVouchersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VoucherWhereInput
   }
 
 
@@ -8740,6 +9015,37 @@ export namespace Prisma {
    */
   export type CustomerSubscriptionCountOutputTypeCountSalesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SalesWhereInput
+  }
+
+
+  /**
+   * Count Type RewardRuleCountOutputType
+   */
+
+  export type RewardRuleCountOutputType = {
+    vouchers: number
+  }
+
+  export type RewardRuleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vouchers?: boolean | RewardRuleCountOutputTypeCountVouchersArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * RewardRuleCountOutputType without action
+   */
+  export type RewardRuleCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRuleCountOutputType
+     */
+    select?: RewardRuleCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * RewardRuleCountOutputType without action
+   */
+  export type RewardRuleCountOutputTypeCountVouchersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VoucherWhereInput
   }
 
 
@@ -17668,6 +17974,7 @@ export namespace Prisma {
     splitBills?: boolean | Customer$splitBillsArgs<ExtArgs>
     loyaltyAccounts?: boolean | Customer$loyaltyAccountsArgs<ExtArgs>
     customerSubscriptions?: boolean | Customer$customerSubscriptionsArgs<ExtArgs>
+    vouchers?: boolean | Customer$vouchersArgs<ExtArgs>
     _count?: boolean | CustomerCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["customer"]>
 
@@ -17710,6 +18017,7 @@ export namespace Prisma {
     splitBills?: boolean | Customer$splitBillsArgs<ExtArgs>
     loyaltyAccounts?: boolean | Customer$loyaltyAccountsArgs<ExtArgs>
     customerSubscriptions?: boolean | Customer$customerSubscriptionsArgs<ExtArgs>
+    vouchers?: boolean | Customer$vouchersArgs<ExtArgs>
     _count?: boolean | CustomerCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -17724,6 +18032,7 @@ export namespace Prisma {
       splitBills: Prisma.$SplitBillPayload<ExtArgs>[]
       loyaltyAccounts: Prisma.$LoyaltyAccountPayload<ExtArgs>[]
       customerSubscriptions: Prisma.$CustomerSubscriptionPayload<ExtArgs>[]
+      vouchers: Prisma.$VoucherPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -18098,6 +18407,7 @@ export namespace Prisma {
     splitBills<T extends Customer$splitBillsArgs<ExtArgs> = {}>(args?: Subset<T, Customer$splitBillsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SplitBillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     loyaltyAccounts<T extends Customer$loyaltyAccountsArgs<ExtArgs> = {}>(args?: Subset<T, Customer$loyaltyAccountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LoyaltyAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     customerSubscriptions<T extends Customer$customerSubscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, Customer$customerSubscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CustomerSubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    vouchers<T extends Customer$vouchersArgs<ExtArgs> = {}>(args?: Subset<T, Customer$vouchersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -18683,6 +18993,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CustomerSubscriptionScalarFieldEnum | CustomerSubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * Customer.vouchers
+   */
+  export type Customer$vouchersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    where?: VoucherWhereInput
+    orderBy?: VoucherOrderByWithRelationInput | VoucherOrderByWithRelationInput[]
+    cursor?: VoucherWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VoucherScalarFieldEnum | VoucherScalarFieldEnum[]
   }
 
   /**
@@ -23880,6 +24214,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount: Decimal | null
     customerSubscriptionId: number | null
     subscriptionDiscountAmount: Decimal | null
+    voucherId: number | null
+    voucherDiscountPercentage: Decimal | null
+    voucherDiscountAmount: Decimal | null
   }
 
   export type SalesSumAggregateOutputType = {
@@ -23912,6 +24249,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount: Decimal | null
     customerSubscriptionId: number | null
     subscriptionDiscountAmount: Decimal | null
+    voucherId: number | null
+    voucherDiscountPercentage: Decimal | null
+    voucherDiscountAmount: Decimal | null
   }
 
   export type SalesMinAggregateOutputType = {
@@ -23971,6 +24311,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount: Decimal | null
     customerSubscriptionId: number | null
     subscriptionDiscountAmount: Decimal | null
+    voucherId: number | null
+    voucherDiscountPercentage: Decimal | null
+    voucherDiscountAmount: Decimal | null
   }
 
   export type SalesMaxAggregateOutputType = {
@@ -24030,6 +24373,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount: Decimal | null
     customerSubscriptionId: number | null
     subscriptionDiscountAmount: Decimal | null
+    voucherId: number | null
+    voucherDiscountPercentage: Decimal | null
+    voucherDiscountAmount: Decimal | null
   }
 
   export type SalesCountAggregateOutputType = {
@@ -24089,6 +24435,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount: number
     customerSubscriptionId: number
     subscriptionDiscountAmount: number
+    voucherId: number
+    voucherDiscountPercentage: number
+    voucherDiscountAmount: number
     _all: number
   }
 
@@ -24123,6 +24472,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: true
     customerSubscriptionId?: true
     subscriptionDiscountAmount?: true
+    voucherId?: true
+    voucherDiscountPercentage?: true
+    voucherDiscountAmount?: true
   }
 
   export type SalesSumAggregateInputType = {
@@ -24155,6 +24507,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: true
     customerSubscriptionId?: true
     subscriptionDiscountAmount?: true
+    voucherId?: true
+    voucherDiscountPercentage?: true
+    voucherDiscountAmount?: true
   }
 
   export type SalesMinAggregateInputType = {
@@ -24214,6 +24569,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: true
     customerSubscriptionId?: true
     subscriptionDiscountAmount?: true
+    voucherId?: true
+    voucherDiscountPercentage?: true
+    voucherDiscountAmount?: true
   }
 
   export type SalesMaxAggregateInputType = {
@@ -24273,6 +24631,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: true
     customerSubscriptionId?: true
     subscriptionDiscountAmount?: true
+    voucherId?: true
+    voucherDiscountPercentage?: true
+    voucherDiscountAmount?: true
   }
 
   export type SalesCountAggregateInputType = {
@@ -24332,6 +24693,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: true
     customerSubscriptionId?: true
     subscriptionDiscountAmount?: true
+    voucherId?: true
+    voucherDiscountPercentage?: true
+    voucherDiscountAmount?: true
     _all?: true
   }
 
@@ -24478,6 +24842,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount: Decimal | null
     customerSubscriptionId: number | null
     subscriptionDiscountAmount: Decimal | null
+    voucherId: number | null
+    voucherDiscountPercentage: Decimal | null
+    voucherDiscountAmount: Decimal | null
     _count: SalesCountAggregateOutputType | null
     _avg: SalesAvgAggregateOutputType | null
     _sum: SalesSumAggregateOutputType | null
@@ -24556,6 +24923,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: boolean
     customerSubscriptionId?: boolean
     subscriptionDiscountAmount?: boolean
+    voucherId?: boolean
+    voucherDiscountPercentage?: boolean
+    voucherDiscountAmount?: boolean
     salesItems?: boolean | Sales$salesItemsArgs<ExtArgs>
     payments?: boolean | Sales$paymentsArgs<ExtArgs>
     registerLogs?: boolean | Sales$registerLogsArgs<ExtArgs>
@@ -24565,6 +24935,7 @@ export namespace Prisma {
     loyaltyPointBatches?: boolean | Sales$loyaltyPointBatchesArgs<ExtArgs>
     subscriptionUsages?: boolean | Sales$subscriptionUsagesArgs<ExtArgs>
     customerSubscription?: boolean | Sales$customerSubscriptionArgs<ExtArgs>
+    redeemedVoucher?: boolean | Sales$redeemedVoucherArgs<ExtArgs>
     _count?: boolean | SalesCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["sales"]>
 
@@ -24627,9 +24998,12 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: boolean
     customerSubscriptionId?: boolean
     subscriptionDiscountAmount?: boolean
+    voucherId?: boolean
+    voucherDiscountPercentage?: boolean
+    voucherDiscountAmount?: boolean
   }
 
-  export type SalesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "outletId" | "businessDate" | "salesType" | "customerName" | "customerId" | "phoneNumber" | "billStreet" | "billCity" | "billState" | "billPostalCode" | "billCountry" | "shipStreet" | "shipCity" | "shipState" | "shipPostalCode" | "shipCountry" | "totalItemDiscountAmount" | "discountPercentage" | "discountAmount" | "profitAmount" | "serviceChargeAmount" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "paidAmount" | "changeAmount" | "status" | "remark" | "completedSessionId" | "sessionId" | "eodId" | "salesQuotationId" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "tableId" | "orderStatus" | "isTaxInclusive" | "stockSourceType" | "stockSourceOutletId" | "stockSourceWarehouseId" | "deliveredAt" | "deliveredBy" | "deliveryNotes" | "loyaltyPointsEarned" | "loyaltyPointsRedeemed" | "loyaltyPointsRedemptionValue" | "loyaltyTierDiscountPercent" | "loyaltyTierDiscountAmount" | "customerSubscriptionId" | "subscriptionDiscountAmount", ExtArgs["result"]["sales"]>
+  export type SalesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "outletId" | "businessDate" | "salesType" | "customerName" | "customerId" | "phoneNumber" | "billStreet" | "billCity" | "billState" | "billPostalCode" | "billCountry" | "shipStreet" | "shipCity" | "shipState" | "shipPostalCode" | "shipCountry" | "totalItemDiscountAmount" | "discountPercentage" | "discountAmount" | "profitAmount" | "serviceChargeAmount" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "paidAmount" | "changeAmount" | "status" | "remark" | "completedSessionId" | "sessionId" | "eodId" | "salesQuotationId" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "tableId" | "orderStatus" | "isTaxInclusive" | "stockSourceType" | "stockSourceOutletId" | "stockSourceWarehouseId" | "deliveredAt" | "deliveredBy" | "deliveryNotes" | "loyaltyPointsEarned" | "loyaltyPointsRedeemed" | "loyaltyPointsRedemptionValue" | "loyaltyTierDiscountPercent" | "loyaltyTierDiscountAmount" | "customerSubscriptionId" | "subscriptionDiscountAmount" | "voucherId" | "voucherDiscountPercentage" | "voucherDiscountAmount", ExtArgs["result"]["sales"]>
   export type SalesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     salesItems?: boolean | Sales$salesItemsArgs<ExtArgs>
     payments?: boolean | Sales$paymentsArgs<ExtArgs>
@@ -24640,6 +25014,7 @@ export namespace Prisma {
     loyaltyPointBatches?: boolean | Sales$loyaltyPointBatchesArgs<ExtArgs>
     subscriptionUsages?: boolean | Sales$subscriptionUsagesArgs<ExtArgs>
     customerSubscription?: boolean | Sales$customerSubscriptionArgs<ExtArgs>
+    redeemedVoucher?: boolean | Sales$redeemedVoucherArgs<ExtArgs>
     _count?: boolean | SalesCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -24655,6 +25030,7 @@ export namespace Prisma {
       loyaltyPointBatches: Prisma.$LoyaltyPointBatchPayload<ExtArgs>[]
       subscriptionUsages: Prisma.$SubscriptionUsagePayload<ExtArgs>[]
       customerSubscription: Prisma.$CustomerSubscriptionPayload<ExtArgs> | null
+      redeemedVoucher: Prisma.$VoucherPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -24713,6 +25089,9 @@ export namespace Prisma {
       loyaltyTierDiscountAmount: Prisma.Decimal | null
       customerSubscriptionId: number | null
       subscriptionDiscountAmount: Prisma.Decimal | null
+      voucherId: number | null
+      voucherDiscountPercentage: Prisma.Decimal | null
+      voucherDiscountAmount: Prisma.Decimal | null
     }, ExtArgs["result"]["sales"]>
     composites: {}
   }
@@ -25062,6 +25441,7 @@ export namespace Prisma {
     loyaltyPointBatches<T extends Sales$loyaltyPointBatchesArgs<ExtArgs> = {}>(args?: Subset<T, Sales$loyaltyPointBatchesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LoyaltyPointBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     subscriptionUsages<T extends Sales$subscriptionUsagesArgs<ExtArgs> = {}>(args?: Subset<T, Sales$subscriptionUsagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubscriptionUsagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     customerSubscription<T extends Sales$customerSubscriptionArgs<ExtArgs> = {}>(args?: Subset<T, Sales$customerSubscriptionArgs<ExtArgs>>): Prisma__CustomerSubscriptionClient<$Result.GetResult<Prisma.$CustomerSubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    redeemedVoucher<T extends Sales$redeemedVoucherArgs<ExtArgs> = {}>(args?: Subset<T, Sales$redeemedVoucherArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -25147,6 +25527,9 @@ export namespace Prisma {
     readonly loyaltyTierDiscountAmount: FieldRef<"Sales", 'Decimal'>
     readonly customerSubscriptionId: FieldRef<"Sales", 'Int'>
     readonly subscriptionDiscountAmount: FieldRef<"Sales", 'Decimal'>
+    readonly voucherId: FieldRef<"Sales", 'Int'>
+    readonly voucherDiscountPercentage: FieldRef<"Sales", 'Decimal'>
+    readonly voucherDiscountAmount: FieldRef<"Sales", 'Decimal'>
   }
     
 
@@ -25688,6 +26071,25 @@ export namespace Prisma {
      */
     include?: CustomerSubscriptionInclude<ExtArgs> | null
     where?: CustomerSubscriptionWhereInput
+  }
+
+  /**
+   * Sales.redeemedVoucher
+   */
+  export type Sales$redeemedVoucherArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    where?: VoucherWhereInput
   }
 
   /**
@@ -85332,6 +85734,7 @@ export namespace Prisma {
     loyaltyTier?: boolean | LoyaltyAccount$loyaltyTierArgs<ExtArgs>
     transactions?: boolean | LoyaltyAccount$transactionsArgs<ExtArgs>
     pointBatches?: boolean | LoyaltyAccount$pointBatchesArgs<ExtArgs>
+    vouchers?: boolean | LoyaltyAccount$vouchersArgs<ExtArgs>
     _count?: boolean | LoyaltyAccountCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["loyaltyAccount"]>
 
@@ -85362,6 +85765,7 @@ export namespace Prisma {
     loyaltyTier?: boolean | LoyaltyAccount$loyaltyTierArgs<ExtArgs>
     transactions?: boolean | LoyaltyAccount$transactionsArgs<ExtArgs>
     pointBatches?: boolean | LoyaltyAccount$pointBatchesArgs<ExtArgs>
+    vouchers?: boolean | LoyaltyAccount$vouchersArgs<ExtArgs>
     _count?: boolean | LoyaltyAccountCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -85373,6 +85777,7 @@ export namespace Prisma {
       loyaltyTier: Prisma.$LoyaltyTierPayload<ExtArgs> | null
       transactions: Prisma.$LoyaltyTransactionPayload<ExtArgs>[]
       pointBatches: Prisma.$LoyaltyPointBatchPayload<ExtArgs>[]
+      vouchers: Prisma.$VoucherPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -85735,6 +86140,7 @@ export namespace Prisma {
     loyaltyTier<T extends LoyaltyAccount$loyaltyTierArgs<ExtArgs> = {}>(args?: Subset<T, LoyaltyAccount$loyaltyTierArgs<ExtArgs>>): Prisma__LoyaltyTierClient<$Result.GetResult<Prisma.$LoyaltyTierPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     transactions<T extends LoyaltyAccount$transactionsArgs<ExtArgs> = {}>(args?: Subset<T, LoyaltyAccount$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LoyaltyTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     pointBatches<T extends LoyaltyAccount$pointBatchesArgs<ExtArgs> = {}>(args?: Subset<T, LoyaltyAccount$pointBatchesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LoyaltyPointBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    vouchers<T extends LoyaltyAccount$vouchersArgs<ExtArgs> = {}>(args?: Subset<T, LoyaltyAccount$vouchersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -86186,6 +86592,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: LoyaltyPointBatchScalarFieldEnum | LoyaltyPointBatchScalarFieldEnum[]
+  }
+
+  /**
+   * LoyaltyAccount.vouchers
+   */
+  export type LoyaltyAccount$vouchersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    where?: VoucherWhereInput
+    orderBy?: VoucherOrderByWithRelationInput | VoucherOrderByWithRelationInput[]
+    cursor?: VoucherWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VoucherScalarFieldEnum | VoucherScalarFieldEnum[]
   }
 
   /**
@@ -92771,6 +93201,3308 @@ export namespace Prisma {
 
 
   /**
+   * Model RewardRule
+   */
+
+  export type AggregateRewardRule = {
+    _count: RewardRuleCountAggregateOutputType | null
+    _avg: RewardRuleAvgAggregateOutputType | null
+    _sum: RewardRuleSumAggregateOutputType | null
+    _min: RewardRuleMinAggregateOutputType | null
+    _max: RewardRuleMaxAggregateOutputType | null
+  }
+
+  export type RewardRuleAvgAggregateOutputType = {
+    id: number | null
+    spendThreshold: Decimal | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    expiryDays: number | null
+    minPurchaseAmount: Decimal | null
+    version: number | null
+  }
+
+  export type RewardRuleSumAggregateOutputType = {
+    id: number | null
+    spendThreshold: Decimal | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    expiryDays: number | null
+    minPurchaseAmount: Decimal | null
+    version: number | null
+  }
+
+  export type RewardRuleMinAggregateOutputType = {
+    id: number | null
+    name: string | null
+    triggerType: string | null
+    spendThreshold: Decimal | null
+    isRepeatable: boolean | null
+    discountType: string | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    expiryDays: number | null
+    minPurchaseAmount: Decimal | null
+    isActive: boolean | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+  }
+
+  export type RewardRuleMaxAggregateOutputType = {
+    id: number | null
+    name: string | null
+    triggerType: string | null
+    spendThreshold: Decimal | null
+    isRepeatable: boolean | null
+    discountType: string | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    expiryDays: number | null
+    minPurchaseAmount: Decimal | null
+    isActive: boolean | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+  }
+
+  export type RewardRuleCountAggregateOutputType = {
+    id: number
+    name: number
+    triggerType: number
+    spendThreshold: number
+    isRepeatable: number
+    discountType: number
+    discountPercentage: number
+    discountAmount: number
+    expiryDays: number
+    minPurchaseAmount: number
+    isActive: number
+    deleted: number
+    deletedAt: number
+    createdAt: number
+    updatedAt: number
+    version: number
+    _all: number
+  }
+
+
+  export type RewardRuleAvgAggregateInputType = {
+    id?: true
+    spendThreshold?: true
+    discountPercentage?: true
+    discountAmount?: true
+    expiryDays?: true
+    minPurchaseAmount?: true
+    version?: true
+  }
+
+  export type RewardRuleSumAggregateInputType = {
+    id?: true
+    spendThreshold?: true
+    discountPercentage?: true
+    discountAmount?: true
+    expiryDays?: true
+    minPurchaseAmount?: true
+    version?: true
+  }
+
+  export type RewardRuleMinAggregateInputType = {
+    id?: true
+    name?: true
+    triggerType?: true
+    spendThreshold?: true
+    isRepeatable?: true
+    discountType?: true
+    discountPercentage?: true
+    discountAmount?: true
+    expiryDays?: true
+    minPurchaseAmount?: true
+    isActive?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+  }
+
+  export type RewardRuleMaxAggregateInputType = {
+    id?: true
+    name?: true
+    triggerType?: true
+    spendThreshold?: true
+    isRepeatable?: true
+    discountType?: true
+    discountPercentage?: true
+    discountAmount?: true
+    expiryDays?: true
+    minPurchaseAmount?: true
+    isActive?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+  }
+
+  export type RewardRuleCountAggregateInputType = {
+    id?: true
+    name?: true
+    triggerType?: true
+    spendThreshold?: true
+    isRepeatable?: true
+    discountType?: true
+    discountPercentage?: true
+    discountAmount?: true
+    expiryDays?: true
+    minPurchaseAmount?: true
+    isActive?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+    _all?: true
+  }
+
+  export type RewardRuleAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RewardRule to aggregate.
+     */
+    where?: RewardRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RewardRules to fetch.
+     */
+    orderBy?: RewardRuleOrderByWithRelationInput | RewardRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RewardRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RewardRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RewardRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RewardRules
+    **/
+    _count?: true | RewardRuleCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RewardRuleAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RewardRuleSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RewardRuleMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RewardRuleMaxAggregateInputType
+  }
+
+  export type GetRewardRuleAggregateType<T extends RewardRuleAggregateArgs> = {
+        [P in keyof T & keyof AggregateRewardRule]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRewardRule[P]>
+      : GetScalarType<T[P], AggregateRewardRule[P]>
+  }
+
+
+
+
+  export type RewardRuleGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RewardRuleWhereInput
+    orderBy?: RewardRuleOrderByWithAggregationInput | RewardRuleOrderByWithAggregationInput[]
+    by: RewardRuleScalarFieldEnum[] | RewardRuleScalarFieldEnum
+    having?: RewardRuleScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RewardRuleCountAggregateInputType | true
+    _avg?: RewardRuleAvgAggregateInputType
+    _sum?: RewardRuleSumAggregateInputType
+    _min?: RewardRuleMinAggregateInputType
+    _max?: RewardRuleMaxAggregateInputType
+  }
+
+  export type RewardRuleGroupByOutputType = {
+    id: number
+    name: string
+    triggerType: string
+    spendThreshold: Decimal
+    isRepeatable: boolean
+    discountType: string
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    expiryDays: number
+    minPurchaseAmount: Decimal | null
+    isActive: boolean
+    deleted: boolean
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+    _count: RewardRuleCountAggregateOutputType | null
+    _avg: RewardRuleAvgAggregateOutputType | null
+    _sum: RewardRuleSumAggregateOutputType | null
+    _min: RewardRuleMinAggregateOutputType | null
+    _max: RewardRuleMaxAggregateOutputType | null
+  }
+
+  type GetRewardRuleGroupByPayload<T extends RewardRuleGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RewardRuleGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RewardRuleGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RewardRuleGroupByOutputType[P]>
+            : GetScalarType<T[P], RewardRuleGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RewardRuleSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    triggerType?: boolean
+    spendThreshold?: boolean
+    isRepeatable?: boolean
+    discountType?: boolean
+    discountPercentage?: boolean
+    discountAmount?: boolean
+    expiryDays?: boolean
+    minPurchaseAmount?: boolean
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    version?: boolean
+    vouchers?: boolean | RewardRule$vouchersArgs<ExtArgs>
+    _count?: boolean | RewardRuleCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["rewardRule"]>
+
+
+
+  export type RewardRuleSelectScalar = {
+    id?: boolean
+    name?: boolean
+    triggerType?: boolean
+    spendThreshold?: boolean
+    isRepeatable?: boolean
+    discountType?: boolean
+    discountPercentage?: boolean
+    discountAmount?: boolean
+    expiryDays?: boolean
+    minPurchaseAmount?: boolean
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    version?: boolean
+  }
+
+  export type RewardRuleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "triggerType" | "spendThreshold" | "isRepeatable" | "discountType" | "discountPercentage" | "discountAmount" | "expiryDays" | "minPurchaseAmount" | "isActive" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["rewardRule"]>
+  export type RewardRuleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    vouchers?: boolean | RewardRule$vouchersArgs<ExtArgs>
+    _count?: boolean | RewardRuleCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $RewardRulePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RewardRule"
+    objects: {
+      vouchers: Prisma.$VoucherPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      name: string
+      triggerType: string
+      spendThreshold: Prisma.Decimal
+      isRepeatable: boolean
+      discountType: string
+      discountPercentage: Prisma.Decimal | null
+      discountAmount: Prisma.Decimal | null
+      expiryDays: number
+      minPurchaseAmount: Prisma.Decimal | null
+      isActive: boolean
+      deleted: boolean
+      deletedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+      version: number | null
+    }, ExtArgs["result"]["rewardRule"]>
+    composites: {}
+  }
+
+  type RewardRuleGetPayload<S extends boolean | null | undefined | RewardRuleDefaultArgs> = $Result.GetResult<Prisma.$RewardRulePayload, S>
+
+  type RewardRuleCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<RewardRuleFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: RewardRuleCountAggregateInputType | true
+    }
+
+  export interface RewardRuleDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RewardRule'], meta: { name: 'RewardRule' } }
+    /**
+     * Find zero or one RewardRule that matches the filter.
+     * @param {RewardRuleFindUniqueArgs} args - Arguments to find a RewardRule
+     * @example
+     * // Get one RewardRule
+     * const rewardRule = await prisma.rewardRule.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RewardRuleFindUniqueArgs>(args: SelectSubset<T, RewardRuleFindUniqueArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one RewardRule that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {RewardRuleFindUniqueOrThrowArgs} args - Arguments to find a RewardRule
+     * @example
+     * // Get one RewardRule
+     * const rewardRule = await prisma.rewardRule.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RewardRuleFindUniqueOrThrowArgs>(args: SelectSubset<T, RewardRuleFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RewardRule that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RewardRuleFindFirstArgs} args - Arguments to find a RewardRule
+     * @example
+     * // Get one RewardRule
+     * const rewardRule = await prisma.rewardRule.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RewardRuleFindFirstArgs>(args?: SelectSubset<T, RewardRuleFindFirstArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RewardRule that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RewardRuleFindFirstOrThrowArgs} args - Arguments to find a RewardRule
+     * @example
+     * // Get one RewardRule
+     * const rewardRule = await prisma.rewardRule.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RewardRuleFindFirstOrThrowArgs>(args?: SelectSubset<T, RewardRuleFindFirstOrThrowArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more RewardRules that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RewardRuleFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RewardRules
+     * const rewardRules = await prisma.rewardRule.findMany()
+     * 
+     * // Get first 10 RewardRules
+     * const rewardRules = await prisma.rewardRule.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const rewardRuleWithIdOnly = await prisma.rewardRule.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RewardRuleFindManyArgs>(args?: SelectSubset<T, RewardRuleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a RewardRule.
+     * @param {RewardRuleCreateArgs} args - Arguments to create a RewardRule.
+     * @example
+     * // Create one RewardRule
+     * const RewardRule = await prisma.rewardRule.create({
+     *   data: {
+     *     // ... data to create a RewardRule
+     *   }
+     * })
+     * 
+     */
+    create<T extends RewardRuleCreateArgs>(args: SelectSubset<T, RewardRuleCreateArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many RewardRules.
+     * @param {RewardRuleCreateManyArgs} args - Arguments to create many RewardRules.
+     * @example
+     * // Create many RewardRules
+     * const rewardRule = await prisma.rewardRule.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RewardRuleCreateManyArgs>(args?: SelectSubset<T, RewardRuleCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a RewardRule.
+     * @param {RewardRuleDeleteArgs} args - Arguments to delete one RewardRule.
+     * @example
+     * // Delete one RewardRule
+     * const RewardRule = await prisma.rewardRule.delete({
+     *   where: {
+     *     // ... filter to delete one RewardRule
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RewardRuleDeleteArgs>(args: SelectSubset<T, RewardRuleDeleteArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one RewardRule.
+     * @param {RewardRuleUpdateArgs} args - Arguments to update one RewardRule.
+     * @example
+     * // Update one RewardRule
+     * const rewardRule = await prisma.rewardRule.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RewardRuleUpdateArgs>(args: SelectSubset<T, RewardRuleUpdateArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more RewardRules.
+     * @param {RewardRuleDeleteManyArgs} args - Arguments to filter RewardRules to delete.
+     * @example
+     * // Delete a few RewardRules
+     * const { count } = await prisma.rewardRule.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RewardRuleDeleteManyArgs>(args?: SelectSubset<T, RewardRuleDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RewardRules.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RewardRuleUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RewardRules
+     * const rewardRule = await prisma.rewardRule.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RewardRuleUpdateManyArgs>(args: SelectSubset<T, RewardRuleUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RewardRule.
+     * @param {RewardRuleUpsertArgs} args - Arguments to update or create a RewardRule.
+     * @example
+     * // Update or create a RewardRule
+     * const rewardRule = await prisma.rewardRule.upsert({
+     *   create: {
+     *     // ... data to create a RewardRule
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RewardRule we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RewardRuleUpsertArgs>(args: SelectSubset<T, RewardRuleUpsertArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of RewardRules.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RewardRuleCountArgs} args - Arguments to filter RewardRules to count.
+     * @example
+     * // Count the number of RewardRules
+     * const count = await prisma.rewardRule.count({
+     *   where: {
+     *     // ... the filter for the RewardRules we want to count
+     *   }
+     * })
+    **/
+    count<T extends RewardRuleCountArgs>(
+      args?: Subset<T, RewardRuleCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RewardRuleCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RewardRule.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RewardRuleAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RewardRuleAggregateArgs>(args: Subset<T, RewardRuleAggregateArgs>): Prisma.PrismaPromise<GetRewardRuleAggregateType<T>>
+
+    /**
+     * Group by RewardRule.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RewardRuleGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RewardRuleGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RewardRuleGroupByArgs['orderBy'] }
+        : { orderBy?: RewardRuleGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RewardRuleGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRewardRuleGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RewardRule model
+   */
+  readonly fields: RewardRuleFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RewardRule.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RewardRuleClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    vouchers<T extends RewardRule$vouchersArgs<ExtArgs> = {}>(args?: Subset<T, RewardRule$vouchersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RewardRule model
+   */
+  interface RewardRuleFieldRefs {
+    readonly id: FieldRef<"RewardRule", 'Int'>
+    readonly name: FieldRef<"RewardRule", 'String'>
+    readonly triggerType: FieldRef<"RewardRule", 'String'>
+    readonly spendThreshold: FieldRef<"RewardRule", 'Decimal'>
+    readonly isRepeatable: FieldRef<"RewardRule", 'Boolean'>
+    readonly discountType: FieldRef<"RewardRule", 'String'>
+    readonly discountPercentage: FieldRef<"RewardRule", 'Decimal'>
+    readonly discountAmount: FieldRef<"RewardRule", 'Decimal'>
+    readonly expiryDays: FieldRef<"RewardRule", 'Int'>
+    readonly minPurchaseAmount: FieldRef<"RewardRule", 'Decimal'>
+    readonly isActive: FieldRef<"RewardRule", 'Boolean'>
+    readonly deleted: FieldRef<"RewardRule", 'Boolean'>
+    readonly deletedAt: FieldRef<"RewardRule", 'DateTime'>
+    readonly createdAt: FieldRef<"RewardRule", 'DateTime'>
+    readonly updatedAt: FieldRef<"RewardRule", 'DateTime'>
+    readonly version: FieldRef<"RewardRule", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RewardRule findUnique
+   */
+  export type RewardRuleFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which RewardRule to fetch.
+     */
+    where: RewardRuleWhereUniqueInput
+  }
+
+  /**
+   * RewardRule findUniqueOrThrow
+   */
+  export type RewardRuleFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which RewardRule to fetch.
+     */
+    where: RewardRuleWhereUniqueInput
+  }
+
+  /**
+   * RewardRule findFirst
+   */
+  export type RewardRuleFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which RewardRule to fetch.
+     */
+    where?: RewardRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RewardRules to fetch.
+     */
+    orderBy?: RewardRuleOrderByWithRelationInput | RewardRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RewardRules.
+     */
+    cursor?: RewardRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RewardRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RewardRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RewardRules.
+     */
+    distinct?: RewardRuleScalarFieldEnum | RewardRuleScalarFieldEnum[]
+  }
+
+  /**
+   * RewardRule findFirstOrThrow
+   */
+  export type RewardRuleFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which RewardRule to fetch.
+     */
+    where?: RewardRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RewardRules to fetch.
+     */
+    orderBy?: RewardRuleOrderByWithRelationInput | RewardRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RewardRules.
+     */
+    cursor?: RewardRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RewardRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RewardRules.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RewardRules.
+     */
+    distinct?: RewardRuleScalarFieldEnum | RewardRuleScalarFieldEnum[]
+  }
+
+  /**
+   * RewardRule findMany
+   */
+  export type RewardRuleFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * Filter, which RewardRules to fetch.
+     */
+    where?: RewardRuleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RewardRules to fetch.
+     */
+    orderBy?: RewardRuleOrderByWithRelationInput | RewardRuleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RewardRules.
+     */
+    cursor?: RewardRuleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RewardRules from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RewardRules.
+     */
+    skip?: number
+    distinct?: RewardRuleScalarFieldEnum | RewardRuleScalarFieldEnum[]
+  }
+
+  /**
+   * RewardRule create
+   */
+  export type RewardRuleCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * The data needed to create a RewardRule.
+     */
+    data: XOR<RewardRuleCreateInput, RewardRuleUncheckedCreateInput>
+  }
+
+  /**
+   * RewardRule createMany
+   */
+  export type RewardRuleCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RewardRules.
+     */
+    data: RewardRuleCreateManyInput | RewardRuleCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RewardRule update
+   */
+  export type RewardRuleUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * The data needed to update a RewardRule.
+     */
+    data: XOR<RewardRuleUpdateInput, RewardRuleUncheckedUpdateInput>
+    /**
+     * Choose, which RewardRule to update.
+     */
+    where: RewardRuleWhereUniqueInput
+  }
+
+  /**
+   * RewardRule updateMany
+   */
+  export type RewardRuleUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RewardRules.
+     */
+    data: XOR<RewardRuleUpdateManyMutationInput, RewardRuleUncheckedUpdateManyInput>
+    /**
+     * Filter which RewardRules to update
+     */
+    where?: RewardRuleWhereInput
+    /**
+     * Limit how many RewardRules to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RewardRule upsert
+   */
+  export type RewardRuleUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * The filter to search for the RewardRule to update in case it exists.
+     */
+    where: RewardRuleWhereUniqueInput
+    /**
+     * In case the RewardRule found by the `where` argument doesn't exist, create a new RewardRule with this data.
+     */
+    create: XOR<RewardRuleCreateInput, RewardRuleUncheckedCreateInput>
+    /**
+     * In case the RewardRule was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RewardRuleUpdateInput, RewardRuleUncheckedUpdateInput>
+  }
+
+  /**
+   * RewardRule delete
+   */
+  export type RewardRuleDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    /**
+     * Filter which RewardRule to delete.
+     */
+    where: RewardRuleWhereUniqueInput
+  }
+
+  /**
+   * RewardRule deleteMany
+   */
+  export type RewardRuleDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RewardRules to delete
+     */
+    where?: RewardRuleWhereInput
+    /**
+     * Limit how many RewardRules to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * RewardRule.vouchers
+   */
+  export type RewardRule$vouchersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    where?: VoucherWhereInput
+    orderBy?: VoucherOrderByWithRelationInput | VoucherOrderByWithRelationInput[]
+    cursor?: VoucherWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VoucherScalarFieldEnum | VoucherScalarFieldEnum[]
+  }
+
+  /**
+   * RewardRule without action
+   */
+  export type RewardRuleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Voucher
+   */
+
+  export type AggregateVoucher = {
+    _count: VoucherCountAggregateOutputType | null
+    _avg: VoucherAvgAggregateOutputType | null
+    _sum: VoucherSumAggregateOutputType | null
+    _min: VoucherMinAggregateOutputType | null
+    _max: VoucherMaxAggregateOutputType | null
+  }
+
+  export type VoucherAvgAggregateOutputType = {
+    id: number | null
+    rewardRuleId: number | null
+    customerId: number | null
+    loyaltyAccountId: number | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    minPurchaseAmount: Decimal | null
+    milestoneSpendSnapshot: Decimal | null
+    redeemedInSalesId: number | null
+    version: number | null
+  }
+
+  export type VoucherSumAggregateOutputType = {
+    id: number | null
+    rewardRuleId: number | null
+    customerId: number | null
+    loyaltyAccountId: number | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    minPurchaseAmount: Decimal | null
+    milestoneSpendSnapshot: Decimal | null
+    redeemedInSalesId: number | null
+    version: number | null
+  }
+
+  export type VoucherMinAggregateOutputType = {
+    id: number | null
+    rewardRuleId: number | null
+    customerId: number | null
+    loyaltyAccountId: number | null
+    discountType: string | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    minPurchaseAmount: Decimal | null
+    status: string | null
+    milestoneSpendSnapshot: Decimal | null
+    label: string | null
+    expiresAt: Date | null
+    redeemedAt: Date | null
+    redeemedInSalesId: number | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+  }
+
+  export type VoucherMaxAggregateOutputType = {
+    id: number | null
+    rewardRuleId: number | null
+    customerId: number | null
+    loyaltyAccountId: number | null
+    discountType: string | null
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    minPurchaseAmount: Decimal | null
+    status: string | null
+    milestoneSpendSnapshot: Decimal | null
+    label: string | null
+    expiresAt: Date | null
+    redeemedAt: Date | null
+    redeemedInSalesId: number | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+  }
+
+  export type VoucherCountAggregateOutputType = {
+    id: number
+    rewardRuleId: number
+    customerId: number
+    loyaltyAccountId: number
+    discountType: number
+    discountPercentage: number
+    discountAmount: number
+    minPurchaseAmount: number
+    status: number
+    milestoneSpendSnapshot: number
+    label: number
+    expiresAt: number
+    redeemedAt: number
+    redeemedInSalesId: number
+    deleted: number
+    deletedAt: number
+    createdAt: number
+    updatedAt: number
+    version: number
+    _all: number
+  }
+
+
+  export type VoucherAvgAggregateInputType = {
+    id?: true
+    rewardRuleId?: true
+    customerId?: true
+    loyaltyAccountId?: true
+    discountPercentage?: true
+    discountAmount?: true
+    minPurchaseAmount?: true
+    milestoneSpendSnapshot?: true
+    redeemedInSalesId?: true
+    version?: true
+  }
+
+  export type VoucherSumAggregateInputType = {
+    id?: true
+    rewardRuleId?: true
+    customerId?: true
+    loyaltyAccountId?: true
+    discountPercentage?: true
+    discountAmount?: true
+    minPurchaseAmount?: true
+    milestoneSpendSnapshot?: true
+    redeemedInSalesId?: true
+    version?: true
+  }
+
+  export type VoucherMinAggregateInputType = {
+    id?: true
+    rewardRuleId?: true
+    customerId?: true
+    loyaltyAccountId?: true
+    discountType?: true
+    discountPercentage?: true
+    discountAmount?: true
+    minPurchaseAmount?: true
+    status?: true
+    milestoneSpendSnapshot?: true
+    label?: true
+    expiresAt?: true
+    redeemedAt?: true
+    redeemedInSalesId?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+  }
+
+  export type VoucherMaxAggregateInputType = {
+    id?: true
+    rewardRuleId?: true
+    customerId?: true
+    loyaltyAccountId?: true
+    discountType?: true
+    discountPercentage?: true
+    discountAmount?: true
+    minPurchaseAmount?: true
+    status?: true
+    milestoneSpendSnapshot?: true
+    label?: true
+    expiresAt?: true
+    redeemedAt?: true
+    redeemedInSalesId?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+  }
+
+  export type VoucherCountAggregateInputType = {
+    id?: true
+    rewardRuleId?: true
+    customerId?: true
+    loyaltyAccountId?: true
+    discountType?: true
+    discountPercentage?: true
+    discountAmount?: true
+    minPurchaseAmount?: true
+    status?: true
+    milestoneSpendSnapshot?: true
+    label?: true
+    expiresAt?: true
+    redeemedAt?: true
+    redeemedInSalesId?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+    _all?: true
+  }
+
+  export type VoucherAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Voucher to aggregate.
+     */
+    where?: VoucherWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Vouchers to fetch.
+     */
+    orderBy?: VoucherOrderByWithRelationInput | VoucherOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VoucherWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Vouchers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Vouchers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Vouchers
+    **/
+    _count?: true | VoucherCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: VoucherAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: VoucherSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VoucherMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VoucherMaxAggregateInputType
+  }
+
+  export type GetVoucherAggregateType<T extends VoucherAggregateArgs> = {
+        [P in keyof T & keyof AggregateVoucher]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVoucher[P]>
+      : GetScalarType<T[P], AggregateVoucher[P]>
+  }
+
+
+
+
+  export type VoucherGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VoucherWhereInput
+    orderBy?: VoucherOrderByWithAggregationInput | VoucherOrderByWithAggregationInput[]
+    by: VoucherScalarFieldEnum[] | VoucherScalarFieldEnum
+    having?: VoucherScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VoucherCountAggregateInputType | true
+    _avg?: VoucherAvgAggregateInputType
+    _sum?: VoucherSumAggregateInputType
+    _min?: VoucherMinAggregateInputType
+    _max?: VoucherMaxAggregateInputType
+  }
+
+  export type VoucherGroupByOutputType = {
+    id: number
+    rewardRuleId: number | null
+    customerId: number
+    loyaltyAccountId: number | null
+    discountType: string
+    discountPercentage: Decimal | null
+    discountAmount: Decimal | null
+    minPurchaseAmount: Decimal | null
+    status: string
+    milestoneSpendSnapshot: Decimal | null
+    label: string
+    expiresAt: Date
+    redeemedAt: Date | null
+    redeemedInSalesId: number | null
+    deleted: boolean
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+    _count: VoucherCountAggregateOutputType | null
+    _avg: VoucherAvgAggregateOutputType | null
+    _sum: VoucherSumAggregateOutputType | null
+    _min: VoucherMinAggregateOutputType | null
+    _max: VoucherMaxAggregateOutputType | null
+  }
+
+  type GetVoucherGroupByPayload<T extends VoucherGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VoucherGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VoucherGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VoucherGroupByOutputType[P]>
+            : GetScalarType<T[P], VoucherGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VoucherSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    rewardRuleId?: boolean
+    customerId?: boolean
+    loyaltyAccountId?: boolean
+    discountType?: boolean
+    discountPercentage?: boolean
+    discountAmount?: boolean
+    minPurchaseAmount?: boolean
+    status?: boolean
+    milestoneSpendSnapshot?: boolean
+    label?: boolean
+    expiresAt?: boolean
+    redeemedAt?: boolean
+    redeemedInSalesId?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    version?: boolean
+    rewardRule?: boolean | Voucher$rewardRuleArgs<ExtArgs>
+    customer?: boolean | CustomerDefaultArgs<ExtArgs>
+    loyaltyAccount?: boolean | Voucher$loyaltyAccountArgs<ExtArgs>
+    redeemedInSale?: boolean | Voucher$redeemedInSaleArgs<ExtArgs>
+  }, ExtArgs["result"]["voucher"]>
+
+
+
+  export type VoucherSelectScalar = {
+    id?: boolean
+    rewardRuleId?: boolean
+    customerId?: boolean
+    loyaltyAccountId?: boolean
+    discountType?: boolean
+    discountPercentage?: boolean
+    discountAmount?: boolean
+    minPurchaseAmount?: boolean
+    status?: boolean
+    milestoneSpendSnapshot?: boolean
+    label?: boolean
+    expiresAt?: boolean
+    redeemedAt?: boolean
+    redeemedInSalesId?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    version?: boolean
+  }
+
+  export type VoucherOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "rewardRuleId" | "customerId" | "loyaltyAccountId" | "discountType" | "discountPercentage" | "discountAmount" | "minPurchaseAmount" | "status" | "milestoneSpendSnapshot" | "label" | "expiresAt" | "redeemedAt" | "redeemedInSalesId" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["voucher"]>
+  export type VoucherInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    rewardRule?: boolean | Voucher$rewardRuleArgs<ExtArgs>
+    customer?: boolean | CustomerDefaultArgs<ExtArgs>
+    loyaltyAccount?: boolean | Voucher$loyaltyAccountArgs<ExtArgs>
+    redeemedInSale?: boolean | Voucher$redeemedInSaleArgs<ExtArgs>
+  }
+
+  export type $VoucherPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Voucher"
+    objects: {
+      rewardRule: Prisma.$RewardRulePayload<ExtArgs> | null
+      customer: Prisma.$CustomerPayload<ExtArgs>
+      loyaltyAccount: Prisma.$LoyaltyAccountPayload<ExtArgs> | null
+      redeemedInSale: Prisma.$SalesPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      rewardRuleId: number | null
+      customerId: number
+      loyaltyAccountId: number | null
+      discountType: string
+      discountPercentage: Prisma.Decimal | null
+      discountAmount: Prisma.Decimal | null
+      minPurchaseAmount: Prisma.Decimal | null
+      status: string
+      milestoneSpendSnapshot: Prisma.Decimal | null
+      label: string
+      expiresAt: Date
+      redeemedAt: Date | null
+      redeemedInSalesId: number | null
+      deleted: boolean
+      deletedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+      version: number | null
+    }, ExtArgs["result"]["voucher"]>
+    composites: {}
+  }
+
+  type VoucherGetPayload<S extends boolean | null | undefined | VoucherDefaultArgs> = $Result.GetResult<Prisma.$VoucherPayload, S>
+
+  type VoucherCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<VoucherFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: VoucherCountAggregateInputType | true
+    }
+
+  export interface VoucherDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Voucher'], meta: { name: 'Voucher' } }
+    /**
+     * Find zero or one Voucher that matches the filter.
+     * @param {VoucherFindUniqueArgs} args - Arguments to find a Voucher
+     * @example
+     * // Get one Voucher
+     * const voucher = await prisma.voucher.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VoucherFindUniqueArgs>(args: SelectSubset<T, VoucherFindUniqueArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Voucher that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {VoucherFindUniqueOrThrowArgs} args - Arguments to find a Voucher
+     * @example
+     * // Get one Voucher
+     * const voucher = await prisma.voucher.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VoucherFindUniqueOrThrowArgs>(args: SelectSubset<T, VoucherFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Voucher that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoucherFindFirstArgs} args - Arguments to find a Voucher
+     * @example
+     * // Get one Voucher
+     * const voucher = await prisma.voucher.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VoucherFindFirstArgs>(args?: SelectSubset<T, VoucherFindFirstArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Voucher that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoucherFindFirstOrThrowArgs} args - Arguments to find a Voucher
+     * @example
+     * // Get one Voucher
+     * const voucher = await prisma.voucher.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VoucherFindFirstOrThrowArgs>(args?: SelectSubset<T, VoucherFindFirstOrThrowArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Vouchers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoucherFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Vouchers
+     * const vouchers = await prisma.voucher.findMany()
+     * 
+     * // Get first 10 Vouchers
+     * const vouchers = await prisma.voucher.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const voucherWithIdOnly = await prisma.voucher.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VoucherFindManyArgs>(args?: SelectSubset<T, VoucherFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Voucher.
+     * @param {VoucherCreateArgs} args - Arguments to create a Voucher.
+     * @example
+     * // Create one Voucher
+     * const Voucher = await prisma.voucher.create({
+     *   data: {
+     *     // ... data to create a Voucher
+     *   }
+     * })
+     * 
+     */
+    create<T extends VoucherCreateArgs>(args: SelectSubset<T, VoucherCreateArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Vouchers.
+     * @param {VoucherCreateManyArgs} args - Arguments to create many Vouchers.
+     * @example
+     * // Create many Vouchers
+     * const voucher = await prisma.voucher.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VoucherCreateManyArgs>(args?: SelectSubset<T, VoucherCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Voucher.
+     * @param {VoucherDeleteArgs} args - Arguments to delete one Voucher.
+     * @example
+     * // Delete one Voucher
+     * const Voucher = await prisma.voucher.delete({
+     *   where: {
+     *     // ... filter to delete one Voucher
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VoucherDeleteArgs>(args: SelectSubset<T, VoucherDeleteArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Voucher.
+     * @param {VoucherUpdateArgs} args - Arguments to update one Voucher.
+     * @example
+     * // Update one Voucher
+     * const voucher = await prisma.voucher.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VoucherUpdateArgs>(args: SelectSubset<T, VoucherUpdateArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Vouchers.
+     * @param {VoucherDeleteManyArgs} args - Arguments to filter Vouchers to delete.
+     * @example
+     * // Delete a few Vouchers
+     * const { count } = await prisma.voucher.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VoucherDeleteManyArgs>(args?: SelectSubset<T, VoucherDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Vouchers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoucherUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Vouchers
+     * const voucher = await prisma.voucher.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VoucherUpdateManyArgs>(args: SelectSubset<T, VoucherUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Voucher.
+     * @param {VoucherUpsertArgs} args - Arguments to update or create a Voucher.
+     * @example
+     * // Update or create a Voucher
+     * const voucher = await prisma.voucher.upsert({
+     *   create: {
+     *     // ... data to create a Voucher
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Voucher we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VoucherUpsertArgs>(args: SelectSubset<T, VoucherUpsertArgs<ExtArgs>>): Prisma__VoucherClient<$Result.GetResult<Prisma.$VoucherPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Vouchers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoucherCountArgs} args - Arguments to filter Vouchers to count.
+     * @example
+     * // Count the number of Vouchers
+     * const count = await prisma.voucher.count({
+     *   where: {
+     *     // ... the filter for the Vouchers we want to count
+     *   }
+     * })
+    **/
+    count<T extends VoucherCountArgs>(
+      args?: Subset<T, VoucherCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VoucherCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Voucher.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoucherAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VoucherAggregateArgs>(args: Subset<T, VoucherAggregateArgs>): Prisma.PrismaPromise<GetVoucherAggregateType<T>>
+
+    /**
+     * Group by Voucher.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VoucherGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VoucherGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VoucherGroupByArgs['orderBy'] }
+        : { orderBy?: VoucherGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VoucherGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVoucherGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Voucher model
+   */
+  readonly fields: VoucherFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Voucher.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VoucherClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    rewardRule<T extends Voucher$rewardRuleArgs<ExtArgs> = {}>(args?: Subset<T, Voucher$rewardRuleArgs<ExtArgs>>): Prisma__RewardRuleClient<$Result.GetResult<Prisma.$RewardRulePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    customer<T extends CustomerDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CustomerDefaultArgs<ExtArgs>>): Prisma__CustomerClient<$Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    loyaltyAccount<T extends Voucher$loyaltyAccountArgs<ExtArgs> = {}>(args?: Subset<T, Voucher$loyaltyAccountArgs<ExtArgs>>): Prisma__LoyaltyAccountClient<$Result.GetResult<Prisma.$LoyaltyAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    redeemedInSale<T extends Voucher$redeemedInSaleArgs<ExtArgs> = {}>(args?: Subset<T, Voucher$redeemedInSaleArgs<ExtArgs>>): Prisma__SalesClient<$Result.GetResult<Prisma.$SalesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Voucher model
+   */
+  interface VoucherFieldRefs {
+    readonly id: FieldRef<"Voucher", 'Int'>
+    readonly rewardRuleId: FieldRef<"Voucher", 'Int'>
+    readonly customerId: FieldRef<"Voucher", 'Int'>
+    readonly loyaltyAccountId: FieldRef<"Voucher", 'Int'>
+    readonly discountType: FieldRef<"Voucher", 'String'>
+    readonly discountPercentage: FieldRef<"Voucher", 'Decimal'>
+    readonly discountAmount: FieldRef<"Voucher", 'Decimal'>
+    readonly minPurchaseAmount: FieldRef<"Voucher", 'Decimal'>
+    readonly status: FieldRef<"Voucher", 'String'>
+    readonly milestoneSpendSnapshot: FieldRef<"Voucher", 'Decimal'>
+    readonly label: FieldRef<"Voucher", 'String'>
+    readonly expiresAt: FieldRef<"Voucher", 'DateTime'>
+    readonly redeemedAt: FieldRef<"Voucher", 'DateTime'>
+    readonly redeemedInSalesId: FieldRef<"Voucher", 'Int'>
+    readonly deleted: FieldRef<"Voucher", 'Boolean'>
+    readonly deletedAt: FieldRef<"Voucher", 'DateTime'>
+    readonly createdAt: FieldRef<"Voucher", 'DateTime'>
+    readonly updatedAt: FieldRef<"Voucher", 'DateTime'>
+    readonly version: FieldRef<"Voucher", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Voucher findUnique
+   */
+  export type VoucherFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * Filter, which Voucher to fetch.
+     */
+    where: VoucherWhereUniqueInput
+  }
+
+  /**
+   * Voucher findUniqueOrThrow
+   */
+  export type VoucherFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * Filter, which Voucher to fetch.
+     */
+    where: VoucherWhereUniqueInput
+  }
+
+  /**
+   * Voucher findFirst
+   */
+  export type VoucherFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * Filter, which Voucher to fetch.
+     */
+    where?: VoucherWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Vouchers to fetch.
+     */
+    orderBy?: VoucherOrderByWithRelationInput | VoucherOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Vouchers.
+     */
+    cursor?: VoucherWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Vouchers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Vouchers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Vouchers.
+     */
+    distinct?: VoucherScalarFieldEnum | VoucherScalarFieldEnum[]
+  }
+
+  /**
+   * Voucher findFirstOrThrow
+   */
+  export type VoucherFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * Filter, which Voucher to fetch.
+     */
+    where?: VoucherWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Vouchers to fetch.
+     */
+    orderBy?: VoucherOrderByWithRelationInput | VoucherOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Vouchers.
+     */
+    cursor?: VoucherWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Vouchers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Vouchers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Vouchers.
+     */
+    distinct?: VoucherScalarFieldEnum | VoucherScalarFieldEnum[]
+  }
+
+  /**
+   * Voucher findMany
+   */
+  export type VoucherFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * Filter, which Vouchers to fetch.
+     */
+    where?: VoucherWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Vouchers to fetch.
+     */
+    orderBy?: VoucherOrderByWithRelationInput | VoucherOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Vouchers.
+     */
+    cursor?: VoucherWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Vouchers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Vouchers.
+     */
+    skip?: number
+    distinct?: VoucherScalarFieldEnum | VoucherScalarFieldEnum[]
+  }
+
+  /**
+   * Voucher create
+   */
+  export type VoucherCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Voucher.
+     */
+    data: XOR<VoucherCreateInput, VoucherUncheckedCreateInput>
+  }
+
+  /**
+   * Voucher createMany
+   */
+  export type VoucherCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Vouchers.
+     */
+    data: VoucherCreateManyInput | VoucherCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Voucher update
+   */
+  export type VoucherUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Voucher.
+     */
+    data: XOR<VoucherUpdateInput, VoucherUncheckedUpdateInput>
+    /**
+     * Choose, which Voucher to update.
+     */
+    where: VoucherWhereUniqueInput
+  }
+
+  /**
+   * Voucher updateMany
+   */
+  export type VoucherUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Vouchers.
+     */
+    data: XOR<VoucherUpdateManyMutationInput, VoucherUncheckedUpdateManyInput>
+    /**
+     * Filter which Vouchers to update
+     */
+    where?: VoucherWhereInput
+    /**
+     * Limit how many Vouchers to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Voucher upsert
+   */
+  export type VoucherUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Voucher to update in case it exists.
+     */
+    where: VoucherWhereUniqueInput
+    /**
+     * In case the Voucher found by the `where` argument doesn't exist, create a new Voucher with this data.
+     */
+    create: XOR<VoucherCreateInput, VoucherUncheckedCreateInput>
+    /**
+     * In case the Voucher was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VoucherUpdateInput, VoucherUncheckedUpdateInput>
+  }
+
+  /**
+   * Voucher delete
+   */
+  export type VoucherDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+    /**
+     * Filter which Voucher to delete.
+     */
+    where: VoucherWhereUniqueInput
+  }
+
+  /**
+   * Voucher deleteMany
+   */
+  export type VoucherDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Vouchers to delete
+     */
+    where?: VoucherWhereInput
+    /**
+     * Limit how many Vouchers to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Voucher.rewardRule
+   */
+  export type Voucher$rewardRuleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RewardRule
+     */
+    select?: RewardRuleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RewardRule
+     */
+    omit?: RewardRuleOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RewardRuleInclude<ExtArgs> | null
+    where?: RewardRuleWhereInput
+  }
+
+  /**
+   * Voucher.loyaltyAccount
+   */
+  export type Voucher$loyaltyAccountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LoyaltyAccount
+     */
+    select?: LoyaltyAccountSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the LoyaltyAccount
+     */
+    omit?: LoyaltyAccountOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LoyaltyAccountInclude<ExtArgs> | null
+    where?: LoyaltyAccountWhereInput
+  }
+
+  /**
+   * Voucher.redeemedInSale
+   */
+  export type Voucher$redeemedInSaleArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sales
+     */
+    select?: SalesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Sales
+     */
+    omit?: SalesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SalesInclude<ExtArgs> | null
+    where?: SalesWhereInput
+  }
+
+  /**
+   * Voucher without action
+   */
+  export type VoucherDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Voucher
+     */
+    select?: VoucherSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Voucher
+     */
+    omit?: VoucherOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VoucherInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model IdempotencyRecord
+   */
+
+  export type AggregateIdempotencyRecord = {
+    _count: IdempotencyRecordCountAggregateOutputType | null
+    _avg: IdempotencyRecordAvgAggregateOutputType | null
+    _sum: IdempotencyRecordSumAggregateOutputType | null
+    _min: IdempotencyRecordMinAggregateOutputType | null
+    _max: IdempotencyRecordMaxAggregateOutputType | null
+  }
+
+  export type IdempotencyRecordAvgAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    responseStatus: number | null
+  }
+
+  export type IdempotencyRecordSumAggregateOutputType = {
+    id: number | null
+    userId: number | null
+    responseStatus: number | null
+  }
+
+  export type IdempotencyRecordMinAggregateOutputType = {
+    id: number | null
+    key: string | null
+    endpoint: string | null
+    userId: number | null
+    responseStatus: number | null
+    responseBody: string | null
+    createdAt: Date | null
+  }
+
+  export type IdempotencyRecordMaxAggregateOutputType = {
+    id: number | null
+    key: string | null
+    endpoint: string | null
+    userId: number | null
+    responseStatus: number | null
+    responseBody: string | null
+    createdAt: Date | null
+  }
+
+  export type IdempotencyRecordCountAggregateOutputType = {
+    id: number
+    key: number
+    endpoint: number
+    userId: number
+    responseStatus: number
+    responseBody: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type IdempotencyRecordAvgAggregateInputType = {
+    id?: true
+    userId?: true
+    responseStatus?: true
+  }
+
+  export type IdempotencyRecordSumAggregateInputType = {
+    id?: true
+    userId?: true
+    responseStatus?: true
+  }
+
+  export type IdempotencyRecordMinAggregateInputType = {
+    id?: true
+    key?: true
+    endpoint?: true
+    userId?: true
+    responseStatus?: true
+    responseBody?: true
+    createdAt?: true
+  }
+
+  export type IdempotencyRecordMaxAggregateInputType = {
+    id?: true
+    key?: true
+    endpoint?: true
+    userId?: true
+    responseStatus?: true
+    responseBody?: true
+    createdAt?: true
+  }
+
+  export type IdempotencyRecordCountAggregateInputType = {
+    id?: true
+    key?: true
+    endpoint?: true
+    userId?: true
+    responseStatus?: true
+    responseBody?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type IdempotencyRecordAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which IdempotencyRecord to aggregate.
+     */
+    where?: IdempotencyRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of IdempotencyRecords to fetch.
+     */
+    orderBy?: IdempotencyRecordOrderByWithRelationInput | IdempotencyRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: IdempotencyRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` IdempotencyRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` IdempotencyRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned IdempotencyRecords
+    **/
+    _count?: true | IdempotencyRecordCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: IdempotencyRecordAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: IdempotencyRecordSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: IdempotencyRecordMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: IdempotencyRecordMaxAggregateInputType
+  }
+
+  export type GetIdempotencyRecordAggregateType<T extends IdempotencyRecordAggregateArgs> = {
+        [P in keyof T & keyof AggregateIdempotencyRecord]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateIdempotencyRecord[P]>
+      : GetScalarType<T[P], AggregateIdempotencyRecord[P]>
+  }
+
+
+
+
+  export type IdempotencyRecordGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: IdempotencyRecordWhereInput
+    orderBy?: IdempotencyRecordOrderByWithAggregationInput | IdempotencyRecordOrderByWithAggregationInput[]
+    by: IdempotencyRecordScalarFieldEnum[] | IdempotencyRecordScalarFieldEnum
+    having?: IdempotencyRecordScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: IdempotencyRecordCountAggregateInputType | true
+    _avg?: IdempotencyRecordAvgAggregateInputType
+    _sum?: IdempotencyRecordSumAggregateInputType
+    _min?: IdempotencyRecordMinAggregateInputType
+    _max?: IdempotencyRecordMaxAggregateInputType
+  }
+
+  export type IdempotencyRecordGroupByOutputType = {
+    id: number
+    key: string
+    endpoint: string
+    userId: number | null
+    responseStatus: number
+    responseBody: string
+    createdAt: Date
+    _count: IdempotencyRecordCountAggregateOutputType | null
+    _avg: IdempotencyRecordAvgAggregateOutputType | null
+    _sum: IdempotencyRecordSumAggregateOutputType | null
+    _min: IdempotencyRecordMinAggregateOutputType | null
+    _max: IdempotencyRecordMaxAggregateOutputType | null
+  }
+
+  type GetIdempotencyRecordGroupByPayload<T extends IdempotencyRecordGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<IdempotencyRecordGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof IdempotencyRecordGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], IdempotencyRecordGroupByOutputType[P]>
+            : GetScalarType<T[P], IdempotencyRecordGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type IdempotencyRecordSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    key?: boolean
+    endpoint?: boolean
+    userId?: boolean
+    responseStatus?: boolean
+    responseBody?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["idempotencyRecord"]>
+
+
+
+  export type IdempotencyRecordSelectScalar = {
+    id?: boolean
+    key?: boolean
+    endpoint?: boolean
+    userId?: boolean
+    responseStatus?: boolean
+    responseBody?: boolean
+    createdAt?: boolean
+  }
+
+  export type IdempotencyRecordOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "key" | "endpoint" | "userId" | "responseStatus" | "responseBody" | "createdAt", ExtArgs["result"]["idempotencyRecord"]>
+
+  export type $IdempotencyRecordPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "IdempotencyRecord"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      key: string
+      endpoint: string
+      userId: number | null
+      responseStatus: number
+      responseBody: string
+      createdAt: Date
+    }, ExtArgs["result"]["idempotencyRecord"]>
+    composites: {}
+  }
+
+  type IdempotencyRecordGetPayload<S extends boolean | null | undefined | IdempotencyRecordDefaultArgs> = $Result.GetResult<Prisma.$IdempotencyRecordPayload, S>
+
+  type IdempotencyRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<IdempotencyRecordFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: IdempotencyRecordCountAggregateInputType | true
+    }
+
+  export interface IdempotencyRecordDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['IdempotencyRecord'], meta: { name: 'IdempotencyRecord' } }
+    /**
+     * Find zero or one IdempotencyRecord that matches the filter.
+     * @param {IdempotencyRecordFindUniqueArgs} args - Arguments to find a IdempotencyRecord
+     * @example
+     * // Get one IdempotencyRecord
+     * const idempotencyRecord = await prisma.idempotencyRecord.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends IdempotencyRecordFindUniqueArgs>(args: SelectSubset<T, IdempotencyRecordFindUniqueArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one IdempotencyRecord that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {IdempotencyRecordFindUniqueOrThrowArgs} args - Arguments to find a IdempotencyRecord
+     * @example
+     * // Get one IdempotencyRecord
+     * const idempotencyRecord = await prisma.idempotencyRecord.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends IdempotencyRecordFindUniqueOrThrowArgs>(args: SelectSubset<T, IdempotencyRecordFindUniqueOrThrowArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first IdempotencyRecord that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {IdempotencyRecordFindFirstArgs} args - Arguments to find a IdempotencyRecord
+     * @example
+     * // Get one IdempotencyRecord
+     * const idempotencyRecord = await prisma.idempotencyRecord.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends IdempotencyRecordFindFirstArgs>(args?: SelectSubset<T, IdempotencyRecordFindFirstArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first IdempotencyRecord that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {IdempotencyRecordFindFirstOrThrowArgs} args - Arguments to find a IdempotencyRecord
+     * @example
+     * // Get one IdempotencyRecord
+     * const idempotencyRecord = await prisma.idempotencyRecord.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends IdempotencyRecordFindFirstOrThrowArgs>(args?: SelectSubset<T, IdempotencyRecordFindFirstOrThrowArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more IdempotencyRecords that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {IdempotencyRecordFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all IdempotencyRecords
+     * const idempotencyRecords = await prisma.idempotencyRecord.findMany()
+     * 
+     * // Get first 10 IdempotencyRecords
+     * const idempotencyRecords = await prisma.idempotencyRecord.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const idempotencyRecordWithIdOnly = await prisma.idempotencyRecord.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends IdempotencyRecordFindManyArgs>(args?: SelectSubset<T, IdempotencyRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a IdempotencyRecord.
+     * @param {IdempotencyRecordCreateArgs} args - Arguments to create a IdempotencyRecord.
+     * @example
+     * // Create one IdempotencyRecord
+     * const IdempotencyRecord = await prisma.idempotencyRecord.create({
+     *   data: {
+     *     // ... data to create a IdempotencyRecord
+     *   }
+     * })
+     * 
+     */
+    create<T extends IdempotencyRecordCreateArgs>(args: SelectSubset<T, IdempotencyRecordCreateArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many IdempotencyRecords.
+     * @param {IdempotencyRecordCreateManyArgs} args - Arguments to create many IdempotencyRecords.
+     * @example
+     * // Create many IdempotencyRecords
+     * const idempotencyRecord = await prisma.idempotencyRecord.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends IdempotencyRecordCreateManyArgs>(args?: SelectSubset<T, IdempotencyRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a IdempotencyRecord.
+     * @param {IdempotencyRecordDeleteArgs} args - Arguments to delete one IdempotencyRecord.
+     * @example
+     * // Delete one IdempotencyRecord
+     * const IdempotencyRecord = await prisma.idempotencyRecord.delete({
+     *   where: {
+     *     // ... filter to delete one IdempotencyRecord
+     *   }
+     * })
+     * 
+     */
+    delete<T extends IdempotencyRecordDeleteArgs>(args: SelectSubset<T, IdempotencyRecordDeleteArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one IdempotencyRecord.
+     * @param {IdempotencyRecordUpdateArgs} args - Arguments to update one IdempotencyRecord.
+     * @example
+     * // Update one IdempotencyRecord
+     * const idempotencyRecord = await prisma.idempotencyRecord.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends IdempotencyRecordUpdateArgs>(args: SelectSubset<T, IdempotencyRecordUpdateArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more IdempotencyRecords.
+     * @param {IdempotencyRecordDeleteManyArgs} args - Arguments to filter IdempotencyRecords to delete.
+     * @example
+     * // Delete a few IdempotencyRecords
+     * const { count } = await prisma.idempotencyRecord.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends IdempotencyRecordDeleteManyArgs>(args?: SelectSubset<T, IdempotencyRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more IdempotencyRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {IdempotencyRecordUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many IdempotencyRecords
+     * const idempotencyRecord = await prisma.idempotencyRecord.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends IdempotencyRecordUpdateManyArgs>(args: SelectSubset<T, IdempotencyRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one IdempotencyRecord.
+     * @param {IdempotencyRecordUpsertArgs} args - Arguments to update or create a IdempotencyRecord.
+     * @example
+     * // Update or create a IdempotencyRecord
+     * const idempotencyRecord = await prisma.idempotencyRecord.upsert({
+     *   create: {
+     *     // ... data to create a IdempotencyRecord
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the IdempotencyRecord we want to update
+     *   }
+     * })
+     */
+    upsert<T extends IdempotencyRecordUpsertArgs>(args: SelectSubset<T, IdempotencyRecordUpsertArgs<ExtArgs>>): Prisma__IdempotencyRecordClient<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of IdempotencyRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {IdempotencyRecordCountArgs} args - Arguments to filter IdempotencyRecords to count.
+     * @example
+     * // Count the number of IdempotencyRecords
+     * const count = await prisma.idempotencyRecord.count({
+     *   where: {
+     *     // ... the filter for the IdempotencyRecords we want to count
+     *   }
+     * })
+    **/
+    count<T extends IdempotencyRecordCountArgs>(
+      args?: Subset<T, IdempotencyRecordCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], IdempotencyRecordCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a IdempotencyRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {IdempotencyRecordAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends IdempotencyRecordAggregateArgs>(args: Subset<T, IdempotencyRecordAggregateArgs>): Prisma.PrismaPromise<GetIdempotencyRecordAggregateType<T>>
+
+    /**
+     * Group by IdempotencyRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {IdempotencyRecordGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends IdempotencyRecordGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: IdempotencyRecordGroupByArgs['orderBy'] }
+        : { orderBy?: IdempotencyRecordGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, IdempotencyRecordGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetIdempotencyRecordGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the IdempotencyRecord model
+   */
+  readonly fields: IdempotencyRecordFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for IdempotencyRecord.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__IdempotencyRecordClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the IdempotencyRecord model
+   */
+  interface IdempotencyRecordFieldRefs {
+    readonly id: FieldRef<"IdempotencyRecord", 'Int'>
+    readonly key: FieldRef<"IdempotencyRecord", 'String'>
+    readonly endpoint: FieldRef<"IdempotencyRecord", 'String'>
+    readonly userId: FieldRef<"IdempotencyRecord", 'Int'>
+    readonly responseStatus: FieldRef<"IdempotencyRecord", 'Int'>
+    readonly responseBody: FieldRef<"IdempotencyRecord", 'String'>
+    readonly createdAt: FieldRef<"IdempotencyRecord", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * IdempotencyRecord findUnique
+   */
+  export type IdempotencyRecordFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * Filter, which IdempotencyRecord to fetch.
+     */
+    where: IdempotencyRecordWhereUniqueInput
+  }
+
+  /**
+   * IdempotencyRecord findUniqueOrThrow
+   */
+  export type IdempotencyRecordFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * Filter, which IdempotencyRecord to fetch.
+     */
+    where: IdempotencyRecordWhereUniqueInput
+  }
+
+  /**
+   * IdempotencyRecord findFirst
+   */
+  export type IdempotencyRecordFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * Filter, which IdempotencyRecord to fetch.
+     */
+    where?: IdempotencyRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of IdempotencyRecords to fetch.
+     */
+    orderBy?: IdempotencyRecordOrderByWithRelationInput | IdempotencyRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for IdempotencyRecords.
+     */
+    cursor?: IdempotencyRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` IdempotencyRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` IdempotencyRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of IdempotencyRecords.
+     */
+    distinct?: IdempotencyRecordScalarFieldEnum | IdempotencyRecordScalarFieldEnum[]
+  }
+
+  /**
+   * IdempotencyRecord findFirstOrThrow
+   */
+  export type IdempotencyRecordFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * Filter, which IdempotencyRecord to fetch.
+     */
+    where?: IdempotencyRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of IdempotencyRecords to fetch.
+     */
+    orderBy?: IdempotencyRecordOrderByWithRelationInput | IdempotencyRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for IdempotencyRecords.
+     */
+    cursor?: IdempotencyRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` IdempotencyRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` IdempotencyRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of IdempotencyRecords.
+     */
+    distinct?: IdempotencyRecordScalarFieldEnum | IdempotencyRecordScalarFieldEnum[]
+  }
+
+  /**
+   * IdempotencyRecord findMany
+   */
+  export type IdempotencyRecordFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * Filter, which IdempotencyRecords to fetch.
+     */
+    where?: IdempotencyRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of IdempotencyRecords to fetch.
+     */
+    orderBy?: IdempotencyRecordOrderByWithRelationInput | IdempotencyRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing IdempotencyRecords.
+     */
+    cursor?: IdempotencyRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` IdempotencyRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` IdempotencyRecords.
+     */
+    skip?: number
+    distinct?: IdempotencyRecordScalarFieldEnum | IdempotencyRecordScalarFieldEnum[]
+  }
+
+  /**
+   * IdempotencyRecord create
+   */
+  export type IdempotencyRecordCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * The data needed to create a IdempotencyRecord.
+     */
+    data: XOR<IdempotencyRecordCreateInput, IdempotencyRecordUncheckedCreateInput>
+  }
+
+  /**
+   * IdempotencyRecord createMany
+   */
+  export type IdempotencyRecordCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many IdempotencyRecords.
+     */
+    data: IdempotencyRecordCreateManyInput | IdempotencyRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * IdempotencyRecord update
+   */
+  export type IdempotencyRecordUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * The data needed to update a IdempotencyRecord.
+     */
+    data: XOR<IdempotencyRecordUpdateInput, IdempotencyRecordUncheckedUpdateInput>
+    /**
+     * Choose, which IdempotencyRecord to update.
+     */
+    where: IdempotencyRecordWhereUniqueInput
+  }
+
+  /**
+   * IdempotencyRecord updateMany
+   */
+  export type IdempotencyRecordUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update IdempotencyRecords.
+     */
+    data: XOR<IdempotencyRecordUpdateManyMutationInput, IdempotencyRecordUncheckedUpdateManyInput>
+    /**
+     * Filter which IdempotencyRecords to update
+     */
+    where?: IdempotencyRecordWhereInput
+    /**
+     * Limit how many IdempotencyRecords to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * IdempotencyRecord upsert
+   */
+  export type IdempotencyRecordUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * The filter to search for the IdempotencyRecord to update in case it exists.
+     */
+    where: IdempotencyRecordWhereUniqueInput
+    /**
+     * In case the IdempotencyRecord found by the `where` argument doesn't exist, create a new IdempotencyRecord with this data.
+     */
+    create: XOR<IdempotencyRecordCreateInput, IdempotencyRecordUncheckedCreateInput>
+    /**
+     * In case the IdempotencyRecord was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<IdempotencyRecordUpdateInput, IdempotencyRecordUncheckedUpdateInput>
+  }
+
+  /**
+   * IdempotencyRecord delete
+   */
+  export type IdempotencyRecordDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+    /**
+     * Filter which IdempotencyRecord to delete.
+     */
+    where: IdempotencyRecordWhereUniqueInput
+  }
+
+  /**
+   * IdempotencyRecord deleteMany
+   */
+  export type IdempotencyRecordDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which IdempotencyRecords to delete
+     */
+    where?: IdempotencyRecordWhereInput
+    /**
+     * Limit how many IdempotencyRecords to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * IdempotencyRecord without action
+   */
+  export type IdempotencyRecordDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the IdempotencyRecord
+     */
+    select?: IdempotencyRecordSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the IdempotencyRecord
+     */
+    omit?: IdempotencyRecordOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -93096,7 +96828,10 @@ export namespace Prisma {
     loyaltyTierDiscountPercent: 'loyaltyTierDiscountPercent',
     loyaltyTierDiscountAmount: 'loyaltyTierDiscountAmount',
     customerSubscriptionId: 'customerSubscriptionId',
-    subscriptionDiscountAmount: 'subscriptionDiscountAmount'
+    subscriptionDiscountAmount: 'subscriptionDiscountAmount',
+    voucherId: 'voucherId',
+    voucherDiscountPercentage: 'voucherDiscountPercentage',
+    voucherDiscountAmount: 'voucherDiscountAmount'
   };
 
   export type SalesScalarFieldEnum = (typeof SalesScalarFieldEnum)[keyof typeof SalesScalarFieldEnum]
@@ -94328,6 +98063,66 @@ export namespace Prisma {
   export type SubscriptionUsageScalarFieldEnum = (typeof SubscriptionUsageScalarFieldEnum)[keyof typeof SubscriptionUsageScalarFieldEnum]
 
 
+  export const RewardRuleScalarFieldEnum: {
+    id: 'id',
+    name: 'name',
+    triggerType: 'triggerType',
+    spendThreshold: 'spendThreshold',
+    isRepeatable: 'isRepeatable',
+    discountType: 'discountType',
+    discountPercentage: 'discountPercentage',
+    discountAmount: 'discountAmount',
+    expiryDays: 'expiryDays',
+    minPurchaseAmount: 'minPurchaseAmount',
+    isActive: 'isActive',
+    deleted: 'deleted',
+    deletedAt: 'deletedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    version: 'version'
+  };
+
+  export type RewardRuleScalarFieldEnum = (typeof RewardRuleScalarFieldEnum)[keyof typeof RewardRuleScalarFieldEnum]
+
+
+  export const VoucherScalarFieldEnum: {
+    id: 'id',
+    rewardRuleId: 'rewardRuleId',
+    customerId: 'customerId',
+    loyaltyAccountId: 'loyaltyAccountId',
+    discountType: 'discountType',
+    discountPercentage: 'discountPercentage',
+    discountAmount: 'discountAmount',
+    minPurchaseAmount: 'minPurchaseAmount',
+    status: 'status',
+    milestoneSpendSnapshot: 'milestoneSpendSnapshot',
+    label: 'label',
+    expiresAt: 'expiresAt',
+    redeemedAt: 'redeemedAt',
+    redeemedInSalesId: 'redeemedInSalesId',
+    deleted: 'deleted',
+    deletedAt: 'deletedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    version: 'version'
+  };
+
+  export type VoucherScalarFieldEnum = (typeof VoucherScalarFieldEnum)[keyof typeof VoucherScalarFieldEnum]
+
+
+  export const IdempotencyRecordScalarFieldEnum: {
+    id: 'id',
+    key: 'key',
+    endpoint: 'endpoint',
+    userId: 'userId',
+    responseStatus: 'responseStatus',
+    responseBody: 'responseBody',
+    createdAt: 'createdAt'
+  };
+
+  export type IdempotencyRecordScalarFieldEnum = (typeof IdempotencyRecordScalarFieldEnum)[keyof typeof IdempotencyRecordScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -94981,6 +98776,33 @@ export namespace Prisma {
   };
 
   export type SubscriptionUsageOrderByRelevanceFieldEnum = (typeof SubscriptionUsageOrderByRelevanceFieldEnum)[keyof typeof SubscriptionUsageOrderByRelevanceFieldEnum]
+
+
+  export const RewardRuleOrderByRelevanceFieldEnum: {
+    name: 'name',
+    triggerType: 'triggerType',
+    discountType: 'discountType'
+  };
+
+  export type RewardRuleOrderByRelevanceFieldEnum = (typeof RewardRuleOrderByRelevanceFieldEnum)[keyof typeof RewardRuleOrderByRelevanceFieldEnum]
+
+
+  export const VoucherOrderByRelevanceFieldEnum: {
+    discountType: 'discountType',
+    status: 'status',
+    label: 'label'
+  };
+
+  export type VoucherOrderByRelevanceFieldEnum = (typeof VoucherOrderByRelevanceFieldEnum)[keyof typeof VoucherOrderByRelevanceFieldEnum]
+
+
+  export const IdempotencyRecordOrderByRelevanceFieldEnum: {
+    key: 'key',
+    endpoint: 'endpoint',
+    responseBody: 'responseBody'
+  };
+
+  export type IdempotencyRecordOrderByRelevanceFieldEnum = (typeof IdempotencyRecordOrderByRelevanceFieldEnum)[keyof typeof IdempotencyRecordOrderByRelevanceFieldEnum]
 
 
   /**
@@ -95838,6 +99660,7 @@ export namespace Prisma {
     splitBills?: SplitBillListRelationFilter
     loyaltyAccounts?: LoyaltyAccountListRelationFilter
     customerSubscriptions?: CustomerSubscriptionListRelationFilter
+    vouchers?: VoucherListRelationFilter
   }
 
   export type CustomerOrderByWithRelationInput = {
@@ -95873,6 +99696,7 @@ export namespace Prisma {
     splitBills?: SplitBillOrderByRelationAggregateInput
     loyaltyAccounts?: LoyaltyAccountOrderByRelationAggregateInput
     customerSubscriptions?: CustomerSubscriptionOrderByRelationAggregateInput
+    vouchers?: VoucherOrderByRelationAggregateInput
     _relevance?: CustomerOrderByRelevanceInput
   }
 
@@ -95912,6 +99736,7 @@ export namespace Prisma {
     splitBills?: SplitBillListRelationFilter
     loyaltyAccounts?: LoyaltyAccountListRelationFilter
     customerSubscriptions?: CustomerSubscriptionListRelationFilter
+    vouchers?: VoucherListRelationFilter
   }, "id">
 
   export type CustomerOrderByWithAggregationInput = {
@@ -96585,6 +100410,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: IntNullableFilter<"Sales"> | number | null
     subscriptionDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherId?: IntNullableFilter<"Sales"> | number | null
+    voucherDiscountPercentage?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemListRelationFilter
     payments?: PaymentListRelationFilter
     registerLogs?: RegisterLogListRelationFilter
@@ -96594,6 +100422,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchListRelationFilter
     subscriptionUsages?: SubscriptionUsageListRelationFilter
     customerSubscription?: XOR<CustomerSubscriptionNullableScalarRelationFilter, CustomerSubscriptionWhereInput> | null
+    redeemedVoucher?: XOR<VoucherNullableScalarRelationFilter, VoucherWhereInput> | null
   }
 
   export type SalesOrderByWithRelationInput = {
@@ -96653,6 +100482,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: SortOrderInput | SortOrder
     customerSubscriptionId?: SortOrderInput | SortOrder
     subscriptionDiscountAmount?: SortOrderInput | SortOrder
+    voucherId?: SortOrderInput | SortOrder
+    voucherDiscountPercentage?: SortOrderInput | SortOrder
+    voucherDiscountAmount?: SortOrderInput | SortOrder
     salesItems?: SalesItemOrderByRelationAggregateInput
     payments?: PaymentOrderByRelationAggregateInput
     registerLogs?: RegisterLogOrderByRelationAggregateInput
@@ -96662,6 +100494,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchOrderByRelationAggregateInput
     subscriptionUsages?: SubscriptionUsageOrderByRelationAggregateInput
     customerSubscription?: CustomerSubscriptionOrderByWithRelationInput
+    redeemedVoucher?: VoucherOrderByWithRelationInput
     _relevance?: SalesOrderByRelevanceInput
   }
 
@@ -96725,6 +100558,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: IntNullableFilter<"Sales"> | number | null
     subscriptionDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherId?: IntNullableFilter<"Sales"> | number | null
+    voucherDiscountPercentage?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemListRelationFilter
     payments?: PaymentListRelationFilter
     registerLogs?: RegisterLogListRelationFilter
@@ -96734,6 +100570,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchListRelationFilter
     subscriptionUsages?: SubscriptionUsageListRelationFilter
     customerSubscription?: XOR<CustomerSubscriptionNullableScalarRelationFilter, CustomerSubscriptionWhereInput> | null
+    redeemedVoucher?: XOR<VoucherNullableScalarRelationFilter, VoucherWhereInput> | null
   }, "id">
 
   export type SalesOrderByWithAggregationInput = {
@@ -96793,6 +100630,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: SortOrderInput | SortOrder
     customerSubscriptionId?: SortOrderInput | SortOrder
     subscriptionDiscountAmount?: SortOrderInput | SortOrder
+    voucherId?: SortOrderInput | SortOrder
+    voucherDiscountPercentage?: SortOrderInput | SortOrder
+    voucherDiscountAmount?: SortOrderInput | SortOrder
     _count?: SalesCountOrderByAggregateInput
     _avg?: SalesAvgOrderByAggregateInput
     _max?: SalesMaxOrderByAggregateInput
@@ -96860,6 +100700,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: DecimalNullableWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: IntNullableWithAggregatesFilter<"Sales"> | number | null
     subscriptionDiscountAmount?: DecimalNullableWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherId?: IntNullableWithAggregatesFilter<"Sales"> | number | null
+    voucherDiscountPercentage?: DecimalNullableWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: DecimalNullableWithAggregatesFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
   }
 
   export type SalesItemWhereInput = {
@@ -102789,6 +106632,7 @@ export namespace Prisma {
     loyaltyTier?: XOR<LoyaltyTierNullableScalarRelationFilter, LoyaltyTierWhereInput> | null
     transactions?: LoyaltyTransactionListRelationFilter
     pointBatches?: LoyaltyPointBatchListRelationFilter
+    vouchers?: VoucherListRelationFilter
   }
 
   export type LoyaltyAccountOrderByWithRelationInput = {
@@ -102812,6 +106656,7 @@ export namespace Prisma {
     loyaltyTier?: LoyaltyTierOrderByWithRelationInput
     transactions?: LoyaltyTransactionOrderByRelationAggregateInput
     pointBatches?: LoyaltyPointBatchOrderByRelationAggregateInput
+    vouchers?: VoucherOrderByRelationAggregateInput
   }
 
   export type LoyaltyAccountWhereUniqueInput = Prisma.AtLeast<{
@@ -102839,6 +106684,7 @@ export namespace Prisma {
     loyaltyTier?: XOR<LoyaltyTierNullableScalarRelationFilter, LoyaltyTierWhereInput> | null
     transactions?: LoyaltyTransactionListRelationFilter
     pointBatches?: LoyaltyPointBatchListRelationFilter
+    vouchers?: VoucherListRelationFilter
   }, "id" | "customerId_loyaltyProgramId">
 
   export type LoyaltyAccountOrderByWithAggregationInput = {
@@ -103481,6 +107327,322 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"SubscriptionUsage"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"SubscriptionUsage"> | Date | string | null
     version?: IntNullableWithAggregatesFilter<"SubscriptionUsage"> | number | null
+  }
+
+  export type RewardRuleWhereInput = {
+    AND?: RewardRuleWhereInput | RewardRuleWhereInput[]
+    OR?: RewardRuleWhereInput[]
+    NOT?: RewardRuleWhereInput | RewardRuleWhereInput[]
+    id?: IntFilter<"RewardRule"> | number
+    name?: StringFilter<"RewardRule"> | string
+    triggerType?: StringFilter<"RewardRule"> | string
+    spendThreshold?: DecimalFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFilter<"RewardRule"> | boolean
+    discountType?: StringFilter<"RewardRule"> | string
+    discountPercentage?: DecimalNullableFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: DecimalNullableFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFilter<"RewardRule"> | number
+    minPurchaseAmount?: DecimalNullableFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFilter<"RewardRule"> | boolean
+    deleted?: BoolFilter<"RewardRule"> | boolean
+    deletedAt?: DateTimeNullableFilter<"RewardRule"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"RewardRule"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"RewardRule"> | Date | string | null
+    version?: IntNullableFilter<"RewardRule"> | number | null
+    vouchers?: VoucherListRelationFilter
+  }
+
+  export type RewardRuleOrderByWithRelationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    triggerType?: SortOrder
+    spendThreshold?: SortOrder
+    isRepeatable?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrderInput | SortOrder
+    discountAmount?: SortOrderInput | SortOrder
+    expiryDays?: SortOrder
+    minPurchaseAmount?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    vouchers?: VoucherOrderByRelationAggregateInput
+    _relevance?: RewardRuleOrderByRelevanceInput
+  }
+
+  export type RewardRuleWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: RewardRuleWhereInput | RewardRuleWhereInput[]
+    OR?: RewardRuleWhereInput[]
+    NOT?: RewardRuleWhereInput | RewardRuleWhereInput[]
+    name?: StringFilter<"RewardRule"> | string
+    triggerType?: StringFilter<"RewardRule"> | string
+    spendThreshold?: DecimalFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFilter<"RewardRule"> | boolean
+    discountType?: StringFilter<"RewardRule"> | string
+    discountPercentage?: DecimalNullableFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: DecimalNullableFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFilter<"RewardRule"> | number
+    minPurchaseAmount?: DecimalNullableFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFilter<"RewardRule"> | boolean
+    deleted?: BoolFilter<"RewardRule"> | boolean
+    deletedAt?: DateTimeNullableFilter<"RewardRule"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"RewardRule"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"RewardRule"> | Date | string | null
+    version?: IntNullableFilter<"RewardRule"> | number | null
+    vouchers?: VoucherListRelationFilter
+  }, "id">
+
+  export type RewardRuleOrderByWithAggregationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    triggerType?: SortOrder
+    spendThreshold?: SortOrder
+    isRepeatable?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrderInput | SortOrder
+    discountAmount?: SortOrderInput | SortOrder
+    expiryDays?: SortOrder
+    minPurchaseAmount?: SortOrderInput | SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    _count?: RewardRuleCountOrderByAggregateInput
+    _avg?: RewardRuleAvgOrderByAggregateInput
+    _max?: RewardRuleMaxOrderByAggregateInput
+    _min?: RewardRuleMinOrderByAggregateInput
+    _sum?: RewardRuleSumOrderByAggregateInput
+  }
+
+  export type RewardRuleScalarWhereWithAggregatesInput = {
+    AND?: RewardRuleScalarWhereWithAggregatesInput | RewardRuleScalarWhereWithAggregatesInput[]
+    OR?: RewardRuleScalarWhereWithAggregatesInput[]
+    NOT?: RewardRuleScalarWhereWithAggregatesInput | RewardRuleScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"RewardRule"> | number
+    name?: StringWithAggregatesFilter<"RewardRule"> | string
+    triggerType?: StringWithAggregatesFilter<"RewardRule"> | string
+    spendThreshold?: DecimalWithAggregatesFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolWithAggregatesFilter<"RewardRule"> | boolean
+    discountType?: StringWithAggregatesFilter<"RewardRule"> | string
+    discountPercentage?: DecimalNullableWithAggregatesFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: DecimalNullableWithAggregatesFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntWithAggregatesFilter<"RewardRule"> | number
+    minPurchaseAmount?: DecimalNullableWithAggregatesFilter<"RewardRule"> | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolWithAggregatesFilter<"RewardRule"> | boolean
+    deleted?: BoolWithAggregatesFilter<"RewardRule"> | boolean
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"RewardRule"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"RewardRule"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"RewardRule"> | Date | string | null
+    version?: IntNullableWithAggregatesFilter<"RewardRule"> | number | null
+  }
+
+  export type VoucherWhereInput = {
+    AND?: VoucherWhereInput | VoucherWhereInput[]
+    OR?: VoucherWhereInput[]
+    NOT?: VoucherWhereInput | VoucherWhereInput[]
+    id?: IntFilter<"Voucher"> | number
+    rewardRuleId?: IntNullableFilter<"Voucher"> | number | null
+    customerId?: IntFilter<"Voucher"> | number
+    loyaltyAccountId?: IntNullableFilter<"Voucher"> | number | null
+    discountType?: StringFilter<"Voucher"> | string
+    discountPercentage?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    status?: StringFilter<"Voucher"> | string
+    milestoneSpendSnapshot?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    label?: StringFilter<"Voucher"> | string
+    expiresAt?: DateTimeFilter<"Voucher"> | Date | string
+    redeemedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    redeemedInSalesId?: IntNullableFilter<"Voucher"> | number | null
+    deleted?: BoolFilter<"Voucher"> | boolean
+    deletedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    version?: IntNullableFilter<"Voucher"> | number | null
+    rewardRule?: XOR<RewardRuleNullableScalarRelationFilter, RewardRuleWhereInput> | null
+    customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
+    loyaltyAccount?: XOR<LoyaltyAccountNullableScalarRelationFilter, LoyaltyAccountWhereInput> | null
+    redeemedInSale?: XOR<SalesNullableScalarRelationFilter, SalesWhereInput> | null
+  }
+
+  export type VoucherOrderByWithRelationInput = {
+    id?: SortOrder
+    rewardRuleId?: SortOrderInput | SortOrder
+    customerId?: SortOrder
+    loyaltyAccountId?: SortOrderInput | SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrderInput | SortOrder
+    discountAmount?: SortOrderInput | SortOrder
+    minPurchaseAmount?: SortOrderInput | SortOrder
+    status?: SortOrder
+    milestoneSpendSnapshot?: SortOrderInput | SortOrder
+    label?: SortOrder
+    expiresAt?: SortOrder
+    redeemedAt?: SortOrderInput | SortOrder
+    redeemedInSalesId?: SortOrderInput | SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    rewardRule?: RewardRuleOrderByWithRelationInput
+    customer?: CustomerOrderByWithRelationInput
+    loyaltyAccount?: LoyaltyAccountOrderByWithRelationInput
+    redeemedInSale?: SalesOrderByWithRelationInput
+    _relevance?: VoucherOrderByRelevanceInput
+  }
+
+  export type VoucherWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    redeemedInSalesId?: number
+    AND?: VoucherWhereInput | VoucherWhereInput[]
+    OR?: VoucherWhereInput[]
+    NOT?: VoucherWhereInput | VoucherWhereInput[]
+    rewardRuleId?: IntNullableFilter<"Voucher"> | number | null
+    customerId?: IntFilter<"Voucher"> | number
+    loyaltyAccountId?: IntNullableFilter<"Voucher"> | number | null
+    discountType?: StringFilter<"Voucher"> | string
+    discountPercentage?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    status?: StringFilter<"Voucher"> | string
+    milestoneSpendSnapshot?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    label?: StringFilter<"Voucher"> | string
+    expiresAt?: DateTimeFilter<"Voucher"> | Date | string
+    redeemedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    deleted?: BoolFilter<"Voucher"> | boolean
+    deletedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    version?: IntNullableFilter<"Voucher"> | number | null
+    rewardRule?: XOR<RewardRuleNullableScalarRelationFilter, RewardRuleWhereInput> | null
+    customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
+    loyaltyAccount?: XOR<LoyaltyAccountNullableScalarRelationFilter, LoyaltyAccountWhereInput> | null
+    redeemedInSale?: XOR<SalesNullableScalarRelationFilter, SalesWhereInput> | null
+  }, "id" | "redeemedInSalesId">
+
+  export type VoucherOrderByWithAggregationInput = {
+    id?: SortOrder
+    rewardRuleId?: SortOrderInput | SortOrder
+    customerId?: SortOrder
+    loyaltyAccountId?: SortOrderInput | SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrderInput | SortOrder
+    discountAmount?: SortOrderInput | SortOrder
+    minPurchaseAmount?: SortOrderInput | SortOrder
+    status?: SortOrder
+    milestoneSpendSnapshot?: SortOrderInput | SortOrder
+    label?: SortOrder
+    expiresAt?: SortOrder
+    redeemedAt?: SortOrderInput | SortOrder
+    redeemedInSalesId?: SortOrderInput | SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    _count?: VoucherCountOrderByAggregateInput
+    _avg?: VoucherAvgOrderByAggregateInput
+    _max?: VoucherMaxOrderByAggregateInput
+    _min?: VoucherMinOrderByAggregateInput
+    _sum?: VoucherSumOrderByAggregateInput
+  }
+
+  export type VoucherScalarWhereWithAggregatesInput = {
+    AND?: VoucherScalarWhereWithAggregatesInput | VoucherScalarWhereWithAggregatesInput[]
+    OR?: VoucherScalarWhereWithAggregatesInput[]
+    NOT?: VoucherScalarWhereWithAggregatesInput | VoucherScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"Voucher"> | number
+    rewardRuleId?: IntNullableWithAggregatesFilter<"Voucher"> | number | null
+    customerId?: IntWithAggregatesFilter<"Voucher"> | number
+    loyaltyAccountId?: IntNullableWithAggregatesFilter<"Voucher"> | number | null
+    discountType?: StringWithAggregatesFilter<"Voucher"> | string
+    discountPercentage?: DecimalNullableWithAggregatesFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: DecimalNullableWithAggregatesFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: DecimalNullableWithAggregatesFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    status?: StringWithAggregatesFilter<"Voucher"> | string
+    milestoneSpendSnapshot?: DecimalNullableWithAggregatesFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    label?: StringWithAggregatesFilter<"Voucher"> | string
+    expiresAt?: DateTimeWithAggregatesFilter<"Voucher"> | Date | string
+    redeemedAt?: DateTimeNullableWithAggregatesFilter<"Voucher"> | Date | string | null
+    redeemedInSalesId?: IntNullableWithAggregatesFilter<"Voucher"> | number | null
+    deleted?: BoolWithAggregatesFilter<"Voucher"> | boolean
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"Voucher"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"Voucher"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"Voucher"> | Date | string | null
+    version?: IntNullableWithAggregatesFilter<"Voucher"> | number | null
+  }
+
+  export type IdempotencyRecordWhereInput = {
+    AND?: IdempotencyRecordWhereInput | IdempotencyRecordWhereInput[]
+    OR?: IdempotencyRecordWhereInput[]
+    NOT?: IdempotencyRecordWhereInput | IdempotencyRecordWhereInput[]
+    id?: IntFilter<"IdempotencyRecord"> | number
+    key?: StringFilter<"IdempotencyRecord"> | string
+    endpoint?: StringFilter<"IdempotencyRecord"> | string
+    userId?: IntNullableFilter<"IdempotencyRecord"> | number | null
+    responseStatus?: IntFilter<"IdempotencyRecord"> | number
+    responseBody?: StringFilter<"IdempotencyRecord"> | string
+    createdAt?: DateTimeFilter<"IdempotencyRecord"> | Date | string
+  }
+
+  export type IdempotencyRecordOrderByWithRelationInput = {
+    id?: SortOrder
+    key?: SortOrder
+    endpoint?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    responseStatus?: SortOrder
+    responseBody?: SortOrder
+    createdAt?: SortOrder
+    _relevance?: IdempotencyRecordOrderByRelevanceInput
+  }
+
+  export type IdempotencyRecordWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    endpoint_key?: IdempotencyRecordEndpoint_keyCompoundUniqueInput
+    AND?: IdempotencyRecordWhereInput | IdempotencyRecordWhereInput[]
+    OR?: IdempotencyRecordWhereInput[]
+    NOT?: IdempotencyRecordWhereInput | IdempotencyRecordWhereInput[]
+    key?: StringFilter<"IdempotencyRecord"> | string
+    endpoint?: StringFilter<"IdempotencyRecord"> | string
+    userId?: IntNullableFilter<"IdempotencyRecord"> | number | null
+    responseStatus?: IntFilter<"IdempotencyRecord"> | number
+    responseBody?: StringFilter<"IdempotencyRecord"> | string
+    createdAt?: DateTimeFilter<"IdempotencyRecord"> | Date | string
+  }, "id" | "endpoint_key">
+
+  export type IdempotencyRecordOrderByWithAggregationInput = {
+    id?: SortOrder
+    key?: SortOrder
+    endpoint?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    responseStatus?: SortOrder
+    responseBody?: SortOrder
+    createdAt?: SortOrder
+    _count?: IdempotencyRecordCountOrderByAggregateInput
+    _avg?: IdempotencyRecordAvgOrderByAggregateInput
+    _max?: IdempotencyRecordMaxOrderByAggregateInput
+    _min?: IdempotencyRecordMinOrderByAggregateInput
+    _sum?: IdempotencyRecordSumOrderByAggregateInput
+  }
+
+  export type IdempotencyRecordScalarWhereWithAggregatesInput = {
+    AND?: IdempotencyRecordScalarWhereWithAggregatesInput | IdempotencyRecordScalarWhereWithAggregatesInput[]
+    OR?: IdempotencyRecordScalarWhereWithAggregatesInput[]
+    NOT?: IdempotencyRecordScalarWhereWithAggregatesInput | IdempotencyRecordScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"IdempotencyRecord"> | number
+    key?: StringWithAggregatesFilter<"IdempotencyRecord"> | string
+    endpoint?: StringWithAggregatesFilter<"IdempotencyRecord"> | string
+    userId?: IntNullableWithAggregatesFilter<"IdempotencyRecord"> | number | null
+    responseStatus?: IntWithAggregatesFilter<"IdempotencyRecord"> | number
+    responseBody?: StringWithAggregatesFilter<"IdempotencyRecord"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"IdempotencyRecord"> | Date | string
   }
 
   export type RoleCreateInput = {
@@ -104293,6 +108455,7 @@ export namespace Prisma {
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateInput = {
@@ -104328,6 +108491,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUpdateInput = {
@@ -104362,6 +108526,7 @@ export namespace Prisma {
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateInput = {
@@ -104397,6 +108562,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerCreateManyInput = {
@@ -105189,6 +109355,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -105198,6 +109367,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateInput = {
@@ -105257,12 +109427,16 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUpdateInput = {
@@ -105318,6 +109492,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -105327,6 +109504,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateInput = {
@@ -105386,12 +109564,16 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesCreateManyInput = {
@@ -105451,6 +109633,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
   }
 
   export type SalesUpdateManyMutationInput = {
@@ -105506,6 +109691,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
   }
 
   export type SalesUncheckedUpdateManyInput = {
@@ -105565,6 +109753,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
   }
 
   export type SalesItemCreateInput = {
@@ -112136,6 +116327,7 @@ export namespace Prisma {
     loyaltyTier?: LoyaltyTierCreateNestedOneWithoutAccountsInput
     transactions?: LoyaltyTransactionCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountUncheckedCreateInput = {
@@ -112156,6 +116348,7 @@ export namespace Prisma {
     version?: number | null
     transactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountUpdateInput = {
@@ -112175,6 +116368,7 @@ export namespace Prisma {
     loyaltyTier?: LoyaltyTierUpdateOneWithoutAccountsNestedInput
     transactions?: LoyaltyTransactionUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateInput = {
@@ -112195,6 +116389,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     transactions?: LoyaltyTransactionUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountCreateManyInput = {
@@ -112884,6 +117079,354 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type RewardRuleCreateInput = {
+    name: string
+    triggerType?: string
+    spendThreshold: Decimal | DecimalJsLike | number | string
+    isRepeatable?: boolean
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    expiryDays: number
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    vouchers?: VoucherCreateNestedManyWithoutRewardRuleInput
+  }
+
+  export type RewardRuleUncheckedCreateInput = {
+    id?: number
+    name: string
+    triggerType?: string
+    spendThreshold: Decimal | DecimalJsLike | number | string
+    isRepeatable?: boolean
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    expiryDays: number
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutRewardRuleInput
+  }
+
+  export type RewardRuleUpdateInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    triggerType?: StringFieldUpdateOperationsInput | string
+    spendThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFieldUpdateOperationsInput | boolean
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFieldUpdateOperationsInput | number
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    vouchers?: VoucherUpdateManyWithoutRewardRuleNestedInput
+  }
+
+  export type RewardRuleUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    triggerType?: StringFieldUpdateOperationsInput | string
+    spendThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFieldUpdateOperationsInput | boolean
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFieldUpdateOperationsInput | number
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    vouchers?: VoucherUncheckedUpdateManyWithoutRewardRuleNestedInput
+  }
+
+  export type RewardRuleCreateManyInput = {
+    id?: number
+    name: string
+    triggerType?: string
+    spendThreshold: Decimal | DecimalJsLike | number | string
+    isRepeatable?: boolean
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    expiryDays: number
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type RewardRuleUpdateManyMutationInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    triggerType?: StringFieldUpdateOperationsInput | string
+    spendThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFieldUpdateOperationsInput | boolean
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFieldUpdateOperationsInput | number
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type RewardRuleUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    triggerType?: StringFieldUpdateOperationsInput | string
+    spendThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFieldUpdateOperationsInput | boolean
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFieldUpdateOperationsInput | number
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherCreateInput = {
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    rewardRule?: RewardRuleCreateNestedOneWithoutVouchersInput
+    customer: CustomerCreateNestedOneWithoutVouchersInput
+    loyaltyAccount?: LoyaltyAccountCreateNestedOneWithoutVouchersInput
+    redeemedInSale?: SalesCreateNestedOneWithoutRedeemedVoucherInput
+  }
+
+  export type VoucherUncheckedCreateInput = {
+    id?: number
+    rewardRuleId?: number | null
+    customerId: number
+    loyaltyAccountId?: number | null
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherUpdateInput = {
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    rewardRule?: RewardRuleUpdateOneWithoutVouchersNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutVouchersNestedInput
+    loyaltyAccount?: LoyaltyAccountUpdateOneWithoutVouchersNestedInput
+    redeemedInSale?: SalesUpdateOneWithoutRedeemedVoucherNestedInput
+  }
+
+  export type VoucherUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rewardRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    customerId?: IntFieldUpdateOperationsInput | number
+    loyaltyAccountId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherCreateManyInput = {
+    id?: number
+    rewardRuleId?: number | null
+    customerId: number
+    loyaltyAccountId?: number | null
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherUpdateManyMutationInput = {
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rewardRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    customerId?: IntFieldUpdateOperationsInput | number
+    loyaltyAccountId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type IdempotencyRecordCreateInput = {
+    key: string
+    endpoint: string
+    userId?: number | null
+    responseStatus: number
+    responseBody: string
+    createdAt?: Date | string
+  }
+
+  export type IdempotencyRecordUncheckedCreateInput = {
+    id?: number
+    key: string
+    endpoint: string
+    userId?: number | null
+    responseStatus: number
+    responseBody: string
+    createdAt?: Date | string
+  }
+
+  export type IdempotencyRecordUpdateInput = {
+    key?: StringFieldUpdateOperationsInput | string
+    endpoint?: StringFieldUpdateOperationsInput | string
+    userId?: NullableIntFieldUpdateOperationsInput | number | null
+    responseStatus?: IntFieldUpdateOperationsInput | number
+    responseBody?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type IdempotencyRecordUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    key?: StringFieldUpdateOperationsInput | string
+    endpoint?: StringFieldUpdateOperationsInput | string
+    userId?: NullableIntFieldUpdateOperationsInput | number | null
+    responseStatus?: IntFieldUpdateOperationsInput | number
+    responseBody?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type IdempotencyRecordCreateManyInput = {
+    id?: number
+    key: string
+    endpoint: string
+    userId?: number | null
+    responseStatus: number
+    responseBody: string
+    createdAt?: Date | string
+  }
+
+  export type IdempotencyRecordUpdateManyMutationInput = {
+    key?: StringFieldUpdateOperationsInput | string
+    endpoint?: StringFieldUpdateOperationsInput | string
+    userId?: NullableIntFieldUpdateOperationsInput | number | null
+    responseStatus?: IntFieldUpdateOperationsInput | number
+    responseBody?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type IdempotencyRecordUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    key?: StringFieldUpdateOperationsInput | string
+    endpoint?: StringFieldUpdateOperationsInput | string
+    userId?: NullableIntFieldUpdateOperationsInput | number | null
+    responseStatus?: IntFieldUpdateOperationsInput | number
+    responseBody?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -113720,6 +118263,12 @@ export namespace Prisma {
     none?: CustomerSubscriptionWhereInput
   }
 
+  export type VoucherListRelationFilter = {
+    every?: VoucherWhereInput
+    some?: VoucherWhereInput
+    none?: VoucherWhereInput
+  }
+
   export type SalesOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -113749,6 +118298,10 @@ export namespace Prisma {
   }
 
   export type CustomerSubscriptionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VoucherOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -114487,6 +119040,11 @@ export namespace Prisma {
     isNot?: CustomerSubscriptionWhereInput | null
   }
 
+  export type VoucherNullableScalarRelationFilter = {
+    is?: VoucherWhereInput | null
+    isNot?: VoucherWhereInput | null
+  }
+
   export type SalesItemOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -114574,6 +119132,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: SortOrder
     customerSubscriptionId?: SortOrder
     subscriptionDiscountAmount?: SortOrder
+    voucherId?: SortOrder
+    voucherDiscountPercentage?: SortOrder
+    voucherDiscountAmount?: SortOrder
   }
 
   export type SalesAvgOrderByAggregateInput = {
@@ -114606,6 +119167,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: SortOrder
     customerSubscriptionId?: SortOrder
     subscriptionDiscountAmount?: SortOrder
+    voucherId?: SortOrder
+    voucherDiscountPercentage?: SortOrder
+    voucherDiscountAmount?: SortOrder
   }
 
   export type SalesMaxOrderByAggregateInput = {
@@ -114665,6 +119229,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: SortOrder
     customerSubscriptionId?: SortOrder
     subscriptionDiscountAmount?: SortOrder
+    voucherId?: SortOrder
+    voucherDiscountPercentage?: SortOrder
+    voucherDiscountAmount?: SortOrder
   }
 
   export type SalesMinOrderByAggregateInput = {
@@ -114724,6 +119291,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: SortOrder
     customerSubscriptionId?: SortOrder
     subscriptionDiscountAmount?: SortOrder
+    voucherId?: SortOrder
+    voucherDiscountPercentage?: SortOrder
+    voucherDiscountAmount?: SortOrder
   }
 
   export type SalesSumOrderByAggregateInput = {
@@ -114756,6 +119326,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: SortOrder
     customerSubscriptionId?: SortOrder
     subscriptionDiscountAmount?: SortOrder
+    voucherId?: SortOrder
+    voucherDiscountPercentage?: SortOrder
+    voucherDiscountAmount?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -119944,6 +124517,250 @@ export namespace Prisma {
     version?: SortOrder
   }
 
+  export type RewardRuleOrderByRelevanceInput = {
+    fields: RewardRuleOrderByRelevanceFieldEnum | RewardRuleOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type RewardRuleCountOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    triggerType?: SortOrder
+    spendThreshold?: SortOrder
+    isRepeatable?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    expiryDays?: SortOrder
+    minPurchaseAmount?: SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type RewardRuleAvgOrderByAggregateInput = {
+    id?: SortOrder
+    spendThreshold?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    expiryDays?: SortOrder
+    minPurchaseAmount?: SortOrder
+    version?: SortOrder
+  }
+
+  export type RewardRuleMaxOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    triggerType?: SortOrder
+    spendThreshold?: SortOrder
+    isRepeatable?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    expiryDays?: SortOrder
+    minPurchaseAmount?: SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type RewardRuleMinOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    triggerType?: SortOrder
+    spendThreshold?: SortOrder
+    isRepeatable?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    expiryDays?: SortOrder
+    minPurchaseAmount?: SortOrder
+    isActive?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type RewardRuleSumOrderByAggregateInput = {
+    id?: SortOrder
+    spendThreshold?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    expiryDays?: SortOrder
+    minPurchaseAmount?: SortOrder
+    version?: SortOrder
+  }
+
+  export type RewardRuleNullableScalarRelationFilter = {
+    is?: RewardRuleWhereInput | null
+    isNot?: RewardRuleWhereInput | null
+  }
+
+  export type LoyaltyAccountNullableScalarRelationFilter = {
+    is?: LoyaltyAccountWhereInput | null
+    isNot?: LoyaltyAccountWhereInput | null
+  }
+
+  export type VoucherOrderByRelevanceInput = {
+    fields: VoucherOrderByRelevanceFieldEnum | VoucherOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type VoucherCountOrderByAggregateInput = {
+    id?: SortOrder
+    rewardRuleId?: SortOrder
+    customerId?: SortOrder
+    loyaltyAccountId?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    minPurchaseAmount?: SortOrder
+    status?: SortOrder
+    milestoneSpendSnapshot?: SortOrder
+    label?: SortOrder
+    expiresAt?: SortOrder
+    redeemedAt?: SortOrder
+    redeemedInSalesId?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type VoucherAvgOrderByAggregateInput = {
+    id?: SortOrder
+    rewardRuleId?: SortOrder
+    customerId?: SortOrder
+    loyaltyAccountId?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    minPurchaseAmount?: SortOrder
+    milestoneSpendSnapshot?: SortOrder
+    redeemedInSalesId?: SortOrder
+    version?: SortOrder
+  }
+
+  export type VoucherMaxOrderByAggregateInput = {
+    id?: SortOrder
+    rewardRuleId?: SortOrder
+    customerId?: SortOrder
+    loyaltyAccountId?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    minPurchaseAmount?: SortOrder
+    status?: SortOrder
+    milestoneSpendSnapshot?: SortOrder
+    label?: SortOrder
+    expiresAt?: SortOrder
+    redeemedAt?: SortOrder
+    redeemedInSalesId?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type VoucherMinOrderByAggregateInput = {
+    id?: SortOrder
+    rewardRuleId?: SortOrder
+    customerId?: SortOrder
+    loyaltyAccountId?: SortOrder
+    discountType?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    minPurchaseAmount?: SortOrder
+    status?: SortOrder
+    milestoneSpendSnapshot?: SortOrder
+    label?: SortOrder
+    expiresAt?: SortOrder
+    redeemedAt?: SortOrder
+    redeemedInSalesId?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type VoucherSumOrderByAggregateInput = {
+    id?: SortOrder
+    rewardRuleId?: SortOrder
+    customerId?: SortOrder
+    loyaltyAccountId?: SortOrder
+    discountPercentage?: SortOrder
+    discountAmount?: SortOrder
+    minPurchaseAmount?: SortOrder
+    milestoneSpendSnapshot?: SortOrder
+    redeemedInSalesId?: SortOrder
+    version?: SortOrder
+  }
+
+  export type IdempotencyRecordOrderByRelevanceInput = {
+    fields: IdempotencyRecordOrderByRelevanceFieldEnum | IdempotencyRecordOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type IdempotencyRecordEndpoint_keyCompoundUniqueInput = {
+    endpoint: string
+    key: string
+  }
+
+  export type IdempotencyRecordCountOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    endpoint?: SortOrder
+    userId?: SortOrder
+    responseStatus?: SortOrder
+    responseBody?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type IdempotencyRecordAvgOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    responseStatus?: SortOrder
+  }
+
+  export type IdempotencyRecordMaxOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    endpoint?: SortOrder
+    userId?: SortOrder
+    responseStatus?: SortOrder
+    responseBody?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type IdempotencyRecordMinOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    endpoint?: SortOrder
+    userId?: SortOrder
+    responseStatus?: SortOrder
+    responseBody?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type IdempotencyRecordSumOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    responseStatus?: SortOrder
+  }
+
   export type RolePermissionCreateNestedManyWithoutRoleInput = {
     create?: XOR<RolePermissionCreateWithoutRoleInput, RolePermissionUncheckedCreateWithoutRoleInput> | RolePermissionCreateWithoutRoleInput[] | RolePermissionUncheckedCreateWithoutRoleInput[]
     connectOrCreate?: RolePermissionCreateOrConnectWithoutRoleInput | RolePermissionCreateOrConnectWithoutRoleInput[]
@@ -120554,6 +125371,13 @@ export namespace Prisma {
     connect?: CustomerSubscriptionWhereUniqueInput | CustomerSubscriptionWhereUniqueInput[]
   }
 
+  export type VoucherCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<VoucherCreateWithoutCustomerInput, VoucherUncheckedCreateWithoutCustomerInput> | VoucherCreateWithoutCustomerInput[] | VoucherUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutCustomerInput | VoucherCreateOrConnectWithoutCustomerInput[]
+    createMany?: VoucherCreateManyCustomerInputEnvelope
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+  }
+
   export type SalesUncheckedCreateNestedManyWithoutCustomerInput = {
     create?: XOR<SalesCreateWithoutCustomerInput, SalesUncheckedCreateWithoutCustomerInput> | SalesCreateWithoutCustomerInput[] | SalesUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: SalesCreateOrConnectWithoutCustomerInput | SalesCreateOrConnectWithoutCustomerInput[]
@@ -120608,6 +125432,13 @@ export namespace Prisma {
     connectOrCreate?: CustomerSubscriptionCreateOrConnectWithoutCustomerInput | CustomerSubscriptionCreateOrConnectWithoutCustomerInput[]
     createMany?: CustomerSubscriptionCreateManyCustomerInputEnvelope
     connect?: CustomerSubscriptionWhereUniqueInput | CustomerSubscriptionWhereUniqueInput[]
+  }
+
+  export type VoucherUncheckedCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<VoucherCreateWithoutCustomerInput, VoucherUncheckedCreateWithoutCustomerInput> | VoucherCreateWithoutCustomerInput[] | VoucherUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutCustomerInput | VoucherCreateOrConnectWithoutCustomerInput[]
+    createMany?: VoucherCreateManyCustomerInputEnvelope
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
   }
 
   export type SalesUpdateManyWithoutCustomerNestedInput = {
@@ -120722,6 +125553,20 @@ export namespace Prisma {
     deleteMany?: CustomerSubscriptionScalarWhereInput | CustomerSubscriptionScalarWhereInput[]
   }
 
+  export type VoucherUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<VoucherCreateWithoutCustomerInput, VoucherUncheckedCreateWithoutCustomerInput> | VoucherCreateWithoutCustomerInput[] | VoucherUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutCustomerInput | VoucherCreateOrConnectWithoutCustomerInput[]
+    upsert?: VoucherUpsertWithWhereUniqueWithoutCustomerInput | VoucherUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: VoucherCreateManyCustomerInputEnvelope
+    set?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    disconnect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    delete?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    update?: VoucherUpdateWithWhereUniqueWithoutCustomerInput | VoucherUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: VoucherUpdateManyWithWhereWithoutCustomerInput | VoucherUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
+  }
+
   export type SalesUncheckedUpdateManyWithoutCustomerNestedInput = {
     create?: XOR<SalesCreateWithoutCustomerInput, SalesUncheckedCreateWithoutCustomerInput> | SalesCreateWithoutCustomerInput[] | SalesUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: SalesCreateOrConnectWithoutCustomerInput | SalesCreateOrConnectWithoutCustomerInput[]
@@ -120832,6 +125677,20 @@ export namespace Prisma {
     update?: CustomerSubscriptionUpdateWithWhereUniqueWithoutCustomerInput | CustomerSubscriptionUpdateWithWhereUniqueWithoutCustomerInput[]
     updateMany?: CustomerSubscriptionUpdateManyWithWhereWithoutCustomerInput | CustomerSubscriptionUpdateManyWithWhereWithoutCustomerInput[]
     deleteMany?: CustomerSubscriptionScalarWhereInput | CustomerSubscriptionScalarWhereInput[]
+  }
+
+  export type VoucherUncheckedUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<VoucherCreateWithoutCustomerInput, VoucherUncheckedCreateWithoutCustomerInput> | VoucherCreateWithoutCustomerInput[] | VoucherUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutCustomerInput | VoucherCreateOrConnectWithoutCustomerInput[]
+    upsert?: VoucherUpsertWithWhereUniqueWithoutCustomerInput | VoucherUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: VoucherCreateManyCustomerInputEnvelope
+    set?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    disconnect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    delete?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    update?: VoucherUpdateWithWhereUniqueWithoutCustomerInput | VoucherUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: VoucherUpdateManyWithWhereWithoutCustomerInput | VoucherUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
   }
 
   export type StockBalanceCreateNestedManyWithoutOutletInput = {
@@ -122034,6 +126893,12 @@ export namespace Prisma {
     connect?: CustomerSubscriptionWhereUniqueInput
   }
 
+  export type VoucherCreateNestedOneWithoutRedeemedInSaleInput = {
+    create?: XOR<VoucherCreateWithoutRedeemedInSaleInput, VoucherUncheckedCreateWithoutRedeemedInSaleInput>
+    connectOrCreate?: VoucherCreateOrConnectWithoutRedeemedInSaleInput
+    connect?: VoucherWhereUniqueInput
+  }
+
   export type SalesItemUncheckedCreateNestedManyWithoutSalesInput = {
     create?: XOR<SalesItemCreateWithoutSalesInput, SalesItemUncheckedCreateWithoutSalesInput> | SalesItemCreateWithoutSalesInput[] | SalesItemUncheckedCreateWithoutSalesInput[]
     connectOrCreate?: SalesItemCreateOrConnectWithoutSalesInput | SalesItemCreateOrConnectWithoutSalesInput[]
@@ -122074,6 +126939,12 @@ export namespace Prisma {
     connectOrCreate?: SubscriptionUsageCreateOrConnectWithoutSaleInput | SubscriptionUsageCreateOrConnectWithoutSaleInput[]
     createMany?: SubscriptionUsageCreateManySaleInputEnvelope
     connect?: SubscriptionUsageWhereUniqueInput | SubscriptionUsageWhereUniqueInput[]
+  }
+
+  export type VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput = {
+    create?: XOR<VoucherCreateWithoutRedeemedInSaleInput, VoucherUncheckedCreateWithoutRedeemedInSaleInput>
+    connectOrCreate?: VoucherCreateOrConnectWithoutRedeemedInSaleInput
+    connect?: VoucherWhereUniqueInput
   }
 
   export type NullableDecimalFieldUpdateOperationsInput = {
@@ -122198,6 +127069,16 @@ export namespace Prisma {
     update?: XOR<XOR<CustomerSubscriptionUpdateToOneWithWhereWithoutSalesInput, CustomerSubscriptionUpdateWithoutSalesInput>, CustomerSubscriptionUncheckedUpdateWithoutSalesInput>
   }
 
+  export type VoucherUpdateOneWithoutRedeemedInSaleNestedInput = {
+    create?: XOR<VoucherCreateWithoutRedeemedInSaleInput, VoucherUncheckedCreateWithoutRedeemedInSaleInput>
+    connectOrCreate?: VoucherCreateOrConnectWithoutRedeemedInSaleInput
+    upsert?: VoucherUpsertWithoutRedeemedInSaleInput
+    disconnect?: VoucherWhereInput | boolean
+    delete?: VoucherWhereInput | boolean
+    connect?: VoucherWhereUniqueInput
+    update?: XOR<XOR<VoucherUpdateToOneWithWhereWithoutRedeemedInSaleInput, VoucherUpdateWithoutRedeemedInSaleInput>, VoucherUncheckedUpdateWithoutRedeemedInSaleInput>
+  }
+
   export type SalesItemUncheckedUpdateManyWithoutSalesNestedInput = {
     create?: XOR<SalesItemCreateWithoutSalesInput, SalesItemUncheckedCreateWithoutSalesInput> | SalesItemCreateWithoutSalesInput[] | SalesItemUncheckedCreateWithoutSalesInput[]
     connectOrCreate?: SalesItemCreateOrConnectWithoutSalesInput | SalesItemCreateOrConnectWithoutSalesInput[]
@@ -122280,6 +127161,16 @@ export namespace Prisma {
     update?: SubscriptionUsageUpdateWithWhereUniqueWithoutSaleInput | SubscriptionUsageUpdateWithWhereUniqueWithoutSaleInput[]
     updateMany?: SubscriptionUsageUpdateManyWithWhereWithoutSaleInput | SubscriptionUsageUpdateManyWithWhereWithoutSaleInput[]
     deleteMany?: SubscriptionUsageScalarWhereInput | SubscriptionUsageScalarWhereInput[]
+  }
+
+  export type VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput = {
+    create?: XOR<VoucherCreateWithoutRedeemedInSaleInput, VoucherUncheckedCreateWithoutRedeemedInSaleInput>
+    connectOrCreate?: VoucherCreateOrConnectWithoutRedeemedInSaleInput
+    upsert?: VoucherUpsertWithoutRedeemedInSaleInput
+    disconnect?: VoucherWhereInput | boolean
+    delete?: VoucherWhereInput | boolean
+    connect?: VoucherWhereUniqueInput
+    update?: XOR<XOR<VoucherUpdateToOneWithWhereWithoutRedeemedInSaleInput, VoucherUpdateWithoutRedeemedInSaleInput>, VoucherUncheckedUpdateWithoutRedeemedInSaleInput>
   }
 
   export type SalesCreateNestedOneWithoutSalesItemsInput = {
@@ -126056,6 +130947,13 @@ export namespace Prisma {
     connect?: LoyaltyPointBatchWhereUniqueInput | LoyaltyPointBatchWhereUniqueInput[]
   }
 
+  export type VoucherCreateNestedManyWithoutLoyaltyAccountInput = {
+    create?: XOR<VoucherCreateWithoutLoyaltyAccountInput, VoucherUncheckedCreateWithoutLoyaltyAccountInput> | VoucherCreateWithoutLoyaltyAccountInput[] | VoucherUncheckedCreateWithoutLoyaltyAccountInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutLoyaltyAccountInput | VoucherCreateOrConnectWithoutLoyaltyAccountInput[]
+    createMany?: VoucherCreateManyLoyaltyAccountInputEnvelope
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+  }
+
   export type LoyaltyTransactionUncheckedCreateNestedManyWithoutLoyaltyAccountInput = {
     create?: XOR<LoyaltyTransactionCreateWithoutLoyaltyAccountInput, LoyaltyTransactionUncheckedCreateWithoutLoyaltyAccountInput> | LoyaltyTransactionCreateWithoutLoyaltyAccountInput[] | LoyaltyTransactionUncheckedCreateWithoutLoyaltyAccountInput[]
     connectOrCreate?: LoyaltyTransactionCreateOrConnectWithoutLoyaltyAccountInput | LoyaltyTransactionCreateOrConnectWithoutLoyaltyAccountInput[]
@@ -126068,6 +130966,13 @@ export namespace Prisma {
     connectOrCreate?: LoyaltyPointBatchCreateOrConnectWithoutLoyaltyAccountInput | LoyaltyPointBatchCreateOrConnectWithoutLoyaltyAccountInput[]
     createMany?: LoyaltyPointBatchCreateManyLoyaltyAccountInputEnvelope
     connect?: LoyaltyPointBatchWhereUniqueInput | LoyaltyPointBatchWhereUniqueInput[]
+  }
+
+  export type VoucherUncheckedCreateNestedManyWithoutLoyaltyAccountInput = {
+    create?: XOR<VoucherCreateWithoutLoyaltyAccountInput, VoucherUncheckedCreateWithoutLoyaltyAccountInput> | VoucherCreateWithoutLoyaltyAccountInput[] | VoucherUncheckedCreateWithoutLoyaltyAccountInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutLoyaltyAccountInput | VoucherCreateOrConnectWithoutLoyaltyAccountInput[]
+    createMany?: VoucherCreateManyLoyaltyAccountInputEnvelope
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
   }
 
   export type CustomerUpdateOneRequiredWithoutLoyaltyAccountsNestedInput = {
@@ -126124,6 +131029,20 @@ export namespace Prisma {
     deleteMany?: LoyaltyPointBatchScalarWhereInput | LoyaltyPointBatchScalarWhereInput[]
   }
 
+  export type VoucherUpdateManyWithoutLoyaltyAccountNestedInput = {
+    create?: XOR<VoucherCreateWithoutLoyaltyAccountInput, VoucherUncheckedCreateWithoutLoyaltyAccountInput> | VoucherCreateWithoutLoyaltyAccountInput[] | VoucherUncheckedCreateWithoutLoyaltyAccountInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutLoyaltyAccountInput | VoucherCreateOrConnectWithoutLoyaltyAccountInput[]
+    upsert?: VoucherUpsertWithWhereUniqueWithoutLoyaltyAccountInput | VoucherUpsertWithWhereUniqueWithoutLoyaltyAccountInput[]
+    createMany?: VoucherCreateManyLoyaltyAccountInputEnvelope
+    set?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    disconnect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    delete?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    update?: VoucherUpdateWithWhereUniqueWithoutLoyaltyAccountInput | VoucherUpdateWithWhereUniqueWithoutLoyaltyAccountInput[]
+    updateMany?: VoucherUpdateManyWithWhereWithoutLoyaltyAccountInput | VoucherUpdateManyWithWhereWithoutLoyaltyAccountInput[]
+    deleteMany?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
+  }
+
   export type LoyaltyTransactionUncheckedUpdateManyWithoutLoyaltyAccountNestedInput = {
     create?: XOR<LoyaltyTransactionCreateWithoutLoyaltyAccountInput, LoyaltyTransactionUncheckedCreateWithoutLoyaltyAccountInput> | LoyaltyTransactionCreateWithoutLoyaltyAccountInput[] | LoyaltyTransactionUncheckedCreateWithoutLoyaltyAccountInput[]
     connectOrCreate?: LoyaltyTransactionCreateOrConnectWithoutLoyaltyAccountInput | LoyaltyTransactionCreateOrConnectWithoutLoyaltyAccountInput[]
@@ -126150,6 +131069,20 @@ export namespace Prisma {
     update?: LoyaltyPointBatchUpdateWithWhereUniqueWithoutLoyaltyAccountInput | LoyaltyPointBatchUpdateWithWhereUniqueWithoutLoyaltyAccountInput[]
     updateMany?: LoyaltyPointBatchUpdateManyWithWhereWithoutLoyaltyAccountInput | LoyaltyPointBatchUpdateManyWithWhereWithoutLoyaltyAccountInput[]
     deleteMany?: LoyaltyPointBatchScalarWhereInput | LoyaltyPointBatchScalarWhereInput[]
+  }
+
+  export type VoucherUncheckedUpdateManyWithoutLoyaltyAccountNestedInput = {
+    create?: XOR<VoucherCreateWithoutLoyaltyAccountInput, VoucherUncheckedCreateWithoutLoyaltyAccountInput> | VoucherCreateWithoutLoyaltyAccountInput[] | VoucherUncheckedCreateWithoutLoyaltyAccountInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutLoyaltyAccountInput | VoucherCreateOrConnectWithoutLoyaltyAccountInput[]
+    upsert?: VoucherUpsertWithWhereUniqueWithoutLoyaltyAccountInput | VoucherUpsertWithWhereUniqueWithoutLoyaltyAccountInput[]
+    createMany?: VoucherCreateManyLoyaltyAccountInputEnvelope
+    set?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    disconnect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    delete?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    update?: VoucherUpdateWithWhereUniqueWithoutLoyaltyAccountInput | VoucherUpdateWithWhereUniqueWithoutLoyaltyAccountInput[]
+    updateMany?: VoucherUpdateManyWithWhereWithoutLoyaltyAccountInput | VoucherUpdateManyWithWhereWithoutLoyaltyAccountInput[]
+    deleteMany?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
   }
 
   export type LoyaltyAccountCreateNestedOneWithoutPointBatchesInput = {
@@ -126462,6 +131395,110 @@ export namespace Prisma {
     upsert?: SalesUpsertWithoutSubscriptionUsagesInput
     connect?: SalesWhereUniqueInput
     update?: XOR<XOR<SalesUpdateToOneWithWhereWithoutSubscriptionUsagesInput, SalesUpdateWithoutSubscriptionUsagesInput>, SalesUncheckedUpdateWithoutSubscriptionUsagesInput>
+  }
+
+  export type VoucherCreateNestedManyWithoutRewardRuleInput = {
+    create?: XOR<VoucherCreateWithoutRewardRuleInput, VoucherUncheckedCreateWithoutRewardRuleInput> | VoucherCreateWithoutRewardRuleInput[] | VoucherUncheckedCreateWithoutRewardRuleInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutRewardRuleInput | VoucherCreateOrConnectWithoutRewardRuleInput[]
+    createMany?: VoucherCreateManyRewardRuleInputEnvelope
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+  }
+
+  export type VoucherUncheckedCreateNestedManyWithoutRewardRuleInput = {
+    create?: XOR<VoucherCreateWithoutRewardRuleInput, VoucherUncheckedCreateWithoutRewardRuleInput> | VoucherCreateWithoutRewardRuleInput[] | VoucherUncheckedCreateWithoutRewardRuleInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutRewardRuleInput | VoucherCreateOrConnectWithoutRewardRuleInput[]
+    createMany?: VoucherCreateManyRewardRuleInputEnvelope
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+  }
+
+  export type VoucherUpdateManyWithoutRewardRuleNestedInput = {
+    create?: XOR<VoucherCreateWithoutRewardRuleInput, VoucherUncheckedCreateWithoutRewardRuleInput> | VoucherCreateWithoutRewardRuleInput[] | VoucherUncheckedCreateWithoutRewardRuleInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutRewardRuleInput | VoucherCreateOrConnectWithoutRewardRuleInput[]
+    upsert?: VoucherUpsertWithWhereUniqueWithoutRewardRuleInput | VoucherUpsertWithWhereUniqueWithoutRewardRuleInput[]
+    createMany?: VoucherCreateManyRewardRuleInputEnvelope
+    set?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    disconnect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    delete?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    update?: VoucherUpdateWithWhereUniqueWithoutRewardRuleInput | VoucherUpdateWithWhereUniqueWithoutRewardRuleInput[]
+    updateMany?: VoucherUpdateManyWithWhereWithoutRewardRuleInput | VoucherUpdateManyWithWhereWithoutRewardRuleInput[]
+    deleteMany?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
+  }
+
+  export type VoucherUncheckedUpdateManyWithoutRewardRuleNestedInput = {
+    create?: XOR<VoucherCreateWithoutRewardRuleInput, VoucherUncheckedCreateWithoutRewardRuleInput> | VoucherCreateWithoutRewardRuleInput[] | VoucherUncheckedCreateWithoutRewardRuleInput[]
+    connectOrCreate?: VoucherCreateOrConnectWithoutRewardRuleInput | VoucherCreateOrConnectWithoutRewardRuleInput[]
+    upsert?: VoucherUpsertWithWhereUniqueWithoutRewardRuleInput | VoucherUpsertWithWhereUniqueWithoutRewardRuleInput[]
+    createMany?: VoucherCreateManyRewardRuleInputEnvelope
+    set?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    disconnect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    delete?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    connect?: VoucherWhereUniqueInput | VoucherWhereUniqueInput[]
+    update?: VoucherUpdateWithWhereUniqueWithoutRewardRuleInput | VoucherUpdateWithWhereUniqueWithoutRewardRuleInput[]
+    updateMany?: VoucherUpdateManyWithWhereWithoutRewardRuleInput | VoucherUpdateManyWithWhereWithoutRewardRuleInput[]
+    deleteMany?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
+  }
+
+  export type RewardRuleCreateNestedOneWithoutVouchersInput = {
+    create?: XOR<RewardRuleCreateWithoutVouchersInput, RewardRuleUncheckedCreateWithoutVouchersInput>
+    connectOrCreate?: RewardRuleCreateOrConnectWithoutVouchersInput
+    connect?: RewardRuleWhereUniqueInput
+  }
+
+  export type CustomerCreateNestedOneWithoutVouchersInput = {
+    create?: XOR<CustomerCreateWithoutVouchersInput, CustomerUncheckedCreateWithoutVouchersInput>
+    connectOrCreate?: CustomerCreateOrConnectWithoutVouchersInput
+    connect?: CustomerWhereUniqueInput
+  }
+
+  export type LoyaltyAccountCreateNestedOneWithoutVouchersInput = {
+    create?: XOR<LoyaltyAccountCreateWithoutVouchersInput, LoyaltyAccountUncheckedCreateWithoutVouchersInput>
+    connectOrCreate?: LoyaltyAccountCreateOrConnectWithoutVouchersInput
+    connect?: LoyaltyAccountWhereUniqueInput
+  }
+
+  export type SalesCreateNestedOneWithoutRedeemedVoucherInput = {
+    create?: XOR<SalesCreateWithoutRedeemedVoucherInput, SalesUncheckedCreateWithoutRedeemedVoucherInput>
+    connectOrCreate?: SalesCreateOrConnectWithoutRedeemedVoucherInput
+    connect?: SalesWhereUniqueInput
+  }
+
+  export type RewardRuleUpdateOneWithoutVouchersNestedInput = {
+    create?: XOR<RewardRuleCreateWithoutVouchersInput, RewardRuleUncheckedCreateWithoutVouchersInput>
+    connectOrCreate?: RewardRuleCreateOrConnectWithoutVouchersInput
+    upsert?: RewardRuleUpsertWithoutVouchersInput
+    disconnect?: RewardRuleWhereInput | boolean
+    delete?: RewardRuleWhereInput | boolean
+    connect?: RewardRuleWhereUniqueInput
+    update?: XOR<XOR<RewardRuleUpdateToOneWithWhereWithoutVouchersInput, RewardRuleUpdateWithoutVouchersInput>, RewardRuleUncheckedUpdateWithoutVouchersInput>
+  }
+
+  export type CustomerUpdateOneRequiredWithoutVouchersNestedInput = {
+    create?: XOR<CustomerCreateWithoutVouchersInput, CustomerUncheckedCreateWithoutVouchersInput>
+    connectOrCreate?: CustomerCreateOrConnectWithoutVouchersInput
+    upsert?: CustomerUpsertWithoutVouchersInput
+    connect?: CustomerWhereUniqueInput
+    update?: XOR<XOR<CustomerUpdateToOneWithWhereWithoutVouchersInput, CustomerUpdateWithoutVouchersInput>, CustomerUncheckedUpdateWithoutVouchersInput>
+  }
+
+  export type LoyaltyAccountUpdateOneWithoutVouchersNestedInput = {
+    create?: XOR<LoyaltyAccountCreateWithoutVouchersInput, LoyaltyAccountUncheckedCreateWithoutVouchersInput>
+    connectOrCreate?: LoyaltyAccountCreateOrConnectWithoutVouchersInput
+    upsert?: LoyaltyAccountUpsertWithoutVouchersInput
+    disconnect?: LoyaltyAccountWhereInput | boolean
+    delete?: LoyaltyAccountWhereInput | boolean
+    connect?: LoyaltyAccountWhereUniqueInput
+    update?: XOR<XOR<LoyaltyAccountUpdateToOneWithWhereWithoutVouchersInput, LoyaltyAccountUpdateWithoutVouchersInput>, LoyaltyAccountUncheckedUpdateWithoutVouchersInput>
+  }
+
+  export type SalesUpdateOneWithoutRedeemedVoucherNestedInput = {
+    create?: XOR<SalesCreateWithoutRedeemedVoucherInput, SalesUncheckedCreateWithoutRedeemedVoucherInput>
+    connectOrCreate?: SalesCreateOrConnectWithoutRedeemedVoucherInput
+    upsert?: SalesUpsertWithoutRedeemedVoucherInput
+    disconnect?: SalesWhereInput | boolean
+    delete?: SalesWhereInput | boolean
+    connect?: SalesWhereUniqueInput
+    update?: XOR<XOR<SalesUpdateToOneWithWhereWithoutRedeemedVoucherInput, SalesUpdateWithoutRedeemedVoucherInput>, SalesUncheckedUpdateWithoutRedeemedVoucherInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -128395,6 +133432,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -128403,6 +133443,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutCustomerInput = {
@@ -128461,12 +133502,16 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutCustomerInput = {
@@ -128658,6 +133703,7 @@ export namespace Prisma {
     loyaltyTier?: LoyaltyTierCreateNestedOneWithoutAccountsInput
     transactions?: LoyaltyTransactionCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountUncheckedCreateWithoutCustomerInput = {
@@ -128677,6 +133723,7 @@ export namespace Prisma {
     version?: number | null
     transactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountCreateOrConnectWithoutCustomerInput = {
@@ -128733,6 +133780,57 @@ export namespace Prisma {
 
   export type CustomerSubscriptionCreateManyCustomerInputEnvelope = {
     data: CustomerSubscriptionCreateManyCustomerInput | CustomerSubscriptionCreateManyCustomerInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type VoucherCreateWithoutCustomerInput = {
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    rewardRule?: RewardRuleCreateNestedOneWithoutVouchersInput
+    loyaltyAccount?: LoyaltyAccountCreateNestedOneWithoutVouchersInput
+    redeemedInSale?: SalesCreateNestedOneWithoutRedeemedVoucherInput
+  }
+
+  export type VoucherUncheckedCreateWithoutCustomerInput = {
+    id?: number
+    rewardRuleId?: number | null
+    loyaltyAccountId?: number | null
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherCreateOrConnectWithoutCustomerInput = {
+    where: VoucherWhereUniqueInput
+    create: XOR<VoucherCreateWithoutCustomerInput, VoucherUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type VoucherCreateManyCustomerInputEnvelope = {
+    data: VoucherCreateManyCustomerInput | VoucherCreateManyCustomerInput[]
     skipDuplicates?: boolean
   }
 
@@ -128812,6 +133910,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: IntNullableFilter<"Sales"> | number | null
     subscriptionDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherId?: IntNullableFilter<"Sales"> | number | null
+    voucherDiscountPercentage?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
   }
 
   export type PromotionCustomerUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -129045,6 +134146,47 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"CustomerSubscription"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"CustomerSubscription"> | Date | string | null
     version?: IntNullableFilter<"CustomerSubscription"> | number | null
+  }
+
+  export type VoucherUpsertWithWhereUniqueWithoutCustomerInput = {
+    where: VoucherWhereUniqueInput
+    update: XOR<VoucherUpdateWithoutCustomerInput, VoucherUncheckedUpdateWithoutCustomerInput>
+    create: XOR<VoucherCreateWithoutCustomerInput, VoucherUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type VoucherUpdateWithWhereUniqueWithoutCustomerInput = {
+    where: VoucherWhereUniqueInput
+    data: XOR<VoucherUpdateWithoutCustomerInput, VoucherUncheckedUpdateWithoutCustomerInput>
+  }
+
+  export type VoucherUpdateManyWithWhereWithoutCustomerInput = {
+    where: VoucherScalarWhereInput
+    data: XOR<VoucherUpdateManyMutationInput, VoucherUncheckedUpdateManyWithoutCustomerInput>
+  }
+
+  export type VoucherScalarWhereInput = {
+    AND?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
+    OR?: VoucherScalarWhereInput[]
+    NOT?: VoucherScalarWhereInput | VoucherScalarWhereInput[]
+    id?: IntFilter<"Voucher"> | number
+    rewardRuleId?: IntNullableFilter<"Voucher"> | number | null
+    customerId?: IntFilter<"Voucher"> | number
+    loyaltyAccountId?: IntNullableFilter<"Voucher"> | number | null
+    discountType?: StringFilter<"Voucher"> | string
+    discountPercentage?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    status?: StringFilter<"Voucher"> | string
+    milestoneSpendSnapshot?: DecimalNullableFilter<"Voucher"> | Decimal | DecimalJsLike | number | string | null
+    label?: StringFilter<"Voucher"> | string
+    expiresAt?: DateTimeFilter<"Voucher"> | Date | string
+    redeemedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    redeemedInSalesId?: IntNullableFilter<"Voucher"> | number | null
+    deleted?: BoolFilter<"Voucher"> | boolean
+    deletedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"Voucher"> | Date | string | null
+    version?: IntNullableFilter<"Voucher"> | number | null
   }
 
   export type StockBalanceCreateWithoutOutletInput = {
@@ -131362,6 +136504,7 @@ export namespace Prisma {
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutSalesInput = {
@@ -131396,6 +136539,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutSalesInput = {
@@ -131592,6 +136736,52 @@ export namespace Prisma {
     create: XOR<CustomerSubscriptionCreateWithoutSalesInput, CustomerSubscriptionUncheckedCreateWithoutSalesInput>
   }
 
+  export type VoucherCreateWithoutRedeemedInSaleInput = {
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    rewardRule?: RewardRuleCreateNestedOneWithoutVouchersInput
+    customer: CustomerCreateNestedOneWithoutVouchersInput
+    loyaltyAccount?: LoyaltyAccountCreateNestedOneWithoutVouchersInput
+  }
+
+  export type VoucherUncheckedCreateWithoutRedeemedInSaleInput = {
+    id?: number
+    rewardRuleId?: number | null
+    customerId: number
+    loyaltyAccountId?: number | null
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherCreateOrConnectWithoutRedeemedInSaleInput = {
+    where: VoucherWhereUniqueInput
+    create: XOR<VoucherCreateWithoutRedeemedInSaleInput, VoucherUncheckedCreateWithoutRedeemedInSaleInput>
+  }
+
   export type SalesItemUpsertWithWhereUniqueWithoutSalesInput = {
     where: SalesItemWhereUniqueInput
     update: XOR<SalesItemUpdateWithoutSalesInput, SalesItemUncheckedUpdateWithoutSalesInput>
@@ -131765,6 +136955,7 @@ export namespace Prisma {
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutSalesInput = {
@@ -131799,6 +136990,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type TableUpsertWithoutSalesInput = {
@@ -131992,6 +137184,58 @@ export namespace Prisma {
     usages?: SubscriptionUsageUncheckedUpdateManyWithoutCustomerSubscriptionNestedInput
   }
 
+  export type VoucherUpsertWithoutRedeemedInSaleInput = {
+    update: XOR<VoucherUpdateWithoutRedeemedInSaleInput, VoucherUncheckedUpdateWithoutRedeemedInSaleInput>
+    create: XOR<VoucherCreateWithoutRedeemedInSaleInput, VoucherUncheckedCreateWithoutRedeemedInSaleInput>
+    where?: VoucherWhereInput
+  }
+
+  export type VoucherUpdateToOneWithWhereWithoutRedeemedInSaleInput = {
+    where?: VoucherWhereInput
+    data: XOR<VoucherUpdateWithoutRedeemedInSaleInput, VoucherUncheckedUpdateWithoutRedeemedInSaleInput>
+  }
+
+  export type VoucherUpdateWithoutRedeemedInSaleInput = {
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    rewardRule?: RewardRuleUpdateOneWithoutVouchersNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutVouchersNestedInput
+    loyaltyAccount?: LoyaltyAccountUpdateOneWithoutVouchersNestedInput
+  }
+
+  export type VoucherUncheckedUpdateWithoutRedeemedInSaleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rewardRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    customerId?: IntFieldUpdateOperationsInput | number
+    loyaltyAccountId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
   export type SalesCreateWithoutSalesItemsInput = {
     outletId: number
     businessDate: Date | string
@@ -132045,6 +137289,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -132053,6 +137300,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutSalesItemsInput = {
@@ -132112,11 +137360,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutSalesItemsInput = {
@@ -132332,6 +137584,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -132340,6 +137595,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutSalesItemsInput = {
@@ -132399,11 +137655,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type ItemVariantUpsertWithoutSalesItemsInput = {
@@ -137050,6 +142310,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -137058,6 +142321,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutPaymentsInput = {
@@ -137117,11 +142381,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutPaymentsInput = {
@@ -137262,6 +142530,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -137270,6 +142541,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutPaymentsInput = {
@@ -137329,11 +142601,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SplitBillUpsertWithWhereUniqueWithoutPaymentInput = {
@@ -137405,6 +142681,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -137413,6 +142692,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutRegisterLogsInput = {
@@ -137472,11 +142752,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutRegisterLogsInput = {
@@ -137548,6 +142832,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -137556,6 +142843,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutRegisterLogsInput = {
@@ -137615,11 +142903,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type PaymentCreateWithoutCardInfosInput = {
@@ -141141,6 +146433,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -141149,6 +146444,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutTableInput = {
@@ -141207,12 +146503,16 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutTableInput = {
@@ -141982,6 +147282,7 @@ export namespace Prisma {
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutReservationsInput = {
@@ -142016,6 +147317,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutReservationsInput = {
@@ -142163,6 +147465,7 @@ export namespace Prisma {
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutReservationsInput = {
@@ -142197,6 +147500,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type TableUpsertWithoutReservationsInput = {
@@ -142540,6 +147844,7 @@ export namespace Prisma {
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutWaitlistsInput = {
@@ -142574,6 +147879,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutWaitlistsInput = {
@@ -142687,6 +147993,7 @@ export namespace Prisma {
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutWaitlistsInput = {
@@ -142721,6 +148028,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type PaymentCreateWithoutSplitBillsInput = {
@@ -142804,6 +148112,7 @@ export namespace Prisma {
     waitlists?: WaitlistCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutSplitBillsInput = {
@@ -142838,6 +148147,7 @@ export namespace Prisma {
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutSplitBillsInput = {
@@ -142943,6 +148253,7 @@ export namespace Prisma {
     waitlists?: WaitlistUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutSplitBillsInput = {
@@ -142977,6 +148288,7 @@ export namespace Prisma {
     waitlists?: WaitlistUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type PromotionItemCreateWithoutPromotionInput = {
@@ -143390,6 +148702,7 @@ export namespace Prisma {
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutPromotionsInput = {
@@ -143424,6 +148737,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutPromotionsInput = {
@@ -143551,6 +148865,7 @@ export namespace Prisma {
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutPromotionsInput = {
@@ -143585,6 +148900,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type PromotionCreateWithoutUsageHistoryInput = {
@@ -143690,6 +149006,7 @@ export namespace Prisma {
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutPromotionUsageInput = {
@@ -143724,6 +149041,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutPromotionUsageInput = {
@@ -143851,6 +149169,7 @@ export namespace Prisma {
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutPromotionUsageInput = {
@@ -143885,6 +149204,7 @@ export namespace Prisma {
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type WarehouseStockBalanceCreateWithoutWarehouseInput = {
@@ -147819,6 +153139,7 @@ export namespace Prisma {
     loyaltyTier?: LoyaltyTierCreateNestedOneWithoutAccountsInput
     transactions?: LoyaltyTransactionCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountUncheckedCreateWithoutLoyaltyProgramInput = {
@@ -147838,6 +153159,7 @@ export namespace Prisma {
     version?: number | null
     transactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountCreateOrConnectWithoutLoyaltyProgramInput = {
@@ -147954,6 +153276,7 @@ export namespace Prisma {
     loyaltyProgram: LoyaltyProgramCreateNestedOneWithoutAccountsInput
     transactions?: LoyaltyTransactionCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountUncheckedCreateWithoutLoyaltyTierInput = {
@@ -147973,6 +153296,7 @@ export namespace Prisma {
     version?: number | null
     transactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutLoyaltyAccountInput
     pointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountCreateOrConnectWithoutLoyaltyTierInput = {
@@ -148076,6 +153400,7 @@ export namespace Prisma {
     waitlists?: WaitlistCreateNestedManyWithoutCustomerInput
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutLoyaltyAccountsInput = {
@@ -148110,6 +153435,7 @@ export namespace Prisma {
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutCustomerInput
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutLoyaltyAccountsInput = {
@@ -148267,6 +153593,57 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type VoucherCreateWithoutLoyaltyAccountInput = {
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    rewardRule?: RewardRuleCreateNestedOneWithoutVouchersInput
+    customer: CustomerCreateNestedOneWithoutVouchersInput
+    redeemedInSale?: SalesCreateNestedOneWithoutRedeemedVoucherInput
+  }
+
+  export type VoucherUncheckedCreateWithoutLoyaltyAccountInput = {
+    id?: number
+    rewardRuleId?: number | null
+    customerId: number
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherCreateOrConnectWithoutLoyaltyAccountInput = {
+    where: VoucherWhereUniqueInput
+    create: XOR<VoucherCreateWithoutLoyaltyAccountInput, VoucherUncheckedCreateWithoutLoyaltyAccountInput>
+  }
+
+  export type VoucherCreateManyLoyaltyAccountInputEnvelope = {
+    data: VoucherCreateManyLoyaltyAccountInput | VoucherCreateManyLoyaltyAccountInput[]
+    skipDuplicates?: boolean
+  }
+
   export type CustomerUpsertWithoutLoyaltyAccountsInput = {
     update: XOR<CustomerUpdateWithoutLoyaltyAccountsInput, CustomerUncheckedUpdateWithoutLoyaltyAccountsInput>
     create: XOR<CustomerCreateWithoutLoyaltyAccountsInput, CustomerUncheckedCreateWithoutLoyaltyAccountsInput>
@@ -148309,6 +153686,7 @@ export namespace Prisma {
     waitlists?: WaitlistUpdateManyWithoutCustomerNestedInput
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutLoyaltyAccountsInput = {
@@ -148343,6 +153721,7 @@ export namespace Prisma {
     waitlists?: WaitlistUncheckedUpdateManyWithoutCustomerNestedInput
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type LoyaltyProgramUpsertWithoutAccountsInput = {
@@ -148461,6 +153840,22 @@ export namespace Prisma {
     data: XOR<LoyaltyPointBatchUpdateManyMutationInput, LoyaltyPointBatchUncheckedUpdateManyWithoutLoyaltyAccountInput>
   }
 
+  export type VoucherUpsertWithWhereUniqueWithoutLoyaltyAccountInput = {
+    where: VoucherWhereUniqueInput
+    update: XOR<VoucherUpdateWithoutLoyaltyAccountInput, VoucherUncheckedUpdateWithoutLoyaltyAccountInput>
+    create: XOR<VoucherCreateWithoutLoyaltyAccountInput, VoucherUncheckedCreateWithoutLoyaltyAccountInput>
+  }
+
+  export type VoucherUpdateWithWhereUniqueWithoutLoyaltyAccountInput = {
+    where: VoucherWhereUniqueInput
+    data: XOR<VoucherUpdateWithoutLoyaltyAccountInput, VoucherUncheckedUpdateWithoutLoyaltyAccountInput>
+  }
+
+  export type VoucherUpdateManyWithWhereWithoutLoyaltyAccountInput = {
+    where: VoucherScalarWhereInput
+    data: XOR<VoucherUpdateManyMutationInput, VoucherUncheckedUpdateManyWithoutLoyaltyAccountInput>
+  }
+
   export type LoyaltyAccountCreateWithoutPointBatchesInput = {
     currentPoints?: Decimal | DecimalJsLike | number | string
     totalEarned?: Decimal | DecimalJsLike | number | string
@@ -148477,6 +153872,7 @@ export namespace Prisma {
     loyaltyProgram: LoyaltyProgramCreateNestedOneWithoutAccountsInput
     loyaltyTier?: LoyaltyTierCreateNestedOneWithoutAccountsInput
     transactions?: LoyaltyTransactionCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountUncheckedCreateWithoutPointBatchesInput = {
@@ -148496,6 +153892,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     transactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountCreateOrConnectWithoutPointBatchesInput = {
@@ -148556,6 +153953,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -148564,6 +153964,7 @@ export namespace Prisma {
     loyaltyTransactions?: LoyaltyTransactionCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutLoyaltyPointBatchesInput = {
@@ -148623,11 +154024,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutLoyaltyPointBatchesInput = {
@@ -148662,6 +154067,7 @@ export namespace Prisma {
     loyaltyProgram?: LoyaltyProgramUpdateOneRequiredWithoutAccountsNestedInput
     loyaltyTier?: LoyaltyTierUpdateOneWithoutAccountsNestedInput
     transactions?: LoyaltyTransactionUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateWithoutPointBatchesInput = {
@@ -148681,6 +154087,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     transactions?: LoyaltyTransactionUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type SalesUpsertWithoutLoyaltyPointBatchesInput = {
@@ -148747,6 +154154,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -148755,6 +154165,7 @@ export namespace Prisma {
     loyaltyTransactions?: LoyaltyTransactionUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutLoyaltyPointBatchesInput = {
@@ -148814,11 +154225,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type LoyaltyAccountCreateWithoutTransactionsInput = {
@@ -148837,6 +154252,7 @@ export namespace Prisma {
     loyaltyProgram: LoyaltyProgramCreateNestedOneWithoutAccountsInput
     loyaltyTier?: LoyaltyTierCreateNestedOneWithoutAccountsInput
     pointBatches?: LoyaltyPointBatchCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountUncheckedCreateWithoutTransactionsInput = {
@@ -148856,6 +154272,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     pointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutLoyaltyAccountInput
   }
 
   export type LoyaltyAccountCreateOrConnectWithoutTransactionsInput = {
@@ -148916,6 +154333,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -148924,6 +154344,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutLoyaltyTransactionsInput = {
@@ -148983,11 +154404,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutLoyaltyTransactionsInput = {
@@ -149022,6 +154447,7 @@ export namespace Prisma {
     loyaltyProgram?: LoyaltyProgramUpdateOneRequiredWithoutAccountsNestedInput
     loyaltyTier?: LoyaltyTierUpdateOneWithoutAccountsNestedInput
     pointBatches?: LoyaltyPointBatchUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateWithoutTransactionsInput = {
@@ -149041,6 +154467,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     pointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type SalesUpsertWithoutLoyaltyTransactionsInput = {
@@ -149107,6 +154534,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -149115,6 +154545,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutLoyaltyTransactionsInput = {
@@ -149174,11 +154605,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SubscriptionPackageCategoryCreateWithoutSubscriptionPackageInput = {
@@ -149482,6 +154917,7 @@ export namespace Prisma {
     waitlists?: WaitlistCreateNestedManyWithoutCustomerInput
     splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutCustomerSubscriptionsInput = {
@@ -149516,6 +154952,7 @@ export namespace Prisma {
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutCustomerInput
     splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
     loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
+    vouchers?: VoucherUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutCustomerSubscriptionsInput = {
@@ -149655,6 +155092,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -149663,6 +155103,7 @@ export namespace Prisma {
     loyaltyTransactions?: LoyaltyTransactionCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutCustomerSubscriptionInput = {
@@ -149721,12 +155162,16 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
     subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutCustomerSubscriptionInput = {
@@ -149781,6 +155226,7 @@ export namespace Prisma {
     waitlists?: WaitlistUpdateManyWithoutCustomerNestedInput
     splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutCustomerSubscriptionsInput = {
@@ -149815,6 +155261,7 @@ export namespace Prisma {
     waitlists?: WaitlistUncheckedUpdateManyWithoutCustomerNestedInput
     splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
     loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type SubscriptionPackageUpsertWithoutSubscriptionsInput = {
@@ -149994,6 +155441,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -150002,6 +155452,7 @@ export namespace Prisma {
     loyaltyTransactions?: LoyaltyTransactionCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
     customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesUncheckedCreateWithoutSubscriptionUsagesInput = {
@@ -150061,11 +155512,15 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
     payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
   }
 
   export type SalesCreateOrConnectWithoutSubscriptionUsagesInput = {
@@ -150185,6 +155640,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -150193,6 +155651,7 @@ export namespace Prisma {
     loyaltyTransactions?: LoyaltyTransactionUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutSubscriptionUsagesInput = {
@@ -150252,11 +155711,706 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
+  }
+
+  export type VoucherCreateWithoutRewardRuleInput = {
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    customer: CustomerCreateNestedOneWithoutVouchersInput
+    loyaltyAccount?: LoyaltyAccountCreateNestedOneWithoutVouchersInput
+    redeemedInSale?: SalesCreateNestedOneWithoutRedeemedVoucherInput
+  }
+
+  export type VoucherUncheckedCreateWithoutRewardRuleInput = {
+    id?: number
+    customerId: number
+    loyaltyAccountId?: number | null
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherCreateOrConnectWithoutRewardRuleInput = {
+    where: VoucherWhereUniqueInput
+    create: XOR<VoucherCreateWithoutRewardRuleInput, VoucherUncheckedCreateWithoutRewardRuleInput>
+  }
+
+  export type VoucherCreateManyRewardRuleInputEnvelope = {
+    data: VoucherCreateManyRewardRuleInput | VoucherCreateManyRewardRuleInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type VoucherUpsertWithWhereUniqueWithoutRewardRuleInput = {
+    where: VoucherWhereUniqueInput
+    update: XOR<VoucherUpdateWithoutRewardRuleInput, VoucherUncheckedUpdateWithoutRewardRuleInput>
+    create: XOR<VoucherCreateWithoutRewardRuleInput, VoucherUncheckedCreateWithoutRewardRuleInput>
+  }
+
+  export type VoucherUpdateWithWhereUniqueWithoutRewardRuleInput = {
+    where: VoucherWhereUniqueInput
+    data: XOR<VoucherUpdateWithoutRewardRuleInput, VoucherUncheckedUpdateWithoutRewardRuleInput>
+  }
+
+  export type VoucherUpdateManyWithWhereWithoutRewardRuleInput = {
+    where: VoucherScalarWhereInput
+    data: XOR<VoucherUpdateManyMutationInput, VoucherUncheckedUpdateManyWithoutRewardRuleInput>
+  }
+
+  export type RewardRuleCreateWithoutVouchersInput = {
+    name: string
+    triggerType?: string
+    spendThreshold: Decimal | DecimalJsLike | number | string
+    isRepeatable?: boolean
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    expiryDays: number
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type RewardRuleUncheckedCreateWithoutVouchersInput = {
+    id?: number
+    name: string
+    triggerType?: string
+    spendThreshold: Decimal | DecimalJsLike | number | string
+    isRepeatable?: boolean
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    expiryDays: number
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    isActive?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type RewardRuleCreateOrConnectWithoutVouchersInput = {
+    where: RewardRuleWhereUniqueInput
+    create: XOR<RewardRuleCreateWithoutVouchersInput, RewardRuleUncheckedCreateWithoutVouchersInput>
+  }
+
+  export type CustomerCreateWithoutVouchersInput = {
+    salutation?: string
+    lastName: string
+    firstName: string
+    mobile?: string | null
+    email?: string | null
+    gender?: string | null
+    billStreet?: string | null
+    billCity?: string | null
+    billState?: string | null
+    billPostalCode?: string | null
+    billCountry?: string | null
+    billRemark?: string | null
+    shipStreet?: string | null
+    shipCity?: string | null
+    shipState?: string | null
+    shipPostalCode?: string | null
+    shipCountry?: string | null
+    shipRemark?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    sales?: SalesCreateNestedManyWithoutCustomerInput
+    promotions?: PromotionCustomerCreateNestedManyWithoutCustomerInput
+    promotionUsage?: PromotionUsageCreateNestedManyWithoutCustomerInput
+    reservations?: ReservationCreateNestedManyWithoutCustomerInput
+    waitlists?: WaitlistCreateNestedManyWithoutCustomerInput
+    splitBills?: SplitBillCreateNestedManyWithoutCustomerInput
+    loyaltyAccounts?: LoyaltyAccountCreateNestedManyWithoutCustomerInput
+    customerSubscriptions?: CustomerSubscriptionCreateNestedManyWithoutCustomerInput
+  }
+
+  export type CustomerUncheckedCreateWithoutVouchersInput = {
+    id?: number
+    salutation?: string
+    lastName: string
+    firstName: string
+    mobile?: string | null
+    email?: string | null
+    gender?: string | null
+    billStreet?: string | null
+    billCity?: string | null
+    billState?: string | null
+    billPostalCode?: string | null
+    billCountry?: string | null
+    billRemark?: string | null
+    shipStreet?: string | null
+    shipCity?: string | null
+    shipState?: string | null
+    shipPostalCode?: string | null
+    shipCountry?: string | null
+    shipRemark?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    sales?: SalesUncheckedCreateNestedManyWithoutCustomerInput
+    promotions?: PromotionCustomerUncheckedCreateNestedManyWithoutCustomerInput
+    promotionUsage?: PromotionUsageUncheckedCreateNestedManyWithoutCustomerInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutCustomerInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutCustomerInput
+    splitBills?: SplitBillUncheckedCreateNestedManyWithoutCustomerInput
+    loyaltyAccounts?: LoyaltyAccountUncheckedCreateNestedManyWithoutCustomerInput
+    customerSubscriptions?: CustomerSubscriptionUncheckedCreateNestedManyWithoutCustomerInput
+  }
+
+  export type CustomerCreateOrConnectWithoutVouchersInput = {
+    where: CustomerWhereUniqueInput
+    create: XOR<CustomerCreateWithoutVouchersInput, CustomerUncheckedCreateWithoutVouchersInput>
+  }
+
+  export type LoyaltyAccountCreateWithoutVouchersInput = {
+    currentPoints?: Decimal | DecimalJsLike | number | string
+    totalEarned?: Decimal | DecimalJsLike | number | string
+    totalRedeemed?: Decimal | DecimalJsLike | number | string
+    totalSpend?: Decimal | DecimalJsLike | number | string
+    isManualTier?: boolean
+    joinedAt?: Date | string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    customer: CustomerCreateNestedOneWithoutLoyaltyAccountsInput
+    loyaltyProgram: LoyaltyProgramCreateNestedOneWithoutAccountsInput
+    loyaltyTier?: LoyaltyTierCreateNestedOneWithoutAccountsInput
+    transactions?: LoyaltyTransactionCreateNestedManyWithoutLoyaltyAccountInput
+    pointBatches?: LoyaltyPointBatchCreateNestedManyWithoutLoyaltyAccountInput
+  }
+
+  export type LoyaltyAccountUncheckedCreateWithoutVouchersInput = {
+    id?: number
+    customerId: number
+    loyaltyProgramId: number
+    currentPoints?: Decimal | DecimalJsLike | number | string
+    totalEarned?: Decimal | DecimalJsLike | number | string
+    totalRedeemed?: Decimal | DecimalJsLike | number | string
+    totalSpend?: Decimal | DecimalJsLike | number | string
+    loyaltyTierId?: number | null
+    isManualTier?: boolean
+    joinedAt?: Date | string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    transactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+    pointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutLoyaltyAccountInput
+  }
+
+  export type LoyaltyAccountCreateOrConnectWithoutVouchersInput = {
+    where: LoyaltyAccountWhereUniqueInput
+    create: XOR<LoyaltyAccountCreateWithoutVouchersInput, LoyaltyAccountUncheckedCreateWithoutVouchersInput>
+  }
+
+  export type SalesCreateWithoutRedeemedVoucherInput = {
+    outletId: number
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceOutletId?: number | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemCreateNestedManyWithoutSalesInput
+    payments?: PaymentCreateNestedManyWithoutSalesInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
+    customer?: CustomerCreateNestedOneWithoutSalesInput
+    table?: TableCreateNestedOneWithoutSalesInput
+    loyaltyTransactions?: LoyaltyTransactionCreateNestedManyWithoutSaleInput
+    loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
+    subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
+    customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+  }
+
+  export type SalesUncheckedCreateWithoutRedeemedVoucherInput = {
+    id?: number
+    outletId: number
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    customerId?: number | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    tableId?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceOutletId?: number | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: number | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
+    loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
+    loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
+    subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+  }
+
+  export type SalesCreateOrConnectWithoutRedeemedVoucherInput = {
+    where: SalesWhereUniqueInput
+    create: XOR<SalesCreateWithoutRedeemedVoucherInput, SalesUncheckedCreateWithoutRedeemedVoucherInput>
+  }
+
+  export type RewardRuleUpsertWithoutVouchersInput = {
+    update: XOR<RewardRuleUpdateWithoutVouchersInput, RewardRuleUncheckedUpdateWithoutVouchersInput>
+    create: XOR<RewardRuleCreateWithoutVouchersInput, RewardRuleUncheckedCreateWithoutVouchersInput>
+    where?: RewardRuleWhereInput
+  }
+
+  export type RewardRuleUpdateToOneWithWhereWithoutVouchersInput = {
+    where?: RewardRuleWhereInput
+    data: XOR<RewardRuleUpdateWithoutVouchersInput, RewardRuleUncheckedUpdateWithoutVouchersInput>
+  }
+
+  export type RewardRuleUpdateWithoutVouchersInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    triggerType?: StringFieldUpdateOperationsInput | string
+    spendThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFieldUpdateOperationsInput | boolean
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFieldUpdateOperationsInput | number
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type RewardRuleUncheckedUpdateWithoutVouchersInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    triggerType?: StringFieldUpdateOperationsInput | string
+    spendThreshold?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isRepeatable?: BoolFieldUpdateOperationsInput | boolean
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expiryDays?: IntFieldUpdateOperationsInput | number
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type CustomerUpsertWithoutVouchersInput = {
+    update: XOR<CustomerUpdateWithoutVouchersInput, CustomerUncheckedUpdateWithoutVouchersInput>
+    create: XOR<CustomerCreateWithoutVouchersInput, CustomerUncheckedCreateWithoutVouchersInput>
+    where?: CustomerWhereInput
+  }
+
+  export type CustomerUpdateToOneWithWhereWithoutVouchersInput = {
+    where?: CustomerWhereInput
+    data: XOR<CustomerUpdateWithoutVouchersInput, CustomerUncheckedUpdateWithoutVouchersInput>
+  }
+
+  export type CustomerUpdateWithoutVouchersInput = {
+    salutation?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    mobile?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    gender?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    billCity?: NullableStringFieldUpdateOperationsInput | string | null
+    billState?: NullableStringFieldUpdateOperationsInput | string | null
+    billPostalCode?: NullableStringFieldUpdateOperationsInput | string | null
+    billCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    billRemark?: NullableStringFieldUpdateOperationsInput | string | null
+    shipStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    shipCity?: NullableStringFieldUpdateOperationsInput | string | null
+    shipState?: NullableStringFieldUpdateOperationsInput | string | null
+    shipPostalCode?: NullableStringFieldUpdateOperationsInput | string | null
+    shipCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    shipRemark?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    sales?: SalesUpdateManyWithoutCustomerNestedInput
+    promotions?: PromotionCustomerUpdateManyWithoutCustomerNestedInput
+    promotionUsage?: PromotionUsageUpdateManyWithoutCustomerNestedInput
+    reservations?: ReservationUpdateManyWithoutCustomerNestedInput
+    waitlists?: WaitlistUpdateManyWithoutCustomerNestedInput
+    splitBills?: SplitBillUpdateManyWithoutCustomerNestedInput
+    loyaltyAccounts?: LoyaltyAccountUpdateManyWithoutCustomerNestedInput
+    customerSubscriptions?: CustomerSubscriptionUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type CustomerUncheckedUpdateWithoutVouchersInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    salutation?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    mobile?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    gender?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    billCity?: NullableStringFieldUpdateOperationsInput | string | null
+    billState?: NullableStringFieldUpdateOperationsInput | string | null
+    billPostalCode?: NullableStringFieldUpdateOperationsInput | string | null
+    billCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    billRemark?: NullableStringFieldUpdateOperationsInput | string | null
+    shipStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    shipCity?: NullableStringFieldUpdateOperationsInput | string | null
+    shipState?: NullableStringFieldUpdateOperationsInput | string | null
+    shipPostalCode?: NullableStringFieldUpdateOperationsInput | string | null
+    shipCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    shipRemark?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    sales?: SalesUncheckedUpdateManyWithoutCustomerNestedInput
+    promotions?: PromotionCustomerUncheckedUpdateManyWithoutCustomerNestedInput
+    promotionUsage?: PromotionUsageUncheckedUpdateManyWithoutCustomerNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutCustomerNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutCustomerNestedInput
+    splitBills?: SplitBillUncheckedUpdateManyWithoutCustomerNestedInput
+    loyaltyAccounts?: LoyaltyAccountUncheckedUpdateManyWithoutCustomerNestedInput
+    customerSubscriptions?: CustomerSubscriptionUncheckedUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type LoyaltyAccountUpsertWithoutVouchersInput = {
+    update: XOR<LoyaltyAccountUpdateWithoutVouchersInput, LoyaltyAccountUncheckedUpdateWithoutVouchersInput>
+    create: XOR<LoyaltyAccountCreateWithoutVouchersInput, LoyaltyAccountUncheckedCreateWithoutVouchersInput>
+    where?: LoyaltyAccountWhereInput
+  }
+
+  export type LoyaltyAccountUpdateToOneWithWhereWithoutVouchersInput = {
+    where?: LoyaltyAccountWhereInput
+    data: XOR<LoyaltyAccountUpdateWithoutVouchersInput, LoyaltyAccountUncheckedUpdateWithoutVouchersInput>
+  }
+
+  export type LoyaltyAccountUpdateWithoutVouchersInput = {
+    currentPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalEarned?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalRedeemed?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalSpend?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isManualTier?: BoolFieldUpdateOperationsInput | boolean
+    joinedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    customer?: CustomerUpdateOneRequiredWithoutLoyaltyAccountsNestedInput
+    loyaltyProgram?: LoyaltyProgramUpdateOneRequiredWithoutAccountsNestedInput
+    loyaltyTier?: LoyaltyTierUpdateOneWithoutAccountsNestedInput
+    transactions?: LoyaltyTransactionUpdateManyWithoutLoyaltyAccountNestedInput
+    pointBatches?: LoyaltyPointBatchUpdateManyWithoutLoyaltyAccountNestedInput
+  }
+
+  export type LoyaltyAccountUncheckedUpdateWithoutVouchersInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    loyaltyProgramId?: IntFieldUpdateOperationsInput | number
+    currentPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalEarned?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalRedeemed?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalSpend?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loyaltyTierId?: NullableIntFieldUpdateOperationsInput | number | null
+    isManualTier?: BoolFieldUpdateOperationsInput | boolean
+    joinedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    transactions?: LoyaltyTransactionUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+    pointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+  }
+
+  export type SalesUpsertWithoutRedeemedVoucherInput = {
+    update: XOR<SalesUpdateWithoutRedeemedVoucherInput, SalesUncheckedUpdateWithoutRedeemedVoucherInput>
+    create: XOR<SalesCreateWithoutRedeemedVoucherInput, SalesUncheckedCreateWithoutRedeemedVoucherInput>
+    where?: SalesWhereInput
+  }
+
+  export type SalesUpdateToOneWithWhereWithoutRedeemedVoucherInput = {
+    where?: SalesWhereInput
+    data: XOR<SalesUpdateWithoutRedeemedVoucherInput, SalesUncheckedUpdateWithoutRedeemedVoucherInput>
+  }
+
+  export type SalesUpdateWithoutRedeemedVoucherInput = {
+    outletId?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
+    payments?: PaymentUpdateManyWithoutSalesNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
+    customer?: CustomerUpdateOneWithoutSalesNestedInput
+    table?: TableUpdateOneWithoutSalesNestedInput
+    loyaltyTransactions?: LoyaltyTransactionUpdateManyWithoutSaleNestedInput
+    loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
+    subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
+    customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+  }
+
+  export type SalesUncheckedUpdateWithoutRedeemedVoucherInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    tableId?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
+    loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
+    loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
+    subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
   }
 
   export type RolePermissionCreateManyRoleInput = {
@@ -151103,6 +157257,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
   }
 
   export type PromotionCustomerCreateManyCustomerInput = {
@@ -151198,6 +157355,27 @@ export namespace Prisma {
     version?: number | null
   }
 
+  export type VoucherCreateManyCustomerInput = {
+    id?: number
+    rewardRuleId?: number | null
+    loyaltyAccountId?: number | null
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
   export type SalesUpdateWithoutCustomerInput = {
     outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -151251,6 +157429,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -151259,6 +157440,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutCustomerInput = {
@@ -151317,12 +157499,16 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateManyWithoutCustomerInput = {
@@ -151381,6 +157567,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
   }
 
   export type PromotionCustomerUpdateWithoutCustomerInput = {
@@ -151571,6 +157760,7 @@ export namespace Prisma {
     loyaltyTier?: LoyaltyTierUpdateOneWithoutAccountsNestedInput
     transactions?: LoyaltyTransactionUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateWithoutCustomerInput = {
@@ -151590,6 +157780,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     transactions?: LoyaltyTransactionUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateManyWithoutCustomerInput = {
@@ -151656,6 +157847,68 @@ export namespace Prisma {
     usedQuota?: IntFieldUpdateOperationsInput | number
     paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     packageSnapshot?: NullableJsonNullValueInput | InputJsonValue
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherUpdateWithoutCustomerInput = {
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    rewardRule?: RewardRuleUpdateOneWithoutVouchersNestedInput
+    loyaltyAccount?: LoyaltyAccountUpdateOneWithoutVouchersNestedInput
+    redeemedInSale?: SalesUpdateOneWithoutRedeemedVoucherNestedInput
+  }
+
+  export type VoucherUncheckedUpdateWithoutCustomerInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rewardRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    loyaltyAccountId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherUncheckedUpdateManyWithoutCustomerInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rewardRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    loyaltyAccountId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -156206,6 +162459,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: number | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
   }
 
   export type ReservationCreateManyTableInput = {
@@ -156275,6 +162531,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -156283,6 +162542,7 @@ export namespace Prisma {
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
     customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutTableInput = {
@@ -156341,12 +162601,16 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateManyWithoutTableInput = {
@@ -156405,6 +162669,9 @@ export namespace Prisma {
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
   }
 
   export type ReservationUpdateWithoutTableInput = {
@@ -158029,6 +164296,7 @@ export namespace Prisma {
     loyaltyTier?: LoyaltyTierUpdateOneWithoutAccountsNestedInput
     transactions?: LoyaltyTransactionUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateWithoutLoyaltyProgramInput = {
@@ -158048,6 +164316,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     transactions?: LoyaltyTransactionUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateManyWithoutLoyaltyProgramInput = {
@@ -158100,6 +164369,7 @@ export namespace Prisma {
     loyaltyProgram?: LoyaltyProgramUpdateOneRequiredWithoutAccountsNestedInput
     transactions?: LoyaltyTransactionUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateWithoutLoyaltyTierInput = {
@@ -158119,6 +164389,7 @@ export namespace Prisma {
     version?: NullableIntFieldUpdateOperationsInput | number | null
     transactions?: LoyaltyTransactionUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
     pointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
+    vouchers?: VoucherUncheckedUpdateManyWithoutLoyaltyAccountNestedInput
   }
 
   export type LoyaltyAccountUncheckedUpdateManyWithoutLoyaltyTierInput = {
@@ -158161,6 +164432,27 @@ export namespace Prisma {
     expiresAt?: Date | string | null
     earnedAt?: Date | string
     salesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherCreateManyLoyaltyAccountInput = {
+    id?: number
+    rewardRuleId?: number | null
+    customerId: number
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
     deleted?: boolean
     deletedAt?: Date | string | null
     createdAt?: Date | string | null
@@ -158249,6 +164541,68 @@ export namespace Prisma {
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     earnedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     salesId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherUpdateWithoutLoyaltyAccountInput = {
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    rewardRule?: RewardRuleUpdateOneWithoutVouchersNestedInput
+    customer?: CustomerUpdateOneRequiredWithoutVouchersNestedInput
+    redeemedInSale?: SalesUpdateOneWithoutRedeemedVoucherNestedInput
+  }
+
+  export type VoucherUncheckedUpdateWithoutLoyaltyAccountInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rewardRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    customerId?: IntFieldUpdateOperationsInput | number
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherUncheckedUpdateManyWithoutLoyaltyAccountInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    rewardRuleId?: NullableIntFieldUpdateOperationsInput | number | null
+    customerId?: IntFieldUpdateOperationsInput | number
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -158431,6 +164785,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
   }
 
   export type SubscriptionUsageUpdateWithoutCustomerSubscriptionInput = {
@@ -158524,6 +164881,9 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -158532,6 +164892,7 @@ export namespace Prisma {
     loyaltyTransactions?: LoyaltyTransactionUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateWithoutCustomerSubscriptionInput = {
@@ -158590,12 +164951,16 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
     loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
     loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
     subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
   }
 
   export type SalesUncheckedUpdateManyWithoutCustomerSubscriptionInput = {
@@ -158654,6 +165019,92 @@ export namespace Prisma {
     loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type VoucherCreateManyRewardRuleInput = {
+    id?: number
+    customerId: number
+    loyaltyAccountId?: number | null
+    discountType: string
+    discountPercentage?: Decimal | DecimalJsLike | number | string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string
+    milestoneSpendSnapshot?: Decimal | DecimalJsLike | number | string | null
+    label: string
+    expiresAt: Date | string
+    redeemedAt?: Date | string | null
+    redeemedInSalesId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type VoucherUpdateWithoutRewardRuleInput = {
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    customer?: CustomerUpdateOneRequiredWithoutVouchersNestedInput
+    loyaltyAccount?: LoyaltyAccountUpdateOneWithoutVouchersNestedInput
+    redeemedInSale?: SalesUpdateOneWithoutRedeemedVoucherNestedInput
+  }
+
+  export type VoucherUncheckedUpdateWithoutRewardRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    loyaltyAccountId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type VoucherUncheckedUpdateManyWithoutRewardRuleInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    customerId?: IntFieldUpdateOperationsInput | number
+    loyaltyAccountId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: StringFieldUpdateOperationsInput | string
+    discountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    minPurchaseAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    milestoneSpendSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    label?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    redeemedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    redeemedInSalesId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
 

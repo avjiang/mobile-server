@@ -274,6 +274,7 @@ model Customer {
   splitBills            SplitBill[]
   loyaltyAccounts       LoyaltyAccount[]
   customerSubscriptions CustomerSubscription[]
+  vouchers              Voucher[]
 
   @@index([version])
   @@index([deleted, createdAt])
@@ -465,6 +466,11 @@ model Sales {
   customerSubscriptionId       Int?     @map("CUSTOMER_SUBSCRIPTION_ID")
   subscriptionDiscountAmount   Decimal? @map("SUBSCRIPTION_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
 
+  // Voucher fields
+  voucherId                 Int?     @map("VOUCHER_ID")
+  voucherDiscountPercentage Decimal? @map("VOUCHER_DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
+  voucherDiscountAmount     Decimal? @map("VOUCHER_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+
   // Relations
   salesItems           SalesItem[]
   payments             Payment[]
@@ -475,6 +481,7 @@ model Sales {
   loyaltyPointBatches  LoyaltyPointBatch[]
   subscriptionUsages   SubscriptionUsage[]
   customerSubscription CustomerSubscription? @relation(fields: [customerSubscriptionId], references: [id])
+  redeemedVoucher      Voucher?
 
   @@index([businessDate])
   @@index([outletId])
@@ -1849,6 +1856,7 @@ model LoyaltyAccount {
   loyaltyTier      LoyaltyTier?         @relation(fields: [loyaltyTierId], references: [id])
   transactions     LoyaltyTransaction[]
   pointBatches     LoyaltyPointBatch[]
+  vouchers         Voucher[]
 
   @@unique([customerId, loyaltyProgramId])
   @@index([loyaltyTierId])
@@ -1985,4 +1993,84 @@ model SubscriptionUsage {
   @@unique([salesId, customerSubscriptionId])
   @@index([customerSubscriptionId, createdAt])
   @@map("subscription_usage")
+}
+
+// ============================================
+// Voucher / Reward Rule Models
+// ============================================
+
+model RewardRule {
+  id                 Int       @id @default(autoincrement()) @map("ID")
+  name               String    @map("NAME")
+  triggerType         String    @default("SPEND_MILESTONE") @map("TRIGGER_TYPE")
+  spendThreshold     Decimal   @map("SPEND_THRESHOLD") @db.Decimal(15, 4)
+  isRepeatable       Boolean   @default(false) @map("IS_REPEATABLE")
+  discountType       String    @map("DISCOUNT_TYPE")
+  discountPercentage Decimal?  @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
+  discountAmount     Decimal?  @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  expiryDays         Int       @map("EXPIRY_DAYS")
+  minPurchaseAmount  Decimal?  @map("MIN_PURCHASE_AMOUNT") @db.Decimal(15, 4)
+  isActive           Boolean   @default(true) @map("IS_ACTIVE")
+  deleted            Boolean   @default(false) @map("IS_DELETED")
+  deletedAt          DateTime? @map("DELETED_AT")
+  createdAt          DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime? @updatedAt @map("UPDATED_AT")
+  version            Int?      @default(1) @map("VERSION")
+  vouchers           Voucher[]
+
+  @@map("reward_rule")
+}
+
+model Voucher {
+  id                     Int             @id @default(autoincrement()) @map("ID")
+  rewardRuleId           Int?            @map("REWARD_RULE_ID")
+  customerId             Int             @map("CUSTOMER_ID")
+  loyaltyAccountId       Int?            @map("LOYALTY_ACCOUNT_ID")
+  discountType           String          @map("DISCOUNT_TYPE")
+  discountPercentage     Decimal?        @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
+  discountAmount         Decimal?        @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  minPurchaseAmount      Decimal?        @map("MIN_PURCHASE_AMOUNT") @db.Decimal(15, 4)
+  status                 String          @default("ACTIVE") @map("STATUS")
+  milestoneSpendSnapshot Decimal?        @map("MILESTONE_SPEND_SNAPSHOT") @db.Decimal(15, 4)
+  label                  String          @map("LABEL")
+  expiresAt              DateTime        @map("EXPIRES_AT")
+  redeemedAt             DateTime?       @map("REDEEMED_AT")
+  redeemedInSalesId      Int?            @unique @map("REDEEMED_IN_SALES_ID")
+  deleted                Boolean         @default(false) @map("IS_DELETED")
+  deletedAt              DateTime?       @map("DELETED_AT")
+  createdAt              DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt              DateTime?       @updatedAt @map("UPDATED_AT")
+  version                Int?            @default(1) @map("VERSION")
+
+  rewardRule             RewardRule?     @relation(fields: [rewardRuleId], references: [id])
+  customer               Customer        @relation(fields: [customerId], references: [id])
+  loyaltyAccount         LoyaltyAccount? @relation(fields: [loyaltyAccountId], references: [id])
+  redeemedInSale         Sales?          @relation(fields: [redeemedInSalesId], references: [id])
+
+  @@index([customerId, status])
+  @@index([expiresAt])
+  @@map("voucher")
+}
+
+/// Dedupe write requests that retry after the server already accepted the
+/// original. The Flutter outbox sends `clientIdempotencyKey` on every retry
+/// of the same queued write; the idempotency middleware looks up
+/// `(endpoint, key)` here and replays the stored response instead of
+/// re-executing the handler.
+///
+/// One row per (endpoint, clientIdempotencyKey). Records expire after 24h
+/// via a cron task — the FE outbox gives up far earlier than that (max
+/// retry count × max backoff ≈ 1.5h).
+model IdempotencyRecord {
+  id             Int      @id @default(autoincrement()) @map("ID")
+  key            String   @map("KEY") @db.VarChar(64)
+  endpoint       String   @map("ENDPOINT") @db.VarChar(255)
+  userId         Int?     @map("USER_ID")
+  responseStatus Int      @map("RESPONSE_STATUS")
+  responseBody   String   @map("RESPONSE_BODY") @db.MediumText
+  createdAt      DateTime @default(now()) @map("CREATED_AT")
+
+  @@unique([endpoint, key], name: "endpoint_key")
+  @@index([createdAt])
+  @@map("idempotency_record")
 }

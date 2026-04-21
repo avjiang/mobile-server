@@ -106,23 +106,40 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 - `config.json`: `JWT_TOKEN_SECRET`
 - PM2 config in `ecosystem.config.js` (tsx interpreter, watch mode)
 
-## Documentation
+## Module Documentation
+
+Module docs are **unified across backend and frontend** and live in the sibling Flutter repo:
+`../flutter-front-end/docs/modules/<MODULE>.md`
+
+The unified doc covers business rules, data model, API contract, backend implementation (this repo's `src/<module>/`), and frontend implementation. Structure follows `../flutter-front-end/docs/modules/_TEMPLATE.md`.
+
+### Rules — apply to EVERY module, always (new features, bug fixes, enhancements, amendments)
+
+1. **Before starting any work** on a module (e.g. anything under `src/<module>/`):
+   - Look for `../flutter-front-end/docs/modules/<MODULE>.md` (check `../flutter-front-end/docs/modules/README.md` for the index).
+   - If it exists → **read it first** to understand contract, business rules, edge cases.
+   - If it does not exist → create it as part of the work using `../flutter-front-end/docs/modules/_TEMPLATE.md`.
+2. **After finishing the work** → update the module doc to reflect the new behavior (including backend-side changes in the "Backend Implementation" and "API Contract" sections). Undocumented change = incomplete change.
+3. **One doc per module.** Never create a BE-only briefing or changelog doc in this repo. Extend the unified module doc instead.
+4. **Module name = `src/<module>/` folder name** (UPPER_SNAKE_CASE in the filename, e.g. `LOYALTY.md`).
+
+### BE-only infra docs (not feature docs) — stay in this repo
 
 | File                                          | Purpose                               |
 | --------------------------------------------- | ------------------------------------- |
-| `docs/LOYALTY.md`                             | Flutter team API contract for loyalty |
-| `docs/ADMIN_ENDPOINT_CHANGES.md`              | Admin API changelog with sample JSON  |
-| `src/admin/ADMIN_MODULE_API_DOCUMENTATION.md` | Full admin module docs                |
-| `src/auth/AUTH_MODULE_API_DOCUMENTATION.md`   | Auth module docs                      |
-| `SUBSCRIPTION_MODEL.md`                       | Subscription & billing architecture   |
 | `SETUP_GUIDE.md`                              | Environment and database setup        |
+| `SUBSCRIPTION_MODEL.md`                       | Subscription & billing architecture   |
+| `docs/SCALING_PLAN.md`                        | Scaling strategy                      |
+| `docs/ADMIN_ENDPOINT_CHANGES.md`              | Admin API changelog with sample JSON  |
+| `src/admin/ADMIN_MODULE_API_DOCUMENTATION.md` | Full admin module docs (legacy)       |
+| `src/auth/AUTH_MODULE_API_DOCUMENTATION.md`   | Auth module docs (legacy)             |
 
 ## Ground Rules
 
 - **Do not run any terminal commands** — the project owner executes all npm, prisma, and shell commands manually
 - Prefer editing existing files over creating new ones
-- If modifying or adding features that affect the Flutter frontend, create a separate `.md` file briefing the Flutter team on the API contract changes (new fields, endpoints, request/response shape)
-- Always update related documentation after making changes; if none exists, create it
+- API contract changes (new fields, endpoints, request/response shape) are captured in the unified module doc at `../flutter-front-end/docs/modules/<MODULE>.md` (API Contract + Backend Implementation sections) — do NOT create a separate briefing file in this repo
+- Always update the unified module doc after making changes (see "Module Documentation" section); if none exists, create one from `../flutter-front-end/docs/modules/_TEMPLATE.md`
 - Always be thorough — deep dive to check for missing pieces before considering something done
 - When compacting, always preserve the full list of modified files
 - When updating current endpoints or adding new ones, do not forget to always update the `postman.json`

@@ -2,6 +2,7 @@ export interface OutletDetailsResponse {
     outletId: number;
     outletName: string;
     isActive: boolean;
+    serverTime: string;
     subscription: {
         planName: string;
         basePlanCost: number;

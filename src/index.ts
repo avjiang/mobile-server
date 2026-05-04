@@ -41,6 +41,7 @@ app.get('/', (req, res) => res.json({
   startedAt: serverStartTime,
 }))
 app.use('/auth', require('./auth/auth.controller'))
+app.use('/version', require('./version/version.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)
@@ -51,6 +52,7 @@ app.use(idempotencyMiddleware)
 
 // all api routes that need authorize should place here
 app.use('/admin', require('./admin/admin.controller'))
+app.use('/admin', require('./admin/version/admin-version.controller'))
 app.use('/account', require('./account/account.controller'))
 app.use('/user', require('./user/user.controller'))
 app.use('/item', require('./item/item.controller'))

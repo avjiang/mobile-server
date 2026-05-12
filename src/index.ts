@@ -7,7 +7,7 @@ import authorizeMiddleware from './middleware/authorize-middleware'
 import idempotencyMiddleware from './middleware/idempotency-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients } from './db';
-// import { initCronJobs } from './cron/cron-manager';
+import { initCronJobs } from './cron/cron-manager';
 const app = express()
 const port = process.env.PORT || 8080;
 
@@ -87,7 +87,7 @@ app.use(errorMiddleware)
 
 const server = app.listen(port, () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
-  // initCronJobs(); // Uncomment when loyalty feature is live
+  initCronJobs();
 });
 
 server.on('error', (err) => {

@@ -50,6 +50,15 @@ let getSessionByID = async (sessionID: number, databaseName: string) => {
 let createSession = async (openSessionRequest: OpenSessionRequest, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Validate outlet existence
+        const outlet = await tenantPrisma.outlet.findUnique({
+            where: { id: openSessionRequest.outletId },
+            select: { id: true, deleted: true }
+        });
+        if (!outlet || outlet.deleted) {
+            throw new NotFoundError("Outlet");
+        }
+
         const createdSession = await tenantPrisma.session.create({
             data: {
                 outletId: openSessionRequest.outletId,

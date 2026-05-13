@@ -936,7 +936,7 @@ async function completeNewSales(
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
             // Batch all initial queries
-            const [stockBalances, stockReceipts, customer, itemTrackStockData] = await Promise.all([
+            const [stockBalances, stockReceipts, customer, itemTrackStockData, outlet] = await Promise.all([
                 // Get stock balances for validation (with variant support)
                 tx.stockBalance.findMany({
                     where: {
@@ -997,8 +997,19 @@ async function completeNewSales(
                 tx.item.findMany({
                     where: { id: { in: [...new Set(salesBody.salesItems.map(i => i.itemId))] } },
                     select: { id: true, trackStock: true, cost: true }
+                }),
+
+                // Validate outlet existence
+                tx.outlet.findUnique({
+                    where: { id: salesBody.outletId },
+                    select: { id: true, deleted: true }
                 })
             ]);
+
+            // Validate outlet
+            if (!outlet || outlet.deleted) {
+                throw new BusinessLogicError(`Invalid outletId: ${salesBody.outletId}. Outlet does not exist or has been deleted.`);
+            }
 
             // Validate customer
             if (salesBody.customerId && (!customer || customer.deleted)) {

@@ -319,16 +319,25 @@ model Outlet {
   createdAt       DateTime?        @default(now()) @map("CREATED_AT")
   updatedAt       DateTime?        @updatedAt @map("UPDATED_AT")
   version         Int?             @default(1) @map("VERSION")
-  stockBalances   StockBalance[]
-  stockMovements  StockMovement[]
-  stockSnapshots  StockSnapshot[]
-  stockReceipts   StockReceipt[]
-  settings        Setting[] // Outlet-specific settings
-  tables          Table[]
-  stations        Station[]
-  reservations    Reservation[]
-  waitlists       Waitlist[]
-  purchaseReturns PurchaseReturn[]
+  stockBalances      StockBalance[]
+  stockMovements     StockMovement[]
+  stockSnapshots     StockSnapshot[]
+  stockReceipts      StockReceipt[]
+  settings           Setting[] // Outlet-specific settings
+  tables             Table[]
+  stations           Station[]
+  reservations       Reservation[]
+  waitlists          Waitlist[]
+  purchaseReturns    PurchaseReturn[]
+  sales              Sales[]
+  payments           Payment[]
+  registerLogs       RegisterLog[]
+  sessions           Session[]
+  invoices           Invoice[]
+  deliveryOrders     DeliveryOrder[]
+  quotations         Quotation[]
+  purchaseOrders     PurchaseOrder[]
+  menuProfileOutlets MenuProfileOutlet[]
 
   @@map("outlet")
 }
@@ -472,6 +481,7 @@ model Sales {
   voucherDiscountAmount     Decimal? @map("VOUCHER_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
 
   // Relations
+  outlet               Outlet                @relation(fields: [outletId], references: [id])
   salesItems           SalesItem[]
   payments             Payment[]
   registerLogs         RegisterLog[]
@@ -587,6 +597,7 @@ model Invoice {
   updatedAt           DateTime?          @updatedAt @map("UPDATED_AT")
   version             Int?               @default(1) @map("VERSION")
   isTaxInclusive      Boolean?           @default(false) @map("IS_TAX_INCLUSIVE")
+  outlet              Outlet             @relation(fields: [outletId], references: [id])
   session             Session?           @relation(fields: [sessionId], references: [id])
   purchaseOrder       PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id])
   supplier            Supplier?          @relation(fields: [supplierId], references: [id])
@@ -688,6 +699,7 @@ model DeliveryOrder {
   createdAt          DateTime?           @default(now()) @map("CREATED_AT")
   updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
   version            Int?                @default(1) @map("VERSION")
+  outlet             Outlet              @relation(fields: [outletId], references: [id])
   session            Session?            @relation(fields: [sessionId], references: [id])
   purchaseOrder      PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
   invoice            Invoice?            @relation(fields: [invoiceId], references: [id]) // One-to-many relation
@@ -757,6 +769,7 @@ model Quotation {
   updatedAt           DateTime?       @updatedAt @map("UPDATED_AT")
   version             Int?            @default(1) @map("VERSION")
   isTaxInclusive      Boolean?        @default(false) @map("IS_TAX_INCLUSIVE")
+  outlet              Outlet          @relation(fields: [outletId], references: [id])
   session             Session?        @relation(fields: [sessionId], references: [id])
   supplier            Supplier        @relation(fields: [supplierId], references: [id])
   quotationItems      QuotationItem[]
@@ -827,6 +840,7 @@ model PurchaseOrder {
   version             Int?                @default(1) @map("VERSION")
   isTaxInclusive      Boolean?            @default(false) @map("IS_TAX_INCLUSIVE")
   quotationId         Int?                @map("QUOTATION_ID") // Reference to source quotation
+  outlet              Outlet              @relation(fields: [outletId], references: [id])
   quotation           Quotation?          @relation(fields: [quotationId], references: [id])
   session             Session?            @relation(fields: [sessionId], references: [id])
   supplier            Supplier            @relation(fields: [supplierId], references: [id])
@@ -890,6 +904,7 @@ model Payment {
   createdAt      DateTime?   @default(now()) @map("CREATED_AT")
   updatedAt      DateTime?   @updatedAt @map("UPDATED_AT")
   version        Int?        @default(1) @map("VERSION")
+  outlet         Outlet      @relation(fields: [outletId], references: [id])
   cardInfos      CardInfo[]
   sales          Sales       @relation(fields: [salesId], references: [id])
   splitBills     SplitBill[]
@@ -915,6 +930,7 @@ model RegisterLog {
   createdAt      DateTime? @default(now()) @map("CREATED_AT")
   updatedAt      DateTime? @updatedAt @map("UPDATED_AT")
   version        Int?      @default(1) @map("VERSION")
+  outlet         Outlet    @relation(fields: [outletId], references: [id])
   sales          Sales     @relation(fields: [salesId], references: [id])
 
   @@map("register_log")
@@ -955,6 +971,7 @@ model Session {
   createdAt       DateTime?       @default(now()) @map("CREATED_AT")
   updatedAt       DateTime?       @updatedAt @map("UPDATED_AT")
   version         Int?            @default(1) @map("VERSION")
+  outlet          Outlet          @relation(fields: [outletId], references: [id])
   declarations    Declaration[]
   quotations      Quotation[]
   purchaseOrders  PurchaseOrder[]
@@ -1135,6 +1152,7 @@ model MenuProfileOutlet {
   createdAt     DateTime? @default(now()) @map("CREATED_AT")
   updatedAt     DateTime? @updatedAt @map("UPDATED_AT")
   version       Int?      @default(1) @map("VERSION")
+  outlet        Outlet    @relation(fields: [outletId], references: [id])
 
   @@map("menu_profile_outlet")
 }

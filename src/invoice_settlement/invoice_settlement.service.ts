@@ -229,8 +229,13 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
 
     try {
         // Parse last sync timestamp
-        const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
-            new Date(lastSyncTimestamp) : new Date(0);
+        let lastSync: Date;
+        if (lastSyncTimestamp && lastSyncTimestamp !== 'null') {
+            lastSync = new Date(lastSyncTimestamp);
+        } else {
+            lastSync = new Date();
+            lastSync.setHours(0, 0, 0, 0); // Start of today
+        }
 
         // Build base where conditions
         let where: any = {

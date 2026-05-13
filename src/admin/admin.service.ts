@@ -2546,6 +2546,209 @@ const removeAdvancedLoyalty = async (tenantId: number) => {
     };
 };
 
+/**
+ * Create a new outlet for a tenant, including its global record and subscription.
+ */
+let createOutletForTenant = async (
+    tenantId: number,
+    data: {
+        outletName: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
+        outletTel?: string;
+        outletEmail?: string;
+    }
+) => {
+    // 1. Get tenant database name
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+
+    if (!tenant || !tenant.databaseName) {
+        throw new NotFoundError('Tenant not found');
+    }
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+
+    // 2. Get existing subscription to determine the plan
+    const { primarySubscription } = await getPrimarySubscription(tenantId);
+    const subscriptionPlanId = primarySubscription.subscriptionPlanId;
+
+    return await prisma.$transaction(async (globalTx) => {
+        return await tenantPrisma.$transaction(async (tenantTx: any) => {
+            // 3. Create global record
+            const globalOutlet = await globalTx.tenantOutlet.create({
+                data: {
+                    tenantId,
+                    outletName: data.outletName,
+                    address: `${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || null,
+                    isActive: true,
+                }
+            });
+
+            // 4. Create subscription for the new outlet
+            const now = new Date();
+            const nextPaymentDate = new Date(now);
+            nextPaymentDate.setDate(now.getDate() + 30);
+            const subscriptionValidUntil = new Date(nextPaymentDate);
+
+            await globalTx.tenantSubscription.create({
+                data: {
+                    tenantId,
+                    outletId: globalOutlet.id,
+                    subscriptionPlanId,
+                    status: 'Active',
+                    nextPaymentDate,
+                    subscriptionValidUntil,
+                }
+            });
+
+            // 5. Create operational outlet in tenant DB
+            const outlet = await tenantTx.outlet.create({
+                data: {
+                    tenantOutletId: globalOutlet.id,
+                    outletName: data.outletName,
+                    street: data.street || '',
+                    city: data.city || '',
+                    state: data.state || '',
+                    postalCode: data.postalCode || '',
+                    country: data.country || '',
+                    outletTel: data.outletTel || '',
+                    outletEmail: data.outletEmail || '',
+                    deleted: false,
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Outlet created successfully',
+                outlet: {
+                    ...outlet,
+                    globalOutletId: globalOutlet.id
+                }
+            };
+        });
+    });
+};
+
+/**
+ * Update an existing outlet in both global and tenant databases.
+ */
+let updateOutletForTenant = async (
+    tenantId: number,
+    outletId: number,
+    data: {
+        outletName?: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
+        outletTel?: string;
+        outletEmail?: string;
+    }
+) => {
+    // 1. Validate outlet exists and belongs to tenant
+    const globalOutlet = await prisma.tenantOutlet.findFirst({
+        where: { id: outletId, tenantId }
+    });
+
+    if (!globalOutlet) {
+        throw new NotFoundError('Outlet not found for this tenant');
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant!.databaseName!);
+
+    return await prisma.$transaction(async (globalTx) => {
+        return await tenantPrisma.$transaction(async (tenantTx: any) => {
+            // 2. Update global record if name or address changed
+            if (data.outletName || data.street || data.city || data.state || data.postalCode) {
+                await globalTx.tenantOutlet.update({
+                    where: { id: outletId },
+                    data: {
+                        outletName: data.outletName,
+                        address: data.outletName ? (`${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || undefined) : undefined
+                    }
+                });
+            }
+
+            // 3. Update tenant DB record
+            const updatedOutlet = await tenantTx.outlet.updateMany({
+                where: { tenantOutletId: outletId },
+                data: {
+                    ...data,
+                    version: { increment: 1 }
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Outlet updated successfully'
+            };
+        });
+    });
+};
+
+/**
+ * Soft-delete an outlet and deactivate its subscription.
+ */
+let deleteOutletForTenant = async (tenantId: number, outletId: number) => {
+    // 1. Safety check: prevent deleting the last active outlet
+    const activeOutlets = await prisma.tenantOutlet.count({
+        where: { tenantId, isActive: true }
+    });
+
+    if (activeOutlets <= 1) {
+        throw new RequestValidateError('Cannot delete the last active outlet');
+    }
+
+    // 2. Get tenant database
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant!.databaseName!);
+
+    return await prisma.$transaction(async (globalTx) => {
+        return await tenantPrisma.$transaction(async (tenantTx: any) => {
+            // 3. Deactivate global records
+            await globalTx.tenantOutlet.update({
+                where: { id: outletId },
+                data: { isActive: false }
+            });
+
+            await globalTx.tenantSubscription.updateMany({
+                where: { outletId, status: { in: ['Active', 'active', 'trial'] } },
+                data: { status: 'expired' }
+            });
+
+            // 4. Soft-delete in tenant DB
+            await tenantTx.outlet.updateMany({
+                where: { tenantOutletId: outletId },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Outlet soft-deleted successfully'
+            };
+        });
+    });
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2558,6 +2761,9 @@ export = {
     createWarehouseForTenant,
     deleteWarehouseForTenant,
     getTenantWarehouses,
+    createOutletForTenant,
+    updateOutletForTenant,
+    deleteOutletForTenant,
     changeTenantPlan,
     // Payment Management
     recordPayment,

@@ -301,6 +301,81 @@ let getTenantWarehouses = (req: AuthRequest, res: Response, next: NextFunction) 
 };
 
 /**
+ * POST /tenants/:tenantId/outlets
+ * Create a new outlet for tenant (POS Owner only)
+ */
+let createOutlet = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+
+    if (!tenantId || isNaN(tenantId)) {
+        throw new RequestValidateError('Valid tenant ID is required');
+    }
+
+    if (!req.body || !req.body.outletName) {
+        throw new RequestValidateError('Outlet name is required');
+    }
+
+    const { outletName, street, city, state, postalCode, country, outletTel, outletEmail } = req.body;
+
+    service.createOutletForTenant(tenantId, {
+        outletName,
+        street,
+        city,
+        state,
+        postalCode,
+        country,
+        outletTel,
+        outletEmail
+    })
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
+ * PUT /tenants/:tenantId/outlets/:id
+ * Update an existing outlet for tenant (POS Owner only)
+ */
+let updateOutlet = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const outletId = parseInt(req.params.id);
+
+    if (!tenantId || isNaN(tenantId) || !outletId || isNaN(outletId)) {
+        throw new RequestValidateError('Valid tenant ID and outlet ID are required');
+    }
+
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Update data is required');
+    }
+
+    service.updateOutletForTenant(tenantId, outletId, req.body)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
+ * DELETE /tenants/:tenantId/outlets/:id
+ * Soft-delete an outlet for tenant (POS Owner only)
+ */
+let deleteOutlet = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const outletId = parseInt(req.params.id);
+
+    if (!tenantId || isNaN(tenantId) || !outletId || isNaN(outletId)) {
+        throw new RequestValidateError('Valid tenant ID and outlet ID are required');
+    }
+
+    service.deleteOutletForTenant(tenantId, outletId)
+        .then((response: any) => {
+            sendResponse(res, response);
+        })
+        .catch(next);
+};
+
+/**
  * PUT /tenants/:tenantId/changePlan
  * Change tenant plan - supports both upgrade and downgrade (POS Owner only)
  * When downgrading to Basic: deactivates all warehouses and push notification devices
@@ -620,6 +695,11 @@ router.put('/tenants/:tenantId/changePlan', changeTenantPlan)
 router.post('/tenants/:tenantId/warehouses', createWarehouse)
 router.delete('/tenants/:tenantId/warehouses/:id', deleteWarehouse)
 router.get('/tenants/:tenantId/warehouses', getTenantWarehouses)
+
+// outlet CRUD routes
+router.post('/tenants/:tenantId/outlets', createOutlet)
+router.put('/tenants/:tenantId/outlets/:id', updateOutlet)
+router.delete('/tenants/:tenantId/outlets/:id', deleteOutlet)
 
 // advanced loyalty add-on routes
 router.post('/tenants/:tenantId/addons/loyalty', addAdvancedLoyalty)

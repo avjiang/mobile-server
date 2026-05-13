@@ -82,3 +82,7 @@ typings/
 
 # Prisma Generated Clients
 prisma/*/generated/
+prisma/**/generated/
+prisma/**/*.node
+prisma/**/index.js
+prisma/**/index.d.ts

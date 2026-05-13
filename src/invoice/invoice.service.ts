@@ -1304,6 +1304,14 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                 if (hasDiscountedItems && existingDeliveryOrderIds.length > 0) {
                     await revertStockReceiptCosts(tx, id, existingDeliveryOrderIds, existingInvoiceItems);
                 }
+
+                // Unlink delivery orders so they can be reselected on a new invoice
+                if (existingDeliveryOrderIds.length > 0) {
+                    await tx.deliveryOrder.updateMany({
+                        where: { invoiceId: id, deleted: false },
+                        data: { invoiceId: null, version: { increment: 1 } }
+                    });
+                }
             }
 
             // Handle invoice items

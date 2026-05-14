@@ -310,6 +310,16 @@ exports.Prisma.TenantPaymentScalarFieldEnum = {
   recordedAt: 'recordedAt'
 };
 
+exports.Prisma.AppVersionScalarFieldEnum = {
+  id: 'id',
+  platform: 'platform',
+  minVersion: 'minVersion',
+  latestVersion: 'latestVersion',
+  storeUrl: 'storeUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.CustomPriceLogScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
@@ -449,6 +459,13 @@ exports.Prisma.TenantPaymentOrderByRelevanceFieldEnum = {
   notes: 'notes'
 };
 
+exports.Prisma.AppVersionOrderByRelevanceFieldEnum = {
+  platform: 'platform',
+  minVersion: 'minVersion',
+  latestVersion: 'latestVersion',
+  storeUrl: 'storeUrl'
+};
+
 exports.Prisma.CustomPriceLogOrderByRelevanceFieldEnum = {
   note: 'note'
 };
@@ -471,6 +488,7 @@ exports.Prisma.ModelName = {
   PushyDeviceAllocation: 'PushyDeviceAllocation',
   TenantWarehouse: 'TenantWarehouse',
   TenantPayment: 'TenantPayment',
+  AppVersion: 'AppVersion',
   CustomPriceLog: 'CustomPriceLog',
   TenantAddOn: 'TenantAddOn'
 };

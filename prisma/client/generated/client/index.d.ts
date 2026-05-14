@@ -416,6 +416,15 @@ export namespace $Enums {
 export type SettingType = (typeof SettingType)[keyof typeof SettingType]
 
 
+export const PointsRoundingMode: {
+  FLOOR: 'FLOOR',
+  ROUND: 'ROUND',
+  CEIL: 'CEIL'
+};
+
+export type PointsRoundingMode = (typeof PointsRoundingMode)[keyof typeof PointsRoundingMode]
+
+
 export const SalesType: {
   DINE_IN: 'DINE_IN',
   TAKEOUT: 'TAKEOUT',
@@ -511,6 +520,10 @@ export type CombinationRule = (typeof CombinationRule)[keyof typeof CombinationR
 export type SettingType = $Enums.SettingType
 
 export const SettingType: typeof $Enums.SettingType
+
+export type PointsRoundingMode = $Enums.PointsRoundingMode
+
+export const PointsRoundingMode: typeof $Enums.PointsRoundingMode
 
 export type SalesType = $Enums.SalesType
 
@@ -83237,6 +83250,7 @@ export namespace Prisma {
     currencyPerPoint: Decimal | null
     pointsExpiryDays: number | null
     minRedeemPoints: Decimal | null
+    pointsRoundingMode: $Enums.PointsRoundingMode | null
     isActive: boolean | null
     deactivatedAt: Date | null
     deleted: boolean | null
@@ -83253,6 +83267,7 @@ export namespace Prisma {
     currencyPerPoint: Decimal | null
     pointsExpiryDays: number | null
     minRedeemPoints: Decimal | null
+    pointsRoundingMode: $Enums.PointsRoundingMode | null
     isActive: boolean | null
     deactivatedAt: Date | null
     deleted: boolean | null
@@ -83269,6 +83284,7 @@ export namespace Prisma {
     currencyPerPoint: number
     pointsExpiryDays: number
     minRedeemPoints: number
+    pointsRoundingMode: number
     isActive: number
     deactivatedAt: number
     deleted: number
@@ -83305,6 +83321,7 @@ export namespace Prisma {
     currencyPerPoint?: true
     pointsExpiryDays?: true
     minRedeemPoints?: true
+    pointsRoundingMode?: true
     isActive?: true
     deactivatedAt?: true
     deleted?: true
@@ -83321,6 +83338,7 @@ export namespace Prisma {
     currencyPerPoint?: true
     pointsExpiryDays?: true
     minRedeemPoints?: true
+    pointsRoundingMode?: true
     isActive?: true
     deactivatedAt?: true
     deleted?: true
@@ -83337,6 +83355,7 @@ export namespace Prisma {
     currencyPerPoint?: true
     pointsExpiryDays?: true
     minRedeemPoints?: true
+    pointsRoundingMode?: true
     isActive?: true
     deactivatedAt?: true
     deleted?: true
@@ -83440,6 +83459,7 @@ export namespace Prisma {
     currencyPerPoint: Decimal
     pointsExpiryDays: number | null
     minRedeemPoints: Decimal
+    pointsRoundingMode: $Enums.PointsRoundingMode
     isActive: boolean
     deactivatedAt: Date | null
     deleted: boolean
@@ -83475,6 +83495,7 @@ export namespace Prisma {
     currencyPerPoint?: boolean
     pointsExpiryDays?: boolean
     minRedeemPoints?: boolean
+    pointsRoundingMode?: boolean
     isActive?: boolean
     deactivatedAt?: boolean
     deleted?: boolean
@@ -83496,6 +83517,7 @@ export namespace Prisma {
     currencyPerPoint?: boolean
     pointsExpiryDays?: boolean
     minRedeemPoints?: boolean
+    pointsRoundingMode?: boolean
     isActive?: boolean
     deactivatedAt?: boolean
     deleted?: boolean
@@ -83505,7 +83527,7 @@ export namespace Prisma {
     version?: boolean
   }
 
-  export type LoyaltyProgramOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "pointsPerCurrency" | "currencyPerPoint" | "pointsExpiryDays" | "minRedeemPoints" | "isActive" | "deactivatedAt" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["loyaltyProgram"]>
+  export type LoyaltyProgramOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "pointsPerCurrency" | "currencyPerPoint" | "pointsExpiryDays" | "minRedeemPoints" | "pointsRoundingMode" | "isActive" | "deactivatedAt" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["loyaltyProgram"]>
   export type LoyaltyProgramInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tiers?: boolean | LoyaltyProgram$tiersArgs<ExtArgs>
     accounts?: boolean | LoyaltyProgram$accountsArgs<ExtArgs>
@@ -83525,6 +83547,7 @@ export namespace Prisma {
       currencyPerPoint: Prisma.Decimal
       pointsExpiryDays: number | null
       minRedeemPoints: Prisma.Decimal
+      pointsRoundingMode: $Enums.PointsRoundingMode
       isActive: boolean
       deactivatedAt: Date | null
       deleted: boolean
@@ -83909,6 +83932,7 @@ export namespace Prisma {
     readonly currencyPerPoint: FieldRef<"LoyaltyProgram", 'Decimal'>
     readonly pointsExpiryDays: FieldRef<"LoyaltyProgram", 'Int'>
     readonly minRedeemPoints: FieldRef<"LoyaltyProgram", 'Decimal'>
+    readonly pointsRoundingMode: FieldRef<"LoyaltyProgram", 'PointsRoundingMode'>
     readonly isActive: FieldRef<"LoyaltyProgram", 'Boolean'>
     readonly deactivatedAt: FieldRef<"LoyaltyProgram", 'DateTime'>
     readonly deleted: FieldRef<"LoyaltyProgram", 'Boolean'>
@@ -97901,6 +97925,7 @@ export namespace Prisma {
     currencyPerPoint: 'currencyPerPoint',
     pointsExpiryDays: 'pointsExpiryDays',
     minRedeemPoints: 'minRedeemPoints',
+    pointsRoundingMode: 'pointsRoundingMode',
     isActive: 'isActive',
     deactivatedAt: 'deactivatedAt',
     deleted: 'deleted',
@@ -98891,6 +98916,13 @@ export namespace Prisma {
    * Reference to a field of type 'BigInt'
    */
   export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
+    
+
+
+  /**
+   * Reference to a field of type 'PointsRoundingMode'
+   */
+  export type EnumPointsRoundingModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PointsRoundingMode'>
     
 
 
@@ -106421,6 +106453,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFilter<"LoyaltyProgram"> | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: IntNullableFilter<"LoyaltyProgram"> | number | null
     minRedeemPoints?: DecimalFilter<"LoyaltyProgram"> | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFilter<"LoyaltyProgram"> | $Enums.PointsRoundingMode
     isActive?: BoolFilter<"LoyaltyProgram"> | boolean
     deactivatedAt?: DateTimeNullableFilter<"LoyaltyProgram"> | Date | string | null
     deleted?: BoolFilter<"LoyaltyProgram"> | boolean
@@ -106439,6 +106472,7 @@ export namespace Prisma {
     currencyPerPoint?: SortOrder
     pointsExpiryDays?: SortOrderInput | SortOrder
     minRedeemPoints?: SortOrder
+    pointsRoundingMode?: SortOrder
     isActive?: SortOrder
     deactivatedAt?: SortOrderInput | SortOrder
     deleted?: SortOrder
@@ -106461,6 +106495,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFilter<"LoyaltyProgram"> | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: IntNullableFilter<"LoyaltyProgram"> | number | null
     minRedeemPoints?: DecimalFilter<"LoyaltyProgram"> | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFilter<"LoyaltyProgram"> | $Enums.PointsRoundingMode
     isActive?: BoolFilter<"LoyaltyProgram"> | boolean
     deactivatedAt?: DateTimeNullableFilter<"LoyaltyProgram"> | Date | string | null
     deleted?: BoolFilter<"LoyaltyProgram"> | boolean
@@ -106479,6 +106514,7 @@ export namespace Prisma {
     currencyPerPoint?: SortOrder
     pointsExpiryDays?: SortOrderInput | SortOrder
     minRedeemPoints?: SortOrder
+    pointsRoundingMode?: SortOrder
     isActive?: SortOrder
     deactivatedAt?: SortOrderInput | SortOrder
     deleted?: SortOrder
@@ -106503,6 +106539,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalWithAggregatesFilter<"LoyaltyProgram"> | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: IntNullableWithAggregatesFilter<"LoyaltyProgram"> | number | null
     minRedeemPoints?: DecimalWithAggregatesFilter<"LoyaltyProgram"> | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeWithAggregatesFilter<"LoyaltyProgram"> | $Enums.PointsRoundingMode
     isActive?: BoolWithAggregatesFilter<"LoyaltyProgram"> | boolean
     deactivatedAt?: DateTimeNullableWithAggregatesFilter<"LoyaltyProgram"> | Date | string | null
     deleted?: BoolWithAggregatesFilter<"LoyaltyProgram"> | boolean
@@ -116094,6 +116131,7 @@ export namespace Prisma {
     currencyPerPoint?: Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: number | null
     minRedeemPoints?: Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: $Enums.PointsRoundingMode
     isActive?: boolean
     deactivatedAt?: Date | string | null
     deleted?: boolean
@@ -116112,6 +116150,7 @@ export namespace Prisma {
     currencyPerPoint?: Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: number | null
     minRedeemPoints?: Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: $Enums.PointsRoundingMode
     isActive?: boolean
     deactivatedAt?: Date | string | null
     deleted?: boolean
@@ -116129,6 +116168,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
@@ -116147,6 +116187,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
@@ -116165,6 +116206,7 @@ export namespace Prisma {
     currencyPerPoint?: Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: number | null
     minRedeemPoints?: Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: $Enums.PointsRoundingMode
     isActive?: boolean
     deactivatedAt?: Date | string | null
     deleted?: boolean
@@ -116180,6 +116222,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
@@ -116196,6 +116239,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
@@ -123776,6 +123820,13 @@ export namespace Prisma {
     version?: SortOrder
   }
 
+  export type EnumPointsRoundingModeFilter<$PrismaModel = never> = {
+    equals?: $Enums.PointsRoundingMode | EnumPointsRoundingModeFieldRefInput<$PrismaModel>
+    in?: $Enums.PointsRoundingMode[]
+    notIn?: $Enums.PointsRoundingMode[]
+    not?: NestedEnumPointsRoundingModeFilter<$PrismaModel> | $Enums.PointsRoundingMode
+  }
+
   export type LoyaltyTierListRelationFilter = {
     every?: LoyaltyTierWhereInput
     some?: LoyaltyTierWhereInput
@@ -123799,6 +123850,7 @@ export namespace Prisma {
     currencyPerPoint?: SortOrder
     pointsExpiryDays?: SortOrder
     minRedeemPoints?: SortOrder
+    pointsRoundingMode?: SortOrder
     isActive?: SortOrder
     deactivatedAt?: SortOrder
     deleted?: SortOrder
@@ -123824,6 +123876,7 @@ export namespace Prisma {
     currencyPerPoint?: SortOrder
     pointsExpiryDays?: SortOrder
     minRedeemPoints?: SortOrder
+    pointsRoundingMode?: SortOrder
     isActive?: SortOrder
     deactivatedAt?: SortOrder
     deleted?: SortOrder
@@ -123840,6 +123893,7 @@ export namespace Prisma {
     currencyPerPoint?: SortOrder
     pointsExpiryDays?: SortOrder
     minRedeemPoints?: SortOrder
+    pointsRoundingMode?: SortOrder
     isActive?: SortOrder
     deactivatedAt?: SortOrder
     deleted?: SortOrder
@@ -123856,6 +123910,16 @@ export namespace Prisma {
     pointsExpiryDays?: SortOrder
     minRedeemPoints?: SortOrder
     version?: SortOrder
+  }
+
+  export type EnumPointsRoundingModeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PointsRoundingMode | EnumPointsRoundingModeFieldRefInput<$PrismaModel>
+    in?: $Enums.PointsRoundingMode[]
+    notIn?: $Enums.PointsRoundingMode[]
+    not?: NestedEnumPointsRoundingModeWithAggregatesFilter<$PrismaModel> | $Enums.PointsRoundingMode
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPointsRoundingModeFilter<$PrismaModel>
+    _max?: NestedEnumPointsRoundingModeFilter<$PrismaModel>
   }
 
   export type LoyaltyProgramScalarRelationFilter = {
@@ -130803,6 +130867,10 @@ export namespace Prisma {
     connect?: LoyaltyAccountWhereUniqueInput | LoyaltyAccountWhereUniqueInput[]
   }
 
+  export type EnumPointsRoundingModeFieldUpdateOperationsInput = {
+    set?: $Enums.PointsRoundingMode
+  }
+
   export type LoyaltyTierUpdateManyWithoutLoyaltyProgramNestedInput = {
     create?: XOR<LoyaltyTierCreateWithoutLoyaltyProgramInput, LoyaltyTierUncheckedCreateWithoutLoyaltyProgramInput> | LoyaltyTierCreateWithoutLoyaltyProgramInput[] | LoyaltyTierUncheckedCreateWithoutLoyaltyProgramInput[]
     connectOrCreate?: LoyaltyTierCreateOrConnectWithoutLoyaltyProgramInput | LoyaltyTierCreateOrConnectWithoutLoyaltyProgramInput[]
@@ -131915,6 +131983,23 @@ export namespace Prisma {
     _sum?: NestedBigIntFilter<$PrismaModel>
     _min?: NestedBigIntFilter<$PrismaModel>
     _max?: NestedBigIntFilter<$PrismaModel>
+  }
+
+  export type NestedEnumPointsRoundingModeFilter<$PrismaModel = never> = {
+    equals?: $Enums.PointsRoundingMode | EnumPointsRoundingModeFieldRefInput<$PrismaModel>
+    in?: $Enums.PointsRoundingMode[]
+    notIn?: $Enums.PointsRoundingMode[]
+    not?: NestedEnumPointsRoundingModeFilter<$PrismaModel> | $Enums.PointsRoundingMode
+  }
+
+  export type NestedEnumPointsRoundingModeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PointsRoundingMode | EnumPointsRoundingModeFieldRefInput<$PrismaModel>
+    in?: $Enums.PointsRoundingMode[]
+    notIn?: $Enums.PointsRoundingMode[]
+    not?: NestedEnumPointsRoundingModeWithAggregatesFilter<$PrismaModel> | $Enums.PointsRoundingMode
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPointsRoundingModeFilter<$PrismaModel>
+    _max?: NestedEnumPointsRoundingModeFilter<$PrismaModel>
   }
   export type NestedJsonNullableFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -153228,6 +153313,7 @@ export namespace Prisma {
     currencyPerPoint?: Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: number | null
     minRedeemPoints?: Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: $Enums.PointsRoundingMode
     isActive?: boolean
     deactivatedAt?: Date | string | null
     deleted?: boolean
@@ -153245,6 +153331,7 @@ export namespace Prisma {
     currencyPerPoint?: Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: number | null
     minRedeemPoints?: Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: $Enums.PointsRoundingMode
     isActive?: boolean
     deactivatedAt?: Date | string | null
     deleted?: boolean
@@ -153326,6 +153413,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
@@ -153343,6 +153431,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
@@ -153449,6 +153538,7 @@ export namespace Prisma {
     currencyPerPoint?: Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: number | null
     minRedeemPoints?: Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: $Enums.PointsRoundingMode
     isActive?: boolean
     deactivatedAt?: Date | string | null
     deleted?: boolean
@@ -153466,6 +153556,7 @@ export namespace Prisma {
     currencyPerPoint?: Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: number | null
     minRedeemPoints?: Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: $Enums.PointsRoundingMode
     isActive?: boolean
     deactivatedAt?: Date | string | null
     deleted?: boolean
@@ -153741,6 +153832,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean
@@ -153758,6 +153850,7 @@ export namespace Prisma {
     currencyPerPoint?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     pointsExpiryDays?: NullableIntFieldUpdateOperationsInput | number | null
     minRedeemPoints?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    pointsRoundingMode?: EnumPointsRoundingModeFieldUpdateOperationsInput | $Enums.PointsRoundingMode
     isActive?: BoolFieldUpdateOperationsInput | boolean
     deactivatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deleted?: BoolFieldUpdateOperationsInput | boolean

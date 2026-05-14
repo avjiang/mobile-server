@@ -38,6 +38,28 @@ let getSessionByID = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+let getOpenSession = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const outletIdRaw = req.query.outletId
+    const userIdRaw = req.query.userId
+    const outletIdStr = typeof outletIdRaw === 'string' ? outletIdRaw : ''
+    const userIdStr = typeof userIdRaw === 'string' ? userIdRaw : ''
+    if (!validator.isNumeric(outletIdStr)) {
+        throw new RequestValidateError('outletId query param required and must be numeric')
+    }
+    if (!validator.isNumeric(userIdStr)) {
+        throw new RequestValidateError('userId query param required and must be numeric')
+    }
+    const outletId: number = parseInt(outletIdStr)
+    const userId: number = parseInt(userIdStr)
+
+    service.getOpenSession(outletId, userId, req.user.databaseName)
+        .then((session: Session | null) => sendResponse(res, session))
+        .catch(next)
+}
+
 let createSession = (req: NetworkRequest<OpenSessionRequest>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -84,7 +106,10 @@ let closeSession = (req: NetworkRequest<CloseSessionRequest>, res: Response, nex
 
 
 //routes
+// NOTE: specific GET routes MUST be registered before the wildcard '/:id'
+// or Express will route them to getSessionByID and fail numeric validation.
 router.get('/getDeclarations/:id', getDeclarationsBySessionID)
+router.get('/getOpenSession', getOpenSession)
 router.get('/:id', getSessionByID)
 router.post('/openSession', createSession)
 router.post('/createDeclarations', createDeclarations)

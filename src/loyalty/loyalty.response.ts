@@ -1,3 +1,5 @@
+export type PointsRoundingMode = 'FLOOR' | 'ROUND' | 'CEIL';
+
 export interface LoyaltyProgramResponse {
     id: number;
     name: string;
@@ -5,6 +7,7 @@ export interface LoyaltyProgramResponse {
     currencyPerPoint: number;
     pointsExpiryDays: number | null;
     minRedeemPoints: number;
+    pointsRoundingMode: PointsRoundingMode;
     isActive: boolean;
     tiers?: LoyaltyTierResponse[];
 }

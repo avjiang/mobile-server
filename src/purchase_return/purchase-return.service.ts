@@ -1049,6 +1049,10 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
             throw new NotFoundError("Purchase Return");
         }
 
+        if (existingPurchaseReturn.status === 'CANCELLED') {
+            throw new RequestValidateError('Cannot update a cancelled purchase return');
+        }
+
         // Use transaction for consistency
         const result = await tenantPrisma.$transaction(async (tx) => {
             const isBeingCancelled = updateData.status === 'CANCELLED';
@@ -1062,7 +1066,8 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
                 version: { increment: 1 }
             };
 
-            // Only update allowed fields (remark, performedBy, status)
+            // Only update allowed fields (returnDate, remark, performedBy, status)
+            if (updateData.returnDate !== undefined) updateFields.returnDate = updateData.returnDate;
             if (updateData.remark !== undefined) updateFields.remark = updateData.remark;
             if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;
             if (updateData.status !== undefined) updateFields.status = updateData.status;

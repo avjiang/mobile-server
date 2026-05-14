@@ -16,6 +16,12 @@ enum SettingType {
   JSON
 }
 
+enum PointsRoundingMode {
+  FLOOR
+  ROUND
+  CEIL
+}
+
 enum SalesType {
   DINE_IN
   TAKEOUT
@@ -1796,21 +1802,22 @@ model PurchaseReturnItem {
 // ============================================
 
 model LoyaltyProgram {
-  id                Int              @id @default(autoincrement()) @map("ID")
-  name              String           @map("NAME")
-  pointsPerCurrency Decimal          @default(1) @map("POINTS_PER_CURRENCY") @db.Decimal(15, 4)
-  currencyPerPoint  Decimal          @default(1) @map("CURRENCY_PER_POINT") @db.Decimal(15, 4)
-  pointsExpiryDays  Int?             @map("POINTS_EXPIRY_DAYS")
-  minRedeemPoints   Decimal          @default(0) @map("MIN_REDEEM_POINTS") @db.Decimal(15, 4)
-  isActive          Boolean          @default(true) @map("IS_ACTIVE")
-  deactivatedAt     DateTime?        @map("DEACTIVATED_AT")
-  deleted           Boolean          @default(false) @map("IS_DELETED")
-  deletedAt         DateTime?        @map("DELETED_AT")
-  createdAt         DateTime?        @default(now()) @map("CREATED_AT")
-  updatedAt         DateTime?        @updatedAt @map("UPDATED_AT")
-  version           Int?             @default(1) @map("VERSION")
-  tiers             LoyaltyTier[]
-  accounts          LoyaltyAccount[]
+  id                 Int                @id @default(autoincrement()) @map("ID")
+  name               String             @map("NAME")
+  pointsPerCurrency  Decimal            @default(1) @map("POINTS_PER_CURRENCY") @db.Decimal(15, 4)
+  currencyPerPoint   Decimal            @default(1) @map("CURRENCY_PER_POINT") @db.Decimal(15, 4)
+  pointsExpiryDays   Int?               @map("POINTS_EXPIRY_DAYS")
+  minRedeemPoints    Decimal            @default(0) @map("MIN_REDEEM_POINTS") @db.Decimal(15, 4)
+  pointsRoundingMode PointsRoundingMode @default(FLOOR) @map("POINTS_ROUNDING_MODE")
+  isActive           Boolean            @default(true) @map("IS_ACTIVE")
+  deactivatedAt      DateTime?          @map("DEACTIVATED_AT")
+  deleted            Boolean            @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?          @map("DELETED_AT")
+  createdAt          DateTime?          @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?          @updatedAt @map("UPDATED_AT")
+  version            Int?               @default(1) @map("VERSION")
+  tiers              LoyaltyTier[]
+  accounts           LoyaltyAccount[]
 
   @@map("loyalty_program")
 }

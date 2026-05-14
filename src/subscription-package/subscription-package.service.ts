@@ -29,6 +29,99 @@ const toDecimalNumber = (val: any): number => {
     return typeof val === 'number' ? val : Number(val);
 };
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// ============================================
+// Pure helpers (exported via __testables)
+// ============================================
+
+/**
+ * Compute the subscription endDate given the package type and validity
+ * window. Returns null when there is no expiry to track:
+ *   - USAGE package without `validityDays` → unlimited validity (docs §8.2)
+ *   - TIME package without `durationDays` → caller-bug; returns null
+ *
+ * This is the single source of endDate truth — `recordUsage`, deactivation
+ * extension, and tester guide §8.2 all read it back.
+ */
+const calcSubscriptionEndDate = (
+    packageType: string,
+    durationDays: number | null | undefined,
+    validityDays: number | null | undefined,
+    now: Date,
+): Date | null => {
+    if (packageType === 'TIME' && durationDays) {
+        return new Date(now.getTime() + durationDays * MS_PER_DAY);
+    }
+    if (packageType === 'USAGE' && validityDays) {
+        return new Date(now.getTime() + validityDays * MS_PER_DAY);
+    }
+    return null;
+};
+
+/**
+ * Build the JSON snapshot of a subscription package frozen at subscribe
+ * time. The snapshot is the source of truth at checkout (docs §8.4) so
+ * later edits to the live package don't retroactively affect active
+ * subscriptions. Materializes Decimal/null values via toDecimalNumber so
+ * the stored JSON is plain numbers.
+ */
+const buildPackageSnapshot = (pkg: {
+    id: number;
+    name: string;
+    packageType: string;
+    price: any;
+    totalQuota: number | null;
+    quotaUnit: string | null;
+    durationDays: number | null;
+    discountPercentage: any;
+    discountAmount: any;
+    categories: { category: { id: number; name: string } }[];
+}) => ({
+    packageId: pkg.id,
+    name: pkg.name,
+    packageType: pkg.packageType,
+    price: toDecimalNumber(pkg.price),
+    totalQuota: pkg.totalQuota,
+    quotaUnit: pkg.quotaUnit,
+    durationDays: pkg.durationDays,
+    discountPercentage: pkg.discountPercentage ? toDecimalNumber(pkg.discountPercentage) : null,
+    discountAmount: pkg.discountAmount ? toDecimalNumber(pkg.discountAmount) : null,
+    categories: pkg.categories.map((c) => ({
+        categoryId: c.category.id,
+        categoryName: c.category.name,
+    })),
+});
+
+/**
+ * USAGE-quota-exhaustion predicate: true when remainingQuota has reached 0
+ * AFTER deducting `quantityUsed`. Returns false for TIME packages (they
+ * are time-bounded, not quota-bounded). Mirrors the `remainingQuota <= 0`
+ * check in `recordUsage` / `processLoyaltyForSale`.
+ */
+const isUsageQuotaExhausted = (
+    packageType: string,
+    remainingQuota: number | null,
+    quantityUsed: number,
+): boolean => {
+    if (packageType !== 'USAGE') return false;
+    if (remainingQuota === null || remainingQuota === undefined) return false;
+    return remainingQuota - quantityUsed <= 0;
+};
+
+/**
+ * Check whether a subscription has timed out (TIME package past endDate,
+ * or USAGE package past validity window). Pure predicate — caller may
+ * choose to flip status to EXPIRED based on this.
+ */
+const isSubscriptionTimedOut = (
+    endDate: Date | null | undefined,
+    now: Date,
+): boolean => {
+    if (!endDate) return false;
+    return now.getTime() > endDate.getTime();
+};
+
 const getCachedPackages = async (db: string): Promise<any[]> => {
     const cacheKey = CACHE_PREFIX + db;
     const cached = cache.get(cacheKey);
@@ -307,33 +400,9 @@ const subscribeCustomer = async (db: string, data: SubscribeCustomerRequest): Pr
         });
         if (!pkg || pkg.deleted || !pkg.isActive) throw new NotFoundError('Subscription package');
 
-        // Calculate end date for TIME packages
         const now = new Date();
-        let endDate: Date | null = null;
-        if (pkg.packageType === 'TIME' && pkg.durationDays) {
-            endDate = new Date(now.getTime() + pkg.durationDays * 24 * 60 * 60 * 1000);
-        }
-        // For USAGE packages with validityDays
-        if (pkg.packageType === 'USAGE' && pkg.validityDays) {
-            endDate = new Date(now.getTime() + pkg.validityDays * 24 * 60 * 60 * 1000);
-        }
-
-        // Create package snapshot for historical record
-        const packageSnapshot = {
-            packageId: pkg.id,
-            name: pkg.name,
-            packageType: pkg.packageType,
-            price: toDecimalNumber(pkg.price),
-            totalQuota: pkg.totalQuota,
-            quotaUnit: pkg.quotaUnit,
-            durationDays: pkg.durationDays,
-            discountPercentage: pkg.discountPercentage ? toDecimalNumber(pkg.discountPercentage) : null,
-            discountAmount: pkg.discountAmount ? toDecimalNumber(pkg.discountAmount) : null,
-            categories: pkg.categories.map((c: any) => ({
-                categoryId: c.category.id,
-                categoryName: c.category.name,
-            })),
-        };
+        const endDate = calcSubscriptionEndDate(pkg.packageType, pkg.durationDays, pkg.validityDays, now);
+        const packageSnapshot = buildPackageSnapshot(pkg);
 
         const subscription = await tx.customerSubscription.create({
             data: {
@@ -488,7 +557,11 @@ const recordUsage = async (
         });
 
         // If USAGE and quota hit 0, mark as expired
-        if (subscription.subscriptionPackage.packageType === 'USAGE' && updated.remainingQuota <= 0) {
+        if (isUsageQuotaExhausted(
+            subscription.subscriptionPackage.packageType,
+            subscription.remainingQuota,
+            quantityUsed,
+        )) {
             await tx.customerSubscription.update({
                 where: { id: subscription.id },
                 data: { status: 'EXPIRED' },
@@ -541,4 +614,14 @@ export default {
     // Cache helpers (for sales integration)
     getCachedPackages,
     invalidatePackageCache,
+    // Pure helpers exposed for unit testing
+    __testables: {
+        toDecimalNumber,
+        calcSubscriptionEndDate,
+        buildPackageSnapshot,
+        isUsageQuotaExhausted,
+        isSubscriptionTimedOut,
+        formatPackage,
+        formatSubscription,
+    },
 };

@@ -29,6 +29,160 @@ function getEffectiveStockQty(
     return quantity;
 }
 
+// ============================================
+// Pure loyalty helpers (exported via __testables)
+// ============================================
+
+/**
+ * Decide whether the customer's voucher or tier discount applies on a sale
+ * given the configured percentages/amounts. Mirrors the math in
+ * `_applyLoyaltyDiscounts` (FE) and `processLoyaltyForSale` (BE) — tie
+ * goes to tier (strict `>` on voucher), and voucher FIXED is capped at
+ * totalAmount. Returns the winning option's amount + which side won; the
+ * caller writes the result onto the Sales record.
+ *
+ * Pure: no DB, no Prisma — backs docs LOYALTY.md §2 "Discount Stacking
+ * Order" + tester guide §16 (Scenarios A–G).
+ */
+function pickBestDiscount(input: {
+    tierDiscountPercentage: number;
+    voucherDiscountType?: 'PERCENTAGE' | 'FIXED' | null;
+    voucherDiscountPercentage?: number;
+    voucherDiscountAmount?: number;
+    hasVoucher: boolean;
+    totalAmount: Decimal;
+}): { winner: 'tier' | 'voucher' | 'none'; tierAmount: Decimal; voucherAmount: Decimal } {
+    const zero = new Decimal(0);
+    const tierAmount = input.tierDiscountPercentage > 0
+        ? input.totalAmount.times(input.tierDiscountPercentage).dividedBy(100)
+        : zero;
+
+    let voucherAmount = zero;
+    if (input.hasVoucher) {
+        if (input.voucherDiscountType === 'PERCENTAGE') {
+            voucherAmount = input.totalAmount.times(input.voucherDiscountPercentage ?? 0).dividedBy(100);
+        } else if (input.voucherDiscountType === 'FIXED') {
+            voucherAmount = new Decimal(input.voucherDiscountAmount ?? 0);
+        }
+        if (voucherAmount.gt(input.totalAmount)) voucherAmount = input.totalAmount;
+    }
+
+    // Strict `>` — tie goes to tier (docs §2 "Tie goes to tier").
+    if (voucherAmount.gt(tierAmount) && input.hasVoucher) {
+        return { winner: 'voucher', tierAmount, voucherAmount };
+    }
+    if (tierAmount.gt(0)) {
+        return { winner: 'tier', tierAmount, voucherAmount };
+    }
+    return { winner: 'none', tierAmount, voucherAmount };
+}
+
+type PointsRoundingMode = 'FLOOR' | 'ROUND' | 'CEIL';
+
+/**
+ * Points earned on a completed sale, per docs LOYALTY.md §2 "Points":
+ *   totalAmount * program.pointsPerCurrency * tier.pointsMultiplier
+ *
+ * `totalAmount` is the final price after ALL discounts. The result is
+ * rounded to a whole number using the tenant-configured rounding mode
+ * (docs §2 "Points are whole numbers only"):
+ *   - FLOOR: round down (conservative, default)
+ *   - ROUND: round to nearest (0.5 rounds up)
+ *   - CEIL : round up (generous)
+ *
+ * Returns 0 for any non-positive inputs.
+ */
+function calcPointsEarned(
+    totalAmount: Decimal,
+    pointsPerCurrency: number,
+    pointsMultiplier: number,
+    roundingMode: PointsRoundingMode = 'FLOOR',
+): number {
+    if (totalAmount.lte(0) || pointsPerCurrency <= 0 || pointsMultiplier <= 0) {
+        return 0;
+    }
+    const raw = totalAmount.toNumber() * pointsPerCurrency * pointsMultiplier;
+    switch (roundingMode) {
+        case 'CEIL':
+            return Math.ceil(raw);
+        case 'ROUND':
+            return Math.round(raw);
+        case 'FLOOR':
+        default:
+            return Math.floor(raw);
+    }
+}
+
+/**
+ * Tier-match validator: the percentage the frontend sent must match the
+ * customer's actual tier on file. Tolerance 0.01% to absorb float drift.
+ * Throws TierMismatchError if mismatched. Backs docs §8.3
+ * "TierMismatchError".
+ */
+function validateTierMatch(sentPercentage: number, actualPercentage: number): void {
+    if (Math.abs(sentPercentage - actualPercentage) > 0.01) {
+        throw new TierMismatchError(
+            `Tier discount mismatch: requested ${sentPercentage}%, actual ${actualPercentage}%`,
+        );
+    }
+}
+
+// Safely coerce a numeric request field to Decimal. Throws BusinessLogicError
+// for non-numeric values so we reject malformed payloads at the boundary.
+function toDecimalOrThrow(value: unknown, fieldName: string, itemRef: string): Decimal {
+    if (value === null || value === undefined) {
+        return new Decimal(0);
+    }
+    try {
+        return new Decimal(value as Decimal.Value);
+    } catch {
+        throw new BusinessLogicError(`Invalid ${fieldName} for ${itemRef}: must be numeric`);
+    }
+}
+
+// Reject malformed/negative numerics on sales item rows before any DB work.
+// Mirrors the contract documented in docs/modules/STOCK_AND_COST.md §2.
+function validateSalesItemNumerics(items: CreateSalesRequest['salesItems']) {
+    if (!Array.isArray(items) || items.length === 0) {
+        throw new BusinessLogicError('Sale must include at least one sales item');
+    }
+    for (const item of items) {
+        const ref = item.itemName || `itemId ${item.itemId}`;
+        const quantity = toDecimalOrThrow(item.quantity, 'quantity', ref);
+        if (quantity.lte(0)) {
+            throw new BusinessLogicError(`Quantity for ${ref} must be greater than 0`);
+        }
+        const price = toDecimalOrThrow(item.price, 'price', ref);
+        if (price.lt(0)) {
+            throw new BusinessLogicError(`Price for ${ref} cannot be negative`);
+        }
+        const cost = toDecimalOrThrow(item.cost, 'cost', ref);
+        if (cost.lt(0)) {
+            throw new BusinessLogicError(`Cost for ${ref} cannot be negative`);
+        }
+        const discount = toDecimalOrThrow(item.discountAmount, 'discountAmount', ref);
+        if (discount.lt(0)) {
+            throw new BusinessLogicError(`Discount amount for ${ref} cannot be negative`);
+        }
+        const tax = toDecimalOrThrow(item.taxAmount, 'taxAmount', ref);
+        if (tax.lt(0)) {
+            throw new BusinessLogicError(`Tax amount for ${ref} cannot be negative`);
+        }
+    }
+}
+
+// Reject malformed/negative payment amounts before any DB work.
+function validatePaymentNumerics(payments: Payment[]) {
+    if (!Array.isArray(payments)) return;
+    for (const [index, payment] of payments.entries()) {
+        const ref = `payment[${index}]`;
+        const tendered = toDecimalOrThrow(payment.tenderedAmount, 'tenderedAmount', ref);
+        if (tendered.lt(0)) {
+            throw new BusinessLogicError(`Tendered amount for ${ref} cannot be negative`);
+        }
+    }
+}
+
 // Extended performedBy with loyaltyTier for loyalty integration
 interface PerformedBy {
     userId: number;
@@ -172,11 +326,8 @@ async function processLoyaltyForSale(
     // 1. VALIDATE tier discount (advanced only) — skipped if voucher was applied
     else if (performedBy.loyaltyTier === 'advanced' && salesBody.loyaltyTierDiscountPercentage && salesBody.loyaltyTierDiscountPercentage > 0) {
         const tier = (account as any).loyaltyTier;
-        if (!tier || toNum(tier.discountPercentage) !== salesBody.loyaltyTierDiscountPercentage) {
-            throw new TierMismatchError(
-                `Tier discount mismatch: requested ${salesBody.loyaltyTierDiscountPercentage}%, actual ${tier ? toNum(tier.discountPercentage) : 0}%`
-            );
-        }
+        const actualPercentage = tier ? toNum(tier.discountPercentage) : 0;
+        validateTierMatch(salesBody.loyaltyTierDiscountPercentage, actualPercentage);
         result.loyaltyTierDiscountPercent = new Decimal(salesBody.loyaltyTierDiscountPercentage);
         result.loyaltyTierDiscountAmount = new Decimal(salesBody.loyaltyTierDiscountAmount || 0);
     }
@@ -334,7 +485,12 @@ async function processLoyaltyForSale(
         if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
             pointsMultiplier = toNum((account as any).loyaltyTier.pointsMultiplier);
         }
-        const pointsEarned = totalAmount.toNumber() * toNum(program.pointsPerCurrency) * pointsMultiplier;
+        const pointsEarned = calcPointsEarned(
+            totalAmount,
+            toNum(program.pointsPerCurrency),
+            pointsMultiplier,
+            program.pointsRoundingMode,
+        );
 
         if (pointsEarned > 0) {
             const expiresAt = program.pointsExpiryDays
@@ -930,6 +1086,9 @@ async function completeNewSales(
 ) {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
+    validateSalesItemNumerics(salesBody.salesItems);
+    validatePaymentNumerics(payments);
+
     // Store stock updates outside transaction for notification use
     let stockUpdatesForNotification: any[] = [];
 
@@ -1261,6 +1420,8 @@ async function completeNewSales(
                             subtotalAmount: totalSubtotalForQuantity,
                             remark: item.remark || '',
                             deleted: false,
+                            stockConsumptionQty: null,
+                            unitOfMeasure: item.unitOfMeasure || null,
                         });
 
                         // Track receipt updates for piece-based item
@@ -1305,6 +1466,8 @@ async function completeNewSales(
                     subtotalAmount: new Decimal(item.subtotalAmount),
                     remark: item.remark || '',
                     deleted: false,
+                    stockConsumptionQty: null,
+                    unitOfMeasure: item.unitOfMeasure || null,
                 });
             }
 
@@ -2311,8 +2474,8 @@ let returnSales = async (
                                 itemId: salesItem.itemId,
                                 itemVariantId: salesItem.itemVariantId || null,
                                 outletId: sales.outletId,
-                                previousAvailableQuantity: stockBalance.availableQuantity,
-                                previousOnHandQuantity: stockBalance.onHandQuantity,
+                                previousAvailableQuantity: stockBalance.availableQuantity.toNumber(),
+                                previousOnHandQuantity: stockBalance.onHandQuantity.toNumber(),
                                 availableQuantityDelta: restoreQty.toNumber(),
                                 onHandQuantityDelta: restoreQty.toNumber(),
                                 movementType: 'Sales Return',
@@ -2451,8 +2614,8 @@ let refundSales = async (
                                 itemId: salesItem.itemId,
                                 itemVariantId: salesItem.itemVariantId || null,
                                 outletId: sales.outletId,
-                                previousAvailableQuantity: stockBalance.availableQuantity,
-                                previousOnHandQuantity: stockBalance.onHandQuantity,
+                                previousAvailableQuantity: stockBalance.availableQuantity.toNumber(),
+                                previousOnHandQuantity: stockBalance.onHandQuantity.toNumber(),
                                 availableQuantityDelta: restoreQty.toNumber(),
                                 onHandQuantityDelta: restoreQty.toNumber(),
                                 movementType: 'Sales Refund',
@@ -2797,5 +2960,16 @@ export = {
     refundSales,
     getDeliveryList,
     getDeliveredList,
-    confirmDeliveryBatch
+    confirmDeliveryBatch,
+    // Pure helpers exposed for unit testing — no DB access.
+    __testables: {
+        getEffectiveStockQty,
+        validateSalesItemNumerics,
+        validatePaymentNumerics,
+        toDecimalOrThrow,
+        // Loyalty helpers
+        pickBestDiscount,
+        calcPointsEarned,
+        validateTierMatch,
+    },
 }

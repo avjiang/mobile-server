@@ -94,6 +94,11 @@ export type TenantWarehouse = $Result.DefaultSelection<Prisma.$TenantWarehousePa
  */
 export type TenantPayment = $Result.DefaultSelection<Prisma.$TenantPaymentPayload>
 /**
+ * Model AppVersion
+ * 
+ */
+export type AppVersion = $Result.DefaultSelection<Prisma.$AppVersionPayload>
+/**
  * Model CustomPriceLog
  * 
  */
@@ -388,6 +393,16 @@ export class PrismaClient<
     * ```
     */
   get tenantPayment(): Prisma.TenantPaymentDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.appVersion`: Exposes CRUD operations for the **AppVersion** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more AppVersions
+    * const appVersions = await prisma.appVersion.findMany()
+    * ```
+    */
+  get appVersion(): Prisma.AppVersionDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.customPriceLog`: Exposes CRUD operations for the **CustomPriceLog** model.
@@ -864,6 +879,7 @@ export namespace Prisma {
     PushyDeviceAllocation: 'PushyDeviceAllocation',
     TenantWarehouse: 'TenantWarehouse',
     TenantPayment: 'TenantPayment',
+    AppVersion: 'AppVersion',
     CustomPriceLog: 'CustomPriceLog',
     TenantAddOn: 'TenantAddOn'
   };
@@ -884,7 +900,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation" | "tenantWarehouse" | "tenantPayment" | "customPriceLog" | "tenantAddOn"
+      modelProps: "subscriptionPlan" | "subscriptionAddOn" | "tenant" | "tenantSubscription" | "tenantSubscriptionAddOn" | "tenantOutlet" | "discount" | "tenantUser" | "refreshToken" | "permission" | "settingDefinition" | "pushyDevice" | "pushySubscription" | "pushyDeviceAllocation" | "tenantWarehouse" | "tenantPayment" | "appVersion" | "customPriceLog" | "tenantAddOn"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1944,6 +1960,72 @@ export namespace Prisma {
           }
         }
       }
+      AppVersion: {
+        payload: Prisma.$AppVersionPayload<ExtArgs>
+        fields: Prisma.AppVersionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AppVersionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AppVersionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload>
+          }
+          findFirst: {
+            args: Prisma.AppVersionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AppVersionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload>
+          }
+          findMany: {
+            args: Prisma.AppVersionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload>[]
+          }
+          create: {
+            args: Prisma.AppVersionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload>
+          }
+          createMany: {
+            args: Prisma.AppVersionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.AppVersionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload>
+          }
+          update: {
+            args: Prisma.AppVersionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload>
+          }
+          deleteMany: {
+            args: Prisma.AppVersionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AppVersionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.AppVersionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AppVersionPayload>
+          }
+          aggregate: {
+            args: Prisma.AppVersionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAppVersion>
+          }
+          groupBy: {
+            args: Prisma.AppVersionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AppVersionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AppVersionCountArgs<ExtArgs>
+            result: $Utils.Optional<AppVersionCountAggregateOutputType> | number
+          }
+        }
+      }
       CustomPriceLog: {
         payload: Prisma.$CustomPriceLogPayload<ExtArgs>
         fields: Prisma.CustomPriceLogFieldRefs
@@ -2176,6 +2258,7 @@ export namespace Prisma {
     pushyDeviceAllocation?: PushyDeviceAllocationOmit
     tenantWarehouse?: TenantWarehouseOmit
     tenantPayment?: TenantPaymentOmit
+    appVersion?: AppVersionOmit
     customPriceLog?: CustomPriceLogOmit
     tenantAddOn?: TenantAddOnOmit
   }
@@ -19307,6 +19390,944 @@ export namespace Prisma {
 
 
   /**
+   * Model AppVersion
+   */
+
+  export type AggregateAppVersion = {
+    _count: AppVersionCountAggregateOutputType | null
+    _avg: AppVersionAvgAggregateOutputType | null
+    _sum: AppVersionSumAggregateOutputType | null
+    _min: AppVersionMinAggregateOutputType | null
+    _max: AppVersionMaxAggregateOutputType | null
+  }
+
+  export type AppVersionAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type AppVersionSumAggregateOutputType = {
+    id: number | null
+  }
+
+  export type AppVersionMinAggregateOutputType = {
+    id: number | null
+    platform: string | null
+    minVersion: string | null
+    latestVersion: string | null
+    storeUrl: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AppVersionMaxAggregateOutputType = {
+    id: number | null
+    platform: string | null
+    minVersion: string | null
+    latestVersion: string | null
+    storeUrl: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AppVersionCountAggregateOutputType = {
+    id: number
+    platform: number
+    minVersion: number
+    latestVersion: number
+    storeUrl: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type AppVersionAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type AppVersionSumAggregateInputType = {
+    id?: true
+  }
+
+  export type AppVersionMinAggregateInputType = {
+    id?: true
+    platform?: true
+    minVersion?: true
+    latestVersion?: true
+    storeUrl?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AppVersionMaxAggregateInputType = {
+    id?: true
+    platform?: true
+    minVersion?: true
+    latestVersion?: true
+    storeUrl?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AppVersionCountAggregateInputType = {
+    id?: true
+    platform?: true
+    minVersion?: true
+    latestVersion?: true
+    storeUrl?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type AppVersionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AppVersion to aggregate.
+     */
+    where?: AppVersionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppVersions to fetch.
+     */
+    orderBy?: AppVersionOrderByWithRelationInput | AppVersionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AppVersionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppVersions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppVersions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned AppVersions
+    **/
+    _count?: true | AppVersionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: AppVersionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: AppVersionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AppVersionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AppVersionMaxAggregateInputType
+  }
+
+  export type GetAppVersionAggregateType<T extends AppVersionAggregateArgs> = {
+        [P in keyof T & keyof AggregateAppVersion]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAppVersion[P]>
+      : GetScalarType<T[P], AggregateAppVersion[P]>
+  }
+
+
+
+
+  export type AppVersionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AppVersionWhereInput
+    orderBy?: AppVersionOrderByWithAggregationInput | AppVersionOrderByWithAggregationInput[]
+    by: AppVersionScalarFieldEnum[] | AppVersionScalarFieldEnum
+    having?: AppVersionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AppVersionCountAggregateInputType | true
+    _avg?: AppVersionAvgAggregateInputType
+    _sum?: AppVersionSumAggregateInputType
+    _min?: AppVersionMinAggregateInputType
+    _max?: AppVersionMaxAggregateInputType
+  }
+
+  export type AppVersionGroupByOutputType = {
+    id: number
+    platform: string
+    minVersion: string
+    latestVersion: string
+    storeUrl: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: AppVersionCountAggregateOutputType | null
+    _avg: AppVersionAvgAggregateOutputType | null
+    _sum: AppVersionSumAggregateOutputType | null
+    _min: AppVersionMinAggregateOutputType | null
+    _max: AppVersionMaxAggregateOutputType | null
+  }
+
+  type GetAppVersionGroupByPayload<T extends AppVersionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AppVersionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AppVersionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AppVersionGroupByOutputType[P]>
+            : GetScalarType<T[P], AppVersionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AppVersionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    platform?: boolean
+    minVersion?: boolean
+    latestVersion?: boolean
+    storeUrl?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["appVersion"]>
+
+
+
+  export type AppVersionSelectScalar = {
+    id?: boolean
+    platform?: boolean
+    minVersion?: boolean
+    latestVersion?: boolean
+    storeUrl?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type AppVersionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "platform" | "minVersion" | "latestVersion" | "storeUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["appVersion"]>
+
+  export type $AppVersionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "AppVersion"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      platform: string
+      minVersion: string
+      latestVersion: string
+      storeUrl: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["appVersion"]>
+    composites: {}
+  }
+
+  type AppVersionGetPayload<S extends boolean | null | undefined | AppVersionDefaultArgs> = $Result.GetResult<Prisma.$AppVersionPayload, S>
+
+  type AppVersionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<AppVersionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: AppVersionCountAggregateInputType | true
+    }
+
+  export interface AppVersionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['AppVersion'], meta: { name: 'AppVersion' } }
+    /**
+     * Find zero or one AppVersion that matches the filter.
+     * @param {AppVersionFindUniqueArgs} args - Arguments to find a AppVersion
+     * @example
+     * // Get one AppVersion
+     * const appVersion = await prisma.appVersion.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AppVersionFindUniqueArgs>(args: SelectSubset<T, AppVersionFindUniqueArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one AppVersion that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {AppVersionFindUniqueOrThrowArgs} args - Arguments to find a AppVersion
+     * @example
+     * // Get one AppVersion
+     * const appVersion = await prisma.appVersion.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AppVersionFindUniqueOrThrowArgs>(args: SelectSubset<T, AppVersionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AppVersion that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppVersionFindFirstArgs} args - Arguments to find a AppVersion
+     * @example
+     * // Get one AppVersion
+     * const appVersion = await prisma.appVersion.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AppVersionFindFirstArgs>(args?: SelectSubset<T, AppVersionFindFirstArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AppVersion that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppVersionFindFirstOrThrowArgs} args - Arguments to find a AppVersion
+     * @example
+     * // Get one AppVersion
+     * const appVersion = await prisma.appVersion.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AppVersionFindFirstOrThrowArgs>(args?: SelectSubset<T, AppVersionFindFirstOrThrowArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more AppVersions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppVersionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all AppVersions
+     * const appVersions = await prisma.appVersion.findMany()
+     * 
+     * // Get first 10 AppVersions
+     * const appVersions = await prisma.appVersion.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const appVersionWithIdOnly = await prisma.appVersion.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AppVersionFindManyArgs>(args?: SelectSubset<T, AppVersionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a AppVersion.
+     * @param {AppVersionCreateArgs} args - Arguments to create a AppVersion.
+     * @example
+     * // Create one AppVersion
+     * const AppVersion = await prisma.appVersion.create({
+     *   data: {
+     *     // ... data to create a AppVersion
+     *   }
+     * })
+     * 
+     */
+    create<T extends AppVersionCreateArgs>(args: SelectSubset<T, AppVersionCreateArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many AppVersions.
+     * @param {AppVersionCreateManyArgs} args - Arguments to create many AppVersions.
+     * @example
+     * // Create many AppVersions
+     * const appVersion = await prisma.appVersion.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AppVersionCreateManyArgs>(args?: SelectSubset<T, AppVersionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a AppVersion.
+     * @param {AppVersionDeleteArgs} args - Arguments to delete one AppVersion.
+     * @example
+     * // Delete one AppVersion
+     * const AppVersion = await prisma.appVersion.delete({
+     *   where: {
+     *     // ... filter to delete one AppVersion
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AppVersionDeleteArgs>(args: SelectSubset<T, AppVersionDeleteArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one AppVersion.
+     * @param {AppVersionUpdateArgs} args - Arguments to update one AppVersion.
+     * @example
+     * // Update one AppVersion
+     * const appVersion = await prisma.appVersion.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AppVersionUpdateArgs>(args: SelectSubset<T, AppVersionUpdateArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more AppVersions.
+     * @param {AppVersionDeleteManyArgs} args - Arguments to filter AppVersions to delete.
+     * @example
+     * // Delete a few AppVersions
+     * const { count } = await prisma.appVersion.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AppVersionDeleteManyArgs>(args?: SelectSubset<T, AppVersionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more AppVersions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppVersionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many AppVersions
+     * const appVersion = await prisma.appVersion.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AppVersionUpdateManyArgs>(args: SelectSubset<T, AppVersionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one AppVersion.
+     * @param {AppVersionUpsertArgs} args - Arguments to update or create a AppVersion.
+     * @example
+     * // Update or create a AppVersion
+     * const appVersion = await prisma.appVersion.upsert({
+     *   create: {
+     *     // ... data to create a AppVersion
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the AppVersion we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AppVersionUpsertArgs>(args: SelectSubset<T, AppVersionUpsertArgs<ExtArgs>>): Prisma__AppVersionClient<$Result.GetResult<Prisma.$AppVersionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of AppVersions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppVersionCountArgs} args - Arguments to filter AppVersions to count.
+     * @example
+     * // Count the number of AppVersions
+     * const count = await prisma.appVersion.count({
+     *   where: {
+     *     // ... the filter for the AppVersions we want to count
+     *   }
+     * })
+    **/
+    count<T extends AppVersionCountArgs>(
+      args?: Subset<T, AppVersionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AppVersionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a AppVersion.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppVersionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AppVersionAggregateArgs>(args: Subset<T, AppVersionAggregateArgs>): Prisma.PrismaPromise<GetAppVersionAggregateType<T>>
+
+    /**
+     * Group by AppVersion.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AppVersionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AppVersionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AppVersionGroupByArgs['orderBy'] }
+        : { orderBy?: AppVersionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AppVersionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAppVersionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the AppVersion model
+   */
+  readonly fields: AppVersionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for AppVersion.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AppVersionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the AppVersion model
+   */
+  interface AppVersionFieldRefs {
+    readonly id: FieldRef<"AppVersion", 'Int'>
+    readonly platform: FieldRef<"AppVersion", 'String'>
+    readonly minVersion: FieldRef<"AppVersion", 'String'>
+    readonly latestVersion: FieldRef<"AppVersion", 'String'>
+    readonly storeUrl: FieldRef<"AppVersion", 'String'>
+    readonly createdAt: FieldRef<"AppVersion", 'DateTime'>
+    readonly updatedAt: FieldRef<"AppVersion", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * AppVersion findUnique
+   */
+  export type AppVersionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * Filter, which AppVersion to fetch.
+     */
+    where: AppVersionWhereUniqueInput
+  }
+
+  /**
+   * AppVersion findUniqueOrThrow
+   */
+  export type AppVersionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * Filter, which AppVersion to fetch.
+     */
+    where: AppVersionWhereUniqueInput
+  }
+
+  /**
+   * AppVersion findFirst
+   */
+  export type AppVersionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * Filter, which AppVersion to fetch.
+     */
+    where?: AppVersionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppVersions to fetch.
+     */
+    orderBy?: AppVersionOrderByWithRelationInput | AppVersionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AppVersions.
+     */
+    cursor?: AppVersionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppVersions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppVersions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AppVersions.
+     */
+    distinct?: AppVersionScalarFieldEnum | AppVersionScalarFieldEnum[]
+  }
+
+  /**
+   * AppVersion findFirstOrThrow
+   */
+  export type AppVersionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * Filter, which AppVersion to fetch.
+     */
+    where?: AppVersionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppVersions to fetch.
+     */
+    orderBy?: AppVersionOrderByWithRelationInput | AppVersionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AppVersions.
+     */
+    cursor?: AppVersionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppVersions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppVersions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AppVersions.
+     */
+    distinct?: AppVersionScalarFieldEnum | AppVersionScalarFieldEnum[]
+  }
+
+  /**
+   * AppVersion findMany
+   */
+  export type AppVersionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * Filter, which AppVersions to fetch.
+     */
+    where?: AppVersionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AppVersions to fetch.
+     */
+    orderBy?: AppVersionOrderByWithRelationInput | AppVersionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing AppVersions.
+     */
+    cursor?: AppVersionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AppVersions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AppVersions.
+     */
+    skip?: number
+    distinct?: AppVersionScalarFieldEnum | AppVersionScalarFieldEnum[]
+  }
+
+  /**
+   * AppVersion create
+   */
+  export type AppVersionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * The data needed to create a AppVersion.
+     */
+    data: XOR<AppVersionCreateInput, AppVersionUncheckedCreateInput>
+  }
+
+  /**
+   * AppVersion createMany
+   */
+  export type AppVersionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many AppVersions.
+     */
+    data: AppVersionCreateManyInput | AppVersionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * AppVersion update
+   */
+  export type AppVersionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * The data needed to update a AppVersion.
+     */
+    data: XOR<AppVersionUpdateInput, AppVersionUncheckedUpdateInput>
+    /**
+     * Choose, which AppVersion to update.
+     */
+    where: AppVersionWhereUniqueInput
+  }
+
+  /**
+   * AppVersion updateMany
+   */
+  export type AppVersionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update AppVersions.
+     */
+    data: XOR<AppVersionUpdateManyMutationInput, AppVersionUncheckedUpdateManyInput>
+    /**
+     * Filter which AppVersions to update
+     */
+    where?: AppVersionWhereInput
+    /**
+     * Limit how many AppVersions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * AppVersion upsert
+   */
+  export type AppVersionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * The filter to search for the AppVersion to update in case it exists.
+     */
+    where: AppVersionWhereUniqueInput
+    /**
+     * In case the AppVersion found by the `where` argument doesn't exist, create a new AppVersion with this data.
+     */
+    create: XOR<AppVersionCreateInput, AppVersionUncheckedCreateInput>
+    /**
+     * In case the AppVersion was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AppVersionUpdateInput, AppVersionUncheckedUpdateInput>
+  }
+
+  /**
+   * AppVersion delete
+   */
+  export type AppVersionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+    /**
+     * Filter which AppVersion to delete.
+     */
+    where: AppVersionWhereUniqueInput
+  }
+
+  /**
+   * AppVersion deleteMany
+   */
+  export type AppVersionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AppVersions to delete
+     */
+    where?: AppVersionWhereInput
+    /**
+     * Limit how many AppVersions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * AppVersion without action
+   */
+  export type AppVersionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AppVersion
+     */
+    select?: AppVersionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AppVersion
+     */
+    omit?: AppVersionOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Model CustomPriceLog
    */
 
@@ -21532,6 +22553,19 @@ export namespace Prisma {
   export type TenantPaymentScalarFieldEnum = (typeof TenantPaymentScalarFieldEnum)[keyof typeof TenantPaymentScalarFieldEnum]
 
 
+  export const AppVersionScalarFieldEnum: {
+    id: 'id',
+    platform: 'platform',
+    minVersion: 'minVersion',
+    latestVersion: 'latestVersion',
+    storeUrl: 'storeUrl',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type AppVersionScalarFieldEnum = (typeof AppVersionScalarFieldEnum)[keyof typeof AppVersionScalarFieldEnum]
+
+
   export const CustomPriceLogScalarFieldEnum: {
     id: 'id',
     tenantId: 'tenantId',
@@ -21735,6 +22769,16 @@ export namespace Prisma {
   };
 
   export type TenantPaymentOrderByRelevanceFieldEnum = (typeof TenantPaymentOrderByRelevanceFieldEnum)[keyof typeof TenantPaymentOrderByRelevanceFieldEnum]
+
+
+  export const AppVersionOrderByRelevanceFieldEnum: {
+    platform: 'platform',
+    minVersion: 'minVersion',
+    latestVersion: 'latestVersion',
+    storeUrl: 'storeUrl'
+  };
+
+  export type AppVersionOrderByRelevanceFieldEnum = (typeof AppVersionOrderByRelevanceFieldEnum)[keyof typeof AppVersionOrderByRelevanceFieldEnum]
 
 
   export const CustomPriceLogOrderByRelevanceFieldEnum: {
@@ -23101,6 +24145,71 @@ export namespace Prisma {
     costSnapshot?: JsonWithAggregatesFilter<"TenantPayment">
     recordedBy?: IntNullableWithAggregatesFilter<"TenantPayment"> | number | null
     recordedAt?: DateTimeWithAggregatesFilter<"TenantPayment"> | Date | string
+  }
+
+  export type AppVersionWhereInput = {
+    AND?: AppVersionWhereInput | AppVersionWhereInput[]
+    OR?: AppVersionWhereInput[]
+    NOT?: AppVersionWhereInput | AppVersionWhereInput[]
+    id?: IntFilter<"AppVersion"> | number
+    platform?: StringFilter<"AppVersion"> | string
+    minVersion?: StringFilter<"AppVersion"> | string
+    latestVersion?: StringFilter<"AppVersion"> | string
+    storeUrl?: StringNullableFilter<"AppVersion"> | string | null
+    createdAt?: DateTimeFilter<"AppVersion"> | Date | string
+    updatedAt?: DateTimeFilter<"AppVersion"> | Date | string
+  }
+
+  export type AppVersionOrderByWithRelationInput = {
+    id?: SortOrder
+    platform?: SortOrder
+    minVersion?: SortOrder
+    latestVersion?: SortOrder
+    storeUrl?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _relevance?: AppVersionOrderByRelevanceInput
+  }
+
+  export type AppVersionWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    platform?: string
+    AND?: AppVersionWhereInput | AppVersionWhereInput[]
+    OR?: AppVersionWhereInput[]
+    NOT?: AppVersionWhereInput | AppVersionWhereInput[]
+    minVersion?: StringFilter<"AppVersion"> | string
+    latestVersion?: StringFilter<"AppVersion"> | string
+    storeUrl?: StringNullableFilter<"AppVersion"> | string | null
+    createdAt?: DateTimeFilter<"AppVersion"> | Date | string
+    updatedAt?: DateTimeFilter<"AppVersion"> | Date | string
+  }, "id" | "platform">
+
+  export type AppVersionOrderByWithAggregationInput = {
+    id?: SortOrder
+    platform?: SortOrder
+    minVersion?: SortOrder
+    latestVersion?: SortOrder
+    storeUrl?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: AppVersionCountOrderByAggregateInput
+    _avg?: AppVersionAvgOrderByAggregateInput
+    _max?: AppVersionMaxOrderByAggregateInput
+    _min?: AppVersionMinOrderByAggregateInput
+    _sum?: AppVersionSumOrderByAggregateInput
+  }
+
+  export type AppVersionScalarWhereWithAggregatesInput = {
+    AND?: AppVersionScalarWhereWithAggregatesInput | AppVersionScalarWhereWithAggregatesInput[]
+    OR?: AppVersionScalarWhereWithAggregatesInput[]
+    NOT?: AppVersionScalarWhereWithAggregatesInput | AppVersionScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"AppVersion"> | number
+    platform?: StringWithAggregatesFilter<"AppVersion"> | string
+    minVersion?: StringWithAggregatesFilter<"AppVersion"> | string
+    latestVersion?: StringWithAggregatesFilter<"AppVersion"> | string
+    storeUrl?: StringNullableWithAggregatesFilter<"AppVersion"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"AppVersion"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"AppVersion"> | Date | string
   }
 
   export type CustomPriceLogWhereInput = {
@@ -24588,6 +25697,73 @@ export namespace Prisma {
     recordedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type AppVersionCreateInput = {
+    platform: string
+    minVersion: string
+    latestVersion: string
+    storeUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AppVersionUncheckedCreateInput = {
+    id?: number
+    platform: string
+    minVersion: string
+    latestVersion: string
+    storeUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AppVersionUpdateInput = {
+    platform?: StringFieldUpdateOperationsInput | string
+    minVersion?: StringFieldUpdateOperationsInput | string
+    latestVersion?: StringFieldUpdateOperationsInput | string
+    storeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AppVersionUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    platform?: StringFieldUpdateOperationsInput | string
+    minVersion?: StringFieldUpdateOperationsInput | string
+    latestVersion?: StringFieldUpdateOperationsInput | string
+    storeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AppVersionCreateManyInput = {
+    id?: number
+    platform: string
+    minVersion: string
+    latestVersion: string
+    storeUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AppVersionUpdateManyMutationInput = {
+    platform?: StringFieldUpdateOperationsInput | string
+    minVersion?: StringFieldUpdateOperationsInput | string
+    latestVersion?: StringFieldUpdateOperationsInput | string
+    storeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AppVersionUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    platform?: StringFieldUpdateOperationsInput | string
+    minVersion?: StringFieldUpdateOperationsInput | string
+    latestVersion?: StringFieldUpdateOperationsInput | string
+    storeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CustomPriceLogCreateInput = {
     tenantId: number
     outletId: number
@@ -26050,6 +27226,50 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedJsonFilter<$PrismaModel>
     _max?: NestedJsonFilter<$PrismaModel>
+  }
+
+  export type AppVersionOrderByRelevanceInput = {
+    fields: AppVersionOrderByRelevanceFieldEnum | AppVersionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type AppVersionCountOrderByAggregateInput = {
+    id?: SortOrder
+    platform?: SortOrder
+    minVersion?: SortOrder
+    latestVersion?: SortOrder
+    storeUrl?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AppVersionAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type AppVersionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    platform?: SortOrder
+    minVersion?: SortOrder
+    latestVersion?: SortOrder
+    storeUrl?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AppVersionMinOrderByAggregateInput = {
+    id?: SortOrder
+    platform?: SortOrder
+    minVersion?: SortOrder
+    latestVersion?: SortOrder
+    storeUrl?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AppVersionSumOrderByAggregateInput = {
+    id?: SortOrder
   }
 
   export type CustomPriceLogOrderByRelevanceInput = {

@@ -82,6 +82,11 @@ const permissions = [
         description: "Modify existing sales histories"
     },
     {
+        name: "Print Bill",
+        category: "Sales",
+        description: "Print pre-payment bill from cart"
+    },
+    {
         name: "Manage Master Data",
         category: "Function Management",
         description: "Create and process master data"

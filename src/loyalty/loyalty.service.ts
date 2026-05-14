@@ -61,6 +61,77 @@ const toDecimalNumber = (val: any): number => {
     return typeof val === 'number' ? val : Number(val);
 };
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// ============================================
+// Pure helpers (exported via __testables)
+// ============================================
+
+/**
+ * Calendar-day delta between two timestamps, rounded up so a sub-day gap
+ * still extends timers by at least one day. Returns 0 for non-positive
+ * spans (defensive: clock skew, identical timestamps).
+ */
+const calculateInactiveDays = (deactivatedAt: Date, now: Date): number => {
+    const ms = now.getTime() - deactivatedAt.getTime();
+    if (ms <= 0) return 0;
+    return Math.ceil(ms / MS_PER_DAY);
+};
+
+/**
+ * Returns the highest-minSpend tier the customer qualifies for, or null
+ * if none match. Backs auto-tier promotion (docs LOYALTY.md §2 "Tier
+ * Membership" — customers never auto-downgrade; caller decides whether to
+ * apply this result.)
+ */
+const selectHighestQualifyingTier = <T extends { id: number; minSpend: any }>(
+    totalSpend: number,
+    tiers: T[],
+): T | null => {
+    const sorted = [...tiers].sort(
+        (a, b) => toDecimalNumber(b.minSpend) - toDecimalNumber(a.minSpend),
+    );
+    for (const tier of sorted) {
+        if (totalSpend >= toDecimalNumber(tier.minSpend)) return tier;
+    }
+    return null;
+};
+
+/**
+ * FIFO point-batch consumption math: returns the per-batch deductions that
+ * should be applied to drain `pointsToRedeem` from the given batches
+ * (already ordered oldest-first by the caller). Does NOT mutate input.
+ * Throws if batches are insufficient — caller should pre-check via
+ * `currentPoints >= pointsToRedeem`, but this is a safety net.
+ */
+const consumePointsFifo = <T extends { id: number; remainingPoints: any }>(
+    batches: T[],
+    pointsToRedeem: number,
+): { batchId: number; deduct: number; newRemaining: number }[] => {
+    if (pointsToRedeem <= 0) return [];
+
+    const deductions: { batchId: number; deduct: number; newRemaining: number }[] = [];
+    let remaining = pointsToRedeem;
+
+    for (const batch of batches) {
+        if (remaining <= 0) break;
+        const batchRemaining = toDecimalNumber(batch.remainingPoints);
+        if (batchRemaining <= 0) continue;
+        const deduct = Math.min(remaining, batchRemaining);
+        deductions.push({
+            batchId: batch.id,
+            deduct,
+            newRemaining: batchRemaining - deduct,
+        });
+        remaining -= deduct;
+    }
+
+    if (remaining > 0) {
+        throw new InsufficientPointsError(pointsToRedeem - remaining, pointsToRedeem);
+    }
+    return deductions;
+};
+
 const bulkEnrollCustomers = async (db: string, programId: number) => {
     const prisma = getTenantDb(db);
     const [customers, enrolled] = await Promise.all([
@@ -107,6 +178,7 @@ const getProgram = async (db: string): Promise<LoyaltyProgramResponse | null> =>
         currencyPerPoint: toDecimalNumber(program.currencyPerPoint),
         pointsExpiryDays: program.pointsExpiryDays,
         minRedeemPoints: toDecimalNumber(program.minRedeemPoints),
+        pointsRoundingMode: program.pointsRoundingMode,
         isActive: program.isActive,
         tiers: program.tiers.map((t: any) => ({
             id: t.id,
@@ -137,6 +209,7 @@ const createProgram = async (db: string, data: CreateProgramRequest): Promise<Lo
             currencyPerPoint: data.currencyPerPoint,
             pointsExpiryDays: data.pointsExpiryDays ?? null,
             minRedeemPoints: data.minRedeemPoints ?? 0,
+            ...(data.pointsRoundingMode !== undefined && { pointsRoundingMode: data.pointsRoundingMode }),
         },
     });
 
@@ -154,6 +227,7 @@ const createProgram = async (db: string, data: CreateProgramRequest): Promise<Lo
         currencyPerPoint: toDecimalNumber(program.currencyPerPoint),
         pointsExpiryDays: program.pointsExpiryDays,
         minRedeemPoints: toDecimalNumber(program.minRedeemPoints),
+        pointsRoundingMode: program.pointsRoundingMode,
         isActive: program.isActive,
         tiers: [],
     };
@@ -181,6 +255,7 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
             ...(data.currencyPerPoint !== undefined && { currencyPerPoint: data.currencyPerPoint }),
             ...(data.pointsExpiryDays !== undefined && { pointsExpiryDays: data.pointsExpiryDays }),
             ...(data.minRedeemPoints !== undefined && { minRedeemPoints: data.minRedeemPoints }),
+            ...(data.pointsRoundingMode !== undefined && { pointsRoundingMode: data.pointsRoundingMode }),
             ...(data.isActive !== undefined && { isActive: data.isActive }),
             ...(isDeactivating && { deactivatedAt: new Date() }),
             ...(isReactivating && { deactivatedAt: null }),
@@ -197,8 +272,7 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
 
     // On reactivation: extend subscription endDates and point batch expiresAt by inactive days
     if (isReactivating && oldProgram?.deactivatedAt) {
-        const MS_PER_DAY = 24 * 60 * 60 * 1000;
-        const daysInactive = Math.ceil((Date.now() - oldProgram.deactivatedAt.getTime()) / MS_PER_DAY);
+        const daysInactive = calculateInactiveDays(oldProgram.deactivatedAt, new Date());
 
         if (daysInactive > 0) {
             // Extend subscription endDates
@@ -236,6 +310,7 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
         currencyPerPoint: toDecimalNumber(program.currencyPerPoint),
         pointsExpiryDays: program.pointsExpiryDays,
         minRedeemPoints: toDecimalNumber(program.minRedeemPoints),
+        pointsRoundingMode: program.pointsRoundingMode,
         isActive: program.isActive,
         tiers: program.tiers.map((t: any) => ({
             id: t.id,
@@ -454,7 +529,6 @@ const redeemPoints = async (
         }
 
         // FIFO deduction from point batches
-        let remaining = data.points;
         const batches = await tx.loyaltyPointBatch.findMany({
             where: {
                 loyaltyAccountId: accountId,
@@ -467,18 +541,11 @@ const redeemPoints = async (
             ],
         });
 
-        for (const batch of batches) {
-            if (remaining <= 0) break;
-
-            const batchRemaining = toDecimalNumber(batch.remainingPoints);
-            const deduct = Math.min(remaining, batchRemaining);
-
+        for (const { batchId, newRemaining } of consumePointsFifo(batches, data.points)) {
             await tx.loyaltyPointBatch.update({
-                where: { id: batch.id },
-                data: { remainingPoints: batchRemaining - deduct },
+                where: { id: batchId },
+                data: { remainingPoints: newRemaining },
             });
-
-            remaining -= deduct;
         }
 
         // Update account totals
@@ -795,18 +862,8 @@ const checkTierUpgrade = async (db: string, accountId: number): Promise<void> =>
 
         const totalSpend = toDecimalNumber(account.totalSpend);
 
-        // Find highest qualifying tier (sorted by minSpend DESC)
-        const sortedTiers = [...program.tiers].sort(
-            (a: any, b: any) => toDecimalNumber(b.minSpend) - toDecimalNumber(a.minSpend)
-        );
-
-        let newTierId: number | null = null;
-        for (const tier of sortedTiers) {
-            if (totalSpend >= toDecimalNumber(tier.minSpend)) {
-                newTierId = tier.id;
-                break;
-            }
-        }
+        const qualifyingTier = selectHighestQualifyingTier(totalSpend, program.tiers);
+        const newTierId: number | null = qualifyingTier?.id ?? null;
 
         // Only upgrade, never auto-downgrade
         if (newTierId && newTierId !== account.loyaltyTierId) {
@@ -937,4 +994,12 @@ export default {
     getCachedProgram,
     toDecimalNumber,
     invalidateProgramCache,
+    // Pure helpers exposed for unit testing
+    __testables: {
+        toDecimalNumber,
+        calculateInactiveDays,
+        selectHighestQualifyingTier,
+        consumePointsFifo,
+        formatTransaction,
+    },
 };

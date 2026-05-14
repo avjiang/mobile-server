@@ -1,9 +1,12 @@
+export type PointsRoundingMode = 'FLOOR' | 'ROUND' | 'CEIL';
+
 export interface CreateProgramRequest {
     name: string;
     pointsPerCurrency: number;
     currencyPerPoint: number;
     pointsExpiryDays?: number;
     minRedeemPoints?: number;
+    pointsRoundingMode?: PointsRoundingMode;
 }
 
 export interface UpdateProgramRequest {
@@ -12,6 +15,7 @@ export interface UpdateProgramRequest {
     currencyPerPoint?: number;
     pointsExpiryDays?: number | null;
     minRedeemPoints?: number;
+    pointsRoundingMode?: PointsRoundingMode;
     isActive?: boolean;
 }
 

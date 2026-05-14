@@ -1313,6 +1313,7 @@ exports.Prisma.LoyaltyProgramScalarFieldEnum = {
   currencyPerPoint: 'currencyPerPoint',
   pointsExpiryDays: 'pointsExpiryDays',
   minRedeemPoints: 'minRedeemPoints',
+  pointsRoundingMode: 'pointsRoundingMode',
   isActive: 'isActive',
   deactivatedAt: 'deactivatedAt',
   deleted: 'deleted',
@@ -2017,6 +2018,12 @@ exports.DiscountType = exports.$Enums.DiscountType = {
   FIXED_AMOUNT: 'FIXED_AMOUNT',
   BUY_X_GET_Y: 'BUY_X_GET_Y',
   BUY_X_GET_Y_DISCOUNT: 'BUY_X_GET_Y_DISCOUNT'
+};
+
+exports.PointsRoundingMode = exports.$Enums.PointsRoundingMode = {
+  FLOOR: 'FLOOR',
+  ROUND: 'ROUND',
+  CEIL: 'CEIL'
 };
 
 exports.Prisma.ModelName = {

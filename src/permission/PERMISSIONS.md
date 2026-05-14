@@ -112,6 +112,7 @@ Permissions for managing the loyalty program, customer loyalty accounts, point a
 | 13 | View Sales History | View sales history and details |
 | 14 | Modify Sales History | Modify existing sales histories |
 | 18 | Receive Sales Notification | Receive sales related notification |
+| 31 | Print Bill | Print pre-payment bill from cart |
 
 ### Function Management Permissions
 
@@ -275,3 +276,4 @@ WHERE PERMISSION_ID = 10 AND IS_DELETED = 0;
 | 2025-11-05 | 1.3 | Added inventory notification permission (ID 21) |
 | 2026-02-27 | 1.4 | Deprecated "Manage Customers" (ID 10); added granular customer permissions: Add Customer (ID 22), Edit Customer (ID 23), Delete Customer (ID 24) |
 | 2026-03-02 | 1.5 | Added Loyalty permissions (IDs 25-30): Manage Loyalty Program, View Loyalty Accounts, Adjust Loyalty Points, Manage Subscription Packages, View Customer Subscriptions, Manage Customer Subscriptions |
+| 2026-05-14 | 1.6 | Added Sales permission (ID 31): Print Bill — print pre-payment bill from cart, default unassigned (allowed_roles="") |

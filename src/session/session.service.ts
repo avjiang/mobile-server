@@ -47,6 +47,31 @@ let getSessionByID = async (sessionID: number, databaseName: string) => {
     }
 }
 
+// Returns the currently-open session for a given (outlet, cashier) pair, or null if none exists.
+// Date-agnostic so sessions resume across calendar days and fresh installs.
+let getOpenSession = async (outletId: number, openByUserID: number, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const session = await tenantPrisma.session.findFirst({
+            where: {
+                outletId,
+                openByUserID,
+                closingDateTime: null
+            },
+            include: {
+                declarations: true
+            },
+            orderBy: {
+                openingDateTime: 'desc'
+            }
+        })
+        return session
+    }
+    catch (error) {
+        throw error
+    }
+}
+
 let createSession = async (openSessionRequest: OpenSessionRequest, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -59,6 +84,22 @@ let createSession = async (openSessionRequest: OpenSessionRequest, databaseName:
             throw new NotFoundError("Outlet");
         }
 
+        // Idempotency guard: if an open session already exists for this (outlet, cashier),
+        // return it instead of creating a duplicate. Protects against double-tap and
+        // multi-device races where the client hasn't yet hydrated from getOpenSession.
+        const existing = await tenantPrisma.session.findFirst({
+            where: {
+                outletId: openSessionRequest.outletId,
+                openByUserID: openSessionRequest.openByUserID,
+                closingDateTime: null
+            },
+            orderBy: {
+                openingDateTime: 'desc'
+            }
+        })
+        if (existing) {
+            return existing
+        }
         const createdSession = await tenantPrisma.session.create({
             data: {
                 outletId: openSessionRequest.outletId,
@@ -128,6 +169,7 @@ let closeSession = async (closeSessionRequest: CloseSessionRequest, databaseName
 export = {
     getDeclarationsBySessionID,
     getSessionByID,
+    getOpenSession,
     createSession,
     createDeclarations,
     closeSession

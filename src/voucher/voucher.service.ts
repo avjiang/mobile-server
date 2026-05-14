@@ -13,6 +13,82 @@ const toNum = (val: any): number => {
 };
 
 // ============================================
+// Pure helpers (exported via __testables)
+// ============================================
+
+/**
+ * Compute the voucher discount amount given its type, configured values,
+ * and the running cart total. FIXED is capped at totalAmount; PERCENTAGE
+ * caps the computed result at totalAmount. Matches the math in
+ * `validateAndRedeemVoucher` and the FE's `_applyLoyaltyDiscounts`.
+ *
+ * Returns Decimals so the caller can use them directly in transaction
+ * writes without re-wrapping.
+ */
+const voucherDiscountFor = (
+    discountType: string,
+    discountPercentage: any,
+    discountAmount: any,
+    totalAmount: Decimal,
+): { discountPercentage: Decimal; discountAmount: Decimal } => {
+    let amount: Decimal;
+    let percentage = new Decimal(0);
+
+    if (discountType === 'PERCENTAGE') {
+        percentage = new Decimal((discountPercentage ?? 0).toString());
+        amount = totalAmount.times(percentage).dividedBy(100);
+        if (amount.gt(totalAmount)) amount = totalAmount;
+    } else {
+        // FIXED
+        amount = new Decimal((discountAmount ?? 0).toString());
+        if (amount.gt(totalAmount)) amount = totalAmount;
+    }
+
+    return { discountPercentage: percentage, discountAmount: amount };
+};
+
+/**
+ * Decide the post-void status of a previously-REDEEMED voucher. Returns
+ * 'ACTIVE' if the voucher hasn't reached its expiry yet — the customer
+ * gets it back; 'EXPIRED' otherwise (per docs §8.4 FAQ).
+ */
+const shouldRestoreVoucher = (expiresAt: Date, now: Date): 'ACTIVE' | 'EXPIRED' => {
+    return expiresAt.getTime() > now.getTime() ? 'ACTIVE' : 'EXPIRED';
+};
+
+/**
+ * For a repeatable SPEND_MILESTONE rule, how many voucher issuances does
+ * the given totalSpend warrant? floor(totalSpend / threshold). Caller
+ * subtracts existingCount to decide how many vouchers to mint. Backs
+ * docs §2 "isRepeatable: true → voucher issued every time the threshold
+ * is crossed".
+ */
+const expectedRepeatableVoucherCount = (
+    totalSpend: Decimal,
+    threshold: Decimal,
+): number => {
+    if (threshold.lte(0)) return 0;
+    return Math.floor(totalSpend.dividedBy(threshold).toNumber());
+};
+
+/**
+ * Format the human-readable voucher label that appears at checkout.
+ * Backs the "Spend RM 1,000 Reward — 10% off" formatting documented in
+ * §2 Reward Rules.
+ */
+const formatVoucherLabel = (
+    ruleName: string,
+    discountType: string,
+    discountPercentage?: any,
+    discountAmount?: any,
+): string => {
+    const discountLabel = discountType === 'PERCENTAGE'
+        ? `${toNum(discountPercentage)}% off`
+        : `RM ${toNum(discountAmount)} off`;
+    return `${ruleName} — ${discountLabel}`;
+};
+
+// ============================================
 // Reward Rule Caching
 // ============================================
 
@@ -230,28 +306,22 @@ const validateAndRedeemVoucher = async (
     }
 
     // Validate discount amount matches voucher
-    let expectedAmount: Decimal;
-    let expectedPercentage = new Decimal(0);
+    const { discountPercentage: expectedPercentage, discountAmount: expectedAmount } =
+        voucherDiscountFor(
+            voucher.discountType,
+            voucher.discountPercentage,
+            voucher.discountAmount,
+            totalAmount,
+        );
 
-    if (voucher.discountType === 'PERCENTAGE') {
-        expectedPercentage = new Decimal(voucher.discountPercentage.toString());
-        expectedAmount = totalAmount.times(expectedPercentage).dividedBy(100);
-        // Cap at totalAmount
-        if (expectedAmount.gt(totalAmount)) expectedAmount = totalAmount;
-
-        // Cross-validate percentage
-        if (sentDiscountPercentage !== undefined && sentDiscountPercentage !== null) {
-            if (Math.abs(sentDiscountPercentage - expectedPercentage.toNumber()) > 0.01) {
-                throw new BusinessLogicError(
-                    `Voucher discount percentage mismatch: sent ${sentDiscountPercentage}%, expected ${expectedPercentage}%`
-                );
-            }
+    // Cross-validate percentage for PERCENTAGE vouchers
+    if (voucher.discountType === 'PERCENTAGE' &&
+        sentDiscountPercentage !== undefined && sentDiscountPercentage !== null) {
+        if (Math.abs(sentDiscountPercentage - expectedPercentage.toNumber()) > 0.01) {
+            throw new BusinessLogicError(
+                `Voucher discount percentage mismatch: sent ${sentDiscountPercentage}%, expected ${expectedPercentage}%`
+            );
         }
-    } else {
-        // FIXED
-        expectedAmount = new Decimal(voucher.discountAmount.toString());
-        // Cap at totalAmount
-        if (expectedAmount.gt(totalAmount)) expectedAmount = totalAmount;
     }
 
     // Validate sent amount matches expected (allow small rounding tolerance)
@@ -292,8 +362,8 @@ const restoreVoucherForSale = async (tx: any, saleId: number) => {
 
     if (!voucher || voucher.status !== 'REDEEMED') return;
 
-    if (voucher.expiresAt > new Date()) {
-        // Not expired — restore to ACTIVE
+    const newStatus = shouldRestoreVoucher(voucher.expiresAt, new Date());
+    if (newStatus === 'ACTIVE') {
         await tx.voucher.update({
             where: { id: voucher.id },
             data: {
@@ -303,7 +373,6 @@ const restoreVoucherForSale = async (tx: any, saleId: number) => {
             },
         });
     } else {
-        // Expired — set to EXPIRED, clear sales link
         await tx.voucher.update({
             where: { id: voucher.id },
             data: {
@@ -350,7 +419,7 @@ const checkMilestones = async (db: string, customerId: number) => {
             const existingCount = await prisma.voucher.count({
                 where: { customerId, rewardRuleId: rule.id, deleted: false },
             });
-            const expectedCount = Math.floor(totalSpend.dividedBy(threshold).toNumber());
+            const expectedCount = expectedRepeatableVoucherCount(totalSpend, threshold);
 
             if (expectedCount > existingCount) {
                 const toIssue = expectedCount - existingCount;
@@ -374,10 +443,12 @@ const issueVoucherFromRule = async (
     totalSpend: Decimal,
 ) => {
     const expiresAt = new Date(Date.now() + rule.expiryDays * 24 * 60 * 60 * 1000);
-
-    const discountLabel = rule.discountType === 'PERCENTAGE'
-        ? `${toNum(rule.discountPercentage)}% off`
-        : `RM ${toNum(rule.discountAmount)} off`;
+    const label = formatVoucherLabel(
+        rule.name,
+        rule.discountType,
+        rule.discountPercentage,
+        rule.discountAmount,
+    );
 
     await prisma.voucher.create({
         data: {
@@ -390,7 +461,7 @@ const issueVoucherFromRule = async (
             minPurchaseAmount: rule.minPurchaseAmount,
             status: 'ACTIVE',
             milestoneSpendSnapshot: totalSpend.toNumber(),
-            label: `${rule.name} — ${discountLabel}`,
+            label,
             expiresAt,
         },
     });
@@ -448,4 +519,14 @@ export default {
     // Cache helpers
     getCachedRewardRules,
     invalidateRulesCache,
+    // Pure helpers exposed for unit testing
+    __testables: {
+        toNum,
+        voucherDiscountFor,
+        shouldRestoreVoucher,
+        expectedRepeatableVoucherCount,
+        formatVoucherLabel,
+        validateRuleDiscountFields,
+        formatRule,
+    },
 };

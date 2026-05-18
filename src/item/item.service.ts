@@ -458,7 +458,7 @@ let getById = async (databaseName: string, id: number) => {
     }
 }
 
-let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
+let createMany = async (databaseName: string, itemBodyArray: ItemDto[], outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const createdItems = await tenantPrisma.$transaction(async (tx) => {
@@ -586,7 +586,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                             ...(shouldTrackStock ? {
                                 stockBalance: {
                                     create: {
-                                        outlet: { connect: { id: 1 } },
+                                        outlet: { connect: { id: outletId } },
                                         availableQuantity: baseStockQuantity,
                                         onHandQuantity: baseStockQuantity,
                                         deleted: false,
@@ -603,7 +603,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                         movementType: "Create Item",
                                         reason: "",
                                         remark: "",
-                                        outletId: 1,
+                                        outletId: outletId,
                                         deleted: false,
                                     },
                                 },
@@ -628,7 +628,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         await tx.stockReceipt.create({
                             data: {
                                 itemId: createdItem.id,
-                                outletId: 1,
+                                outletId: outletId,
                                 quantity: baseStockQuantity,
                                 cost: cost,
                                 receiptDate: new Date(),
@@ -706,7 +706,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
 
                         // Create StockBalance, StockMovement, and StockReceipt for all variants (batch operation)
                         if (shouldTrackStock) {
-                            await createVariantStockRecords(tx, createdItem.id, createdVariantIds, 1, variantStockDataMap);
+                            await createVariantStockRecords(tx, createdItem.id, createdVariantIds, outletId, variantStockDataMap);
                         }
                     }
 
@@ -734,7 +734,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
     }
 };
 
-let update = async (databaseName: string, item: Item & { reorderThreshold?: number, variants?: any[] }) => {
+let update = async (databaseName: string, item: Item & { reorderThreshold?: number, variants?: any[] }, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Extract id, version, and relation fields from the item object
@@ -851,7 +851,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 // Audit trail
                 await tx.stockMovement.create({
                     data: {
-                        itemId: id, outletId: 1,
+                        itemId: id, outletId: outletId,
                         previousAvailableQuantity: 0, previousOnHandQuantity: 0,
                         availableQuantityDelta: 0, onHandQuantityDelta: 0,
                         documentId: 0,
@@ -870,7 +870,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 // Create StockBalance
                 await tx.stockBalance.create({
                     data: {
-                        itemId: id, outletId: 1,
+                        itemId: id, outletId: outletId,
                         availableQuantity: qty, onHandQuantity: qty,
                         reorderThreshold: reorderThreshold || 0,
                         deleted: false,
@@ -880,7 +880,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 // Audit trail
                 await tx.stockMovement.create({
                     data: {
-                        itemId: id, outletId: 1,
+                        itemId: id, outletId: outletId,
                         previousAvailableQuantity: 0, previousOnHandQuantity: 0,
                         availableQuantityDelta: qty, onHandQuantityDelta: qty,
                         documentId: 0,
@@ -896,7 +896,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 if (originalCost > 0 && qty > 0) {
                     await tx.stockReceipt.create({
                         data: {
-                            itemId: id, outletId: 1,
+                            itemId: id, outletId: outletId,
                             quantity: qty, cost: originalCost,
                             receiptDate: new Date(),
                             deleted: false, version: 1,
@@ -1254,7 +1254,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 // Create StockBalance, StockMovement, and StockReceipt for all new variants (only for stock-tracked items)
                 // Skip when turningOn — step 6 below handles ALL variants during off→on transition
                 if (newVariantIds.length > 0 && itemUpdate.trackStock !== false && !turningOn) {
-                    await createVariantStockRecords(tx, id, newVariantIds, 1, variantStockDataMap);
+                    await createVariantStockRecords(tx, id, newVariantIds, outletId, variantStockDataMap);
                 }
 
                 // ===== trackStock transition: OFF → ON (variant items) =====
@@ -1284,7 +1284,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                     await createVariantStockRecords(
                         tx, id,
                         allActiveVariants.map(v => v.id),
-                        1,
+                        outletId,
                         variantStockDataMap
                     );
 
@@ -1298,7 +1298,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                     // Audit trail
                     await tx.stockMovement.create({
                         data: {
-                            itemId: id, outletId: 1,
+                            itemId: id, outletId: outletId,
                             previousAvailableQuantity: 0, previousOnHandQuantity: 0,
                             availableQuantityDelta: 0, onHandQuantityDelta: 0,
                             documentId: 0,
@@ -1374,14 +1374,14 @@ let remove = async (databaseName: string, id: number) => {
     }
 }
 
-let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const lowStockItems = await tenantPrisma.stockBalance.groupBy({
             by: ['itemId'],
             where: {
                 deleted: false,
-                outletId: 1, // Ensure the StockBalance is for the main outlet
+                outletId: outletId, // Ensure the StockBalance is for the main outlet
                 item: { deleted: false }, // Ensure the Item is not soft-deleted
             },
             _sum: {
@@ -1402,14 +1402,14 @@ let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number
     }
 }
 
-let getLowStockItems = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean) => {
+let getLowStockItems = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const lowStockItems = await tenantPrisma.stockBalance.groupBy({
             by: ['itemId'],
             where: {
                 deleted: false,
-                outletId: 1, // Ensure the StockBalance is for the main outlet
+                outletId: outletId, // Ensure the StockBalance is for the main outlet
                 item: { deleted: false },
             },
             _sum: {
@@ -1433,7 +1433,7 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
                 stockBalance: {
                     where: {
                         deleted: false,
-                        outletId: 1,
+                        outletId: outletId,
                     },
                 },
                 category: true,

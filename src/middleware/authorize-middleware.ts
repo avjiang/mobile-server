@@ -20,7 +20,8 @@ export interface UserInfo {
     notificationTopics?: string[],
     planName?: string | null,
     planType?: string | null,
-    loyaltyTier?: 'none' | 'basic' | 'advanced'
+    loyaltyTier?: 'none' | 'basic' | 'advanced',
+    allowedOutletIds: number[]
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {

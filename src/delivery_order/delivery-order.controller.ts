@@ -8,6 +8,7 @@ import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request"
+import { validateDocumentNumber } from "../helpers/documentHelper"
 
 const router = express.Router()
 
@@ -105,6 +106,11 @@ let createMany = (req: NetworkRequest<CreateDeliveryOrderRequestBody>, res: Resp
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
+    if (requestBody.deliveryOrders && requestBody.deliveryOrders.length > 0) {
+        requestBody.deliveryOrders.forEach((doOrder: DeliveryOrderInput) => {
+            validateDocumentNumber(doOrder.trackingNumber);
+        });
+    }
     service.createMany(req.user.databaseName, requestBody)
         .then((response) => {
             sendResponse(res, response)
@@ -126,6 +132,11 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
     if (!deliveryOrder.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
+    
+    if (deliveryOrder.trackingNumber) {
+        validateDocumentNumber(deliveryOrder.trackingNumber);
+    }
+
     service.update(deliveryOrder, req.user.databaseName)
         .then((updatedDeliveryOrder: any) => sendResponse(res, updatedDeliveryOrder))
         .catch(next)

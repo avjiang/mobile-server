@@ -253,3 +253,12 @@ This project uses a multi-tenant architecture with two Prisma schemas:
 - **Tenant Schema** (`prisma/client/schema.prisma`)
   - Separate database per tenant (using `{tenant_db_name}` placeholder)
   - Contains: User, Item, Category, Sales, Invoice, etc.
+
+## Multi-Outlet Awareness
+
+The system is strictly multi-tenant and multi-outlet. When developing new features, follow these rules:
+
+1.  **Scoped Queries**: Always scope your queries by `outletId`. Transactional data must belong to an outlet.
+2.  **No Hardcoded Defaults**: Never use hardcoded fallbacks like `?? 1` for `outletId`. The system relies on the `AuthRequest` middleware to provide the verified `outletId` for the current context.
+3.  **Auth Scoping**: The `outlet-authorization-middleware.ts` enforces that users can only access `outletId`s they are assigned to.
+4.  **Document Numbering**: Document numbers (Invoices, Sales, etc.) must follow the `{PREFIX}-OUT{outletId}-{DATE}-{SEQ}` format to prevent collisions across outlets during offline-sync workflows.

@@ -88,12 +88,15 @@ let createMany = (req: NetworkRequest<CreateItemsRequestBody>, res: Response, ne
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
+    if (!req.outletId) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     const requestBody = plainToInstance(
         CreateItemsRequestBody,
         req.body,
         { excludeExtraneousValues: true }
     );
-    service.createMany(req.user.databaseName, requestBody.items)
+    service.createMany(req.user.databaseName, requestBody.items, req.outletId)
         .then((insertedItems: Item[]) => {
             // var message = `Successfully created ${insertedItems} items`
             // if (insertedRecordCount === 1) {
@@ -111,6 +114,9 @@ let update = (req: NetworkRequest<Item>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
+    if (!req.outletId) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     const item = req.body
 
     if (!item) {
@@ -120,7 +126,7 @@ let update = (req: NetworkRequest<Item>, res: Response, next: NextFunction) => {
         throw new RequestValidateError('Update failed: [id] not found')
     }
 
-    service.update(req.user.databaseName, item)
+    service.update(req.user.databaseName, item, req.outletId)
         .then((item: Item) => sendResponse(res, "Successfully updated"))
         .catch(next)
 }
@@ -162,6 +168,9 @@ let getLowStockItemCount = (req: AuthRequest, res: Response, next: NextFunction)
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
+    if (!req.outletId) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     const { lowStockQuantity, isIncludedZeroStock } = req.query
     if (!lowStockQuantity || !isIncludedZeroStock) {
         return new RequestValidateError('startDate and endDate are required')
@@ -175,7 +184,7 @@ let getLowStockItemCount = (req: AuthRequest, res: Response, next: NextFunction)
 
     const lowStockQuantityParam = Number(lowStockQuantity)
     const isIncludedZeroStockParam = parseBoolean(isIncludedZeroStock as string)
-    service.getLowStockItemCount(req.user.databaseName, lowStockQuantityParam, isIncludedZeroStockParam)
+    service.getLowStockItemCount(req.user.databaseName, lowStockQuantityParam, isIncludedZeroStockParam, req.outletId)
         .then((lowStockItemCount: number) => sendResponse(res, lowStockItemCount))
         .catch(next)
 }
@@ -183,6 +192,9 @@ let getLowStockItemCount = (req: AuthRequest, res: Response, next: NextFunction)
 let getLowStockItems = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
+    }
+    if (!req.outletId) {
+        throw new RequestValidateError('Outlet ID is required');
     }
     const { lowStockQuantity, isIncludedZeroStock } = req.query
     if (!lowStockQuantity || !isIncludedZeroStock) {
@@ -200,7 +212,7 @@ let getLowStockItems = (req: AuthRequest, res: Response, next: NextFunction) => 
     // service.getLowStockItems(req.user.databaseName, lowStockQuantityParam, isIncludedZeroStockParam)
     //     .then((lowStockItems: ItemDto[]) => sendResponse(res, lowStockItems))
     //     .catch(next)
-    service.getLowStockItems(req.user.databaseName, lowStockQuantityParam, isIncludedZeroStockParam)
+    service.getLowStockItems(req.user.databaseName, lowStockQuantityParam, isIncludedZeroStockParam, req.outletId)
         .then((lowStockItems: Item[]) => sendResponse(res, lowStockItems))
         .catch(next)
 }

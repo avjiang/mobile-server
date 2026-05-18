@@ -8,6 +8,7 @@ import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request"
+import { validateDocumentNumber } from "../helpers/documentHelper"
 
 const router = express.Router()
 
@@ -105,6 +106,11 @@ let createMany = (req: NetworkRequest<CreateInvoiceRequestBody>, res: Response, 
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
+    if (requestBody.invoices && requestBody.invoices.length > 0) {
+        requestBody.invoices.forEach((inv: InvoiceInput) => {
+            validateDocumentNumber(inv.invoiceNumber);
+        });
+    }
     service.createMany(req.user.databaseName, requestBody)
         .then((response) => {
             sendResponse(res, response)
@@ -126,6 +132,11 @@ let update = (req: NetworkRequest<InvoiceInput>, res: Response, next: NextFuncti
     if (!invoice.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
+    
+    if (invoice.invoiceNumber) {
+        validateDocumentNumber(invoice.invoiceNumber);
+    }
+
     service.update(invoice, req.user.databaseName)
         .then((updatedInvoice: any) => sendResponse(res, updatedInvoice))
         .catch(next)

@@ -13,7 +13,7 @@ let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    service.getAll(req.user.databaseName)
+    service.getAll(req.user.databaseName, req.user)
         .then((response: any) => {
             sendResponse(res, response);
         })

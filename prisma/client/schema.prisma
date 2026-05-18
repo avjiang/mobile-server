@@ -167,9 +167,29 @@ model User {
   roles                  Role[]                  @relation("user_roles") // Many-to-many with roles
   overrideRequests       OverrideLog[]           @relation("OverrideRequests")
   notificationPreference NotificationPreference?
+  userOutlets            UserOutlet[]
 
   @@index([email])
   @@map("user")
+}
+
+model UserOutlet {
+  id        Int       @id @default(autoincrement()) @map("ID")
+  userId    Int       @map("USER_ID")
+  outletId  Int       @map("OUTLET_ID")
+  isPrimary Boolean   @default(false) @map("IS_PRIMARY")
+  deleted   Boolean   @default(false) @map("IS_DELETED")
+  deletedAt DateTime? @map("DELETED_AT")
+  createdAt DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt DateTime? @updatedAt @map("UPDATED_AT")
+  version   Int?      @default(1) @map("VERSION")
+  user      User      @relation(fields: [userId], references: [id])
+  outlet    Outlet    @relation(fields: [outletId], references: [id])
+
+  @@unique([userId, outletId])
+  @@index([userId])
+  @@index([outletId])
+  @@map("user_outlet")
 }
 
 model OverrideLog {
@@ -310,21 +330,21 @@ model Company {
 }
 
 model Outlet {
-  id              Int              @id @default(autoincrement()) @map("ID")
-  tenantOutletId  Int              @map("TENANT_OUTLET_ID")
-  outletName      String           @map("OUTLET_NAME")
-  street          String           @default("") @map("STREET")
-  city            String           @default("") @map("CITY")
-  state           String           @default("") @map("STATE")
-  postalCode      String           @default("") @map("POSTAL_CODE")
-  country         String           @default("") @map("COUNTRY")
-  outletTel       String           @default("") @map("OUTLET_TEL")
-  outletEmail     String           @default("") @map("OUTLET_EMAIL")
-  deleted         Boolean          @default(false) @map("IS_DELETED")
-  deletedAt       DateTime?        @map("DELETED_AT")
-  createdAt       DateTime?        @default(now()) @map("CREATED_AT")
-  updatedAt       DateTime?        @updatedAt @map("UPDATED_AT")
-  version         Int?             @default(1) @map("VERSION")
+  id                 Int                 @id @default(autoincrement()) @map("ID")
+  tenantOutletId     Int                 @map("TENANT_OUTLET_ID")
+  outletName         String              @map("OUTLET_NAME")
+  street             String              @default("") @map("STREET")
+  city               String              @default("") @map("CITY")
+  state              String              @default("") @map("STATE")
+  postalCode         String              @default("") @map("POSTAL_CODE")
+  country            String              @default("") @map("COUNTRY")
+  outletTel          String              @default("") @map("OUTLET_TEL")
+  outletEmail        String              @default("") @map("OUTLET_EMAIL")
+  deleted            Boolean             @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?           @map("DELETED_AT")
+  createdAt          DateTime?           @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
+  version            Int?                @default(1) @map("VERSION")
   stockBalances      StockBalance[]
   stockMovements     StockMovement[]
   stockSnapshots     StockSnapshot[]
@@ -344,6 +364,7 @@ model Outlet {
   quotations         Quotation[]
   purchaseOrders     PurchaseOrder[]
   menuProfileOutlets MenuProfileOutlet[]
+  userOutlets        UserOutlet[]
 
   @@map("outlet")
 }
@@ -2027,7 +2048,7 @@ model SubscriptionUsage {
 model RewardRule {
   id                 Int       @id @default(autoincrement()) @map("ID")
   name               String    @map("NAME")
-  triggerType         String    @default("SPEND_MILESTONE") @map("TRIGGER_TYPE")
+  triggerType        String    @default("SPEND_MILESTONE") @map("TRIGGER_TYPE")
   spendThreshold     Decimal   @map("SPEND_THRESHOLD") @db.Decimal(15, 4)
   isRepeatable       Boolean   @default(false) @map("IS_REPEATABLE")
   discountType       String    @map("DISCOUNT_TYPE")
@@ -2047,30 +2068,30 @@ model RewardRule {
 }
 
 model Voucher {
-  id                     Int             @id @default(autoincrement()) @map("ID")
-  rewardRuleId           Int?            @map("REWARD_RULE_ID")
-  customerId             Int             @map("CUSTOMER_ID")
-  loyaltyAccountId       Int?            @map("LOYALTY_ACCOUNT_ID")
-  discountType           String          @map("DISCOUNT_TYPE")
-  discountPercentage     Decimal?        @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
-  discountAmount         Decimal?        @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
-  minPurchaseAmount      Decimal?        @map("MIN_PURCHASE_AMOUNT") @db.Decimal(15, 4)
-  status                 String          @default("ACTIVE") @map("STATUS")
-  milestoneSpendSnapshot Decimal?        @map("MILESTONE_SPEND_SNAPSHOT") @db.Decimal(15, 4)
-  label                  String          @map("LABEL")
-  expiresAt              DateTime        @map("EXPIRES_AT")
-  redeemedAt             DateTime?       @map("REDEEMED_AT")
-  redeemedInSalesId      Int?            @unique @map("REDEEMED_IN_SALES_ID")
-  deleted                Boolean         @default(false) @map("IS_DELETED")
-  deletedAt              DateTime?       @map("DELETED_AT")
-  createdAt              DateTime?       @default(now()) @map("CREATED_AT")
-  updatedAt              DateTime?       @updatedAt @map("UPDATED_AT")
-  version                Int?            @default(1) @map("VERSION")
+  id                     Int       @id @default(autoincrement()) @map("ID")
+  rewardRuleId           Int?      @map("REWARD_RULE_ID")
+  customerId             Int       @map("CUSTOMER_ID")
+  loyaltyAccountId       Int?      @map("LOYALTY_ACCOUNT_ID")
+  discountType           String    @map("DISCOUNT_TYPE")
+  discountPercentage     Decimal?  @map("DISCOUNT_PERCENTAGE") @db.Decimal(15, 4)
+  discountAmount         Decimal?  @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
+  minPurchaseAmount      Decimal?  @map("MIN_PURCHASE_AMOUNT") @db.Decimal(15, 4)
+  status                 String    @default("ACTIVE") @map("STATUS")
+  milestoneSpendSnapshot Decimal?  @map("MILESTONE_SPEND_SNAPSHOT") @db.Decimal(15, 4)
+  label                  String    @map("LABEL")
+  expiresAt              DateTime  @map("EXPIRES_AT")
+  redeemedAt             DateTime? @map("REDEEMED_AT")
+  redeemedInSalesId      Int?      @unique @map("REDEEMED_IN_SALES_ID")
+  deleted                Boolean   @default(false) @map("IS_DELETED")
+  deletedAt              DateTime? @map("DELETED_AT")
+  createdAt              DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt              DateTime? @updatedAt @map("UPDATED_AT")
+  version                Int?      @default(1) @map("VERSION")
 
-  rewardRule             RewardRule?     @relation(fields: [rewardRuleId], references: [id])
-  customer               Customer        @relation(fields: [customerId], references: [id])
-  loyaltyAccount         LoyaltyAccount? @relation(fields: [loyaltyAccountId], references: [id])
-  redeemedInSale         Sales?          @relation(fields: [redeemedInSalesId], references: [id])
+  rewardRule     RewardRule?     @relation(fields: [rewardRuleId], references: [id])
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  loyaltyAccount LoyaltyAccount? @relation(fields: [loyaltyAccountId], references: [id])
+  redeemedInSale Sales?          @relation(fields: [redeemedInSalesId], references: [id])
 
   @@index([customerId, status])
   @@index([expiresAt])

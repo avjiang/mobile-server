@@ -8,6 +8,7 @@ import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { CreatePurchaseOrderRequestBody, PurchaseOrderInput } from "./purchase-order.request"
+import { validateDocumentNumber } from "../helpers/documentHelper"
 
 const router = express.Router()
 
@@ -105,6 +106,11 @@ let createMany = (req: NetworkRequest<CreatePurchaseOrderRequestBody>, res: Resp
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
+    if (requestBody.purchaseOrders && requestBody.purchaseOrders.length > 0) {
+        requestBody.purchaseOrders.forEach((po: PurchaseOrderInput) => {
+            validateDocumentNumber(po.purchaseOrderNumber);
+        });
+    }
     service.createMany(req.user.databaseName, requestBody)
         .then((response) => {
             sendResponse(res, response)
@@ -145,6 +151,11 @@ let update = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: Next
     if (!purchaseOrder.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
+    
+    if (purchaseOrder.purchaseOrderNumber) {
+        validateDocumentNumber(purchaseOrder.purchaseOrderNumber);
+    }
+
     service.update(purchaseOrder, req.user.databaseName)
         .then((updatedPurchaseOrder: any) => sendResponse(res, updatedPurchaseOrder))
         .catch(next)

@@ -277,7 +277,7 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
     }
 }
 
-let getNotificationTopics = async (tenantId: number, userId: number, db: string) => {
+let getNotificationTopics = async (tenantId: number, userId: number, db: string, allowedOutletIds: number[]) => {
     try {
         // Generate notification topics regardless of plan
         // Frontend will control whether to use them based on plan from JWT
@@ -382,9 +382,15 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
 
             // Check if this permission is outlet-specific
             if (outletSpecificPermissions.includes(shortPermission)) {
-                // Add outlet-specific topic (default to outlet_1)
-                // TODO: In future, detect user's actual outlet from session/context
-                topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+                // Add outlet-specific topic for each allowed outlet
+                if (allowedOutletIds && allowedOutletIds.length > 0) {
+                    allowedOutletIds.forEach(outletId => {
+                        topics.push(`tenant_${tenantId}_outlet_${outletId}_${shortPermission}`);
+                    });
+                } else {
+                    // Fallback to legacy behavior if no outlets mapped
+                    topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+                }
             } else {
                 // Add tenant-wide topic for financial, staff, system alerts
                 topics.push(`tenant_${tenantId}_${shortPermission}`);
@@ -420,6 +426,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
 
     let loyaltyTier: 'none' | 'basic' | 'advanced' = 'none';
 
+    let allowedOutletIds: number[] = [];
+
     if (tenantUser.username !== "avjiang") {
         const subscriptionInfo = await getTenantSubscriptionInfo(tenantUser.tenantId);
         planName = subscriptionInfo.planName;
@@ -427,8 +435,16 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         globalOutletId = subscriptionInfo.globalOutletId;
         loyaltyTier = subscriptionInfo.loyaltyTier;
 
+        const tenantPrisma = getTenantPrisma(db);
+        const userOutlets = await tenantPrisma.userOutlet.findMany({
+            where: { userId: user.id, deleted: false },
+            select: { outletId: true }
+        });
+        allowedOutletIds = userOutlets.map((uo: any) => uo.outletId);
+        await tenantPrisma.$disconnect();
+
         if (planName === "Pro") {
-            notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db);
+            notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db, allowedOutletIds);
         }
     }
 
@@ -443,7 +459,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         notificationTopics,
         planName,
         planType,
-        loyaltyTier
+        loyaltyTier,
+        allowedOutletIds
     }
     const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
     return { token, globalOutletId, loyaltyTier };

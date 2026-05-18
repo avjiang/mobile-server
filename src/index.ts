@@ -46,6 +46,9 @@ app.use('/version', require('./version/version.controller'))
 //authentication middleware
 app.use(authorizeMiddleware)
 
+import { requireOutletAccess } from './middleware/outlet-authorization.middleware'
+app.use(requireOutletAccess)
+
 // Dedupe retries of the same write (clientIdempotencyKey from Flutter outbox).
 // Must run after auth so we know which tenant DB to query.
 app.use(idempotencyMiddleware)

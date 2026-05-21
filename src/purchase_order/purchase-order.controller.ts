@@ -108,7 +108,7 @@ let createMany = (req: NetworkRequest<CreatePurchaseOrderRequestBody>, res: Resp
     const requestBody = req.body
     if (requestBody.purchaseOrders && requestBody.purchaseOrders.length > 0) {
         requestBody.purchaseOrders.forEach((po: PurchaseOrderInput) => {
-            validateDocumentNumber(po.purchaseOrderNumber);
+            validateDocumentNumber(po.purchaseOrderNumber, po.outletId);
         });
     }
     service.createMany(req.user.databaseName, requestBody)
@@ -153,7 +153,7 @@ let update = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: Next
     }
     
     if (purchaseOrder.purchaseOrderNumber) {
-        validateDocumentNumber(purchaseOrder.purchaseOrderNumber);
+        validateDocumentNumber(purchaseOrder.purchaseOrderNumber, purchaseOrder.outletId);
     }
 
     service.update(purchaseOrder, req.user.databaseName)

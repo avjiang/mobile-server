@@ -4,11 +4,15 @@ import { AuthRequest } from "./auth-request";
 
 export const requireOutletAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const outletIdHeader = req.headers['x-outlet-id'] || req.headers['outlet-id'];
-        
+        // Extract outletId from body → query → params (in that order)
+        const rawOutletId =
+            req.body?.outletId ??
+            req.query?.outletId ??
+            req.params?.outletId;
+
         // Some routes may not have an outlet context, but for those that do, we validate.
-        if (outletIdHeader) {
-            const requestedOutletId = parseInt(outletIdHeader as string, 10);
+        if (rawOutletId !== undefined && rawOutletId !== null) {
+            const requestedOutletId = parseInt(String(rawOutletId), 10);
 
             if (isNaN(requestedOutletId)) {
                 throw new AuthenticationError(400, "Invalid Outlet ID");
@@ -23,7 +27,7 @@ export const requireOutletAccess = (req: AuthRequest, res: Response, next: NextF
 
                 // Check if the user is authorized for this outlet
                 if (!allowedOutletIds.includes(requestedOutletId)) {
-                    throw new AuthenticationError(403, `User is not authorized to access outlet ${requestedOutletId}`);
+                    throw new AuthenticationError(403, "Outlet access denied");
                 }
             }
         }

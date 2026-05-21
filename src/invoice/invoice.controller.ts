@@ -108,7 +108,7 @@ let createMany = (req: NetworkRequest<CreateInvoiceRequestBody>, res: Response, 
     const requestBody = req.body
     if (requestBody.invoices && requestBody.invoices.length > 0) {
         requestBody.invoices.forEach((inv: InvoiceInput) => {
-            validateDocumentNumber(inv.invoiceNumber);
+            validateDocumentNumber(inv.invoiceNumber, inv.outletId);
         });
     }
     service.createMany(req.user.databaseName, requestBody)
@@ -134,7 +134,7 @@ let update = (req: NetworkRequest<InvoiceInput>, res: Response, next: NextFuncti
     }
     
     if (invoice.invoiceNumber) {
-        validateDocumentNumber(invoice.invoiceNumber);
+        validateDocumentNumber(invoice.invoiceNumber, invoice.outletId);
     }
 
     service.update(invoice, req.user.databaseName)

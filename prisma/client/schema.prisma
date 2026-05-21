@@ -355,7 +355,8 @@ model Outlet {
   reservations       Reservation[]
   waitlists          Waitlist[]
   purchaseReturns    PurchaseReturn[]
-  sales              Sales[]
+  sales              Sales[]             @relation("SalesOutlet")
+  stockSourceSales   Sales[]             @relation("SalesStockSourceOutlet")
   payments           Payment[]
   registerLogs       RegisterLog[]
   sessions           Session[]
@@ -508,7 +509,8 @@ model Sales {
   voucherDiscountAmount     Decimal? @map("VOUCHER_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
 
   // Relations
-  outlet               Outlet                @relation(fields: [outletId], references: [id])
+  outlet               Outlet                @relation("SalesOutlet", fields: [outletId], references: [id])
+  stockSourceOutlet    Outlet?               @relation("SalesStockSourceOutlet", fields: [stockSourceOutletId], references: [id])
   salesItems           SalesItem[]
   payments             Payment[]
   registerLogs         RegisterLog[]
@@ -938,6 +940,7 @@ model Payment {
 
   @@index([method])
   @@index([businessDate])
+  @@index([outletId])
   @@map("payment")
 }
 
@@ -960,6 +963,7 @@ model RegisterLog {
   outlet         Outlet    @relation(fields: [outletId], references: [id])
   sales          Sales     @relation(fields: [salesId], references: [id])
 
+  @@index([outletId])
   @@map("register_log")
 }
 
@@ -1005,6 +1009,7 @@ model Session {
   deliveryOrders  DeliveryOrder[]
   invoices        Invoice[]
 
+  @@index([outletId])
   @@map("session")
 }
 
@@ -1179,7 +1184,8 @@ model MenuProfileOutlet {
   createdAt     DateTime? @default(now()) @map("CREATED_AT")
   updatedAt     DateTime? @updatedAt @map("UPDATED_AT")
   version       Int?      @default(1) @map("VERSION")
-  outlet        Outlet    @relation(fields: [outletId], references: [id])
+  outlet        Outlet      @relation(fields: [outletId], references: [id])
+  menuProfile   MenuProfile @relation(fields: [menuProfileID], references: [id])
 
   @@map("menu_profile_outlet")
 }
@@ -1203,8 +1209,9 @@ model MenuProfile {
   deletedAt      DateTime?      @map("DELETED_AT")
   createdAt      DateTime?      @default(now()) @map("CREATED_AT")
   updatedAt      DateTime?      @updatedAt @map("UPDATED_AT")
-  version        Int?           @default(1) @map("VERSION")
-  menuCategories MenuCategory[]
+  version            Int?                @default(1) @map("VERSION")
+  menuCategories     MenuCategory[]
+  menuProfileOutlets MenuProfileOutlet[]
 
   @@map("menu_profile")
 }

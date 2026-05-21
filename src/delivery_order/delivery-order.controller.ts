@@ -108,7 +108,7 @@ let createMany = (req: NetworkRequest<CreateDeliveryOrderRequestBody>, res: Resp
     const requestBody = req.body
     if (requestBody.deliveryOrders && requestBody.deliveryOrders.length > 0) {
         requestBody.deliveryOrders.forEach((doOrder: DeliveryOrderInput) => {
-            validateDocumentNumber(doOrder.trackingNumber);
+            validateDocumentNumber(doOrder.trackingNumber, doOrder.outletId);
         });
     }
     service.createMany(req.user.databaseName, requestBody)
@@ -134,7 +134,7 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
     }
     
     if (deliveryOrder.trackingNumber) {
-        validateDocumentNumber(deliveryOrder.trackingNumber);
+        validateDocumentNumber(deliveryOrder.trackingNumber, deliveryOrder.outletId);
     }
 
     service.update(deliveryOrder, req.user.databaseName)

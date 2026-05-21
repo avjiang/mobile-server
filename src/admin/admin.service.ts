@@ -2749,6 +2749,66 @@ let deleteOutletForTenant = async (tenantId: number, outletId: number) => {
     });
 };
 
+let getUserOutlets = async (tenantId: number, userId: number) => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+    if (!tenant?.databaseName) throw new NotFoundError('Tenant not found');
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+    try {
+        return await tenantPrisma.userOutlet.findMany({
+            where: { userId, deleted: false },
+            include: { outlet: true },
+        });
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
+let assignUserOutlets = async (tenantId: number, userId: number, outletIds: number[]) => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+    if (!tenant?.databaseName) throw new NotFoundError('Tenant not found');
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+    try {
+        const results = await tenantPrisma.$transaction(
+            outletIds.map((outletId) =>
+                tenantPrisma.userOutlet.upsert({
+                    where: { userId_outletId: { userId, outletId } },
+                    create: { userId, outletId, isPrimary: false, deleted: false },
+                    update: { deleted: false },
+                })
+            )
+        );
+        return results;
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
+let removeUserOutlet = async (tenantId: number, userId: number, outletId: number) => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+    if (!tenant?.databaseName) throw new NotFoundError('Tenant not found');
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+    try {
+        return await tenantPrisma.userOutlet.update({
+            where: { userId_outletId: { userId, outletId } },
+            data: { deleted: true, deletedAt: new Date() },
+        });
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2781,5 +2841,9 @@ export = {
     forgotTenantUserPassword,
     // Advanced Loyalty Add-On
     addAdvancedLoyalty,
-    removeAdvancedLoyalty
+    removeAdvancedLoyalty,
+    // UserOutlet management
+    getUserOutlets,
+    assignUserOutlets,
+    removeUserOutlet,
 }

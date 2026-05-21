@@ -376,6 +376,56 @@ let deleteOutlet = (req: AuthRequest, res: Response, next: NextFunction) => {
 };
 
 /**
+ * GET /tenants/:tenantId/users/:userId/outlets
+ * List outlets a user belongs to
+ */
+let getUserOutletsHandler = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const userId = parseInt(req.params.userId);
+    if (isNaN(tenantId) || isNaN(userId)) {
+        throw new RequestValidateError('Valid tenant ID and user ID are required');
+    }
+    service.getUserOutlets(tenantId, userId)
+        .then((response: any) => sendResponse(res, response))
+        .catch(next);
+};
+
+/**
+ * POST /tenants/:tenantId/users/:userId/outlets
+ * Assign a user to one or more outlets; body: { outletIds: number[] }
+ */
+let assignUserOutletsHandler = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const userId = parseInt(req.params.userId);
+    if (isNaN(tenantId) || isNaN(userId)) {
+        throw new RequestValidateError('Valid tenant ID and user ID are required');
+    }
+    const { outletIds } = req.body;
+    if (!Array.isArray(outletIds) || outletIds.length === 0) {
+        throw new RequestValidateError('outletIds must be a non-empty array');
+    }
+    service.assignUserOutlets(tenantId, userId, outletIds.map(Number))
+        .then((response: any) => sendResponse(res, response))
+        .catch(next);
+};
+
+/**
+ * DELETE /tenants/:tenantId/users/:userId/outlets/:outletId
+ * Remove a user from a specific outlet
+ */
+let removeUserOutletHandler = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const userId = parseInt(req.params.userId);
+    const outletId = parseInt(req.params.outletId);
+    if (isNaN(tenantId) || isNaN(userId) || isNaN(outletId)) {
+        throw new RequestValidateError('Valid tenant ID, user ID, and outlet ID are required');
+    }
+    service.removeUserOutlet(tenantId, userId, outletId)
+        .then((response: any) => sendResponse(res, response))
+        .catch(next);
+};
+
+/**
  * PUT /tenants/:tenantId/changePlan
  * Change tenant plan - supports both upgrade and downgrade (POS Owner only)
  * When downgrading to Basic: deactivates all warehouses and push notification devices
@@ -700,6 +750,11 @@ router.get('/tenants/:tenantId/warehouses', getTenantWarehouses)
 router.post('/tenants/:tenantId/outlets', createOutlet)
 router.put('/tenants/:tenantId/outlets/:id', updateOutlet)
 router.delete('/tenants/:tenantId/outlets/:id', deleteOutlet)
+
+// UserOutlet management routes
+router.get('/tenants/:tenantId/users/:userId/outlets', getUserOutletsHandler)
+router.post('/tenants/:tenantId/users/:userId/outlets', assignUserOutletsHandler)
+router.delete('/tenants/:tenantId/users/:userId/outlets/:outletId', removeUserOutletHandler)
 
 // advanced loyalty add-on routes
 router.post('/tenants/:tenantId/addons/loyalty', addAdvancedLoyalty)

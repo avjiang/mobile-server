@@ -426,6 +426,23 @@ let removeUserOutletHandler = (req: AuthRequest, res: Response, next: NextFuncti
 };
 
 /**
+ * GET /tenants/:tenantId/outlets/:outletId/users
+ * List every non-deleted tenant user along with whether they are currently
+ * assigned to the given outlet. Used by the admin portal's per-outlet
+ * "Manage users" dialog.
+ */
+let getOutletUsersHandler = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const outletId = parseInt(req.params.outletId);
+    if (isNaN(tenantId) || isNaN(outletId)) {
+        throw new RequestValidateError('Valid tenant ID and outlet ID are required');
+    }
+    service.getOutletUsers(tenantId, outletId)
+        .then((response: any) => sendResponse(res, response))
+        .catch(next);
+};
+
+/**
  * PUT /tenants/:tenantId/changePlan
  * Change tenant plan - supports both upgrade and downgrade (POS Owner only)
  * When downgrading to Basic: deactivates all warehouses and push notification devices
@@ -755,6 +772,7 @@ router.delete('/tenants/:tenantId/outlets/:id', deleteOutlet)
 router.get('/tenants/:tenantId/users/:userId/outlets', getUserOutletsHandler)
 router.post('/tenants/:tenantId/users/:userId/outlets', assignUserOutletsHandler)
 router.delete('/tenants/:tenantId/users/:userId/outlets/:outletId', removeUserOutletHandler)
+router.get('/tenants/:tenantId/outlets/:outletId/users', getOutletUsersHandler)
 
 // advanced loyalty add-on routes
 router.post('/tenants/:tenantId/addons/loyalty', addAdvancedLoyalty)

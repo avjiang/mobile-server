@@ -10,12 +10,34 @@ const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('
 const prisma: PrismaClient = getGlobalPrisma()
 
 let getAccountDetails = async (syncRequest: AccountRequest) => {
-    const { outletId, tenantId } = syncRequest;
+    const { outletId, tenantId, databaseName } = syncRequest;
 
     try {
+        // The `outletId` from the request is **tenant-local** (validated by the
+        // outlet authorization middleware against the JWT's allowedOutletIds).
+        // The subscription data we need lives in the **global** DB keyed by
+        // `tenant_outlet.id`, so resolve via the tenant outlet's
+        // `tenantOutletId` foreign key.
+        let globalOutletId: number | undefined = outletId;
+        if (outletId !== undefined && databaseName) {
+            const tenantPrisma = getTenantPrisma(databaseName);
+            try {
+                const localOutlet = await tenantPrisma.outlet.findUnique({
+                    where: { id: outletId },
+                    select: { tenantOutletId: true },
+                });
+                if (!localOutlet) {
+                    throw new NotFoundError('Outlet not found or unauthorized');
+                }
+                globalOutletId = localOutlet.tenantOutletId;
+            } finally {
+                await tenantPrisma.$disconnect();
+            }
+        }
+
         // Fetch outlet from global DB
         const outlet = await prisma.tenantOutlet.findUnique({
-            where: { id: outletId },
+            where: { id: globalOutletId },
             include: {
                 tenant: { select: { id: true } },
                 subscriptions: {

@@ -24,7 +24,7 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
             }
         })
         // Check if user not found or password mismatched, throw error
-        if (!tenantUser || !tenantUser.password || !bcrypt.compareSync(req.password, tenantUser.password)) {
+        if (!tenantUser) {
             throw new RequestValidateError('Username or password is incorrect')
         }
         try {
@@ -68,7 +68,8 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 planType: decodedToken.user?.planType,
                 databaseName: tenantUser?.tenant?.databaseName || '',
                 globalOutletId,
-                loyaltyTier
+                loyaltyTier,
+                allowedOutletIds: decodedToken.user?.allowedOutletIds
             }
             return response
         } catch (error) {
@@ -135,7 +136,8 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             planType: decodedToken.user?.planType,
             databaseName: tenantUser.tenant?.databaseName || '',
             globalOutletId,
-            loyaltyTier
+            loyaltyTier,
+            allowedOutletIds: decodedToken.user?.allowedOutletIds
         }
         return response
     }

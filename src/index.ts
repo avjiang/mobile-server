@@ -6,7 +6,7 @@ import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import idempotencyMiddleware from './middleware/idempotency-middleware'
 import 'reflect-metadata';
-import { disconnectAllPrismaClients } from './db';
+import { disconnectAllPrismaClients, startTenantClientEviction, getTenantClientStats } from './db';
 import { initCronJobs } from './cron/cron-manager';
 const app = express()
 const port = process.env.PORT || 8080;
@@ -40,6 +40,15 @@ app.get('/', (req, res) => res.json({
   version: require('../package.json').version,
   startedAt: serverStartTime,
 }))
+
+// Liveness probe for Azure App Service healthCheckPath. Must stay cheap —
+// no DB calls — so a transient DB hiccup doesn't trigger an instance restart.
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  uptime: process.uptime(),
+  tenants: getTenantClientStats().activeTenants,
+}))
+
 app.use('/auth', require('./auth/auth.controller'))
 app.use('/version', require('./version/version.controller'))
 
@@ -88,6 +97,7 @@ app.use(errorMiddleware)
 const server = app.listen(port, () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
   initCronJobs();
+  startTenantClientEviction();
 });
 
 server.on('error', (err) => {

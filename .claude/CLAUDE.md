@@ -108,20 +108,18 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 
 ## Module Documentation
 
-Module docs are **unified across backend and frontend** and live in the sibling Flutter repo:
-`../flutter-front-end/docs/modules/<MODULE>.md`
+**Entry point: [`../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md`](../../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md)** — the master dispatcher. It indexes every unified module doc (FE+BE), the file routing table (so `src/<module>/...` paths map straight to the right doc), and the cross-cutting docs. Module docs themselves live at `../flutter-front-end/docs/modules/<MODULE>.md` and cover both backend (`src/<module>/`) and frontend.
 
-The unified doc covers business rules, data model, API contract, backend implementation (this repo's `src/<module>/`), and frontend implementation. Structure follows `../flutter-front-end/docs/modules/_TEMPLATE.md`.
+### Rules — apply to EVERY change, always (new features, bug fixes, enhancements, amendments)
 
-### Rules — apply to EVERY module, always (new features, bug fixes, enhancements, amendments)
+For every task — even if the user does not explicitly tag the dispatcher — follow this workflow:
 
-1. **Before starting any work** on a module (e.g. anything under `src/<module>/`):
-   - Look for `../flutter-front-end/docs/modules/<MODULE>.md` (check `../flutter-front-end/docs/modules/README.md` for the index).
-   - If it exists → **read it first** to understand contract, business rules, edge cases.
-   - If it does not exist → create it as part of the work using `../flutter-front-end/docs/modules/_TEMPLATE.md`.
-2. **After finishing the work** → update the module doc to reflect the new behavior (including backend-side changes in the "Backend Implementation" and "API Contract" sections). Undocumented change = incomplete change.
-3. **One doc per module.** Never create a BE-only briefing or changelog doc in this repo. Extend the unified module doc instead.
-4. **Module name = `src/<module>/` folder name** (UPPER_SNAKE_CASE in the filename, e.g. `LOYALTY.md`).
+1. **Open `../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md`** and use §2 File Routing (Backend table) to find which module doc the touched `src/<module>/...` files belong to.
+2. **Read the matched module doc(s)** before writing any code, to understand contract, business rules, edge cases.
+3. **If no row matches** → create the module doc from `../flutter-front-end/docs/modules/_TEMPLATE.md` and add routing rows to `INTERNAL_DOCUMENTATION.md` §2 (Backend table).
+4. **After finishing the work** → update the module doc to reflect the new behavior (including backend-side changes in the "Backend Implementation" and "API Contract" sections). Undocumented change = incomplete change.
+5. **One doc per module.** Never create a BE-only briefing or changelog doc in this repo. Extend the unified module doc instead.
+6. **Module name = `src/<module>/` folder name** (UPPER_SNAKE_CASE in the filename, e.g. `LOYALTY.md`).
 
 ### BE-only infra docs (not feature docs) — stay in this repo
 
@@ -137,9 +135,10 @@ The unified doc covers business rules, data model, API contract, backend impleme
 ## Ground Rules
 
 - **Do not run any terminal commands** — the project owner executes all npm, prisma, and shell commands manually
+- **Always consult [`../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md`](../../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md) at the start and end of every task** — it is the single dispatcher for all internal docs. Use §2 File Routing (Backend table) to find the right module doc(s) to read/update.
 - Prefer editing existing files over creating new ones
 - API contract changes (new fields, endpoints, request/response shape) are captured in the unified module doc at `../flutter-front-end/docs/modules/<MODULE>.md` (API Contract + Backend Implementation sections) — do NOT create a separate briefing file in this repo
-- Always update the unified module doc after making changes (see "Module Documentation" section); if none exists, create one from `../flutter-front-end/docs/modules/_TEMPLATE.md`
+- Always update the unified module doc after making changes; if none exists, create one from `../flutter-front-end/docs/modules/_TEMPLATE.md` and add routing rows to `INTERNAL_DOCUMENTATION.md` §2
 - Always be thorough — deep dive to check for missing pieces before considering something done
 - When compacting, always preserve the full list of modified files
 - When updating current endpoints or adding new ones, do not forget to always update the `postman.json`

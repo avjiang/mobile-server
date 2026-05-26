@@ -10,7 +10,14 @@ npm run dev                        # Start dev server (PM2 + tsx, port 8080, wat
 npm run build                      # TypeScript compilation (tsc → ./dist)
 npm start                          # Production mode (node dist/index.js)
 npm run generate_prisma            # Generate Prisma clients for both global and tenant schemas
-npm run upgrade_db                 # Run Prisma migrations on all databases
+
+# DB ops — `db_upgrade.ts` / `db_backup.ts` both accept target arg: `local` | `prod`
+npm run upgrade_db                 # Apply Prisma migrations to LOCAL global + every tenant DB
+npm run upgrade_db_prod            # Same, against PROD_* DB URLs from .env (Azure MySQL)
+npm run backup_db                  # mysqldump LOCAL global + each tenant → backups/local_<ts>/
+npm run backup_db_prod             # mysqldump PROD                       → backups/prod_<ts>/
+
+# Seeds
 npm run seed_permissions           # Seed permission definitions
 npm run seed_settings_definitions  # Seed settings
 npm run seed_subscription_plans    # Seed subscription plans
@@ -102,9 +109,41 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 
 ## Environment
 
-- `.env`: `TENANT_DATABASE_URL`, `GLOBAL_DB_URL`, `PORT`, `PUSHY_SECRET_API_KEY`
+- `.env` (local): `TENANT_DATABASE_URL`, `GLOBAL_DB_URL`, `PORT`, `PUSHY_SECRET_API_KEY`
+- `.env` (prod overrides): `PROD_GLOBAL_DB_URL`, `PROD_TENANT_DATABASE_URL` (consumed when `db_upgrade.ts` / `db_backup.ts` are invoked with the `prod` arg — they swap these into `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` at runtime)
 - `config.json`: `JWT_TOKEN_SECRET`
 - PM2 config in `ecosystem.config.js` (tsx interpreter, watch mode)
+- App Service env vars on Azure are managed separately — `az webapp config appsettings list --name BayarYuk --resource-group bayar-yuk`
+
+## Deployment
+
+Auto-deploys to Azure App Service `BayarYuk` (RG `bayar-yuk`, Southeast Asia) on `push` to `main` via [`.github/workflows/main_bayaryuk.yml`](../.github/workflows/main_bayaryuk.yml). Public host: `bayaryuk-c2c8d5acg8chaqfm.southeastasia-01.azurewebsites.net`. There is no manual deploy step.
+
+Health check: `GET /health`.
+
+## Production DB Upgrade Workflow
+
+For a coordinated release that includes schema changes:
+
+1. **Audit pending migrations first** — `prisma migrate status` against prod (read-only). All Prisma migrations *should* be backward-compatible (additive cols nullable or with defaults, new tables only). Anything else (NOT NULL adds, drops, type changes) needs a multi-step rollout.
+2. `npm run backup_db_prod` — produces `backups/prod_<ts>/global.sql` + one `<tenant>.sql` per tenant. **Verify files exist and are non-empty before continuing.**
+3. `npm run upgrade_db_prod` — applies migrations to global + every tenant DB. DB is now ahead of the still-running App Service code; safe if migrations are additive.
+4. `git push origin main` — CI/CD deploys the new server code that uses the new schema.
+5. Wait for green deploy + `curl https://bayaryuk-…/health`.
+6. Release the matching Flutter build.
+
+### Silent-failure caveat in `updateAllTenantDatabases()`
+
+[`src/db.ts:82`](../src/db.ts#L82) **catches per-tenant migration failures and logs them — it does NOT abort**. Always grep stdout of `upgrade_db_prod` for `Failed to update` after the run. A clean exit code does not mean every tenant migrated.
+
+### Rollback gap (current state)
+
+- Server code rollback is easy: `git revert <commit> && git push origin main` → CI/CD redeploys, or use App Service Deployment Center to redeploy a previous build.
+- **DB rollback has no script yet.** Restoring a backup requires manually piping each `.sql` file with the `mysql` CLI (`mysql -h … <db> < backups/prod_<ts>/<db>.sql`). The planned `db_restore.ts` is drafted in [`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md) §0.3 but not yet implemented. For additive-only migrations, hand-written reverse SQL (`DROP TABLE`, `DROP COLUMN`) is also valid and was used historically.
+
+### Azure free-tier expiry
+
+Current MySQL free tier on this subscription **expires Fri 4 Sep 2026**. Full migration runbook to a fresh subscription is in [`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md) (target cutover ~25 Aug 2026). Phase 0 tooling is partially built (`prod` target works; `newprod` target and `db_restore.ts` not yet).
 
 ## Module Documentation
 

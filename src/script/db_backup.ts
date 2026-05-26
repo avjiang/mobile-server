@@ -124,7 +124,8 @@ async function main() {
     try {
         await backup();
     } catch (err) {
-        console.error("Backup aborted.");
+        console.error("Backup aborted:", (err as Error).message);
+        console.error((err as Error).stack);
         process.exit(1);
     } finally {
         await disconnectAllPrismaClients();

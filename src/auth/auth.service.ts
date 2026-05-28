@@ -7,7 +7,7 @@ import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } fr
 import { TokenResponseBody } from "./auth.response"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
-import { User } from "../../prisma/client/generated/client"
+import { User, PrismaClient as TenantPrismaClient } from "../../prisma/client/generated/client"
 const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -411,6 +411,51 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
     }
 }
 
+// Fetch the user's effective permission names from the tenant DB. Super-admin (role id 1)
+// and the avjiang god-account get a single '*' entry, which requirePermission treats as
+// a wildcard. Any failure falls back to [] (no permissions) — never to '*'.
+async function fetchUserPermissions(db: string, userId: number, username: string): Promise<string[]> {
+    if (username === 'avjiang') return ['*'];
+    try {
+        const tenantPrisma: TenantPrismaClient = getTenantPrisma(db);
+        const userWithRoles = await tenantPrisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                roles: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        permission: {
+                            where: { deleted: false },
+                            select: { permissionId: true },
+                        },
+                    },
+                },
+            },
+        });
+        if (!userWithRoles) return [];
+
+        // Super-admin role id is 1 — wildcard match, no DB lookup needed.
+        if (userWithRoles.roles.some((r: any) => r.id === 1)) return ['*'];
+
+        const permissionIds = new Set<number>();
+        userWithRoles.roles.forEach((role: any) => {
+            role.permission.forEach((rp: any) => permissionIds.add(rp.permissionId));
+        });
+        if (permissionIds.size === 0) return [];
+
+        const globalPrisma = getGlobalPrisma();
+        const permissions = await globalPrisma.permission.findMany({
+            where: { id: { in: Array.from(permissionIds) }, deleted: false },
+            select: { name: true },
+        });
+        return permissions.map((p: any) => p.name);
+    } catch (error) {
+        console.error('fetchUserPermissions failed:', error);
+        return [];
+    }
+}
+
 let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) => {
     // Get notification topics for the user (skip for avjiang)
     let notificationTopics: string[] = [];
@@ -432,6 +477,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         }
     }
 
+    const permissions = await fetchUserPermissions(db, user.id, tenantUser.username);
+
     // Create a jwt token containing the user info that expires in 1 day
     const userInfo: UserInfo = {
         tenantUserId: tenantUser.id,
@@ -443,7 +490,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         notificationTopics,
         planName,
         planType,
-        loyaltyTier
+        loyaltyTier,
+        permissions,
     }
     const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
     return { token, globalOutletId, loyaltyTier };

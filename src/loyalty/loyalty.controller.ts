@@ -5,6 +5,14 @@ import { RequestValidateError } from '../api-helpers/error';
 import { AuthRequest } from '../middleware/auth-request';
 import { UserInfo } from '../middleware/authorize-middleware';
 import { requireLoyalty } from '../middleware/loyalty-gate.middleware';
+import { requirePermission } from '../middleware/require-permission.middleware';
+
+// Permission names — match src/script/permission_seed.ts
+const P = {
+    MANAGE_PROGRAM: 'Manage Loyalty Program',
+    VIEW_ACCOUNTS: 'View Loyalty Accounts',
+    ADJUST_POINTS: 'Adjust Loyalty Points',
+};
 
 const router = express.Router();
 
@@ -117,6 +125,14 @@ const adjustPoints = async (req: AuthRequest, res: Response, next: NextFunction)
         if (isNaN(accountId)) throw new RequestValidateError('Invalid account ID');
         const { points, description } = req.body;
         if (points === undefined || points === 0) throw new RequestValidateError('points must be non-zero');
+        if (typeof points !== 'number' || !Number.isFinite(points)) {
+            throw new RequestValidateError('points must be a finite number');
+        }
+        // Audit r2-#3: previously unbounded. Match the project's monetary cap to prevent
+        // a compromised cashier from minting billions of points.
+        if (Math.abs(points) > 999999) {
+            throw new RequestValidateError('points adjustment exceeds maximum of 999,999');
+        }
         if (!description) throw new RequestValidateError('description is required for manual adjustments');
         const result = await service.adjustPoints(
             user.databaseName, accountId,
@@ -226,22 +242,22 @@ const getExpiringPoints = async (req: AuthRequest, res: Response, next: NextFunc
 // ============================================
 
 // Basic loyalty routes (Pro plan required)
-router.get('/program', requireLoyalty('basic'), getProgram);
-router.post('/program', requireLoyalty('basic'), createProgram);
-router.put('/program/:id', requireLoyalty('basic'), updateProgram);
-router.post('/enroll', requireLoyalty('basic'), enrollCustomer);
-router.get('/account/customer/:id', requireLoyalty('basic'), getAccountByCustomerId);
-router.post('/account/:id/earn', requireLoyalty('basic'), earnPoints);
-router.post('/account/:id/redeem', requireLoyalty('basic'), redeemPoints);
-router.post('/account/:id/adjust', requireLoyalty('basic'), adjustPoints);
-router.get('/account/:id/transactions', requireLoyalty('basic'), getTransactions);
-router.get('/account/:id/expiring', requireLoyalty('basic'), getExpiringPoints);
+router.get('/program', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getProgram);
+router.post('/program', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), createProgram);
+router.put('/program/:id', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), updateProgram);
+router.post('/enroll', requireLoyalty('basic'), requirePermission(P.ADJUST_POINTS), enrollCustomer);
+router.get('/account/customer/:id', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getAccountByCustomerId);
+router.post('/account/:id/earn', requireLoyalty('basic'), requirePermission(P.ADJUST_POINTS), earnPoints);
+router.post('/account/:id/redeem', requireLoyalty('basic'), requirePermission(P.ADJUST_POINTS), redeemPoints);
+router.post('/account/:id/adjust', requireLoyalty('basic'), requirePermission(P.ADJUST_POINTS), adjustPoints);
+router.get('/account/:id/transactions', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getTransactions);
+router.get('/account/:id/expiring', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getExpiringPoints);
 
 // Advanced loyalty routes (add-on required)
-router.get('/tier/program/:programId', requireLoyalty('advanced'), getTiersByProgramId);
-router.post('/tier', requireLoyalty('advanced'), createTier);
-router.put('/tier/:id', requireLoyalty('advanced'), updateTier);
-router.delete('/tier/:id', requireLoyalty('advanced'), deleteTier);
-router.put('/account/:id/tier', requireLoyalty('advanced'), assignTier);
+router.get('/tier/program/:programId', requireLoyalty('advanced'), requirePermission(P.VIEW_ACCOUNTS), getTiersByProgramId);
+router.post('/tier', requireLoyalty('advanced'), requirePermission(P.MANAGE_PROGRAM), createTier);
+router.put('/tier/:id', requireLoyalty('advanced'), requirePermission(P.MANAGE_PROGRAM), updateTier);
+router.delete('/tier/:id', requireLoyalty('advanced'), requirePermission(P.MANAGE_PROGRAM), deleteTier);
+router.put('/account/:id/tier', requireLoyalty('advanced'), requirePermission(P.ADJUST_POINTS), assignTier);
 
 module.exports = router;

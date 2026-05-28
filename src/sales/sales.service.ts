@@ -328,8 +328,10 @@ async function processLoyaltyForSale(
         const tier = (account as any).loyaltyTier;
         const actualPercentage = tier ? toNum(tier.discountPercentage) : 0;
         validateTierMatch(salesBody.loyaltyTierDiscountPercentage, actualPercentage);
-        result.loyaltyTierDiscountPercent = new Decimal(salesBody.loyaltyTierDiscountPercentage);
-        result.loyaltyTierDiscountAmount = new Decimal(salesBody.loyaltyTierDiscountAmount || 0);
+        // Recompute amount from authoritative percentage × totalAmount. Audit r1-#9:
+        // client-supplied amount was previously stored as-is and could be inflated.
+        result.loyaltyTierDiscountPercent = new Decimal(actualPercentage);
+        result.loyaltyTierDiscountAmount = totalAmount.times(actualPercentage).dividedBy(100);
     }
 
     // 2. VALIDATE + EXECUTE point redemption
@@ -395,8 +397,10 @@ async function processLoyaltyForSale(
             },
         });
 
+        // Recompute redemption value server-side. Audit r1-#5: client-trusted value
+        // could be inflated independently of pointsToRedeem.
         result.loyaltyPointsRedeemed = new Decimal(pointsToRedeem);
-        result.loyaltyPointsRedemptionValue = new Decimal(salesBody.loyaltyPointsRedemptionValue || 0);
+        result.loyaltyPointsRedemptionValue = new Decimal(pointsToRedeem).times(toNum(program.currencyPerPoint));
     }
 
     // 3. VALIDATE + EXECUTE subscription usage (advanced only)
@@ -421,6 +425,11 @@ async function processLoyaltyForSale(
         if (subscription.status !== 'ACTIVE') {
             throw new SubscriptionExpiredError();
         }
+        // Audit r2-#2: status may still read ACTIVE if the daily expiry cron has not run yet.
+        // Also defend against device-clock skew that lets a stale FE submit a past-end-date sub.
+        if (subscription.endDate && new Date() > subscription.endDate) {
+            throw new SubscriptionExpiredError();
+        }
         if (subscription.customerId !== customerId) {
             throw new BusinessLogicError('Subscription does not belong to this customer');
         }
@@ -435,7 +444,10 @@ async function processLoyaltyForSale(
                 );
             }
 
-            await tx.customerSubscription.update({
+            // Optimistic-lock with assertion: prisma.update silently no-ops on 0 matches
+            // when a composite where misses, so we use updateMany and check count.
+            // Race: two cashiers both reading version=N — the second update sees 0 rows.
+            const decrementResult = await tx.customerSubscription.updateMany({
                 where: { id: subscription.id, version: subscription.version },
                 data: {
                     remainingQuota: { decrement: quantityUsed },
@@ -443,6 +455,11 @@ async function processLoyaltyForSale(
                     version: { increment: 1 },
                 },
             });
+            if (decrementResult.count !== 1) {
+                throw new BusinessLogicError(
+                    'Subscription was modified concurrently. Please retry the sale.'
+                );
+            }
 
             // Check if quota depleted
             if ((subscription.remainingQuota - quantityUsed) <= 0) {
@@ -476,10 +493,40 @@ async function processLoyaltyForSale(
         });
 
         result.customerSubscriptionId = subscription.id;
-        result.subscriptionDiscountAmount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+        // Audit r1-#4: subscriptionDiscountAmount was previously stored as-sent. Bound it.
+        // The package category × item matching is item-level; doing a full recompute here
+        // would require per-item category lookups. Instead we apply a tight upper bound:
+        //   - TIME + fixed: discount ≤ package.discountAmount
+        //   - TIME + %: discount ≤ preDiscountTotal × pct / 100
+        //   - USAGE: discount ≤ preDiscountTotal (100% of matching items, max = full cart)
+        // preDiscountTotal = the cart total before THIS subscription discount was applied.
+        const sentSubDiscount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+        const preDiscountTotal = totalAmount.plus(sentSubDiscount);
+        const pkg = subscription.subscriptionPackage;
+        let maxSubDiscount: Decimal;
+        if (pkg.packageType === 'TIME') {
+            if (pkg.discountPercentage && toNum(pkg.discountPercentage) > 0) {
+                maxSubDiscount = preDiscountTotal.times(toNum(pkg.discountPercentage)).dividedBy(100);
+            } else if (pkg.discountAmount && toNum(pkg.discountAmount) > 0) {
+                maxSubDiscount = new Decimal(toNum(pkg.discountAmount));
+            } else {
+                maxSubDiscount = new Decimal(0);
+            }
+        } else {
+            // USAGE — 100% off matching items, bounded by the pre-discount cart total.
+            maxSubDiscount = preDiscountTotal;
+        }
+        if (sentSubDiscount.gt(maxSubDiscount.plus(0.01))) {
+            throw new BusinessLogicError(
+                `Subscription discount exceeds maximum allowed: sent ${sentSubDiscount}, max ${maxSubDiscount}`
+            );
+        }
+        result.subscriptionDiscountAmount = sentSubDiscount;
     }
 
     // 4. EARN points on finalTotalAmount (after ALL discounts)
+    // totalSpend must accumulate on every paid sale, even when rounding produces 0 points —
+    // otherwise small-ticket merchants never trigger tier auto-upgrade.
     if (totalAmount.gt(0)) {
         let pointsMultiplier = 1.0;
         if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
@@ -497,7 +544,6 @@ async function processLoyaltyForSale(
                 ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
                 : null;
 
-            // Create point batch
             await tx.loyaltyPointBatch.create({
                 data: {
                     loyaltyAccountId: account.id,
@@ -508,7 +554,6 @@ async function processLoyaltyForSale(
                 },
             });
 
-            // Update account totals
             await tx.loyaltyAccount.update({
                 where: { id: account.id },
                 data: {
@@ -521,7 +566,6 @@ async function processLoyaltyForSale(
             const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
             const finalBalance = toNum(finalAccount.currentPoints);
 
-            // Create EARN transaction
             await tx.loyaltyTransaction.create({
                 data: {
                     loyaltyAccountId: account.id,
@@ -535,6 +579,12 @@ async function processLoyaltyForSale(
             });
 
             result.loyaltyPointsEarned = new Decimal(pointsEarned);
+        } else {
+            // Sale paid but earned 0 points after rounding — still bump totalSpend for tier eligibility.
+            await tx.loyaltyAccount.update({
+                where: { id: account.id },
+                data: { totalSpend: { increment: totalAmount.toNumber() } },
+            });
         }
     }
 
@@ -562,45 +612,52 @@ async function reverseLoyaltyForSale(
 
     // 1. Reverse EARNED points
     const pointsEarned = sale.loyaltyPointsEarned ? new Decimal(sale.loyaltyPointsEarned).toNumber() : 0;
+    const saleTotalForReversal = sale.totalAmount ? new Decimal(sale.totalAmount).toNumber() : 0;
     if (pointsEarned > 0) {
-        // Find the point batch for this sale and deduct
         const earnBatch = await tx.loyaltyPointBatch.findFirst({
             where: { loyaltyAccountId: account.id, salesId: sale.id, deleted: false },
         });
 
+        // remainingInBatch = points the customer hadn't spent yet from this earn.
+        // Those are the only points we can claw back from currentPoints; the rest were
+        // already redeemed elsewhere and stay redeemed.
+        let remainingInBatch = 0;
         if (earnBatch) {
-            const remainingInBatch = toNum(earnBatch.remainingPoints);
-            // Deduct remaining (may be less than original if partially spent)
+            remainingInBatch = Math.max(toNum(earnBatch.remainingPoints), 0);
             await tx.loyaltyPointBatch.update({
                 where: { id: earnBatch.id },
                 data: { remainingPoints: 0, deleted: true, deletedAt: new Date() },
             });
-
-            // Decrement account.currentPoints by whatever was still remaining
-            await tx.loyaltyAccount.update({
-                where: { id: account.id },
-                data: {
-                    currentPoints: { decrement: Math.max(remainingInBatch, 0) },
-                    totalSpend: { decrement: new Decimal(sale.totalAmount).toNumber() },
-                },
-            });
         }
+
+        // Account totals: always reverse the full earn (totalEarned) and the full sale spend
+        // (totalSpend) regardless of whether the batch still existed. Only currentPoints is
+        // bounded by what's still in the batch.
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: {
+                currentPoints: { decrement: remainingInBatch },
+                totalEarned: { decrement: pointsEarned },
+                totalSpend: { decrement: saleTotalForReversal },
+            },
+        });
 
         const updatedAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
 
-        // Create EARN_REVERSAL transaction (idempotent check)
         const existingReversal = await tx.loyaltyTransaction.findFirst({
             where: { salesId: sale.id, type: 'EARN_REVERSAL', deleted: false },
         });
         if (!existingReversal) {
+            // points field reflects actual balance impact (what we took back from currentPoints),
+            // matching balanceAfter. The original earn amount is recoverable via the sale record.
             await tx.loyaltyTransaction.create({
                 data: {
                     loyaltyAccountId: account.id,
                     type: 'EARN_REVERSAL',
-                    points: -pointsEarned,
+                    points: -remainingInBatch,
                     balanceAfter: toNum(updatedAccount?.currentPoints ?? 0),
                     salesId: sale.id,
-                    description: `Earn reversed for sale #${sale.id}`,
+                    description: `Earn reversed for sale #${sale.id} (original ${pointsEarned}, clawed back ${remainingInBatch})`,
                     performedBy: performedBy.username,
                 },
             });

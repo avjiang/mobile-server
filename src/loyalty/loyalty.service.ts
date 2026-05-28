@@ -275,24 +275,26 @@ const updateProgram = async (db: string, programId: number, data: UpdateProgramR
         const daysInactive = calculateInactiveDays(oldProgram.deactivatedAt, new Date());
 
         if (daysInactive > 0) {
-            // Extend subscription endDates
+            // Raw SQL must bump UPDATED_AT — delta sync uses it as the change cursor, so
+            // forgetting it makes offline clients never see the extended dates. Audit r1-#8.
             prisma.$executeRaw`
                 UPDATE customer_subscription
-                SET END_DATE = DATE_ADD(END_DATE, INTERVAL ${daysInactive} DAY)
+                SET END_DATE = DATE_ADD(END_DATE, INTERVAL ${daysInactive} DAY),
+                    UPDATED_AT = NOW()
                 WHERE STATUS = 'ACTIVE' AND END_DATE IS NOT NULL AND IS_DELETED = false
             `.catch((err: unknown) => console.error('Extend subscription dates failed:', err));
 
-            // Extend point batch expiresAt
             prisma.$executeRaw`
                 UPDATE loyalty_point_batch
-                SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY)
+                SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY),
+                    UPDATED_AT = NOW()
                 WHERE REMAINING_POINTS > 0 AND EXPIRES_AT IS NOT NULL AND IS_DELETED = false
             `.catch((err: unknown) => console.error('Extend point batch expiry failed:', err));
 
-            // Extend voucher expiresAt
             prisma.$executeRaw`
                 UPDATE voucher
-                SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY)
+                SET EXPIRES_AT = DATE_ADD(EXPIRES_AT, INTERVAL ${daysInactive} DAY),
+                    UPDATED_AT = NOW()
                 WHERE STATUS = 'ACTIVE' AND EXPIRES_AT IS NOT NULL AND IS_DELETED = false
             `.catch((err: unknown) => console.error('Extend voucher expiry failed:', err));
         }
@@ -810,6 +812,17 @@ const deleteTier = async (db: string, tierId: number): Promise<void> => {
 
 const assignTier = async (db: string, accountId: number, data: ManualTierAssignRequest): Promise<LoyaltyAccountResponse> => {
     const prisma = getTenantDb(db);
+
+    // Audit r2-#7: reject soft-deleted tier — assigning a tombstoned tier would
+    // leave the account pointing at a row that future tier listings filter out,
+    // and discountPercentage from a deleted tier would still be honored at checkout.
+    if (data.loyaltyTierId !== null && data.loyaltyTierId !== undefined) {
+        const tier = await prisma.loyaltyTier.findFirst({
+            where: { id: data.loyaltyTierId, deleted: false },
+            select: { id: true },
+        });
+        if (!tier) throw new NotFoundError('Loyalty tier');
+    }
 
     const updatedAccount = await prisma.loyaltyAccount.update({
         where: { id: accountId },

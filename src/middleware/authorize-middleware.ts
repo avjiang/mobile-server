@@ -20,7 +20,11 @@ export interface UserInfo {
     notificationTopics?: string[],
     planName?: string | null,
     planType?: string | null,
-    loyaltyTier?: 'none' | 'basic' | 'advanced'
+    loyaltyTier?: 'none' | 'basic' | 'advanced',
+    // Stamped at login. '*' = wildcard (super-admin / god-account); empty/undefined
+    // = no permissions. Tokens older than the rollout will lack this field — treat
+    // missing as empty.
+    permissions?: string[]
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {

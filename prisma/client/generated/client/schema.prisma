@@ -1886,6 +1886,10 @@ model LoyaltyPointBatch {
   loyaltyAccount   LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id])
   sale             Sales?         @relation(fields: [salesId], references: [id])
 
+  // Prevents double-earn on retry: a single (account, sale) can only have one batch.
+  // NULL salesId rows (manual adjustments, reversal restores) bypass this since MySQL
+  // treats NULL as distinct in unique constraints. Audit r3-#2.
+  @@unique([loyaltyAccountId, salesId])
   @@index([loyaltyAccountId, expiresAt])
   @@index([expiresAt, remainingPoints])
   @@index([salesId])

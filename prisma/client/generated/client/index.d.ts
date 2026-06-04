@@ -106807,6 +106807,7 @@ export namespace Prisma {
 
   export type LoyaltyPointBatchWhereUniqueInput = Prisma.AtLeast<{
     id?: number
+    loyaltyAccountId_salesId?: LoyaltyPointBatchLoyaltyAccountIdSalesIdCompoundUniqueInput
     AND?: LoyaltyPointBatchWhereInput | LoyaltyPointBatchWhereInput[]
     OR?: LoyaltyPointBatchWhereInput[]
     NOT?: LoyaltyPointBatchWhereInput | LoyaltyPointBatchWhereInput[]
@@ -106823,7 +106824,7 @@ export namespace Prisma {
     version?: IntNullableFilter<"LoyaltyPointBatch"> | number | null
     loyaltyAccount?: XOR<LoyaltyAccountScalarRelationFilter, LoyaltyAccountWhereInput>
     sale?: XOR<SalesNullableScalarRelationFilter, SalesWhereInput> | null
-  }, "id">
+  }, "id" | "loyaltyAccountId_salesId">
 
   export type LoyaltyPointBatchOrderByWithAggregationInput = {
     id?: SortOrder
@@ -124094,6 +124095,11 @@ export namespace Prisma {
   export type SalesNullableScalarRelationFilter = {
     is?: SalesWhereInput | null
     isNot?: SalesWhereInput | null
+  }
+
+  export type LoyaltyPointBatchLoyaltyAccountIdSalesIdCompoundUniqueInput = {
+    loyaltyAccountId: number
+    salesId: number
   }
 
   export type LoyaltyPointBatchCountOrderByAggregateInput = {

@@ -73,6 +73,12 @@ export class CreateSalesRequest {
     // or they silently never reach tx.sales.create.
     @Expose() orderRef?: string;
     @Expose() friendlyNumber?: string;
+    // Stock source (optional — Pro tenants). When stockSourceType === 'WAREHOUSE',
+    // stock is deducted from stockSourceWarehouseId instead of the outlet. Defaults
+    // to outlet behaviour when omitted.
+    @Expose() stockSourceType?: string;
+    @Expose() stockSourceOutletId?: number;
+    @Expose() stockSourceWarehouseId?: number;
     @Expose()
     @Type(() => CreateSalesItemRequest)
     salesItems: CreateSalesItemRequest[] = [];

@@ -1215,15 +1215,39 @@ async function completeNewSales(
 
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Batch all initial queries
-            const [stockBalances, stockReceipts, customer, itemTrackStockData] = await Promise.all([
+            // Stock source: outlet (default) or warehouse (Pro feature). When sourcing
+            // from a warehouse, every stock read/write below targets the warehouse_*
+            // tables instead of the outlet stock tables — the FIFO / COGS / profit logic
+            // in between is source-agnostic and unchanged. Defaults to outlet behaviour.
+            const fromWarehouse =
+                salesBody.stockSourceType === 'WAREHOUSE' && !!salesBody.stockSourceWarehouseId;
+            const srcWarehouseId = salesBody.stockSourceWarehouseId ?? 0;
+            if (fromWarehouse) {
+                const wh = await tx.warehouse.findFirst({
+                    where: { id: srcWarehouseId, deleted: false },
+                    select: { id: true },
+                });
+                if (!wh) {
+                    throw new BusinessLogicError(`Warehouse ${srcWarehouseId} not found or inactive`);
+                }
+            }
+            const stockBalanceDelegate: any = fromWarehouse ? tx.warehouseStockBalance : tx.stockBalance;
+            const stockReceiptDelegate: any = fromWarehouse ? tx.warehouseStockReceipt : tx.stockReceipt;
+            const stockMovementDelegate: any = fromWarehouse ? tx.warehouseStockMovement : tx.stockMovement;
+            const locWhere: any = fromWarehouse
+                ? { warehouseId: srcWarehouseId }
+                : { outletId: salesBody.outletId };
+
+            // Batch all initial queries. Typed loosely because the stock balance/receipt
+            // delegates are resolved dynamically (outlet vs warehouse tables).
+            const [stockBalances, stockReceipts, customer, itemTrackStockData]: [any[], any[], any, any[]] = await Promise.all([
                 // Get stock balances for validation (with variant support)
-                tx.stockBalance.findMany({
+                stockBalanceDelegate.findMany({
                     where: {
                         OR: salesBody.salesItems.map(item => ({
                             itemId: item.itemId,
                             itemVariantId: item.itemVariantId || null,
-                            outletId: salesBody.outletId,
+                            ...locWhere,
                             deleted: false,
                         })),
                     },
@@ -1245,12 +1269,12 @@ async function completeNewSales(
                 }),
 
                 // Get all stock receipts needed for FIFO in one query (with variant support)
-                tx.stockReceipt.findMany({
+                stockReceiptDelegate.findMany({
                     where: {
                         OR: salesBody.salesItems.map(item => ({
                             itemId: item.itemId,
                             itemVariantId: item.itemVariantId || null,
-                            outletId: salesBody.outletId,
+                            ...locWhere,
                             deleted: false,
                             quantity: { gt: 0 },
                         })),
@@ -1633,6 +1657,10 @@ async function completeNewSales(
                     // Laundry intake→pickup identity (null for retail / when not sent)
                     orderRef: salesBody.orderRef || null,
                     friendlyNumber: salesBody.friendlyNumber || null,
+                    // Stock source provenance (warehouse-sourced sales; null/outlet otherwise)
+                    stockSourceType: fromWarehouse ? 'WAREHOUSE' : (salesBody.stockSourceType ?? null),
+                    stockSourceOutletId: fromWarehouse ? null : (salesBody.stockSourceOutletId ?? null),
+                    stockSourceWarehouseId: fromWarehouse ? srcWarehouseId : null,
                 },
             });
 
@@ -1704,7 +1732,7 @@ async function completeNewSales(
             if (stockReceiptUpdates.length > 0) {
                 await Promise.all(
                     stockReceiptUpdates.map((update) =>
-                        tx.stockReceipt.update({
+                        stockReceiptDelegate.update({
                             where: { id: update.id },
                             data: {
                                 quantity: update.newQuantity,
@@ -1762,7 +1790,7 @@ async function completeNewSales(
             await Promise.all([
                 // Update stock balances directly using stored IDs
                 ...stockUpdates.map((update) =>
-                    tx.stockBalance.update({
+                    stockBalanceDelegate.update({
                         where: { id: update.stockBalanceId },
                         data: {
                             availableQuantity: { decrement: update.quantity.toNumber() },
@@ -1774,11 +1802,11 @@ async function completeNewSales(
                 ),
 
                 // Batch create stock movements
-                tx.stockMovement.createMany({
+                stockMovementDelegate.createMany({
                     data: stockUpdates.map(update => ({
                         itemId: update.itemId,
                         itemVariantId: update.itemVariantId,
-                        outletId: update.outletId,
+                        ...(fromWarehouse ? { warehouseId: srcWarehouseId } : { outletId: update.outletId }),
                         previousAvailableQuantity: update.previousAvailable.toNumber(),
                         previousOnHandQuantity: update.previousOnHand.toNumber(),
                         availableQuantityDelta: -update.quantity.toNumber(),

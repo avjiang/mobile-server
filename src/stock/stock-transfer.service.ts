@@ -131,4 +131,78 @@ async function transferStock(databaseName: string, body: TransferBody) {
     };
 }
 
-export { transferStock };
+/**
+ * Drain ALL warehouse stock back to a target outlet — the "transfer everything"
+ * special case used by the Pro→Basic downgrade (AD4/AD5). Operates on a caller-
+ * supplied tenant transaction so it stays atomic with the rest of the downgrade.
+ *
+ * FIFO cost + receiptDate preserved; paired Transfer Out/In movements. Reuses the
+ * exact same engine as a normal transfer, so warehouse and outlet stock can never
+ * diverge. Per-balance loop (downgrade is rare; volume is bounded by the tenant's
+ * catalogue) — a set-based raw-SQL variant is documented in the completion plan as a
+ * future optimization if profiling ever warrants it.
+ *
+ * The CALLER must ensure a target outlet exists before invoking (refuse the
+ * downgrade otherwise — never strand stock).
+ */
+async function drainAllWarehousesToOutlet(
+    tx: Tx,
+    targetOutletId: number,
+    performedBy?: string | null
+): Promise<{ itemsDrained: number; totalQuantity: string; totalValue: string }> {
+    const balances = await tx.warehouseStockBalance.findMany({
+        where: { deleted: false, availableQuantity: { gt: 0 } },
+        select: { warehouseId: true, itemId: true, itemVariantId: true, availableQuantity: true },
+    });
+
+    const dst = outletRef(tx, targetOutletId);
+    let itemsDrained = 0;
+    let totalQuantity = new Decimal(0);
+    let totalValue = new Decimal(0);
+
+    for (const b of balances) {
+        const qty = new Decimal(b.availableQuantity);
+        if (qty.lessThanOrEqualTo(0)) continue;
+
+        const item = await tx.item.findUnique({
+            where: { id: b.itemId },
+            select: { cost: true },
+        });
+        const src = warehouseRef(tx, b.warehouseId);
+
+        const result = await consumeFIFO(src, {
+            itemId: b.itemId,
+            itemVariantId: b.itemVariantId,
+            quantity: qty,
+            fallbackCost: new Decimal(item?.cost || 0),
+            movementType: "Transfer Out",
+            reason: "Auto-drain on plan downgrade",
+            performedBy: performedBy ?? "SYSTEM",
+        });
+
+        await receiveLayers(dst, {
+            itemId: b.itemId,
+            itemVariantId: b.itemVariantId,
+            layers: result.layers.map((l) => ({
+                quantity: l.quantityUsed,
+                cost: l.cost,
+                receiptDate: l.receiptDate,
+            })),
+            movementType: "Transfer In",
+            reason: "Auto-drain on plan downgrade",
+            performedBy: performedBy ?? "SYSTEM",
+        });
+
+        itemsDrained++;
+        totalQuantity = totalQuantity.add(qty);
+        totalValue = totalValue.add(result.totalCost);
+    }
+
+    return {
+        itemsDrained,
+        totalQuantity: totalQuantity.toString(),
+        totalValue: totalValue.toString(),
+    };
+}
+
+export { transferStock, drainAllWarehousesToOutlet };

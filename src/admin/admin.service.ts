@@ -23,6 +23,7 @@ import {
 } from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
 import { ADD_ON_IDS } from "../constants/add-on-ids";
+import { drainAllWarehousesToOutlet } from "../stock/stock-transfer.service";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -1372,7 +1373,40 @@ const handleDowngradeToBasic = async (
         }
     });
 
-    // Step 2: Deactivate all warehouses in GLOBAL DB
+    // Step 2: AUTO-DRAIN warehouse stock back to an outlet, then deactivate tenant
+    // warehouses — atomically in one tenant transaction (AD4). Never strand stock:
+    // refuse the downgrade if warehouse stock exists but there is no active outlet
+    // to receive it. Drain reuses the shared transfer engine (FIFO cost + receiptDate
+    // preserved, paired Transfer Out/In movements).
+    let drainSummary = { itemsDrained: 0, totalQuantity: "0", totalValue: "0" };
+    await tenantPrisma.$transaction(async (tenantTx: any) => {
+        const hasWarehouseStock = await tenantTx.warehouseStockBalance.findFirst({
+            where: { deleted: false, availableQuantity: { gt: 0 } },
+            select: { id: true },
+        });
+        if (hasWarehouseStock) {
+            const targetOutlet = await tenantTx.outlet.findFirst({
+                where: { deleted: false },
+                orderBy: { id: "asc" },
+                select: { id: true },
+            });
+            if (!targetOutlet) {
+                throw new RequestValidateError(
+                    "Cannot downgrade: warehouse holds stock but the tenant has no active outlet " +
+                    "to receive it. Restore an outlet or clear warehouse stock first."
+                );
+            }
+            drainSummary = await drainAllWarehousesToOutlet(tenantTx, targetOutlet.id, "SYSTEM");
+        }
+
+        // Deactivate all warehouses in TENANT DB (after draining)
+        await tenantTx.warehouse.updateMany({
+            where: { deleted: false },
+            data: { deleted: true, deletedAt: new Date() },
+        });
+    });
+
+    // Step 3: Deactivate all warehouses in GLOBAL DB
     await globalTx.tenantWarehouse.updateMany({
         where: {
             tenantId,
@@ -1381,17 +1415,6 @@ const handleDowngradeToBasic = async (
         },
         data: {
             isActive: false,
-            deleted: true,
-            deletedAt: new Date()
-        }
-    });
-
-    // Step 3: Deactivate all warehouses in TENANT DB
-    await tenantPrisma.warehouse.updateMany({
-        where: {
-            deleted: false
-        },
-        data: {
             deleted: true,
             deletedAt: new Date()
         }
@@ -1414,6 +1437,7 @@ const handleDowngradeToBasic = async (
     return {
         warehousesDeactivated: warehouseCount,
         addOnsRemoved: addOnDeleteResult.count,
+        drain: drainSummary,
     };
 };
 

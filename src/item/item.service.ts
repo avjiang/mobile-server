@@ -254,6 +254,15 @@ let getAll = async (
                         },
                     },
                 },
+                // Laundry recipe lines (only present on service items).
+                serviceConsumables: {
+                    where: { deleted: false },
+                    select: {
+                        consumableItemId: true,
+                        ratePerKg: true,
+                        unit: true,
+                    },
+                },
             },
         });
 
@@ -288,6 +297,17 @@ let getAll = async (
                 stockQuantity: baseItemStock, // Add stock quantity for base item
                 stockBalance: undefined, // Remove raw field
                 variants: transformedVariants,
+                // Flatten recipe lines for the client (drops raw relation field).
+                // Only emit `consumables` for laundry service items so retail items
+                // carry no recipe key (avoids a redundant local delete on each sync).
+                consumables: item.itemType === 'service'
+                    ? (item.serviceConsumables?.map(c => ({
+                        consumableItemId: c.consumableItemId,
+                        ratePerKg: Number(c.ratePerKg),
+                        unit: c.unit,
+                    })) ?? [])
+                    : undefined,
+                serviceConsumables: undefined,
             };
         });
         // Return with server timestamp
@@ -557,10 +577,42 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                 }
             }
 
+            // Resolve fallback supplier/category for accounts that don't track them (e.g. laundry).
+            // Item.supplierId and Item.categoryId are NOT NULL columns, so when the client omits
+            // them we attach a tenant-level "Laundry" default (find-or-create by unique name).
+            const needsDefaultSupplier = itemBodyArray.some((i: any) => !i.supplierId);
+            const needsDefaultCategory = itemBodyArray.some((i: any) => !i.categoryId);
+
+            let defaultSupplierId: number | undefined;
+            if (needsDefaultSupplier) {
+                const defaultSupplier = await tx.supplier.upsert({
+                    where: { companyName: "Laundry" },
+                    update: { deleted: false },
+                    create: { companyName: "Laundry", hasTax: false, deleted: false },
+                    select: { id: true },
+                });
+                defaultSupplierId = defaultSupplier.id;
+            }
+
+            let defaultCategoryId: number | undefined;
+            if (needsDefaultCategory) {
+                const defaultCategory = await tx.category.upsert({
+                    where: { name: "Laundry" },
+                    update: { deleted: false },
+                    create: { name: "Laundry", deleted: false },
+                    select: { id: true },
+                });
+                defaultCategoryId = defaultCategory.id;
+            }
+
             // Create items with nested relations in parallel
             return Promise.all(
                 itemBodyArray.map(async (itemBody) => {
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, ...itemWithoutId } = itemBody as any;
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, ...itemWithoutId } = itemBody as any;
+
+                    // Fall back to the tenant default when supplier/category were not provided.
+                    const effectiveSupplierId = supplierId || defaultSupplierId;
+                    const effectiveCategoryId = categoryId || defaultCategoryId;
 
                     // Auto-flag hasVariants if variants array exists
                     const hasVariants = variants && Array.isArray(variants) && variants.length > 0;
@@ -609,10 +661,10 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                 },
                             } : {}),
                             supplier: {
-                                connect: { id: supplierId },
+                                connect: { id: effectiveSupplierId },
                             },
                             category: {
-                                connect: { id: categoryId },
+                                connect: { id: effectiveCategoryId },
                             },
                             createdAt: new Date(),
                             updatedAt: new Date(),
@@ -710,6 +762,22 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                         }
                     }
 
+                    // Laundry: create recipe lines (bill-of-materials) for a service item.
+                    // consumableItemId references already-persisted "supply" items (created
+                    // inline by the client just before the service). Distinct from F&B Recipe.
+                    if (Array.isArray(consumables) && consumables.length > 0) {
+                        await tx.itemConsumable.createMany({
+                            data: consumables.map((c: any) => ({
+                                serviceItemId: createdItem.id,
+                                consumableItemId: c.consumableItemId,
+                                ratePerKg: c.ratePerKg ?? 0,
+                                unit: c.unit || "Milliliter",
+                                deleted: false,
+                            })),
+                            skipDuplicates: true,
+                        });
+                    }
+
                     return createdItem;
                 })
             );
@@ -739,7 +807,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
     try {
         // Extract id, version, and relation fields from the item object
         // stockQuantity is a virtual field (not a DB column) — must be extracted to prevent Prisma errors
-        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, ...updateData } = item as any;
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, ...updateData } = item as any;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Check if alternateLookUp is being updated and not empty
@@ -819,6 +887,26 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 },
                 data: itemUpdateData
             });
+
+            // Laundry: replace recipe lines when the client sends a consumables array.
+            // Hard delete + recreate keeps the @@unique(serviceItemId, consumableItemId)
+            // constraint clean. The item.update above bumped updatedAt, so the service
+            // re-syncs to clients with its new recipe.
+            if (consumables !== undefined && Array.isArray(consumables)) {
+                await tx.itemConsumable.deleteMany({ where: { serviceItemId: id } });
+                if (consumables.length > 0) {
+                    await tx.itemConsumable.createMany({
+                        data: consumables.map((c: any) => ({
+                            serviceItemId: id,
+                            consumableItemId: c.consumableItemId,
+                            ratePerKg: c.ratePerKg ?? 0,
+                            unit: c.unit || "Milliliter",
+                            deleted: false,
+                        })),
+                        skipDuplicates: true,
+                    });
+                }
+            }
 
             // ===== trackStock transition: ON → OFF =====
             if (turningOff) {

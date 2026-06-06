@@ -4,7 +4,7 @@ import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
 
-let generateReport = async (databaseName: string, sessionId: number) => {
+let generateReport = async (databaseName: string, sessionId: number, planType?: string | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // First check if session exists
@@ -15,6 +15,11 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         if (!session) {
             throw new NotFoundError('Session');
         }
+
+        // Laundry: exclude consumable-depletion lines from item rankings and surface
+        // them under laundryOps instead (see generateOutletReport for rationale).
+        const isLaundry = planType === 'Laundry';
+        const itemRankingFilter = isLaundry ? { stockConsumptionQty: null } : {};
 
         // All queries will filter by this session ID
         const sessionFilter = { sessionId: sessionId };
@@ -140,7 +145,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     sales: {
                         ...sessionFilter,
                         status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
-                    }
+                    },
+                    ...itemRankingFilter
                 },
                 _sum: {
                     quantity: true,
@@ -164,7 +170,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     },
                     profit: {
                         gt: 0
-                    }
+                    },
+                    ...itemRankingFilter
                 },
                 _sum: {
                     profit: true
@@ -187,7 +194,8 @@ let generateReport = async (databaseName: string, sessionId: number) => {
                     },
                     profit: {
                         lt: 0
-                    }
+                    },
+                    ...itemRankingFilter
                 },
                 _sum: {
                     profit: true
@@ -641,8 +649,61 @@ let generateReport = async (databaseName: string, sessionId: number) => {
         const refundedProfitLoss = refundedProfit.gt(0) ? refundedProfit : new Decimal(0);
         const refundedLossRecovery = refundedProfit.lt(0) ? refundedProfit.abs() : new Decimal(0);
 
+        // ── Laundry operations (only for laundry accounts) — KG processed + supplies consumed ──
+        let laundryOps: {
+            totalKgProcessed: number;
+            totalLoads: number;
+            averageKgPerLoad: number;
+            suppliesConsumed: { itemId: number; itemName: string; unitOfMeasure: string | null; totalConsumed: number }[];
+        } | null = null;
+        if (isLaundry) {
+            const nonVoidStatuses = ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"];
+            const [kgAgg, consumableLines] = await Promise.all([
+                tenantPrisma.salesItem.aggregate({
+                    where: {
+                        sales: { ...sessionFilter, status: { in: nonVoidStatuses } },
+                        loadWeightKg: { not: null }
+                    },
+                    _sum: { loadWeightKg: true },
+                    _count: { id: true }
+                }),
+                tenantPrisma.salesItem.findMany({
+                    where: {
+                        sales: { ...sessionFilter, status: { in: nonVoidStatuses } },
+                        stockConsumptionQty: { not: null }
+                    },
+                    select: { itemId: true, itemName: true, unitOfMeasure: true, quantity: true, stockConsumptionQty: true }
+                })
+            ]);
+
+            const totalKg = (kgAgg._sum.loadWeightKg || new Decimal(0)).toNumber();
+            const totalLoads = kgAgg._count.id || 0;
+
+            const suppliesMap: Record<number, { itemId: number; itemName: string; unitOfMeasure: string | null; totalConsumed: Decimal }> = {};
+            for (const line of consumableLines) {
+                const consumed = new Decimal(line.quantity).times(new Decimal(line.stockConsumptionQty!));
+                if (!suppliesMap[line.itemId]) {
+                    suppliesMap[line.itemId] = { itemId: line.itemId, itemName: line.itemName, unitOfMeasure: line.unitOfMeasure, totalConsumed: new Decimal(0) };
+                }
+                suppliesMap[line.itemId].totalConsumed = suppliesMap[line.itemId].totalConsumed.plus(consumed);
+            }
+            const suppliesConsumed = Object.values(suppliesMap)
+                .map(s => ({ itemId: s.itemId, itemName: s.itemName, unitOfMeasure: s.unitOfMeasure, totalConsumed: s.totalConsumed.toNumber() }))
+                .sort((a, b) => b.totalConsumed - a.totalConsumed);
+
+            laundryOps = {
+                totalKgProcessed: totalKg,
+                totalLoads,
+                averageKgPerLoad: totalLoads > 0 ? totalKg / totalLoads : 0,
+                suppliesConsumed
+            };
+        }
+
         // Prepare response object
         return {
+            // Laundry operations block (null for non-laundry accounts)
+            laundryOps,
+
             // Overall metrics (only from completed sales)
             totalRevenue: netRevenue.toNumber(),
             grossRevenue: grossRevenue.toNumber(),
@@ -904,9 +965,16 @@ let generateReport = async (databaseName: string, sessionId: number) => {
     }
 }
 
-let generateOutletReport = async (databaseName: string, outletId: number, startDate?: Date, endDate?: Date) => {
+let generateOutletReport = async (databaseName: string, outletId: number, startDate?: Date, endDate?: Date, planType?: string | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Laundry accounts split each wash into a service line (revenue) + consumable
+        // depletion lines (detergent COGS). For item rankings those consumable lines
+        // would surface as "sold"/"loss" items, so we exclude them (stockConsumptionQty
+        // set) and surface them instead under the dedicated laundryOps block below.
+        // Retail/F&B keep the original behaviour (filter is a no-op).
+        const isLaundry = planType === 'Laundry';
+        const itemRankingFilter = isLaundry ? { stockConsumptionQty: null } : {};
         // First check if outlet exists
         const outlet = await tenantPrisma.outlet.findUnique({
             where: { id: outletId }
@@ -1045,7 +1113,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     sales: {
                         ...outletFilter,
                         status: { in: ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"] }
-                    }
+                    },
+                    ...itemRankingFilter
                 },
                 _sum: {
                     quantity: true,
@@ -1069,7 +1138,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     },
                     profit: {
                         gt: 0
-                    }
+                    },
+                    ...itemRankingFilter
                 },
                 _sum: {
                     profit: true
@@ -1092,7 +1162,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     },
                     profit: {
                         lt: 0
-                    }
+                    },
+                    ...itemRankingFilter
                 },
                 _sum: {
                     profit: true
@@ -1535,8 +1606,64 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
         const refundedProfitLoss = refundedProfit.gt(0) ? refundedProfit : new Decimal(0);
         const refundedLossRecovery = refundedProfit.lt(0) ? refundedProfit.abs() : new Decimal(0);
 
+        // ── Laundry operations (only computed for laundry accounts) ──
+        // totalKgProcessed = Σ actual processed weight across wash-service lines;
+        // suppliesConsumed = Σ(quantity × stockConsumptionQty) per supply item, in
+        // base units (ml/g) — the FE converts to L/kg using unitOfMeasure.
+        let laundryOps: {
+            totalKgProcessed: number;
+            totalLoads: number;
+            averageKgPerLoad: number;
+            suppliesConsumed: { itemId: number; itemName: string; unitOfMeasure: string | null; totalConsumed: number }[];
+        } | null = null;
+        if (isLaundry) {
+            const nonVoidStatuses = ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"];
+            const [kgAgg, consumableLines] = await Promise.all([
+                tenantPrisma.salesItem.aggregate({
+                    where: {
+                        sales: { ...outletFilter, status: { in: nonVoidStatuses } },
+                        loadWeightKg: { not: null }
+                    },
+                    _sum: { loadWeightKg: true },
+                    _count: { id: true }
+                }),
+                tenantPrisma.salesItem.findMany({
+                    where: {
+                        sales: { ...outletFilter, status: { in: nonVoidStatuses } },
+                        stockConsumptionQty: { not: null }
+                    },
+                    select: { itemId: true, itemName: true, unitOfMeasure: true, quantity: true, stockConsumptionQty: true }
+                })
+            ]);
+
+            const totalKg = (kgAgg._sum.loadWeightKg || new Decimal(0)).toNumber();
+            const totalLoads = kgAgg._count.id || 0;
+
+            const suppliesMap: Record<number, { itemId: number; itemName: string; unitOfMeasure: string | null; totalConsumed: Decimal }> = {};
+            for (const line of consumableLines) {
+                const consumed = new Decimal(line.quantity).times(new Decimal(line.stockConsumptionQty!));
+                if (!suppliesMap[line.itemId]) {
+                    suppliesMap[line.itemId] = { itemId: line.itemId, itemName: line.itemName, unitOfMeasure: line.unitOfMeasure, totalConsumed: new Decimal(0) };
+                }
+                suppliesMap[line.itemId].totalConsumed = suppliesMap[line.itemId].totalConsumed.plus(consumed);
+            }
+            const suppliesConsumed = Object.values(suppliesMap)
+                .map(s => ({ itemId: s.itemId, itemName: s.itemName, unitOfMeasure: s.unitOfMeasure, totalConsumed: s.totalConsumed.toNumber() }))
+                .sort((a, b) => b.totalConsumed - a.totalConsumed);
+
+            laundryOps = {
+                totalKgProcessed: totalKg,
+                totalLoads,
+                averageKgPerLoad: totalLoads > 0 ? totalKg / totalLoads : 0,
+                suppliesConsumed
+            };
+        }
+
         // Prepare response object
         return {
+            // Laundry operations block (null for non-laundry accounts)
+            laundryOps,
+
             // Overall metrics
             totalRevenue: netRevenue.toNumber(),
             grossRevenue: grossRevenue.toNumber(),
@@ -1779,4 +1906,224 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
     }
 }
 
-export = { generateReport, generateOutletReport }
+/**
+ * Lean session report for Laundry accounts.
+ *
+ * Laundry shifts don't deal in product/category rankings, stock depletion,
+ * procurement (PO/DO/invoices), or the full sales-status spread (returned /
+ * refunded / voided / partially-paid / delivered breakdowns). Surfacing those
+ * is noise for a wash-and-fold operator. This endpoint runs ONLY the queries
+ * that back the sections a laundry shift actually cares about:
+ *
+ *   - Session info (the shift envelope)
+ *   - Headline metrics: revenue, profit, average order value
+ *   - Laundry operations: total KG processed, loads, per-supply consumption
+ *   - Payment section: total paid, change given, payment-method breakdown
+ *   - Per-order transactions list (the actual wash orders)
+ *
+ * Every other field in the shared SessionReport shape is intentionally omitted;
+ * the frontend `SessionReportDO.fromMap` defaults them to empty/zero so the lean
+ * payload stays backwards-compatible without a bespoke model. The frontend hides
+ * the corresponding sections for laundry tenants (see session_report_sheet.dart
+ * and pdf_generator.dart).
+ */
+let generateLaundryReport = async (databaseName: string, sessionId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const session = await tenantPrisma.session.findUnique({
+            where: { id: sessionId }
+        });
+
+        if (!session) {
+            throw new NotFoundError('Session');
+        }
+
+        const sessionFilter = { sessionId: sessionId };
+        const completedSessionFilter = { completedSessionId: sessionId };
+        const nonVoidStatuses = ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"];
+
+        const [completedSales, paymentBreakdown, allSales, kgAgg, consumableLines] = await Promise.all([
+            // Completed sales from completedSessionId only — backs revenue / avg / paid / change
+            tenantPrisma.sales.aggregate({
+                where: { ...completedSessionFilter, status: "Completed", deleted: false },
+                _count: { id: true },
+                _sum: { totalAmount: true, paidAmount: true, profitAmount: true, changeAmount: true }
+            }),
+
+            // Payment-method breakdown across all non-voided sales
+            tenantPrisma.payment.groupBy({
+                by: ['method'],
+                where: {
+                    ...sessionFilter,
+                    sales: { status: { in: nonVoidStatuses } }
+                },
+                _sum: { paidAmount: true }
+            }),
+
+            // All non-voided session sales — drives the per-order list, profit split, and shift count
+            tenantPrisma.sales.findMany({
+                where: { ...sessionFilter, deleted: false },
+                select: {
+                    id: true,
+                    businessDate: true,
+                    salesType: true,
+                    customerName: true,
+                    phoneNumber: true,
+                    totalAmount: true,
+                    paidAmount: true,
+                    profitAmount: true,
+                    isTaxInclusive: true,
+                    status: true,
+                    remark: true,
+                    completedSessionId: true,
+                    salesItems: {
+                        select: {
+                            id: true,
+                            itemName: true,
+                            itemModel: true,
+                            quantity: true,
+                            cost: true,
+                            discountAmount: true,
+                            taxAmount: true,
+                            subtotalAmount: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            }),
+
+            // Laundry operations: total weight processed across wash loads
+            tenantPrisma.salesItem.aggregate({
+                where: {
+                    sales: { ...sessionFilter, status: { in: nonVoidStatuses } },
+                    loadWeightKg: { not: null }
+                },
+                _sum: { loadWeightKg: true },
+                _count: { id: true }
+            }),
+
+            // Laundry operations: per-supply consumption (detergent, softener, …)
+            tenantPrisma.salesItem.findMany({
+                where: {
+                    sales: { ...sessionFilter, status: { in: nonVoidStatuses } },
+                    stockConsumptionQty: { not: null }
+                },
+                select: { itemId: true, itemName: true, unitOfMeasure: true, quantity: true, stockConsumptionQty: true }
+            })
+        ]);
+
+        // ── Headline metrics (completed sales only, mirroring generateReport) ──
+        const totalCompletedSalesCount = completedSales._count.id || 0;
+        const totalCompletedRevenue = completedSales._sum?.totalAmount || new Decimal(0);
+        const averageTransactionValue = totalCompletedSalesCount > 0
+            ? totalCompletedRevenue.dividedBy(totalCompletedSalesCount)
+            : new Decimal(0);
+
+        // Split completed-sale profit into gains/losses (in memory, same as generateReport)
+        let totalGains = new Decimal(0);
+        let totalLosses = new Decimal(0);
+        allSales
+            .filter(sale => sale.completedSessionId === sessionId && sale.status === "Completed")
+            .forEach(sale => {
+                if (sale.profitAmount.gt(0)) totalGains = totalGains.plus(sale.profitAmount);
+                else if (sale.profitAmount.lt(0)) totalLosses = totalLosses.plus(sale.profitAmount);
+            });
+        const totalProfit = totalGains.plus(totalLosses);
+
+        const sessionSalesCount = allSales.filter(sale => nonVoidStatuses.includes(sale.status)).length;
+
+        // ── Laundry operations block ──
+        const totalKg = (kgAgg._sum.loadWeightKg || new Decimal(0)).toNumber();
+        const totalLoads = kgAgg._count.id || 0;
+        const suppliesMap: Record<number, { itemId: number; itemName: string; unitOfMeasure: string | null; totalConsumed: Decimal }> = {};
+        for (const line of consumableLines) {
+            const consumed = new Decimal(line.quantity).times(new Decimal(line.stockConsumptionQty!));
+            if (!suppliesMap[line.itemId]) {
+                suppliesMap[line.itemId] = { itemId: line.itemId, itemName: line.itemName, unitOfMeasure: line.unitOfMeasure, totalConsumed: new Decimal(0) };
+            }
+            suppliesMap[line.itemId].totalConsumed = suppliesMap[line.itemId].totalConsumed.plus(consumed);
+        }
+        const suppliesConsumed = Object.values(suppliesMap)
+            .map(s => ({ itemId: s.itemId, itemName: s.itemName, unitOfMeasure: s.unitOfMeasure, totalConsumed: s.totalConsumed.toNumber() }))
+            .sort((a, b) => b.totalConsumed - a.totalConsumed);
+
+        return {
+            laundryOps: {
+                totalKgProcessed: totalKg,
+                totalLoads,
+                averageKgPerLoad: totalLoads > 0 ? totalKg / totalLoads : 0,
+                suppliesConsumed
+            },
+
+            // Headline metrics
+            totalRevenue: totalCompletedRevenue.toNumber(),
+            grossRevenue: totalCompletedRevenue.toNumber(),
+            returnRefundImpact: 0,
+            totalProfit: totalProfit.toNumber(),
+            totalProfitGains: totalGains.toNumber(),
+            totalProfitLosses: totalLosses.toNumber(),
+            averageTransactionValue: averageTransactionValue.toNumber(),
+            totalPaidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+            changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber(),
+            voidedSalesCount: 0,
+            voidedSalesAmount: 0,
+
+            completedSales: {
+                count: totalCompletedSalesCount,
+                totalAmount: totalCompletedRevenue.toNumber(),
+                paidAmount: (completedSales._sum?.paidAmount || new Decimal(0)).toNumber(),
+                profit: totalProfit.toNumber(),
+                profitGains: totalGains.toNumber(),
+                profitLosses: totalLosses.toNumber(),
+                changeGiven: (completedSales._sum?.changeAmount || new Decimal(0)).toNumber()
+            },
+
+            sessionInfo: {
+                id: session.id,
+                outletId: session.outletId,
+                businessDate: session.businessDate,
+                openingDateTime: session.openingDateTime,
+                closingDateTime: session.closingDateTime,
+                openingAmount: session.openingAmount.toNumber(),
+                totalSalesCount: sessionSalesCount,
+                openByUserID: session.openByUserID,
+                closeByUserID: session.closeByUserID
+            },
+
+            paymentBreakdown: paymentBreakdown.map(payment => ({
+                method: payment.method,
+                amount: (payment._sum.paidAmount || new Decimal(0)).toNumber()
+            })),
+
+            // Per-order transactions list (the actual wash orders)
+            sales: allSales.map(sale => ({
+                id: sale.id,
+                businessDate: sale.businessDate,
+                salesType: sale.salesType,
+                customerName: sale.customerName || 'Guest',
+                phoneNumber: sale.phoneNumber || '',
+                totalAmount: sale.totalAmount.toNumber(),
+                paidAmount: sale.paidAmount.toNumber(),
+                profitAmount: sale.profitAmount.toNumber(),
+                isTaxInclusive: true,
+                status: sale.status,
+                remark: sale.remark || '',
+                salesItems: sale.salesItems.map(item => ({
+                    id: item.id,
+                    itemName: item.itemName,
+                    itemModel: item.itemModel,
+                    cost: item.cost.toNumber(),
+                    quantity: item.quantity.toNumber(),
+                    discountAmount: item.discountAmount.toNumber(),
+                    taxAmount: item.taxAmount.toNumber(),
+                    subtotalAmount: item.subtotalAmount.toNumber()
+                }))
+            }))
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+export = { generateReport, generateOutletReport, generateLaundryReport }

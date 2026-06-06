@@ -1414,6 +1414,7 @@ async function completeNewSales(
                         deleted: false,
                         stockConsumptionQty: item.stockConsumptionQty,
                         unitOfMeasure: item.unitOfMeasure || null,
+                        loadWeightKg: item.loadWeightKg ?? null,
                     });
 
                     // Track receipt updates for consumption item
@@ -1468,6 +1469,7 @@ async function completeNewSales(
                             deleted: false,
                             stockConsumptionQty: null,
                             unitOfMeasure: item.unitOfMeasure || null,
+                            loadWeightKg: item.loadWeightKg ?? null,
                         });
 
                         // Track receipt updates for piece-based item
@@ -1514,6 +1516,7 @@ async function completeNewSales(
                     deleted: false,
                     stockConsumptionQty: null,
                     unitOfMeasure: item.unitOfMeasure || null,
+                    loadWeightKg: item.loadWeightKg ?? null,
                 });
             }
 
@@ -2100,6 +2103,83 @@ let getTotalSalesData = async (databaseName: string, sessionID: number, loyaltyT
 
             // Loyalty metrics (only present when loyalty is enabled)
             ...(loyaltyMetrics ? { loyaltyMetrics } : {}),
+        };
+    }
+    catch (error) {
+        throw error
+    }
+}
+
+/**
+ * Daily revenue trend for the dashboard sparkline + "vs yesterday" chip.
+ *
+ * Performance / cost notes:
+ * - Single parameterised aggregate query. Day-bucketing + SUM happen IN MySQL,
+ *   so the wire transfers at most `days` rows (not every sale row).
+ * - Rides the existing composite index @@index([outletId, businessDate, status]):
+ *   outletId equality + businessDate range seek; STATUS filtered via index-condition
+ *   pushdown. Work scales with one outlet × N days, never the whole table.
+ * - Days are bucketed by UTC calendar day to stay consistent with the rest of the
+ *   app (session.businessDate = getUTCStartOfDay, outlet reports use UTC bounds).
+ * - Revenue definition matches getTotalSalesData (SUM(totalAmount) of active sales:
+ *   Completed + Partially Paid + Delivered) so the graph agrees with the headline.
+ */
+let getRevenueTrend = async (databaseName: string, outletId: number, days: number = 7) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        // Clamp to a sane window (defensive; avoids an unbounded scan if a bad value slips through).
+        const windowDays = Math.min(Math.max(Math.trunc(days) || 7, 1), 31);
+
+        // [start, end) in UTC: start = midnight of (today - (windowDays - 1)), end = midnight of tomorrow.
+        const now = new Date();
+        const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (windowDays - 1), 0, 0, 0, 0));
+
+        // Aggregate in the DB. DATE() truncation isn't expressible via Prisma groupBy, so use a
+        // parameterised raw query (still safe — values are bound, not interpolated).
+        const rows = await tenantPrisma.$queryRaw<Array<{ day: Date | string; revenue: Prisma.Decimal | string | null }>>(
+            Prisma.sql`
+                SELECT DATE(BUSINESS_DATE)                      AS day,
+                       CAST(SUM(TOTAL_AMOUNT) AS DECIMAL(18,4)) AS revenue
+                FROM   sales
+                WHERE  OUTLET_ID     = ${outletId}
+                  AND  BUSINESS_DATE >= ${start}
+                  AND  BUSINESS_DATE <  ${end}
+                  AND  STATUS IN ('Completed', 'Partially Paid', 'Delivered')
+                  AND  IS_DELETED = 0
+                GROUP BY DATE(BUSINESS_DATE)
+                ORDER BY day ASC
+            `
+        );
+
+        // Index returned rows by YYYY-MM-DD for zero-fill.
+        const byDay = new Map<string, number>();
+        for (const r of rows) {
+            const key = typeof r.day === 'string' ? r.day.slice(0, 10) : r.day.toISOString().slice(0, 10);
+            const rev = r.revenue == null ? 0 : Number(r.revenue);
+            byDay.set(key, rev);
+        }
+
+        // Build a dense, zero-filled series oldest→newest so the client can plot directly.
+        const series: Array<{ date: string; revenue: number }> = [];
+        for (let i = 0; i < windowDays; i++) {
+            const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (windowDays - 1 - i), 0, 0, 0, 0));
+            const key = d.toISOString().slice(0, 10);
+            series.push({ date: key, revenue: byDay.get(key) ?? 0 });
+        }
+
+        const todayRevenue = series[series.length - 1]?.revenue ?? 0;
+        const yesterdayRevenue = series.length >= 2 ? series[series.length - 2].revenue : 0;
+        // null trend when there's no baseline (avoids divide-by-zero / fake 100%).
+        const trendPct = yesterdayRevenue > 0
+            ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 1000) / 10
+            : null;
+
+        return {
+            series,
+            todayRevenue,
+            yesterdayRevenue,
+            trendPct,
         };
     }
     catch (error) {
@@ -2999,6 +3079,7 @@ export = {
     update,
     remove,
     getTotalSalesData,
+    getRevenueTrend,
     getPartiallyPaidSales,
     addPaymentToPartiallyPaidSales,
     voidSales,

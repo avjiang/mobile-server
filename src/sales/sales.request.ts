@@ -104,6 +104,9 @@ export class CreateSalesItemRequest {
     @Expose() deleted: boolean | undefined;
     @Expose() stockConsumptionQty?: PrismaDecimal;
     @Expose() unitOfMeasure?: string;
+    // Laundry: actual processed weight (kg) on a wash-service line. The charged
+    // price is fixed to the machine load; this is captured only for KG reporting.
+    @Expose() loadWeightKg?: PrismaDecimal;
 }
 
 export class CalculateSalesObject {

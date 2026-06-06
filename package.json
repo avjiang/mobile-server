@@ -4,7 +4,8 @@
   "description": "## Getting started Before you run the project, make sure to install all packages first by running `npm install`",
   "main": "dist/src/index.js",
   "dependencies": {
-    "@azure/storage-blob": "^12.27.0",
+    "@aws-sdk/client-s3": "^3.1062.0",
+    "@aws-sdk/s3-request-presigner": "^3.1062.0",
     "@prisma/client": "^6.7.0",
     "@types/validator": "^13.11.1",
     "accepts": "^1.3.8",
@@ -66,6 +67,7 @@
     "parseurl": "^1.3.3",
     "path-to-regexp": "^0.1.7",
     "pm2": "^6.0.5",
+    "prisma": "^6.7.0",
     "process-nextick-args": "^2.0.1",
     "proxy-addr": "^2.0.7",
     "pushy": "^4.0.3",
@@ -89,7 +91,6 @@
     "util-deprecate": "^1.0.2",
     "utils-merge": "^1.0.1",
     "validator": "^13.11.0",
-    "prisma": "^6.7.0",
     "vary": "^1.1.2"
   },
   "scripts": {

@@ -115,6 +115,15 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 - PM2 config in `ecosystem.config.js` (tsx interpreter, watch mode)
 - App Service env vars on Azure are managed separately — `az webapp config appsettings list --name BayarYuk --resource-group bayar-yuk`
 
+## Testing — LOCAL DB ONLY (hard rule)
+
+**When testing or verifying behavior — creating/inspecting/deleting test data, running ad-hoc queries, seeding, or confirming a fix — you MUST only access the LOCAL MySQL DB.** Never the production database.
+
+- **Local only:** `mysql -h127.0.0.1 -P3306 -uroot -prootroot <db>` — the `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` (`127.0.0.1:3306`) values, including any tenant DB such as `nanggroe_wash_db`.
+- **Never for testing:** the prod Azure MySQL host `*.mysql.database.azure.com` or the `PROD_GLOBAL_DB_URL` / `PROD_TENANT_DATABASE_URL` URLs. Do not connect to, query, or mutate it to "check" or "test" anything.
+- Production is touched **only** through the explicit, user-authorized release path in "Production DB Upgrade Workflow" below (`backup_db_prod` → `upgrade_db_prod`) — never for testing, verification, or convenience.
+- If a test seems to require prod data, stop and ask the user first.
+
 ## Deployment
 
 Auto-deploys to Azure App Service `BayarYuk` (RG `bayar-yuk`, Southeast Asia) on `push` to `main` via [`.github/workflows/main_bayaryuk.yml`](../.github/workflows/main_bayaryuk.yml). Public host: `bayaryuk-c2c8d5acg8chaqfm.southeastasia-01.azurewebsites.net`. There is no manual deploy step.

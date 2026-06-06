@@ -51,6 +51,8 @@ app.get('/health', (req, res) => res.json({
 
 app.use('/auth', require('./auth/auth.controller'))
 app.use('/version', require('./version/version.controller'))
+// Public online catalogue — tokenless by design; MUST stay above the auth middleware.
+app.use('/public', require('./public/public.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)
@@ -90,6 +92,7 @@ app.use('/purchaseReturn', require('./purchase_return/purchase-return.controller
 app.use('/loyalty', require('./loyalty/loyalty.controller'))
 app.use('/subscription', require('./subscription-package/subscription-package.controller'))
 app.use('/voucher', require('./voucher/voucher.controller'))
+app.use('/catalogue', require('./catalogue/catalogue.controller'))
 
 // error middleware
 app.use(errorMiddleware)

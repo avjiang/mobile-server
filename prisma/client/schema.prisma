@@ -364,6 +364,9 @@ model Item {
   supplierId              Int                      @map("SUPPLIER_ID")
   hasVariants             Boolean                  @default(false) @map("HAS_VARIANTS")
   trackStock              Boolean                  @default(true) @map("TRACK_STOCK")
+  // Laundry vertical: default machine-load weight (kg) for a "service" item, used to
+  // prefill the consumption dialog at sale time. Null for non-laundry items.
+  defaultLoadWeightKg     Decimal?                 @map("DEFAULT_LOAD_WEIGHT_KG") @db.Decimal(15, 4)
   deleted                 Boolean                  @default(false) @map("IS_DELETED")
   deletedAt               DateTime?                @map("DELETED_AT")
   createdAt               DateTime?                @default(now()) @map("CREATED_AT")
@@ -385,6 +388,12 @@ model Item {
   warehouseStockMovements WarehouseStockMovement[]
   warehouseStockReceipts  WarehouseStockReceipt[]
   purchaseReturnItems     PurchaseReturnItem[]
+  // Laundry vertical recipe (separate from the F&B `Recipe`/`MenuItem` system):
+  // when this item is a "service" (itemType='service'), serviceConsumables holds its
+  // bill-of-materials lines; when it is a "supply" (itemType='supply'), consumableOf
+  // holds the recipe lines that reference it.
+  serviceConsumables      ItemConsumable[]         @relation("ServiceRecipe")
+  consumableOf            ItemConsumable[]         @relation("ConsumableOf")
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -393,6 +402,31 @@ model Item {
   @@index([supplierId])
   @@index([alternateLookUp])
   @@map("item")
+}
+
+// Laundry vertical bill-of-materials. Links a "service" item (e.g. "Wash 6kg") to a
+// "supply" item it consumes (e.g. detergent), with a consumption rate. This is a
+// client-side prefill default — the actual consumed amount is sent explicitly per sale
+// via SalesItem.stockConsumptionQty. Intentionally distinct from the F&B `Recipe` model,
+// which is reserved for MenuItem/Station kitchen routing.
+model ItemConsumable {
+  id               Int       @id @default(autoincrement()) @map("ID")
+  serviceItemId    Int       @map("SERVICE_ITEM_ID")
+  consumableItemId Int       @map("CONSUMABLE_ITEM_ID")
+  ratePerKg        Decimal   @map("RATE_PER_KG") @db.Decimal(15, 4) // amount of `unit` consumed per kg of load
+  unit             String    @default("Milliliter") @map("UNIT") // UOM api-key of the consumable (e.g. "Milliliter")
+  deleted          Boolean   @default(false) @map("IS_DELETED")
+  deletedAt        DateTime? @map("DELETED_AT")
+  createdAt        DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime? @updatedAt @map("UPDATED_AT")
+  version          Int?      @default(1) @map("VERSION")
+  serviceItem      Item      @relation("ServiceRecipe", fields: [serviceItemId], references: [id])
+  consumableItem   Item      @relation("ConsumableOf", fields: [consumableItemId], references: [id])
+
+  @@unique([serviceItemId, consumableItemId])
+  @@index([serviceItemId])
+  @@index([updatedAt])
+  @@map("item_consumable")
 }
 
 model Category {
@@ -491,6 +525,7 @@ model Sales {
 
   @@index([businessDate])
   @@index([outletId])
+  @@index([outletId, businessDate, status]) // Outlet report range filter (any account type) — covers outlet + date-range + status in one index
   @@index([sessionId, completedSessionId])
   @@index([stockSourceType])
   @@index([stockSourceWarehouseId])
@@ -527,6 +562,7 @@ model SalesItem {
   specialInstructions String?             @default("") @map("SPECIAL_INSTRUCTIONS")
   stockConsumptionQty Decimal?            @map("STOCK_CONSUMPTION_QTY") @db.Decimal(15, 4)
   unitOfMeasure       String?             @map("UNIT_OF_MEASURE")
+  loadWeightKg        Decimal?            @map("LOAD_WEIGHT_KG") @db.Decimal(15, 4) // Laundry: actual processed weight on a wash-service line (machine price is fixed; this is for KG reporting)
   itemStatus          String?             @map("ITEM_STATUS")
   priority            String?             @map("PRIORITY") // e.g., "NORMAL", "RUSH"
   estimatedPrepTime   Int?                @map("ESTIMATED_PREP_TIME") // In minutes

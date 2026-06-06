@@ -264,6 +264,21 @@ const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) 
         .catch(next)
 }
 
+const getRevenueTrend = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { outletId, days } = req.query
+    const outletIdNum = typeof outletId === 'string' && validator.isNumeric(outletId) ? parseInt(outletId) : undefined
+    if (outletIdNum === undefined) {
+        throw new RequestValidateError('outletId is required and must be a number')
+    }
+    const daysNum = typeof days === 'string' && validator.isNumeric(days) ? parseInt(days) : 7
+    service.getRevenueTrend(req.user.databaseName, outletIdNum, daysNum)
+        .then((trend) => sendResponse(res, trend))
+        .catch(next)
+}
+
 const getPartiallyPaidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -472,6 +487,7 @@ const getDeliveredList = (req: AuthRequest, res: Response, next: NextFunction) =
 
 // sales routes
 router.get('/getTotalSalesData', getTotalSalesData)
+router.get('/getRevenueTrend', getRevenueTrend)
 router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
 router.get('/outlet', getAll)
 router.get('/dateRange', getAllByDateRange)

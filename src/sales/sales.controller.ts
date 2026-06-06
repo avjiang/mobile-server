@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express"
 import validator from "validator"
 import service from "./sales.service"
+import photoService from "./sales-photo.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
@@ -110,6 +111,80 @@ const getById = (req: AuthRequest, res: Response, next: NextFunction) => {
     const itemId: number = parseInt(req.params.id)
     service.getById(req.user.databaseName, itemId)
         .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next)
+}
+
+// Laundry pickup: fetch a sale by its client-minted orderRef (QR scan key).
+const getByRef = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.params.orderRef ?? '').trim()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    service.getByRef(req.user.databaseName, orderRef)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next)
+}
+
+// Laundry pickup: mark an order collected (+ status→Completed if fully paid).
+const collect = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.params.orderRef ?? '').trim()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    service.collect(req.user.databaseName, orderRef)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next)
+}
+
+// Laundry photos: mint a pre-signed R2 PUT URL for photo #index of an order.
+const photoUploadUrl = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.body?.orderRef ?? '').toString().trim()
+    const index = parseInt((req.body?.index ?? '0').toString())
+    const contentType = (req.body?.contentType ?? 'image/webp').toString()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    photoService.mintUploadTicket(req.user.tenantId, orderRef, isNaN(index) ? 0 : index, contentType)
+        .then((ticket) => sendResponse(res, ticket))
+        .catch(next)
+}
+
+// Laundry photos: persist a photo URL after the client's direct R2 PUT.
+const registerPhoto = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.body?.orderRef ?? '').toString().trim()
+    const photoUrl = (req.body?.photoUrl ?? '').toString().trim()
+    const salesId = req.body?.salesId ? parseInt(req.body.salesId.toString()) : undefined
+    if (!orderRef || !photoUrl) {
+        throw new RequestValidateError('orderRef and photoUrl are required')
+    }
+    photoService.register(req.user.databaseName, { orderRef, salesId, photoUrl })
+        .then((photo) => sendResponse(res, photo))
+        .catch(next)
+}
+
+// Laundry photos: list an order's photos.
+const listPhotos = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.params.orderRef ?? '').trim()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    photoService.listByRef(req.user.databaseName, orderRef)
+        .then((photos) => sendResponse(res, photos))
         .catch(next)
 }
 
@@ -496,6 +571,16 @@ router.get('/dateRange', getAllByDateRange)
 router.get('/delivery/list', getDeliveryList);
 router.get('/delivery/history', getDeliveredList);
 router.post('/delivery/confirm', confirmDeliveryBatch);
+
+// laundry pickup: fetch-by-ref + collect (MUST be before the catch-all /:id,
+// otherwise "ref" would be parsed as an :id)
+router.get('/ref/:orderRef', getByRef)
+router.put('/ref/:orderRef/collect', collect)
+
+// laundry photos (named paths — safe before /:id)
+router.post('/photo/upload-url', photoUploadUrl)
+router.post('/photo/register', registerPhoto)
+router.get('/photo/list/:orderRef', listPhotos)
 
 router.get('/:id', getById)
 router.post('/calculate', calculateSales)

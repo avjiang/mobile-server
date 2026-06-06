@@ -497,6 +497,14 @@ model Sales {
   deliveredBy             String?   @map("DELIVERED_BY")
   deliveryNotes           String?   @default("") @map("DELIVERY_NOTES")
 
+  // Laundry intake→pickup identity (laundry-only; see docs/modules/SALES.md).
+  // orderRef = client-minted UUID, the durable scan/lookup key (@unique → index
+  // used by GET /sales/ref/:orderRef). friendlyNumber = YYMMDD-<terminal>-<seq>,
+  // human display/search only. collectedAt = set when the bag is collected.
+  orderRef                String?   @unique @map("ORDER_REF")
+  friendlyNumber          String?   @map("FRIENDLY_NUMBER")
+  collectedAt             DateTime? @map("COLLECTED_AT")
+
   // Loyalty fields
   loyaltyPointsEarned          Decimal? @map("LOYALTY_POINTS_EARNED") @db.Decimal(15, 4)
   loyaltyPointsRedeemed        Decimal? @map("LOYALTY_POINTS_REDEEMED") @db.Decimal(15, 4)
@@ -531,6 +539,23 @@ model Sales {
   @@index([stockSourceWarehouseId])
   @@index([customerSubscriptionId])
   @@map("sales")
+}
+
+/// Laundry condition/verification photos (≤5 per order). Keyed by `orderRef`
+/// (not salesId) so a photo survives the gap before an offline sale receives
+/// its server id; `salesId` is backfilled when known. Bytes live in Cloudflare
+/// R2 under `laundry/<tenantId>/<orderRef>/<n>.webp` (60-day lifecycle rule);
+/// this row stores only the URL. See docs/modules/SALES.md.
+model SalesPhoto {
+  id         Int       @id @default(autoincrement()) @map("ID")
+  orderRef   String    @map("ORDER_REF")
+  salesId    Int?      @map("SALES_ID")
+  photoUrl   String    @map("PHOTO_URL")
+  uploadedAt DateTime  @default(now()) @map("UPLOADED_AT")
+  deleted    Boolean   @default(false) @map("IS_DELETED")
+
+  @@index([orderRef])
+  @@map("sales_photo")
 }
 
 model SalesItem {

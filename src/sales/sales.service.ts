@@ -804,6 +804,11 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                 totalItemDiscountAmount: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
+                // must be in BOTH select and transform or it never reaches the client)
+                orderRef: true,
+                friendlyNumber: true,
+                collectedAt: true,
                 // Loyalty fields
                 loyaltyPointsEarned: true,
                 loyaltyPointsRedeemed: true,
@@ -853,6 +858,10 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             totalItems: sale.salesItems.length,
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Laundry intake→pickup identity
+            orderRef: sale.orderRef,
+            friendlyNumber: sale.friendlyNumber,
+            collectedAt: sale.collectedAt,
             // Loyalty fields
             loyaltyPointsEarned: sale.loyaltyPointsEarned,
             loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
@@ -940,6 +949,11 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 remark: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
+                // must be in BOTH select and transform or it never reaches the client)
+                orderRef: true,
+                friendlyNumber: true,
+                collectedAt: true,
                 // Loyalty fields
                 loyaltyPointsEarned: true,
                 loyaltyPointsRedeemed: true,
@@ -985,6 +999,10 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             totalItems: sale.salesItems.length,
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Laundry intake→pickup identity
+            orderRef: sale.orderRef,
+            friendlyNumber: sale.friendlyNumber,
+            collectedAt: sale.collectedAt,
             // Loyalty fields
             loyaltyPointsEarned: sale.loyaltyPointsEarned,
             loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
@@ -1132,6 +1150,52 @@ let getById = async (databaseName: string, id: number) => {
     catch (error) {
         throw error
     }
+}
+
+/**
+ * Laundry pickup: fetch a sale by its client-minted orderRef (the QR scan key).
+ * Mirrors getById but keyed by the unique orderRef column.
+ */
+let getByRef = async (databaseName: string, orderRef: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const sales = await tenantPrisma.sales.findUnique({
+        where: { orderRef },
+        include: {
+            salesItems: true,
+            payments: true,
+            registerLogs: true,
+        },
+    })
+    if (!sales) {
+        throw new NotFoundError("Sales")
+    }
+    return sales
+}
+
+/**
+ * Laundry pickup: mark an order collected by orderRef.
+ *
+ * Sets `collectedAt` and, only when the sale is already fully paid, transitions
+ * status → Completed. Outstanding balances are settled separately via the
+ * existing add-payment flow BEFORE collect is called, so we never force a
+ * still-owed sale to Completed here.
+ */
+let collect = async (databaseName: string, orderRef: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const sale = await tenantPrisma.sales.findUnique({ where: { orderRef } })
+    if (!sale) {
+        throw new NotFoundError("Sales")
+    }
+    const fullyPaid = new Decimal(sale.paidAmount.toString())
+        .gte(new Decimal(sale.totalAmount.toString()))
+    await tenantPrisma.sales.update({
+        where: { orderRef },
+        data: {
+            collectedAt: new Date(),
+            ...(fullyPaid ? { status: 'Completed' } : {}),
+        },
+    })
+    return getByRef(databaseName, orderRef)
 }
 
 async function completeNewSales(
@@ -1566,6 +1630,9 @@ async function completeNewSales(
                     performedBy: salesBody.performedBy,
                     deleted: false,
                     profitAmount: totalProfit,
+                    // Laundry intake→pickup identity (null for retail / when not sent)
+                    orderRef: salesBody.orderRef || null,
+                    friendlyNumber: salesBody.friendlyNumber || null,
                 },
             });
 
@@ -3074,6 +3141,8 @@ export = {
     getAll,
     getByDateRange,
     getById,
+    getByRef,
+    collect,
     calculateSales,
     completeNewSales,
     update,

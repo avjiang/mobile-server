@@ -140,3 +140,55 @@ export async function createImageUploadTicket(params: {
     expiresIn: UPLOAD_URL_TTL_SECONDS,
   };
 }
+
+/**
+ * Mint a pre-signed PUT URL for a LAUNDRY condition photo.
+ *
+ * ⛔ Load-bearing key shape: the key MUST be top-level `laundry/<tenantId>/<orderRef>/<n>.webp`.
+ * The LIVE R2 object-lifecycle rule ("Flush Laundry Images") expires the
+ * `laundry/` prefix at 60 days — objects under any other prefix would linger
+ * forever, and catalogue images (keyed `<tenantId>/…`) must NOT match it. See
+ * docs/modules/SALES.md and reference_cloudflare_infra.md.
+ */
+export async function createLaundryPhotoUploadTicket(params: {
+  tenantId: number;
+  orderRef: string;
+  index: number;
+  contentType: string;
+}): Promise<UploadTicket> {
+  const { tenantId, orderRef, index, contentType } = params;
+
+  const bucket = process.env.R2_BUCKET;
+  const publicBase = process.env.R2_PUBLIC_BASE_URL;
+  if (!bucket || !publicBase) {
+    throw new BusinessLogicError("R2 storage is not configured on the server");
+  }
+  if (contentType !== ALLOWED_CONTENT_TYPE) {
+    throw new BusinessLogicError(
+      `Unsupported content type '${contentType}'. Only ${ALLOWED_CONTENT_TYPE} is allowed.`
+    );
+  }
+  // Sanitize orderRef for safe key usage (UUIDs are already safe; guard anyway).
+  const safeRef = orderRef.replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!safeRef) {
+    throw new BusinessLogicError("Invalid orderRef");
+  }
+
+  const key = `laundry/${tenantId}/${safeRef}/${index}.webp`;
+
+  const uploadUrl = await getSignedUrl(
+    getClient(),
+    new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),
+    { expiresIn: UPLOAD_URL_TTL_SECONDS }
+  );
+
+  const publicUrl = `${publicBase.replace(/\/+$/, "")}/${key}`;
+
+  return {
+    uploadUrl,
+    publicUrl,
+    key,
+    contentType,
+    expiresIn: UPLOAD_URL_TTL_SECONDS,
+  };
+}

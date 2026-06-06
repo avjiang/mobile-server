@@ -68,6 +68,11 @@ export class CreateSalesRequest {
     @Expose() voucherId?: number;
     @Expose() voucherDiscountPercentage?: number;
     @Expose() voucherDiscountAmount?: number;
+    // Laundry intake→pickup identity (optional — only sent by laundry tenants).
+    // class-transformer drops any non-@Expose field, so these MUST be decorated
+    // or they silently never reach tx.sales.create.
+    @Expose() orderRef?: string;
+    @Expose() friendlyNumber?: string;
     @Expose()
     @Type(() => CreateSalesItemRequest)
     salesItems: CreateSalesItemRequest[] = [];

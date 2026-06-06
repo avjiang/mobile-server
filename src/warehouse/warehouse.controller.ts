@@ -1,6 +1,7 @@
 import express, { NextFunction, Response } from "express";
 import service from "./warehouse.service";
 import * as stockService from "./warehouse-stock.service";
+import { transferStock, TransferBody } from "../stock/stock-transfer.service";
 import { RequestValidateError } from "../api-helpers/error";
 import { sendResponse } from "../api-helpers/network";
 import { AuthRequest } from "../middleware/auth-request";
@@ -159,10 +160,44 @@ let clearStock = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next);
 };
 
+/**
+ * POST /warehouses/transfer
+ * Transfer stock between locations (warehouse↔outlet, outlet↔outlet).
+ * Body: { sourceType, sourceId, destType, destId, items: [{ itemId, itemVariantId?, quantity }], reason? }
+ */
+let transfer = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError("User not authenticated");
+
+    const body: TransferBody = {
+        sourceType: req.body.sourceType,
+        sourceId: parseInt(req.body.sourceId),
+        destType: req.body.destType,
+        destId: parseInt(req.body.destId),
+        items: req.body.items,
+        reason: req.body.reason,
+        performedBy: req.user.username,
+    };
+
+    if (body.sourceType !== "OUTLET" && body.sourceType !== "WAREHOUSE") {
+        throw new RequestValidateError("sourceType must be OUTLET or WAREHOUSE");
+    }
+    if (body.destType !== "OUTLET" && body.destType !== "WAREHOUSE") {
+        throw new RequestValidateError("destType must be OUTLET or WAREHOUSE");
+    }
+    if (!body.sourceId || isNaN(body.sourceId) || !body.destId || isNaN(body.destId)) {
+        throw new RequestValidateError("Valid sourceId and destId are required");
+    }
+
+    transferStock(req.user.databaseName, body)
+        .then((result) => sendResponse(res, { success: true, ...result }))
+        .catch(next);
+};
+
 // Routes
 router.get('/sync', getAllWarehouses);
 router.get('/:id', getWarehouseById);
 router.get('/:id/stock', getWarehouseStock);
+router.post('/transfer', transfer);
 router.post('/:id/receive', receiveStock);
 router.post('/:id/adjust', adjustStock);
 router.post('/:id/clear', clearStock);

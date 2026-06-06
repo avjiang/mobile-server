@@ -24,7 +24,7 @@
 | MySQL tier upgrade (B1ms → B2ms / B4ms) | ⏸ Deferred (budget) | Plan stands; budget-gated |
 | App Service tier upgrade (B1 → S1+) | ⏸ Deferred (budget) | Plan stands; budget-gated |
 | Azure Cache for Redis | ❌ Skipped (budget) | Off the table until budget loosens |
-| Azure CDN + Blob Storage | ⏸ Deferred | Only relevant when image upload is built |
+| Product image storage | ✅ On Cloudflare R2 | Implemented (zero egress, 10 GB free) — Azure CDN/Blob not used |
 
 ---
 
@@ -193,38 +193,29 @@ Examples:
 
 ---
 
-## 5. CDN Plan
+## 5. Image Storage / CDN — ✅ Cloudflare R2 (implemented 2026-06-05)
 
-### Current State
+Product/catalogue images are stored on **Cloudflare R2** (S3-compatible object storage).
 
-- Pure API server — no static file serving
-- Image URL fields exist in DB: `Item.image`, `Category.image`, `MenuItem.imageURL`, `MenuCategory.imageURL`, `ItemVariant.image`
-- `@azure/storage-blob` v12.27.0 already installed in package.json but unused
-- No upload endpoints implemented yet
+### Why R2
+- **Permanent free tier (10 GB) with zero egress.** A public catalogue is read-heavy, and egress is what bills on most object storage — R2 charges $0 for it. Served over `images.bayaryuk.net` (Cloudflare custom domain) with edge caching.
+- No separate CDN/storage line item is needed.
 
-### Recommended Setup
-
+### How it works
 ```
-Mobile App  -->  Azure CDN  -->  Azure Blob Storage (origin)
-                                       ^
-                              Upload API endpoint (your server)
+Merchant app  --(WebP, pre-signed PUT)-->  Cloudflare R2  <--(edge cache)--  Buyer's browser
+                       ^                                         via images.bayaryuk.net
+       backend mints pre-signed URL (bytes never touch App Service)
 ```
+- Upload: `POST /catalogue/image-upload-url` (`src/catalogue/`) mints a pre-signed PUT URL; the client compresses to WebP and uploads bytes directly to R2.
+- Public reads: `GET /public/catalogue/:slug` (data) + `GET /public/c/:slug` (HTML page); images load from `images.bayaryuk.net`.
+- SDK: `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` (R2 is S3-compatible).
+- Image URL fields already in DB: `Item.image`, `ItemVariant.image`, `Category.image`, `MenuItem.imageURL`, `MenuCategory.imageURL`.
 
-**Azure Blob Storage (Hot tier):** ~$0.02/GB/mo
-- 100 tenants x 500 products x 50KB avg = 2.5GB = ~$0.05/mo
+### Cost
+- 100 tenants × 500 products × ~100 KB WebP ≈ 5 GB → within R2's free tier = **$0/mo**.
 
-**Azure CDN Standard Microsoft:** ~$0.081/GB for first 10TB
-- Monthly transfer ~10-50GB = ~$1-4/mo
-
-**Total CDN + storage cost at 100 tenants: ~$2-5/mo**
-
-### Implementation Steps (When You Build Image Upload)
-
-1. Create Azure Blob Storage container for product images
-2. Build upload endpoint using already-installed `@azure/storage-blob`
-3. Store CDN URLs in existing image fields
-4. Configure Azure CDN profile pointing to blob container
-5. Set cache headers: `Cache-Control: public, max-age=2592000` (30 days)
+Full design: `docs/future/ONLINE_CATALOGUE.md` (frontend repo).
 
 ---
 
@@ -268,8 +259,8 @@ Mobile App  -->  Azure CDN  -->  Azure Blob Storage (origin)
 | Azure MySQL D4ds v4 | ~$198 |
 | Storage (200GB) | ~$28 |
 | Azure Cache for Redis Basic C1 | ~$42 |
-| Azure CDN + Blob Storage | ~$5 |
-| **Total** | **~$373/mo** |
+| Cloudflare R2 (product images) | $0 (free tier) |
+| **Total** | **~$368/mo** |
 
 ### With Reserved Capacity (1-year commitment, ~40% off compute)
 
@@ -278,7 +269,7 @@ Mobile App  -->  Azure CDN  -->  Azure Blob Storage (origin)
 | Phase 1 (1-10) | $39 | ~$30 | 23% |
 | Phase 2 (10-30) | $65 | ~$48 | 26% |
 | Phase 3 (30-100) | $155 | ~$110 | 29% |
-| Phase 4 (100-200) | $373 | ~$255 | 32% |
+| Phase 4 (100-200) | $368 | ~$250 | 32% |
 
 ---
 
@@ -318,7 +309,7 @@ Mobile App  -->  Azure CDN  -->  Azure Blob Storage (origin)
 ### At 50-100 Tenants
 9. Upgrade Web App to B2 or S1
 10. Parallelize migration scripts
-11. Implement CDN + Blob Storage for product images
+11. ✅ Product image storage — done on Cloudflare R2 (zero egress, free tier); no Azure CDN/Blob needed
 12. Upgrade MySQL to D2ds v4 if burstable credits deplete frequently
 
 ### At 100+ Tenants

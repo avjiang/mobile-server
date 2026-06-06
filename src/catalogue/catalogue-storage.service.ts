@@ -1,4 +1,8 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { BusinessLogicError } from "../api-helpers/error";
 
@@ -20,6 +24,10 @@ import { BusinessLogicError } from "../api-helpers/error";
 const UPLOAD_URL_TTL_SECONDS = 300; // 5 min to complete the PUT
 const ALLOWED_CONTENT_TYPE = "image/webp"; // FE downsamples to WebP before upload
 
+// Per-tenant R2 storage cap (abuse guardrail, NOT a billing axis). At ~100KB/WebP
+// this is ~5,000 images — generous for a catalogue, protects the free 10GB tier.
+export const CATALOGUE_STORAGE_LIMIT_BYTES = 500 * 1024 * 1024; // 500 MB
+
 let _client: S3Client | null = null;
 
 function getClient(): S3Client {
@@ -37,6 +45,36 @@ function getClient(): S3Client {
     },
   });
   return _client;
+}
+
+/**
+ * Total bytes a tenant has stored under its `<tenantId>/` prefix in R2.
+ * Computed on demand via ListObjectsV2 (no stored counter to drift; reflects
+ * deletes/replaces exactly). Paginates past 1,000 objects.
+ */
+export async function getStorageUsage(tenantId: number): Promise<number> {
+  const bucket = process.env.R2_BUCKET;
+  if (!bucket) {
+    throw new BusinessLogicError("R2 storage is not configured on the server");
+  }
+  const client = getClient();
+  const prefix = `${tenantId}/`;
+  let total = 0;
+  let token: string | undefined = undefined;
+  do {
+    const res: any = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: token,
+      })
+    );
+    for (const obj of res.Contents ?? []) {
+      total += obj.Size ?? 0;
+    }
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token);
+  return total;
 }
 
 export type ImageTargetKind = "item" | "variant";
@@ -72,6 +110,14 @@ export async function createImageUploadTicket(params: {
   if (contentType !== ALLOWED_CONTENT_TYPE) {
     throw new BusinessLogicError(
       `Unsupported content type '${contentType}'. Only ${ALLOWED_CONTENT_TYPE} is allowed.`
+    );
+  }
+
+  // Abuse guardrail: block new uploads once over the per-tenant cap.
+  const used = await getStorageUsage(tenantId);
+  if (used >= CATALOGUE_STORAGE_LIMIT_BYTES) {
+    throw new BusinessLogicError(
+      "Storage limit reached. Delete some product photos before uploading more."
     );
   }
 

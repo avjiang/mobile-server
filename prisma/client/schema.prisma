@@ -497,6 +497,13 @@ model Sales {
   deliveredBy             String?   @map("DELIVERED_BY")
   deliveryNotes           String?   @default("") @map("DELIVERY_NOTES")
 
+  // Terminal attribution — which physical terminal/device performed this sale.
+  // Server-assigned terminal number (RegisteredDevice.siteId), supplied by the
+  // client (same trust model as performedBy/outletId/sessionId). Nullable: rows
+  // created before this feature, or by a device that hasn't registered yet, stay
+  // valid. See docs/modules/SALES.md + docs/modules/AUTH.md.
+  siteId                  Int?      @map("SITE_ID")
+
   // Laundry intake→pickup identity (laundry-only; see docs/modules/SALES.md).
   // orderRef = client-minted UUID, the durable scan/lookup key (@unique → index
   // used by GET /sales/ref/:orderRef). friendlyNumber = YYMMDD-<terminal>-<seq>,
@@ -538,6 +545,7 @@ model Sales {
   @@index([stockSourceType])
   @@index([stockSourceWarehouseId])
   @@index([customerSubscriptionId])
+  @@index([siteId]) // Per-terminal attribution / report grouping
   @@map("sales")
 }
 
@@ -648,6 +656,7 @@ model Invoice {
   dueDate             DateTime?          @map("DUE_DATE")
   remark              String?            @default("") @map("REMARK")
   performedBy         String?            @default("") @map("PERFORMED_BY")
+  siteId              Int?               @map("SITE_ID") // Terminal that created/edited this document (RegisteredDevice.siteId)
   deleted             Boolean            @default(false) @map("IS_DELETED")
   deletedAt           DateTime?          @map("DELETED_AT")
   createdAt           DateTime?          @default(now()) @map("CREATED_AT")
@@ -713,6 +722,7 @@ model InvoiceSettlement {
   remark             String?          @default("") @map("REMARK")
   status             String           @default("COMPLETED") @map("STATUS")
   performedBy        String?          @default("") @map("PERFORMED_BY")
+  siteId             Int?             @map("SITE_ID") // Terminal that created/edited this document (RegisteredDevice.siteId)
   totalRebateAmount  Decimal          @default(0) @map("TOTAL_REBATE_AMOUNT") @db.Decimal(15, 4) // Total rebate given in this settlement
   rebateReason       String?          @map("REBATE_REASON") // Reason for rebate (e.g., "EARLY_PAYMENT", "BULK_DISCOUNT", "PRICE_ADJUSTMENT")
   totalInvoiceCount  Int              @default(0) @map("TOTAL_INVOICE_COUNT")
@@ -750,6 +760,12 @@ model DeliveryOrder {
   status             String              @map("STATUS")
   remark             String?             @map("REMARK")
   performedBy        String?             @default("") @map("PERFORMED_BY")
+  siteId             Int?                @map("SITE_ID") // Terminal that created/edited this document (RegisteredDevice.siteId)
+  // Goods-receipt destination (Pro warehouse feature). When DESTINATION_LOCATION_TYPE
+  // = 'WAREHOUSE', received stock flows into WAREHOUSE_ID instead of OUTLET_ID. Defaults
+  // to 'OUTLET' so all existing/Basic delivery orders are unchanged.
+  destinationLocationType String         @default("OUTLET") @map("DESTINATION_LOCATION_TYPE")
+  warehouseId        Int?                @map("WAREHOUSE_ID")
   deleted            Boolean             @default(false) @map("IS_DELETED")
   deletedAt          DateTime?           @map("DELETED_AT")
   createdAt          DateTime?           @default(now()) @map("CREATED_AT")
@@ -816,6 +832,7 @@ model Quotation {
   remark              String?         @map("REMARK")
   currency            String          @default("IDR") @map("CURRENCY")
   performedBy         String?         @default("") @map("PERFORMED_BY")
+  siteId              Int?            @map("SITE_ID") // Terminal that created/edited this document (RegisteredDevice.siteId)
   convertedToPOAt     DateTime?       @map("CONVERTED_TO_PO_AT") // When converted to Purchase Order
   convertedPOId       Int?            @map("CONVERTED_PO_ID") // Reference to created Purchase Order
   deleted             Boolean         @default(false) @map("IS_DELETED")
@@ -887,6 +904,7 @@ model PurchaseOrder {
   remark              String?             @map("REMARK")
   currency            String              @default("IDR") @map("CURRENCY")
   performedBy         String?             @default("") @map("PERFORMED_BY")
+  siteId              Int?                @map("SITE_ID") // Terminal that created/edited this document (RegisteredDevice.siteId)
   deleted             Boolean             @default(false) @map("IS_DELETED")
   deletedAt           DateTime?           @map("DELETED_AT")
   createdAt           DateTime?           @default(now()) @map("CREATED_AT")
@@ -952,6 +970,9 @@ model Payment {
   sessionId      Int         @map("SESSION_ID")
   eodId          Int         @map("EOD_ID")
   performedBy    String?     @default("") @map("PERFORMED_BY")
+  // Terminal attribution — which terminal took this payment (RegisteredDevice.siteId).
+  // Client-supplied, nullable. See docs/modules/SALES.md.
+  siteId         Int?        @map("SITE_ID")
   deleted        Boolean     @default(false) @map("IS_DELETED")
   deletedAt      DateTime?   @map("DELETED_AT")
   createdAt      DateTime?   @default(now()) @map("CREATED_AT")
@@ -963,6 +984,7 @@ model Payment {
 
   @@index([method])
   @@index([businessDate])
+  @@index([siteId])
   @@map("payment")
 }
 
@@ -1017,6 +1039,11 @@ model Session {
   totalSalesCount Int             @map("TOTAL_SALES_COUNT")
   openByUserID    Int             @map("OPEN_BY_USER_ID")
   closeByUserID   Int             @map("CLOSE_BY_USER_ID")
+  // Terminal attribution — which terminal opened this session (RegisteredDevice.siteId).
+  // Client-supplied, nullable. See docs/modules/SALES.md + docs/modules/AUTH.md.
+  siteId          Int?            @map("SITE_ID")
+  // Terminal that CLOSED this session (may differ from the opener). Nullable.
+  closedBySiteId  Int?            @map("CLOSED_BY_SITE_ID")
   deleted         Boolean         @default(false) @map("IS_DELETED")
   deletedAt       DateTime?       @map("DELETED_AT")
   createdAt       DateTime?       @default(now()) @map("CREATED_AT")
@@ -1132,6 +1159,10 @@ model StockMovement {
   updatedAt                 DateTime?    @updatedAt @map("UPDATED_AT")
   version                   Int?         @default(1) @map("VERSION")
   performedBy               String?      @default("") @map("PERFORMED_BY")
+  // Terminal attribution — which terminal caused this movement (RegisteredDevice.siteId).
+  // For sale/void-driven movements this is the sale's siteId; for manual
+  // adjustments it's the adjusting device. Client-supplied, nullable. See SALES.md.
+  siteId                    Int?         @map("SITE_ID")
   item                      Item         @relation(fields: [itemId], references: [id])
   outlet                    Outlet       @relation(fields: [outletId], references: [id])
   itemVariant               ItemVariant? @relation(fields: [itemVariantId], references: [id])
@@ -1141,6 +1172,7 @@ model StockMovement {
   @@index([itemVariantId])
   @@index([movementType])
   @@index([deleted])
+  @@index([siteId])
   @@map("stock_movement")
 }
 
@@ -1804,6 +1836,7 @@ model PurchaseReturn {
   totalReturnAmount   Decimal?             @map("TOTAL_RETURN_AMOUNT") @db.Decimal(15, 4)
   remark              String?              @default("") @map("REMARK")
   performedBy         String?              @default("") @map("PERFORMED_BY")
+  siteId              Int?                 @map("SITE_ID") // Terminal that created/edited this document (RegisteredDevice.siteId)
   cancelReason        String?              @map("CANCEL_REASON")
   cancelledBy         String?              @map("CANCELLED_BY")
   cancelledAt         DateTime?            @map("CANCELLED_AT")

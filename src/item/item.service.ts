@@ -120,7 +120,8 @@ async function createVariantStockRecords(
     itemId: number,
     variantIds: number[],
     outletId: number = 1,
-    variantStockData?: Map<number, { stockQuantity: number; cost: number }>
+    variantStockData?: Map<number, { stockQuantity: number; cost: number }>,
+    siteId: number | null = null
 ): Promise<void> {
     if (variantIds.length === 0) return;
 
@@ -159,6 +160,8 @@ async function createVariantStockRecords(
                 movementType: "Create Variant",
                 reason: "",
                 remark: "",
+                // Terminal attribution — the terminal that created the variant.
+                siteId: siteId,
                 deleted: false,
             };
         }),
@@ -608,7 +611,9 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
             // Create items with nested relations in parallel
             return Promise.all(
                 itemBodyArray.map(async (itemBody) => {
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, ...itemWithoutId } = itemBody as any;
+                    // siteId is destructured OUT so it never spreads into tx.item.create
+                    // (Item has no siteId column); it's stamped on the stock movements only.
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, siteId, ...itemWithoutId } = itemBody as any;
 
                     // Fall back to the tenant default when supplier/category were not provided.
                     const effectiveSupplierId = supplierId || defaultSupplierId;
@@ -656,6 +661,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                                         reason: "",
                                         remark: "",
                                         outletId: 1,
+                                        siteId: siteId ?? null,
                                         deleted: false,
                                     },
                                 },
@@ -758,7 +764,7 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
 
                         // Create StockBalance, StockMovement, and StockReceipt for all variants (batch operation)
                         if (shouldTrackStock) {
-                            await createVariantStockRecords(tx, createdItem.id, createdVariantIds, 1, variantStockDataMap);
+                            await createVariantStockRecords(tx, createdItem.id, createdVariantIds, 1, variantStockDataMap, siteId ?? null);
                         }
                     }
 
@@ -807,7 +813,9 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
     try {
         // Extract id, version, and relation fields from the item object
         // stockQuantity is a virtual field (not a DB column) — must be extracted to prevent Prisma errors
-        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, ...updateData } = item as any;
+        // siteId is destructured OUT so it never spreads into tx.item.update
+        // (Item has no siteId column); it's stamped on the stock movements only.
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, siteId, ...updateData } = item as any;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Check if alternateLookUp is being updated and not empty
@@ -945,7 +953,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         documentId: 0,
                         movementType: "Stock Tracking Disabled",
                         reason: "trackStock changed from on to off",
-                        remark: "", deleted: false,
+                        remark: "", deleted: false, siteId: siteId ?? null,
                     }
                 });
             }
@@ -974,7 +982,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         documentId: 0,
                         movementType: "Stock Tracking Enabled",
                         reason: "trackStock changed from off to on",
-                        remark: "", deleted: false,
+                        remark: "", deleted: false, siteId: siteId ?? null,
                     }
                 });
 
@@ -1342,7 +1350,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 // Create StockBalance, StockMovement, and StockReceipt for all new variants (only for stock-tracked items)
                 // Skip when turningOn — step 6 below handles ALL variants during off→on transition
                 if (newVariantIds.length > 0 && itemUpdate.trackStock !== false && !turningOn) {
-                    await createVariantStockRecords(tx, id, newVariantIds, 1, variantStockDataMap);
+                    await createVariantStockRecords(tx, id, newVariantIds, 1, variantStockDataMap, siteId ?? null);
                 }
 
                 // ===== trackStock transition: OFF → ON (variant items) =====
@@ -1373,7 +1381,8 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         tx, id,
                         allActiveVariants.map(v => v.id),
                         1,
-                        variantStockDataMap
+                        variantStockDataMap,
+                        siteId ?? null
                     );
 
                     // Zero out ALL variant costs (FIFO is now the cost source)
@@ -1392,7 +1401,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                             documentId: 0,
                             movementType: "Stock Tracking Enabled",
                             reason: "trackStock changed from off to on",
-                            remark: "", deleted: false,
+                            remark: "", deleted: false, siteId: siteId ?? null,
                         }
                     });
                 }

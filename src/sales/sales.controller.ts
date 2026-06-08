@@ -230,7 +230,7 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
     service.completeNewSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier, permissions: req.user.permissions },
         sales,
         payments
     )
@@ -431,7 +431,9 @@ const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         req.user.databaseName,
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
-        salesId
+        salesId,
+        // Acting terminal performing the void (client-supplied, nullable).
+        (req.body as any)?.siteId ?? null
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -449,7 +451,9 @@ const returnSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         req.user.databaseName,
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
-        salesId
+        salesId,
+        // Acting terminal performing the return (client-supplied, nullable).
+        (req.body as any)?.siteId ?? null
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -467,7 +471,9 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         req.user.databaseName,
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
-        salesId
+        salesId,
+        // Acting terminal performing the refund (client-supplied, nullable).
+        (req.body as any)?.siteId ?? null
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);

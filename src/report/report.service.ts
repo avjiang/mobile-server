@@ -699,10 +699,37 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             };
         }
 
+        // Per-terminal breakdown — which terminal rang the session's completed sales.
+        // Groups completed sales (completedSessionId) by siteId so a multi-terminal
+        // outlet can see each terminal's count + totals. Null siteId = unattributed
+        // (rows from before this feature, or a device that hasn't registered).
+        const terminalGroups = await tenantPrisma.sales.groupBy({
+            by: ['siteId'],
+            where: {
+                ...completedSessionFilter,
+                status: "Completed",
+                deleted: false
+            },
+            _count: { id: true },
+            _sum: { totalAmount: true, paidAmount: true, profitAmount: true }
+        });
+        const terminalBreakdown = terminalGroups
+            .map(g => ({
+                siteId: g.siteId ?? null,
+                salesCount: g._count?.id || 0,
+                totalAmount: (g._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (g._sum?.paidAmount || new Decimal(0)).toNumber(),
+                profitAmount: (g._sum?.profitAmount || new Decimal(0)).toNumber(),
+            }))
+            .sort((a, b) => (a.siteId ?? 0) - (b.siteId ?? 0));
+
         // Prepare response object
         return {
             // Laundry operations block (null for non-laundry accounts)
             laundryOps,
+
+            // Per-terminal attribution (empty when single-terminal / unattributed)
+            terminalBreakdown,
 
             // Overall metrics (only from completed sales)
             totalRevenue: netRevenue.toNumber(),
@@ -1659,10 +1686,33 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             };
         }
 
+        // Per-terminal breakdown — which terminal rang the outlet's completed sales
+        // over the report range. Groups by siteId across ALL sessions/terminals in
+        // the outlet (this is the outlet-wide, cross-session report). Null siteId =
+        // unattributed. See generateReport for the per-session variant.
+        const terminalGroups = await tenantPrisma.sales.groupBy({
+            by: ['siteId'],
+            where: { ...outletFilter, status: "Completed", deleted: false },
+            _count: { id: true },
+            _sum: { totalAmount: true, paidAmount: true, profitAmount: true }
+        });
+        const terminalBreakdown = terminalGroups
+            .map(g => ({
+                siteId: g.siteId ?? null,
+                salesCount: g._count?.id || 0,
+                totalAmount: (g._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (g._sum?.paidAmount || new Decimal(0)).toNumber(),
+                profitAmount: (g._sum?.profitAmount || new Decimal(0)).toNumber(),
+            }))
+            .sort((a, b) => (a.siteId ?? 0) - (b.siteId ?? 0));
+
         // Prepare response object
         return {
             // Laundry operations block (null for non-laundry accounts)
             laundryOps,
+
+            // Per-terminal attribution across the outlet's sessions (empty when single-terminal)
+            terminalBreakdown,
 
             // Overall metrics
             totalRevenue: netRevenue.toNumber(),
@@ -2047,6 +2097,23 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
             .map(s => ({ itemId: s.itemId, itemName: s.itemName, unitOfMeasure: s.unitOfMeasure, totalConsumed: s.totalConsumed.toNumber() }))
             .sort((a, b) => b.totalConsumed - a.totalConsumed);
 
+        // Per-terminal breakdown — same shape as generateReport (see there for rationale).
+        const terminalGroups = await tenantPrisma.sales.groupBy({
+            by: ['siteId'],
+            where: { ...completedSessionFilter, status: "Completed", deleted: false },
+            _count: { id: true },
+            _sum: { totalAmount: true, paidAmount: true, profitAmount: true }
+        });
+        const terminalBreakdown = terminalGroups
+            .map(g => ({
+                siteId: g.siteId ?? null,
+                salesCount: g._count?.id || 0,
+                totalAmount: (g._sum?.totalAmount || new Decimal(0)).toNumber(),
+                paidAmount: (g._sum?.paidAmount || new Decimal(0)).toNumber(),
+                profitAmount: (g._sum?.profitAmount || new Decimal(0)).toNumber(),
+            }))
+            .sort((a, b) => (a.siteId ?? 0) - (b.siteId ?? 0));
+
         return {
             laundryOps: {
                 totalKgProcessed: totalKg,
@@ -2054,6 +2121,9 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                 averageKgPerLoad: totalLoads > 0 ? totalKg / totalLoads : 0,
                 suppliesConsumed
             },
+
+            // Per-terminal attribution (empty when single-terminal / unattributed)
+            terminalBreakdown,
 
             // Headline metrics
             totalRevenue: totalCompletedRevenue.toNumber(),

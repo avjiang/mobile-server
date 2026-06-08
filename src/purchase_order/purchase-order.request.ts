@@ -36,6 +36,9 @@ export interface PurchaseOrderInput {
     remark?: string;
     currency?: string;
     performedBy?: string;
+    // Terminal attribution — the terminal that created/edited this PO
+    // (RegisteredDevice.siteId). Optional; nullable on the column.
+    siteId?: number;
     purchaseOrderItems?: PurchaseOrderItemInput[]; // Add items here
 }
 

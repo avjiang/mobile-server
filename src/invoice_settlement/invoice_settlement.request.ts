@@ -11,6 +11,9 @@ export interface InvoiceSettlementInput {
     remark?: string;
     status?: string; // e.g., "COMPLETED", "PENDING", "CANCELLED"
     performedBy?: string;
+    // Terminal attribution — the terminal that created/edited this settlement
+    // (RegisteredDevice.siteId). Optional; nullable on the column.
+    siteId?: number;
     totalRebateAmount?: number;
     rebateReason?: string;
     totalInvoiceCount?: number;

@@ -154,7 +154,11 @@ let cancelPurchaseReturn = (req: NetworkRequest<CancelPurchaseReturnInput>, res:
     const cancelData: CancelPurchaseReturnInput = {
         cancelReason: req.body?.cancelReason,
         performedBy: req.body?.performedBy,
-        cancelledAt: req.body?.cancelledAt
+        cancelledAt: req.body?.cancelledAt,
+        // Terminal attribution — the terminal that cancelled this return. Must be
+        // copied explicitly: cancelData is built by enumeration, so an omitted
+        // field is silently dropped before reaching service.cancel().
+        siteId: req.body?.siteId
     }
     service.cancel(purchaseReturnId, cancelData, req.user.databaseName)
         .then((updatedPurchaseReturn: any) => sendResponse(res, updatedPurchaseReturn))

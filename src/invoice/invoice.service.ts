@@ -1039,6 +1039,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         dueDate: invoiceData.dueDate,
                         remark: invoiceData.remark,
                         performedBy: invoiceData.performedBy,
+                        siteId: invoiceData.siteId ?? null, // Terminal attribution
                         isTaxInclusive: invoiceData.isTaxInclusive !== undefined ? invoiceData.isTaxInclusive : true,
                     },
                     include: {
@@ -1283,6 +1284,7 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                     dueDate: updateData.dueDate,
                     remark: updateData.remark,
                     performedBy: updateData.performedBy,
+                    siteId: updateData.siteId ?? null, // Terminal attribution (latest editor)
                     isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
                     version: { increment: 1 }
                 }

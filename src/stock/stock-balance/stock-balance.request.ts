@@ -23,4 +23,7 @@ export interface StockAdjustment {
     remark: string,
     version: number,
     performedBy?: string,
+    // Terminal attribution — the terminal performing this adjustment/clearance
+    // (RegisteredDevice.siteId). Optional; nullable on stock_movement.SITE_ID.
+    siteId?: number,
 }

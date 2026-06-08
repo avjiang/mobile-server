@@ -188,6 +188,55 @@ interface PerformedBy {
     userId: number;
     username: string;
     loyaltyTier?: 'none' | 'basic' | 'advanced';
+    // Effective permission names from the JWT ('*' = super-admin wildcard). Used to gate
+    // the manual stock-source override (AD6 / F3). Missing/empty → no override.
+    permissions?: string[];
+}
+
+// ── Stock sourcing (AD6) ──────────────────────────────────────────────────────
+// A sale draws stock from the outlet first, then from warehouse(s) for any
+// remainder (automatic per-line split). A user holding this permission (or super
+// admin) may instead force a single explicit source for the whole sale.
+const OVERRIDE_STOCK_SOURCE_PERMISSION = 'Override Stock Source';
+
+type SaleSourceKind = 'OUTLET' | 'WAREHOUSE';
+
+/**
+ * One stock location a sale can draw from (outlet or a single warehouse), bundling
+ * its Prisma delegates + the in-memory FIFO/consumption state built during a sale.
+ * The two table-sets share identical FIFO mechanics, so the same loop drives both.
+ */
+interface SaleStockSource {
+    kind: SaleSourceKind;
+    locationId: number;
+    balanceDelegate: any;   // tx.stockBalance | tx.warehouseStockBalance
+    receiptDelegate: any;   // tx.stockReceipt | tx.warehouseStockReceipt
+    movementDelegate: any;  // tx.stockMovement | tx.warehouseStockMovement
+    locWhere: any;          // { outletId } | { warehouseId }
+    balanceMap: Map<string, any>;        // lookupKey -> balance row
+    receiptsByItem: Map<string, any[]>;  // lookupKey -> FIFO receipts (mutated in-memory)
+    originalReceiptQty: Map<number, Decimal>; // receiptId -> qty before this sale
+    remainingBalance: Map<string, Decimal>;   // lookupKey -> available left to allocate
+    receiptUpdateMap: Map<number, Decimal>;   // receiptId -> qty consumed this sale
+    consumedByItem: Map<string, Decimal>;     // lookupKey -> total consumed (for balance/movement)
+}
+
+function makeSaleStockSource(tx: any, kind: SaleSourceKind, locationId: number): SaleStockSource {
+    const isWh = kind === 'WAREHOUSE';
+    return {
+        kind,
+        locationId,
+        balanceDelegate: isWh ? tx.warehouseStockBalance : tx.stockBalance,
+        receiptDelegate: isWh ? tx.warehouseStockReceipt : tx.stockReceipt,
+        movementDelegate: isWh ? tx.warehouseStockMovement : tx.stockMovement,
+        locWhere: isWh ? { warehouseId: locationId } : { outletId: locationId },
+        balanceMap: new Map(),
+        receiptsByItem: new Map(),
+        originalReceiptQty: new Map(),
+        remainingBalance: new Map(),
+        receiptUpdateMap: new Map(),
+        consumedByItem: new Map(),
+    };
 }
 
 // Helper function to send sales notifications (non-blocking)
@@ -804,6 +853,8 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                 totalItemDiscountAmount: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Terminal attribution (silent-drop fix: in BOTH select and transform)
+                siteId: true,
                 // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
                 // must be in BOTH select and transform or it never reaches the client)
                 orderRef: true,
@@ -858,6 +909,8 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             totalItems: sale.salesItems.length,
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Terminal attribution
+            siteId: sale.siteId,
             // Laundry intake→pickup identity
             orderRef: sale.orderRef,
             friendlyNumber: sale.friendlyNumber,
@@ -949,6 +1002,8 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 remark: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Terminal attribution (silent-drop fix: in BOTH select and transform)
+                siteId: true,
                 // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
                 // must be in BOTH select and transform or it never reaches the client)
                 orderRef: true,
@@ -999,6 +1054,8 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             totalItems: sale.salesItems.length,
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Terminal attribution
+            siteId: sale.siteId,
             // Laundry intake→pickup identity
             orderRef: sale.orderRef,
             friendlyNumber: sale.friendlyNumber,
@@ -1077,6 +1134,8 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
                 paidAmount: true,
                 status: true,
                 remark: true,
+                // Terminal attribution (silent-drop fix: in BOTH select and transform)
+                siteId: true,
                 // customer: {
                 //     select: {
                 //         firstName: true,
@@ -1114,6 +1173,7 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
             status: sale.status,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
+            siteId: sale.siteId,
             payments: sale.payments || []
         }));
 
@@ -1215,81 +1275,93 @@ async function completeNewSales(
 
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Stock source: outlet (default) or warehouse (Pro feature). When sourcing
-            // from a warehouse, every stock read/write below targets the warehouse_*
-            // tables instead of the outlet stock tables — the FIFO / COGS / profit logic
-            // in between is source-agnostic and unchanged. Defaults to outlet behaviour.
-            const fromWarehouse =
-                salesBody.stockSourceType === 'WAREHOUSE' && !!salesBody.stockSourceWarehouseId;
-            const srcWarehouseId = salesBody.stockSourceWarehouseId ?? 0;
-            if (fromWarehouse) {
-                const wh = await tx.warehouse.findFirst({
-                    where: { id: srcWarehouseId, deleted: false },
+            // ── Stock sourcing (AD6): automatic per-line "outlet-first → warehouse split",
+            // with a permission-gated whole-sale override. When the tenant has no active
+            // warehouse and no override is in effect, `sources` is just [outlet] and every
+            // read/write below is byte-for-byte the historical outlet-only path.
+            // See docs/future/WAREHOUSE_COMPLETION.md §A.
+            const canOverride = (performedBy.permissions ?? []).some(
+                (p) => p === '*' || p === OVERRIDE_STOCK_SOURCE_PERMISSION
+            );
+            const overrideRequested =
+                salesBody.stockSourceType === 'OUTLET' || salesBody.stockSourceType === 'WAREHOUSE';
+            const overrideActive = overrideRequested && canOverride;
+
+            const sources: SaleStockSource[] = [];
+            if (overrideActive && salesBody.stockSourceType === 'WAREHOUSE') {
+                // Manual override → that warehouse only, no fallback.
+                const whId = salesBody.stockSourceWarehouseId ?? 0;
+                const wh = await tx.warehouse.findFirst({ where: { id: whId, deleted: false }, select: { id: true } });
+                if (!wh) throw new BusinessLogicError(`Warehouse ${whId} not found or inactive`);
+                sources.push(makeSaleStockSource(tx, 'WAREHOUSE', whId));
+            } else if (overrideActive) {
+                // Manual override → outlet only, no fallback.
+                sources.push(makeSaleStockSource(tx, 'OUTLET', salesBody.outletId));
+            } else {
+                // Automatic: outlet first, then every active warehouse (FIFO split-fill).
+                // F1-ready: this is the candidate-warehouse list (single warehouse in v1).
+                sources.push(makeSaleStockSource(tx, 'OUTLET', salesBody.outletId));
+                const activeWarehouses = await tx.warehouse.findMany({
+                    where: { deleted: false },
                     select: { id: true },
+                    orderBy: { id: 'asc' },
                 });
-                if (!wh) {
-                    throw new BusinessLogicError(`Warehouse ${srcWarehouseId} not found or inactive`);
-                }
+                for (const w of activeWarehouses) sources.push(makeSaleStockSource(tx, 'WAREHOUSE', w.id));
             }
-            const stockBalanceDelegate: any = fromWarehouse ? tx.warehouseStockBalance : tx.stockBalance;
-            const stockReceiptDelegate: any = fromWarehouse ? tx.warehouseStockReceipt : tx.stockReceipt;
-            const stockMovementDelegate: any = fromWarehouse ? tx.warehouseStockMovement : tx.stockMovement;
-            const locWhere: any = fromWarehouse
-                ? { warehouseId: srcWarehouseId }
-                : { outletId: salesBody.outletId };
+            // splitCapable = more than one source participates (≥1 warehouse joined the resolver).
+            const splitCapable = sources.length > 1;
 
-            // Batch all initial queries. Typed loosely because the stock balance/receipt
-            // delegates are resolved dynamically (outlet vs warehouse tables).
-            const [stockBalances, stockReceipts, customer, itemTrackStockData]: [any[], any[], any, any[]] = await Promise.all([
-                // Get stock balances for validation (with variant support)
-                stockBalanceDelegate.findMany({
-                    where: {
-                        OR: salesBody.salesItems.map(item => ({
-                            itemId: item.itemId,
-                            itemVariantId: item.itemVariantId || null,
-                            ...locWhere,
-                            deleted: false,
-                        })),
-                    },
-                    select: {
-                        id: true, // Added for direct updates
-                        itemId: true,
-                        itemVariantId: true, // Added for variant support
-                        availableQuantity: true,
-                        reorderThreshold: true, // For low stock notifications
-                        item: {
-                            select: {
-                                itemName: true,
-                                itemCode: true,
-                                cost: true, // Fallback cost
-                                unitOfMeasure: true, // For consumption-based stock deduction
-                            },
-                        },
-                    },
-                }),
+            const balanceSelect = {
+                id: true,
+                itemId: true,
+                itemVariantId: true,
+                availableQuantity: true,
+                reorderThreshold: true,
+                item: { select: { itemName: true, itemCode: true, cost: true, unitOfMeasure: true } },
+            };
+            const receiptSelect = {
+                id: true,
+                itemId: true,
+                itemVariantId: true,
+                quantity: true,
+                cost: true,
+                receiptDate: true,
+                createdAt: true,
+            };
 
-                // Get all stock receipts needed for FIFO in one query (with variant support)
-                stockReceiptDelegate.findMany({
-                    where: {
-                        OR: salesBody.salesItems.map(item => ({
-                            itemId: item.itemId,
-                            itemVariantId: item.itemVariantId || null,
-                            ...locWhere,
-                            deleted: false,
-                            quantity: { gt: 0 },
-                        })),
-                    },
-                    select: {
-                        id: true,
-                        itemId: true,
-                        itemVariantId: true, // Added for variant support
-                        quantity: true,
-                        cost: true,
-                        receiptDate: true,
-                        createdAt: true,
-                    },
-                    orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
-                }),
+            // Batch-load balances + receipts for every source (parallel), plus customer +
+            // item flags. Typed loosely (delegates resolved dynamically per source).
+            const [perSourceResults, customer, itemTrackStockData]: [Array<[any[], any[]]>, any, any[]] = await Promise.all([
+                Promise.all(
+                    sources.map((src) =>
+                        Promise.all([
+                            src.balanceDelegate.findMany({
+                                where: {
+                                    OR: salesBody.salesItems.map(item => ({
+                                        itemId: item.itemId,
+                                        itemVariantId: item.itemVariantId || null,
+                                        ...src.locWhere,
+                                        deleted: false,
+                                    })),
+                                },
+                                select: balanceSelect,
+                            }),
+                            src.receiptDelegate.findMany({
+                                where: {
+                                    OR: salesBody.salesItems.map(item => ({
+                                        itemId: item.itemId,
+                                        itemVariantId: item.itemVariantId || null,
+                                        ...src.locWhere,
+                                        deleted: false,
+                                        quantity: { gt: 0 },
+                                    })),
+                                },
+                                select: receiptSelect,
+                                orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
+                            }),
+                        ])
+                    )
+                ) as Promise<Array<[any[], any[]]>>,
 
                 // Validate customer if provided
                 salesBody.customerId ? tx.customer.findUnique({
@@ -1309,20 +1381,20 @@ async function completeNewSales(
                 throw new Error(`Invalid customerId: ${salesBody.customerId}`);
             }
 
-            // Create lookup maps for better performance (with variant support using composite keys)
-            const stockBalanceMap = new Map(
-                stockBalances.map(sb => [
-                    `${sb.itemId}-${sb.itemVariantId || 'null'}`, // Composite key
-                    sb
-                ])
-            );
-            const stockReceiptsByItem = new Map<string, typeof stockReceipts>();
-            stockReceipts.forEach(receipt => {
-                const lookupKey = `${receipt.itemId}-${receipt.itemVariantId || 'null'}`;
-                if (!stockReceiptsByItem.has(lookupKey)) {
-                    stockReceiptsByItem.set(lookupKey, []);
+            // Build per-source lookup maps (composite key itemId-variant). Receipts are
+            // mutated in-memory during FIFO so later lines for the same item see depletion.
+            sources.forEach((src, i) => {
+                const [balances, receipts] = perSourceResults[i];
+                src.balanceMap = new Map(
+                    balances.map((sb: any) => [`${sb.itemId}-${sb.itemVariantId || 'null'}`, sb])
+                );
+                src.receiptsByItem = new Map();
+                for (const r of receipts) {
+                    const key = `${r.itemId}-${r.itemVariantId || 'null'}`;
+                    if (!src.receiptsByItem.has(key)) src.receiptsByItem.set(key, []);
+                    src.receiptsByItem.get(key)!.push(r);
                 }
-                stockReceiptsByItem.get(lookupKey)!.push(receipt);
+                src.originalReceiptQty = new Map(receipts.map((r: any) => [r.id, new Decimal(r.quantity)]));
             });
 
             // Build trackStock lookup map
@@ -1357,21 +1429,34 @@ async function completeNewSales(
                 aggregatedEffectiveQtyMap.set(lookupKey, current.plus(effectiveQty));
             }
 
-            // Validate stock availability using aggregated quantities
+            // Validate COMBINED availability across all sources (atomic — fail before any
+            // write). Also seed each source's remainingBalance ledger used by the split.
             const stockValidationErrors: string[] = [];
             for (const [lookupKey, totalEffectiveQty] of aggregatedEffectiveQtyMap) {
-                const stockBalance = stockBalanceMap.get(lookupKey);
-                if (!stockBalance) {
-                    const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                let combinedAvail = new Decimal(0);
+                let anyBalance = false;
+                let itemInfo: any = null;
+                for (const src of sources) {
+                    const b = src.balanceMap.get(lookupKey);
+                    if (b) {
+                        anyBalance = true;
+                        itemInfo = itemInfo || b.item;
+                        combinedAvail = combinedAvail.plus(new Decimal(b.availableQuantity));
+                    }
+                    src.remainingBalance.set(lookupKey, b ? new Decimal(b.availableQuantity) : new Decimal(0));
+                }
+                const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                if (!anyBalance) {
                     const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
                     stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}${variantInfo}`);
                     continue;
                 }
-                if (new Decimal(stockBalance.availableQuantity).lt(totalEffectiveQty)) {
-                    const variantInfo = stockBalance.itemVariantId ? ` (variant)` : '';
+                if (combinedAvail.lt(totalEffectiveQty)) {
+                    const variantInfo = item.itemVariantId ? ` (variant)` : '';
+                    const srcNote = splitCapable ? ' (outlet + warehouse)' : '';
                     stockValidationErrors.push(
-                        `Insufficient stock for ${stockBalance.item.itemName}${variantInfo} (${stockBalance.item.itemCode}). ` +
-                        `Available: ${stockBalance.availableQuantity}, Required: ${totalEffectiveQty}`
+                        `Insufficient stock for ${itemInfo?.itemName || item.itemName}${variantInfo} (${itemInfo?.itemCode || item.itemCode}). ` +
+                        `Available: ${combinedAvail}${srcNote}, Required: ${totalEffectiveQty}`
                     );
                 }
             }
@@ -1379,66 +1464,57 @@ async function completeNewSales(
                 throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
             }
 
-            // Snapshot original receipt quantities BEFORE FIFO mutation
-            // (FIFO loop mutates receipt.quantity in-memory for duplicate-item handling)
-            const originalReceiptQtyMap = new Map<number, Decimal>();
-            for (const receipt of stockReceipts) {
-                originalReceiptQtyMap.set(receipt.id, new Decimal(receipt.quantity));
-            }
-
-            // Calculate FIFO costs for each sales item
-            // Receipt quantities are mutated in-memory so subsequent items with the same
-            // itemId see reduced quantities (fixes duplicate-item FIFO bug)
+            // Calculate FIFO costs for each sales line, splitting across sources in priority
+            // order (outlet first, then warehouse). Each used-receipt is tagged with its
+            // source index. Receipt quantities + remainingBalance are mutated in-memory so
+            // later lines for the same item see depletion (fixes duplicate-item FIFO bug).
             const salesItemsWithFIFOCost: Array<typeof salesBody.salesItems[0] & {
-                usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[]
+                usedReceipts: { srcIndex: number; id: number; quantityUsed: Decimal; cost: Decimal }[]
             }> = [];
 
             for (const item of stockItems) {
                 const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
-                const stockBalance = stockBalanceMap.get(lookupKey)!;
                 const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
+                const fallbackCost = new Decimal(itemTrackStockMap.get(item.itemId)?.cost || 0);
+                let remaining = effectiveQty;
+                const usedReceipts: { srcIndex: number; id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
 
-                const itemReceipts = stockReceiptsByItem.get(lookupKey) || [];
-                let remainingQuantity = effectiveQty;
-                let usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
+                for (let si = 0; si < sources.length && remaining.gt(0); si++) {
+                    const src = sources[si];
+                    const avail = src.remainingBalance.get(lookupKey) || new Decimal(0);
+                    const take = Decimal.min(remaining, avail);
+                    if (take.lte(0)) continue;
 
-                if (itemReceipts.length === 0) {
-                    // Fallback to item cost
-                    usedReceipts.push({
-                        id: -1,
-                        quantityUsed: remainingQuantity,
-                        cost: new Decimal(stockBalance.item.cost || 0)
-                    });
-                } else {
-                    // Use FIFO — receipt.quantity is mutated in-memory for subsequent items
-                    for (const receipt of itemReceipts) {
-                        if (remainingQuantity.lte(0)) break;
-
-                        const availableInReceipt = new Decimal(receipt.quantity);
-                        if (availableInReceipt.lte(0)) continue;
-
-                        const quantityToUse = Decimal.min(remainingQuantity, availableInReceipt);
-                        remainingQuantity = remainingQuantity.minus(quantityToUse);
-
-                        // Mutate receipt quantity in-memory for subsequent items with same itemId
-                        (receipt as any).quantity = availableInReceipt.minus(quantityToUse);
-
-                        usedReceipts.push({
-                            id: receipt.id,
-                            quantityUsed: quantityToUse,
-                            cost: new Decimal(receipt.cost),
-                        });
+                    const itemReceipts = src.receiptsByItem.get(lookupKey) || [];
+                    let need = take;
+                    if (itemReceipts.length === 0) {
+                        // Source has balance but no FIFO receipts → fall back to item cost.
+                        usedReceipts.push({ srcIndex: si, id: -1, quantityUsed: need, cost: fallbackCost });
+                        need = new Decimal(0);
+                    } else {
+                        for (const receipt of itemReceipts) {
+                            if (need.lte(0)) break;
+                            const availableInReceipt = new Decimal(receipt.quantity);
+                            if (availableInReceipt.lte(0)) continue;
+                            const quantityToUse = Decimal.min(need, availableInReceipt);
+                            need = need.minus(quantityToUse);
+                            (receipt as any).quantity = availableInReceipt.minus(quantityToUse);
+                            usedReceipts.push({ srcIndex: si, id: receipt.id, quantityUsed: quantityToUse, cost: new Decimal(receipt.cost) });
+                        }
+                        // Receipts short within this source's portion → last receipt's cost.
+                        if (need.gt(0)) {
+                            const lastReceipt = itemReceipts[itemReceipts.length - 1];
+                            usedReceipts.push({ srcIndex: si, id: -1, quantityUsed: need, cost: new Decimal(lastReceipt.cost) });
+                            need = new Decimal(0);
+                        }
                     }
+                    src.remainingBalance.set(lookupKey, avail.minus(take));
+                    remaining = remaining.minus(take);
+                }
 
-                    // If still remaining, use last receipt's cost
-                    if (remainingQuantity.gt(0) && itemReceipts.length > 0) {
-                        const lastReceipt = itemReceipts[itemReceipts.length - 1];
-                        usedReceipts.push({
-                            id: -1,
-                            quantityUsed: remainingQuantity,
-                            cost: new Decimal(lastReceipt.cost),
-                        });
-                    }
+                if (remaining.gt(0)) {
+                    // Unreachable after combined validation — defensive guard.
+                    throw new BusinessLogicError(`Insufficient combined stock for item ${item.itemName || item.itemId}`);
                 }
 
                 salesItemsWithFIFOCost.push({ ...item, usedReceipts });
@@ -1453,9 +1529,6 @@ async function completeNewSales(
             // Calculate total profit and prepare sales item data
             let totalProfit = new Decimal(0);
             const salesItemData: any[] = [];
-            // Aggregate receipt updates by receipt ID to prevent duplicate updates
-            // when multiple sales items consume from the same receipt
-            const stockReceiptUpdateMap = new Map<number, Decimal>();
 
             salesItemsWithFIFOCost.forEach((item) => {
                 const isConsumptionItem = item.stockConsumptionQty != null;
@@ -1504,14 +1577,6 @@ async function completeNewSales(
                         unitOfMeasure: item.unitOfMeasure || null,
                         loadWeightKg: item.loadWeightKg ?? null,
                     });
-
-                    // Track receipt updates for consumption item
-                    for (const receipt of item.usedReceipts) {
-                        if (receipt.id !== -1) {
-                            const current = stockReceiptUpdateMap.get(receipt.id) || new Decimal(0);
-                            stockReceiptUpdateMap.set(receipt.id, current.plus(receipt.quantityUsed));
-                        }
-                    }
                 } else {
                     // ── Piece-based items: existing multi-row FIFO split ──
                     const totalQuantity = new Decimal(item.quantity);
@@ -1559,15 +1624,23 @@ async function completeNewSales(
                             unitOfMeasure: item.unitOfMeasure || null,
                             loadWeightKg: item.loadWeightKg ?? null,
                         });
-
-                        // Track receipt updates for piece-based item
-                        if (receipt.id !== -1) {
-                            const current = stockReceiptUpdateMap.get(receipt.id) || new Decimal(0);
-                            stockReceiptUpdateMap.set(receipt.id, current.plus(receipt.quantityUsed));
-                        }
                     });
                 }
             });
+
+            // Consolidate FIFO consumption per source: receiptUpdateMap (receipt depletion)
+            // and consumedByItem (balance decrement + movement). Driven off the source-tagged
+            // usedReceipts so a split line records against each actual location.
+            for (const fifoItem of salesItemsWithFIFOCost) {
+                const lookupKey = `${fifoItem.itemId}-${fifoItem.itemVariantId || 'null'}`;
+                for (const ur of fifoItem.usedReceipts) {
+                    const src = sources[ur.srcIndex];
+                    if (ur.id !== -1) {
+                        src.receiptUpdateMap.set(ur.id, (src.receiptUpdateMap.get(ur.id) || new Decimal(0)).plus(ur.quantityUsed));
+                    }
+                    src.consumedByItem.set(lookupKey, (src.consumedByItem.get(lookupKey) || new Decimal(0)).plus(ur.quantityUsed));
+                }
+            }
 
             // ── Non-stock items: use item.cost directly, no FIFO/stock operations ──
             for (const item of nonStockItems) {
@@ -1608,11 +1681,38 @@ async function completeNewSales(
                 });
             }
 
-            // Convert aggregated receipt update map to final update list
-            const stockReceiptUpdates: { id: number; newQuantity: Decimal }[] = [];
-            for (const [receiptId, totalUsed] of stockReceiptUpdateMap) {
-                const originalQty = originalReceiptQtyMap.get(receiptId) || new Decimal(0);
-                stockReceiptUpdates.push({ id: receiptId, newQuantity: originalQty.minus(totalUsed) });
+            // Compute sale-level stock-source provenance from what was ACTUALLY consumed.
+            const consumedFrom = (s: SaleStockSource) =>
+                [...s.consumedByItem.values()].some((q) => q.gt(0));
+            const outletUsed = sources.some((s) => s.kind === 'OUTLET' && consumedFrom(s));
+            const warehouseUsedSource = sources.find((s) => s.kind === 'WAREHOUSE' && consumedFrom(s));
+            const warehouseUsed = !!warehouseUsedSource;
+
+            let saleStockSourceType: string | null;
+            let saleStockSourceOutletId: number | null;
+            let saleStockSourceWarehouseId: number | null;
+            if (overrideActive) {
+                // Manual whole-sale override → record the chosen single source verbatim.
+                saleStockSourceType = salesBody.stockSourceType ?? 'OUTLET';
+                saleStockSourceOutletId = saleStockSourceType === 'OUTLET' ? salesBody.outletId : null;
+                saleStockSourceWarehouseId = saleStockSourceType === 'WAREHOUSE' ? (salesBody.stockSourceWarehouseId ?? null) : null;
+            } else if (!splitCapable) {
+                // No active warehouse → byte-for-byte the historical outlet path (null source).
+                saleStockSourceType = salesBody.stockSourceType ?? null;
+                saleStockSourceOutletId = salesBody.stockSourceOutletId ?? null;
+                saleStockSourceWarehouseId = null;
+            } else if (outletUsed && warehouseUsed) {
+                saleStockSourceType = 'MIXED';
+                saleStockSourceOutletId = salesBody.outletId;
+                saleStockSourceWarehouseId = warehouseUsedSource!.locationId;
+            } else if (warehouseUsed) {
+                saleStockSourceType = 'WAREHOUSE';
+                saleStockSourceOutletId = null;
+                saleStockSourceWarehouseId = warehouseUsedSource!.locationId;
+            } else {
+                saleStockSourceType = 'OUTLET';
+                saleStockSourceOutletId = salesBody.outletId;
+                saleStockSourceWarehouseId = null;
             }
 
             // Create sales record
@@ -1652,15 +1752,18 @@ async function completeNewSales(
                     eodId: salesBody.eodId,
                     salesQuotationId: salesBody.salesQuotationId,
                     performedBy: salesBody.performedBy,
+                    // Terminal attribution — which terminal rang this sale (client-supplied).
+                    siteId: salesBody.siteId ?? null,
                     deleted: false,
                     profitAmount: totalProfit,
                     // Laundry intake→pickup identity (null for retail / when not sent)
                     orderRef: salesBody.orderRef || null,
                     friendlyNumber: salesBody.friendlyNumber || null,
-                    // Stock source provenance (warehouse-sourced sales; null/outlet otherwise)
-                    stockSourceType: fromWarehouse ? 'WAREHOUSE' : (salesBody.stockSourceType ?? null),
-                    stockSourceOutletId: fromWarehouse ? null : (salesBody.stockSourceOutletId ?? null),
-                    stockSourceWarehouseId: fromWarehouse ? srcWarehouseId : null,
+                    // Stock-source provenance — computed from actual per-line consumption
+                    // (OUTLET / WAREHOUSE / MIXED), or null for non-warehouse tenants.
+                    stockSourceType: saleStockSourceType,
+                    stockSourceOutletId: saleStockSourceOutletId,
+                    stockSourceWarehouseId: saleStockSourceWarehouseId,
                 },
             });
 
@@ -1677,6 +1780,9 @@ async function completeNewSales(
                 data: payments.map(payment => ({
                     ...payment,
                     salesId: createdSales.id,
+                    // Terminal attribution — the terminal that took the payment.
+                    // Prefer a payment-level siteId; fall back to the sale's terminal.
+                    siteId: (payment as any).siteId ?? salesBody.siteId ?? null,
                 }))
             });
 
@@ -1728,96 +1834,106 @@ async function completeNewSales(
             }
             // ── End Loyalty Block ──
 
-            // Batch update stock receipts (parallel execution for performance)
-            if (stockReceiptUpdates.length > 0) {
-                await Promise.all(
-                    stockReceiptUpdates.map((update) =>
-                        stockReceiptDelegate.update({
-                            where: { id: update.id },
+            // ── Per-source stock writes (receipts → balances → movements). For a normal
+            // outlet-only sale `sources` is just [outlet] → identical to the legacy path;
+            // a split sale writes against each location it actually drew from.
+            const receiptUpdateOps: Promise<any>[] = [];
+            for (const src of sources) {
+                for (const [receiptId, totalUsed] of src.receiptUpdateMap) {
+                    const originalQty = src.originalReceiptQty.get(receiptId) || new Decimal(0);
+                    const newQuantity = originalQty.minus(totalUsed);
+                    receiptUpdateOps.push(
+                        src.receiptDelegate.update({
+                            where: { id: receiptId },
                             data: {
-                                quantity: update.newQuantity,
+                                quantity: newQuantity,
                                 updatedAt: new Date(),
                                 version: { increment: 1 },
-                                deleted: update.newQuantity.eq(0) ? true : undefined,
-                                deletedAt: update.newQuantity.eq(0) ? new Date() : undefined,
+                                deleted: newQuantity.eq(0) ? true : undefined,
+                                deletedAt: newQuantity.eq(0) ? new Date() : undefined,
                             },
                         })
-                    )
-                );
+                    );
+                }
+            }
+            if (receiptUpdateOps.length > 0) {
+                await Promise.all(receiptUpdateOps);
             }
 
-            // Prepare stock balance updates and movements (with variant support)
-            // Aggregate per unique item to handle duplicate itemIds (consumption items)
-            const stockUpdates: any[] = [];
-            for (const [lookupKey, totalEffectiveQty] of aggregatedEffectiveQtyMap) {
-                const stockBalance = stockBalanceMap.get(lookupKey)!;
-                const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
-                const newAvailableQuantity = new Decimal(stockBalance.availableQuantity)
-                    .minus(totalEffectiveQty);
+            // Build balance decrements + movements per source + collect notification
+            // candidates (outlet only drives low/out-of-stock alerts in v1).
+            const balanceOps: Promise<any>[] = [];
+            const movementOps: Promise<any>[] = [];
+            const stockUpdatesForNotif: any[] = [];
+            for (const src of sources) {
+                const movementData: any[] = [];
+                for (const [lookupKey, consumedQty] of src.consumedByItem) {
+                    if (consumedQty.lte(0)) continue;
+                    const balance = src.balanceMap.get(lookupKey)!;
+                    const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                    const prev = new Decimal(balance.availableQuantity);
+                    const newAvail = prev.minus(consumedQty);
+                    const reorderThreshold = balance.reorderThreshold ? new Decimal(balance.reorderThreshold) : null;
+                    const needsReorder = reorderThreshold
+                        ? newAvail.lte(reorderThreshold) && prev.gt(reorderThreshold)
+                        : false;
 
-                // Check reorder threshold
-                const reorderThreshold = stockBalance.reorderThreshold
-                    ? new Decimal(stockBalance.reorderThreshold)
-                    : null;
+                    balanceOps.push(
+                        src.balanceDelegate.update({
+                            where: { id: balance.id },
+                            data: {
+                                availableQuantity: { decrement: consumedQty.toNumber() },
+                                onHandQuantity: { decrement: consumedQty.toNumber() },
+                                version: { increment: 1 },
+                                updatedAt: new Date(),
+                            },
+                        })
+                    );
 
-                const needsReorder = reorderThreshold
-                    ? newAvailableQuantity.lte(reorderThreshold) &&
-                    new Decimal(stockBalance.availableQuantity).gt(reorderThreshold)
-                    : false;
-
-                stockUpdates.push({
-                    stockBalanceId: stockBalance.id,
-                    outletId: salesBody.outletId,
-                    itemId: item.itemId,
-                    itemVariantId: item.itemVariantId || null,
-                    itemName: stockBalance.item.itemName,
-                    itemCode: stockBalance.item.itemCode,
-                    variantName: item.variantName || null,
-                    quantity: totalEffectiveQty,
-                    previousAvailable: new Decimal(stockBalance.availableQuantity),
-                    previousOnHand: new Decimal(stockBalance.availableQuantity),
-                    newAvailableQuantity: newAvailableQuantity,
-                    reorderThreshold: reorderThreshold?.toNumber(),
-                    willBeOutOfStock: newAvailableQuantity.lte(0),
-                    needsReorder: needsReorder,
-                });
-            }
-
-            // Store for notifications outside transaction
-            stockUpdatesForNotification = stockUpdates;
-
-            // Batch update stock balances and create movements
-            await Promise.all([
-                // Update stock balances directly using stored IDs
-                ...stockUpdates.map((update) =>
-                    stockBalanceDelegate.update({
-                        where: { id: update.stockBalanceId },
-                        data: {
-                            availableQuantity: { decrement: update.quantity.toNumber() },
-                            onHandQuantity: { decrement: update.quantity.toNumber() },
-                            version: { increment: 1 },
-                            updatedAt: new Date(),
-                        },
-                    })
-                ),
-
-                // Batch create stock movements
-                stockMovementDelegate.createMany({
-                    data: stockUpdates.map(update => ({
-                        itemId: update.itemId,
-                        itemVariantId: update.itemVariantId,
-                        ...(fromWarehouse ? { warehouseId: srcWarehouseId } : { outletId: update.outletId }),
-                        previousAvailableQuantity: update.previousAvailable.toNumber(),
-                        previousOnHandQuantity: update.previousOnHand.toNumber(),
-                        availableQuantityDelta: -update.quantity.toNumber(),
-                        onHandQuantityDelta: -update.quantity.toNumber(),
+                    movementData.push({
+                        itemId: item.itemId,
+                        itemVariantId: item.itemVariantId || null,
+                        ...src.locWhere,
+                        previousAvailableQuantity: prev.toNumber(),
+                        previousOnHandQuantity: prev.toNumber(),
+                        availableQuantityDelta: -consumedQty.toNumber(),
+                        onHandQuantityDelta: -consumedQty.toNumber(),
                         movementType: 'Sales',
                         documentId: createdSales.id,
                         reason: 'Sales transaction',
                         remark: `Sales #${createdSales.id}`,
-                    }))
-                })
-            ]);
+                        // Outlet movements carry terminal attribution (siteId); warehouse
+                        // movements carry performedBy (no siteId column).
+                        ...(src.kind === 'OUTLET'
+                            ? { siteId: salesBody.siteId ?? null }
+                            : { performedBy: performedBy.username }),
+                    });
+
+                    if (src.kind === 'OUTLET') {
+                        stockUpdatesForNotif.push({
+                            itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            itemName: balance.item.itemName,
+                            itemCode: balance.item.itemCode,
+                            variantName: item.variantName || null,
+                            quantity: consumedQty,
+                            previousAvailable: prev,
+                            newAvailableQuantity: newAvail,
+                            reorderThreshold: reorderThreshold?.toNumber(),
+                            willBeOutOfStock: newAvail.lte(0),
+                            needsReorder,
+                        });
+                    }
+                }
+                if (movementData.length > 0) {
+                    movementOps.push(src.movementDelegate.createMany({ data: movementData }));
+                }
+            }
+
+            // Store for notifications outside transaction
+            stockUpdatesForNotification = stockUpdatesForNotif;
+
+            await Promise.all([...balanceOps, ...movementOps]);
 
             return createdSales;
         });
@@ -2470,7 +2586,8 @@ let voidSales = async (
     databaseName: string,
     tenantId: number,
     performedBy: PerformedBy,
-    salesId: number
+    salesId: number,
+    actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -2562,6 +2679,9 @@ let voidSales = async (
                                 documentId: salesId,
                                 reason: '',
                                 remark: `Sales #${salesId} voided`,
+                                // Attributed to the acting terminal (the device performing
+                                // the reversal); falls back to the sale's terminal of record.
+                                siteId: actingSiteId ?? sales.siteId ?? null,
                             },
                         });
                     }
@@ -2610,7 +2730,8 @@ let returnSales = async (
     databaseName: string,
     tenantId: number,
     performedBy: PerformedBy,
-    salesId: number
+    salesId: number,
+    actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -2703,6 +2824,9 @@ let returnSales = async (
                                 documentId: salesId,
                                 reason: '',
                                 remark: `Sales #${salesId} returned`,
+                                // Attributed to the acting terminal (the device performing
+                                // the reversal); falls back to the sale's terminal of record.
+                                siteId: actingSiteId ?? sales.siteId ?? null,
                             },
                         });
                     }
@@ -2751,7 +2875,8 @@ let refundSales = async (
     databaseName: string,
     tenantId: number,
     performedBy: PerformedBy,
-    salesId: number
+    salesId: number,
+    actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -2843,6 +2968,9 @@ let refundSales = async (
                                 documentId: salesId,
                                 reason: '',
                                 remark: `Sales #${salesId} refunded`,
+                                // Attributed to the acting terminal (the device performing
+                                // the reversal); falls back to the sale's terminal of record.
+                                siteId: actingSiteId ?? sales.siteId ?? null,
                             },
                         });
                     }

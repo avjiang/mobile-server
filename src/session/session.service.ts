@@ -99,7 +99,9 @@ let createSession = async (openSessionRequest: OpenSessionRequest, databaseName:
                 openByUserID: openSessionRequest.openByUserID,
                 openingAmount: openSessionRequest.openingAmount,
                 totalSalesCount: 0,
-                closeByUserID: 0
+                closeByUserID: 0,
+                // Terminal attribution — the terminal that opened this session.
+                siteId: openSessionRequest.siteId ?? null
             }
         })
         return createdSession
@@ -144,7 +146,9 @@ let closeSession = async (closeSessionRequest: CloseSessionRequest, databaseName
                 data: {
                     closingDateTime: closeSessionRequest.closingDateTime,
                     totalSalesCount: closeSessionRequest.totalSalesCount,
-                    closeByUserID: closeSessionRequest.closeByUserID
+                    closeByUserID: closeSessionRequest.closeByUserID,
+                    // Terminal attribution — the terminal that closed this session.
+                    closedBySiteId: closeSessionRequest.siteId ?? null
                 }
             })
             isSuccess = true

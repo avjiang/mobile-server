@@ -28,6 +28,7 @@ const getValidSettlementFields = (data: any) => {
         'remark',
         'status',
         'performedBy',
+        'siteId', // Terminal attribution — whitelist or the update silently drops it
         'totalRebateAmount',
         'rebateReason',
         'totalInvoiceCount',
@@ -773,6 +774,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                         remark: settlementData.remark || null,
                         status: settlementStatus,
                         performedBy: settlementData.performedBy || null,
+                        siteId: settlementData.siteId ?? null, // Terminal attribution
                         totalRebateAmount: settlementData.totalRebateAmount || 0,
                         rebateReason: settlementData.rebateReason || null,
                         totalInvoiceCount: totalInvoiceCount,

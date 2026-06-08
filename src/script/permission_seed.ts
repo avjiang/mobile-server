@@ -47,6 +47,11 @@ const permissions = [
         description: "View complete stock amount"
     },
     {
+        name: "Override Stock Source",
+        category: "Inventory",
+        description: "Manually force a sale's stock source (outlet vs warehouse), overriding the automatic resolver"
+    },
+    {
         name: "Add Client",
         category: "Client Management",
         description: "Add new clients"

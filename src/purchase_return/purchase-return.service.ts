@@ -497,7 +497,8 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                         status: 'COMPLETED', // Always start as COMPLETED
                         totalReturnAmount: totalReturnAmount,
                         remark: purchaseReturnData.remark || null,
-                        performedBy: purchaseReturnData.performedBy || null
+                        performedBy: purchaseReturnData.performedBy || null,
+                        siteId: purchaseReturnData.siteId ?? null // Terminal attribution
                     }
                 });
 
@@ -525,7 +526,8 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                         purchaseReturnData.purchaseReturnItems,
                         newPurchaseReturn,
                         purchaseReturnData.invoiceId,
-                        purchaseReturnData.performedBy || "SYSTEM"
+                        purchaseReturnData.performedBy || "SYSTEM",
+                        purchaseReturnData.siteId ?? null
                     );
 
                     // Fetch created items and update them with stockReceiptId
@@ -719,7 +721,8 @@ const reduceStockBalancesAndCreateMovements = async (
     items: any[],
     purchaseReturn: any,
     invoiceId: number,
-    performedBy: string
+    performedBy: string,
+    siteId: number | null = null
 ): Promise<Map<string, number>> => {
     const movementOperations = [];
     const stockReceiptIdMap = new Map<string, number>(); // itemId-itemVariantId -> stockReceiptId
@@ -829,7 +832,9 @@ const reduceStockBalancesAndCreateMovements = async (
                 documentId: purchaseReturn.id,
                 reason: `Return from invoice - ${item.returnReason}`,
                 remark: item.remark || '',
-                performedBy: performedBy
+                performedBy: performedBy,
+                // Terminal attribution — the terminal that made the return.
+                siteId: siteId
             });
 
             // Find the matching StockReceipt and either soft-delete or reduce quantity
@@ -887,7 +892,8 @@ const reverseStockOperationsForCancellation = async (
     tx: Prisma.TransactionClient,
     items: any[],
     purchaseReturn: any,
-    performedBy: string
+    performedBy: string,
+    siteId: number | null = null
 ) => {
     const movementOperations = [];
 
@@ -966,7 +972,9 @@ const reverseStockOperationsForCancellation = async (
                     documentId: purchaseReturn.id,
                     reason: `Cancelled return #${purchaseReturn.returnNumber}`,
                     remark: 'Purchase return cancelled - stock restored',
-                    performedBy: performedBy
+                    performedBy: performedBy,
+                    // Terminal attribution — the terminal that cancelled the return.
+                    siteId: siteId
                 });
             }
 
@@ -1070,6 +1078,7 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
             if (updateData.returnDate !== undefined) updateFields.returnDate = updateData.returnDate;
             if (updateData.remark !== undefined) updateFields.remark = updateData.remark;
             if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;
+            if (updateData.siteId !== undefined) updateFields.siteId = updateData.siteId; // Terminal attribution (latest editor)
             if (updateData.status !== undefined) updateFields.status = updateData.status;
 
             // Update purchase return
@@ -1084,7 +1093,8 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
                     tx,
                     existingPurchaseReturn.purchaseReturnItems,
                     { ...updatedPurchaseReturn, outletId: existingPurchaseReturn.outletId },
-                    updateData.performedBy || "SYSTEM"
+                    updateData.performedBy || "SYSTEM",
+                    updateData.siteId ?? null
                 );
             }
 
@@ -1238,6 +1248,7 @@ let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseN
                     cancelledBy: cancelData.performedBy || "SYSTEM",
                     cancelledAt: cancelData.cancelledAt ? new Date(cancelData.cancelledAt) : new Date(),
                     cancelReason: cancelData.cancelReason || null,
+                    siteId: cancelData.siteId ?? null, // Terminal attribution (latest editor = canceller)
                     version: { increment: 1 }
                 }
             });
@@ -1248,7 +1259,8 @@ let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseN
                     tx,
                     existingPurchaseReturn.purchaseReturnItems,
                     { ...updatedPurchaseReturn, outletId: existingPurchaseReturn.outletId },
-                    cancelData.performedBy || "SYSTEM"
+                    cancelData.performedBy || "SYSTEM",
+                    cancelData.siteId ?? null
                 );
             }
 

@@ -634,6 +634,7 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         remark: purchaseOrderData.remark,
                         currency: purchaseOrderData.currency || 'IDR',
                         performedBy: purchaseOrderData.performedBy,
+                        siteId: purchaseOrderData.siteId ?? null, // Terminal attribution
                         isTaxInclusive: purchaseOrderData.isTaxInclusive !== undefined ? purchaseOrderData.isTaxInclusive : true,
                     },
                     include: {
@@ -893,6 +894,7 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                     remark: updateData.remark,
                     currency: updateData.currency,
                     performedBy: updateData.performedBy,
+                    siteId: updateData.siteId ?? null, // Terminal attribution (latest editor)
                     isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
                     version: { increment: 1 }
                 }

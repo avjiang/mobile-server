@@ -97,6 +97,12 @@ export class ItemDto {
     @Expose()
     trackStock: boolean = true;
 
+    // Terminal attribution — the terminal that created this item (RegisteredDevice
+    // siteId). Must be @Expose'd or class-transformer (excludeExtraneousValues)
+    // drops it before createMany. Stamped on the item's stock movements.
+    @Expose()
+    siteId: number | undefined = undefined;
+
     // Laundry: default machine-load weight (kg) for a service item; prefills the sale dialog.
     @Expose()
     defaultLoadWeightKg: number | undefined = undefined;

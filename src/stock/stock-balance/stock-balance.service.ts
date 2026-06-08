@@ -333,6 +333,8 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     deleted: false,
                     createdAt: new Date(),
                     performedBy: adjustment.performedBy ?? null,
+                    // Terminal attribution — the terminal performing this adjustment.
+                    siteId: adjustment.siteId ?? null,
                 });
 
                 // Prepare stock balance update (with variant info for delta sync)
@@ -557,6 +559,8 @@ async function clearStock(databaseName: string, stockClearance: StockAdjustment)
                     deleted: false,
                     createdAt: new Date(),
                     performedBy: stockClearance.performedBy ?? null,
+                    // Terminal attribution — the terminal performing this clearance.
+                    siteId: stockClearance.siteId ?? null,
                 }
             });
 

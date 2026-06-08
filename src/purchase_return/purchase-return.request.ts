@@ -23,6 +23,9 @@ export interface PurchaseReturnInput {
     totalReturnAmount?: PrismaDecimal | number;
     remark?: string;
     performedBy?: string;
+    // Terminal attribution — the terminal that created/updated this purchase
+    // return (RegisteredDevice.siteId). Stamped on the resulting stock movements.
+    siteId?: number;
     purchaseReturnItems?: PurchaseReturnItemInput[];
 }
 
@@ -33,6 +36,8 @@ export interface CreatePurchaseReturnRequestBody {
 export interface CancelPurchaseReturnInput {
     cancelReason?: string;
     performedBy?: string;
+    // Terminal attribution — the terminal that cancelled this return.
+    siteId?: number;
     cancelledAt?: Date | string;
 }
 

@@ -55,6 +55,10 @@ export class CreateSalesRequest {
     @Expose() eodId: number = 0;
     @Expose() salesQuotationId: number | undefined;
     @Expose() performedBy: string = "";
+    // Terminal attribution — the originating terminal number (RegisteredDevice.siteId),
+    // cached at login. Must be @Expose'd or class-transformer drops it before
+    // tx.sales.create. Nullable: omitted by devices that haven't registered yet.
+    @Expose() siteId?: number;
     @Expose() deleted: boolean | undefined;
     // Loyalty fields (optional — only sent when loyalty is enabled)
     @Expose() loyaltyPointsToRedeem?: number;

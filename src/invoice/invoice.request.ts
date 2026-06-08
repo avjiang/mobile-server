@@ -37,6 +37,9 @@ export interface InvoiceInput {
     dueDate?: Date;
     remark?: string;
     performedBy?: string;
+    // Terminal attribution — the terminal that created/edited this invoice
+    // (RegisteredDevice.siteId). Optional; nullable on the column.
+    siteId?: number;
     invoiceItems?: InvoiceItemInput[]; // Add items here
 }
 

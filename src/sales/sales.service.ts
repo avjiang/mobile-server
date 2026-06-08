@@ -907,6 +907,13 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             totalItemDiscountAmount: sale.totalItemDiscountAmount,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
+            // Laundry: total processed weight = sum of LOAD_WEIGHT_KG across the
+            // wash-service line(s). null for non-laundry (sum 0) so retail payloads
+            // stay identical. salesItems already loaded above — in-memory reduce.
+            loadWeightKg: (() => {
+                const w = sale.salesItems.reduce((sum, it) => sum + Number(it.loadWeightKg ?? 0), 0);
+                return w > 0 ? w : null;
+            })(),
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
             // Terminal attribution
@@ -1052,6 +1059,13 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             status: sale.status,
             remark: sale.remark,
             totalItems: sale.salesItems.length,
+            // Laundry: total processed weight = sum of LOAD_WEIGHT_KG across the
+            // wash-service line(s). null for non-laundry (sum 0) so retail payloads
+            // stay identical. salesItems already loaded above — in-memory reduce.
+            loadWeightKg: (() => {
+                const w = sale.salesItems.reduce((sum, it) => sum + Number(it.loadWeightKg ?? 0), 0);
+                return w > 0 ? w : null;
+            })(),
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
             // Terminal attribution

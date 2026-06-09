@@ -729,6 +729,7 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             where,
             select: {
                 id: true,
+                outletId: true,
                 businessDate: true,
                 salesType: true,
                 customerId: true,
@@ -777,6 +778,7 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
         // Transform results to include customerName
         const transformedSales = salesArray.map(sale => ({
             id: sale.id,
+            outletId: sale.outletId,
             businessDate: sale.businessDate,
             salesType: sale.salesType,
             customerId: sale.customerId,
@@ -865,6 +867,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             where,
             select: {
                 id: true,
+                outletId: true,
                 businessDate: true,
                 salesType: true,
                 customerId: true,
@@ -909,6 +912,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
         // Transform results to include customerName
         const transformedSales = salesArray.map(sale => ({
             id: sale.id,
+            outletId: sale.outletId,
             businessDate: sale.businessDate,
             salesType: sale.salesType,
             customerId: sale.customerId,
@@ -986,6 +990,7 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
             where,
             select: {
                 id: true,
+                outletId: true,
                 businessDate: true,
                 salesType: true,
                 customerId: true,
@@ -1022,6 +1027,7 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
         // Transform the results to include more readable data
         const transformedSales = partiallyPaidSales.map(sale => ({
             id: sale.id,
+            outletId: sale.outletId,
             businessDate: sale.businessDate,
             salesType: sale.salesType,
             customerId: sale.customerId,
@@ -1168,6 +1174,17 @@ async function completeNewSales(
             // Validate outlet
             if (!outlet || outlet.deleted) {
                 throw new BusinessLogicError(`Invalid outletId: ${salesBody.outletId}. Outlet does not exist or has been deleted.`);
+            }
+
+            // Validate stockSourceOutletId if present
+            if (salesBody.stockSourceOutletId !== undefined && salesBody.stockSourceOutletId !== null) {
+                const sourceOutlet = await tx.outlet.findUnique({
+                    where: { id: salesBody.stockSourceOutletId },
+                    select: { id: true, deleted: true }
+                });
+                if (!sourceOutlet || sourceOutlet.deleted) {
+                    throw new BusinessLogicError(`Invalid stockSourceOutletId: ${salesBody.stockSourceOutletId}. Source outlet does not exist or has been deleted.`);
+                }
             }
 
             // Validate customer
@@ -1482,6 +1499,7 @@ async function completeNewSales(
             const createdSales = await tx.sales.create({
                 data: {
                     outletId: salesBody.outletId,
+                    stockSourceOutletId: salesBody.stockSourceOutletId ?? null,
                     businessDate: salesBody.businessDate,
                     salesType: salesBody.salesType.replace(/\b\w/g, (char) => char.toUpperCase()),
                     customerName: salesBody.customerName || '',
@@ -1878,12 +1896,21 @@ let calculateSalesDiscount = (sales: CalculateSalesObject) => {
     return sales
 }
 
-let update = async (databaseName: string, salesRequest: SalesRequestBody) => {
+let update = async (databaseName: string, salesRequest: SalesRequestBody, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         await tenantPrisma.$transaction(async (tx) => {
             //separate sales & salesitem to perform update to different tables
             let { items, ...sales } = salesRequest.sales
+            // Scope by outletId so a user in outlet A cannot edit a sale belonging
+            // to outlet B by guessing its id.
+            const existing = await tx.sales.findFirst({
+                where: { id: sales.id, outletId, deleted: false },
+                select: { id: true }
+            })
+            if (!existing) {
+                throw new NotFoundError("Sales");
+            }
             items.forEach(async function (salesItem) {
                 await tx.salesItem.update({
                     where: {
@@ -1905,10 +1932,18 @@ let update = async (databaseName: string, salesRequest: SalesRequestBody) => {
     }
 }
 
-let remove = async (databaseName: string, id: number) => {
+let remove = async (databaseName: string, id: number, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         await tenantPrisma.$transaction(async (tx) => {
+            // Scope by outletId so cross-outlet deletions surface as 404.
+            const existing = await tx.sales.findFirst({
+                where: { id, outletId, deleted: false },
+                select: { id: true }
+            })
+            if (!existing) {
+                throw new NotFoundError("Sales");
+            }
             await tx.sales.update({
                 where: {
                     id: id
@@ -2066,15 +2101,19 @@ let addPaymentToPartiallyPaidSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
-    payments: Payment[]
+    payments: Payment[],
+    outletId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Scope by outletId so the partially-paid sale must belong to the
+            // requesting outlet — otherwise cross-outlet payments slip through.
+            const sales = await tx.sales.findFirst({
                 where: {
-                    id: salesId
+                    id: salesId,
+                    outletId: outletId,
+                    deleted: false
                 }
             });
             if (!sales) {
@@ -2249,15 +2288,18 @@ let voidSales = async (
     databaseName: string,
     tenantId: number,
     performedBy: PerformedBy,
-    salesId: number
+    salesId: number,
+    outletId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Get the sales record, scoped to the requesting outlet so a user in
+            // outlet A cannot void a sale belonging to outlet B by guessing its id.
+            const sales = await tx.sales.findFirst({
                 where: {
                     id: salesId,
+                    outletId: outletId,
                     deleted: false
                 },
                 include: {
@@ -2389,15 +2431,17 @@ let returnSales = async (
     databaseName: string,
     tenantId: number,
     performedBy: PerformedBy,
-    salesId: number
+    salesId: number,
+    outletId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Get the sales record, scoped to the requesting outlet.
+            const sales = await tx.sales.findFirst({
                 where: {
                     id: salesId,
+                    outletId: outletId,
                     deleted: false
                 },
                 include: {
@@ -2530,15 +2574,17 @@ let refundSales = async (
     databaseName: string,
     tenantId: number,
     performedBy: PerformedBy,
-    salesId: number
+    salesId: number,
+    outletId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Get the sales record, scoped to the requesting outlet.
+            const sales = await tx.sales.findFirst({
                 where: {
                     id: salesId,
+                    outletId: outletId,
                     deleted: false
                 },
                 include: {
@@ -2836,23 +2882,28 @@ let confirmDeliveryBatch = async (
     tenantId: number,
     performedBy: { userId: number, username: string },
     salesIds: number[],
+    outletId: number,
     deliveryNotes?: string,
     deliveredAt?: Date
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
     try {
-        const result = await tenantPrisma.$transaction(async (tx) => {
-            // Validate all sales exist and are eligible for delivery
+        await tenantPrisma.$transaction(async (tx) => {
+            // Validate all sales exist in the requesting outlet. Any id that
+            // belongs to another outlet (or doesn't exist) drops out of the
+            // result and we surface a 404 — never letting a user confirm
+            // delivery of a sale that isn't theirs.
             const sales = await tx.sales.findMany({
                 where: {
                     id: { in: salesIds },
+                    outletId: outletId,
                     deleted: false
                 }
             });
 
             if (sales.length !== salesIds.length) {
-                throw new NotFoundError('One or more sales records not found');
+                throw new NotFoundError('One or more sales records not found in this outlet');
             }
 
             // Validate each sale
@@ -2908,8 +2959,8 @@ let confirmDeliveryBatch = async (
             return sales;
         });
 
-        // Send delivery notification (non-blocking)
-        const outletId = result[0]?.outletId;
+        // Send delivery notification (non-blocking). All sales were filtered
+        // by the requesting outlet, so we route the topic by that outlet.
         if (outletId) {
             PushyService.sendToTopic(
                 `tenant_${tenantId}_outlet_${outletId}_delivery`,

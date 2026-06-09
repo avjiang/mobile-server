@@ -4,6 +4,7 @@ import service from "./session.service"
 import { Declaration, Session } from "../../prisma/client/generated/client"
 import validator from "validator"
 import { RequestValidateError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { CloseSessionRequest, OpenSessionRequest } from "./session.request"
 import NetworkRequest from "../api-helpers/network-request"
 import { AuthRequest } from "src/middleware/auth-request"
@@ -68,7 +69,12 @@ let createSession = (req: NetworkRequest<OpenSessionRequest>, res: Response, nex
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createSession(requestBody, req.user.databaseName)
+    // Make the X-Outlet-ID header authoritative. The global outlet-authz
+    // middleware's fallback order (body→query→params→header) means a body
+    // outletId would otherwise silently satisfy a req.outletId check, masking
+    // a missing/disagreeing header.
+    const outletId = requireOutletHeader(req, requestBody.outletId);
+    service.createSession(requestBody, req.user.databaseName, outletId)
         .then((session: Session) => sendResponse(res, session))
         .catch(next)
 }
@@ -82,8 +88,9 @@ let createDeclarations = (req: NetworkRequest<Declaration[]>, res: Response, nex
     }
 
     const requestBody = req.body
+    const outletId = requireOutletHeader(req);
 
-    service.createDeclarations(requestBody, req.user.databaseName)
+    service.createDeclarations(requestBody, req.user.databaseName, outletId)
         .then((declarationsCount: number) => sendResponse(res, declarationsCount))
         .catch(next)
 }
@@ -98,8 +105,9 @@ let closeSession = (req: NetworkRequest<CloseSessionRequest>, res: Response, nex
     }
 
     const requestBody = req.body
+    const outletId = requireOutletHeader(req);
 
-    service.closeSession(requestBody, req.user.databaseName)
+    service.closeSession(requestBody, req.user.databaseName, outletId)
         .then((isSuccess: boolean) => sendResponse(res, isSuccess))
         .catch(next)
 }

@@ -22,6 +22,7 @@ export interface SalesRequestBody {
 export class CreateSalesRequest {
     @Expose() id: number = 0;
     @Expose() outletId: number = 0;
+    @Expose() stockSourceOutletId?: number;
     @Expose() businessDate: Date = new Date();
     @Expose() salesType: string = "";
     @Expose() customerId?: number;

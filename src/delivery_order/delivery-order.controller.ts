@@ -3,7 +3,8 @@ import validator from "validator"
 import service from "./delivery-order.service"
 import { DeliveryOrder, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError } from "../api-helpers/error"
+import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
@@ -107,7 +108,11 @@ let createMany = (req: NetworkRequest<CreateDeliveryOrderRequestBody>, res: Resp
     }
     const requestBody = req.body
     if (requestBody.deliveryOrders && requestBody.deliveryOrders.length > 0) {
+        const allowed = req.user?.allowedOutletIds ?? [];
         requestBody.deliveryOrders.forEach((doOrder: DeliveryOrderInput) => {
+            if (!allowed.includes(doOrder.outletId)) {
+                throw new ForbiddenError("Outlet access denied");
+            }
             validateDocumentNumber(doOrder.trackingNumber, doOrder.outletId);
         });
     }
@@ -132,12 +137,13 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
     if (!deliveryOrder.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    
+    const outletId = requireOutletHeader(req, deliveryOrder.outletId);
+
     if (deliveryOrder.trackingNumber) {
         validateDocumentNumber(deliveryOrder.trackingNumber, deliveryOrder.outletId);
     }
 
-    service.update(deliveryOrder, req.user.databaseName)
+    service.update(deliveryOrder, req.user.databaseName, outletId)
         .then((updatedDeliveryOrder: any) => sendResponse(res, updatedDeliveryOrder))
         .catch(next)
 }
@@ -149,8 +155,9 @@ let deleteDeliveryOrder = (req: AuthRequest, res: Response, next: NextFunction) 
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
+    const outletId = requireOutletHeader(req);
     const deliveryOrderId: number = parseInt(req.params.id)
-    service.deleteDeliveryOrder(deliveryOrderId, req.user.databaseName)
+    service.deleteDeliveryOrder(deliveryOrderId, req.user.databaseName, outletId)
         .then((message: string) => sendResponse(res, { message }))
         .catch(next)
 }

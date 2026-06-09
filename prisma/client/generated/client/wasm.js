@@ -174,6 +174,17 @@ exports.Prisma.UserScalarFieldEnum = {
   version: 'version'
 };
 
+exports.Prisma.UserOutletScalarFieldEnum = {
+  userId: 'userId',
+  outletId: 'outletId',
+  isPrimary: 'isPrimary',
+  deleted: 'deleted',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  version: 'version'
+};
+
 exports.Prisma.OverrideLogScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2031,6 +2042,7 @@ exports.Prisma.ModelName = {
   RolePermission: 'RolePermission',
   NotificationPreference: 'NotificationPreference',
   User: 'User',
+  UserOutlet: 'UserOutlet',
   OverrideLog: 'OverrideLog',
   Setting: 'Setting',
   Referral: 'Referral',

@@ -34,6 +34,11 @@ export type NotificationPreference = $Result.DefaultSelection<Prisma.$Notificati
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model UserOutlet
+ * 
+ */
+export type UserOutlet = $Result.DefaultSelection<Prisma.$UserOutletPayload>
+/**
  * Model OverrideLog
  * 
  */
@@ -725,6 +730,16 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.userOutlet`: Exposes CRUD operations for the **UserOutlet** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more UserOutlets
+    * const userOutlets = await prisma.userOutlet.findMany()
+    * ```
+    */
+  get userOutlet(): Prisma.UserOutletDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.overrideLog`: Exposes CRUD operations for the **OverrideLog** model.
@@ -1889,6 +1904,7 @@ export namespace Prisma {
     RolePermission: 'RolePermission',
     NotificationPreference: 'NotificationPreference',
     User: 'User',
+    UserOutlet: 'UserOutlet',
     OverrideLog: 'OverrideLog',
     Setting: 'Setting',
     Referral: 'Referral',
@@ -1979,7 +1995,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "role" | "rolePermission" | "notificationPreference" | "user" | "overrideLog" | "setting" | "referral" | "supplier" | "customer" | "company" | "outlet" | "item" | "category" | "sales" | "salesItem" | "salesItemModifier" | "invoice" | "invoiceItem" | "invoiceSettlement" | "deliveryOrder" | "deliveryOrderItem" | "quotation" | "quotationItem" | "purchaseOrder" | "purchaseOrderItem" | "payment" | "registerLog" | "cardInfo" | "session" | "declaration" | "stockBalance" | "stockReceipt" | "stockReceiptArchive" | "stockMovement" | "stockMovementArchive" | "stockSnapshot" | "menuProfileOutlet" | "menuProfile" | "menuCategory" | "menuItem" | "menuItemModifierGroup" | "menuItemModifier" | "table" | "recipe" | "station" | "reservation" | "orderRouting" | "waitlist" | "splitBill" | "promotion" | "promotionItem" | "promotionCustomer" | "promotionUsage" | "registeredDevice" | "warehouse" | "warehouseStockBalance" | "warehouseStockReceipt" | "warehouseStockMovement" | "warehouseStockMovementArchive" | "variantAttributeValue" | "itemVariant" | "itemVariantAttribute" | "purchaseReturn" | "purchaseReturnItem" | "loyaltyProgram" | "loyaltyTier" | "loyaltyAccount" | "loyaltyPointBatch" | "loyaltyTransaction" | "subscriptionPackage" | "subscriptionPackageCategory" | "customerSubscription" | "subscriptionUsage" | "rewardRule" | "voucher" | "idempotencyRecord"
+      modelProps: "role" | "rolePermission" | "notificationPreference" | "user" | "userOutlet" | "overrideLog" | "setting" | "referral" | "supplier" | "customer" | "company" | "outlet" | "item" | "category" | "sales" | "salesItem" | "salesItemModifier" | "invoice" | "invoiceItem" | "invoiceSettlement" | "deliveryOrder" | "deliveryOrderItem" | "quotation" | "quotationItem" | "purchaseOrder" | "purchaseOrderItem" | "payment" | "registerLog" | "cardInfo" | "session" | "declaration" | "stockBalance" | "stockReceipt" | "stockReceiptArchive" | "stockMovement" | "stockMovementArchive" | "stockSnapshot" | "menuProfileOutlet" | "menuProfile" | "menuCategory" | "menuItem" | "menuItemModifierGroup" | "menuItemModifier" | "table" | "recipe" | "station" | "reservation" | "orderRouting" | "waitlist" | "splitBill" | "promotion" | "promotionItem" | "promotionCustomer" | "promotionUsage" | "registeredDevice" | "warehouse" | "warehouseStockBalance" | "warehouseStockReceipt" | "warehouseStockMovement" | "warehouseStockMovementArchive" | "variantAttributeValue" | "itemVariant" | "itemVariantAttribute" | "purchaseReturn" | "purchaseReturnItem" | "loyaltyProgram" | "loyaltyTier" | "loyaltyAccount" | "loyaltyPointBatch" | "loyaltyTransaction" | "subscriptionPackage" | "subscriptionPackageCategory" | "customerSubscription" | "subscriptionUsage" | "rewardRule" | "voucher" | "idempotencyRecord"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2244,6 +2260,72 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      UserOutlet: {
+        payload: Prisma.$UserOutletPayload<ExtArgs>
+        fields: Prisma.UserOutletFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.UserOutletFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.UserOutletFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload>
+          }
+          findFirst: {
+            args: Prisma.UserOutletFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.UserOutletFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload>
+          }
+          findMany: {
+            args: Prisma.UserOutletFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload>[]
+          }
+          create: {
+            args: Prisma.UserOutletCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload>
+          }
+          createMany: {
+            args: Prisma.UserOutletCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.UserOutletDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload>
+          }
+          update: {
+            args: Prisma.UserOutletUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload>
+          }
+          deleteMany: {
+            args: Prisma.UserOutletDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.UserOutletUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.UserOutletUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserOutletPayload>
+          }
+          aggregate: {
+            args: Prisma.UserOutletAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateUserOutlet>
+          }
+          groupBy: {
+            args: Prisma.UserOutletGroupByArgs<ExtArgs>
+            result: $Utils.Optional<UserOutletGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.UserOutletCountArgs<ExtArgs>
+            result: $Utils.Optional<UserOutletCountAggregateOutputType> | number
           }
         }
       }
@@ -7087,6 +7169,7 @@ export namespace Prisma {
     rolePermission?: RolePermissionOmit
     notificationPreference?: NotificationPreferenceOmit
     user?: UserOmit
+    userOutlet?: UserOutletOmit
     overrideLog?: OverrideLogOmit
     setting?: SettingOmit
     referral?: ReferralOmit
@@ -7296,12 +7379,14 @@ export namespace Prisma {
     settings: number
     roles: number
     overrideRequests: number
+    userOutlets: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     settings?: boolean | UserCountOutputTypeCountSettingsArgs
     roles?: boolean | UserCountOutputTypeCountRolesArgs
     overrideRequests?: boolean | UserCountOutputTypeCountOverrideRequestsArgs
+    userOutlets?: boolean | UserCountOutputTypeCountUserOutletsArgs
   }
 
   // Custom InputTypes
@@ -7334,6 +7419,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountOverrideRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: OverrideLogWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountUserOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserOutletWhereInput
   }
 
 
@@ -7522,6 +7614,17 @@ export namespace Prisma {
     reservations: number
     waitlists: number
     purchaseReturns: number
+    sales: number
+    stockSourceSales: number
+    payments: number
+    registerLogs: number
+    sessions: number
+    invoices: number
+    deliveryOrders: number
+    quotations: number
+    purchaseOrders: number
+    menuProfileOutlets: number
+    userOutlets: number
   }
 
   export type OutletCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7535,6 +7638,17 @@ export namespace Prisma {
     reservations?: boolean | OutletCountOutputTypeCountReservationsArgs
     waitlists?: boolean | OutletCountOutputTypeCountWaitlistsArgs
     purchaseReturns?: boolean | OutletCountOutputTypeCountPurchaseReturnsArgs
+    sales?: boolean | OutletCountOutputTypeCountSalesArgs
+    stockSourceSales?: boolean | OutletCountOutputTypeCountStockSourceSalesArgs
+    payments?: boolean | OutletCountOutputTypeCountPaymentsArgs
+    registerLogs?: boolean | OutletCountOutputTypeCountRegisterLogsArgs
+    sessions?: boolean | OutletCountOutputTypeCountSessionsArgs
+    invoices?: boolean | OutletCountOutputTypeCountInvoicesArgs
+    deliveryOrders?: boolean | OutletCountOutputTypeCountDeliveryOrdersArgs
+    quotations?: boolean | OutletCountOutputTypeCountQuotationsArgs
+    purchaseOrders?: boolean | OutletCountOutputTypeCountPurchaseOrdersArgs
+    menuProfileOutlets?: boolean | OutletCountOutputTypeCountMenuProfileOutletsArgs
+    userOutlets?: boolean | OutletCountOutputTypeCountUserOutletsArgs
   }
 
   // Custom InputTypes
@@ -7616,6 +7730,83 @@ export namespace Prisma {
    */
   export type OutletCountOutputTypeCountPurchaseReturnsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PurchaseReturnWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountSalesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SalesWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountStockSourceSalesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SalesWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountRegisterLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RegisterLogWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SessionWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountInvoicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InvoiceWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountDeliveryOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DeliveryOrderWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountQuotationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: QuotationWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountPurchaseOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PurchaseOrderWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountMenuProfileOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MenuProfileOutletWhereInput
+  }
+
+  /**
+   * OutletCountOutputType without action
+   */
+  export type OutletCountOutputTypeCountUserOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserOutletWhereInput
   }
 
 
@@ -8285,10 +8476,12 @@ export namespace Prisma {
 
   export type MenuProfileCountOutputType = {
     menuCategories: number
+    menuProfileOutlets: number
   }
 
   export type MenuProfileCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     menuCategories?: boolean | MenuProfileCountOutputTypeCountMenuCategoriesArgs
+    menuProfileOutlets?: boolean | MenuProfileCountOutputTypeCountMenuProfileOutletsArgs
   }
 
   // Custom InputTypes
@@ -8307,6 +8500,13 @@ export namespace Prisma {
    */
   export type MenuProfileCountOutputTypeCountMenuCategoriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: MenuCategoryWhereInput
+  }
+
+  /**
+   * MenuProfileCountOutputType without action
+   */
+  export type MenuProfileCountOutputTypeCountMenuProfileOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MenuProfileOutletWhereInput
   }
 
 
@@ -12453,6 +12653,7 @@ export namespace Prisma {
     roles?: boolean | User$rolesArgs<ExtArgs>
     overrideRequests?: boolean | User$overrideRequestsArgs<ExtArgs>
     notificationPreference?: boolean | User$notificationPreferenceArgs<ExtArgs>
+    userOutlets?: boolean | User$userOutletsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -12480,6 +12681,7 @@ export namespace Prisma {
     roles?: boolean | User$rolesArgs<ExtArgs>
     overrideRequests?: boolean | User$overrideRequestsArgs<ExtArgs>
     notificationPreference?: boolean | User$notificationPreferenceArgs<ExtArgs>
+    userOutlets?: boolean | User$userOutletsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -12490,6 +12692,7 @@ export namespace Prisma {
       roles: Prisma.$RolePayload<ExtArgs>[]
       overrideRequests: Prisma.$OverrideLogPayload<ExtArgs>[]
       notificationPreference: Prisma.$NotificationPreferencePayload<ExtArgs> | null
+      userOutlets: Prisma.$UserOutletPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -12849,6 +13052,7 @@ export namespace Prisma {
     roles<T extends User$rolesArgs<ExtArgs> = {}>(args?: Subset<T, User$rolesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     overrideRequests<T extends User$overrideRequestsArgs<ExtArgs> = {}>(args?: Subset<T, User$overrideRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OverrideLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     notificationPreference<T extends User$notificationPreferenceArgs<ExtArgs> = {}>(args?: Subset<T, User$notificationPreferenceArgs<ExtArgs>>): Prisma__NotificationPreferenceClient<$Result.GetResult<Prisma.$NotificationPreferencePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    userOutlets<T extends User$userOutletsArgs<ExtArgs> = {}>(args?: Subset<T, User$userOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -13325,6 +13529,30 @@ export namespace Prisma {
   }
 
   /**
+   * User.userOutlets
+   */
+  export type User$userOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    where?: UserOutletWhereInput
+    orderBy?: UserOutletOrderByWithRelationInput | UserOutletOrderByWithRelationInput[]
+    cursor?: UserOutletWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: UserOutletScalarFieldEnum | UserOutletScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -13340,6 +13568,1014 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model UserOutlet
+   */
+
+  export type AggregateUserOutlet = {
+    _count: UserOutletCountAggregateOutputType | null
+    _avg: UserOutletAvgAggregateOutputType | null
+    _sum: UserOutletSumAggregateOutputType | null
+    _min: UserOutletMinAggregateOutputType | null
+    _max: UserOutletMaxAggregateOutputType | null
+  }
+
+  export type UserOutletAvgAggregateOutputType = {
+    userId: number | null
+    outletId: number | null
+    version: number | null
+  }
+
+  export type UserOutletSumAggregateOutputType = {
+    userId: number | null
+    outletId: number | null
+    version: number | null
+  }
+
+  export type UserOutletMinAggregateOutputType = {
+    userId: number | null
+    outletId: number | null
+    isPrimary: boolean | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+  }
+
+  export type UserOutletMaxAggregateOutputType = {
+    userId: number | null
+    outletId: number | null
+    isPrimary: boolean | null
+    deleted: boolean | null
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+  }
+
+  export type UserOutletCountAggregateOutputType = {
+    userId: number
+    outletId: number
+    isPrimary: number
+    deleted: number
+    deletedAt: number
+    createdAt: number
+    updatedAt: number
+    version: number
+    _all: number
+  }
+
+
+  export type UserOutletAvgAggregateInputType = {
+    userId?: true
+    outletId?: true
+    version?: true
+  }
+
+  export type UserOutletSumAggregateInputType = {
+    userId?: true
+    outletId?: true
+    version?: true
+  }
+
+  export type UserOutletMinAggregateInputType = {
+    userId?: true
+    outletId?: true
+    isPrimary?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+  }
+
+  export type UserOutletMaxAggregateInputType = {
+    userId?: true
+    outletId?: true
+    isPrimary?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+  }
+
+  export type UserOutletCountAggregateInputType = {
+    userId?: true
+    outletId?: true
+    isPrimary?: true
+    deleted?: true
+    deletedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    version?: true
+    _all?: true
+  }
+
+  export type UserOutletAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserOutlet to aggregate.
+     */
+    where?: UserOutletWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserOutlets to fetch.
+     */
+    orderBy?: UserOutletOrderByWithRelationInput | UserOutletOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: UserOutletWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserOutlets from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserOutlets.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned UserOutlets
+    **/
+    _count?: true | UserOutletCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: UserOutletAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: UserOutletSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: UserOutletMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: UserOutletMaxAggregateInputType
+  }
+
+  export type GetUserOutletAggregateType<T extends UserOutletAggregateArgs> = {
+        [P in keyof T & keyof AggregateUserOutlet]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateUserOutlet[P]>
+      : GetScalarType<T[P], AggregateUserOutlet[P]>
+  }
+
+
+
+
+  export type UserOutletGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserOutletWhereInput
+    orderBy?: UserOutletOrderByWithAggregationInput | UserOutletOrderByWithAggregationInput[]
+    by: UserOutletScalarFieldEnum[] | UserOutletScalarFieldEnum
+    having?: UserOutletScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: UserOutletCountAggregateInputType | true
+    _avg?: UserOutletAvgAggregateInputType
+    _sum?: UserOutletSumAggregateInputType
+    _min?: UserOutletMinAggregateInputType
+    _max?: UserOutletMaxAggregateInputType
+  }
+
+  export type UserOutletGroupByOutputType = {
+    userId: number
+    outletId: number
+    isPrimary: boolean
+    deleted: boolean
+    deletedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    version: number | null
+    _count: UserOutletCountAggregateOutputType | null
+    _avg: UserOutletAvgAggregateOutputType | null
+    _sum: UserOutletSumAggregateOutputType | null
+    _min: UserOutletMinAggregateOutputType | null
+    _max: UserOutletMaxAggregateOutputType | null
+  }
+
+  type GetUserOutletGroupByPayload<T extends UserOutletGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<UserOutletGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof UserOutletGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], UserOutletGroupByOutputType[P]>
+            : GetScalarType<T[P], UserOutletGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type UserOutletSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    userId?: boolean
+    outletId?: boolean
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    version?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userOutlet"]>
+
+
+
+  export type UserOutletSelectScalar = {
+    userId?: boolean
+    outletId?: boolean
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    version?: boolean
+  }
+
+  export type UserOutletOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"userId" | "outletId" | "isPrimary" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["userOutlet"]>
+  export type UserOutletInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
+  }
+
+  export type $UserOutletPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "UserOutlet"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      outlet: Prisma.$OutletPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      userId: number
+      outletId: number
+      isPrimary: boolean
+      deleted: boolean
+      deletedAt: Date | null
+      createdAt: Date | null
+      updatedAt: Date | null
+      version: number | null
+    }, ExtArgs["result"]["userOutlet"]>
+    composites: {}
+  }
+
+  type UserOutletGetPayload<S extends boolean | null | undefined | UserOutletDefaultArgs> = $Result.GetResult<Prisma.$UserOutletPayload, S>
+
+  type UserOutletCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<UserOutletFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: UserOutletCountAggregateInputType | true
+    }
+
+  export interface UserOutletDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['UserOutlet'], meta: { name: 'UserOutlet' } }
+    /**
+     * Find zero or one UserOutlet that matches the filter.
+     * @param {UserOutletFindUniqueArgs} args - Arguments to find a UserOutlet
+     * @example
+     * // Get one UserOutlet
+     * const userOutlet = await prisma.userOutlet.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends UserOutletFindUniqueArgs>(args: SelectSubset<T, UserOutletFindUniqueArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one UserOutlet that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {UserOutletFindUniqueOrThrowArgs} args - Arguments to find a UserOutlet
+     * @example
+     * // Get one UserOutlet
+     * const userOutlet = await prisma.userOutlet.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends UserOutletFindUniqueOrThrowArgs>(args: SelectSubset<T, UserOutletFindUniqueOrThrowArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserOutlet that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserOutletFindFirstArgs} args - Arguments to find a UserOutlet
+     * @example
+     * // Get one UserOutlet
+     * const userOutlet = await prisma.userOutlet.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends UserOutletFindFirstArgs>(args?: SelectSubset<T, UserOutletFindFirstArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserOutlet that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserOutletFindFirstOrThrowArgs} args - Arguments to find a UserOutlet
+     * @example
+     * // Get one UserOutlet
+     * const userOutlet = await prisma.userOutlet.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends UserOutletFindFirstOrThrowArgs>(args?: SelectSubset<T, UserOutletFindFirstOrThrowArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more UserOutlets that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserOutletFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all UserOutlets
+     * const userOutlets = await prisma.userOutlet.findMany()
+     * 
+     * // Get first 10 UserOutlets
+     * const userOutlets = await prisma.userOutlet.findMany({ take: 10 })
+     * 
+     * // Only select the `userId`
+     * const userOutletWithUserIdOnly = await prisma.userOutlet.findMany({ select: { userId: true } })
+     * 
+     */
+    findMany<T extends UserOutletFindManyArgs>(args?: SelectSubset<T, UserOutletFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a UserOutlet.
+     * @param {UserOutletCreateArgs} args - Arguments to create a UserOutlet.
+     * @example
+     * // Create one UserOutlet
+     * const UserOutlet = await prisma.userOutlet.create({
+     *   data: {
+     *     // ... data to create a UserOutlet
+     *   }
+     * })
+     * 
+     */
+    create<T extends UserOutletCreateArgs>(args: SelectSubset<T, UserOutletCreateArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many UserOutlets.
+     * @param {UserOutletCreateManyArgs} args - Arguments to create many UserOutlets.
+     * @example
+     * // Create many UserOutlets
+     * const userOutlet = await prisma.userOutlet.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends UserOutletCreateManyArgs>(args?: SelectSubset<T, UserOutletCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a UserOutlet.
+     * @param {UserOutletDeleteArgs} args - Arguments to delete one UserOutlet.
+     * @example
+     * // Delete one UserOutlet
+     * const UserOutlet = await prisma.userOutlet.delete({
+     *   where: {
+     *     // ... filter to delete one UserOutlet
+     *   }
+     * })
+     * 
+     */
+    delete<T extends UserOutletDeleteArgs>(args: SelectSubset<T, UserOutletDeleteArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one UserOutlet.
+     * @param {UserOutletUpdateArgs} args - Arguments to update one UserOutlet.
+     * @example
+     * // Update one UserOutlet
+     * const userOutlet = await prisma.userOutlet.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends UserOutletUpdateArgs>(args: SelectSubset<T, UserOutletUpdateArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more UserOutlets.
+     * @param {UserOutletDeleteManyArgs} args - Arguments to filter UserOutlets to delete.
+     * @example
+     * // Delete a few UserOutlets
+     * const { count } = await prisma.userOutlet.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends UserOutletDeleteManyArgs>(args?: SelectSubset<T, UserOutletDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserOutlets.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserOutletUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many UserOutlets
+     * const userOutlet = await prisma.userOutlet.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends UserOutletUpdateManyArgs>(args: SelectSubset<T, UserOutletUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one UserOutlet.
+     * @param {UserOutletUpsertArgs} args - Arguments to update or create a UserOutlet.
+     * @example
+     * // Update or create a UserOutlet
+     * const userOutlet = await prisma.userOutlet.upsert({
+     *   create: {
+     *     // ... data to create a UserOutlet
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the UserOutlet we want to update
+     *   }
+     * })
+     */
+    upsert<T extends UserOutletUpsertArgs>(args: SelectSubset<T, UserOutletUpsertArgs<ExtArgs>>): Prisma__UserOutletClient<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of UserOutlets.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserOutletCountArgs} args - Arguments to filter UserOutlets to count.
+     * @example
+     * // Count the number of UserOutlets
+     * const count = await prisma.userOutlet.count({
+     *   where: {
+     *     // ... the filter for the UserOutlets we want to count
+     *   }
+     * })
+    **/
+    count<T extends UserOutletCountArgs>(
+      args?: Subset<T, UserOutletCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], UserOutletCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a UserOutlet.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserOutletAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends UserOutletAggregateArgs>(args: Subset<T, UserOutletAggregateArgs>): Prisma.PrismaPromise<GetUserOutletAggregateType<T>>
+
+    /**
+     * Group by UserOutlet.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserOutletGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends UserOutletGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: UserOutletGroupByArgs['orderBy'] }
+        : { orderBy?: UserOutletGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, UserOutletGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetUserOutletGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the UserOutlet model
+   */
+  readonly fields: UserOutletFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for UserOutlet.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__UserOutletClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the UserOutlet model
+   */
+  interface UserOutletFieldRefs {
+    readonly userId: FieldRef<"UserOutlet", 'Int'>
+    readonly outletId: FieldRef<"UserOutlet", 'Int'>
+    readonly isPrimary: FieldRef<"UserOutlet", 'Boolean'>
+    readonly deleted: FieldRef<"UserOutlet", 'Boolean'>
+    readonly deletedAt: FieldRef<"UserOutlet", 'DateTime'>
+    readonly createdAt: FieldRef<"UserOutlet", 'DateTime'>
+    readonly updatedAt: FieldRef<"UserOutlet", 'DateTime'>
+    readonly version: FieldRef<"UserOutlet", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * UserOutlet findUnique
+   */
+  export type UserOutletFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * Filter, which UserOutlet to fetch.
+     */
+    where: UserOutletWhereUniqueInput
+  }
+
+  /**
+   * UserOutlet findUniqueOrThrow
+   */
+  export type UserOutletFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * Filter, which UserOutlet to fetch.
+     */
+    where: UserOutletWhereUniqueInput
+  }
+
+  /**
+   * UserOutlet findFirst
+   */
+  export type UserOutletFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * Filter, which UserOutlet to fetch.
+     */
+    where?: UserOutletWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserOutlets to fetch.
+     */
+    orderBy?: UserOutletOrderByWithRelationInput | UserOutletOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserOutlets.
+     */
+    cursor?: UserOutletWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserOutlets from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserOutlets.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserOutlets.
+     */
+    distinct?: UserOutletScalarFieldEnum | UserOutletScalarFieldEnum[]
+  }
+
+  /**
+   * UserOutlet findFirstOrThrow
+   */
+  export type UserOutletFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * Filter, which UserOutlet to fetch.
+     */
+    where?: UserOutletWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserOutlets to fetch.
+     */
+    orderBy?: UserOutletOrderByWithRelationInput | UserOutletOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserOutlets.
+     */
+    cursor?: UserOutletWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserOutlets from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserOutlets.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserOutlets.
+     */
+    distinct?: UserOutletScalarFieldEnum | UserOutletScalarFieldEnum[]
+  }
+
+  /**
+   * UserOutlet findMany
+   */
+  export type UserOutletFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * Filter, which UserOutlets to fetch.
+     */
+    where?: UserOutletWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserOutlets to fetch.
+     */
+    orderBy?: UserOutletOrderByWithRelationInput | UserOutletOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing UserOutlets.
+     */
+    cursor?: UserOutletWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserOutlets from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserOutlets.
+     */
+    skip?: number
+    distinct?: UserOutletScalarFieldEnum | UserOutletScalarFieldEnum[]
+  }
+
+  /**
+   * UserOutlet create
+   */
+  export type UserOutletCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * The data needed to create a UserOutlet.
+     */
+    data: XOR<UserOutletCreateInput, UserOutletUncheckedCreateInput>
+  }
+
+  /**
+   * UserOutlet createMany
+   */
+  export type UserOutletCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many UserOutlets.
+     */
+    data: UserOutletCreateManyInput | UserOutletCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UserOutlet update
+   */
+  export type UserOutletUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * The data needed to update a UserOutlet.
+     */
+    data: XOR<UserOutletUpdateInput, UserOutletUncheckedUpdateInput>
+    /**
+     * Choose, which UserOutlet to update.
+     */
+    where: UserOutletWhereUniqueInput
+  }
+
+  /**
+   * UserOutlet updateMany
+   */
+  export type UserOutletUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update UserOutlets.
+     */
+    data: XOR<UserOutletUpdateManyMutationInput, UserOutletUncheckedUpdateManyInput>
+    /**
+     * Filter which UserOutlets to update
+     */
+    where?: UserOutletWhereInput
+    /**
+     * Limit how many UserOutlets to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserOutlet upsert
+   */
+  export type UserOutletUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * The filter to search for the UserOutlet to update in case it exists.
+     */
+    where: UserOutletWhereUniqueInput
+    /**
+     * In case the UserOutlet found by the `where` argument doesn't exist, create a new UserOutlet with this data.
+     */
+    create: XOR<UserOutletCreateInput, UserOutletUncheckedCreateInput>
+    /**
+     * In case the UserOutlet was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<UserOutletUpdateInput, UserOutletUncheckedUpdateInput>
+  }
+
+  /**
+   * UserOutlet delete
+   */
+  export type UserOutletDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    /**
+     * Filter which UserOutlet to delete.
+     */
+    where: UserOutletWhereUniqueInput
+  }
+
+  /**
+   * UserOutlet deleteMany
+   */
+  export type UserOutletDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserOutlets to delete
+     */
+    where?: UserOutletWhereInput
+    /**
+     * Limit how many UserOutlets to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserOutlet without action
+   */
+  export type UserOutletDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
   }
 
 
@@ -20377,6 +21613,17 @@ export namespace Prisma {
     reservations?: boolean | Outlet$reservationsArgs<ExtArgs>
     waitlists?: boolean | Outlet$waitlistsArgs<ExtArgs>
     purchaseReturns?: boolean | Outlet$purchaseReturnsArgs<ExtArgs>
+    sales?: boolean | Outlet$salesArgs<ExtArgs>
+    stockSourceSales?: boolean | Outlet$stockSourceSalesArgs<ExtArgs>
+    payments?: boolean | Outlet$paymentsArgs<ExtArgs>
+    registerLogs?: boolean | Outlet$registerLogsArgs<ExtArgs>
+    sessions?: boolean | Outlet$sessionsArgs<ExtArgs>
+    invoices?: boolean | Outlet$invoicesArgs<ExtArgs>
+    deliveryOrders?: boolean | Outlet$deliveryOrdersArgs<ExtArgs>
+    quotations?: boolean | Outlet$quotationsArgs<ExtArgs>
+    purchaseOrders?: boolean | Outlet$purchaseOrdersArgs<ExtArgs>
+    menuProfileOutlets?: boolean | Outlet$menuProfileOutletsArgs<ExtArgs>
+    userOutlets?: boolean | Outlet$userOutletsArgs<ExtArgs>
     _count?: boolean | OutletCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["outlet"]>
 
@@ -20412,6 +21659,17 @@ export namespace Prisma {
     reservations?: boolean | Outlet$reservationsArgs<ExtArgs>
     waitlists?: boolean | Outlet$waitlistsArgs<ExtArgs>
     purchaseReturns?: boolean | Outlet$purchaseReturnsArgs<ExtArgs>
+    sales?: boolean | Outlet$salesArgs<ExtArgs>
+    stockSourceSales?: boolean | Outlet$stockSourceSalesArgs<ExtArgs>
+    payments?: boolean | Outlet$paymentsArgs<ExtArgs>
+    registerLogs?: boolean | Outlet$registerLogsArgs<ExtArgs>
+    sessions?: boolean | Outlet$sessionsArgs<ExtArgs>
+    invoices?: boolean | Outlet$invoicesArgs<ExtArgs>
+    deliveryOrders?: boolean | Outlet$deliveryOrdersArgs<ExtArgs>
+    quotations?: boolean | Outlet$quotationsArgs<ExtArgs>
+    purchaseOrders?: boolean | Outlet$purchaseOrdersArgs<ExtArgs>
+    menuProfileOutlets?: boolean | Outlet$menuProfileOutletsArgs<ExtArgs>
+    userOutlets?: boolean | Outlet$userOutletsArgs<ExtArgs>
     _count?: boolean | OutletCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -20428,6 +21686,17 @@ export namespace Prisma {
       reservations: Prisma.$ReservationPayload<ExtArgs>[]
       waitlists: Prisma.$WaitlistPayload<ExtArgs>[]
       purchaseReturns: Prisma.$PurchaseReturnPayload<ExtArgs>[]
+      sales: Prisma.$SalesPayload<ExtArgs>[]
+      stockSourceSales: Prisma.$SalesPayload<ExtArgs>[]
+      payments: Prisma.$PaymentPayload<ExtArgs>[]
+      registerLogs: Prisma.$RegisterLogPayload<ExtArgs>[]
+      sessions: Prisma.$SessionPayload<ExtArgs>[]
+      invoices: Prisma.$InvoicePayload<ExtArgs>[]
+      deliveryOrders: Prisma.$DeliveryOrderPayload<ExtArgs>[]
+      quotations: Prisma.$QuotationPayload<ExtArgs>[]
+      purchaseOrders: Prisma.$PurchaseOrderPayload<ExtArgs>[]
+      menuProfileOutlets: Prisma.$MenuProfileOutletPayload<ExtArgs>[]
+      userOutlets: Prisma.$UserOutletPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -20795,6 +22064,17 @@ export namespace Prisma {
     reservations<T extends Outlet$reservationsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$reservationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     waitlists<T extends Outlet$waitlistsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$waitlistsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WaitlistPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     purchaseReturns<T extends Outlet$purchaseReturnsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$purchaseReturnsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseReturnPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    sales<T extends Outlet$salesArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$salesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SalesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    stockSourceSales<T extends Outlet$stockSourceSalesArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$stockSourceSalesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SalesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    payments<T extends Outlet$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    registerLogs<T extends Outlet$registerLogsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$registerLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegisterLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    sessions<T extends Outlet$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    invoices<T extends Outlet$invoicesArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$invoicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    deliveryOrders<T extends Outlet$deliveryOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$deliveryOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliveryOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    quotations<T extends Outlet$quotationsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$quotationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$QuotationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    purchaseOrders<T extends Outlet$purchaseOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$purchaseOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    menuProfileOutlets<T extends Outlet$menuProfileOutletsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$menuProfileOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MenuProfileOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    userOutlets<T extends Outlet$userOutletsArgs<ExtArgs> = {}>(args?: Subset<T, Outlet$userOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -21419,6 +22699,270 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PurchaseReturnScalarFieldEnum | PurchaseReturnScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.sales
+   */
+  export type Outlet$salesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sales
+     */
+    select?: SalesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Sales
+     */
+    omit?: SalesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SalesInclude<ExtArgs> | null
+    where?: SalesWhereInput
+    orderBy?: SalesOrderByWithRelationInput | SalesOrderByWithRelationInput[]
+    cursor?: SalesWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SalesScalarFieldEnum | SalesScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.stockSourceSales
+   */
+  export type Outlet$stockSourceSalesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sales
+     */
+    select?: SalesSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Sales
+     */
+    omit?: SalesOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SalesInclude<ExtArgs> | null
+    where?: SalesWhereInput
+    orderBy?: SalesOrderByWithRelationInput | SalesOrderByWithRelationInput[]
+    cursor?: SalesWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SalesScalarFieldEnum | SalesScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.payments
+   */
+  export type Outlet$paymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Payment
+     */
+    select?: PaymentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Payment
+     */
+    omit?: PaymentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentInclude<ExtArgs> | null
+    where?: PaymentWhereInput
+    orderBy?: PaymentOrderByWithRelationInput | PaymentOrderByWithRelationInput[]
+    cursor?: PaymentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentScalarFieldEnum | PaymentScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.registerLogs
+   */
+  export type Outlet$registerLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegisterLog
+     */
+    select?: RegisterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RegisterLog
+     */
+    omit?: RegisterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegisterLogInclude<ExtArgs> | null
+    where?: RegisterLogWhereInput
+    orderBy?: RegisterLogOrderByWithRelationInput | RegisterLogOrderByWithRelationInput[]
+    cursor?: RegisterLogWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RegisterLogScalarFieldEnum | RegisterLogScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.sessions
+   */
+  export type Outlet$sessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Session
+     */
+    select?: SessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Session
+     */
+    omit?: SessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SessionInclude<ExtArgs> | null
+    where?: SessionWhereInput
+    orderBy?: SessionOrderByWithRelationInput | SessionOrderByWithRelationInput[]
+    cursor?: SessionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SessionScalarFieldEnum | SessionScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.invoices
+   */
+  export type Outlet$invoicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Invoice
+     */
+    select?: InvoiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Invoice
+     */
+    omit?: InvoiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InvoiceInclude<ExtArgs> | null
+    where?: InvoiceWhereInput
+    orderBy?: InvoiceOrderByWithRelationInput | InvoiceOrderByWithRelationInput[]
+    cursor?: InvoiceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: InvoiceScalarFieldEnum | InvoiceScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.deliveryOrders
+   */
+  export type Outlet$deliveryOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliveryOrder
+     */
+    select?: DeliveryOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DeliveryOrder
+     */
+    omit?: DeliveryOrderOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeliveryOrderInclude<ExtArgs> | null
+    where?: DeliveryOrderWhereInput
+    orderBy?: DeliveryOrderOrderByWithRelationInput | DeliveryOrderOrderByWithRelationInput[]
+    cursor?: DeliveryOrderWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DeliveryOrderScalarFieldEnum | DeliveryOrderScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.quotations
+   */
+  export type Outlet$quotationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Quotation
+     */
+    select?: QuotationSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Quotation
+     */
+    omit?: QuotationOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: QuotationInclude<ExtArgs> | null
+    where?: QuotationWhereInput
+    orderBy?: QuotationOrderByWithRelationInput | QuotationOrderByWithRelationInput[]
+    cursor?: QuotationWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: QuotationScalarFieldEnum | QuotationScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.purchaseOrders
+   */
+  export type Outlet$purchaseOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrder
+     */
+    select?: PurchaseOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrder
+     */
+    omit?: PurchaseOrderOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderInclude<ExtArgs> | null
+    where?: PurchaseOrderWhereInput
+    orderBy?: PurchaseOrderOrderByWithRelationInput | PurchaseOrderOrderByWithRelationInput[]
+    cursor?: PurchaseOrderWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PurchaseOrderScalarFieldEnum | PurchaseOrderScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.menuProfileOutlets
+   */
+  export type Outlet$menuProfileOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MenuProfileOutlet
+     */
+    select?: MenuProfileOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MenuProfileOutlet
+     */
+    omit?: MenuProfileOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    where?: MenuProfileOutletWhereInput
+    orderBy?: MenuProfileOutletOrderByWithRelationInput | MenuProfileOutletOrderByWithRelationInput[]
+    cursor?: MenuProfileOutletWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MenuProfileOutletScalarFieldEnum | MenuProfileOutletScalarFieldEnum[]
+  }
+
+  /**
+   * Outlet.userOutlets
+   */
+  export type Outlet$userOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserOutlet
+     */
+    select?: UserOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserOutlet
+     */
+    omit?: UserOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserOutletInclude<ExtArgs> | null
+    where?: UserOutletWhereInput
+    orderBy?: UserOutletOrderByWithRelationInput | UserOutletOrderByWithRelationInput[]
+    cursor?: UserOutletWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: UserOutletScalarFieldEnum | UserOutletScalarFieldEnum[]
   }
 
   /**
@@ -24939,6 +26483,8 @@ export namespace Prisma {
     voucherId?: boolean
     voucherDiscountPercentage?: boolean
     voucherDiscountAmount?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
+    stockSourceOutlet?: boolean | Sales$stockSourceOutletArgs<ExtArgs>
     salesItems?: boolean | Sales$salesItemsArgs<ExtArgs>
     payments?: boolean | Sales$paymentsArgs<ExtArgs>
     registerLogs?: boolean | Sales$registerLogsArgs<ExtArgs>
@@ -25018,6 +26564,8 @@ export namespace Prisma {
 
   export type SalesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "outletId" | "businessDate" | "salesType" | "customerName" | "customerId" | "phoneNumber" | "billStreet" | "billCity" | "billState" | "billPostalCode" | "billCountry" | "shipStreet" | "shipCity" | "shipState" | "shipPostalCode" | "shipCountry" | "totalItemDiscountAmount" | "discountPercentage" | "discountAmount" | "profitAmount" | "serviceChargeAmount" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "paidAmount" | "changeAmount" | "status" | "remark" | "completedSessionId" | "sessionId" | "eodId" | "salesQuotationId" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "tableId" | "orderStatus" | "isTaxInclusive" | "stockSourceType" | "stockSourceOutletId" | "stockSourceWarehouseId" | "deliveredAt" | "deliveredBy" | "deliveryNotes" | "loyaltyPointsEarned" | "loyaltyPointsRedeemed" | "loyaltyPointsRedemptionValue" | "loyaltyTierDiscountPercent" | "loyaltyTierDiscountAmount" | "customerSubscriptionId" | "subscriptionDiscountAmount" | "voucherId" | "voucherDiscountPercentage" | "voucherDiscountAmount", ExtArgs["result"]["sales"]>
   export type SalesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
+    stockSourceOutlet?: boolean | Sales$stockSourceOutletArgs<ExtArgs>
     salesItems?: boolean | Sales$salesItemsArgs<ExtArgs>
     payments?: boolean | Sales$paymentsArgs<ExtArgs>
     registerLogs?: boolean | Sales$registerLogsArgs<ExtArgs>
@@ -25034,6 +26582,8 @@ export namespace Prisma {
   export type $SalesPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Sales"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
+      stockSourceOutlet: Prisma.$OutletPayload<ExtArgs> | null
       salesItems: Prisma.$SalesItemPayload<ExtArgs>[]
       payments: Prisma.$PaymentPayload<ExtArgs>[]
       registerLogs: Prisma.$RegisterLogPayload<ExtArgs>[]
@@ -25445,6 +26995,8 @@ export namespace Prisma {
    */
   export interface Prisma__SalesClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    stockSourceOutlet<T extends Sales$stockSourceOutletArgs<ExtArgs> = {}>(args?: Subset<T, Sales$stockSourceOutletArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     salesItems<T extends Sales$salesItemsArgs<ExtArgs> = {}>(args?: Subset<T, Sales$salesItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SalesItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     payments<T extends Sales$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Sales$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     registerLogs<T extends Sales$registerLogsArgs<ExtArgs> = {}>(args?: Subset<T, Sales$registerLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegisterLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -25883,6 +27435,25 @@ export namespace Prisma {
      * Limit how many Sales to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Sales.stockSourceOutlet
+   */
+  export type Sales$stockSourceOutletArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Outlet
+     */
+    select?: OutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Outlet
+     */
+    omit?: OutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OutletInclude<ExtArgs> | null
+    where?: OutletWhereInput
   }
 
   /**
@@ -29003,6 +30574,7 @@ export namespace Prisma {
     updatedAt?: boolean
     version?: boolean
     isTaxInclusive?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     session?: boolean | Invoice$sessionArgs<ExtArgs>
     purchaseOrder?: boolean | Invoice$purchaseOrderArgs<ExtArgs>
     supplier?: boolean | Invoice$supplierArgs<ExtArgs>
@@ -29046,6 +30618,7 @@ export namespace Prisma {
 
   export type InvoiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "invoiceNumber" | "taxInvoiceNumber" | "purchaseOrderId" | "invoiceSettlementId" | "supplierId" | "outletId" | "subtotalAmount" | "taxAmount" | "sessionId" | "discountType" | "discountAmount" | "totalAmount" | "currency" | "status" | "invoiceDate" | "paymentDate" | "dueDate" | "remark" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "isTaxInclusive", ExtArgs["result"]["invoice"]>
   export type InvoiceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     session?: boolean | Invoice$sessionArgs<ExtArgs>
     purchaseOrder?: boolean | Invoice$purchaseOrderArgs<ExtArgs>
     supplier?: boolean | Invoice$supplierArgs<ExtArgs>
@@ -29059,6 +30632,7 @@ export namespace Prisma {
   export type $InvoicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Invoice"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
       session: Prisma.$SessionPayload<ExtArgs> | null
       purchaseOrder: Prisma.$PurchaseOrderPayload<ExtArgs> | null
       supplier: Prisma.$SupplierPayload<ExtArgs> | null
@@ -29434,6 +31008,7 @@ export namespace Prisma {
    */
   export interface Prisma__InvoiceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     session<T extends Invoice$sessionArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$sessionArgs<ExtArgs>>): Prisma__SessionClient<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     purchaseOrder<T extends Invoice$purchaseOrderArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$purchaseOrderArgs<ExtArgs>>): Prisma__PurchaseOrderClient<$Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     supplier<T extends Invoice$supplierArgs<ExtArgs> = {}>(args?: Subset<T, Invoice$supplierArgs<ExtArgs>>): Prisma__SupplierClient<$Result.GetResult<Prisma.$SupplierPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -32753,6 +34328,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     session?: boolean | DeliveryOrder$sessionArgs<ExtArgs>
     purchaseOrder?: boolean | DeliveryOrder$purchaseOrderArgs<ExtArgs>
     invoice?: boolean | DeliveryOrder$invoiceArgs<ExtArgs>
@@ -32790,6 +34366,7 @@ export namespace Prisma {
 
   export type DeliveryOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "trackingNumber" | "outletId" | "customerId" | "purchaseOrderId" | "supplierId" | "invoiceId" | "sessionId" | "deliveryDate" | "deliveryStreet" | "deliveryCity" | "deliveryState" | "deliveryPostalCode" | "deliveryCountry" | "status" | "remark" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["deliveryOrder"]>
   export type DeliveryOrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     session?: boolean | DeliveryOrder$sessionArgs<ExtArgs>
     purchaseOrder?: boolean | DeliveryOrder$purchaseOrderArgs<ExtArgs>
     invoice?: boolean | DeliveryOrder$invoiceArgs<ExtArgs>
@@ -32801,6 +34378,7 @@ export namespace Prisma {
   export type $DeliveryOrderPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "DeliveryOrder"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
       session: Prisma.$SessionPayload<ExtArgs> | null
       purchaseOrder: Prisma.$PurchaseOrderPayload<ExtArgs> | null
       invoice: Prisma.$InvoicePayload<ExtArgs> | null
@@ -33170,6 +34748,7 @@ export namespace Prisma {
    */
   export interface Prisma__DeliveryOrderClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     session<T extends DeliveryOrder$sessionArgs<ExtArgs> = {}>(args?: Subset<T, DeliveryOrder$sessionArgs<ExtArgs>>): Prisma__SessionClient<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     purchaseOrder<T extends DeliveryOrder$purchaseOrderArgs<ExtArgs> = {}>(args?: Subset<T, DeliveryOrder$purchaseOrderArgs<ExtArgs>>): Prisma__PurchaseOrderClient<$Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     invoice<T extends DeliveryOrder$invoiceArgs<ExtArgs> = {}>(args?: Subset<T, DeliveryOrder$invoiceArgs<ExtArgs>>): Prisma__InvoiceClient<$Result.GetResult<Prisma.$InvoicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -35245,6 +36824,7 @@ export namespace Prisma {
     updatedAt?: boolean
     version?: boolean
     isTaxInclusive?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     session?: boolean | Quotation$sessionArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
     quotationItems?: boolean | Quotation$quotationItemsArgs<ExtArgs>
@@ -35285,6 +36865,7 @@ export namespace Prisma {
 
   export type QuotationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "quotationNumber" | "outletId" | "supplierId" | "quotationDate" | "validUntilDate" | "sessionId" | "discountType" | "discountAmount" | "serviceChargeAmount" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "status" | "remark" | "currency" | "performedBy" | "convertedToPOAt" | "convertedPOId" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "isTaxInclusive", ExtArgs["result"]["quotation"]>
   export type QuotationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     session?: boolean | Quotation$sessionArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
     quotationItems?: boolean | Quotation$quotationItemsArgs<ExtArgs>
@@ -35295,6 +36876,7 @@ export namespace Prisma {
   export type $QuotationPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Quotation"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
       session: Prisma.$SessionPayload<ExtArgs> | null
       supplier: Prisma.$SupplierPayload<ExtArgs>
       quotationItems: Prisma.$QuotationItemPayload<ExtArgs>[]
@@ -35667,6 +37249,7 @@ export namespace Prisma {
    */
   export interface Prisma__QuotationClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     session<T extends Quotation$sessionArgs<ExtArgs> = {}>(args?: Subset<T, Quotation$sessionArgs<ExtArgs>>): Prisma__SessionClient<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     supplier<T extends SupplierDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SupplierDefaultArgs<ExtArgs>>): Prisma__SupplierClient<$Result.GetResult<Prisma.$SupplierPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     quotationItems<T extends Quotation$quotationItemsArgs<ExtArgs> = {}>(args?: Subset<T, Quotation$quotationItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$QuotationItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -37743,6 +39326,7 @@ export namespace Prisma {
     version?: boolean
     isTaxInclusive?: boolean
     quotationId?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     quotation?: boolean | PurchaseOrder$quotationArgs<ExtArgs>
     session?: boolean | PurchaseOrder$sessionArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
@@ -37783,6 +39367,7 @@ export namespace Prisma {
 
   export type PurchaseOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "purchaseOrderNumber" | "outletId" | "supplierId" | "purchaseOrderDate" | "sessionId" | "discountType" | "discountAmount" | "serviceChargeAmount" | "taxAmount" | "roundingAmount" | "subtotalAmount" | "totalAmount" | "status" | "remark" | "currency" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version" | "isTaxInclusive" | "quotationId", ExtArgs["result"]["purchaseOrder"]>
   export type PurchaseOrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     quotation?: boolean | PurchaseOrder$quotationArgs<ExtArgs>
     session?: boolean | PurchaseOrder$sessionArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
@@ -37795,6 +39380,7 @@ export namespace Prisma {
   export type $PurchaseOrderPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "PurchaseOrder"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
       quotation: Prisma.$QuotationPayload<ExtArgs> | null
       session: Prisma.$SessionPayload<ExtArgs> | null
       supplier: Prisma.$SupplierPayload<ExtArgs>
@@ -38167,6 +39753,7 @@ export namespace Prisma {
    */
   export interface Prisma__PurchaseOrderClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     quotation<T extends PurchaseOrder$quotationArgs<ExtArgs> = {}>(args?: Subset<T, PurchaseOrder$quotationArgs<ExtArgs>>): Prisma__QuotationClient<$Result.GetResult<Prisma.$QuotationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     session<T extends PurchaseOrder$sessionArgs<ExtArgs> = {}>(args?: Subset<T, PurchaseOrder$sessionArgs<ExtArgs>>): Prisma__SessionClient<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     supplier<T extends SupplierDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SupplierDefaultArgs<ExtArgs>>): Prisma__SupplierClient<$Result.GetResult<Prisma.$SupplierPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
@@ -40204,6 +41791,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     cardInfos?: boolean | Payment$cardInfosArgs<ExtArgs>
     sales?: boolean | SalesDefaultArgs<ExtArgs>
     splitBills?: boolean | Payment$splitBillsArgs<ExtArgs>
@@ -40236,6 +41824,7 @@ export namespace Prisma {
 
   export type PaymentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "method" | "tenderedAmount" | "paidAmount" | "currencySymbol" | "salesId" | "reference" | "remark" | "businessDate" | "status" | "outletId" | "sessionId" | "eodId" | "performedBy" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["payment"]>
   export type PaymentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     cardInfos?: boolean | Payment$cardInfosArgs<ExtArgs>
     sales?: boolean | SalesDefaultArgs<ExtArgs>
     splitBills?: boolean | Payment$splitBillsArgs<ExtArgs>
@@ -40245,6 +41834,7 @@ export namespace Prisma {
   export type $PaymentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Payment"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
       cardInfos: Prisma.$CardInfoPayload<ExtArgs>[]
       sales: Prisma.$SalesPayload<ExtArgs>
       splitBills: Prisma.$SplitBillPayload<ExtArgs>[]
@@ -40609,6 +42199,7 @@ export namespace Prisma {
    */
   export interface Prisma__PaymentClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     cardInfos<T extends Payment$cardInfosArgs<ExtArgs> = {}>(args?: Subset<T, Payment$cardInfosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CardInfoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sales<T extends SalesDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SalesDefaultArgs<ExtArgs>>): Prisma__SalesClient<$Result.GetResult<Prisma.$SalesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     splitBills<T extends Payment$splitBillsArgs<ExtArgs> = {}>(args?: Subset<T, Payment$splitBillsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SplitBillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -41371,6 +42962,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     sales?: boolean | SalesDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["registerLog"]>
 
@@ -41396,12 +42988,14 @@ export namespace Prisma {
 
   export type RegisterLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "type" | "modifiedAmount" | "currencySymbol" | "salesId" | "remark" | "status" | "outletId" | "sessionId" | "eodId" | "performedBy" | "deleted" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["registerLog"]>
   export type RegisterLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     sales?: boolean | SalesDefaultArgs<ExtArgs>
   }
 
   export type $RegisterLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "RegisterLog"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
       sales: Prisma.$SalesPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -41760,6 +43354,7 @@ export namespace Prisma {
    */
   export interface Prisma__RegisterLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     sales<T extends SalesDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SalesDefaultArgs<ExtArgs>>): Prisma__SalesClient<$Result.GetResult<Prisma.$SalesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -43534,6 +45129,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     declarations?: boolean | Session$declarationsArgs<ExtArgs>
     quotations?: boolean | Session$quotationsArgs<ExtArgs>
     purchaseOrders?: boolean | Session$purchaseOrdersArgs<ExtArgs>
@@ -43563,6 +45159,7 @@ export namespace Prisma {
 
   export type SessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "outletId" | "businessDate" | "openingDateTime" | "closingDateTime" | "openingAmount" | "totalSalesCount" | "openByUserID" | "closeByUserID" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["session"]>
   export type SessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
     declarations?: boolean | Session$declarationsArgs<ExtArgs>
     quotations?: boolean | Session$quotationsArgs<ExtArgs>
     purchaseOrders?: boolean | Session$purchaseOrdersArgs<ExtArgs>
@@ -43574,6 +45171,7 @@ export namespace Prisma {
   export type $SessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Session"
     objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
       declarations: Prisma.$DeclarationPayload<ExtArgs>[]
       quotations: Prisma.$QuotationPayload<ExtArgs>[]
       purchaseOrders: Prisma.$PurchaseOrderPayload<ExtArgs>[]
@@ -43935,6 +45533,7 @@ export namespace Prisma {
    */
   export interface Prisma__SessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     declarations<T extends Session$declarationsArgs<ExtArgs> = {}>(args?: Subset<T, Session$declarationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeclarationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     quotations<T extends Session$quotationsArgs<ExtArgs> = {}>(args?: Subset<T, Session$quotationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$QuotationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     purchaseOrders<T extends Session$purchaseOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Session$purchaseOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -52354,6 +53953,8 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     version?: boolean
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
+    menuProfile?: boolean | MenuProfileDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["menuProfileOutlet"]>
 
 
@@ -52370,10 +53971,17 @@ export namespace Prisma {
   }
 
   export type MenuProfileOutletOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "outletId" | "menuProfileID" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["menuProfileOutlet"]>
+  export type MenuProfileOutletInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    outlet?: boolean | OutletDefaultArgs<ExtArgs>
+    menuProfile?: boolean | MenuProfileDefaultArgs<ExtArgs>
+  }
 
   export type $MenuProfileOutletPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "MenuProfileOutlet"
-    objects: {}
+    objects: {
+      outlet: Prisma.$OutletPayload<ExtArgs>
+      menuProfile: Prisma.$MenuProfilePayload<ExtArgs>
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: number
       outletId: number
@@ -52723,6 +54331,8 @@ export namespace Prisma {
    */
   export interface Prisma__MenuProfileOutletClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    outlet<T extends OutletDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OutletDefaultArgs<ExtArgs>>): Prisma__OutletClient<$Result.GetResult<Prisma.$OutletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    menuProfile<T extends MenuProfileDefaultArgs<ExtArgs> = {}>(args?: Subset<T, MenuProfileDefaultArgs<ExtArgs>>): Prisma__MenuProfileClient<$Result.GetResult<Prisma.$MenuProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -52777,6 +54387,10 @@ export namespace Prisma {
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    /**
      * Filter, which MenuProfileOutlet to fetch.
      */
     where: MenuProfileOutletWhereUniqueInput
@@ -52795,6 +54409,10 @@ export namespace Prisma {
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    /**
      * Filter, which MenuProfileOutlet to fetch.
      */
     where: MenuProfileOutletWhereUniqueInput
@@ -52812,6 +54430,10 @@ export namespace Prisma {
      * Omit specific fields from the MenuProfileOutlet
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
     /**
      * Filter, which MenuProfileOutlet to fetch.
      */
@@ -52861,6 +54483,10 @@ export namespace Prisma {
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    /**
      * Filter, which MenuProfileOutlet to fetch.
      */
     where?: MenuProfileOutletWhereInput
@@ -52909,6 +54535,10 @@ export namespace Prisma {
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    /**
      * Filter, which MenuProfileOutlets to fetch.
      */
     where?: MenuProfileOutletWhereInput
@@ -52952,6 +54582,10 @@ export namespace Prisma {
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    /**
      * The data needed to create a MenuProfileOutlet.
      */
     data: XOR<MenuProfileOutletCreateInput, MenuProfileOutletUncheckedCreateInput>
@@ -52980,6 +54614,10 @@ export namespace Prisma {
      * Omit specific fields from the MenuProfileOutlet
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
     /**
      * The data needed to update a MenuProfileOutlet.
      */
@@ -53021,6 +54659,10 @@ export namespace Prisma {
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    /**
      * The filter to search for the MenuProfileOutlet to update in case it exists.
      */
     where: MenuProfileOutletWhereUniqueInput
@@ -53046,6 +54688,10 @@ export namespace Prisma {
      * Omit specific fields from the MenuProfileOutlet
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
     /**
      * Filter which MenuProfileOutlet to delete.
      */
@@ -53078,6 +54724,10 @@ export namespace Prisma {
      * Omit specific fields from the MenuProfileOutlet
      */
     omit?: MenuProfileOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
   }
 
 
@@ -53400,6 +55050,7 @@ export namespace Prisma {
     updatedAt?: boolean
     version?: boolean
     menuCategories?: boolean | MenuProfile$menuCategoriesArgs<ExtArgs>
+    menuProfileOutlets?: boolean | MenuProfile$menuProfileOutletsArgs<ExtArgs>
     _count?: boolean | MenuProfileCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["menuProfile"]>
 
@@ -53430,6 +55081,7 @@ export namespace Prisma {
   export type MenuProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "dateStart" | "dateEnd" | "timeStart" | "timeEnd" | "isMonday" | "isTuesday" | "isWednesday" | "isThursday" | "isFriday" | "isSaturday" | "isSunday" | "sequence" | "deleted" | "deletedAt" | "createdAt" | "updatedAt" | "version", ExtArgs["result"]["menuProfile"]>
   export type MenuProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     menuCategories?: boolean | MenuProfile$menuCategoriesArgs<ExtArgs>
+    menuProfileOutlets?: boolean | MenuProfile$menuProfileOutletsArgs<ExtArgs>
     _count?: boolean | MenuProfileCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -53437,6 +55089,7 @@ export namespace Prisma {
     name: "MenuProfile"
     objects: {
       menuCategories: Prisma.$MenuCategoryPayload<ExtArgs>[]
+      menuProfileOutlets: Prisma.$MenuProfileOutletPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -53799,6 +55452,7 @@ export namespace Prisma {
   export interface Prisma__MenuProfileClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     menuCategories<T extends MenuProfile$menuCategoriesArgs<ExtArgs> = {}>(args?: Subset<T, MenuProfile$menuCategoriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MenuCategoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    menuProfileOutlets<T extends MenuProfile$menuProfileOutletsArgs<ExtArgs> = {}>(args?: Subset<T, MenuProfile$menuProfileOutletsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MenuProfileOutletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -54211,6 +55865,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: MenuCategoryScalarFieldEnum | MenuCategoryScalarFieldEnum[]
+  }
+
+  /**
+   * MenuProfile.menuProfileOutlets
+   */
+  export type MenuProfile$menuProfileOutletsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MenuProfileOutlet
+     */
+    select?: MenuProfileOutletSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MenuProfileOutlet
+     */
+    omit?: MenuProfileOutletOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MenuProfileOutletInclude<ExtArgs> | null
+    where?: MenuProfileOutletWhereInput
+    orderBy?: MenuProfileOutletOrderByWithRelationInput | MenuProfileOutletOrderByWithRelationInput[]
+    cursor?: MenuProfileOutletWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MenuProfileOutletScalarFieldEnum | MenuProfileOutletScalarFieldEnum[]
   }
 
   /**
@@ -96606,6 +98284,20 @@ export namespace Prisma {
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+  export const UserOutletScalarFieldEnum: {
+    userId: 'userId',
+    outletId: 'outletId',
+    isPrimary: 'isPrimary',
+    deleted: 'deleted',
+    deletedAt: 'deletedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    version: 'version'
+  };
+
+  export type UserOutletScalarFieldEnum = (typeof UserOutletScalarFieldEnum)[keyof typeof UserOutletScalarFieldEnum]
+
+
   export const OverrideLogScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
@@ -99211,6 +100903,7 @@ export namespace Prisma {
     roles?: RoleListRelationFilter
     overrideRequests?: OverrideLogListRelationFilter
     notificationPreference?: XOR<NotificationPreferenceNullableScalarRelationFilter, NotificationPreferenceWhereInput> | null
+    userOutlets?: UserOutletListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -99231,6 +100924,7 @@ export namespace Prisma {
     roles?: RoleOrderByRelationAggregateInput
     overrideRequests?: OverrideLogOrderByRelationAggregateInput
     notificationPreference?: NotificationPreferenceOrderByWithRelationInput
+    userOutlets?: UserOutletOrderByRelationAggregateInput
     _relevance?: UserOrderByRelevanceInput
   }
 
@@ -99255,6 +100949,7 @@ export namespace Prisma {
     roles?: RoleListRelationFilter
     overrideRequests?: OverrideLogListRelationFilter
     notificationPreference?: XOR<NotificationPreferenceNullableScalarRelationFilter, NotificationPreferenceWhereInput> | null
+    userOutlets?: UserOutletListRelationFilter
   }, "id" | "username">
 
   export type UserOrderByWithAggregationInput = {
@@ -99295,6 +100990,82 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     updatedAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     version?: IntNullableWithAggregatesFilter<"User"> | number | null
+  }
+
+  export type UserOutletWhereInput = {
+    AND?: UserOutletWhereInput | UserOutletWhereInput[]
+    OR?: UserOutletWhereInput[]
+    NOT?: UserOutletWhereInput | UserOutletWhereInput[]
+    userId?: IntFilter<"UserOutlet"> | number
+    outletId?: IntFilter<"UserOutlet"> | number
+    isPrimary?: BoolFilter<"UserOutlet"> | boolean
+    deleted?: BoolFilter<"UserOutlet"> | boolean
+    deletedAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    version?: IntNullableFilter<"UserOutlet"> | number | null
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
+  }
+
+  export type UserOutletOrderByWithRelationInput = {
+    userId?: SortOrder
+    outletId?: SortOrder
+    isPrimary?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    user?: UserOrderByWithRelationInput
+    outlet?: OutletOrderByWithRelationInput
+  }
+
+  export type UserOutletWhereUniqueInput = Prisma.AtLeast<{
+    userId_outletId?: UserOutletUserIdOutletIdCompoundUniqueInput
+    AND?: UserOutletWhereInput | UserOutletWhereInput[]
+    OR?: UserOutletWhereInput[]
+    NOT?: UserOutletWhereInput | UserOutletWhereInput[]
+    userId?: IntFilter<"UserOutlet"> | number
+    outletId?: IntFilter<"UserOutlet"> | number
+    isPrimary?: BoolFilter<"UserOutlet"> | boolean
+    deleted?: BoolFilter<"UserOutlet"> | boolean
+    deletedAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    version?: IntNullableFilter<"UserOutlet"> | number | null
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
+  }, "userId_outletId">
+
+  export type UserOutletOrderByWithAggregationInput = {
+    userId?: SortOrder
+    outletId?: SortOrder
+    isPrimary?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrderInput | SortOrder
+    updatedAt?: SortOrderInput | SortOrder
+    version?: SortOrderInput | SortOrder
+    _count?: UserOutletCountOrderByAggregateInput
+    _avg?: UserOutletAvgOrderByAggregateInput
+    _max?: UserOutletMaxOrderByAggregateInput
+    _min?: UserOutletMinOrderByAggregateInput
+    _sum?: UserOutletSumOrderByAggregateInput
+  }
+
+  export type UserOutletScalarWhereWithAggregatesInput = {
+    AND?: UserOutletScalarWhereWithAggregatesInput | UserOutletScalarWhereWithAggregatesInput[]
+    OR?: UserOutletScalarWhereWithAggregatesInput[]
+    NOT?: UserOutletScalarWhereWithAggregatesInput | UserOutletScalarWhereWithAggregatesInput[]
+    userId?: IntWithAggregatesFilter<"UserOutlet"> | number
+    outletId?: IntWithAggregatesFilter<"UserOutlet"> | number
+    isPrimary?: BoolWithAggregatesFilter<"UserOutlet"> | boolean
+    deleted?: BoolWithAggregatesFilter<"UserOutlet"> | boolean
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"UserOutlet"> | Date | string | null
+    createdAt?: DateTimeNullableWithAggregatesFilter<"UserOutlet"> | Date | string | null
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"UserOutlet"> | Date | string | null
+    version?: IntNullableWithAggregatesFilter<"UserOutlet"> | number | null
   }
 
   export type OverrideLogWhereInput = {
@@ -99967,6 +101738,17 @@ export namespace Prisma {
     reservations?: ReservationListRelationFilter
     waitlists?: WaitlistListRelationFilter
     purchaseReturns?: PurchaseReturnListRelationFilter
+    sales?: SalesListRelationFilter
+    stockSourceSales?: SalesListRelationFilter
+    payments?: PaymentListRelationFilter
+    registerLogs?: RegisterLogListRelationFilter
+    sessions?: SessionListRelationFilter
+    invoices?: InvoiceListRelationFilter
+    deliveryOrders?: DeliveryOrderListRelationFilter
+    quotations?: QuotationListRelationFilter
+    purchaseOrders?: PurchaseOrderListRelationFilter
+    menuProfileOutlets?: MenuProfileOutletListRelationFilter
+    userOutlets?: UserOutletListRelationFilter
   }
 
   export type OutletOrderByWithRelationInput = {
@@ -99995,6 +101777,17 @@ export namespace Prisma {
     reservations?: ReservationOrderByRelationAggregateInput
     waitlists?: WaitlistOrderByRelationAggregateInput
     purchaseReturns?: PurchaseReturnOrderByRelationAggregateInput
+    sales?: SalesOrderByRelationAggregateInput
+    stockSourceSales?: SalesOrderByRelationAggregateInput
+    payments?: PaymentOrderByRelationAggregateInput
+    registerLogs?: RegisterLogOrderByRelationAggregateInput
+    sessions?: SessionOrderByRelationAggregateInput
+    invoices?: InvoiceOrderByRelationAggregateInput
+    deliveryOrders?: DeliveryOrderOrderByRelationAggregateInput
+    quotations?: QuotationOrderByRelationAggregateInput
+    purchaseOrders?: PurchaseOrderOrderByRelationAggregateInput
+    menuProfileOutlets?: MenuProfileOutletOrderByRelationAggregateInput
+    userOutlets?: UserOutletOrderByRelationAggregateInput
     _relevance?: OutletOrderByRelevanceInput
   }
 
@@ -100027,6 +101820,17 @@ export namespace Prisma {
     reservations?: ReservationListRelationFilter
     waitlists?: WaitlistListRelationFilter
     purchaseReturns?: PurchaseReturnListRelationFilter
+    sales?: SalesListRelationFilter
+    stockSourceSales?: SalesListRelationFilter
+    payments?: PaymentListRelationFilter
+    registerLogs?: RegisterLogListRelationFilter
+    sessions?: SessionListRelationFilter
+    invoices?: InvoiceListRelationFilter
+    deliveryOrders?: DeliveryOrderListRelationFilter
+    quotations?: QuotationListRelationFilter
+    purchaseOrders?: PurchaseOrderListRelationFilter
+    menuProfileOutlets?: MenuProfileOutletListRelationFilter
+    userOutlets?: UserOutletListRelationFilter
   }, "id">
 
   export type OutletOrderByWithAggregationInput = {
@@ -100445,6 +102249,8 @@ export namespace Prisma {
     voucherId?: IntNullableFilter<"Sales"> | number | null
     voucherDiscountPercentage?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
+    stockSourceOutlet?: XOR<OutletNullableScalarRelationFilter, OutletWhereInput> | null
     salesItems?: SalesItemListRelationFilter
     payments?: PaymentListRelationFilter
     registerLogs?: RegisterLogListRelationFilter
@@ -100517,6 +102323,8 @@ export namespace Prisma {
     voucherId?: SortOrderInput | SortOrder
     voucherDiscountPercentage?: SortOrderInput | SortOrder
     voucherDiscountAmount?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
+    stockSourceOutlet?: OutletOrderByWithRelationInput
     salesItems?: SalesItemOrderByRelationAggregateInput
     payments?: PaymentOrderByRelationAggregateInput
     registerLogs?: RegisterLogOrderByRelationAggregateInput
@@ -100593,6 +102401,8 @@ export namespace Prisma {
     voucherId?: IntNullableFilter<"Sales"> | number | null
     voucherDiscountPercentage?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: DecimalNullableFilter<"Sales"> | Decimal | DecimalJsLike | number | string | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
+    stockSourceOutlet?: XOR<OutletNullableScalarRelationFilter, OutletWhereInput> | null
     salesItems?: SalesItemListRelationFilter
     payments?: PaymentListRelationFilter
     registerLogs?: RegisterLogListRelationFilter
@@ -101065,6 +102875,7 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     version?: IntNullableFilter<"Invoice"> | number | null
     isTaxInclusive?: BoolNullableFilter<"Invoice"> | boolean | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     purchaseOrder?: XOR<PurchaseOrderNullableScalarRelationFilter, PurchaseOrderWhereInput> | null
     supplier?: XOR<SupplierNullableScalarRelationFilter, SupplierWhereInput> | null
@@ -101101,6 +102912,7 @@ export namespace Prisma {
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
     isTaxInclusive?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
     session?: SessionOrderByWithRelationInput
     purchaseOrder?: PurchaseOrderOrderByWithRelationInput
     supplier?: SupplierOrderByWithRelationInput
@@ -101141,6 +102953,7 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"Invoice"> | Date | string | null
     version?: IntNullableFilter<"Invoice"> | number | null
     isTaxInclusive?: BoolNullableFilter<"Invoice"> | boolean | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     purchaseOrder?: XOR<PurchaseOrderNullableScalarRelationFilter, PurchaseOrderWhereInput> | null
     supplier?: XOR<SupplierNullableScalarRelationFilter, SupplierWhereInput> | null
@@ -101512,6 +103325,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     version?: IntNullableFilter<"DeliveryOrder"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     purchaseOrder?: XOR<PurchaseOrderNullableScalarRelationFilter, PurchaseOrderWhereInput> | null
     invoice?: XOR<InvoiceNullableScalarRelationFilter, InvoiceWhereInput> | null
@@ -101542,6 +103356,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
     session?: SessionOrderByWithRelationInput
     purchaseOrder?: PurchaseOrderOrderByWithRelationInput
     invoice?: InvoiceOrderByWithRelationInput
@@ -101576,6 +103391,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     version?: IntNullableFilter<"DeliveryOrder"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     purchaseOrder?: XOR<PurchaseOrderNullableScalarRelationFilter, PurchaseOrderWhereInput> | null
     invoice?: XOR<InvoiceNullableScalarRelationFilter, InvoiceWhereInput> | null
@@ -101790,6 +103606,7 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"Quotation"> | Date | string | null
     version?: IntNullableFilter<"Quotation"> | number | null
     isTaxInclusive?: BoolNullableFilter<"Quotation"> | boolean | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
     quotationItems?: QuotationItemListRelationFilter
@@ -101823,6 +103640,7 @@ export namespace Prisma {
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
     isTaxInclusive?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
     session?: SessionOrderByWithRelationInput
     supplier?: SupplierOrderByWithRelationInput
     quotationItems?: QuotationItemOrderByRelationAggregateInput
@@ -101860,6 +103678,7 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"Quotation"> | Date | string | null
     version?: IntNullableFilter<"Quotation"> | number | null
     isTaxInclusive?: BoolNullableFilter<"Quotation"> | boolean | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
     quotationItems?: QuotationItemListRelationFilter
@@ -102099,6 +103918,7 @@ export namespace Prisma {
     version?: IntNullableFilter<"PurchaseOrder"> | number | null
     isTaxInclusive?: BoolNullableFilter<"PurchaseOrder"> | boolean | null
     quotationId?: IntNullableFilter<"PurchaseOrder"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     quotation?: XOR<QuotationNullableScalarRelationFilter, QuotationWhereInput> | null
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
@@ -102132,6 +103952,7 @@ export namespace Prisma {
     version?: SortOrderInput | SortOrder
     isTaxInclusive?: SortOrderInput | SortOrder
     quotationId?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
     quotation?: QuotationOrderByWithRelationInput
     session?: SessionOrderByWithRelationInput
     supplier?: SupplierOrderByWithRelationInput
@@ -102169,6 +103990,7 @@ export namespace Prisma {
     version?: IntNullableFilter<"PurchaseOrder"> | number | null
     isTaxInclusive?: BoolNullableFilter<"PurchaseOrder"> | boolean | null
     quotationId?: IntNullableFilter<"PurchaseOrder"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     quotation?: XOR<QuotationNullableScalarRelationFilter, QuotationWhereInput> | null
     session?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
@@ -102391,6 +104213,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
     version?: IntNullableFilter<"Payment"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     cardInfos?: CardInfoListRelationFilter
     sales?: XOR<SalesScalarRelationFilter, SalesWhereInput>
     splitBills?: SplitBillListRelationFilter
@@ -102416,6 +104239,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
     cardInfos?: CardInfoOrderByRelationAggregateInput
     sales?: SalesOrderByWithRelationInput
     splitBills?: SplitBillOrderByRelationAggregateInput
@@ -102445,6 +104269,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
     version?: IntNullableFilter<"Payment"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     cardInfos?: CardInfoListRelationFilter
     sales?: XOR<SalesScalarRelationFilter, SalesWhereInput>
     splitBills?: SplitBillListRelationFilter
@@ -102521,6 +104346,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
     version?: IntNullableFilter<"RegisterLog"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     sales?: XOR<SalesScalarRelationFilter, SalesWhereInput>
   }
 
@@ -102540,6 +104366,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
     sales?: SalesOrderByWithRelationInput
     _relevance?: RegisterLogOrderByRelevanceInput
   }
@@ -102563,6 +104390,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
     version?: IntNullableFilter<"RegisterLog"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     sales?: XOR<SalesScalarRelationFilter, SalesWhereInput>
   }, "id">
 
@@ -102731,6 +104559,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"Session"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"Session"> | Date | string | null
     version?: IntNullableFilter<"Session"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     declarations?: DeclarationListRelationFilter
     quotations?: QuotationListRelationFilter
     purchaseOrders?: PurchaseOrderListRelationFilter
@@ -102753,6 +104582,7 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
     declarations?: DeclarationOrderByRelationAggregateInput
     quotations?: QuotationOrderByRelationAggregateInput
     purchaseOrders?: PurchaseOrderOrderByRelationAggregateInput
@@ -102778,6 +104608,7 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"Session"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"Session"> | Date | string | null
     version?: IntNullableFilter<"Session"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
     declarations?: DeclarationListRelationFilter
     quotations?: QuotationListRelationFilter
     purchaseOrders?: PurchaseOrderListRelationFilter
@@ -103566,6 +105397,8 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"MenuProfileOutlet"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"MenuProfileOutlet"> | Date | string | null
     version?: IntNullableFilter<"MenuProfileOutlet"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
+    menuProfile?: XOR<MenuProfileScalarRelationFilter, MenuProfileWhereInput>
   }
 
   export type MenuProfileOutletOrderByWithRelationInput = {
@@ -103577,6 +105410,8 @@ export namespace Prisma {
     createdAt?: SortOrderInput | SortOrder
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
+    outlet?: OutletOrderByWithRelationInput
+    menuProfile?: MenuProfileOrderByWithRelationInput
   }
 
   export type MenuProfileOutletWhereUniqueInput = Prisma.AtLeast<{
@@ -103591,6 +105426,8 @@ export namespace Prisma {
     createdAt?: DateTimeNullableFilter<"MenuProfileOutlet"> | Date | string | null
     updatedAt?: DateTimeNullableFilter<"MenuProfileOutlet"> | Date | string | null
     version?: IntNullableFilter<"MenuProfileOutlet"> | number | null
+    outlet?: XOR<OutletScalarRelationFilter, OutletWhereInput>
+    menuProfile?: XOR<MenuProfileScalarRelationFilter, MenuProfileWhereInput>
   }, "id">
 
   export type MenuProfileOutletOrderByWithAggregationInput = {
@@ -103647,6 +105484,7 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"MenuProfile"> | Date | string | null
     version?: IntNullableFilter<"MenuProfile"> | number | null
     menuCategories?: MenuCategoryListRelationFilter
+    menuProfileOutlets?: MenuProfileOutletListRelationFilter
   }
 
   export type MenuProfileOrderByWithRelationInput = {
@@ -103670,6 +105508,7 @@ export namespace Prisma {
     updatedAt?: SortOrderInput | SortOrder
     version?: SortOrderInput | SortOrder
     menuCategories?: MenuCategoryOrderByRelationAggregateInput
+    menuProfileOutlets?: MenuProfileOutletOrderByRelationAggregateInput
     _relevance?: MenuProfileOrderByRelevanceInput
   }
 
@@ -103697,6 +105536,7 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"MenuProfile"> | Date | string | null
     version?: IntNullableFilter<"MenuProfile"> | number | null
     menuCategories?: MenuCategoryListRelationFilter
+    menuProfileOutlets?: MenuProfileOutletListRelationFilter
   }, "id">
 
   export type MenuProfileOrderByWithAggregationInput = {
@@ -107962,6 +109802,7 @@ export namespace Prisma {
     roles?: RoleCreateNestedManyWithoutUsersInput
     overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
     notificationPreference?: NotificationPreferenceCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -107982,6 +109823,7 @@ export namespace Prisma {
     roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
     overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
     notificationPreference?: NotificationPreferenceUncheckedCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -108001,6 +109843,7 @@ export namespace Prisma {
     roles?: RoleUpdateManyWithoutUsersNestedInput
     overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
     notificationPreference?: NotificationPreferenceUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -108021,6 +109864,7 @@ export namespace Prisma {
     roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
     overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
     notificationPreference?: NotificationPreferenceUncheckedUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -108063,6 +109907,81 @@ export namespace Prisma {
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     mobile?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type UserOutletCreateInput = {
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    user: UserCreateNestedOneWithoutUserOutletsInput
+    outlet: OutletCreateNestedOneWithoutUserOutletsInput
+  }
+
+  export type UserOutletUncheckedCreateInput = {
+    userId: number
+    outletId: number
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type UserOutletUpdateInput = {
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    user?: UserUpdateOneRequiredWithoutUserOutletsNestedInput
+    outlet?: OutletUpdateOneRequiredWithoutUserOutletsNestedInput
+  }
+
+  export type UserOutletUncheckedUpdateInput = {
+    userId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type UserOutletCreateManyInput = {
+    userId: number
+    outletId: number
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type UserOutletUpdateManyMutationInput = {
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type UserOutletUncheckedUpdateManyInput = {
+    userId?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -108830,6 +110749,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateInput = {
@@ -108858,6 +110788,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUpdateInput = {
@@ -108885,6 +110826,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateInput = {
@@ -108913,6 +110865,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletCreateManyInput = {
@@ -109340,7 +111303,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -109381,7 +111343,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -109395,6 +111356,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -109477,7 +111440,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -109518,7 +111480,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -109532,6 +111493,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -109676,7 +111639,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateManyMutationInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -109717,7 +111679,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -110146,7 +112107,6 @@ export namespace Prisma {
   export type InvoiceCreateInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -110165,6 +112125,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -110209,7 +112170,6 @@ export namespace Prisma {
   export type InvoiceUpdateInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -110228,6 +112188,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -110301,7 +112262,6 @@ export namespace Prisma {
   export type InvoiceUpdateManyMutationInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -110667,7 +112627,6 @@ export namespace Prisma {
 
   export type DeliveryOrderCreateInput = {
     trackingNumber?: string | null
-    outletId: number
     customerId?: number | null
     supplierId?: number | null
     deliveryDate?: Date | string | null
@@ -110684,6 +112643,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutDeliveryOrdersInput
     session?: SessionCreateNestedOneWithoutDeliveryOrdersInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutDeliveryOrdersInput
     invoice?: InvoiceCreateNestedOneWithoutDeliveryOrdersInput
@@ -110720,7 +112680,6 @@ export namespace Prisma {
 
   export type DeliveryOrderUpdateInput = {
     trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    outletId?: IntFieldUpdateOperationsInput | number
     customerId?: NullableIntFieldUpdateOperationsInput | number | null
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -110737,6 +112696,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutDeliveryOrdersNestedInput
     session?: SessionUpdateOneWithoutDeliveryOrdersNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutDeliveryOrdersNestedInput
     invoice?: InvoiceUpdateOneWithoutDeliveryOrdersNestedInput
@@ -110798,7 +112758,6 @@ export namespace Prisma {
 
   export type DeliveryOrderUpdateManyMutationInput = {
     trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    outletId?: IntFieldUpdateOperationsInput | number
     customerId?: NullableIntFieldUpdateOperationsInput | number | null
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -110971,7 +112930,6 @@ export namespace Prisma {
 
   export type QuotationCreateInput = {
     quotationNumber: string
-    outletId: number
     quotationDate?: Date | string | null
     validUntilDate?: Date | string | null
     discountType?: string | null
@@ -110993,6 +112951,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutQuotationsInput
     session?: SessionCreateNestedOneWithoutQuotationsInput
     supplier: SupplierCreateNestedOneWithoutQuotationsInput
     quotationItems?: QuotationItemCreateNestedManyWithoutQuotationInput
@@ -111032,7 +112991,6 @@ export namespace Prisma {
 
   export type QuotationUpdateInput = {
     quotationNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -111054,6 +113012,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutQuotationsNestedInput
     session?: SessionUpdateOneWithoutQuotationsNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutQuotationsNestedInput
     quotationItems?: QuotationItemUpdateManyWithoutQuotationNestedInput
@@ -111122,7 +113081,6 @@ export namespace Prisma {
 
   export type QuotationUpdateManyMutationInput = {
     quotationNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -111332,7 +113290,6 @@ export namespace Prisma {
 
   export type PurchaseOrderCreateInput = {
     purchaseOrderNumber: string
-    outletId: number
     purchaseOrderDate?: Date | string | null
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
@@ -111351,6 +113308,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutPurchaseOrdersInput
     quotation?: QuotationCreateNestedOneWithoutPurchaseOrdersInput
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
@@ -111391,7 +113349,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -111410,6 +113367,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     quotation?: QuotationUpdateOneWithoutPurchaseOrdersNestedInput
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
@@ -111477,7 +113435,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateManyMutationInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -111675,7 +113632,6 @@ export namespace Prisma {
     remark?: string
     businessDate: Date | string
     status: string
-    outletId: number
     sessionId: number
     eodId: number
     performedBy?: string | null
@@ -111684,6 +113640,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutPaymentsInput
     cardInfos?: CardInfoCreateNestedManyWithoutPaymentInput
     sales: SalesCreateNestedOneWithoutPaymentsInput
     splitBills?: SplitBillCreateNestedManyWithoutPaymentInput
@@ -111722,7 +113679,6 @@ export namespace Prisma {
     remark?: StringFieldUpdateOperationsInput | string
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -111731,6 +113687,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutPaymentsNestedInput
     cardInfos?: CardInfoUpdateManyWithoutPaymentNestedInput
     sales?: SalesUpdateOneRequiredWithoutPaymentsNestedInput
     splitBills?: SplitBillUpdateManyWithoutPaymentNestedInput
@@ -111791,7 +113748,6 @@ export namespace Prisma {
     remark?: StringFieldUpdateOperationsInput | string
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -111830,7 +113786,6 @@ export namespace Prisma {
     currencySymbol?: string
     remark?: string
     status: string
-    outletId: number
     sessionId: number
     eodId: number
     performedBy?: string | null
@@ -111838,6 +113793,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutRegisterLogsInput
     sales: SalesCreateNestedOneWithoutRegisterLogsInput
   }
 
@@ -111865,7 +113821,6 @@ export namespace Prisma {
     currencySymbol?: StringFieldUpdateOperationsInput | string
     remark?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -111873,6 +113828,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutRegisterLogsNestedInput
     sales?: SalesUpdateOneRequiredWithoutRegisterLogsNestedInput
   }
 
@@ -111918,7 +113874,6 @@ export namespace Prisma {
     currencySymbol?: StringFieldUpdateOperationsInput | string
     remark?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -112062,7 +114017,6 @@ export namespace Prisma {
   }
 
   export type SessionCreateInput = {
-    outletId: number
     businessDate: Date | string
     openingDateTime?: Date | string | null
     closingDateTime?: Date | string | null
@@ -112075,6 +114029,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutSessionsInput
     declarations?: DeclarationCreateNestedManyWithoutSessionInput
     quotations?: QuotationCreateNestedManyWithoutSessionInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutSessionInput
@@ -112105,7 +114060,6 @@ export namespace Prisma {
   }
 
   export type SessionUpdateInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -112118,6 +114072,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutSessionsNestedInput
     declarations?: DeclarationUpdateManyWithoutSessionNestedInput
     quotations?: QuotationUpdateManyWithoutSessionNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutSessionNestedInput
@@ -112165,7 +114120,6 @@ export namespace Prisma {
   }
 
   export type SessionUpdateManyMutationInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -112979,13 +114933,13 @@ export namespace Prisma {
   }
 
   export type MenuProfileOutletCreateInput = {
-    outletId: number
-    menuProfileID: number
     deleted?: boolean
     deletedAt?: Date | string | null
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutMenuProfileOutletsInput
+    menuProfile: MenuProfileCreateNestedOneWithoutMenuProfileOutletsInput
   }
 
   export type MenuProfileOutletUncheckedCreateInput = {
@@ -113000,13 +114954,13 @@ export namespace Prisma {
   }
 
   export type MenuProfileOutletUpdateInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
-    menuProfileID?: IntFieldUpdateOperationsInput | number
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutMenuProfileOutletsNestedInput
+    menuProfile?: MenuProfileUpdateOneRequiredWithoutMenuProfileOutletsNestedInput
   }
 
   export type MenuProfileOutletUncheckedUpdateInput = {
@@ -113032,8 +114986,6 @@ export namespace Prisma {
   }
 
   export type MenuProfileOutletUpdateManyMutationInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
-    menuProfileID?: IntFieldUpdateOperationsInput | number
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -113072,6 +115024,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     menuCategories?: MenuCategoryCreateNestedManyWithoutMenuProfileInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutMenuProfileInput
   }
 
   export type MenuProfileUncheckedCreateInput = {
@@ -113095,6 +115048,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     menuCategories?: MenuCategoryUncheckedCreateNestedManyWithoutMenuProfileInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutMenuProfileInput
   }
 
   export type MenuProfileUpdateInput = {
@@ -113117,6 +115071,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     menuCategories?: MenuCategoryUpdateManyWithoutMenuProfileNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutMenuProfileNestedInput
   }
 
   export type MenuProfileUncheckedUpdateInput = {
@@ -113140,6 +115095,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     menuCategories?: MenuCategoryUncheckedUpdateManyWithoutMenuProfileNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutMenuProfileNestedInput
   }
 
   export type MenuProfileCreateManyInput = {
@@ -117879,6 +119835,12 @@ export namespace Prisma {
     isNot?: NotificationPreferenceWhereInput | null
   }
 
+  export type UserOutletListRelationFilter = {
+    every?: UserOutletWhereInput
+    some?: UserOutletWhereInput
+    none?: UserOutletWhereInput
+  }
+
   export type SettingOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -117888,6 +119850,10 @@ export namespace Prisma {
   }
 
   export type OverrideLogOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type UserOutletOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -117952,6 +119918,61 @@ export namespace Prisma {
 
   export type UserSumOrderByAggregateInput = {
     id?: SortOrder
+    version?: SortOrder
+  }
+
+  export type OutletScalarRelationFilter = {
+    is?: OutletWhereInput
+    isNot?: OutletWhereInput
+  }
+
+  export type UserOutletUserIdOutletIdCompoundUniqueInput = {
+    userId: number
+    outletId: number
+  }
+
+  export type UserOutletCountOrderByAggregateInput = {
+    userId?: SortOrder
+    outletId?: SortOrder
+    isPrimary?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type UserOutletAvgOrderByAggregateInput = {
+    userId?: SortOrder
+    outletId?: SortOrder
+    version?: SortOrder
+  }
+
+  export type UserOutletMaxOrderByAggregateInput = {
+    userId?: SortOrder
+    outletId?: SortOrder
+    isPrimary?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type UserOutletMinOrderByAggregateInput = {
+    userId?: SortOrder
+    outletId?: SortOrder
+    isPrimary?: SortOrder
+    deleted?: SortOrder
+    deletedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    version?: SortOrder
+  }
+
+  export type UserOutletSumOrderByAggregateInput = {
+    userId?: SortOrder
+    outletId?: SortOrder
     version?: SortOrder
   }
 
@@ -118552,6 +120573,36 @@ export namespace Prisma {
     none?: StationWhereInput
   }
 
+  export type PaymentListRelationFilter = {
+    every?: PaymentWhereInput
+    some?: PaymentWhereInput
+    none?: PaymentWhereInput
+  }
+
+  export type RegisterLogListRelationFilter = {
+    every?: RegisterLogWhereInput
+    some?: RegisterLogWhereInput
+    none?: RegisterLogWhereInput
+  }
+
+  export type SessionListRelationFilter = {
+    every?: SessionWhereInput
+    some?: SessionWhereInput
+    none?: SessionWhereInput
+  }
+
+  export type DeliveryOrderListRelationFilter = {
+    every?: DeliveryOrderWhereInput
+    some?: DeliveryOrderWhereInput
+    none?: DeliveryOrderWhereInput
+  }
+
+  export type MenuProfileOutletListRelationFilter = {
+    every?: MenuProfileOutletWhereInput
+    some?: MenuProfileOutletWhereInput
+    none?: MenuProfileOutletWhereInput
+  }
+
   export type StockBalanceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -118573,6 +120624,26 @@ export namespace Prisma {
   }
 
   export type StationOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PaymentOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type RegisterLogOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SessionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DeliveryOrderOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type MenuProfileOutletOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -119039,18 +121110,6 @@ export namespace Prisma {
     none?: SalesItemWhereInput
   }
 
-  export type PaymentListRelationFilter = {
-    every?: PaymentWhereInput
-    some?: PaymentWhereInput
-    none?: PaymentWhereInput
-  }
-
-  export type RegisterLogListRelationFilter = {
-    every?: RegisterLogWhereInput
-    some?: RegisterLogWhereInput
-    none?: RegisterLogWhereInput
-  }
-
   export type CustomerNullableScalarRelationFilter = {
     is?: CustomerWhereInput | null
     isNot?: CustomerWhereInput | null
@@ -119090,14 +121149,6 @@ export namespace Prisma {
   }
 
   export type SalesItemOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type PaymentOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type RegisterLogOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -119685,19 +121736,9 @@ export namespace Prisma {
     isNot?: SupplierWhereInput | null
   }
 
-  export type DeliveryOrderListRelationFilter = {
-    every?: DeliveryOrderWhereInput
-    some?: DeliveryOrderWhereInput
-    none?: DeliveryOrderWhereInput
-  }
-
   export type InvoiceSettlementNullableScalarRelationFilter = {
     is?: InvoiceSettlementWhereInput | null
     isNot?: InvoiceSettlementWhereInput | null
-  }
-
-  export type DeliveryOrderOrderByRelationAggregateInput = {
-    _count?: SortOrder
   }
 
   export type InvoiceOrderByRelevanceInput = {
@@ -121116,11 +123157,6 @@ export namespace Prisma {
     sessionID?: SortOrder
   }
 
-  export type OutletScalarRelationFilter = {
-    is?: OutletWhereInput
-    isNot?: OutletWhereInput
-  }
-
   export type StockBalanceItemIdOutletIdItemVariantIdReorderThresholdDeletedAvailableQuantityCompoundUniqueInput = {
     itemId: number
     outletId: number
@@ -121585,6 +123621,11 @@ export namespace Prisma {
     version?: SortOrder
   }
 
+  export type MenuProfileScalarRelationFilter = {
+    is?: MenuProfileWhereInput
+    isNot?: MenuProfileWhereInput
+  }
+
   export type MenuProfileOutletCountOrderByAggregateInput = {
     id?: SortOrder
     outletId?: SortOrder
@@ -121724,11 +123765,6 @@ export namespace Prisma {
     id?: SortOrder
     sequence?: SortOrder
     version?: SortOrder
-  }
-
-  export type MenuProfileScalarRelationFilter = {
-    is?: MenuProfileWhereInput
-    isNot?: MenuProfileWhereInput
   }
 
   export type MenuItemListRelationFilter = {
@@ -124995,6 +127031,13 @@ export namespace Prisma {
     connect?: NotificationPreferenceWhereUniqueInput
   }
 
+  export type UserOutletCreateNestedManyWithoutUserInput = {
+    create?: XOR<UserOutletCreateWithoutUserInput, UserOutletUncheckedCreateWithoutUserInput> | UserOutletCreateWithoutUserInput[] | UserOutletUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutUserInput | UserOutletCreateOrConnectWithoutUserInput[]
+    createMany?: UserOutletCreateManyUserInputEnvelope
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+  }
+
   export type SettingUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<SettingCreateWithoutUserInput, SettingUncheckedCreateWithoutUserInput> | SettingCreateWithoutUserInput[] | SettingUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SettingCreateOrConnectWithoutUserInput | SettingCreateOrConnectWithoutUserInput[]
@@ -125019,6 +127062,13 @@ export namespace Prisma {
     create?: XOR<NotificationPreferenceCreateWithoutUserInput, NotificationPreferenceUncheckedCreateWithoutUserInput>
     connectOrCreate?: NotificationPreferenceCreateOrConnectWithoutUserInput
     connect?: NotificationPreferenceWhereUniqueInput
+  }
+
+  export type UserOutletUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<UserOutletCreateWithoutUserInput, UserOutletUncheckedCreateWithoutUserInput> | UserOutletCreateWithoutUserInput[] | UserOutletUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutUserInput | UserOutletCreateOrConnectWithoutUserInput[]
+    createMany?: UserOutletCreateManyUserInputEnvelope
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
   }
 
   export type SettingUpdateManyWithoutUserNestedInput = {
@@ -125072,6 +127122,20 @@ export namespace Prisma {
     update?: XOR<XOR<NotificationPreferenceUpdateToOneWithWhereWithoutUserInput, NotificationPreferenceUpdateWithoutUserInput>, NotificationPreferenceUncheckedUpdateWithoutUserInput>
   }
 
+  export type UserOutletUpdateManyWithoutUserNestedInput = {
+    create?: XOR<UserOutletCreateWithoutUserInput, UserOutletUncheckedCreateWithoutUserInput> | UserOutletCreateWithoutUserInput[] | UserOutletUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutUserInput | UserOutletCreateOrConnectWithoutUserInput[]
+    upsert?: UserOutletUpsertWithWhereUniqueWithoutUserInput | UserOutletUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: UserOutletCreateManyUserInputEnvelope
+    set?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    disconnect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    delete?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    update?: UserOutletUpdateWithWhereUniqueWithoutUserInput | UserOutletUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: UserOutletUpdateManyWithWhereWithoutUserInput | UserOutletUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: UserOutletScalarWhereInput | UserOutletScalarWhereInput[]
+  }
+
   export type SettingUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<SettingCreateWithoutUserInput, SettingUncheckedCreateWithoutUserInput> | SettingCreateWithoutUserInput[] | SettingUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SettingCreateOrConnectWithoutUserInput | SettingCreateOrConnectWithoutUserInput[]
@@ -125121,6 +127185,48 @@ export namespace Prisma {
     delete?: NotificationPreferenceWhereInput | boolean
     connect?: NotificationPreferenceWhereUniqueInput
     update?: XOR<XOR<NotificationPreferenceUpdateToOneWithWhereWithoutUserInput, NotificationPreferenceUpdateWithoutUserInput>, NotificationPreferenceUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserOutletUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<UserOutletCreateWithoutUserInput, UserOutletUncheckedCreateWithoutUserInput> | UserOutletCreateWithoutUserInput[] | UserOutletUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutUserInput | UserOutletCreateOrConnectWithoutUserInput[]
+    upsert?: UserOutletUpsertWithWhereUniqueWithoutUserInput | UserOutletUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: UserOutletCreateManyUserInputEnvelope
+    set?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    disconnect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    delete?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    update?: UserOutletUpdateWithWhereUniqueWithoutUserInput | UserOutletUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: UserOutletUpdateManyWithWhereWithoutUserInput | UserOutletUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: UserOutletScalarWhereInput | UserOutletScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutUserOutletsInput = {
+    create?: XOR<UserCreateWithoutUserOutletsInput, UserUncheckedCreateWithoutUserOutletsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutUserOutletsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type OutletCreateNestedOneWithoutUserOutletsInput = {
+    create?: XOR<OutletCreateWithoutUserOutletsInput, OutletUncheckedCreateWithoutUserOutletsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutUserOutletsInput
+    connect?: OutletWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutUserOutletsNestedInput = {
+    create?: XOR<UserCreateWithoutUserOutletsInput, UserUncheckedCreateWithoutUserOutletsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutUserOutletsInput
+    upsert?: UserUpsertWithoutUserOutletsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutUserOutletsInput, UserUpdateWithoutUserOutletsInput>, UserUncheckedUpdateWithoutUserOutletsInput>
+  }
+
+  export type OutletUpdateOneRequiredWithoutUserOutletsNestedInput = {
+    create?: XOR<OutletCreateWithoutUserOutletsInput, OutletUncheckedCreateWithoutUserOutletsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutUserOutletsInput
+    upsert?: OutletUpsertWithoutUserOutletsInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutUserOutletsInput, OutletUpdateWithoutUserOutletsInput>, OutletUncheckedUpdateWithoutUserOutletsInput>
   }
 
   export type UserCreateNestedOneWithoutOverrideRequestsInput = {
@@ -125827,6 +127933,83 @@ export namespace Prisma {
     connect?: PurchaseReturnWhereUniqueInput | PurchaseReturnWhereUniqueInput[]
   }
 
+  export type SalesCreateNestedManyWithoutOutletInput = {
+    create?: XOR<SalesCreateWithoutOutletInput, SalesUncheckedCreateWithoutOutletInput> | SalesCreateWithoutOutletInput[] | SalesUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutOutletInput | SalesCreateOrConnectWithoutOutletInput[]
+    createMany?: SalesCreateManyOutletInputEnvelope
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+  }
+
+  export type SalesCreateNestedManyWithoutStockSourceOutletInput = {
+    create?: XOR<SalesCreateWithoutStockSourceOutletInput, SalesUncheckedCreateWithoutStockSourceOutletInput> | SalesCreateWithoutStockSourceOutletInput[] | SalesUncheckedCreateWithoutStockSourceOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutStockSourceOutletInput | SalesCreateOrConnectWithoutStockSourceOutletInput[]
+    createMany?: SalesCreateManyStockSourceOutletInputEnvelope
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+  }
+
+  export type PaymentCreateNestedManyWithoutOutletInput = {
+    create?: XOR<PaymentCreateWithoutOutletInput, PaymentUncheckedCreateWithoutOutletInput> | PaymentCreateWithoutOutletInput[] | PaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PaymentCreateOrConnectWithoutOutletInput | PaymentCreateOrConnectWithoutOutletInput[]
+    createMany?: PaymentCreateManyOutletInputEnvelope
+    connect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+  }
+
+  export type RegisterLogCreateNestedManyWithoutOutletInput = {
+    create?: XOR<RegisterLogCreateWithoutOutletInput, RegisterLogUncheckedCreateWithoutOutletInput> | RegisterLogCreateWithoutOutletInput[] | RegisterLogUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: RegisterLogCreateOrConnectWithoutOutletInput | RegisterLogCreateOrConnectWithoutOutletInput[]
+    createMany?: RegisterLogCreateManyOutletInputEnvelope
+    connect?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+  }
+
+  export type SessionCreateNestedManyWithoutOutletInput = {
+    create?: XOR<SessionCreateWithoutOutletInput, SessionUncheckedCreateWithoutOutletInput> | SessionCreateWithoutOutletInput[] | SessionUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SessionCreateOrConnectWithoutOutletInput | SessionCreateOrConnectWithoutOutletInput[]
+    createMany?: SessionCreateManyOutletInputEnvelope
+    connect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+  }
+
+  export type InvoiceCreateNestedManyWithoutOutletInput = {
+    create?: XOR<InvoiceCreateWithoutOutletInput, InvoiceUncheckedCreateWithoutOutletInput> | InvoiceCreateWithoutOutletInput[] | InvoiceUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutOutletInput | InvoiceCreateOrConnectWithoutOutletInput[]
+    createMany?: InvoiceCreateManyOutletInputEnvelope
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+  }
+
+  export type DeliveryOrderCreateNestedManyWithoutOutletInput = {
+    create?: XOR<DeliveryOrderCreateWithoutOutletInput, DeliveryOrderUncheckedCreateWithoutOutletInput> | DeliveryOrderCreateWithoutOutletInput[] | DeliveryOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutOutletInput | DeliveryOrderCreateOrConnectWithoutOutletInput[]
+    createMany?: DeliveryOrderCreateManyOutletInputEnvelope
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+  }
+
+  export type QuotationCreateNestedManyWithoutOutletInput = {
+    create?: XOR<QuotationCreateWithoutOutletInput, QuotationUncheckedCreateWithoutOutletInput> | QuotationCreateWithoutOutletInput[] | QuotationUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: QuotationCreateOrConnectWithoutOutletInput | QuotationCreateOrConnectWithoutOutletInput[]
+    createMany?: QuotationCreateManyOutletInputEnvelope
+    connect?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+  }
+
+  export type PurchaseOrderCreateNestedManyWithoutOutletInput = {
+    create?: XOR<PurchaseOrderCreateWithoutOutletInput, PurchaseOrderUncheckedCreateWithoutOutletInput> | PurchaseOrderCreateWithoutOutletInput[] | PurchaseOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PurchaseOrderCreateOrConnectWithoutOutletInput | PurchaseOrderCreateOrConnectWithoutOutletInput[]
+    createMany?: PurchaseOrderCreateManyOutletInputEnvelope
+    connect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+  }
+
+  export type MenuProfileOutletCreateNestedManyWithoutOutletInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutOutletInput, MenuProfileOutletUncheckedCreateWithoutOutletInput> | MenuProfileOutletCreateWithoutOutletInput[] | MenuProfileOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutOutletInput | MenuProfileOutletCreateOrConnectWithoutOutletInput[]
+    createMany?: MenuProfileOutletCreateManyOutletInputEnvelope
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+  }
+
+  export type UserOutletCreateNestedManyWithoutOutletInput = {
+    create?: XOR<UserOutletCreateWithoutOutletInput, UserOutletUncheckedCreateWithoutOutletInput> | UserOutletCreateWithoutOutletInput[] | UserOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutOutletInput | UserOutletCreateOrConnectWithoutOutletInput[]
+    createMany?: UserOutletCreateManyOutletInputEnvelope
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+  }
+
   export type StockBalanceUncheckedCreateNestedManyWithoutOutletInput = {
     create?: XOR<StockBalanceCreateWithoutOutletInput, StockBalanceUncheckedCreateWithoutOutletInput> | StockBalanceCreateWithoutOutletInput[] | StockBalanceUncheckedCreateWithoutOutletInput[]
     connectOrCreate?: StockBalanceCreateOrConnectWithoutOutletInput | StockBalanceCreateOrConnectWithoutOutletInput[]
@@ -125895,6 +128078,83 @@ export namespace Prisma {
     connectOrCreate?: PurchaseReturnCreateOrConnectWithoutOutletInput | PurchaseReturnCreateOrConnectWithoutOutletInput[]
     createMany?: PurchaseReturnCreateManyOutletInputEnvelope
     connect?: PurchaseReturnWhereUniqueInput | PurchaseReturnWhereUniqueInput[]
+  }
+
+  export type SalesUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<SalesCreateWithoutOutletInput, SalesUncheckedCreateWithoutOutletInput> | SalesCreateWithoutOutletInput[] | SalesUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutOutletInput | SalesCreateOrConnectWithoutOutletInput[]
+    createMany?: SalesCreateManyOutletInputEnvelope
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+  }
+
+  export type SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput = {
+    create?: XOR<SalesCreateWithoutStockSourceOutletInput, SalesUncheckedCreateWithoutStockSourceOutletInput> | SalesCreateWithoutStockSourceOutletInput[] | SalesUncheckedCreateWithoutStockSourceOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutStockSourceOutletInput | SalesCreateOrConnectWithoutStockSourceOutletInput[]
+    createMany?: SalesCreateManyStockSourceOutletInputEnvelope
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+  }
+
+  export type PaymentUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<PaymentCreateWithoutOutletInput, PaymentUncheckedCreateWithoutOutletInput> | PaymentCreateWithoutOutletInput[] | PaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PaymentCreateOrConnectWithoutOutletInput | PaymentCreateOrConnectWithoutOutletInput[]
+    createMany?: PaymentCreateManyOutletInputEnvelope
+    connect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+  }
+
+  export type RegisterLogUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<RegisterLogCreateWithoutOutletInput, RegisterLogUncheckedCreateWithoutOutletInput> | RegisterLogCreateWithoutOutletInput[] | RegisterLogUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: RegisterLogCreateOrConnectWithoutOutletInput | RegisterLogCreateOrConnectWithoutOutletInput[]
+    createMany?: RegisterLogCreateManyOutletInputEnvelope
+    connect?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+  }
+
+  export type SessionUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<SessionCreateWithoutOutletInput, SessionUncheckedCreateWithoutOutletInput> | SessionCreateWithoutOutletInput[] | SessionUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SessionCreateOrConnectWithoutOutletInput | SessionCreateOrConnectWithoutOutletInput[]
+    createMany?: SessionCreateManyOutletInputEnvelope
+    connect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+  }
+
+  export type InvoiceUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<InvoiceCreateWithoutOutletInput, InvoiceUncheckedCreateWithoutOutletInput> | InvoiceCreateWithoutOutletInput[] | InvoiceUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutOutletInput | InvoiceCreateOrConnectWithoutOutletInput[]
+    createMany?: InvoiceCreateManyOutletInputEnvelope
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+  }
+
+  export type DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<DeliveryOrderCreateWithoutOutletInput, DeliveryOrderUncheckedCreateWithoutOutletInput> | DeliveryOrderCreateWithoutOutletInput[] | DeliveryOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutOutletInput | DeliveryOrderCreateOrConnectWithoutOutletInput[]
+    createMany?: DeliveryOrderCreateManyOutletInputEnvelope
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+  }
+
+  export type QuotationUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<QuotationCreateWithoutOutletInput, QuotationUncheckedCreateWithoutOutletInput> | QuotationCreateWithoutOutletInput[] | QuotationUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: QuotationCreateOrConnectWithoutOutletInput | QuotationCreateOrConnectWithoutOutletInput[]
+    createMany?: QuotationCreateManyOutletInputEnvelope
+    connect?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+  }
+
+  export type PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<PurchaseOrderCreateWithoutOutletInput, PurchaseOrderUncheckedCreateWithoutOutletInput> | PurchaseOrderCreateWithoutOutletInput[] | PurchaseOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PurchaseOrderCreateOrConnectWithoutOutletInput | PurchaseOrderCreateOrConnectWithoutOutletInput[]
+    createMany?: PurchaseOrderCreateManyOutletInputEnvelope
+    connect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+  }
+
+  export type MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutOutletInput, MenuProfileOutletUncheckedCreateWithoutOutletInput> | MenuProfileOutletCreateWithoutOutletInput[] | MenuProfileOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutOutletInput | MenuProfileOutletCreateOrConnectWithoutOutletInput[]
+    createMany?: MenuProfileOutletCreateManyOutletInputEnvelope
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+  }
+
+  export type UserOutletUncheckedCreateNestedManyWithoutOutletInput = {
+    create?: XOR<UserOutletCreateWithoutOutletInput, UserOutletUncheckedCreateWithoutOutletInput> | UserOutletCreateWithoutOutletInput[] | UserOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutOutletInput | UserOutletCreateOrConnectWithoutOutletInput[]
+    createMany?: UserOutletCreateManyOutletInputEnvelope
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
   }
 
   export type StockBalanceUpdateManyWithoutOutletNestedInput = {
@@ -126037,6 +128297,160 @@ export namespace Prisma {
     deleteMany?: PurchaseReturnScalarWhereInput | PurchaseReturnScalarWhereInput[]
   }
 
+  export type SalesUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<SalesCreateWithoutOutletInput, SalesUncheckedCreateWithoutOutletInput> | SalesCreateWithoutOutletInput[] | SalesUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutOutletInput | SalesCreateOrConnectWithoutOutletInput[]
+    upsert?: SalesUpsertWithWhereUniqueWithoutOutletInput | SalesUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: SalesCreateManyOutletInputEnvelope
+    set?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    disconnect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    delete?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    update?: SalesUpdateWithWhereUniqueWithoutOutletInput | SalesUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: SalesUpdateManyWithWhereWithoutOutletInput | SalesUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: SalesScalarWhereInput | SalesScalarWhereInput[]
+  }
+
+  export type SalesUpdateManyWithoutStockSourceOutletNestedInput = {
+    create?: XOR<SalesCreateWithoutStockSourceOutletInput, SalesUncheckedCreateWithoutStockSourceOutletInput> | SalesCreateWithoutStockSourceOutletInput[] | SalesUncheckedCreateWithoutStockSourceOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutStockSourceOutletInput | SalesCreateOrConnectWithoutStockSourceOutletInput[]
+    upsert?: SalesUpsertWithWhereUniqueWithoutStockSourceOutletInput | SalesUpsertWithWhereUniqueWithoutStockSourceOutletInput[]
+    createMany?: SalesCreateManyStockSourceOutletInputEnvelope
+    set?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    disconnect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    delete?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    update?: SalesUpdateWithWhereUniqueWithoutStockSourceOutletInput | SalesUpdateWithWhereUniqueWithoutStockSourceOutletInput[]
+    updateMany?: SalesUpdateManyWithWhereWithoutStockSourceOutletInput | SalesUpdateManyWithWhereWithoutStockSourceOutletInput[]
+    deleteMany?: SalesScalarWhereInput | SalesScalarWhereInput[]
+  }
+
+  export type PaymentUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<PaymentCreateWithoutOutletInput, PaymentUncheckedCreateWithoutOutletInput> | PaymentCreateWithoutOutletInput[] | PaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PaymentCreateOrConnectWithoutOutletInput | PaymentCreateOrConnectWithoutOutletInput[]
+    upsert?: PaymentUpsertWithWhereUniqueWithoutOutletInput | PaymentUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: PaymentCreateManyOutletInputEnvelope
+    set?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    disconnect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    delete?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    connect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    update?: PaymentUpdateWithWhereUniqueWithoutOutletInput | PaymentUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: PaymentUpdateManyWithWhereWithoutOutletInput | PaymentUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
+  }
+
+  export type RegisterLogUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<RegisterLogCreateWithoutOutletInput, RegisterLogUncheckedCreateWithoutOutletInput> | RegisterLogCreateWithoutOutletInput[] | RegisterLogUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: RegisterLogCreateOrConnectWithoutOutletInput | RegisterLogCreateOrConnectWithoutOutletInput[]
+    upsert?: RegisterLogUpsertWithWhereUniqueWithoutOutletInput | RegisterLogUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: RegisterLogCreateManyOutletInputEnvelope
+    set?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    disconnect?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    delete?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    connect?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    update?: RegisterLogUpdateWithWhereUniqueWithoutOutletInput | RegisterLogUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: RegisterLogUpdateManyWithWhereWithoutOutletInput | RegisterLogUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: RegisterLogScalarWhereInput | RegisterLogScalarWhereInput[]
+  }
+
+  export type SessionUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<SessionCreateWithoutOutletInput, SessionUncheckedCreateWithoutOutletInput> | SessionCreateWithoutOutletInput[] | SessionUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SessionCreateOrConnectWithoutOutletInput | SessionCreateOrConnectWithoutOutletInput[]
+    upsert?: SessionUpsertWithWhereUniqueWithoutOutletInput | SessionUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: SessionCreateManyOutletInputEnvelope
+    set?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    disconnect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    delete?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    connect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    update?: SessionUpdateWithWhereUniqueWithoutOutletInput | SessionUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: SessionUpdateManyWithWhereWithoutOutletInput | SessionUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: SessionScalarWhereInput | SessionScalarWhereInput[]
+  }
+
+  export type InvoiceUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<InvoiceCreateWithoutOutletInput, InvoiceUncheckedCreateWithoutOutletInput> | InvoiceCreateWithoutOutletInput[] | InvoiceUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutOutletInput | InvoiceCreateOrConnectWithoutOutletInput[]
+    upsert?: InvoiceUpsertWithWhereUniqueWithoutOutletInput | InvoiceUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: InvoiceCreateManyOutletInputEnvelope
+    set?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    disconnect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    delete?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    update?: InvoiceUpdateWithWhereUniqueWithoutOutletInput | InvoiceUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: InvoiceUpdateManyWithWhereWithoutOutletInput | InvoiceUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: InvoiceScalarWhereInput | InvoiceScalarWhereInput[]
+  }
+
+  export type DeliveryOrderUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<DeliveryOrderCreateWithoutOutletInput, DeliveryOrderUncheckedCreateWithoutOutletInput> | DeliveryOrderCreateWithoutOutletInput[] | DeliveryOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutOutletInput | DeliveryOrderCreateOrConnectWithoutOutletInput[]
+    upsert?: DeliveryOrderUpsertWithWhereUniqueWithoutOutletInput | DeliveryOrderUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: DeliveryOrderCreateManyOutletInputEnvelope
+    set?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    disconnect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    delete?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    update?: DeliveryOrderUpdateWithWhereUniqueWithoutOutletInput | DeliveryOrderUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: DeliveryOrderUpdateManyWithWhereWithoutOutletInput | DeliveryOrderUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
+  }
+
+  export type QuotationUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<QuotationCreateWithoutOutletInput, QuotationUncheckedCreateWithoutOutletInput> | QuotationCreateWithoutOutletInput[] | QuotationUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: QuotationCreateOrConnectWithoutOutletInput | QuotationCreateOrConnectWithoutOutletInput[]
+    upsert?: QuotationUpsertWithWhereUniqueWithoutOutletInput | QuotationUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: QuotationCreateManyOutletInputEnvelope
+    set?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    disconnect?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    delete?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    connect?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    update?: QuotationUpdateWithWhereUniqueWithoutOutletInput | QuotationUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: QuotationUpdateManyWithWhereWithoutOutletInput | QuotationUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: QuotationScalarWhereInput | QuotationScalarWhereInput[]
+  }
+
+  export type PurchaseOrderUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<PurchaseOrderCreateWithoutOutletInput, PurchaseOrderUncheckedCreateWithoutOutletInput> | PurchaseOrderCreateWithoutOutletInput[] | PurchaseOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PurchaseOrderCreateOrConnectWithoutOutletInput | PurchaseOrderCreateOrConnectWithoutOutletInput[]
+    upsert?: PurchaseOrderUpsertWithWhereUniqueWithoutOutletInput | PurchaseOrderUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: PurchaseOrderCreateManyOutletInputEnvelope
+    set?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    disconnect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    delete?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    connect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    update?: PurchaseOrderUpdateWithWhereUniqueWithoutOutletInput | PurchaseOrderUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: PurchaseOrderUpdateManyWithWhereWithoutOutletInput | PurchaseOrderUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: PurchaseOrderScalarWhereInput | PurchaseOrderScalarWhereInput[]
+  }
+
+  export type MenuProfileOutletUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutOutletInput, MenuProfileOutletUncheckedCreateWithoutOutletInput> | MenuProfileOutletCreateWithoutOutletInput[] | MenuProfileOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutOutletInput | MenuProfileOutletCreateOrConnectWithoutOutletInput[]
+    upsert?: MenuProfileOutletUpsertWithWhereUniqueWithoutOutletInput | MenuProfileOutletUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: MenuProfileOutletCreateManyOutletInputEnvelope
+    set?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    disconnect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    delete?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    update?: MenuProfileOutletUpdateWithWhereUniqueWithoutOutletInput | MenuProfileOutletUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: MenuProfileOutletUpdateManyWithWhereWithoutOutletInput | MenuProfileOutletUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: MenuProfileOutletScalarWhereInput | MenuProfileOutletScalarWhereInput[]
+  }
+
+  export type UserOutletUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<UserOutletCreateWithoutOutletInput, UserOutletUncheckedCreateWithoutOutletInput> | UserOutletCreateWithoutOutletInput[] | UserOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutOutletInput | UserOutletCreateOrConnectWithoutOutletInput[]
+    upsert?: UserOutletUpsertWithWhereUniqueWithoutOutletInput | UserOutletUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: UserOutletCreateManyOutletInputEnvelope
+    set?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    disconnect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    delete?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    update?: UserOutletUpdateWithWhereUniqueWithoutOutletInput | UserOutletUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: UserOutletUpdateManyWithWhereWithoutOutletInput | UserOutletUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: UserOutletScalarWhereInput | UserOutletScalarWhereInput[]
+  }
+
   export type StockBalanceUncheckedUpdateManyWithoutOutletNestedInput = {
     create?: XOR<StockBalanceCreateWithoutOutletInput, StockBalanceUncheckedCreateWithoutOutletInput> | StockBalanceCreateWithoutOutletInput[] | StockBalanceUncheckedCreateWithoutOutletInput[]
     connectOrCreate?: StockBalanceCreateOrConnectWithoutOutletInput | StockBalanceCreateOrConnectWithoutOutletInput[]
@@ -126175,6 +128589,160 @@ export namespace Prisma {
     update?: PurchaseReturnUpdateWithWhereUniqueWithoutOutletInput | PurchaseReturnUpdateWithWhereUniqueWithoutOutletInput[]
     updateMany?: PurchaseReturnUpdateManyWithWhereWithoutOutletInput | PurchaseReturnUpdateManyWithWhereWithoutOutletInput[]
     deleteMany?: PurchaseReturnScalarWhereInput | PurchaseReturnScalarWhereInput[]
+  }
+
+  export type SalesUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<SalesCreateWithoutOutletInput, SalesUncheckedCreateWithoutOutletInput> | SalesCreateWithoutOutletInput[] | SalesUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutOutletInput | SalesCreateOrConnectWithoutOutletInput[]
+    upsert?: SalesUpsertWithWhereUniqueWithoutOutletInput | SalesUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: SalesCreateManyOutletInputEnvelope
+    set?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    disconnect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    delete?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    update?: SalesUpdateWithWhereUniqueWithoutOutletInput | SalesUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: SalesUpdateManyWithWhereWithoutOutletInput | SalesUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: SalesScalarWhereInput | SalesScalarWhereInput[]
+  }
+
+  export type SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput = {
+    create?: XOR<SalesCreateWithoutStockSourceOutletInput, SalesUncheckedCreateWithoutStockSourceOutletInput> | SalesCreateWithoutStockSourceOutletInput[] | SalesUncheckedCreateWithoutStockSourceOutletInput[]
+    connectOrCreate?: SalesCreateOrConnectWithoutStockSourceOutletInput | SalesCreateOrConnectWithoutStockSourceOutletInput[]
+    upsert?: SalesUpsertWithWhereUniqueWithoutStockSourceOutletInput | SalesUpsertWithWhereUniqueWithoutStockSourceOutletInput[]
+    createMany?: SalesCreateManyStockSourceOutletInputEnvelope
+    set?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    disconnect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    delete?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    connect?: SalesWhereUniqueInput | SalesWhereUniqueInput[]
+    update?: SalesUpdateWithWhereUniqueWithoutStockSourceOutletInput | SalesUpdateWithWhereUniqueWithoutStockSourceOutletInput[]
+    updateMany?: SalesUpdateManyWithWhereWithoutStockSourceOutletInput | SalesUpdateManyWithWhereWithoutStockSourceOutletInput[]
+    deleteMany?: SalesScalarWhereInput | SalesScalarWhereInput[]
+  }
+
+  export type PaymentUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<PaymentCreateWithoutOutletInput, PaymentUncheckedCreateWithoutOutletInput> | PaymentCreateWithoutOutletInput[] | PaymentUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PaymentCreateOrConnectWithoutOutletInput | PaymentCreateOrConnectWithoutOutletInput[]
+    upsert?: PaymentUpsertWithWhereUniqueWithoutOutletInput | PaymentUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: PaymentCreateManyOutletInputEnvelope
+    set?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    disconnect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    delete?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    connect?: PaymentWhereUniqueInput | PaymentWhereUniqueInput[]
+    update?: PaymentUpdateWithWhereUniqueWithoutOutletInput | PaymentUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: PaymentUpdateManyWithWhereWithoutOutletInput | PaymentUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
+  }
+
+  export type RegisterLogUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<RegisterLogCreateWithoutOutletInput, RegisterLogUncheckedCreateWithoutOutletInput> | RegisterLogCreateWithoutOutletInput[] | RegisterLogUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: RegisterLogCreateOrConnectWithoutOutletInput | RegisterLogCreateOrConnectWithoutOutletInput[]
+    upsert?: RegisterLogUpsertWithWhereUniqueWithoutOutletInput | RegisterLogUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: RegisterLogCreateManyOutletInputEnvelope
+    set?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    disconnect?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    delete?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    connect?: RegisterLogWhereUniqueInput | RegisterLogWhereUniqueInput[]
+    update?: RegisterLogUpdateWithWhereUniqueWithoutOutletInput | RegisterLogUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: RegisterLogUpdateManyWithWhereWithoutOutletInput | RegisterLogUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: RegisterLogScalarWhereInput | RegisterLogScalarWhereInput[]
+  }
+
+  export type SessionUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<SessionCreateWithoutOutletInput, SessionUncheckedCreateWithoutOutletInput> | SessionCreateWithoutOutletInput[] | SessionUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: SessionCreateOrConnectWithoutOutletInput | SessionCreateOrConnectWithoutOutletInput[]
+    upsert?: SessionUpsertWithWhereUniqueWithoutOutletInput | SessionUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: SessionCreateManyOutletInputEnvelope
+    set?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    disconnect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    delete?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    connect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+    update?: SessionUpdateWithWhereUniqueWithoutOutletInput | SessionUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: SessionUpdateManyWithWhereWithoutOutletInput | SessionUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: SessionScalarWhereInput | SessionScalarWhereInput[]
+  }
+
+  export type InvoiceUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<InvoiceCreateWithoutOutletInput, InvoiceUncheckedCreateWithoutOutletInput> | InvoiceCreateWithoutOutletInput[] | InvoiceUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: InvoiceCreateOrConnectWithoutOutletInput | InvoiceCreateOrConnectWithoutOutletInput[]
+    upsert?: InvoiceUpsertWithWhereUniqueWithoutOutletInput | InvoiceUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: InvoiceCreateManyOutletInputEnvelope
+    set?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    disconnect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    delete?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+    update?: InvoiceUpdateWithWhereUniqueWithoutOutletInput | InvoiceUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: InvoiceUpdateManyWithWhereWithoutOutletInput | InvoiceUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: InvoiceScalarWhereInput | InvoiceScalarWhereInput[]
+  }
+
+  export type DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<DeliveryOrderCreateWithoutOutletInput, DeliveryOrderUncheckedCreateWithoutOutletInput> | DeliveryOrderCreateWithoutOutletInput[] | DeliveryOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutOutletInput | DeliveryOrderCreateOrConnectWithoutOutletInput[]
+    upsert?: DeliveryOrderUpsertWithWhereUniqueWithoutOutletInput | DeliveryOrderUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: DeliveryOrderCreateManyOutletInputEnvelope
+    set?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    disconnect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    delete?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    update?: DeliveryOrderUpdateWithWhereUniqueWithoutOutletInput | DeliveryOrderUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: DeliveryOrderUpdateManyWithWhereWithoutOutletInput | DeliveryOrderUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
+  }
+
+  export type QuotationUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<QuotationCreateWithoutOutletInput, QuotationUncheckedCreateWithoutOutletInput> | QuotationCreateWithoutOutletInput[] | QuotationUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: QuotationCreateOrConnectWithoutOutletInput | QuotationCreateOrConnectWithoutOutletInput[]
+    upsert?: QuotationUpsertWithWhereUniqueWithoutOutletInput | QuotationUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: QuotationCreateManyOutletInputEnvelope
+    set?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    disconnect?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    delete?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    connect?: QuotationWhereUniqueInput | QuotationWhereUniqueInput[]
+    update?: QuotationUpdateWithWhereUniqueWithoutOutletInput | QuotationUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: QuotationUpdateManyWithWhereWithoutOutletInput | QuotationUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: QuotationScalarWhereInput | QuotationScalarWhereInput[]
+  }
+
+  export type PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<PurchaseOrderCreateWithoutOutletInput, PurchaseOrderUncheckedCreateWithoutOutletInput> | PurchaseOrderCreateWithoutOutletInput[] | PurchaseOrderUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: PurchaseOrderCreateOrConnectWithoutOutletInput | PurchaseOrderCreateOrConnectWithoutOutletInput[]
+    upsert?: PurchaseOrderUpsertWithWhereUniqueWithoutOutletInput | PurchaseOrderUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: PurchaseOrderCreateManyOutletInputEnvelope
+    set?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    disconnect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    delete?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    connect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+    update?: PurchaseOrderUpdateWithWhereUniqueWithoutOutletInput | PurchaseOrderUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: PurchaseOrderUpdateManyWithWhereWithoutOutletInput | PurchaseOrderUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: PurchaseOrderScalarWhereInput | PurchaseOrderScalarWhereInput[]
+  }
+
+  export type MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutOutletInput, MenuProfileOutletUncheckedCreateWithoutOutletInput> | MenuProfileOutletCreateWithoutOutletInput[] | MenuProfileOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutOutletInput | MenuProfileOutletCreateOrConnectWithoutOutletInput[]
+    upsert?: MenuProfileOutletUpsertWithWhereUniqueWithoutOutletInput | MenuProfileOutletUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: MenuProfileOutletCreateManyOutletInputEnvelope
+    set?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    disconnect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    delete?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    update?: MenuProfileOutletUpdateWithWhereUniqueWithoutOutletInput | MenuProfileOutletUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: MenuProfileOutletUpdateManyWithWhereWithoutOutletInput | MenuProfileOutletUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: MenuProfileOutletScalarWhereInput | MenuProfileOutletScalarWhereInput[]
+  }
+
+  export type UserOutletUncheckedUpdateManyWithoutOutletNestedInput = {
+    create?: XOR<UserOutletCreateWithoutOutletInput, UserOutletUncheckedCreateWithoutOutletInput> | UserOutletCreateWithoutOutletInput[] | UserOutletUncheckedCreateWithoutOutletInput[]
+    connectOrCreate?: UserOutletCreateOrConnectWithoutOutletInput | UserOutletCreateOrConnectWithoutOutletInput[]
+    upsert?: UserOutletUpsertWithWhereUniqueWithoutOutletInput | UserOutletUpsertWithWhereUniqueWithoutOutletInput[]
+    createMany?: UserOutletCreateManyOutletInputEnvelope
+    set?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    disconnect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    delete?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    connect?: UserOutletWhereUniqueInput | UserOutletWhereUniqueInput[]
+    update?: UserOutletUpdateWithWhereUniqueWithoutOutletInput | UserOutletUpdateWithWhereUniqueWithoutOutletInput[]
+    updateMany?: UserOutletUpdateManyWithWhereWithoutOutletInput | UserOutletUpdateManyWithWhereWithoutOutletInput[]
+    deleteMany?: UserOutletScalarWhereInput | UserOutletScalarWhereInput[]
   }
 
   export type CategoryCreateNestedOneWithoutItemsInput = {
@@ -126897,6 +129465,18 @@ export namespace Prisma {
     deleteMany?: SubscriptionPackageCategoryScalarWhereInput | SubscriptionPackageCategoryScalarWhereInput[]
   }
 
+  export type OutletCreateNestedOneWithoutSalesInput = {
+    create?: XOR<OutletCreateWithoutSalesInput, OutletUncheckedCreateWithoutSalesInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutSalesInput
+    connect?: OutletWhereUniqueInput
+  }
+
+  export type OutletCreateNestedOneWithoutStockSourceSalesInput = {
+    create?: XOR<OutletCreateWithoutStockSourceSalesInput, OutletUncheckedCreateWithoutStockSourceSalesInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutStockSourceSalesInput
+    connect?: OutletWhereUniqueInput
+  }
+
   export type SalesItemCreateNestedManyWithoutSalesInput = {
     create?: XOR<SalesItemCreateWithoutSalesInput, SalesItemUncheckedCreateWithoutSalesInput> | SalesItemCreateWithoutSalesInput[] | SalesItemUncheckedCreateWithoutSalesInput[]
     connectOrCreate?: SalesItemCreateOrConnectWithoutSalesInput | SalesItemCreateOrConnectWithoutSalesInput[]
@@ -127017,6 +129597,24 @@ export namespace Prisma {
     decrement?: Decimal | DecimalJsLike | number | string
     multiply?: Decimal | DecimalJsLike | number | string
     divide?: Decimal | DecimalJsLike | number | string
+  }
+
+  export type OutletUpdateOneRequiredWithoutSalesNestedInput = {
+    create?: XOR<OutletCreateWithoutSalesInput, OutletUncheckedCreateWithoutSalesInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutSalesInput
+    upsert?: OutletUpsertWithoutSalesInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutSalesInput, OutletUpdateWithoutSalesInput>, OutletUncheckedUpdateWithoutSalesInput>
+  }
+
+  export type OutletUpdateOneWithoutStockSourceSalesNestedInput = {
+    create?: XOR<OutletCreateWithoutStockSourceSalesInput, OutletUncheckedCreateWithoutStockSourceSalesInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutStockSourceSalesInput
+    upsert?: OutletUpsertWithoutStockSourceSalesInput
+    disconnect?: OutletWhereInput | boolean
+    delete?: OutletWhereInput | boolean
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutStockSourceSalesInput, OutletUpdateWithoutStockSourceSalesInput>, OutletUncheckedUpdateWithoutStockSourceSalesInput>
   }
 
   export type SalesItemUpdateManyWithoutSalesNestedInput = {
@@ -127383,6 +129981,12 @@ export namespace Prisma {
     update?: XOR<XOR<SalesItemUpdateToOneWithWhereWithoutSelectedModifiersInput, SalesItemUpdateWithoutSelectedModifiersInput>, SalesItemUncheckedUpdateWithoutSelectedModifiersInput>
   }
 
+  export type OutletCreateNestedOneWithoutInvoicesInput = {
+    create?: XOR<OutletCreateWithoutInvoicesInput, OutletUncheckedCreateWithoutInvoicesInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutInvoicesInput
+    connect?: OutletWhereUniqueInput
+  }
+
   export type SessionCreateNestedOneWithoutInvoicesInput = {
     create?: XOR<SessionCreateWithoutInvoicesInput, SessionUncheckedCreateWithoutInvoicesInput>
     connectOrCreate?: SessionCreateOrConnectWithoutInvoicesInput
@@ -127447,6 +130051,14 @@ export namespace Prisma {
     connectOrCreate?: PurchaseReturnCreateOrConnectWithoutInvoiceInput | PurchaseReturnCreateOrConnectWithoutInvoiceInput[]
     createMany?: PurchaseReturnCreateManyInvoiceInputEnvelope
     connect?: PurchaseReturnWhereUniqueInput | PurchaseReturnWhereUniqueInput[]
+  }
+
+  export type OutletUpdateOneRequiredWithoutInvoicesNestedInput = {
+    create?: XOR<OutletCreateWithoutInvoicesInput, OutletUncheckedCreateWithoutInvoicesInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutInvoicesInput
+    upsert?: OutletUpsertWithoutInvoicesInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutInvoicesInput, OutletUpdateWithoutInvoicesInput>, OutletUncheckedUpdateWithoutInvoicesInput>
   }
 
   export type SessionUpdateOneWithoutInvoicesNestedInput = {
@@ -127701,6 +130313,12 @@ export namespace Prisma {
     deleteMany?: PurchaseReturnScalarWhereInput | PurchaseReturnScalarWhereInput[]
   }
 
+  export type OutletCreateNestedOneWithoutDeliveryOrdersInput = {
+    create?: XOR<OutletCreateWithoutDeliveryOrdersInput, OutletUncheckedCreateWithoutDeliveryOrdersInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutDeliveryOrdersInput
+    connect?: OutletWhereUniqueInput
+  }
+
   export type SessionCreateNestedOneWithoutDeliveryOrdersInput = {
     create?: XOR<SessionCreateWithoutDeliveryOrdersInput, SessionUncheckedCreateWithoutDeliveryOrdersInput>
     connectOrCreate?: SessionCreateOrConnectWithoutDeliveryOrdersInput
@@ -127745,6 +130363,14 @@ export namespace Prisma {
     connectOrCreate?: StockReceiptCreateOrConnectWithoutDeliveryOrderInput | StockReceiptCreateOrConnectWithoutDeliveryOrderInput[]
     createMany?: StockReceiptCreateManyDeliveryOrderInputEnvelope
     connect?: StockReceiptWhereUniqueInput | StockReceiptWhereUniqueInput[]
+  }
+
+  export type OutletUpdateOneRequiredWithoutDeliveryOrdersNestedInput = {
+    create?: XOR<OutletCreateWithoutDeliveryOrdersInput, OutletUncheckedCreateWithoutDeliveryOrdersInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutDeliveryOrdersInput
+    upsert?: OutletUpsertWithoutDeliveryOrdersInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutDeliveryOrdersInput, OutletUpdateWithoutDeliveryOrdersInput>, OutletUncheckedUpdateWithoutDeliveryOrdersInput>
   }
 
   export type SessionUpdateOneWithoutDeliveryOrdersNestedInput = {
@@ -127885,6 +130511,12 @@ export namespace Prisma {
     update?: XOR<XOR<ItemVariantUpdateToOneWithWhereWithoutDeliveryOrderItemsInput, ItemVariantUpdateWithoutDeliveryOrderItemsInput>, ItemVariantUncheckedUpdateWithoutDeliveryOrderItemsInput>
   }
 
+  export type OutletCreateNestedOneWithoutQuotationsInput = {
+    create?: XOR<OutletCreateWithoutQuotationsInput, OutletUncheckedCreateWithoutQuotationsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutQuotationsInput
+    connect?: OutletWhereUniqueInput
+  }
+
   export type SessionCreateNestedOneWithoutQuotationsInput = {
     create?: XOR<SessionCreateWithoutQuotationsInput, SessionUncheckedCreateWithoutQuotationsInput>
     connectOrCreate?: SessionCreateOrConnectWithoutQuotationsInput
@@ -127923,6 +130555,14 @@ export namespace Prisma {
     connectOrCreate?: PurchaseOrderCreateOrConnectWithoutQuotationInput | PurchaseOrderCreateOrConnectWithoutQuotationInput[]
     createMany?: PurchaseOrderCreateManyQuotationInputEnvelope
     connect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+  }
+
+  export type OutletUpdateOneRequiredWithoutQuotationsNestedInput = {
+    create?: XOR<OutletCreateWithoutQuotationsInput, OutletUncheckedCreateWithoutQuotationsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutQuotationsInput
+    upsert?: OutletUpsertWithoutQuotationsInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutQuotationsInput, OutletUpdateWithoutQuotationsInput>, OutletUncheckedUpdateWithoutQuotationsInput>
   }
 
   export type SessionUpdateOneWithoutQuotationsNestedInput = {
@@ -128043,6 +130683,12 @@ export namespace Prisma {
     update?: XOR<XOR<ItemVariantUpdateToOneWithWhereWithoutQuotationItemsInput, ItemVariantUpdateWithoutQuotationItemsInput>, ItemVariantUncheckedUpdateWithoutQuotationItemsInput>
   }
 
+  export type OutletCreateNestedOneWithoutPurchaseOrdersInput = {
+    create?: XOR<OutletCreateWithoutPurchaseOrdersInput, OutletUncheckedCreateWithoutPurchaseOrdersInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutPurchaseOrdersInput
+    connect?: OutletWhereUniqueInput
+  }
+
   export type QuotationCreateNestedOneWithoutPurchaseOrdersInput = {
     create?: XOR<QuotationCreateWithoutPurchaseOrdersInput, QuotationUncheckedCreateWithoutPurchaseOrdersInput>
     connectOrCreate?: QuotationCreateOrConnectWithoutPurchaseOrdersInput
@@ -128101,6 +130747,14 @@ export namespace Prisma {
     connectOrCreate?: InvoiceCreateOrConnectWithoutPurchaseOrderInput | InvoiceCreateOrConnectWithoutPurchaseOrderInput[]
     createMany?: InvoiceCreateManyPurchaseOrderInputEnvelope
     connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+  }
+
+  export type OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput = {
+    create?: XOR<OutletCreateWithoutPurchaseOrdersInput, OutletUncheckedCreateWithoutPurchaseOrdersInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutPurchaseOrdersInput
+    upsert?: OutletUpsertWithoutPurchaseOrdersInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutPurchaseOrdersInput, OutletUpdateWithoutPurchaseOrdersInput>, OutletUncheckedUpdateWithoutPurchaseOrdersInput>
   }
 
   export type QuotationUpdateOneWithoutPurchaseOrdersNestedInput = {
@@ -128259,6 +130913,12 @@ export namespace Prisma {
     update?: XOR<XOR<ItemVariantUpdateToOneWithWhereWithoutPurchaseOrderItemsInput, ItemVariantUpdateWithoutPurchaseOrderItemsInput>, ItemVariantUncheckedUpdateWithoutPurchaseOrderItemsInput>
   }
 
+  export type OutletCreateNestedOneWithoutPaymentsInput = {
+    create?: XOR<OutletCreateWithoutPaymentsInput, OutletUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutPaymentsInput
+    connect?: OutletWhereUniqueInput
+  }
+
   export type CardInfoCreateNestedManyWithoutPaymentInput = {
     create?: XOR<CardInfoCreateWithoutPaymentInput, CardInfoUncheckedCreateWithoutPaymentInput> | CardInfoCreateWithoutPaymentInput[] | CardInfoUncheckedCreateWithoutPaymentInput[]
     connectOrCreate?: CardInfoCreateOrConnectWithoutPaymentInput | CardInfoCreateOrConnectWithoutPaymentInput[]
@@ -128291,6 +130951,14 @@ export namespace Prisma {
     connectOrCreate?: SplitBillCreateOrConnectWithoutPaymentInput | SplitBillCreateOrConnectWithoutPaymentInput[]
     createMany?: SplitBillCreateManyPaymentInputEnvelope
     connect?: SplitBillWhereUniqueInput | SplitBillWhereUniqueInput[]
+  }
+
+  export type OutletUpdateOneRequiredWithoutPaymentsNestedInput = {
+    create?: XOR<OutletCreateWithoutPaymentsInput, OutletUncheckedCreateWithoutPaymentsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutPaymentsInput
+    upsert?: OutletUpsertWithoutPaymentsInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutPaymentsInput, OutletUpdateWithoutPaymentsInput>, OutletUncheckedUpdateWithoutPaymentsInput>
   }
 
   export type CardInfoUpdateManyWithoutPaymentNestedInput = {
@@ -128357,10 +131025,24 @@ export namespace Prisma {
     deleteMany?: SplitBillScalarWhereInput | SplitBillScalarWhereInput[]
   }
 
+  export type OutletCreateNestedOneWithoutRegisterLogsInput = {
+    create?: XOR<OutletCreateWithoutRegisterLogsInput, OutletUncheckedCreateWithoutRegisterLogsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutRegisterLogsInput
+    connect?: OutletWhereUniqueInput
+  }
+
   export type SalesCreateNestedOneWithoutRegisterLogsInput = {
     create?: XOR<SalesCreateWithoutRegisterLogsInput, SalesUncheckedCreateWithoutRegisterLogsInput>
     connectOrCreate?: SalesCreateOrConnectWithoutRegisterLogsInput
     connect?: SalesWhereUniqueInput
+  }
+
+  export type OutletUpdateOneRequiredWithoutRegisterLogsNestedInput = {
+    create?: XOR<OutletCreateWithoutRegisterLogsInput, OutletUncheckedCreateWithoutRegisterLogsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutRegisterLogsInput
+    upsert?: OutletUpsertWithoutRegisterLogsInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutRegisterLogsInput, OutletUpdateWithoutRegisterLogsInput>, OutletUncheckedUpdateWithoutRegisterLogsInput>
   }
 
   export type SalesUpdateOneRequiredWithoutRegisterLogsNestedInput = {
@@ -128383,6 +131065,12 @@ export namespace Prisma {
     upsert?: PaymentUpsertWithoutCardInfosInput
     connect?: PaymentWhereUniqueInput
     update?: XOR<XOR<PaymentUpdateToOneWithWhereWithoutCardInfosInput, PaymentUpdateWithoutCardInfosInput>, PaymentUncheckedUpdateWithoutCardInfosInput>
+  }
+
+  export type OutletCreateNestedOneWithoutSessionsInput = {
+    create?: XOR<OutletCreateWithoutSessionsInput, OutletUncheckedCreateWithoutSessionsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutSessionsInput
+    connect?: OutletWhereUniqueInput
   }
 
   export type DeclarationCreateNestedManyWithoutSessionInput = {
@@ -128453,6 +131141,14 @@ export namespace Prisma {
     connectOrCreate?: InvoiceCreateOrConnectWithoutSessionInput | InvoiceCreateOrConnectWithoutSessionInput[]
     createMany?: InvoiceCreateManySessionInputEnvelope
     connect?: InvoiceWhereUniqueInput | InvoiceWhereUniqueInput[]
+  }
+
+  export type OutletUpdateOneRequiredWithoutSessionsNestedInput = {
+    create?: XOR<OutletCreateWithoutSessionsInput, OutletUncheckedCreateWithoutSessionsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutSessionsInput
+    upsert?: OutletUpsertWithoutSessionsInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutSessionsInput, OutletUpdateWithoutSessionsInput>, OutletUncheckedUpdateWithoutSessionsInput>
   }
 
   export type DeclarationUpdateManyWithoutSessionNestedInput = {
@@ -128843,6 +131539,34 @@ export namespace Prisma {
     update?: XOR<XOR<ItemVariantUpdateToOneWithWhereWithoutStockSnapshotsInput, ItemVariantUpdateWithoutStockSnapshotsInput>, ItemVariantUncheckedUpdateWithoutStockSnapshotsInput>
   }
 
+  export type OutletCreateNestedOneWithoutMenuProfileOutletsInput = {
+    create?: XOR<OutletCreateWithoutMenuProfileOutletsInput, OutletUncheckedCreateWithoutMenuProfileOutletsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutMenuProfileOutletsInput
+    connect?: OutletWhereUniqueInput
+  }
+
+  export type MenuProfileCreateNestedOneWithoutMenuProfileOutletsInput = {
+    create?: XOR<MenuProfileCreateWithoutMenuProfileOutletsInput, MenuProfileUncheckedCreateWithoutMenuProfileOutletsInput>
+    connectOrCreate?: MenuProfileCreateOrConnectWithoutMenuProfileOutletsInput
+    connect?: MenuProfileWhereUniqueInput
+  }
+
+  export type OutletUpdateOneRequiredWithoutMenuProfileOutletsNestedInput = {
+    create?: XOR<OutletCreateWithoutMenuProfileOutletsInput, OutletUncheckedCreateWithoutMenuProfileOutletsInput>
+    connectOrCreate?: OutletCreateOrConnectWithoutMenuProfileOutletsInput
+    upsert?: OutletUpsertWithoutMenuProfileOutletsInput
+    connect?: OutletWhereUniqueInput
+    update?: XOR<XOR<OutletUpdateToOneWithWhereWithoutMenuProfileOutletsInput, OutletUpdateWithoutMenuProfileOutletsInput>, OutletUncheckedUpdateWithoutMenuProfileOutletsInput>
+  }
+
+  export type MenuProfileUpdateOneRequiredWithoutMenuProfileOutletsNestedInput = {
+    create?: XOR<MenuProfileCreateWithoutMenuProfileOutletsInput, MenuProfileUncheckedCreateWithoutMenuProfileOutletsInput>
+    connectOrCreate?: MenuProfileCreateOrConnectWithoutMenuProfileOutletsInput
+    upsert?: MenuProfileUpsertWithoutMenuProfileOutletsInput
+    connect?: MenuProfileWhereUniqueInput
+    update?: XOR<XOR<MenuProfileUpdateToOneWithWhereWithoutMenuProfileOutletsInput, MenuProfileUpdateWithoutMenuProfileOutletsInput>, MenuProfileUncheckedUpdateWithoutMenuProfileOutletsInput>
+  }
+
   export type MenuCategoryCreateNestedManyWithoutMenuProfileInput = {
     create?: XOR<MenuCategoryCreateWithoutMenuProfileInput, MenuCategoryUncheckedCreateWithoutMenuProfileInput> | MenuCategoryCreateWithoutMenuProfileInput[] | MenuCategoryUncheckedCreateWithoutMenuProfileInput[]
     connectOrCreate?: MenuCategoryCreateOrConnectWithoutMenuProfileInput | MenuCategoryCreateOrConnectWithoutMenuProfileInput[]
@@ -128850,11 +131574,25 @@ export namespace Prisma {
     connect?: MenuCategoryWhereUniqueInput | MenuCategoryWhereUniqueInput[]
   }
 
+  export type MenuProfileOutletCreateNestedManyWithoutMenuProfileInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutMenuProfileInput, MenuProfileOutletUncheckedCreateWithoutMenuProfileInput> | MenuProfileOutletCreateWithoutMenuProfileInput[] | MenuProfileOutletUncheckedCreateWithoutMenuProfileInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutMenuProfileInput | MenuProfileOutletCreateOrConnectWithoutMenuProfileInput[]
+    createMany?: MenuProfileOutletCreateManyMenuProfileInputEnvelope
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+  }
+
   export type MenuCategoryUncheckedCreateNestedManyWithoutMenuProfileInput = {
     create?: XOR<MenuCategoryCreateWithoutMenuProfileInput, MenuCategoryUncheckedCreateWithoutMenuProfileInput> | MenuCategoryCreateWithoutMenuProfileInput[] | MenuCategoryUncheckedCreateWithoutMenuProfileInput[]
     connectOrCreate?: MenuCategoryCreateOrConnectWithoutMenuProfileInput | MenuCategoryCreateOrConnectWithoutMenuProfileInput[]
     createMany?: MenuCategoryCreateManyMenuProfileInputEnvelope
     connect?: MenuCategoryWhereUniqueInput | MenuCategoryWhereUniqueInput[]
+  }
+
+  export type MenuProfileOutletUncheckedCreateNestedManyWithoutMenuProfileInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutMenuProfileInput, MenuProfileOutletUncheckedCreateWithoutMenuProfileInput> | MenuProfileOutletCreateWithoutMenuProfileInput[] | MenuProfileOutletUncheckedCreateWithoutMenuProfileInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutMenuProfileInput | MenuProfileOutletCreateOrConnectWithoutMenuProfileInput[]
+    createMany?: MenuProfileOutletCreateManyMenuProfileInputEnvelope
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
   }
 
   export type MenuCategoryUpdateManyWithoutMenuProfileNestedInput = {
@@ -128871,6 +131609,20 @@ export namespace Prisma {
     deleteMany?: MenuCategoryScalarWhereInput | MenuCategoryScalarWhereInput[]
   }
 
+  export type MenuProfileOutletUpdateManyWithoutMenuProfileNestedInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutMenuProfileInput, MenuProfileOutletUncheckedCreateWithoutMenuProfileInput> | MenuProfileOutletCreateWithoutMenuProfileInput[] | MenuProfileOutletUncheckedCreateWithoutMenuProfileInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutMenuProfileInput | MenuProfileOutletCreateOrConnectWithoutMenuProfileInput[]
+    upsert?: MenuProfileOutletUpsertWithWhereUniqueWithoutMenuProfileInput | MenuProfileOutletUpsertWithWhereUniqueWithoutMenuProfileInput[]
+    createMany?: MenuProfileOutletCreateManyMenuProfileInputEnvelope
+    set?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    disconnect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    delete?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    update?: MenuProfileOutletUpdateWithWhereUniqueWithoutMenuProfileInput | MenuProfileOutletUpdateWithWhereUniqueWithoutMenuProfileInput[]
+    updateMany?: MenuProfileOutletUpdateManyWithWhereWithoutMenuProfileInput | MenuProfileOutletUpdateManyWithWhereWithoutMenuProfileInput[]
+    deleteMany?: MenuProfileOutletScalarWhereInput | MenuProfileOutletScalarWhereInput[]
+  }
+
   export type MenuCategoryUncheckedUpdateManyWithoutMenuProfileNestedInput = {
     create?: XOR<MenuCategoryCreateWithoutMenuProfileInput, MenuCategoryUncheckedCreateWithoutMenuProfileInput> | MenuCategoryCreateWithoutMenuProfileInput[] | MenuCategoryUncheckedCreateWithoutMenuProfileInput[]
     connectOrCreate?: MenuCategoryCreateOrConnectWithoutMenuProfileInput | MenuCategoryCreateOrConnectWithoutMenuProfileInput[]
@@ -128883,6 +131635,20 @@ export namespace Prisma {
     update?: MenuCategoryUpdateWithWhereUniqueWithoutMenuProfileInput | MenuCategoryUpdateWithWhereUniqueWithoutMenuProfileInput[]
     updateMany?: MenuCategoryUpdateManyWithWhereWithoutMenuProfileInput | MenuCategoryUpdateManyWithWhereWithoutMenuProfileInput[]
     deleteMany?: MenuCategoryScalarWhereInput | MenuCategoryScalarWhereInput[]
+  }
+
+  export type MenuProfileOutletUncheckedUpdateManyWithoutMenuProfileNestedInput = {
+    create?: XOR<MenuProfileOutletCreateWithoutMenuProfileInput, MenuProfileOutletUncheckedCreateWithoutMenuProfileInput> | MenuProfileOutletCreateWithoutMenuProfileInput[] | MenuProfileOutletUncheckedCreateWithoutMenuProfileInput[]
+    connectOrCreate?: MenuProfileOutletCreateOrConnectWithoutMenuProfileInput | MenuProfileOutletCreateOrConnectWithoutMenuProfileInput[]
+    upsert?: MenuProfileOutletUpsertWithWhereUniqueWithoutMenuProfileInput | MenuProfileOutletUpsertWithWhereUniqueWithoutMenuProfileInput[]
+    createMany?: MenuProfileOutletCreateManyMenuProfileInputEnvelope
+    set?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    disconnect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    delete?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    connect?: MenuProfileOutletWhereUniqueInput | MenuProfileOutletWhereUniqueInput[]
+    update?: MenuProfileOutletUpdateWithWhereUniqueWithoutMenuProfileInput | MenuProfileOutletUpdateWithWhereUniqueWithoutMenuProfileInput[]
+    updateMany?: MenuProfileOutletUpdateManyWithWhereWithoutMenuProfileInput | MenuProfileOutletUpdateManyWithWhereWithoutMenuProfileInput[]
+    deleteMany?: MenuProfileOutletScalarWhereInput | MenuProfileOutletScalarWhereInput[]
   }
 
   export type MenuProfileCreateNestedOneWithoutMenuCategoriesInput = {
@@ -132070,6 +134836,7 @@ export namespace Prisma {
     settings?: SettingCreateNestedManyWithoutUserInput
     overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
     notificationPreference?: NotificationPreferenceCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRolesInput = {
@@ -132089,6 +134856,7 @@ export namespace Prisma {
     settings?: SettingUncheckedCreateNestedManyWithoutUserInput
     overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
     notificationPreference?: NotificationPreferenceUncheckedCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRolesInput = {
@@ -132243,6 +135011,7 @@ export namespace Prisma {
     settings?: SettingCreateNestedManyWithoutUserInput
     roles?: RoleCreateNestedManyWithoutUsersInput
     overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
+    userOutlets?: UserOutletCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutNotificationPreferenceInput = {
@@ -132262,6 +135031,7 @@ export namespace Prisma {
     settings?: SettingUncheckedCreateNestedManyWithoutUserInput
     roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
     overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutNotificationPreferenceInput = {
@@ -132296,6 +135066,7 @@ export namespace Prisma {
     settings?: SettingUpdateManyWithoutUserNestedInput
     roles?: RoleUpdateManyWithoutUsersNestedInput
     overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutNotificationPreferenceInput = {
@@ -132315,6 +135086,7 @@ export namespace Prisma {
     settings?: SettingUncheckedUpdateManyWithoutUserNestedInput
     roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
     overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type SettingCreateWithoutUserInput = {
@@ -132437,6 +135209,36 @@ export namespace Prisma {
   export type NotificationPreferenceCreateOrConnectWithoutUserInput = {
     where: NotificationPreferenceWhereUniqueInput
     create: XOR<NotificationPreferenceCreateWithoutUserInput, NotificationPreferenceUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserOutletCreateWithoutUserInput = {
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    outlet: OutletCreateNestedOneWithoutUserOutletsInput
+  }
+
+  export type UserOutletUncheckedCreateWithoutUserInput = {
+    outletId: number
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type UserOutletCreateOrConnectWithoutUserInput = {
+    where: UserOutletWhereUniqueInput
+    create: XOR<UserOutletCreateWithoutUserInput, UserOutletUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserOutletCreateManyUserInputEnvelope = {
+    data: UserOutletCreateManyUserInput | UserOutletCreateManyUserInput[]
+    skipDuplicates?: boolean
   }
 
   export type SettingUpsertWithWhereUniqueWithoutUserInput = {
@@ -132569,6 +135371,296 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type UserOutletUpsertWithWhereUniqueWithoutUserInput = {
+    where: UserOutletWhereUniqueInput
+    update: XOR<UserOutletUpdateWithoutUserInput, UserOutletUncheckedUpdateWithoutUserInput>
+    create: XOR<UserOutletCreateWithoutUserInput, UserOutletUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserOutletUpdateWithWhereUniqueWithoutUserInput = {
+    where: UserOutletWhereUniqueInput
+    data: XOR<UserOutletUpdateWithoutUserInput, UserOutletUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserOutletUpdateManyWithWhereWithoutUserInput = {
+    where: UserOutletScalarWhereInput
+    data: XOR<UserOutletUpdateManyMutationInput, UserOutletUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type UserOutletScalarWhereInput = {
+    AND?: UserOutletScalarWhereInput | UserOutletScalarWhereInput[]
+    OR?: UserOutletScalarWhereInput[]
+    NOT?: UserOutletScalarWhereInput | UserOutletScalarWhereInput[]
+    userId?: IntFilter<"UserOutlet"> | number
+    outletId?: IntFilter<"UserOutlet"> | number
+    isPrimary?: BoolFilter<"UserOutlet"> | boolean
+    deleted?: BoolFilter<"UserOutlet"> | boolean
+    deletedAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"UserOutlet"> | Date | string | null
+    version?: IntNullableFilter<"UserOutlet"> | number | null
+  }
+
+  export type UserCreateWithoutUserOutletsInput = {
+    username: string
+    password: string
+    overridePin?: string | null
+    lastName?: string | null
+    firstName?: string | null
+    mobile?: string | null
+    email?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    settings?: SettingCreateNestedManyWithoutUserInput
+    roles?: RoleCreateNestedManyWithoutUsersInput
+    overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
+    notificationPreference?: NotificationPreferenceCreateNestedOneWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutUserOutletsInput = {
+    id?: number
+    username: string
+    password: string
+    overridePin?: string | null
+    lastName?: string | null
+    firstName?: string | null
+    mobile?: string | null
+    email?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    settings?: SettingUncheckedCreateNestedManyWithoutUserInput
+    roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
+    overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
+    notificationPreference?: NotificationPreferenceUncheckedCreateNestedOneWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutUserOutletsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutUserOutletsInput, UserUncheckedCreateWithoutUserOutletsInput>
+  }
+
+  export type OutletCreateWithoutUserOutletsInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutUserOutletsInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutUserOutletsInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutUserOutletsInput, OutletUncheckedCreateWithoutUserOutletsInput>
+  }
+
+  export type UserUpsertWithoutUserOutletsInput = {
+    update: XOR<UserUpdateWithoutUserOutletsInput, UserUncheckedUpdateWithoutUserOutletsInput>
+    create: XOR<UserCreateWithoutUserOutletsInput, UserUncheckedCreateWithoutUserOutletsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutUserOutletsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutUserOutletsInput, UserUncheckedUpdateWithoutUserOutletsInput>
+  }
+
+  export type UserUpdateWithoutUserOutletsInput = {
+    username?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
+    lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    firstName?: NullableStringFieldUpdateOperationsInput | string | null
+    mobile?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    settings?: SettingUpdateManyWithoutUserNestedInput
+    roles?: RoleUpdateManyWithoutUsersNestedInput
+    overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
+    notificationPreference?: NotificationPreferenceUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutUserOutletsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    username?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    overridePin?: NullableStringFieldUpdateOperationsInput | string | null
+    lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    firstName?: NullableStringFieldUpdateOperationsInput | string | null
+    mobile?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    settings?: SettingUncheckedUpdateManyWithoutUserNestedInput
+    roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
+    overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
+    notificationPreference?: NotificationPreferenceUncheckedUpdateOneWithoutUserNestedInput
+  }
+
+  export type OutletUpsertWithoutUserOutletsInput = {
+    update: XOR<OutletUpdateWithoutUserOutletsInput, OutletUncheckedUpdateWithoutUserOutletsInput>
+    create: XOR<OutletCreateWithoutUserOutletsInput, OutletUncheckedCreateWithoutUserOutletsInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutUserOutletsInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutUserOutletsInput, OutletUncheckedUpdateWithoutUserOutletsInput>
+  }
+
+  export type OutletUpdateWithoutUserOutletsInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutUserOutletsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type UserCreateWithoutOverrideRequestsInput = {
     username: string
     password: string
@@ -132585,6 +135677,7 @@ export namespace Prisma {
     settings?: SettingCreateNestedManyWithoutUserInput
     roles?: RoleCreateNestedManyWithoutUsersInput
     notificationPreference?: NotificationPreferenceCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutOverrideRequestsInput = {
@@ -132604,6 +135697,7 @@ export namespace Prisma {
     settings?: SettingUncheckedCreateNestedManyWithoutUserInput
     roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
     notificationPreference?: NotificationPreferenceUncheckedCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutOverrideRequestsInput = {
@@ -132638,6 +135732,7 @@ export namespace Prisma {
     settings?: SettingUpdateManyWithoutUserNestedInput
     roles?: RoleUpdateManyWithoutUsersNestedInput
     notificationPreference?: NotificationPreferenceUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOverrideRequestsInput = {
@@ -132657,6 +135752,7 @@ export namespace Prisma {
     settings?: SettingUncheckedUpdateManyWithoutUserNestedInput
     roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
     notificationPreference?: NotificationPreferenceUncheckedUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSettingsInput = {
@@ -132675,6 +135771,7 @@ export namespace Prisma {
     roles?: RoleCreateNestedManyWithoutUsersInput
     overrideRequests?: OverrideLogCreateNestedManyWithoutUserInput
     notificationPreference?: NotificationPreferenceCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSettingsInput = {
@@ -132694,6 +135791,7 @@ export namespace Prisma {
     roles?: RoleUncheckedCreateNestedManyWithoutUsersInput
     overrideRequests?: OverrideLogUncheckedCreateNestedManyWithoutUserInput
     notificationPreference?: NotificationPreferenceUncheckedCreateNestedOneWithoutUserInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSettingsInput = {
@@ -132725,6 +135823,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutSettingsInput = {
@@ -132752,6 +135861,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutSettingsInput = {
@@ -132786,6 +135906,7 @@ export namespace Prisma {
     roles?: RoleUpdateManyWithoutUsersNestedInput
     overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
     notificationPreference?: NotificationPreferenceUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSettingsInput = {
@@ -132805,6 +135926,7 @@ export namespace Prisma {
     roles?: RoleUncheckedUpdateManyWithoutUsersNestedInput
     overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
     notificationPreference?: NotificationPreferenceUncheckedUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type OutletUpsertWithoutSettingsInput = {
@@ -132842,6 +135964,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutSettingsInput = {
@@ -132869,6 +136002,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type ItemCreateWithoutSupplierInput = {
@@ -132972,7 +136116,6 @@ export namespace Prisma {
 
   export type QuotationCreateWithoutSupplierInput = {
     quotationNumber: string
-    outletId: number
     quotationDate?: Date | string | null
     validUntilDate?: Date | string | null
     discountType?: string | null
@@ -132994,6 +136137,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutQuotationsInput
     session?: SessionCreateNestedOneWithoutQuotationsInput
     quotationItems?: QuotationItemCreateNestedManyWithoutQuotationInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutQuotationInput
@@ -133041,7 +136185,6 @@ export namespace Prisma {
 
   export type PurchaseOrderCreateWithoutSupplierInput = {
     purchaseOrderNumber: string
-    outletId: number
     purchaseOrderDate?: Date | string | null
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
@@ -133060,6 +136203,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutPurchaseOrdersInput
     quotation?: QuotationCreateNestedOneWithoutPurchaseOrdersInput
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
@@ -133109,7 +136253,6 @@ export namespace Prisma {
   export type InvoiceCreateWithoutSupplierInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -133128,6 +136271,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     invoiceItems?: InvoiceItemCreateNestedManyWithoutInvoiceInput
@@ -133465,7 +136609,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutCustomerInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -133506,7 +136649,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -133520,6 +136662,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -134666,6 +137810,772 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type SalesCreateWithoutOutletInput = {
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
+    salesItems?: SalesItemCreateNestedManyWithoutSalesInput
+    payments?: PaymentCreateNestedManyWithoutSalesInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
+    customer?: CustomerCreateNestedOneWithoutSalesInput
+    table?: TableCreateNestedOneWithoutSalesInput
+    loyaltyTransactions?: LoyaltyTransactionCreateNestedManyWithoutSaleInput
+    loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
+    subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
+    customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
+  }
+
+  export type SalesUncheckedCreateWithoutOutletInput = {
+    id?: number
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    customerId?: number | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    tableId?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceOutletId?: number | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: number | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
+    loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
+    loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
+    subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
+  }
+
+  export type SalesCreateOrConnectWithoutOutletInput = {
+    where: SalesWhereUniqueInput
+    create: XOR<SalesCreateWithoutOutletInput, SalesUncheckedCreateWithoutOutletInput>
+  }
+
+  export type SalesCreateManyOutletInputEnvelope = {
+    data: SalesCreateManyOutletInput | SalesCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SalesCreateWithoutStockSourceOutletInput = {
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    salesItems?: SalesItemCreateNestedManyWithoutSalesInput
+    payments?: PaymentCreateNestedManyWithoutSalesInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
+    customer?: CustomerCreateNestedOneWithoutSalesInput
+    table?: TableCreateNestedOneWithoutSalesInput
+    loyaltyTransactions?: LoyaltyTransactionCreateNestedManyWithoutSaleInput
+    loyaltyPointBatches?: LoyaltyPointBatchCreateNestedManyWithoutSaleInput
+    subscriptionUsages?: SubscriptionUsageCreateNestedManyWithoutSaleInput
+    customerSubscription?: CustomerSubscriptionCreateNestedOneWithoutSalesInput
+    redeemedVoucher?: VoucherCreateNestedOneWithoutRedeemedInSaleInput
+  }
+
+  export type SalesUncheckedCreateWithoutStockSourceOutletInput = {
+    id?: number
+    outletId: number
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    customerId?: number | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    tableId?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: number | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemUncheckedCreateNestedManyWithoutSalesInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutSalesInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutSalesInput
+    loyaltyTransactions?: LoyaltyTransactionUncheckedCreateNestedManyWithoutSaleInput
+    loyaltyPointBatches?: LoyaltyPointBatchUncheckedCreateNestedManyWithoutSaleInput
+    subscriptionUsages?: SubscriptionUsageUncheckedCreateNestedManyWithoutSaleInput
+    redeemedVoucher?: VoucherUncheckedCreateNestedOneWithoutRedeemedInSaleInput
+  }
+
+  export type SalesCreateOrConnectWithoutStockSourceOutletInput = {
+    where: SalesWhereUniqueInput
+    create: XOR<SalesCreateWithoutStockSourceOutletInput, SalesUncheckedCreateWithoutStockSourceOutletInput>
+  }
+
+  export type SalesCreateManyStockSourceOutletInputEnvelope = {
+    data: SalesCreateManyStockSourceOutletInput | SalesCreateManyStockSourceOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PaymentCreateWithoutOutletInput = {
+    method: string
+    tenderedAmount: Decimal | DecimalJsLike | number | string
+    paidAmount: Decimal | DecimalJsLike | number | string
+    currencySymbol?: string
+    reference?: string
+    remark?: string
+    businessDate: Date | string
+    status: string
+    sessionId: number
+    eodId: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    cardInfos?: CardInfoCreateNestedManyWithoutPaymentInput
+    sales: SalesCreateNestedOneWithoutPaymentsInput
+    splitBills?: SplitBillCreateNestedManyWithoutPaymentInput
+  }
+
+  export type PaymentUncheckedCreateWithoutOutletInput = {
+    id?: number
+    method: string
+    tenderedAmount: Decimal | DecimalJsLike | number | string
+    paidAmount: Decimal | DecimalJsLike | number | string
+    currencySymbol?: string
+    salesId: number
+    reference?: string
+    remark?: string
+    businessDate: Date | string
+    status: string
+    sessionId: number
+    eodId: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    cardInfos?: CardInfoUncheckedCreateNestedManyWithoutPaymentInput
+    splitBills?: SplitBillUncheckedCreateNestedManyWithoutPaymentInput
+  }
+
+  export type PaymentCreateOrConnectWithoutOutletInput = {
+    where: PaymentWhereUniqueInput
+    create: XOR<PaymentCreateWithoutOutletInput, PaymentUncheckedCreateWithoutOutletInput>
+  }
+
+  export type PaymentCreateManyOutletInputEnvelope = {
+    data: PaymentCreateManyOutletInput | PaymentCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RegisterLogCreateWithoutOutletInput = {
+    type: string
+    modifiedAmount: Decimal | DecimalJsLike | number | string
+    currencySymbol?: string
+    remark?: string
+    status: string
+    sessionId: number
+    eodId: number
+    performedBy?: string | null
+    deleted?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    sales: SalesCreateNestedOneWithoutRegisterLogsInput
+  }
+
+  export type RegisterLogUncheckedCreateWithoutOutletInput = {
+    id?: number
+    type: string
+    modifiedAmount: Decimal | DecimalJsLike | number | string
+    currencySymbol?: string
+    salesId: number
+    remark?: string
+    status: string
+    sessionId: number
+    eodId: number
+    performedBy?: string | null
+    deleted?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type RegisterLogCreateOrConnectWithoutOutletInput = {
+    where: RegisterLogWhereUniqueInput
+    create: XOR<RegisterLogCreateWithoutOutletInput, RegisterLogUncheckedCreateWithoutOutletInput>
+  }
+
+  export type RegisterLogCreateManyOutletInputEnvelope = {
+    data: RegisterLogCreateManyOutletInput | RegisterLogCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SessionCreateWithoutOutletInput = {
+    businessDate: Date | string
+    openingDateTime?: Date | string | null
+    closingDateTime?: Date | string | null
+    openingAmount: Decimal | DecimalJsLike | number | string
+    totalSalesCount: number
+    openByUserID: number
+    closeByUserID: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    declarations?: DeclarationCreateNestedManyWithoutSessionInput
+    quotations?: QuotationCreateNestedManyWithoutSessionInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutSessionInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutSessionInput
+    invoices?: InvoiceCreateNestedManyWithoutSessionInput
+  }
+
+  export type SessionUncheckedCreateWithoutOutletInput = {
+    id?: number
+    businessDate: Date | string
+    openingDateTime?: Date | string | null
+    closingDateTime?: Date | string | null
+    openingAmount: Decimal | DecimalJsLike | number | string
+    totalSalesCount: number
+    openByUserID: number
+    closeByUserID: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    declarations?: DeclarationUncheckedCreateNestedManyWithoutSessionInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutSessionInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutSessionInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutSessionInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutSessionInput
+  }
+
+  export type SessionCreateOrConnectWithoutOutletInput = {
+    where: SessionWhereUniqueInput
+    create: XOR<SessionCreateWithoutOutletInput, SessionUncheckedCreateWithoutOutletInput>
+  }
+
+  export type SessionCreateManyOutletInputEnvelope = {
+    data: SessionCreateManyOutletInput | SessionCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type InvoiceCreateWithoutOutletInput = {
+    invoiceNumber: string
+    taxInvoiceNumber: string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    taxAmount: Decimal | DecimalJsLike | number | string
+    discountType?: string | null
+    discountAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    currency: string
+    status: string
+    invoiceDate?: Date | string | null
+    paymentDate?: Date | string | null
+    dueDate?: Date | string | null
+    remark?: string | null
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+    session?: SessionCreateNestedOneWithoutInvoicesInput
+    purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
+    supplier?: SupplierCreateNestedOneWithoutInvoicesInput
+    invoiceItems?: InvoiceItemCreateNestedManyWithoutInvoiceInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutInvoiceInput
+    invoiceSettlement?: InvoiceSettlementCreateNestedOneWithoutInvoicesInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutInvoiceInput
+  }
+
+  export type InvoiceUncheckedCreateWithoutOutletInput = {
+    id?: number
+    invoiceNumber: string
+    taxInvoiceNumber: string
+    purchaseOrderId?: number | null
+    invoiceSettlementId?: number | null
+    supplierId?: number | null
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    taxAmount: Decimal | DecimalJsLike | number | string
+    sessionId?: number | null
+    discountType?: string | null
+    discountAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    currency: string
+    status: string
+    invoiceDate?: Date | string | null
+    paymentDate?: Date | string | null
+    dueDate?: Date | string | null
+    remark?: string | null
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+    invoiceItems?: InvoiceItemUncheckedCreateNestedManyWithoutInvoiceInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutInvoiceInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutInvoiceInput
+  }
+
+  export type InvoiceCreateOrConnectWithoutOutletInput = {
+    where: InvoiceWhereUniqueInput
+    create: XOR<InvoiceCreateWithoutOutletInput, InvoiceUncheckedCreateWithoutOutletInput>
+  }
+
+  export type InvoiceCreateManyOutletInputEnvelope = {
+    data: InvoiceCreateManyOutletInput | InvoiceCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type DeliveryOrderCreateWithoutOutletInput = {
+    trackingNumber?: string | null
+    customerId?: number | null
+    supplierId?: number | null
+    deliveryDate?: Date | string | null
+    deliveryStreet?: string | null
+    deliveryCity?: string | null
+    deliveryState?: string | null
+    deliveryPostalCode?: string | null
+    deliveryCountry?: string | null
+    status: string
+    remark?: string | null
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    session?: SessionCreateNestedOneWithoutDeliveryOrdersInput
+    purchaseOrder?: PurchaseOrderCreateNestedOneWithoutDeliveryOrdersInput
+    invoice?: InvoiceCreateNestedOneWithoutDeliveryOrdersInput
+    deliveryOrderItems?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutDeliveryOrderInput
+  }
+
+  export type DeliveryOrderUncheckedCreateWithoutOutletInput = {
+    id?: number
+    trackingNumber?: string | null
+    customerId?: number | null
+    purchaseOrderId?: number | null
+    supplierId?: number | null
+    invoiceId?: number | null
+    sessionId?: number | null
+    deliveryDate?: Date | string | null
+    deliveryStreet?: string | null
+    deliveryCity?: string | null
+    deliveryState?: string | null
+    deliveryPostalCode?: string | null
+    deliveryCountry?: string | null
+    status: string
+    remark?: string | null
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    deliveryOrderItems?: DeliveryOrderItemUncheckedCreateNestedManyWithoutDeliveryOrderInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutDeliveryOrderInput
+  }
+
+  export type DeliveryOrderCreateOrConnectWithoutOutletInput = {
+    where: DeliveryOrderWhereUniqueInput
+    create: XOR<DeliveryOrderCreateWithoutOutletInput, DeliveryOrderUncheckedCreateWithoutOutletInput>
+  }
+
+  export type DeliveryOrderCreateManyOutletInputEnvelope = {
+    data: DeliveryOrderCreateManyOutletInput | DeliveryOrderCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type QuotationCreateWithoutOutletInput = {
+    quotationNumber: string
+    quotationDate?: Date | string | null
+    validUntilDate?: Date | string | null
+    discountType?: string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
+    taxAmount?: Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: Decimal | DecimalJsLike | number | string | null
+    totalAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string | null
+    remark?: string | null
+    currency?: string
+    performedBy?: string | null
+    convertedToPOAt?: Date | string | null
+    convertedPOId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+    session?: SessionCreateNestedOneWithoutQuotationsInput
+    supplier: SupplierCreateNestedOneWithoutQuotationsInput
+    quotationItems?: QuotationItemCreateNestedManyWithoutQuotationInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutQuotationInput
+  }
+
+  export type QuotationUncheckedCreateWithoutOutletInput = {
+    id?: number
+    quotationNumber: string
+    supplierId: number
+    quotationDate?: Date | string | null
+    validUntilDate?: Date | string | null
+    sessionId?: number | null
+    discountType?: string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
+    taxAmount?: Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: Decimal | DecimalJsLike | number | string | null
+    totalAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string | null
+    remark?: string | null
+    currency?: string
+    performedBy?: string | null
+    convertedToPOAt?: Date | string | null
+    convertedPOId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+    quotationItems?: QuotationItemUncheckedCreateNestedManyWithoutQuotationInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutQuotationInput
+  }
+
+  export type QuotationCreateOrConnectWithoutOutletInput = {
+    where: QuotationWhereUniqueInput
+    create: XOR<QuotationCreateWithoutOutletInput, QuotationUncheckedCreateWithoutOutletInput>
+  }
+
+  export type QuotationCreateManyOutletInputEnvelope = {
+    data: QuotationCreateManyOutletInput | QuotationCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PurchaseOrderCreateWithoutOutletInput = {
+    purchaseOrderNumber: string
+    purchaseOrderDate?: Date | string | null
+    discountType?: string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
+    taxAmount?: Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: Decimal | DecimalJsLike | number | string | null
+    totalAmount?: Decimal | DecimalJsLike | number | string | null
+    status: string
+    remark?: string | null
+    currency?: string
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+    quotation?: QuotationCreateNestedOneWithoutPurchaseOrdersInput
+    session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
+    supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutPurchaseOrderInput
+    invoices?: InvoiceCreateNestedManyWithoutPurchaseOrderInput
+  }
+
+  export type PurchaseOrderUncheckedCreateWithoutOutletInput = {
+    id?: number
+    purchaseOrderNumber: string
+    supplierId: number
+    purchaseOrderDate?: Date | string | null
+    sessionId?: number | null
+    discountType?: string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
+    taxAmount?: Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: Decimal | DecimalJsLike | number | string | null
+    totalAmount?: Decimal | DecimalJsLike | number | string | null
+    status: string
+    remark?: string | null
+    currency?: string
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+    quotationId?: number | null
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutPurchaseOrderInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutPurchaseOrderInput
+  }
+
+  export type PurchaseOrderCreateOrConnectWithoutOutletInput = {
+    where: PurchaseOrderWhereUniqueInput
+    create: XOR<PurchaseOrderCreateWithoutOutletInput, PurchaseOrderUncheckedCreateWithoutOutletInput>
+  }
+
+  export type PurchaseOrderCreateManyOutletInputEnvelope = {
+    data: PurchaseOrderCreateManyOutletInput | PurchaseOrderCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type MenuProfileOutletCreateWithoutOutletInput = {
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    menuProfile: MenuProfileCreateNestedOneWithoutMenuProfileOutletsInput
+  }
+
+  export type MenuProfileOutletUncheckedCreateWithoutOutletInput = {
+    id?: number
+    menuProfileID: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type MenuProfileOutletCreateOrConnectWithoutOutletInput = {
+    where: MenuProfileOutletWhereUniqueInput
+    create: XOR<MenuProfileOutletCreateWithoutOutletInput, MenuProfileOutletUncheckedCreateWithoutOutletInput>
+  }
+
+  export type MenuProfileOutletCreateManyOutletInputEnvelope = {
+    data: MenuProfileOutletCreateManyOutletInput | MenuProfileOutletCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserOutletCreateWithoutOutletInput = {
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    user: UserCreateNestedOneWithoutUserOutletsInput
+  }
+
+  export type UserOutletUncheckedCreateWithoutOutletInput = {
+    userId: number
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type UserOutletCreateOrConnectWithoutOutletInput = {
+    where: UserOutletWhereUniqueInput
+    create: XOR<UserOutletCreateWithoutOutletInput, UserOutletUncheckedCreateWithoutOutletInput>
+  }
+
+  export type UserOutletCreateManyOutletInputEnvelope = {
+    data: UserOutletCreateManyOutletInput | UserOutletCreateManyOutletInput[]
+    skipDuplicates?: boolean
+  }
+
   export type StockBalanceUpsertWithWhereUniqueWithoutOutletInput = {
     where: StockBalanceWhereUniqueInput
     update: XOR<StockBalanceUpdateWithoutOutletInput, StockBalanceUncheckedUpdateWithoutOutletInput>
@@ -134933,6 +138843,290 @@ export namespace Prisma {
   export type PurchaseReturnUpdateManyWithWhereWithoutOutletInput = {
     where: PurchaseReturnScalarWhereInput
     data: XOR<PurchaseReturnUpdateManyMutationInput, PurchaseReturnUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type SalesUpsertWithWhereUniqueWithoutOutletInput = {
+    where: SalesWhereUniqueInput
+    update: XOR<SalesUpdateWithoutOutletInput, SalesUncheckedUpdateWithoutOutletInput>
+    create: XOR<SalesCreateWithoutOutletInput, SalesUncheckedCreateWithoutOutletInput>
+  }
+
+  export type SalesUpdateWithWhereUniqueWithoutOutletInput = {
+    where: SalesWhereUniqueInput
+    data: XOR<SalesUpdateWithoutOutletInput, SalesUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type SalesUpdateManyWithWhereWithoutOutletInput = {
+    where: SalesScalarWhereInput
+    data: XOR<SalesUpdateManyMutationInput, SalesUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type SalesUpsertWithWhereUniqueWithoutStockSourceOutletInput = {
+    where: SalesWhereUniqueInput
+    update: XOR<SalesUpdateWithoutStockSourceOutletInput, SalesUncheckedUpdateWithoutStockSourceOutletInput>
+    create: XOR<SalesCreateWithoutStockSourceOutletInput, SalesUncheckedCreateWithoutStockSourceOutletInput>
+  }
+
+  export type SalesUpdateWithWhereUniqueWithoutStockSourceOutletInput = {
+    where: SalesWhereUniqueInput
+    data: XOR<SalesUpdateWithoutStockSourceOutletInput, SalesUncheckedUpdateWithoutStockSourceOutletInput>
+  }
+
+  export type SalesUpdateManyWithWhereWithoutStockSourceOutletInput = {
+    where: SalesScalarWhereInput
+    data: XOR<SalesUpdateManyMutationInput, SalesUncheckedUpdateManyWithoutStockSourceOutletInput>
+  }
+
+  export type PaymentUpsertWithWhereUniqueWithoutOutletInput = {
+    where: PaymentWhereUniqueInput
+    update: XOR<PaymentUpdateWithoutOutletInput, PaymentUncheckedUpdateWithoutOutletInput>
+    create: XOR<PaymentCreateWithoutOutletInput, PaymentUncheckedCreateWithoutOutletInput>
+  }
+
+  export type PaymentUpdateWithWhereUniqueWithoutOutletInput = {
+    where: PaymentWhereUniqueInput
+    data: XOR<PaymentUpdateWithoutOutletInput, PaymentUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type PaymentUpdateManyWithWhereWithoutOutletInput = {
+    where: PaymentScalarWhereInput
+    data: XOR<PaymentUpdateManyMutationInput, PaymentUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type PaymentScalarWhereInput = {
+    AND?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
+    OR?: PaymentScalarWhereInput[]
+    NOT?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
+    id?: IntFilter<"Payment"> | number
+    method?: StringFilter<"Payment"> | string
+    tenderedAmount?: DecimalFilter<"Payment"> | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFilter<"Payment"> | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFilter<"Payment"> | string
+    salesId?: IntFilter<"Payment"> | number
+    reference?: StringFilter<"Payment"> | string
+    remark?: StringFilter<"Payment"> | string
+    businessDate?: DateTimeFilter<"Payment"> | Date | string
+    status?: StringFilter<"Payment"> | string
+    outletId?: IntFilter<"Payment"> | number
+    sessionId?: IntFilter<"Payment"> | number
+    eodId?: IntFilter<"Payment"> | number
+    performedBy?: StringNullableFilter<"Payment"> | string | null
+    deleted?: BoolFilter<"Payment"> | boolean
+    deletedAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
+    version?: IntNullableFilter<"Payment"> | number | null
+  }
+
+  export type RegisterLogUpsertWithWhereUniqueWithoutOutletInput = {
+    where: RegisterLogWhereUniqueInput
+    update: XOR<RegisterLogUpdateWithoutOutletInput, RegisterLogUncheckedUpdateWithoutOutletInput>
+    create: XOR<RegisterLogCreateWithoutOutletInput, RegisterLogUncheckedCreateWithoutOutletInput>
+  }
+
+  export type RegisterLogUpdateWithWhereUniqueWithoutOutletInput = {
+    where: RegisterLogWhereUniqueInput
+    data: XOR<RegisterLogUpdateWithoutOutletInput, RegisterLogUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type RegisterLogUpdateManyWithWhereWithoutOutletInput = {
+    where: RegisterLogScalarWhereInput
+    data: XOR<RegisterLogUpdateManyMutationInput, RegisterLogUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type RegisterLogScalarWhereInput = {
+    AND?: RegisterLogScalarWhereInput | RegisterLogScalarWhereInput[]
+    OR?: RegisterLogScalarWhereInput[]
+    NOT?: RegisterLogScalarWhereInput | RegisterLogScalarWhereInput[]
+    id?: IntFilter<"RegisterLog"> | number
+    type?: StringFilter<"RegisterLog"> | string
+    modifiedAmount?: DecimalFilter<"RegisterLog"> | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFilter<"RegisterLog"> | string
+    salesId?: IntFilter<"RegisterLog"> | number
+    remark?: StringFilter<"RegisterLog"> | string
+    status?: StringFilter<"RegisterLog"> | string
+    outletId?: IntFilter<"RegisterLog"> | number
+    sessionId?: IntFilter<"RegisterLog"> | number
+    eodId?: IntFilter<"RegisterLog"> | number
+    performedBy?: StringNullableFilter<"RegisterLog"> | string | null
+    deleted?: BoolFilter<"RegisterLog"> | boolean
+    createdAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
+    version?: IntNullableFilter<"RegisterLog"> | number | null
+  }
+
+  export type SessionUpsertWithWhereUniqueWithoutOutletInput = {
+    where: SessionWhereUniqueInput
+    update: XOR<SessionUpdateWithoutOutletInput, SessionUncheckedUpdateWithoutOutletInput>
+    create: XOR<SessionCreateWithoutOutletInput, SessionUncheckedCreateWithoutOutletInput>
+  }
+
+  export type SessionUpdateWithWhereUniqueWithoutOutletInput = {
+    where: SessionWhereUniqueInput
+    data: XOR<SessionUpdateWithoutOutletInput, SessionUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type SessionUpdateManyWithWhereWithoutOutletInput = {
+    where: SessionScalarWhereInput
+    data: XOR<SessionUpdateManyMutationInput, SessionUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type SessionScalarWhereInput = {
+    AND?: SessionScalarWhereInput | SessionScalarWhereInput[]
+    OR?: SessionScalarWhereInput[]
+    NOT?: SessionScalarWhereInput | SessionScalarWhereInput[]
+    id?: IntFilter<"Session"> | number
+    outletId?: IntFilter<"Session"> | number
+    businessDate?: DateTimeFilter<"Session"> | Date | string
+    openingDateTime?: DateTimeNullableFilter<"Session"> | Date | string | null
+    closingDateTime?: DateTimeNullableFilter<"Session"> | Date | string | null
+    openingAmount?: DecimalFilter<"Session"> | Decimal | DecimalJsLike | number | string
+    totalSalesCount?: IntFilter<"Session"> | number
+    openByUserID?: IntFilter<"Session"> | number
+    closeByUserID?: IntFilter<"Session"> | number
+    deleted?: BoolFilter<"Session"> | boolean
+    deletedAt?: DateTimeNullableFilter<"Session"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"Session"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"Session"> | Date | string | null
+    version?: IntNullableFilter<"Session"> | number | null
+  }
+
+  export type InvoiceUpsertWithWhereUniqueWithoutOutletInput = {
+    where: InvoiceWhereUniqueInput
+    update: XOR<InvoiceUpdateWithoutOutletInput, InvoiceUncheckedUpdateWithoutOutletInput>
+    create: XOR<InvoiceCreateWithoutOutletInput, InvoiceUncheckedCreateWithoutOutletInput>
+  }
+
+  export type InvoiceUpdateWithWhereUniqueWithoutOutletInput = {
+    where: InvoiceWhereUniqueInput
+    data: XOR<InvoiceUpdateWithoutOutletInput, InvoiceUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type InvoiceUpdateManyWithWhereWithoutOutletInput = {
+    where: InvoiceScalarWhereInput
+    data: XOR<InvoiceUpdateManyMutationInput, InvoiceUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type DeliveryOrderUpsertWithWhereUniqueWithoutOutletInput = {
+    where: DeliveryOrderWhereUniqueInput
+    update: XOR<DeliveryOrderUpdateWithoutOutletInput, DeliveryOrderUncheckedUpdateWithoutOutletInput>
+    create: XOR<DeliveryOrderCreateWithoutOutletInput, DeliveryOrderUncheckedCreateWithoutOutletInput>
+  }
+
+  export type DeliveryOrderUpdateWithWhereUniqueWithoutOutletInput = {
+    where: DeliveryOrderWhereUniqueInput
+    data: XOR<DeliveryOrderUpdateWithoutOutletInput, DeliveryOrderUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type DeliveryOrderUpdateManyWithWhereWithoutOutletInput = {
+    where: DeliveryOrderScalarWhereInput
+    data: XOR<DeliveryOrderUpdateManyMutationInput, DeliveryOrderUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type DeliveryOrderScalarWhereInput = {
+    AND?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
+    OR?: DeliveryOrderScalarWhereInput[]
+    NOT?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
+    id?: IntFilter<"DeliveryOrder"> | number
+    trackingNumber?: StringNullableFilter<"DeliveryOrder"> | string | null
+    outletId?: IntFilter<"DeliveryOrder"> | number
+    customerId?: IntNullableFilter<"DeliveryOrder"> | number | null
+    purchaseOrderId?: IntNullableFilter<"DeliveryOrder"> | number | null
+    supplierId?: IntNullableFilter<"DeliveryOrder"> | number | null
+    invoiceId?: IntNullableFilter<"DeliveryOrder"> | number | null
+    sessionId?: IntNullableFilter<"DeliveryOrder"> | number | null
+    deliveryDate?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
+    deliveryStreet?: StringNullableFilter<"DeliveryOrder"> | string | null
+    deliveryCity?: StringNullableFilter<"DeliveryOrder"> | string | null
+    deliveryState?: StringNullableFilter<"DeliveryOrder"> | string | null
+    deliveryPostalCode?: StringNullableFilter<"DeliveryOrder"> | string | null
+    deliveryCountry?: StringNullableFilter<"DeliveryOrder"> | string | null
+    status?: StringFilter<"DeliveryOrder"> | string
+    remark?: StringNullableFilter<"DeliveryOrder"> | string | null
+    performedBy?: StringNullableFilter<"DeliveryOrder"> | string | null
+    deleted?: BoolFilter<"DeliveryOrder"> | boolean
+    deletedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
+    version?: IntNullableFilter<"DeliveryOrder"> | number | null
+  }
+
+  export type QuotationUpsertWithWhereUniqueWithoutOutletInput = {
+    where: QuotationWhereUniqueInput
+    update: XOR<QuotationUpdateWithoutOutletInput, QuotationUncheckedUpdateWithoutOutletInput>
+    create: XOR<QuotationCreateWithoutOutletInput, QuotationUncheckedCreateWithoutOutletInput>
+  }
+
+  export type QuotationUpdateWithWhereUniqueWithoutOutletInput = {
+    where: QuotationWhereUniqueInput
+    data: XOR<QuotationUpdateWithoutOutletInput, QuotationUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type QuotationUpdateManyWithWhereWithoutOutletInput = {
+    where: QuotationScalarWhereInput
+    data: XOR<QuotationUpdateManyMutationInput, QuotationUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type PurchaseOrderUpsertWithWhereUniqueWithoutOutletInput = {
+    where: PurchaseOrderWhereUniqueInput
+    update: XOR<PurchaseOrderUpdateWithoutOutletInput, PurchaseOrderUncheckedUpdateWithoutOutletInput>
+    create: XOR<PurchaseOrderCreateWithoutOutletInput, PurchaseOrderUncheckedCreateWithoutOutletInput>
+  }
+
+  export type PurchaseOrderUpdateWithWhereUniqueWithoutOutletInput = {
+    where: PurchaseOrderWhereUniqueInput
+    data: XOR<PurchaseOrderUpdateWithoutOutletInput, PurchaseOrderUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type PurchaseOrderUpdateManyWithWhereWithoutOutletInput = {
+    where: PurchaseOrderScalarWhereInput
+    data: XOR<PurchaseOrderUpdateManyMutationInput, PurchaseOrderUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type MenuProfileOutletUpsertWithWhereUniqueWithoutOutletInput = {
+    where: MenuProfileOutletWhereUniqueInput
+    update: XOR<MenuProfileOutletUpdateWithoutOutletInput, MenuProfileOutletUncheckedUpdateWithoutOutletInput>
+    create: XOR<MenuProfileOutletCreateWithoutOutletInput, MenuProfileOutletUncheckedCreateWithoutOutletInput>
+  }
+
+  export type MenuProfileOutletUpdateWithWhereUniqueWithoutOutletInput = {
+    where: MenuProfileOutletWhereUniqueInput
+    data: XOR<MenuProfileOutletUpdateWithoutOutletInput, MenuProfileOutletUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type MenuProfileOutletUpdateManyWithWhereWithoutOutletInput = {
+    where: MenuProfileOutletScalarWhereInput
+    data: XOR<MenuProfileOutletUpdateManyMutationInput, MenuProfileOutletUncheckedUpdateManyWithoutOutletInput>
+  }
+
+  export type MenuProfileOutletScalarWhereInput = {
+    AND?: MenuProfileOutletScalarWhereInput | MenuProfileOutletScalarWhereInput[]
+    OR?: MenuProfileOutletScalarWhereInput[]
+    NOT?: MenuProfileOutletScalarWhereInput | MenuProfileOutletScalarWhereInput[]
+    id?: IntFilter<"MenuProfileOutlet"> | number
+    outletId?: IntFilter<"MenuProfileOutlet"> | number
+    menuProfileID?: IntFilter<"MenuProfileOutlet"> | number
+    deleted?: BoolFilter<"MenuProfileOutlet"> | boolean
+    deletedAt?: DateTimeNullableFilter<"MenuProfileOutlet"> | Date | string | null
+    createdAt?: DateTimeNullableFilter<"MenuProfileOutlet"> | Date | string | null
+    updatedAt?: DateTimeNullableFilter<"MenuProfileOutlet"> | Date | string | null
+    version?: IntNullableFilter<"MenuProfileOutlet"> | number | null
+  }
+
+  export type UserOutletUpsertWithWhereUniqueWithoutOutletInput = {
+    where: UserOutletWhereUniqueInput
+    update: XOR<UserOutletUpdateWithoutOutletInput, UserOutletUncheckedUpdateWithoutOutletInput>
+    create: XOR<UserOutletCreateWithoutOutletInput, UserOutletUncheckedCreateWithoutOutletInput>
+  }
+
+  export type UserOutletUpdateWithWhereUniqueWithoutOutletInput = {
+    where: UserOutletWhereUniqueInput
+    data: XOR<UserOutletUpdateWithoutOutletInput, UserOutletUncheckedUpdateWithoutOutletInput>
+  }
+
+  export type UserOutletUpdateManyWithWhereWithoutOutletInput = {
+    where: UserOutletScalarWhereInput
+    data: XOR<UserOutletUpdateManyMutationInput, UserOutletUncheckedUpdateManyWithoutOutletInput>
   }
 
   export type CategoryCreateWithoutItemsInput = {
@@ -136381,6 +140575,166 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableFilter<"SubscriptionPackageCategory"> | Date | string | null
   }
 
+  export type OutletCreateWithoutSalesInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutSalesInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutSalesInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutSalesInput, OutletUncheckedCreateWithoutSalesInput>
+  }
+
+  export type OutletCreateWithoutStockSourceSalesInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutStockSourceSalesInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutStockSourceSalesInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutStockSourceSalesInput, OutletUncheckedCreateWithoutStockSourceSalesInput>
+  }
+
   export type SalesItemCreateWithoutSalesInput = {
     itemId: number
     itemName: string
@@ -136469,7 +140823,6 @@ export namespace Prisma {
     remark?: string
     businessDate: Date | string
     status: string
-    outletId: number
     sessionId: number
     eodId: number
     performedBy?: string | null
@@ -136478,6 +140831,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutPaymentsInput
     cardInfos?: CardInfoCreateNestedManyWithoutPaymentInput
     splitBills?: SplitBillCreateNestedManyWithoutPaymentInput
   }
@@ -136521,7 +140875,6 @@ export namespace Prisma {
     currencySymbol?: string
     remark?: string
     status: string
-    outletId: number
     sessionId: number
     eodId: number
     performedBy?: string | null
@@ -136529,6 +140882,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutRegisterLogsInput
   }
 
   export type RegisterLogUncheckedCreateWithoutSalesInput = {
@@ -136867,6 +141221,178 @@ export namespace Prisma {
     create: XOR<VoucherCreateWithoutRedeemedInSaleInput, VoucherUncheckedCreateWithoutRedeemedInSaleInput>
   }
 
+  export type OutletUpsertWithoutSalesInput = {
+    update: XOR<OutletUpdateWithoutSalesInput, OutletUncheckedUpdateWithoutSalesInput>
+    create: XOR<OutletCreateWithoutSalesInput, OutletUncheckedCreateWithoutSalesInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutSalesInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutSalesInput, OutletUncheckedUpdateWithoutSalesInput>
+  }
+
+  export type OutletUpdateWithoutSalesInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutSalesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUpsertWithoutStockSourceSalesInput = {
+    update: XOR<OutletUpdateWithoutStockSourceSalesInput, OutletUncheckedUpdateWithoutStockSourceSalesInput>
+    create: XOR<OutletCreateWithoutStockSourceSalesInput, OutletUncheckedCreateWithoutStockSourceSalesInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutStockSourceSalesInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutStockSourceSalesInput, OutletUncheckedUpdateWithoutStockSourceSalesInput>
+  }
+
+  export type OutletUpdateWithoutStockSourceSalesInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutStockSourceSalesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type SalesItemUpsertWithWhereUniqueWithoutSalesInput = {
     where: SalesItemWhereUniqueInput
     update: XOR<SalesItemUpdateWithoutSalesInput, SalesItemUncheckedUpdateWithoutSalesInput>
@@ -136936,31 +141462,6 @@ export namespace Prisma {
     data: XOR<PaymentUpdateManyMutationInput, PaymentUncheckedUpdateManyWithoutSalesInput>
   }
 
-  export type PaymentScalarWhereInput = {
-    AND?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
-    OR?: PaymentScalarWhereInput[]
-    NOT?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
-    id?: IntFilter<"Payment"> | number
-    method?: StringFilter<"Payment"> | string
-    tenderedAmount?: DecimalFilter<"Payment"> | Decimal | DecimalJsLike | number | string
-    paidAmount?: DecimalFilter<"Payment"> | Decimal | DecimalJsLike | number | string
-    currencySymbol?: StringFilter<"Payment"> | string
-    salesId?: IntFilter<"Payment"> | number
-    reference?: StringFilter<"Payment"> | string
-    remark?: StringFilter<"Payment"> | string
-    businessDate?: DateTimeFilter<"Payment"> | Date | string
-    status?: StringFilter<"Payment"> | string
-    outletId?: IntFilter<"Payment"> | number
-    sessionId?: IntFilter<"Payment"> | number
-    eodId?: IntFilter<"Payment"> | number
-    performedBy?: StringNullableFilter<"Payment"> | string | null
-    deleted?: BoolFilter<"Payment"> | boolean
-    deletedAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
-    createdAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
-    updatedAt?: DateTimeNullableFilter<"Payment"> | Date | string | null
-    version?: IntNullableFilter<"Payment"> | number | null
-  }
-
   export type RegisterLogUpsertWithWhereUniqueWithoutSalesInput = {
     where: RegisterLogWhereUniqueInput
     update: XOR<RegisterLogUpdateWithoutSalesInput, RegisterLogUncheckedUpdateWithoutSalesInput>
@@ -136975,27 +141476,6 @@ export namespace Prisma {
   export type RegisterLogUpdateManyWithWhereWithoutSalesInput = {
     where: RegisterLogScalarWhereInput
     data: XOR<RegisterLogUpdateManyMutationInput, RegisterLogUncheckedUpdateManyWithoutSalesInput>
-  }
-
-  export type RegisterLogScalarWhereInput = {
-    AND?: RegisterLogScalarWhereInput | RegisterLogScalarWhereInput[]
-    OR?: RegisterLogScalarWhereInput[]
-    NOT?: RegisterLogScalarWhereInput | RegisterLogScalarWhereInput[]
-    id?: IntFilter<"RegisterLog"> | number
-    type?: StringFilter<"RegisterLog"> | string
-    modifiedAmount?: DecimalFilter<"RegisterLog"> | Decimal | DecimalJsLike | number | string
-    currencySymbol?: StringFilter<"RegisterLog"> | string
-    salesId?: IntFilter<"RegisterLog"> | number
-    remark?: StringFilter<"RegisterLog"> | string
-    status?: StringFilter<"RegisterLog"> | string
-    outletId?: IntFilter<"RegisterLog"> | number
-    sessionId?: IntFilter<"RegisterLog"> | number
-    eodId?: IntFilter<"RegisterLog"> | number
-    performedBy?: StringNullableFilter<"RegisterLog"> | string | null
-    deleted?: BoolFilter<"RegisterLog"> | boolean
-    createdAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
-    updatedAt?: DateTimeNullableFilter<"RegisterLog"> | Date | string | null
-    version?: IntNullableFilter<"RegisterLog"> | number | null
   }
 
   export type CustomerUpsertWithoutSalesInput = {
@@ -137322,7 +141802,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutSalesItemsInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -137363,7 +141842,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -137377,6 +141855,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -137617,7 +142097,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutSalesItemsInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -137658,7 +142137,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -137672,6 +142150,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -138135,8 +142615,87 @@ export namespace Prisma {
     orderRouting?: OrderRoutingUncheckedUpdateManyWithoutSalesItemNestedInput
   }
 
+  export type OutletCreateWithoutInvoicesInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutInvoicesInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutInvoicesInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutInvoicesInput, OutletUncheckedCreateWithoutInvoicesInput>
+  }
+
   export type SessionCreateWithoutInvoicesInput = {
-    outletId: number
     businessDate: Date | string
     openingDateTime?: Date | string | null
     closingDateTime?: Date | string | null
@@ -138149,6 +142708,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutSessionsInput
     declarations?: DeclarationCreateNestedManyWithoutSessionInput
     quotations?: QuotationCreateNestedManyWithoutSessionInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutSessionInput
@@ -138183,7 +142743,6 @@ export namespace Prisma {
 
   export type PurchaseOrderCreateWithoutInvoicesInput = {
     purchaseOrderNumber: string
-    outletId: number
     purchaseOrderDate?: Date | string | null
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
@@ -138202,6 +142761,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutPurchaseOrdersInput
     quotation?: QuotationCreateNestedOneWithoutPurchaseOrdersInput
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
@@ -138350,7 +142910,6 @@ export namespace Prisma {
 
   export type DeliveryOrderCreateWithoutInvoiceInput = {
     trackingNumber?: string | null
-    outletId: number
     customerId?: number | null
     supplierId?: number | null
     deliveryDate?: Date | string | null
@@ -138367,6 +142926,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutDeliveryOrdersInput
     session?: SessionCreateNestedOneWithoutDeliveryOrdersInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutDeliveryOrdersInput
     deliveryOrderItems?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
@@ -138516,6 +143076,92 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type OutletUpsertWithoutInvoicesInput = {
+    update: XOR<OutletUpdateWithoutInvoicesInput, OutletUncheckedUpdateWithoutInvoicesInput>
+    create: XOR<OutletCreateWithoutInvoicesInput, OutletUncheckedCreateWithoutInvoicesInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutInvoicesInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutInvoicesInput, OutletUncheckedUpdateWithoutInvoicesInput>
+  }
+
+  export type OutletUpdateWithoutInvoicesInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutInvoicesInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type SessionUpsertWithoutInvoicesInput = {
     update: XOR<SessionUpdateWithoutInvoicesInput, SessionUncheckedUpdateWithoutInvoicesInput>
     create: XOR<SessionCreateWithoutInvoicesInput, SessionUncheckedCreateWithoutInvoicesInput>
@@ -138528,7 +143174,6 @@ export namespace Prisma {
   }
 
   export type SessionUpdateWithoutInvoicesInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -138541,6 +143186,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutSessionsNestedInput
     declarations?: DeclarationUpdateManyWithoutSessionNestedInput
     quotations?: QuotationUpdateManyWithoutSessionNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutSessionNestedInput
@@ -138581,7 +143227,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateWithoutInvoicesInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -138600,6 +143245,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     quotation?: QuotationUpdateOneWithoutPurchaseOrdersNestedInput
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
@@ -138730,34 +143376,6 @@ export namespace Prisma {
     data: XOR<DeliveryOrderUpdateManyMutationInput, DeliveryOrderUncheckedUpdateManyWithoutInvoiceInput>
   }
 
-  export type DeliveryOrderScalarWhereInput = {
-    AND?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
-    OR?: DeliveryOrderScalarWhereInput[]
-    NOT?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
-    id?: IntFilter<"DeliveryOrder"> | number
-    trackingNumber?: StringNullableFilter<"DeliveryOrder"> | string | null
-    outletId?: IntFilter<"DeliveryOrder"> | number
-    customerId?: IntNullableFilter<"DeliveryOrder"> | number | null
-    purchaseOrderId?: IntNullableFilter<"DeliveryOrder"> | number | null
-    supplierId?: IntNullableFilter<"DeliveryOrder"> | number | null
-    invoiceId?: IntNullableFilter<"DeliveryOrder"> | number | null
-    sessionId?: IntNullableFilter<"DeliveryOrder"> | number | null
-    deliveryDate?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
-    deliveryStreet?: StringNullableFilter<"DeliveryOrder"> | string | null
-    deliveryCity?: StringNullableFilter<"DeliveryOrder"> | string | null
-    deliveryState?: StringNullableFilter<"DeliveryOrder"> | string | null
-    deliveryPostalCode?: StringNullableFilter<"DeliveryOrder"> | string | null
-    deliveryCountry?: StringNullableFilter<"DeliveryOrder"> | string | null
-    status?: StringFilter<"DeliveryOrder"> | string
-    remark?: StringNullableFilter<"DeliveryOrder"> | string | null
-    performedBy?: StringNullableFilter<"DeliveryOrder"> | string | null
-    deleted?: BoolFilter<"DeliveryOrder"> | boolean
-    deletedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
-    createdAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
-    updatedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
-    version?: IntNullableFilter<"DeliveryOrder"> | number | null
-  }
-
   export type InvoiceSettlementUpsertWithoutInvoicesInput = {
     update: XOR<InvoiceSettlementUpdateWithoutInvoicesInput, InvoiceSettlementUncheckedUpdateWithoutInvoicesInput>
     create: XOR<InvoiceSettlementCreateWithoutInvoicesInput, InvoiceSettlementUncheckedCreateWithoutInvoicesInput>
@@ -138837,7 +143455,6 @@ export namespace Prisma {
   export type InvoiceCreateWithoutInvoiceItemsInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -138856,6 +143473,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -139078,7 +143696,6 @@ export namespace Prisma {
   export type InvoiceUpdateWithoutInvoiceItemsInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139097,6 +143714,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -139315,7 +143933,6 @@ export namespace Prisma {
   export type InvoiceCreateWithoutInvoiceSettlementInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -139334,6 +143951,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -139468,8 +144086,87 @@ export namespace Prisma {
     data: XOR<PurchaseReturnUpdateManyMutationInput, PurchaseReturnUncheckedUpdateManyWithoutInvoiceSettlementInput>
   }
 
+  export type OutletCreateWithoutDeliveryOrdersInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutDeliveryOrdersInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutDeliveryOrdersInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutDeliveryOrdersInput, OutletUncheckedCreateWithoutDeliveryOrdersInput>
+  }
+
   export type SessionCreateWithoutDeliveryOrdersInput = {
-    outletId: number
     businessDate: Date | string
     openingDateTime?: Date | string | null
     closingDateTime?: Date | string | null
@@ -139482,6 +144179,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutSessionsInput
     declarations?: DeclarationCreateNestedManyWithoutSessionInput
     quotations?: QuotationCreateNestedManyWithoutSessionInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutSessionInput
@@ -139516,7 +144214,6 @@ export namespace Prisma {
 
   export type PurchaseOrderCreateWithoutDeliveryOrdersInput = {
     purchaseOrderNumber: string
-    outletId: number
     purchaseOrderDate?: Date | string | null
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
@@ -139535,6 +144232,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutPurchaseOrdersInput
     quotation?: QuotationCreateNestedOneWithoutPurchaseOrdersInput
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
@@ -139579,7 +144277,6 @@ export namespace Prisma {
   export type InvoiceCreateWithoutDeliveryOrdersInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -139598,6 +144295,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -139728,6 +144426,92 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type OutletUpsertWithoutDeliveryOrdersInput = {
+    update: XOR<OutletUpdateWithoutDeliveryOrdersInput, OutletUncheckedUpdateWithoutDeliveryOrdersInput>
+    create: XOR<OutletCreateWithoutDeliveryOrdersInput, OutletUncheckedCreateWithoutDeliveryOrdersInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutDeliveryOrdersInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutDeliveryOrdersInput, OutletUncheckedUpdateWithoutDeliveryOrdersInput>
+  }
+
+  export type OutletUpdateWithoutDeliveryOrdersInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutDeliveryOrdersInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type SessionUpsertWithoutDeliveryOrdersInput = {
     update: XOR<SessionUpdateWithoutDeliveryOrdersInput, SessionUncheckedUpdateWithoutDeliveryOrdersInput>
     create: XOR<SessionCreateWithoutDeliveryOrdersInput, SessionUncheckedCreateWithoutDeliveryOrdersInput>
@@ -139740,7 +144524,6 @@ export namespace Prisma {
   }
 
   export type SessionUpdateWithoutDeliveryOrdersInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -139753,6 +144536,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutSessionsNestedInput
     declarations?: DeclarationUpdateManyWithoutSessionNestedInput
     quotations?: QuotationUpdateManyWithoutSessionNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutSessionNestedInput
@@ -139793,7 +144577,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateWithoutDeliveryOrdersInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -139812,6 +144595,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     quotation?: QuotationUpdateOneWithoutPurchaseOrdersNestedInput
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
@@ -139862,7 +144646,6 @@ export namespace Prisma {
   export type InvoiceUpdateWithoutDeliveryOrdersInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -139881,6 +144664,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -139954,7 +144738,6 @@ export namespace Prisma {
 
   export type DeliveryOrderCreateWithoutDeliveryOrderItemsInput = {
     trackingNumber?: string | null
-    outletId: number
     customerId?: number | null
     supplierId?: number | null
     deliveryDate?: Date | string | null
@@ -139971,6 +144754,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutDeliveryOrdersInput
     session?: SessionCreateNestedOneWithoutDeliveryOrdersInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutDeliveryOrdersInput
     invoice?: InvoiceCreateNestedOneWithoutDeliveryOrdersInput
@@ -140185,7 +144969,6 @@ export namespace Prisma {
 
   export type DeliveryOrderUpdateWithoutDeliveryOrderItemsInput = {
     trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    outletId?: IntFieldUpdateOperationsInput | number
     customerId?: NullableIntFieldUpdateOperationsInput | number | null
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -140202,6 +144985,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutDeliveryOrdersNestedInput
     session?: SessionUpdateOneWithoutDeliveryOrdersNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutDeliveryOrdersNestedInput
     invoice?: InvoiceUpdateOneWithoutDeliveryOrdersNestedInput
@@ -140410,8 +145194,87 @@ export namespace Prisma {
     purchaseReturnItems?: PurchaseReturnItemUncheckedUpdateManyWithoutItemVariantNestedInput
   }
 
+  export type OutletCreateWithoutQuotationsInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutQuotationsInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutQuotationsInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutQuotationsInput, OutletUncheckedCreateWithoutQuotationsInput>
+  }
+
   export type SessionCreateWithoutQuotationsInput = {
-    outletId: number
     businessDate: Date | string
     openingDateTime?: Date | string | null
     closingDateTime?: Date | string | null
@@ -140424,6 +145287,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutSessionsInput
     declarations?: DeclarationCreateNestedManyWithoutSessionInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutSessionInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutSessionInput
@@ -140567,7 +145431,6 @@ export namespace Prisma {
 
   export type PurchaseOrderCreateWithoutQuotationInput = {
     purchaseOrderNumber: string
-    outletId: number
     purchaseOrderDate?: Date | string | null
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
@@ -140586,6 +145449,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutPurchaseOrdersInput
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
@@ -140632,6 +145496,92 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type OutletUpsertWithoutQuotationsInput = {
+    update: XOR<OutletUpdateWithoutQuotationsInput, OutletUncheckedUpdateWithoutQuotationsInput>
+    create: XOR<OutletCreateWithoutQuotationsInput, OutletUncheckedCreateWithoutQuotationsInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutQuotationsInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutQuotationsInput, OutletUncheckedUpdateWithoutQuotationsInput>
+  }
+
+  export type OutletUpdateWithoutQuotationsInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutQuotationsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type SessionUpsertWithoutQuotationsInput = {
     update: XOR<SessionUpdateWithoutQuotationsInput, SessionUncheckedUpdateWithoutQuotationsInput>
     create: XOR<SessionCreateWithoutQuotationsInput, SessionUncheckedCreateWithoutQuotationsInput>
@@ -140644,7 +145594,6 @@ export namespace Prisma {
   }
 
   export type SessionUpdateWithoutQuotationsInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -140657,6 +145606,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutSessionsNestedInput
     declarations?: DeclarationUpdateManyWithoutSessionNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutSessionNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutSessionNestedInput
@@ -140780,7 +145730,6 @@ export namespace Prisma {
 
   export type QuotationCreateWithoutQuotationItemsInput = {
     quotationNumber: string
-    outletId: number
     quotationDate?: Date | string | null
     validUntilDate?: Date | string | null
     discountType?: string | null
@@ -140802,6 +145751,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutQuotationsInput
     session?: SessionCreateNestedOneWithoutQuotationsInput
     supplier: SupplierCreateNestedOneWithoutQuotationsInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutQuotationInput
@@ -141019,7 +145969,6 @@ export namespace Prisma {
 
   export type QuotationUpdateWithoutQuotationItemsInput = {
     quotationNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -141041,6 +145990,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutQuotationsNestedInput
     session?: SessionUpdateOneWithoutQuotationsNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutQuotationsNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutQuotationNestedInput
@@ -141252,9 +146202,88 @@ export namespace Prisma {
     purchaseReturnItems?: PurchaseReturnItemUncheckedUpdateManyWithoutItemVariantNestedInput
   }
 
+  export type OutletCreateWithoutPurchaseOrdersInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutPurchaseOrdersInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutPurchaseOrdersInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutPurchaseOrdersInput, OutletUncheckedCreateWithoutPurchaseOrdersInput>
+  }
+
   export type QuotationCreateWithoutPurchaseOrdersInput = {
     quotationNumber: string
-    outletId: number
     quotationDate?: Date | string | null
     validUntilDate?: Date | string | null
     discountType?: string | null
@@ -141276,6 +146305,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutQuotationsInput
     session?: SessionCreateNestedOneWithoutQuotationsInput
     supplier: SupplierCreateNestedOneWithoutQuotationsInput
     quotationItems?: QuotationItemCreateNestedManyWithoutQuotationInput
@@ -141317,7 +146347,6 @@ export namespace Prisma {
   }
 
   export type SessionCreateWithoutPurchaseOrdersInput = {
-    outletId: number
     businessDate: Date | string
     openingDateTime?: Date | string | null
     closingDateTime?: Date | string | null
@@ -141330,6 +146359,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutSessionsInput
     declarations?: DeclarationCreateNestedManyWithoutSessionInput
     quotations?: QuotationCreateNestedManyWithoutSessionInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutSessionInput
@@ -141469,7 +146499,6 @@ export namespace Prisma {
 
   export type DeliveryOrderCreateWithoutPurchaseOrderInput = {
     trackingNumber?: string | null
-    outletId: number
     customerId?: number | null
     supplierId?: number | null
     deliveryDate?: Date | string | null
@@ -141486,6 +146515,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutDeliveryOrdersInput
     session?: SessionCreateNestedOneWithoutDeliveryOrdersInput
     invoice?: InvoiceCreateNestedOneWithoutDeliveryOrdersInput
     deliveryOrderItems?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
@@ -141531,7 +146561,6 @@ export namespace Prisma {
   export type InvoiceCreateWithoutPurchaseOrderInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -141550,6 +146579,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     session?: SessionCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
     invoiceItems?: InvoiceItemCreateNestedManyWithoutInvoiceInput
@@ -141599,6 +146629,92 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type OutletUpsertWithoutPurchaseOrdersInput = {
+    update: XOR<OutletUpdateWithoutPurchaseOrdersInput, OutletUncheckedUpdateWithoutPurchaseOrdersInput>
+    create: XOR<OutletCreateWithoutPurchaseOrdersInput, OutletUncheckedCreateWithoutPurchaseOrdersInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutPurchaseOrdersInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutPurchaseOrdersInput, OutletUncheckedUpdateWithoutPurchaseOrdersInput>
+  }
+
+  export type OutletUpdateWithoutPurchaseOrdersInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutPurchaseOrdersInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type QuotationUpsertWithoutPurchaseOrdersInput = {
     update: XOR<QuotationUpdateWithoutPurchaseOrdersInput, QuotationUncheckedUpdateWithoutPurchaseOrdersInput>
     create: XOR<QuotationCreateWithoutPurchaseOrdersInput, QuotationUncheckedCreateWithoutPurchaseOrdersInput>
@@ -141612,7 +146728,6 @@ export namespace Prisma {
 
   export type QuotationUpdateWithoutPurchaseOrdersInput = {
     quotationNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -141634,6 +146749,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutQuotationsNestedInput
     session?: SessionUpdateOneWithoutQuotationsNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutQuotationsNestedInput
     quotationItems?: QuotationItemUpdateManyWithoutQuotationNestedInput
@@ -141681,7 +146797,6 @@ export namespace Prisma {
   }
 
   export type SessionUpdateWithoutPurchaseOrdersInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -141694,6 +146809,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutSessionsNestedInput
     declarations?: DeclarationUpdateManyWithoutSessionNestedInput
     quotations?: QuotationUpdateManyWithoutSessionNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutSessionNestedInput
@@ -141833,7 +146949,6 @@ export namespace Prisma {
 
   export type PurchaseOrderCreateWithoutPurchaseOrderItemsInput = {
     purchaseOrderNumber: string
-    outletId: number
     purchaseOrderDate?: Date | string | null
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
@@ -141852,6 +146967,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutPurchaseOrdersInput
     quotation?: QuotationCreateNestedOneWithoutPurchaseOrdersInput
     session?: SessionCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
@@ -142070,7 +147186,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateWithoutPurchaseOrderItemsInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -142089,6 +147204,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     quotation?: QuotationUpdateOneWithoutPurchaseOrdersNestedInput
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
@@ -142301,6 +147417,86 @@ export namespace Prisma {
     purchaseReturnItems?: PurchaseReturnItemUncheckedUpdateManyWithoutItemVariantNestedInput
   }
 
+  export type OutletCreateWithoutPaymentsInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutPaymentsInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutPaymentsInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutPaymentsInput, OutletUncheckedCreateWithoutPaymentsInput>
+  }
+
   export type CardInfoCreateWithoutPaymentInput = {
     cardNumber?: string | null
     cardExpiry?: string | null
@@ -142343,7 +147539,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutPaymentsInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -142384,7 +147579,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -142398,6 +147592,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -142515,6 +147711,92 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type OutletUpsertWithoutPaymentsInput = {
+    update: XOR<OutletUpdateWithoutPaymentsInput, OutletUncheckedUpdateWithoutPaymentsInput>
+    create: XOR<OutletCreateWithoutPaymentsInput, OutletUncheckedCreateWithoutPaymentsInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutPaymentsInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutPaymentsInput, OutletUncheckedUpdateWithoutPaymentsInput>
+  }
+
+  export type OutletUpdateWithoutPaymentsInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutPaymentsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type CardInfoUpsertWithWhereUniqueWithoutPaymentInput = {
     where: CardInfoWhereUniqueInput
     update: XOR<CardInfoUpdateWithoutPaymentInput, CardInfoUncheckedUpdateWithoutPaymentInput>
@@ -142563,7 +147845,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutPaymentsInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -142604,7 +147885,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -142618,6 +147898,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -142713,8 +147995,87 @@ export namespace Prisma {
     data: XOR<SplitBillUpdateManyMutationInput, SplitBillUncheckedUpdateManyWithoutPaymentInput>
   }
 
+  export type OutletCreateWithoutRegisterLogsInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutRegisterLogsInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutRegisterLogsInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutRegisterLogsInput, OutletUncheckedCreateWithoutRegisterLogsInput>
+  }
+
   export type SalesCreateWithoutRegisterLogsInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -142755,7 +148116,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -142769,6 +148129,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     customer?: CustomerCreateNestedOneWithoutSalesInput
@@ -142853,6 +148215,92 @@ export namespace Prisma {
     create: XOR<SalesCreateWithoutRegisterLogsInput, SalesUncheckedCreateWithoutRegisterLogsInput>
   }
 
+  export type OutletUpsertWithoutRegisterLogsInput = {
+    update: XOR<OutletUpdateWithoutRegisterLogsInput, OutletUncheckedUpdateWithoutRegisterLogsInput>
+    create: XOR<OutletCreateWithoutRegisterLogsInput, OutletUncheckedCreateWithoutRegisterLogsInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutRegisterLogsInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutRegisterLogsInput, OutletUncheckedUpdateWithoutRegisterLogsInput>
+  }
+
+  export type OutletUpdateWithoutRegisterLogsInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutRegisterLogsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
   export type SalesUpsertWithoutRegisterLogsInput = {
     update: XOR<SalesUpdateWithoutRegisterLogsInput, SalesUncheckedUpdateWithoutRegisterLogsInput>
     create: XOR<SalesCreateWithoutRegisterLogsInput, SalesUncheckedCreateWithoutRegisterLogsInput>
@@ -142865,7 +148313,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutRegisterLogsInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -142906,7 +148353,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -142920,6 +148366,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     customer?: CustomerUpdateOneWithoutSalesNestedInput
@@ -143008,7 +148456,6 @@ export namespace Prisma {
     remark?: string
     businessDate: Date | string
     status: string
-    outletId: number
     sessionId: number
     eodId: number
     performedBy?: string | null
@@ -143017,6 +148464,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutPaymentsInput
     sales: SalesCreateNestedOneWithoutPaymentsInput
     splitBills?: SplitBillCreateNestedManyWithoutPaymentInput
   }
@@ -143069,7 +148517,6 @@ export namespace Prisma {
     remark?: StringFieldUpdateOperationsInput | string
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -143078,6 +148525,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutPaymentsNestedInput
     sales?: SalesUpdateOneRequiredWithoutPaymentsNestedInput
     splitBills?: SplitBillUpdateManyWithoutPaymentNestedInput
   }
@@ -143103,6 +148551,86 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     splitBills?: SplitBillUncheckedUpdateManyWithoutPaymentNestedInput
+  }
+
+  export type OutletCreateWithoutSessionsInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutSessionsInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutSessionsInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutSessionsInput, OutletUncheckedCreateWithoutSessionsInput>
   }
 
   export type DeclarationCreateWithoutSessionInput = {
@@ -143142,7 +148670,6 @@ export namespace Prisma {
 
   export type QuotationCreateWithoutSessionInput = {
     quotationNumber: string
-    outletId: number
     quotationDate?: Date | string | null
     validUntilDate?: Date | string | null
     discountType?: string | null
@@ -143164,6 +148691,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutQuotationsInput
     supplier: SupplierCreateNestedOneWithoutQuotationsInput
     quotationItems?: QuotationItemCreateNestedManyWithoutQuotationInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutQuotationInput
@@ -143211,7 +148739,6 @@ export namespace Prisma {
 
   export type PurchaseOrderCreateWithoutSessionInput = {
     purchaseOrderNumber: string
-    outletId: number
     purchaseOrderDate?: Date | string | null
     discountType?: string | null
     discountAmount?: Decimal | DecimalJsLike | number | string | null
@@ -143230,6 +148757,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutPurchaseOrdersInput
     quotation?: QuotationCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
     purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
@@ -143278,7 +148806,6 @@ export namespace Prisma {
 
   export type DeliveryOrderCreateWithoutSessionInput = {
     trackingNumber?: string | null
-    outletId: number
     customerId?: number | null
     supplierId?: number | null
     deliveryDate?: Date | string | null
@@ -143295,6 +148822,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutDeliveryOrdersInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutDeliveryOrdersInput
     invoice?: InvoiceCreateNestedOneWithoutDeliveryOrdersInput
     deliveryOrderItems?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
@@ -143340,7 +148868,6 @@ export namespace Prisma {
   export type InvoiceCreateWithoutSessionInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -143359,6 +148886,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
     invoiceItems?: InvoiceItemCreateNestedManyWithoutInvoiceInput
@@ -143406,6 +148934,92 @@ export namespace Prisma {
   export type InvoiceCreateManySessionInputEnvelope = {
     data: InvoiceCreateManySessionInput | InvoiceCreateManySessionInput[]
     skipDuplicates?: boolean
+  }
+
+  export type OutletUpsertWithoutSessionsInput = {
+    update: XOR<OutletUpdateWithoutSessionsInput, OutletUncheckedUpdateWithoutSessionsInput>
+    create: XOR<OutletCreateWithoutSessionsInput, OutletUncheckedCreateWithoutSessionsInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutSessionsInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutSessionsInput, OutletUncheckedUpdateWithoutSessionsInput>
+  }
+
+  export type OutletUpdateWithoutSessionsInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutSessionsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type DeclarationUpsertWithWhereUniqueWithoutSessionInput = {
@@ -143506,7 +149120,6 @@ export namespace Prisma {
   }
 
   export type SessionCreateWithoutDeclarationsInput = {
-    outletId: number
     businessDate: Date | string
     openingDateTime?: Date | string | null
     closingDateTime?: Date | string | null
@@ -143519,6 +149132,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutSessionsInput
     quotations?: QuotationCreateNestedManyWithoutSessionInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutSessionInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutSessionInput
@@ -143563,7 +149177,6 @@ export namespace Prisma {
   }
 
   export type SessionUpdateWithoutDeclarationsInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -143576,6 +149189,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutSessionsNestedInput
     quotations?: QuotationUpdateManyWithoutSessionNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutSessionNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutSessionNestedInput
@@ -143721,6 +149335,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutStockBalancesInput = {
@@ -143748,6 +149373,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutStockBalancesInput = {
@@ -143960,6 +149596,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutStockBalancesInput = {
@@ -143987,6 +149634,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type ItemVariantUpsertWithoutStockBalancesInput = {
@@ -144183,6 +149841,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutStockReceiptsInput = {
@@ -144210,6 +149879,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutStockReceiptsInput = {
@@ -144289,7 +149969,6 @@ export namespace Prisma {
 
   export type DeliveryOrderCreateWithoutStockReceiptsInput = {
     trackingNumber?: string | null
-    outletId: number
     customerId?: number | null
     supplierId?: number | null
     deliveryDate?: Date | string | null
@@ -144306,6 +149985,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutDeliveryOrdersInput
     session?: SessionCreateNestedOneWithoutDeliveryOrdersInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutDeliveryOrdersInput
     invoice?: InvoiceCreateNestedOneWithoutDeliveryOrdersInput
@@ -144523,6 +150203,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutStockReceiptsInput = {
@@ -144550,6 +150241,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type ItemVariantUpsertWithoutStockReceiptsInput = {
@@ -144641,7 +150343,6 @@ export namespace Prisma {
 
   export type DeliveryOrderUpdateWithoutStockReceiptsInput = {
     trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    outletId?: IntFieldUpdateOperationsInput | number
     customerId?: NullableIntFieldUpdateOperationsInput | number | null
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -144658,6 +150359,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutDeliveryOrdersNestedInput
     session?: SessionUpdateOneWithoutDeliveryOrdersNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutDeliveryOrdersNestedInput
     invoice?: InvoiceUpdateOneWithoutDeliveryOrdersNestedInput
@@ -144824,6 +150526,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutStockMovementsInput = {
@@ -144851,6 +150564,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutStockMovementsInput = {
@@ -145063,6 +150787,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutStockMovementsInput = {
@@ -145090,6 +150825,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type ItemVariantUpsertWithoutStockMovementsInput = {
@@ -145286,6 +151032,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutStockSnapshotsInput = {
@@ -145313,6 +151070,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutStockSnapshotsInput = {
@@ -145525,6 +151293,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutStockSnapshotsInput = {
@@ -145552,6 +151331,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type ItemVariantUpsertWithoutStockSnapshotsInput = {
@@ -145630,6 +151420,278 @@ export namespace Prisma {
     purchaseReturnItems?: PurchaseReturnItemUncheckedUpdateManyWithoutItemVariantNestedInput
   }
 
+  export type OutletCreateWithoutMenuProfileOutletsInput = {
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptCreateNestedManyWithoutOutletInput
+    settings?: SettingCreateNestedManyWithoutOutletInput
+    tables?: TableCreateNestedManyWithoutOutletInput
+    stations?: StationCreateNestedManyWithoutOutletInput
+    reservations?: ReservationCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletUncheckedCreateWithoutMenuProfileOutletsInput = {
+    id?: number
+    tenantOutletId: number
+    outletName: string
+    street?: string
+    city?: string
+    state?: string
+    postalCode?: string
+    country?: string
+    outletTel?: string
+    outletEmail?: string
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    stockBalances?: StockBalanceUncheckedCreateNestedManyWithoutOutletInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutOutletInput
+    stockSnapshots?: StockSnapshotUncheckedCreateNestedManyWithoutOutletInput
+    stockReceipts?: StockReceiptUncheckedCreateNestedManyWithoutOutletInput
+    settings?: SettingUncheckedCreateNestedManyWithoutOutletInput
+    tables?: TableUncheckedCreateNestedManyWithoutOutletInput
+    stations?: StationUncheckedCreateNestedManyWithoutOutletInput
+    reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
+    waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
+  }
+
+  export type OutletCreateOrConnectWithoutMenuProfileOutletsInput = {
+    where: OutletWhereUniqueInput
+    create: XOR<OutletCreateWithoutMenuProfileOutletsInput, OutletUncheckedCreateWithoutMenuProfileOutletsInput>
+  }
+
+  export type MenuProfileCreateWithoutMenuProfileOutletsInput = {
+    name: string
+    dateStart: string
+    dateEnd: string
+    timeStart: string
+    timeEnd: string
+    isMonday: boolean
+    isTuesday: boolean
+    isWednesday: boolean
+    isThursday: boolean
+    isFriday: boolean
+    isSaturday: boolean
+    isSunday: boolean
+    sequence: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    menuCategories?: MenuCategoryCreateNestedManyWithoutMenuProfileInput
+  }
+
+  export type MenuProfileUncheckedCreateWithoutMenuProfileOutletsInput = {
+    id?: number
+    name: string
+    dateStart: string
+    dateEnd: string
+    timeStart: string
+    timeEnd: string
+    isMonday: boolean
+    isTuesday: boolean
+    isWednesday: boolean
+    isThursday: boolean
+    isFriday: boolean
+    isSaturday: boolean
+    isSunday: boolean
+    sequence: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    menuCategories?: MenuCategoryUncheckedCreateNestedManyWithoutMenuProfileInput
+  }
+
+  export type MenuProfileCreateOrConnectWithoutMenuProfileOutletsInput = {
+    where: MenuProfileWhereUniqueInput
+    create: XOR<MenuProfileCreateWithoutMenuProfileOutletsInput, MenuProfileUncheckedCreateWithoutMenuProfileOutletsInput>
+  }
+
+  export type OutletUpsertWithoutMenuProfileOutletsInput = {
+    update: XOR<OutletUpdateWithoutMenuProfileOutletsInput, OutletUncheckedUpdateWithoutMenuProfileOutletsInput>
+    create: XOR<OutletCreateWithoutMenuProfileOutletsInput, OutletUncheckedCreateWithoutMenuProfileOutletsInput>
+    where?: OutletWhereInput
+  }
+
+  export type OutletUpdateToOneWithWhereWithoutMenuProfileOutletsInput = {
+    where?: OutletWhereInput
+    data: XOR<OutletUpdateWithoutMenuProfileOutletsInput, OutletUncheckedUpdateWithoutMenuProfileOutletsInput>
+  }
+
+  export type OutletUpdateWithoutMenuProfileOutletsInput = {
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutOutletNestedInput
+    settings?: SettingUpdateManyWithoutOutletNestedInput
+    tables?: TableUpdateManyWithoutOutletNestedInput
+    stations?: StationUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
+  }
+
+  export type OutletUncheckedUpdateWithoutMenuProfileOutletsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantOutletId?: IntFieldUpdateOperationsInput | number
+    outletName?: StringFieldUpdateOperationsInput | string
+    street?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    state?: StringFieldUpdateOperationsInput | string
+    postalCode?: StringFieldUpdateOperationsInput | string
+    country?: StringFieldUpdateOperationsInput | string
+    outletTel?: StringFieldUpdateOperationsInput | string
+    outletEmail?: StringFieldUpdateOperationsInput | string
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    stockBalances?: StockBalanceUncheckedUpdateManyWithoutOutletNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutOutletNestedInput
+    stockSnapshots?: StockSnapshotUncheckedUpdateManyWithoutOutletNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutOutletNestedInput
+    settings?: SettingUncheckedUpdateManyWithoutOutletNestedInput
+    tables?: TableUncheckedUpdateManyWithoutOutletNestedInput
+    stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
+    reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
+    waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
+  }
+
+  export type MenuProfileUpsertWithoutMenuProfileOutletsInput = {
+    update: XOR<MenuProfileUpdateWithoutMenuProfileOutletsInput, MenuProfileUncheckedUpdateWithoutMenuProfileOutletsInput>
+    create: XOR<MenuProfileCreateWithoutMenuProfileOutletsInput, MenuProfileUncheckedCreateWithoutMenuProfileOutletsInput>
+    where?: MenuProfileWhereInput
+  }
+
+  export type MenuProfileUpdateToOneWithWhereWithoutMenuProfileOutletsInput = {
+    where?: MenuProfileWhereInput
+    data: XOR<MenuProfileUpdateWithoutMenuProfileOutletsInput, MenuProfileUncheckedUpdateWithoutMenuProfileOutletsInput>
+  }
+
+  export type MenuProfileUpdateWithoutMenuProfileOutletsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    dateStart?: StringFieldUpdateOperationsInput | string
+    dateEnd?: StringFieldUpdateOperationsInput | string
+    timeStart?: StringFieldUpdateOperationsInput | string
+    timeEnd?: StringFieldUpdateOperationsInput | string
+    isMonday?: BoolFieldUpdateOperationsInput | boolean
+    isTuesday?: BoolFieldUpdateOperationsInput | boolean
+    isWednesday?: BoolFieldUpdateOperationsInput | boolean
+    isThursday?: BoolFieldUpdateOperationsInput | boolean
+    isFriday?: BoolFieldUpdateOperationsInput | boolean
+    isSaturday?: BoolFieldUpdateOperationsInput | boolean
+    isSunday?: BoolFieldUpdateOperationsInput | boolean
+    sequence?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    menuCategories?: MenuCategoryUpdateManyWithoutMenuProfileNestedInput
+  }
+
+  export type MenuProfileUncheckedUpdateWithoutMenuProfileOutletsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    dateStart?: StringFieldUpdateOperationsInput | string
+    dateEnd?: StringFieldUpdateOperationsInput | string
+    timeStart?: StringFieldUpdateOperationsInput | string
+    timeEnd?: StringFieldUpdateOperationsInput | string
+    isMonday?: BoolFieldUpdateOperationsInput | boolean
+    isTuesday?: BoolFieldUpdateOperationsInput | boolean
+    isWednesday?: BoolFieldUpdateOperationsInput | boolean
+    isThursday?: BoolFieldUpdateOperationsInput | boolean
+    isFriday?: BoolFieldUpdateOperationsInput | boolean
+    isSaturday?: BoolFieldUpdateOperationsInput | boolean
+    isSunday?: BoolFieldUpdateOperationsInput | boolean
+    sequence?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    menuCategories?: MenuCategoryUncheckedUpdateManyWithoutMenuProfileNestedInput
+  }
+
   export type MenuCategoryCreateWithoutMenuProfileInput = {
     name: string
     imageURL?: string | null
@@ -145660,6 +151722,35 @@ export namespace Prisma {
 
   export type MenuCategoryCreateManyMenuProfileInputEnvelope = {
     data: MenuCategoryCreateManyMenuProfileInput | MenuCategoryCreateManyMenuProfileInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type MenuProfileOutletCreateWithoutMenuProfileInput = {
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    outlet: OutletCreateNestedOneWithoutMenuProfileOutletsInput
+  }
+
+  export type MenuProfileOutletUncheckedCreateWithoutMenuProfileInput = {
+    id?: number
+    outletId: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type MenuProfileOutletCreateOrConnectWithoutMenuProfileInput = {
+    where: MenuProfileOutletWhereUniqueInput
+    create: XOR<MenuProfileOutletCreateWithoutMenuProfileInput, MenuProfileOutletUncheckedCreateWithoutMenuProfileInput>
+  }
+
+  export type MenuProfileOutletCreateManyMenuProfileInputEnvelope = {
+    data: MenuProfileOutletCreateManyMenuProfileInput | MenuProfileOutletCreateManyMenuProfileInput[]
     skipDuplicates?: boolean
   }
 
@@ -145694,6 +151785,22 @@ export namespace Prisma {
     version?: IntNullableFilter<"MenuCategory"> | number | null
   }
 
+  export type MenuProfileOutletUpsertWithWhereUniqueWithoutMenuProfileInput = {
+    where: MenuProfileOutletWhereUniqueInput
+    update: XOR<MenuProfileOutletUpdateWithoutMenuProfileInput, MenuProfileOutletUncheckedUpdateWithoutMenuProfileInput>
+    create: XOR<MenuProfileOutletCreateWithoutMenuProfileInput, MenuProfileOutletUncheckedCreateWithoutMenuProfileInput>
+  }
+
+  export type MenuProfileOutletUpdateWithWhereUniqueWithoutMenuProfileInput = {
+    where: MenuProfileOutletWhereUniqueInput
+    data: XOR<MenuProfileOutletUpdateWithoutMenuProfileInput, MenuProfileOutletUncheckedUpdateWithoutMenuProfileInput>
+  }
+
+  export type MenuProfileOutletUpdateManyWithWhereWithoutMenuProfileInput = {
+    where: MenuProfileOutletScalarWhereInput
+    data: XOR<MenuProfileOutletUpdateManyMutationInput, MenuProfileOutletUncheckedUpdateManyWithoutMenuProfileInput>
+  }
+
   export type MenuProfileCreateWithoutMenuCategoriesInput = {
     name: string
     dateStart: string
@@ -145713,6 +151820,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutMenuProfileInput
   }
 
   export type MenuProfileUncheckedCreateWithoutMenuCategoriesInput = {
@@ -145735,6 +151843,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutMenuProfileInput
   }
 
   export type MenuProfileCreateOrConnectWithoutMenuCategoriesInput = {
@@ -145815,6 +151924,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutMenuProfileNestedInput
   }
 
   export type MenuProfileUncheckedUpdateWithoutMenuCategoriesInput = {
@@ -145837,6 +151947,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutMenuProfileNestedInput
   }
 
   export type MenuItemUpsertWithWhereUniqueWithoutMenuCategoryInput = {
@@ -146431,6 +152542,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutTablesInput = {
@@ -146458,6 +152580,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutTablesInput = {
@@ -146466,7 +152599,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutTableInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -146507,7 +152639,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -146521,6 +152652,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -146682,6 +152815,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutTablesInput = {
@@ -146709,6 +152853,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type SalesUpsertWithWhereUniqueWithoutTableInput = {
@@ -147129,6 +153284,17 @@ export namespace Prisma {
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutStationsInput = {
@@ -147156,6 +153322,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutStationsInput = {
@@ -147233,6 +153410,17 @@ export namespace Prisma {
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutStationsInput = {
@@ -147260,6 +153448,17 @@ export namespace Prisma {
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type OrderRoutingUpsertWithWhereUniqueWithoutStationInput = {
@@ -147302,6 +153501,17 @@ export namespace Prisma {
     stations?: StationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutReservationsInput = {
@@ -147329,6 +153539,17 @@ export namespace Prisma {
     stations?: StationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutReservationsInput = {
@@ -147479,6 +153700,17 @@ export namespace Prisma {
     stations?: StationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutReservationsInput = {
@@ -147506,6 +153738,17 @@ export namespace Prisma {
     stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type CustomerUpsertWithoutReservationsInput = {
@@ -147864,6 +154107,17 @@ export namespace Prisma {
     stations?: StationCreateNestedManyWithoutOutletInput
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutWaitlistsInput = {
@@ -147891,6 +154145,17 @@ export namespace Prisma {
     stations?: StationUncheckedCreateNestedManyWithoutOutletInput
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     purchaseReturns?: PurchaseReturnUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutWaitlistsInput = {
@@ -148007,6 +154272,17 @@ export namespace Prisma {
     stations?: StationUpdateManyWithoutOutletNestedInput
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutWaitlistsInput = {
@@ -148034,6 +154310,17 @@ export namespace Prisma {
     stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type CustomerUpsertWithoutWaitlistsInput = {
@@ -148125,7 +154412,6 @@ export namespace Prisma {
     remark?: string
     businessDate: Date | string
     status: string
-    outletId: number
     sessionId: number
     eodId: number
     performedBy?: string | null
@@ -148134,6 +154420,7 @@ export namespace Prisma {
     createdAt?: Date | string | null
     updatedAt?: Date | string | null
     version?: number | null
+    outlet: OutletCreateNestedOneWithoutPaymentsInput
     cardInfos?: CardInfoCreateNestedManyWithoutPaymentInput
     sales: SalesCreateNestedOneWithoutPaymentsInput
   }
@@ -148260,7 +154547,6 @@ export namespace Prisma {
     remark?: StringFieldUpdateOperationsInput | string
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -148269,6 +154555,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutPaymentsNestedInput
     cardInfos?: CardInfoUpdateManyWithoutPaymentNestedInput
     sales?: SalesUpdateOneRequiredWithoutPaymentsNestedInput
   }
@@ -152099,7 +158386,6 @@ export namespace Prisma {
   export type InvoiceCreateWithoutPurchaseReturnsInput = {
     invoiceNumber: string
     taxInvoiceNumber: string
-    outletId: number
     subtotalAmount: Decimal | DecimalJsLike | number | string
     taxAmount: Decimal | DecimalJsLike | number | string
     discountType?: string | null
@@ -152118,6 +158404,7 @@ export namespace Prisma {
     updatedAt?: Date | string | null
     version?: number | null
     isTaxInclusive?: boolean | null
+    outlet: OutletCreateNestedOneWithoutInvoicesInput
     session?: SessionCreateNestedOneWithoutInvoicesInput
     purchaseOrder?: PurchaseOrderCreateNestedOneWithoutInvoicesInput
     supplier?: SupplierCreateNestedOneWithoutInvoicesInput
@@ -152296,6 +158583,17 @@ export namespace Prisma {
     stations?: StationCreateNestedManyWithoutOutletInput
     reservations?: ReservationCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistCreateNestedManyWithoutOutletInput
+    sales?: SalesCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogCreateNestedManyWithoutOutletInput
+    sessions?: SessionCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutOutletInput
+    quotations?: QuotationCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletCreateNestedManyWithoutOutletInput
   }
 
   export type OutletUncheckedCreateWithoutPurchaseReturnsInput = {
@@ -152323,6 +158621,17 @@ export namespace Prisma {
     stations?: StationUncheckedCreateNestedManyWithoutOutletInput
     reservations?: ReservationUncheckedCreateNestedManyWithoutOutletInput
     waitlists?: WaitlistUncheckedCreateNestedManyWithoutOutletInput
+    sales?: SalesUncheckedCreateNestedManyWithoutOutletInput
+    stockSourceSales?: SalesUncheckedCreateNestedManyWithoutStockSourceOutletInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOutletInput
+    registerLogs?: RegisterLogUncheckedCreateNestedManyWithoutOutletInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutOutletInput
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutOutletInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutOutletInput
+    quotations?: QuotationUncheckedCreateNestedManyWithoutOutletInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutOutletInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedCreateNestedManyWithoutOutletInput
+    userOutlets?: UserOutletUncheckedCreateNestedManyWithoutOutletInput
   }
 
   export type OutletCreateOrConnectWithoutPurchaseReturnsInput = {
@@ -152389,7 +158698,6 @@ export namespace Prisma {
   export type InvoiceUpdateWithoutPurchaseReturnsInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -152408,6 +158716,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -152604,6 +158913,17 @@ export namespace Prisma {
     stations?: StationUpdateManyWithoutOutletNestedInput
     reservations?: ReservationUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUpdateManyWithoutOutletNestedInput
+    sales?: SalesUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutOutletNestedInput
   }
 
   export type OutletUncheckedUpdateWithoutPurchaseReturnsInput = {
@@ -152631,6 +158951,17 @@ export namespace Prisma {
     stations?: StationUncheckedUpdateManyWithoutOutletNestedInput
     reservations?: ReservationUncheckedUpdateManyWithoutOutletNestedInput
     waitlists?: WaitlistUncheckedUpdateManyWithoutOutletNestedInput
+    sales?: SalesUncheckedUpdateManyWithoutOutletNestedInput
+    stockSourceSales?: SalesUncheckedUpdateManyWithoutStockSourceOutletNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOutletNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutOutletNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutOutletNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutOutletNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutOutletNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutOutletNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutOutletNestedInput
+    menuProfileOutlets?: MenuProfileOutletUncheckedUpdateManyWithoutOutletNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutOutletNestedInput
   }
 
   export type PurchaseReturnItemUpsertWithWhereUniqueWithoutPurchaseReturnInput = {
@@ -153994,7 +160325,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutLoyaltyPointBatchesInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -154035,7 +160365,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -154049,6 +160378,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -154195,7 +160526,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutLoyaltyPointBatchesInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154236,7 +160566,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154250,6 +160579,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -154374,7 +160705,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutLoyaltyTransactionsInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -154415,7 +160745,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -154429,6 +160758,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -154575,7 +160906,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutLoyaltyTransactionsInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154616,7 +160946,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -154630,6 +160959,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -155133,7 +161464,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutCustomerSubscriptionInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -155174,7 +161504,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -155188,6 +161517,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -155482,7 +161813,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutSubscriptionUsagesInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -155523,7 +161853,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -155537,6 +161866,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -155681,7 +162012,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutSubscriptionUsagesInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155722,7 +162052,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -155736,6 +162065,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -156043,7 +162374,6 @@ export namespace Prisma {
   }
 
   export type SalesCreateWithoutRedeemedVoucherInput = {
-    outletId: number
     businessDate: Date | string
     salesType: string
     customerName?: string | null
@@ -156084,7 +162414,6 @@ export namespace Prisma {
     orderStatus?: string | null
     isTaxInclusive?: boolean | null
     stockSourceType?: string | null
-    stockSourceOutletId?: number | null
     stockSourceWarehouseId?: number | null
     deliveredAt?: Date | string | null
     deliveredBy?: string | null
@@ -156098,6 +162427,8 @@ export namespace Prisma {
     voucherId?: number | null
     voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    outlet: OutletCreateNestedOneWithoutSalesInput
+    stockSourceOutlet?: OutletCreateNestedOneWithoutStockSourceSalesInput
     salesItems?: SalesItemCreateNestedManyWithoutSalesInput
     payments?: PaymentCreateNestedManyWithoutSalesInput
     registerLogs?: RegisterLogCreateNestedManyWithoutSalesInput
@@ -156372,7 +162703,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutRedeemedVoucherInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -156413,7 +162743,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -156427,6 +162756,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -156561,6 +162892,7 @@ export namespace Prisma {
     settings?: SettingUpdateManyWithoutUserNestedInput
     overrideRequests?: OverrideLogUpdateManyWithoutUserNestedInput
     notificationPreference?: NotificationPreferenceUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRolesInput = {
@@ -156580,6 +162912,7 @@ export namespace Prisma {
     settings?: SettingUncheckedUpdateManyWithoutUserNestedInput
     overrideRequests?: OverrideLogUncheckedUpdateManyWithoutUserNestedInput
     notificationPreference?: NotificationPreferenceUncheckedUpdateOneWithoutUserNestedInput
+    userOutlets?: UserOutletUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateManyWithoutRolesInput = {
@@ -156617,6 +162950,16 @@ export namespace Prisma {
     action: string
     reason?: string | null
     createdAt?: Date | string
+  }
+
+  export type UserOutletCreateManyUserInput = {
+    outletId: number
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
   }
 
   export type SettingUpdateWithoutUserInput = {
@@ -156715,6 +163058,36 @@ export namespace Prisma {
     action?: StringFieldUpdateOperationsInput | string
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserOutletUpdateWithoutUserInput = {
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutUserOutletsNestedInput
+  }
+
+  export type UserOutletUncheckedUpdateWithoutUserInput = {
+    outletId?: IntFieldUpdateOperationsInput | number
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type UserOutletUncheckedUpdateManyWithoutUserInput = {
+    outletId?: IntFieldUpdateOperationsInput | number
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ItemCreateManySupplierInput = {
@@ -156973,7 +163346,6 @@ export namespace Prisma {
 
   export type QuotationUpdateWithoutSupplierInput = {
     quotationNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -156995,6 +163367,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutQuotationsNestedInput
     session?: SessionUpdateOneWithoutQuotationsNestedInput
     quotationItems?: QuotationItemUpdateManyWithoutQuotationNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutQuotationNestedInput
@@ -157060,7 +163433,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateWithoutSupplierInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -157079,6 +163451,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     quotation?: QuotationUpdateOneWithoutPurchaseOrdersNestedInput
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
@@ -157144,7 +163517,6 @@ export namespace Prisma {
   export type InvoiceUpdateWithoutSupplierInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -157163,6 +163535,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     invoiceItems?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
@@ -157470,7 +163843,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutCustomerInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -157511,7 +163883,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -157525,6 +163896,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -158155,6 +164528,308 @@ export namespace Prisma {
     version?: number | null
   }
 
+  export type SalesCreateManyOutletInput = {
+    id?: number
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    customerId?: number | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    tableId?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceOutletId?: number | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: number | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type SalesCreateManyStockSourceOutletInput = {
+    id?: number
+    outletId: number
+    businessDate: Date | string
+    salesType: string
+    customerName?: string | null
+    customerId?: number | null
+    phoneNumber?: string | null
+    billStreet?: string
+    billCity?: string
+    billState?: string
+    billPostalCode?: string
+    billCountry?: string
+    shipStreet?: string
+    shipCity?: string
+    shipState?: string
+    shipPostalCode?: string
+    shipCountry?: string
+    totalItemDiscountAmount?: Decimal | DecimalJsLike | number | string
+    discountPercentage?: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
+    profitAmount: Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string
+    taxAmount?: Decimal | DecimalJsLike | number | string
+    roundingAmount?: Decimal | DecimalJsLike | number | string
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeAmount?: Decimal | DecimalJsLike | number | string
+    status: string
+    remark?: string
+    completedSessionId?: number | null
+    sessionId: number
+    eodId: number
+    salesQuotationId?: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    tableId?: number | null
+    orderStatus?: string | null
+    isTaxInclusive?: boolean | null
+    stockSourceType?: string | null
+    stockSourceWarehouseId?: number | null
+    deliveredAt?: Date | string | null
+    deliveredBy?: string | null
+    deliveryNotes?: string | null
+    loyaltyPointsEarned?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: number | null
+    subscriptionDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+    voucherId?: number | null
+    voucherDiscountPercentage?: Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type PaymentCreateManyOutletInput = {
+    id?: number
+    method: string
+    tenderedAmount: Decimal | DecimalJsLike | number | string
+    paidAmount: Decimal | DecimalJsLike | number | string
+    currencySymbol?: string
+    salesId: number
+    reference?: string
+    remark?: string
+    businessDate: Date | string
+    status: string
+    sessionId: number
+    eodId: number
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type RegisterLogCreateManyOutletInput = {
+    id?: number
+    type: string
+    modifiedAmount: Decimal | DecimalJsLike | number | string
+    currencySymbol?: string
+    salesId: number
+    remark?: string
+    status: string
+    sessionId: number
+    eodId: number
+    performedBy?: string | null
+    deleted?: boolean
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type SessionCreateManyOutletInput = {
+    id?: number
+    businessDate: Date | string
+    openingDateTime?: Date | string | null
+    closingDateTime?: Date | string | null
+    openingAmount: Decimal | DecimalJsLike | number | string
+    totalSalesCount: number
+    openByUserID: number
+    closeByUserID: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type InvoiceCreateManyOutletInput = {
+    id?: number
+    invoiceNumber: string
+    taxInvoiceNumber: string
+    purchaseOrderId?: number | null
+    invoiceSettlementId?: number | null
+    supplierId?: number | null
+    subtotalAmount: Decimal | DecimalJsLike | number | string
+    taxAmount: Decimal | DecimalJsLike | number | string
+    sessionId?: number | null
+    discountType?: string | null
+    discountAmount: Decimal | DecimalJsLike | number | string
+    totalAmount: Decimal | DecimalJsLike | number | string
+    currency: string
+    status: string
+    invoiceDate?: Date | string | null
+    paymentDate?: Date | string | null
+    dueDate?: Date | string | null
+    remark?: string | null
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+  }
+
+  export type DeliveryOrderCreateManyOutletInput = {
+    id?: number
+    trackingNumber?: string | null
+    customerId?: number | null
+    purchaseOrderId?: number | null
+    supplierId?: number | null
+    invoiceId?: number | null
+    sessionId?: number | null
+    deliveryDate?: Date | string | null
+    deliveryStreet?: string | null
+    deliveryCity?: string | null
+    deliveryState?: string | null
+    deliveryPostalCode?: string | null
+    deliveryCountry?: string | null
+    status: string
+    remark?: string | null
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type QuotationCreateManyOutletInput = {
+    id?: number
+    quotationNumber: string
+    supplierId: number
+    quotationDate?: Date | string | null
+    validUntilDate?: Date | string | null
+    sessionId?: number | null
+    discountType?: string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
+    taxAmount?: Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: Decimal | DecimalJsLike | number | string | null
+    totalAmount?: Decimal | DecimalJsLike | number | string | null
+    status?: string | null
+    remark?: string | null
+    currency?: string
+    performedBy?: string | null
+    convertedToPOAt?: Date | string | null
+    convertedPOId?: number | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+  }
+
+  export type PurchaseOrderCreateManyOutletInput = {
+    id?: number
+    purchaseOrderNumber: string
+    supplierId: number
+    purchaseOrderDate?: Date | string | null
+    sessionId?: number | null
+    discountType?: string | null
+    discountAmount?: Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: Decimal | DecimalJsLike | number | string | null
+    taxAmount?: Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: Decimal | DecimalJsLike | number | string | null
+    totalAmount?: Decimal | DecimalJsLike | number | string | null
+    status: string
+    remark?: string | null
+    currency?: string
+    performedBy?: string | null
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+    isTaxInclusive?: boolean | null
+    quotationId?: number | null
+  }
+
+  export type MenuProfileOutletCreateManyOutletInput = {
+    id?: number
+    menuProfileID: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
+  export type UserOutletCreateManyOutletInput = {
+    userId: number
+    isPrimary?: boolean
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
   export type StockBalanceUpdateWithoutOutletInput = {
     availableQuantity?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     onHandQuantity?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -158586,6 +165261,964 @@ export namespace Prisma {
     cancelReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type SalesUpdateWithoutOutletInput = {
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
+    salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
+    payments?: PaymentUpdateManyWithoutSalesNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
+    customer?: CustomerUpdateOneWithoutSalesNestedInput
+    table?: TableUpdateOneWithoutSalesNestedInput
+    loyaltyTransactions?: LoyaltyTransactionUpdateManyWithoutSaleNestedInput
+    loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
+    subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
+    customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
+  }
+
+  export type SalesUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    tableId?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
+    loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
+    loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
+    subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
+  }
+
+  export type SalesUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    tableId?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type SalesUpdateWithoutStockSourceOutletInput = {
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
+    payments?: PaymentUpdateManyWithoutSalesNestedInput
+    registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
+    customer?: CustomerUpdateOneWithoutSalesNestedInput
+    table?: TableUpdateOneWithoutSalesNestedInput
+    loyaltyTransactions?: LoyaltyTransactionUpdateManyWithoutSaleNestedInput
+    loyaltyPointBatches?: LoyaltyPointBatchUpdateManyWithoutSaleNestedInput
+    subscriptionUsages?: SubscriptionUsageUpdateManyWithoutSaleNestedInput
+    customerSubscription?: CustomerSubscriptionUpdateOneWithoutSalesNestedInput
+    redeemedVoucher?: VoucherUpdateOneWithoutRedeemedInSaleNestedInput
+  }
+
+  export type SalesUncheckedUpdateWithoutStockSourceOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    tableId?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    salesItems?: SalesItemUncheckedUpdateManyWithoutSalesNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutSalesNestedInput
+    registerLogs?: RegisterLogUncheckedUpdateManyWithoutSalesNestedInput
+    loyaltyTransactions?: LoyaltyTransactionUncheckedUpdateManyWithoutSaleNestedInput
+    loyaltyPointBatches?: LoyaltyPointBatchUncheckedUpdateManyWithoutSaleNestedInput
+    subscriptionUsages?: SubscriptionUsageUncheckedUpdateManyWithoutSaleNestedInput
+    redeemedVoucher?: VoucherUncheckedUpdateOneWithoutRedeemedInSaleNestedInput
+  }
+
+  export type SalesUncheckedUpdateManyWithoutStockSourceOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    salesType?: StringFieldUpdateOperationsInput | string
+    customerName?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    billStreet?: StringFieldUpdateOperationsInput | string
+    billCity?: StringFieldUpdateOperationsInput | string
+    billState?: StringFieldUpdateOperationsInput | string
+    billPostalCode?: StringFieldUpdateOperationsInput | string
+    billCountry?: StringFieldUpdateOperationsInput | string
+    shipStreet?: StringFieldUpdateOperationsInput | string
+    shipCity?: StringFieldUpdateOperationsInput | string
+    shipState?: StringFieldUpdateOperationsInput | string
+    shipPostalCode?: StringFieldUpdateOperationsInput | string
+    shipCountry?: StringFieldUpdateOperationsInput | string
+    totalItemDiscountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountPercentage?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    serviceChargeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    roundingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    completedSessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    salesQuotationId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    tableId?: NullableIntFieldUpdateOperationsInput | number | null
+    orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
+    stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    loyaltyPointsEarned?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedeemed?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyPointsRedemptionValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    loyaltyTierDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    customerSubscriptionId?: NullableIntFieldUpdateOperationsInput | number | null
+    subscriptionDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherId?: NullableIntFieldUpdateOperationsInput | number | null
+    voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type PaymentUpdateWithoutOutletInput = {
+    method?: StringFieldUpdateOperationsInput | string
+    tenderedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFieldUpdateOperationsInput | string
+    reference?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    cardInfos?: CardInfoUpdateManyWithoutPaymentNestedInput
+    sales?: SalesUpdateOneRequiredWithoutPaymentsNestedInput
+    splitBills?: SplitBillUpdateManyWithoutPaymentNestedInput
+  }
+
+  export type PaymentUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    method?: StringFieldUpdateOperationsInput | string
+    tenderedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFieldUpdateOperationsInput | string
+    salesId?: IntFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    cardInfos?: CardInfoUncheckedUpdateManyWithoutPaymentNestedInput
+    splitBills?: SplitBillUncheckedUpdateManyWithoutPaymentNestedInput
+  }
+
+  export type PaymentUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    method?: StringFieldUpdateOperationsInput | string
+    tenderedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFieldUpdateOperationsInput | string
+    salesId?: IntFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type RegisterLogUpdateWithoutOutletInput = {
+    type?: StringFieldUpdateOperationsInput | string
+    modifiedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFieldUpdateOperationsInput | string
+    remark?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    sales?: SalesUpdateOneRequiredWithoutRegisterLogsNestedInput
+  }
+
+  export type RegisterLogUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    type?: StringFieldUpdateOperationsInput | string
+    modifiedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFieldUpdateOperationsInput | string
+    salesId?: IntFieldUpdateOperationsInput | number
+    remark?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type RegisterLogUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    type?: StringFieldUpdateOperationsInput | string
+    modifiedAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currencySymbol?: StringFieldUpdateOperationsInput | string
+    salesId?: IntFieldUpdateOperationsInput | number
+    remark?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    sessionId?: IntFieldUpdateOperationsInput | number
+    eodId?: IntFieldUpdateOperationsInput | number
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type SessionUpdateWithoutOutletInput = {
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    openingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalSalesCount?: IntFieldUpdateOperationsInput | number
+    openByUserID?: IntFieldUpdateOperationsInput | number
+    closeByUserID?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    declarations?: DeclarationUpdateManyWithoutSessionNestedInput
+    quotations?: QuotationUpdateManyWithoutSessionNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutSessionNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutSessionNestedInput
+    invoices?: InvoiceUpdateManyWithoutSessionNestedInput
+  }
+
+  export type SessionUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    openingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalSalesCount?: IntFieldUpdateOperationsInput | number
+    openByUserID?: IntFieldUpdateOperationsInput | number
+    closeByUserID?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    declarations?: DeclarationUncheckedUpdateManyWithoutSessionNestedInput
+    quotations?: QuotationUncheckedUpdateManyWithoutSessionNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutSessionNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutSessionNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutSessionNestedInput
+  }
+
+  export type SessionUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    openingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    closingDateTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    openingAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalSalesCount?: IntFieldUpdateOperationsInput | number
+    openByUserID?: IntFieldUpdateOperationsInput | number
+    closeByUserID?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type InvoiceUpdateWithoutOutletInput = {
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currency?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    invoiceDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    session?: SessionUpdateOneWithoutInvoicesNestedInput
+    purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
+    supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
+    invoiceItems?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutInvoiceNestedInput
+    invoiceSettlement?: InvoiceSettlementUpdateOneWithoutInvoicesNestedInput
+    purchaseReturns?: PurchaseReturnUpdateManyWithoutInvoiceNestedInput
+  }
+
+  export type InvoiceUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
+    purchaseOrderId?: NullableIntFieldUpdateOperationsInput | number | null
+    invoiceSettlementId?: NullableIntFieldUpdateOperationsInput | number | null
+    supplierId?: NullableIntFieldUpdateOperationsInput | number | null
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currency?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    invoiceDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    invoiceItems?: InvoiceItemUncheckedUpdateManyWithoutInvoiceNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutInvoiceNestedInput
+    purchaseReturns?: PurchaseReturnUncheckedUpdateManyWithoutInvoiceNestedInput
+  }
+
+  export type InvoiceUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
+    purchaseOrderId?: NullableIntFieldUpdateOperationsInput | number | null
+    invoiceSettlementId?: NullableIntFieldUpdateOperationsInput | number | null
+    supplierId?: NullableIntFieldUpdateOperationsInput | number | null
+    subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    currency?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    invoiceDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paymentDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+  }
+
+  export type DeliveryOrderUpdateWithoutOutletInput = {
+    trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    supplierId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryState?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryPostalCode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    session?: SessionUpdateOneWithoutDeliveryOrdersNestedInput
+    purchaseOrder?: PurchaseOrderUpdateOneWithoutDeliveryOrdersNestedInput
+    invoice?: InvoiceUpdateOneWithoutDeliveryOrdersNestedInput
+    deliveryOrderItems?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
+    stockReceipts?: StockReceiptUpdateManyWithoutDeliveryOrderNestedInput
+  }
+
+  export type DeliveryOrderUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    purchaseOrderId?: NullableIntFieldUpdateOperationsInput | number | null
+    supplierId?: NullableIntFieldUpdateOperationsInput | number | null
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryState?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryPostalCode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveryOrderItems?: DeliveryOrderItemUncheckedUpdateManyWithoutDeliveryOrderNestedInput
+    stockReceipts?: StockReceiptUncheckedUpdateManyWithoutDeliveryOrderNestedInput
+  }
+
+  export type DeliveryOrderUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    customerId?: NullableIntFieldUpdateOperationsInput | number | null
+    purchaseOrderId?: NullableIntFieldUpdateOperationsInput | number | null
+    supplierId?: NullableIntFieldUpdateOperationsInput | number | null
+    invoiceId?: NullableIntFieldUpdateOperationsInput | number | null
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryStreet?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryState?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryPostalCode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryCountry?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type QuotationUpdateWithoutOutletInput = {
+    quotationNumber?: StringFieldUpdateOperationsInput | string
+    quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    totalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    convertedToPOAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    convertedPOId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    session?: SessionUpdateOneWithoutQuotationsNestedInput
+    supplier?: SupplierUpdateOneRequiredWithoutQuotationsNestedInput
+    quotationItems?: QuotationItemUpdateManyWithoutQuotationNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutQuotationNestedInput
+  }
+
+  export type QuotationUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    quotationNumber?: StringFieldUpdateOperationsInput | string
+    supplierId?: IntFieldUpdateOperationsInput | number
+    quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    totalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    convertedToPOAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    convertedPOId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    quotationItems?: QuotationItemUncheckedUpdateManyWithoutQuotationNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutQuotationNestedInput
+  }
+
+  export type QuotationUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    quotationNumber?: StringFieldUpdateOperationsInput | string
+    supplierId?: IntFieldUpdateOperationsInput | number
+    quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    totalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    convertedToPOAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    convertedPOId?: NullableIntFieldUpdateOperationsInput | number | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+  }
+
+  export type PurchaseOrderUpdateWithoutOutletInput = {
+    purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
+    purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    totalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    quotation?: QuotationUpdateOneWithoutPurchaseOrdersNestedInput
+    session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
+    supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutPurchaseOrderNestedInput
+    invoices?: InvoiceUpdateManyWithoutPurchaseOrderNestedInput
+  }
+
+  export type PurchaseOrderUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
+    supplierId?: IntFieldUpdateOperationsInput | number
+    purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    totalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    quotationId?: NullableIntFieldUpdateOperationsInput | number | null
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutPurchaseOrderNestedInput
+    invoices?: InvoiceUncheckedUpdateManyWithoutPurchaseOrderNestedInput
+  }
+
+  export type PurchaseOrderUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
+    supplierId?: IntFieldUpdateOperationsInput | number
+    purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionId?: NullableIntFieldUpdateOperationsInput | number | null
+    discountType?: NullableStringFieldUpdateOperationsInput | string | null
+    discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    serviceChargeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    taxAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    roundingAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    totalAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    remark?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    performedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    quotationId?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type MenuProfileOutletUpdateWithoutOutletInput = {
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    menuProfile?: MenuProfileUpdateOneRequiredWithoutMenuProfileOutletsNestedInput
+  }
+
+  export type MenuProfileOutletUncheckedUpdateWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    menuProfileID?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type MenuProfileOutletUncheckedUpdateManyWithoutOutletInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    menuProfileID?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type UserOutletUpdateWithoutOutletInput = {
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    user?: UserUpdateOneRequiredWithoutUserOutletsNestedInput
+  }
+
+  export type UserOutletUncheckedUpdateWithoutOutletInput = {
+    userId?: IntFieldUpdateOperationsInput | number
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type UserOutletUncheckedUpdateManyWithoutOutletInput = {
+    userId?: IntFieldUpdateOperationsInput | number
+    isPrimary?: BoolFieldUpdateOperationsInput | boolean
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -159992,7 +167625,6 @@ export namespace Prisma {
     remark?: StringFieldUpdateOperationsInput | string
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -160001,6 +167633,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutPaymentsNestedInput
     cardInfos?: CardInfoUpdateManyWithoutPaymentNestedInput
     splitBills?: SplitBillUpdateManyWithoutPaymentNestedInput
   }
@@ -160055,7 +167688,6 @@ export namespace Prisma {
     currencySymbol?: StringFieldUpdateOperationsInput | string
     remark?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     sessionId?: IntFieldUpdateOperationsInput | number
     eodId?: IntFieldUpdateOperationsInput | number
     performedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -160063,6 +167695,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutRegisterLogsNestedInput
   }
 
   export type RegisterLogUncheckedUpdateWithoutSalesInput = {
@@ -160461,7 +168094,6 @@ export namespace Prisma {
 
   export type DeliveryOrderUpdateWithoutInvoiceInput = {
     trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    outletId?: IntFieldUpdateOperationsInput | number
     customerId?: NullableIntFieldUpdateOperationsInput | number | null
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -160478,6 +168110,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutDeliveryOrdersNestedInput
     session?: SessionUpdateOneWithoutDeliveryOrdersNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutDeliveryOrdersNestedInput
     deliveryOrderItems?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
@@ -160650,7 +168283,6 @@ export namespace Prisma {
   export type InvoiceUpdateWithoutInvoiceSettlementInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -160669,6 +168301,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
@@ -161047,7 +168680,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateWithoutQuotationInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -161066,6 +168698,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     session?: SessionUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
@@ -161261,7 +168894,6 @@ export namespace Prisma {
 
   export type DeliveryOrderUpdateWithoutPurchaseOrderInput = {
     trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    outletId?: IntFieldUpdateOperationsInput | number
     customerId?: NullableIntFieldUpdateOperationsInput | number | null
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -161278,6 +168910,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutDeliveryOrdersNestedInput
     session?: SessionUpdateOneWithoutDeliveryOrdersNestedInput
     invoice?: InvoiceUpdateOneWithoutDeliveryOrdersNestedInput
     deliveryOrderItems?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
@@ -161337,7 +168970,6 @@ export namespace Prisma {
   export type InvoiceUpdateWithoutPurchaseOrderInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -161356,6 +168988,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     session?: SessionUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
     invoiceItems?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
@@ -161692,7 +169325,6 @@ export namespace Prisma {
 
   export type QuotationUpdateWithoutSessionInput = {
     quotationNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     quotationDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     validUntilDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -161714,6 +169346,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutQuotationsNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutQuotationsNestedInput
     quotationItems?: QuotationItemUpdateManyWithoutQuotationNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutQuotationNestedInput
@@ -161779,7 +169412,6 @@ export namespace Prisma {
 
   export type PurchaseOrderUpdateWithoutSessionInput = {
     purchaseOrderNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     purchaseOrderDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
     discountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -161798,6 +169430,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     quotation?: QuotationUpdateOneWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
@@ -161862,7 +169495,6 @@ export namespace Prisma {
 
   export type DeliveryOrderUpdateWithoutSessionInput = {
     trackingNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    outletId?: IntFieldUpdateOperationsInput | number
     customerId?: NullableIntFieldUpdateOperationsInput | number | null
     supplierId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveryDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -161879,6 +169511,7 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutDeliveryOrdersNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutDeliveryOrdersNestedInput
     invoice?: InvoiceUpdateOneWithoutDeliveryOrdersNestedInput
     deliveryOrderItems?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
@@ -161938,7 +169571,6 @@ export namespace Prisma {
   export type InvoiceUpdateWithoutSessionInput = {
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     taxInvoiceNumber?: StringFieldUpdateOperationsInput | string
-    outletId?: IntFieldUpdateOperationsInput | number
     subtotalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountType?: NullableStringFieldUpdateOperationsInput | string | null
@@ -161957,6 +169589,7 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     version?: NullableIntFieldUpdateOperationsInput | number | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    outlet?: OutletUpdateOneRequiredWithoutInvoicesNestedInput
     purchaseOrder?: PurchaseOrderUpdateOneWithoutInvoicesNestedInput
     supplier?: SupplierUpdateOneWithoutInvoicesNestedInput
     invoiceItems?: InvoiceItemUpdateManyWithoutInvoiceNestedInput
@@ -162106,6 +169739,16 @@ export namespace Prisma {
     version?: number | null
   }
 
+  export type MenuProfileOutletCreateManyMenuProfileInput = {
+    id?: number
+    outletId: number
+    deleted?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string | null
+    updatedAt?: Date | string | null
+    version?: number | null
+  }
+
   export type MenuCategoryUpdateWithoutMenuProfileInput = {
     name?: StringFieldUpdateOperationsInput | string
     imageURL?: NullableStringFieldUpdateOperationsInput | string | null
@@ -162133,6 +169776,35 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     name?: StringFieldUpdateOperationsInput | string
     imageURL?: NullableStringFieldUpdateOperationsInput | string | null
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type MenuProfileOutletUpdateWithoutMenuProfileInput = {
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+    outlet?: OutletUpdateOneRequiredWithoutMenuProfileOutletsNestedInput
+  }
+
+  export type MenuProfileOutletUncheckedUpdateWithoutMenuProfileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
+    deleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    version?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type MenuProfileOutletUncheckedUpdateManyWithoutMenuProfileInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    outletId?: IntFieldUpdateOperationsInput | number
     deleted?: BoolFieldUpdateOperationsInput | boolean
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -162572,7 +170244,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutTableInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -162613,7 +170284,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -162627,6 +170297,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput
@@ -164922,7 +172594,6 @@ export namespace Prisma {
   }
 
   export type SalesUpdateWithoutCustomerSubscriptionInput = {
-    outletId?: IntFieldUpdateOperationsInput | number
     businessDate?: DateTimeFieldUpdateOperationsInput | Date | string
     salesType?: StringFieldUpdateOperationsInput | string
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -164963,7 +172634,6 @@ export namespace Prisma {
     orderStatus?: NullableStringFieldUpdateOperationsInput | string | null
     isTaxInclusive?: NullableBoolFieldUpdateOperationsInput | boolean | null
     stockSourceType?: NullableStringFieldUpdateOperationsInput | string | null
-    stockSourceOutletId?: NullableIntFieldUpdateOperationsInput | number | null
     stockSourceWarehouseId?: NullableIntFieldUpdateOperationsInput | number | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -164977,6 +172647,8 @@ export namespace Prisma {
     voucherId?: NullableIntFieldUpdateOperationsInput | number | null
     voucherDiscountPercentage?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     voucherDiscountAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    outlet?: OutletUpdateOneRequiredWithoutSalesNestedInput
+    stockSourceOutlet?: OutletUpdateOneWithoutStockSourceSalesNestedInput
     salesItems?: SalesItemUpdateManyWithoutSalesNestedInput
     payments?: PaymentUpdateManyWithoutSalesNestedInput
     registerLogs?: RegisterLogUpdateManyWithoutSalesNestedInput

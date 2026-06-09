@@ -895,7 +895,7 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
     });
 };
 
-let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => {
+let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = deliveryOrder;
@@ -904,9 +904,9 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             throw new RequestValidateError('Delivery order ID is required');
         }
 
-        // Enhanced query to get existing delivery order with more data upfront
-        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
-            where: { id: id, deleted: false },
+        // Get existing delivery order, scoped to the requesting outlet.
+        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findFirst({
+            where: { id: id, outletId: outletId, deleted: false },
             select: {
                 id: true,
                 outletId: true,
@@ -1344,12 +1344,12 @@ const checkAndUpdatePurchaseOrderStatus = async (tx: Prisma.TransactionClient, p
     await checkAndUpdatePurchaseOrderStatusWithCancellation(tx, purchaseOrderId);
 };
 
-let deleteDeliveryOrder = async (id: number, databaseName: string): Promise<string> => {
+let deleteDeliveryOrder = async (id: number, databaseName: string, outletId: number): Promise<string> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // Check if delivery order exists and is not already deleted
-        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
-            where: { id: id, deleted: false }
+        // Scope by outletId so cross-outlet deletions surface as 404.
+        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findFirst({
+            where: { id: id, outletId: outletId, deleted: false }
         });
 
         if (!existingDeliveryOrder) {

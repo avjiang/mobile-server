@@ -35,6 +35,12 @@ export class BaseError extends Error {
 
 export class AuthenticationError extends BaseError { }
 
+export class ForbiddenError extends BaseError {
+    constructor(message: string = 'Forbidden') {
+        super(403, message);
+    }
+}
+
 export class NotFoundError extends BaseError {
     propertyName: string
 

@@ -24,7 +24,7 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
             }
         })
         // Check if user not found or password mismatched, throw error
-        if (!tenantUser) {
+        if (!tenantUser || !tenantUser.password || !bcrypt.compareSync(req.password, tenantUser.password)) {
             throw new RequestValidateError('Username or password is incorrect')
         }
         try {
@@ -384,14 +384,13 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string,
 
             // Check if this permission is outlet-specific
             if (outletSpecificPermissions.includes(shortPermission)) {
-                // Add outlet-specific topic for each allowed outlet
+                // Add one outlet-specific topic per allowed outlet.
+                // If the user has no outlet assignments yet, emit NO outlet topics —
+                // do not silently subscribe them to outlet 1.
                 if (allowedOutletIds && allowedOutletIds.length > 0) {
                     allowedOutletIds.forEach(outletId => {
                         topics.push(`tenant_${tenantId}_outlet_${outletId}_${shortPermission}`);
                     });
-                } else {
-                    // Fallback to legacy behavior if no outlets mapped
-                    topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
                 }
             } else {
                 // Add tenant-wide topic for financial, staff, system alerts

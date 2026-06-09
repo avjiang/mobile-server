@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import NetworkResponse from "../api-helpers/network-response";
-import { BaseError, ResponseError, AuthenticationError, VersionMismatchError } from "../api-helpers/error";
+import { BaseError, ResponseError, AuthenticationError, ForbiddenError, VersionMismatchError } from "../api-helpers/error";
 import { Prisma } from "../../prisma/client/generated/client";
 import { sendErrorResponse } from "../api-helpers/network";
 
@@ -9,7 +9,11 @@ export default (error: Error, req: Request, res: Response, next: NextFunction) =
     let responseError: ResponseError;
 
     console.log("Prisma error:", error);
-    if (error instanceof VersionMismatchError) {
+    if (error instanceof ForbiddenError) {
+        // Contract: { success: false, message: "..." } (flat shape, not wrapped in `error`)
+        // Agreed in MULTI_OUTLET_BE.md §6 and MULTI_OUTLET_FE.md §4.
+        return res.status(403).json({ success: false, message: error.message });
+    } else if (error instanceof VersionMismatchError) {
         // Handle VersionMismatchError specifically
         responseError = new ResponseError(error.name, error.message, error.mismatches);
         statusCode = error.statusCode;

@@ -119,7 +119,7 @@ async function createVariantStockRecords(
     tx: any,
     itemId: number,
     variantIds: number[],
-    outletId: number = 1,
+    outletId: number,
     variantStockData?: Map<number, { stockQuantity: number; cost: number }>
 ): Promise<void> {
     if (variantIds.length === 0) return;
@@ -196,7 +196,10 @@ let getAll = async (
     syncRequest: SyncRequest
 ): Promise<{ items: any[]; total: number; serverTimestamp: string }> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
-    const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
+    const { lastSyncTimestamp, lastVersion, skip = 0, take = 100, outletId } = syncRequest;
+    const parsedOutletId = outletId !== undefined && outletId !== null
+        ? (typeof outletId === 'string' ? parseInt(outletId, 10) : outletId)
+        : undefined;
 
     try {
         let where: any;
@@ -224,6 +227,14 @@ let getAll = async (
         // Count total changes
         const total = await tenantPrisma.item.count({ where });
 
+        // The virtual `stockQuantity` field returned to the FE must reflect ONLY
+        // the requesting outlet's stock_balance row — without this filter we'd
+        // sum across outlets and surface another outlet's quantity on the FE.
+        const stockBalanceWhere: any = { deleted: false };
+        if (parsedOutletId !== undefined) {
+            stockBalanceWhere.outletId = parsedOutletId;
+        }
+
         // Fetch paginated items with variants and stock balances (optimized query)
         const items = await tenantPrisma.item.findMany({
             where,
@@ -231,7 +242,7 @@ let getAll = async (
             take,
             include: {
                 stockBalance: {
-                    where: { deleted: false },
+                    where: stockBalanceWhere,
                     select: {
                         availableQuantity: true,
                         itemVariantId: true, // To match with variants
@@ -247,7 +258,7 @@ let getAll = async (
                             },
                         },
                         stockBalances: {
-                            where: { deleted: false },
+                            where: stockBalanceWhere,
                             select: {
                                 availableQuantity: true,
                             },
@@ -320,15 +331,20 @@ let getByIdRaw = async (databaseName: string, id: number) => {
     }
 }
 
-let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
+let getAllBySupplierId = async (databaseName: string, supplierId: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        const stockBalanceWhere: any = {};
+        if (outletId !== undefined) {
+            stockBalanceWhere.outletId = outletId;
+        }
         const items = await tenantPrisma.item.findMany({
             where: {
                 supplierId: supplierId
             },
             include: {
                 stockBalance: {
+                    where: stockBalanceWhere,
                     select: {
                         availableQuantity: true,
                         reorderThreshold: true
@@ -348,15 +364,20 @@ let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
     }
 }
 
-let getAllByCategoryId = async (databaseName: string, categoryId: number) => {
+let getAllByCategoryId = async (databaseName: string, categoryId: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        const stockBalanceWhere: any = {};
+        if (outletId !== undefined) {
+            stockBalanceWhere.outletId = outletId;
+        }
         const items = await tenantPrisma.item.findMany({
             where: {
                 categoryId: categoryId
             },
             include: {
                 stockBalance: {
+                    where: stockBalanceWhere,
                     select: {
                         availableQuantity: true,
                         reorderThreshold: true
@@ -376,16 +397,20 @@ let getAllByCategoryId = async (databaseName: string, categoryId: number) => {
     }
 }
 
-let getById = async (databaseName: string, id: number) => {
+let getById = async (databaseName: string, id: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        const stockBalanceWhere: any = { deleted: false };
+        if (outletId !== undefined) {
+            stockBalanceWhere.outletId = outletId;
+        }
         const item = await tenantPrisma.item.findUnique({
             where: {
                 id: id
             },
             include: {
                 stockBalance: {
-                    where: { deleted: false },
+                    where: stockBalanceWhere,
                     select: {
                         availableQuantity: true,
                         itemVariantId: true, // To match with variants
@@ -402,7 +427,7 @@ let getById = async (databaseName: string, id: number) => {
                             },
                         },
                         stockBalances: {
-                            where: { deleted: false },
+                            where: stockBalanceWhere,
                             select: {
                                 availableQuantity: true,
                             },
@@ -1357,9 +1382,12 @@ let remove = async (databaseName: string, id: number) => {
                     deletedAt: new Date(),
                 },
             }),
-            // Soft-delete all related StockBalance records
+            // Soft-delete all related StockBalance records. The where had
+            // `{ id }` which only matched a single stock_balance row whose id
+            // happened to equal the item id — wrong join column. We want every
+            // stock_balance row tied to this item across all outlets.
             tenantPrisma.stockBalance.updateMany({
-                where: { id },
+                where: { itemId: id },
                 data: {
                     deleted: true,
                     deletedAt: new Date(),
@@ -1465,7 +1493,7 @@ let getLowStockItems = async (databaseName: string, lowStockQuantity: number, is
     }
 }
 
-let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) => {
+let getSoldItemsBySessionId = async (databaseName: string, sessionId: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Get all sales IDs for the specified session - only completed sales
@@ -1520,13 +1548,20 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
         // Collect all itemIds for bulk query
         const itemIds = topSoldItemsData.map(soldItem => soldItem.itemId);
 
-        // Single bulk query to fetch all items at once
+        // Single bulk query to fetch all items at once.
+        // The stockBalance include MUST be outlet-scoped — otherwise the
+        // virtual `stockQuantity` we attach below would be another outlet's row.
+        const stockBalanceWhere: any = {};
+        if (outletId !== undefined) {
+            stockBalanceWhere.outletId = outletId;
+        }
         const items = await tenantPrisma.item.findMany({
             where: {
                 id: { in: itemIds }
             },
             include: {
                 stockBalance: {
+                    where: stockBalanceWhere,
                     select: {
                         availableQuantity: true
                     }

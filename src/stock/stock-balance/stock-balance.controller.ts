@@ -3,7 +3,8 @@ import validator from "validator"
 import service from "./stock-balance.service"
 import { StockBalance } from "../../../prisma/client/generated/client"
 import NetworkRequest from "../../api-helpers/network-request"
-import { RequestValidateError } from "../../api-helpers/error"
+import { RequestValidateError, ForbiddenError } from "../../api-helpers/error"
+import { requireOutletHeader } from "../../api-helpers/outlet-helper"
 import { sendResponse } from "../../api-helpers/network"
 import { CreateStocksRequestBody, StockAdjustment, StockAdjustmentRequestBody, UpdateStocksRequestBody } from "./stock-balance.request"
 import { AuthRequest } from "src/middleware/auth-request"
@@ -31,6 +32,9 @@ let getStockByItemId = (req: AuthRequest, res: Response, next: NextFunction) => 
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
+    if (req.outletId === undefined) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     const itemId = req.query.itemId as string
     const itemVariantId = req.query.itemVariantId as string | undefined
 
@@ -50,7 +54,7 @@ let getStockByItemId = (req: AuthRequest, res: Response, next: NextFunction) => 
         }
     }
 
-    service.getStockByItemId(req.user.databaseName, parseInt(itemId), parsedVariantId)
+    service.getStockByItemId(req.user.databaseName, parseInt(itemId), req.outletId, parsedVariantId)
         .then((stock: any) => sendResponse(res, stock))
         .catch(next)
 }
@@ -59,10 +63,22 @@ let stockAdjustment = (req: NetworkRequest<StockAdjustmentRequestBody>, res: Res
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
+    if (req.outletId === undefined) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
+    // Reject if any per-row outletId disagrees with the requesting outlet.
+    // The body shape is {stockAdjustments: [{outletId, itemId, ...}]} so the
+    // global outlet-authz middleware sees no top-level outletId and cannot
+    // validate the inner rows on its own.
+    requestBody.stockAdjustments.forEach((adj) => {
+        if (adj.outletId !== req.outletId) {
+            throw new ForbiddenError("Stock adjustment outlet mismatch");
+        }
+    });
     service.stockAdjustment(req.user.databaseName, requestBody.stockAdjustments)
         .then((adjustedRecordCount: number) => {
             var message = `Successfully adjusted ${adjustedRecordCount} stocks`
@@ -88,6 +104,10 @@ let clearStock = (req: NetworkRequest<StockAdjustment>, res: Response, next: Nex
     if (!requestBody.itemId || !requestBody.outletId || requestBody.version === undefined) {
         throw new RequestValidateError('itemId, outletId, and version are required for stock clearance')
     }
+
+    // Enforce X-Outlet-ID header presence and that body.outletId matches it.
+    // The helper throws 400 if missing/mismatched.
+    requireOutletHeader(req, requestBody.outletId);
 
     service.clearStock(req.user.databaseName, requestBody)
         .then((clearedRecordCount: number) => {

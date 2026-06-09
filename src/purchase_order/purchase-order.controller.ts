@@ -3,7 +3,8 @@ import validator from "validator"
 import service from "./purchase-order.service"
 import { PurchaseOrder, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError } from "../api-helpers/error"
+import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
@@ -107,7 +108,11 @@ let createMany = (req: NetworkRequest<CreatePurchaseOrderRequestBody>, res: Resp
     }
     const requestBody = req.body
     if (requestBody.purchaseOrders && requestBody.purchaseOrders.length > 0) {
+        const allowed = req.user?.allowedOutletIds ?? [];
         requestBody.purchaseOrders.forEach((po: PurchaseOrderInput) => {
+            if (!allowed.includes(po.outletId)) {
+                throw new ForbiddenError("Outlet access denied");
+            }
             validateDocumentNumber(po.purchaseOrderNumber, po.outletId);
         });
     }
@@ -132,7 +137,8 @@ let cancel = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: Next
     if (!purchaseOrder.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    service.cancel(purchaseOrder, req.user.databaseName)
+    const outletId = requireOutletHeader(req, purchaseOrder.outletId);
+    service.cancel(purchaseOrder, req.user.databaseName, outletId)
         .then((updatedPurchaseOrder: any) => sendResponse(res, updatedPurchaseOrder))
         .catch(next)
 }
@@ -151,12 +157,13 @@ let update = (req: NetworkRequest<PurchaseOrderInput>, res: Response, next: Next
     if (!purchaseOrder.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    
+    const outletId = requireOutletHeader(req, purchaseOrder.outletId);
+
     if (purchaseOrder.purchaseOrderNumber) {
         validateDocumentNumber(purchaseOrder.purchaseOrderNumber, purchaseOrder.outletId);
     }
 
-    service.update(purchaseOrder, req.user.databaseName)
+    service.update(purchaseOrder, req.user.databaseName, outletId)
         .then((updatedPurchaseOrder: any) => sendResponse(res, updatedPurchaseOrder))
         .catch(next)
 }
@@ -168,8 +175,9 @@ let deletePurchaseOrder = (req: AuthRequest, res: Response, next: NextFunction) 
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
+    const outletId = requireOutletHeader(req);
     const purchaseOrderId: number = parseInt(req.params.id)
-    service.deletePurchaseOrder(purchaseOrderId, req.user.databaseName)
+    service.deletePurchaseOrder(purchaseOrderId, req.user.databaseName, outletId)
         .then((message: string) => sendResponse(res, { message }))
         .catch(next)
 }

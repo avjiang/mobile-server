@@ -107,7 +107,6 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
                 itemDescription: `This is a detailed description for product ${i}. It includes features and specifications.`,
                 cost,
                 price,
-                sku, // Add the generated SKU
                 isOpenPrice: i % 10 === 0,
                 unitOfMeasure: getRandomElement(unitOptions),
                 height: getRandomFloat(1, 50),
@@ -174,10 +173,47 @@ async function seedItems(tenantPrisma: any, outletId: number, supplierId: number
 }
 
 async function main(): Promise<void> {
-    const tenantPrisma1 = getTenantPrisma('web_bytes_db');
+    const targetDb = process.env.TARGET_TENANT_DB || 'cch_db';
+    const itemCount = parseInt(process.env.SEED_ITEM_COUNT || '200', 10);
+    console.log(`Seeding tenant DB: ${targetDb} (${itemCount} items)`);
+
+    const tenantPrisma = getTenantPrisma(targetDb);
     try {
-        // Seed 200 items
-        // await seedItems(tenantPrisma1, 1, 1, 1, 200);
+        // Prerequisite: an outlet must exist (created during tenant provisioning).
+        const outlet = await tenantPrisma.outlet.findFirst({
+            where: { deleted: false },
+            orderBy: { id: 'asc' },
+        });
+        if (!outlet) {
+            throw new Error(`No outlet found in ${targetDb}. Provision the tenant first.`);
+        }
+
+        // Prerequisite: a supplier. Create "Default Supplier" if missing.
+        let supplier = await tenantPrisma.supplier.findFirst({
+            where: { companyName: 'Default Supplier' },
+        });
+        if (!supplier) {
+            supplier = await tenantPrisma.supplier.create({
+                data: {
+                    companyName: 'Default Supplier',
+                    hasTax: false,
+                },
+            });
+            console.log(`Created supplier id=${supplier.id}`);
+        }
+
+        // Prerequisite: a category. Create "General" if missing.
+        let category = await tenantPrisma.category.findFirst({
+            where: { name: 'General' },
+        });
+        if (!category) {
+            category = await tenantPrisma.category.create({
+                data: { name: 'General' },
+            });
+            console.log(`Created category id=${category.id}`);
+        }
+
+        await seedItems(tenantPrisma, outlet.id, supplier.id, category.id, itemCount);
 
         console.log("Seeding completed successfully!");
     } catch (error) {
@@ -185,7 +221,7 @@ async function main(): Promise<void> {
         process.exit(1);
     } finally {
         // Close the Prisma client connection
-        await tenantPrisma1.$disconnect();
+        await tenantPrisma.$disconnect();
     }
 }
 

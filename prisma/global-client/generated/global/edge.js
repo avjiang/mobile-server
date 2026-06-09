@@ -475,7 +475,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/alvinjiang/Developments/flutter-server/prisma/global-client/generated/global",
+      "value": "/Users/choonhongchong/Documents/workspace/flutter-spa-backend/prisma/global-client/generated/global",
       "fromEnvVar": null
     },
     "config": {
@@ -505,7 +505,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/alvinjiang/Developments/flutter-server/prisma/global-client/schema.prisma",
+    "sourceFilePath": "/Users/choonhongchong/Documents/workspace/flutter-spa-backend/prisma/global-client/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

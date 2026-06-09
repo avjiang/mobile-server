@@ -13,6 +13,7 @@ let getAll = async (
     userId: number,
     tenantId: number,
     planName: string | null | undefined,
+    outletId: number,
     syncRequest: SyncRequest
 ): Promise<{ roles: any[]; total: number; serverTimestamp: string; notificationTopics?: string[] }> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -86,47 +87,22 @@ let getAll = async (
             }
         });
 
-        // Check if current user's permissions were affected by role changes
-        // Only include notificationTopics on first page (skip=0) to avoid duplicates in pagination
-        // Only for Pro plan tenants (push notifications feature)
+        // Compute notification topics on first page only (to avoid duplicates
+        // across paginated responses). Always emit topics — not gated on
+        // role-change delta — so the FE picks up the per-outlet topic set on
+        // every sync (notably after an outlet switch where roles haven't
+        // changed but the outlet has). `processTopicSubscriptions` is
+        // idempotent — sending the same list twice is a no-op.
         let notificationTopics: string[] | undefined = undefined;
 
         if (skip === 0 && planName === 'Pro') {
-            // On first page, check if user is affected by ANY role changes (not just current page)
-            // This ensures we detect changes even if user's role is on a later page
-            if (!lastSyncTimestamp) {
-                // Initial sync - check if user has active device before generating topics
-                const hasActiveDevice = await checkUserHasActiveDevice(tenantId, userId, databaseName);
-                if (hasActiveDevice) {
-                    notificationTopics = await generateNotificationTopics(tenantId, userId, databaseName);
-                } else {
-                    // Return empty array to force frontend to unsubscribe from all topics
-                    notificationTopics = [];
-                }
-            } else if (total > 0) {
-                // Get ALL changed role IDs (not paginated) for accurate user impact check
-                const allChangedRoleIds = await tenantPrisma.role.findMany({
-                    where,
-                    select: { id: true }
-                });
-
-                const currentUserAffected = await checkIfUserAffectedByRoleChanges(
-                    tenantPrisma,
-                    userId,
-                    allChangedRoleIds.map(r => r.id),
-                    lastSync
-                );
-
-                if (currentUserAffected) {
-                    // Check if user has active device before generating topics
-                    const hasActiveDevice = await checkUserHasActiveDevice(tenantId, userId, databaseName);
-                    if (hasActiveDevice) {
-                        notificationTopics = await generateNotificationTopics(tenantId, userId, databaseName);
-                    } else {
-                        // Return empty array to force frontend to unsubscribe from all topics
-                        notificationTopics = [];
-                    }
-                }
+            const hasActiveDevice = await checkUserHasActiveDevice(tenantId, userId, databaseName);
+            if (hasActiveDevice) {
+                notificationTopics = await generateNotificationTopics(tenantId, userId, databaseName, outletId);
+            } else {
+                // Empty array signals the FE to unsubscribe from all topics
+                // (user lost their active device, or plan downgraded).
+                notificationTopics = [];
             }
         }
 
@@ -223,7 +199,8 @@ const checkUserHasActiveDevice = async (
 const generateNotificationTopics = async (
     tenantId: number,
     userId: number,
-    databaseName: string
+    databaseName: string,
+    outletId: number
 ): Promise<string[]> => {
     try {
         const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -326,9 +303,7 @@ const generateNotificationTopics = async (
 
             // Check if this permission is outlet-specific
             if (outletSpecificPermissions.includes(shortPermission)) {
-                // Add outlet-specific topic (default to outlet_1)
-                // TODO: In future, detect user's actual outlet from session/context
-                topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+                topics.push(`tenant_${tenantId}_outlet_${outletId}_${shortPermission}`);
             } else {
                 // Add tenant-wide topic for financial, staff, system alerts
                 topics.push(`tenant_${tenantId}_${shortPermission}`);

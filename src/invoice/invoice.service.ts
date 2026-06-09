@@ -1135,7 +1135,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
     }
 }
 
-let update = async (invoice: InvoiceInput, databaseName: string) => {
+let update = async (invoice: InvoiceInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = invoice;
@@ -1144,9 +1144,9 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
             throw new RequestValidateError('Invoice ID is required');
         }
 
-        // Get existing invoice
-        const existingInvoice = await tenantPrisma.invoice.findUnique({
-            where: { id: id, deleted: false },
+        // Get existing invoice, scoped to the requesting outlet.
+        const existingInvoice = await tenantPrisma.invoice.findFirst({
+            where: { id: id, outletId: outletId, deleted: false },
             select: {
                 id: true,
                 version: true,
@@ -1476,17 +1476,18 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
     }
 }
 
-let deleteInvoice = async (id: number, databaseName: string): Promise<string> => {
+let deleteInvoice = async (id: number, databaseName: string, outletId: number): Promise<string> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         if (!id) {
             throw new RequestValidateError('Invoice ID is required');
         }
 
-        // Check if invoice exists and is not already deleted
-        const existingInvoice = await tenantPrisma.invoice.findUnique({
+        // Scope by outletId so cross-outlet deletions surface as 404.
+        const existingInvoice = await tenantPrisma.invoice.findFirst({
             where: {
                 id: id,
+                outletId: outletId,
                 deleted: false
             },
             include: {

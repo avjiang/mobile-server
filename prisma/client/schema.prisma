@@ -174,7 +174,6 @@ model User {
 }
 
 model UserOutlet {
-  id        Int       @id @default(autoincrement()) @map("ID")
   userId    Int       @map("USER_ID")
   outletId  Int       @map("OUTLET_ID")
   isPrimary Boolean   @default(false) @map("IS_PRIMARY")
@@ -186,8 +185,7 @@ model UserOutlet {
   user      User      @relation(fields: [userId], references: [id])
   outlet    Outlet    @relation(fields: [outletId], references: [id])
 
-  @@unique([userId, outletId])
-  @@index([userId])
+  @@id([userId, outletId])
   @@index([outletId])
   @@map("user_outlet")
 }
@@ -1187,6 +1185,7 @@ model MenuProfileOutlet {
   outlet        Outlet      @relation(fields: [outletId], references: [id])
   menuProfile   MenuProfile @relation(fields: [menuProfileID], references: [id])
 
+  @@index([outletId])
   @@map("menu_profile_outlet")
 }
 

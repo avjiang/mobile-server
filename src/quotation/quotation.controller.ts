@@ -3,7 +3,9 @@ import validator from "validator"
 import service from "./quotation.service"
 import { Quotation, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError } from "../api-helpers/error"
+import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
+import { validateDocumentNumber } from "../helpers/documentHelper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
@@ -105,6 +107,15 @@ let createMany = (req: NetworkRequest<CreateQuotationRequestBody>, res: Response
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
+    if (requestBody.quotations && requestBody.quotations.length > 0) {
+        const allowed = req.user?.allowedOutletIds ?? [];
+        requestBody.quotations.forEach((q: QuotationInput) => {
+            if (!allowed.includes(q.outletId)) {
+                throw new ForbiddenError("Outlet access denied");
+            }
+            validateDocumentNumber(q.quotationNumber, q.outletId);
+        });
+    }
     service.createMany(req.user.databaseName, requestBody)
         .then((response) => {
             sendResponse(res, response)
@@ -126,7 +137,8 @@ let cancel = (req: NetworkRequest<QuotationInput>, res: Response, next: NextFunc
     if (!quotation.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    service.cancel(quotation, req.user.databaseName)
+    const outletId = requireOutletHeader(req, quotation.outletId);
+    service.cancel(quotation, req.user.databaseName, outletId)
         .then((updatedQuotation: any) => sendResponse(res, updatedQuotation))
         .catch(next)
 }
@@ -145,7 +157,11 @@ let update = (req: NetworkRequest<QuotationInput>, res: Response, next: NextFunc
     if (!quotation.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    service.update(quotation, req.user.databaseName)
+    const outletId = requireOutletHeader(req, quotation.outletId);
+    if (quotation.quotationNumber) {
+        validateDocumentNumber(quotation.quotationNumber, quotation.outletId);
+    }
+    service.update(quotation, req.user.databaseName, outletId)
         .then((updatedQuotation: any) => sendResponse(res, updatedQuotation))
         .catch(next)
 }
@@ -157,8 +173,9 @@ let deleteQuotation = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
+    const outletId = requireOutletHeader(req);
     const quotationId: number = parseInt(req.params.id)
-    service.deleteQuotation(quotationId, req.user.databaseName)
+    service.deleteQuotation(quotationId, req.user.databaseName, outletId)
         .then((message: string) => sendResponse(res, { message }))
         .catch(next)
 }

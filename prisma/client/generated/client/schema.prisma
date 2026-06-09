@@ -167,9 +167,27 @@ model User {
   roles                  Role[]                  @relation("user_roles") // Many-to-many with roles
   overrideRequests       OverrideLog[]           @relation("OverrideRequests")
   notificationPreference NotificationPreference?
+  userOutlets            UserOutlet[]
 
   @@index([email])
   @@map("user")
+}
+
+model UserOutlet {
+  userId    Int       @map("USER_ID")
+  outletId  Int       @map("OUTLET_ID")
+  isPrimary Boolean   @default(false) @map("IS_PRIMARY")
+  deleted   Boolean   @default(false) @map("IS_DELETED")
+  deletedAt DateTime? @map("DELETED_AT")
+  createdAt DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt DateTime? @updatedAt @map("UPDATED_AT")
+  version   Int?      @default(1) @map("VERSION")
+  user      User      @relation(fields: [userId], references: [id])
+  outlet    Outlet    @relation(fields: [outletId], references: [id])
+
+  @@id([userId, outletId])
+  @@index([outletId])
+  @@map("user_outlet")
 }
 
 model OverrideLog {
@@ -310,31 +328,42 @@ model Company {
 }
 
 model Outlet {
-  id              Int              @id @default(autoincrement()) @map("ID")
-  tenantOutletId  Int              @map("TENANT_OUTLET_ID")
-  outletName      String           @map("OUTLET_NAME")
-  street          String           @default("") @map("STREET")
-  city            String           @default("") @map("CITY")
-  state           String           @default("") @map("STATE")
-  postalCode      String           @default("") @map("POSTAL_CODE")
-  country         String           @default("") @map("COUNTRY")
-  outletTel       String           @default("") @map("OUTLET_TEL")
-  outletEmail     String           @default("") @map("OUTLET_EMAIL")
-  deleted         Boolean          @default(false) @map("IS_DELETED")
-  deletedAt       DateTime?        @map("DELETED_AT")
-  createdAt       DateTime?        @default(now()) @map("CREATED_AT")
-  updatedAt       DateTime?        @updatedAt @map("UPDATED_AT")
-  version         Int?             @default(1) @map("VERSION")
-  stockBalances   StockBalance[]
-  stockMovements  StockMovement[]
-  stockSnapshots  StockSnapshot[]
-  stockReceipts   StockReceipt[]
-  settings        Setting[] // Outlet-specific settings
-  tables          Table[]
-  stations        Station[]
-  reservations    Reservation[]
-  waitlists       Waitlist[]
-  purchaseReturns PurchaseReturn[]
+  id                 Int                 @id @default(autoincrement()) @map("ID")
+  tenantOutletId     Int                 @map("TENANT_OUTLET_ID")
+  outletName         String              @map("OUTLET_NAME")
+  street             String              @default("") @map("STREET")
+  city               String              @default("") @map("CITY")
+  state              String              @default("") @map("STATE")
+  postalCode         String              @default("") @map("POSTAL_CODE")
+  country            String              @default("") @map("COUNTRY")
+  outletTel          String              @default("") @map("OUTLET_TEL")
+  outletEmail        String              @default("") @map("OUTLET_EMAIL")
+  deleted            Boolean             @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?           @map("DELETED_AT")
+  createdAt          DateTime?           @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
+  version            Int?                @default(1) @map("VERSION")
+  stockBalances      StockBalance[]
+  stockMovements     StockMovement[]
+  stockSnapshots     StockSnapshot[]
+  stockReceipts      StockReceipt[]
+  settings           Setting[] // Outlet-specific settings
+  tables             Table[]
+  stations           Station[]
+  reservations       Reservation[]
+  waitlists          Waitlist[]
+  purchaseReturns    PurchaseReturn[]
+  sales              Sales[]             @relation("SalesOutlet")
+  stockSourceSales   Sales[]             @relation("SalesStockSourceOutlet")
+  payments           Payment[]
+  registerLogs       RegisterLog[]
+  sessions           Session[]
+  invoices           Invoice[]
+  deliveryOrders     DeliveryOrder[]
+  quotations         Quotation[]
+  purchaseOrders     PurchaseOrder[]
+  menuProfileOutlets MenuProfileOutlet[]
+  userOutlets        UserOutlet[]
 
   @@map("outlet")
 }
@@ -478,6 +507,8 @@ model Sales {
   voucherDiscountAmount     Decimal? @map("VOUCHER_DISCOUNT_AMOUNT") @db.Decimal(15, 4)
 
   // Relations
+  outlet               Outlet                @relation("SalesOutlet", fields: [outletId], references: [id])
+  stockSourceOutlet    Outlet?               @relation("SalesStockSourceOutlet", fields: [stockSourceOutletId], references: [id])
   salesItems           SalesItem[]
   payments             Payment[]
   registerLogs         RegisterLog[]
@@ -593,6 +624,7 @@ model Invoice {
   updatedAt           DateTime?          @updatedAt @map("UPDATED_AT")
   version             Int?               @default(1) @map("VERSION")
   isTaxInclusive      Boolean?           @default(false) @map("IS_TAX_INCLUSIVE")
+  outlet              Outlet             @relation(fields: [outletId], references: [id])
   session             Session?           @relation(fields: [sessionId], references: [id])
   purchaseOrder       PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id])
   supplier            Supplier?          @relation(fields: [supplierId], references: [id])
@@ -694,6 +726,7 @@ model DeliveryOrder {
   createdAt          DateTime?           @default(now()) @map("CREATED_AT")
   updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
   version            Int?                @default(1) @map("VERSION")
+  outlet             Outlet              @relation(fields: [outletId], references: [id])
   session            Session?            @relation(fields: [sessionId], references: [id])
   purchaseOrder      PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
   invoice            Invoice?            @relation(fields: [invoiceId], references: [id]) // One-to-many relation
@@ -763,6 +796,7 @@ model Quotation {
   updatedAt           DateTime?       @updatedAt @map("UPDATED_AT")
   version             Int?            @default(1) @map("VERSION")
   isTaxInclusive      Boolean?        @default(false) @map("IS_TAX_INCLUSIVE")
+  outlet              Outlet          @relation(fields: [outletId], references: [id])
   session             Session?        @relation(fields: [sessionId], references: [id])
   supplier            Supplier        @relation(fields: [supplierId], references: [id])
   quotationItems      QuotationItem[]
@@ -833,6 +867,7 @@ model PurchaseOrder {
   version             Int?                @default(1) @map("VERSION")
   isTaxInclusive      Boolean?            @default(false) @map("IS_TAX_INCLUSIVE")
   quotationId         Int?                @map("QUOTATION_ID") // Reference to source quotation
+  outlet              Outlet              @relation(fields: [outletId], references: [id])
   quotation           Quotation?          @relation(fields: [quotationId], references: [id])
   session             Session?            @relation(fields: [sessionId], references: [id])
   supplier            Supplier            @relation(fields: [supplierId], references: [id])
@@ -896,12 +931,14 @@ model Payment {
   createdAt      DateTime?   @default(now()) @map("CREATED_AT")
   updatedAt      DateTime?   @updatedAt @map("UPDATED_AT")
   version        Int?        @default(1) @map("VERSION")
+  outlet         Outlet      @relation(fields: [outletId], references: [id])
   cardInfos      CardInfo[]
   sales          Sales       @relation(fields: [salesId], references: [id])
   splitBills     SplitBill[]
 
   @@index([method])
   @@index([businessDate])
+  @@index([outletId])
   @@map("payment")
 }
 
@@ -921,8 +958,10 @@ model RegisterLog {
   createdAt      DateTime? @default(now()) @map("CREATED_AT")
   updatedAt      DateTime? @updatedAt @map("UPDATED_AT")
   version        Int?      @default(1) @map("VERSION")
+  outlet         Outlet    @relation(fields: [outletId], references: [id])
   sales          Sales     @relation(fields: [salesId], references: [id])
 
+  @@index([outletId])
   @@map("register_log")
 }
 
@@ -961,12 +1000,14 @@ model Session {
   createdAt       DateTime?       @default(now()) @map("CREATED_AT")
   updatedAt       DateTime?       @updatedAt @map("UPDATED_AT")
   version         Int?            @default(1) @map("VERSION")
+  outlet          Outlet          @relation(fields: [outletId], references: [id])
   declarations    Declaration[]
   quotations      Quotation[]
   purchaseOrders  PurchaseOrder[]
   deliveryOrders  DeliveryOrder[]
   invoices        Invoice[]
 
+  @@index([outletId])
   @@map("session")
 }
 
@@ -1133,39 +1174,43 @@ model StockSnapshot {
 }
 
 model MenuProfileOutlet {
-  id            Int       @id @default(autoincrement()) @map("ID")
-  outletId      Int       @map("OUTLET_ID")
-  menuProfileID Int       @map("MENU_PROFILE_ID")
-  deleted       Boolean   @default(false) @map("IS_DELETED")
-  deletedAt     DateTime? @map("DELETED_AT")
-  createdAt     DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt     DateTime? @updatedAt @map("UPDATED_AT")
-  version       Int?      @default(1) @map("VERSION")
+  id            Int         @id @default(autoincrement()) @map("ID")
+  outletId      Int         @map("OUTLET_ID")
+  menuProfileID Int         @map("MENU_PROFILE_ID")
+  deleted       Boolean     @default(false) @map("IS_DELETED")
+  deletedAt     DateTime?   @map("DELETED_AT")
+  createdAt     DateTime?   @default(now()) @map("CREATED_AT")
+  updatedAt     DateTime?   @updatedAt @map("UPDATED_AT")
+  version       Int?        @default(1) @map("VERSION")
+  outlet        Outlet      @relation(fields: [outletId], references: [id])
+  menuProfile   MenuProfile @relation(fields: [menuProfileID], references: [id])
 
+  @@index([outletId])
   @@map("menu_profile_outlet")
 }
 
 model MenuProfile {
-  id             Int            @id @default(autoincrement()) @map("ID")
-  name           String         @map("NAME")
-  dateStart      String         @map("DATE_START")
-  dateEnd        String         @map("DATE_END")
-  timeStart      String         @map("TIME_START")
-  timeEnd        String         @map("TIME_END")
-  isMonday       Boolean        @map("IS_MONDAY")
-  isTuesday      Boolean        @map("IS_TUESDAY")
-  isWednesday    Boolean        @map("IS_WEDNESDAY")
-  isThursday     Boolean        @map("IS_THURSDAY")
-  isFriday       Boolean        @map("IS_FRIDAY")
-  isSaturday     Boolean        @map("IS_SATURDAY")
-  isSunday       Boolean        @map("IS_SUNDAY")
-  sequence       Int            @map("SEQUENCE")
-  deleted        Boolean        @default(false) @map("IS_DELETED")
-  deletedAt      DateTime?      @map("DELETED_AT")
-  createdAt      DateTime?      @default(now()) @map("CREATED_AT")
-  updatedAt      DateTime?      @updatedAt @map("UPDATED_AT")
-  version        Int?           @default(1) @map("VERSION")
-  menuCategories MenuCategory[]
+  id                 Int                 @id @default(autoincrement()) @map("ID")
+  name               String              @map("NAME")
+  dateStart          String              @map("DATE_START")
+  dateEnd            String              @map("DATE_END")
+  timeStart          String              @map("TIME_START")
+  timeEnd            String              @map("TIME_END")
+  isMonday           Boolean             @map("IS_MONDAY")
+  isTuesday          Boolean             @map("IS_TUESDAY")
+  isWednesday        Boolean             @map("IS_WEDNESDAY")
+  isThursday         Boolean             @map("IS_THURSDAY")
+  isFriday           Boolean             @map("IS_FRIDAY")
+  isSaturday         Boolean             @map("IS_SATURDAY")
+  isSunday           Boolean             @map("IS_SUNDAY")
+  sequence           Int                 @map("SEQUENCE")
+  deleted            Boolean             @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?           @map("DELETED_AT")
+  createdAt          DateTime?           @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime?           @updatedAt @map("UPDATED_AT")
+  version            Int?                @default(1) @map("VERSION")
+  menuCategories     MenuCategory[]
+  menuProfileOutlets MenuProfileOutlet[]
 
   @@map("menu_profile")
 }

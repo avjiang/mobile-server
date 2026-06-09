@@ -125,13 +125,14 @@ let getAllStock = async (
     }
 };
 
-let getStockByItemId = async (databaseName: string, itemId: number, itemVariantId?: number | null) => {
+let getStockByItemId = async (databaseName: string, itemId: number, outletId: number, itemVariantId?: number | null) => {
     try {
         const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
-        // Build where condition - include itemVariantId if provided
+        // Build where condition - scope to current outlet; optionally include itemVariantId
         const whereCondition: any = {
             itemId: itemId,
+            outletId: outletId,
             deleted: false
         };
 
@@ -234,12 +235,41 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                 stockBalances.map(stock => [`${stock.itemId}-${stock.itemVariantId || 'null'}-${stock.outletId}`, stock])
             );
 
+            // Step 2b: Auto-seed missing rows. Items created in another outlet
+            // have no stock_balance row in the current outlet — adjusting becomes
+            // the act of initializing stock here. The FE has no prior row to
+            // read a version from and submits null/undefined; we normalize the
+            // seed to version 1 (matches the schema default) and mutate the
+            // adjustment in place so Step 3's version check and Step 7's update
+            // WHERE clause both agree.
+            for (const adjustment of stockAdjustments) {
+                const stockKey = `${adjustment.itemId}-${adjustment.itemVariantId || 'null'}-${adjustment.outletId}`;
+                if (stockBalanceMap.has(stockKey)) continue;
+                adjustment.version = 1;
+                const created = await tx.stockBalance.create({
+                    data: {
+                        itemId: adjustment.itemId,
+                        itemVariantId: adjustment.itemVariantId || null,
+                        outletId: adjustment.outletId,
+                        availableQuantity: 0,
+                        onHandQuantity: 0,
+                        reorderThreshold: null,
+                        version: 1,
+                        deleted: false,
+                    },
+                    select: { id: true, itemId: true, outletId: true, itemVariantId: true, availableQuantity: true, onHandQuantity: true, version: true }
+                });
+                stockBalanceMap.set(stockKey, created);
+            }
+
             // Step 3: Validate all adjustments against fetched stocks
             const validatedAdjustments = stockAdjustments.map(adjustment => {
                 const stockKey = `${adjustment.itemId}-${adjustment.itemVariantId || 'null'}-${adjustment.outletId}`;
                 const stock = stockBalanceMap.get(stockKey);
 
                 if (!stock) {
+                    // Unreachable: Step 2b guarantees a row exists for every adjustment.
+                    // Kept as a defensive guard in case the seed path is bypassed.
                     const variantInfo = adjustment.itemVariantId ? ` and variantId ${adjustment.itemVariantId}` : '';
                     throw new NotFoundError(`Stock not found for itemId ${adjustment.itemId}${variantInfo} and outletId ${adjustment.outletId}`);
                 }

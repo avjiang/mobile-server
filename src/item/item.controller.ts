@@ -19,6 +19,7 @@ let getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('User not authenticated');
     }
     const syncRequest: SyncRequest = {
+        outletId: req.outletId !== undefined ? String(req.outletId) : undefined,
         lastSyncTimestamp: req.query.lastSyncTimestamp as string,
         lastVersion: req.query.lastVersion ? parseInt(req.query.lastVersion as string) : undefined,
         skip: req.query.skip ? parseInt(req.query.skip as string) : undefined,
@@ -45,7 +46,7 @@ let getAllBySupplierId = (req: AuthRequest, res: Response, next: NextFunction) =
         throw new RequestValidateError('User not authenticated')
     }
     const supplierIdParam = Number(supplierId)
-    service.getAllBySupplierId(req.user.databaseName, supplierIdParam)
+    service.getAllBySupplierId(req.user.databaseName, supplierIdParam, req.outletId)
         .then((items: any[]) => sendResponse(res, items))
         .catch(next)
 }
@@ -63,7 +64,7 @@ let getAllByCategoryId = (req: AuthRequest, res: Response, next: NextFunction) =
         throw new RequestValidateError('User not authenticated')
     }
     const categoryIdParam = Number(categoryId)
-    service.getAllByCategoryId(req.user.databaseName, categoryIdParam)
+    service.getAllByCategoryId(req.user.databaseName, categoryIdParam, req.outletId)
         .then((items: any[]) => sendResponse(res, items))
         .catch(next)
 }
@@ -76,7 +77,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('User not authenticated')
     }
     const itemId: number = parseInt(req.params.id)
-    service.getById(req.user?.databaseName, itemId)
+    service.getById(req.user?.databaseName, itemId, req.outletId)
         .then((item) => sendResponse(res, item))
         .catch(next)
 }
@@ -154,7 +155,7 @@ let getSoldItemRanking = (req: AuthRequest, res: Response, next: NextFunction) =
     if (sessionIdNum === undefined) {
         throw new RequestValidateError('sessionID is required and must be a number')
     }
-    service.getSoldItemsBySessionId(req.user.databaseName, sessionIdNum)
+    service.getSoldItemsBySessionId(req.user.databaseName, sessionIdNum, req.outletId)
         .then((itemSoldObjects) => {
             const response = {
                 ...itemSoldObjects,

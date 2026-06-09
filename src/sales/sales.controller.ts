@@ -2,7 +2,8 @@ import express, { NextFunction, Request, Response } from "express"
 import validator from "validator"
 import service from "./sales.service"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError } from "../api-helpers/error"
+import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
 import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
@@ -151,6 +152,15 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
     if (!sales) {
         throw new RequestValidateError('Create failed: sales data missing')
     }
+    // Defence-in-depth: stockSourceOutletId must also be in the user's allowedOutletIds.
+    // The global outlet-authz middleware validates body.outletId but does not look at
+    // additional outlet references on the payload.
+    if (sales.stockSourceOutletId !== undefined && sales.stockSourceOutletId !== null) {
+        const allowed = req.user.allowedOutletIds ?? [];
+        if (!allowed.includes(sales.stockSourceOutletId)) {
+            throw new ForbiddenError("Outlet access denied");
+        }
+    }
     const payments = requestBody.payments
     service.completeNewSales(
         req.user.databaseName,
@@ -231,7 +241,8 @@ const update = (req: NetworkRequest<SalesRequestBody>, res: Response, next: Next
         throw new RequestValidateError('Update failed: [id] not found')
     }
 
-    service.update(req.user.databaseName, salesBody)
+    const outletId = requireOutletHeader(req, salesBody.sales.outletId);
+    service.update(req.user.databaseName, salesBody, outletId)
         .then(() => sendResponse(res, "Successfully updated"))
         .catch(next)
 }
@@ -243,9 +254,9 @@ const remove = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
-
+    const outletId = requireOutletHeader(req);
     const salesId: number = parseInt(req.params.id)
-    service.remove(req.user.databaseName, salesId)
+    service.remove(req.user.databaseName, salesId, outletId)
         .then(() => sendResponse(res, "Successfully deleted"))
         .catch(next)
 }
@@ -318,12 +329,14 @@ const addPaymentToPartiallyPaidSales = (req: NetworkRequest<AddPaymentRequest>, 
     if (!payments || !Array.isArray(payments) || payments.length === 0) {
         throw new RequestValidateError('At least one payment is required');
     }
+    const outletId = requireOutletHeader(req);
     service.addPaymentToPartiallyPaidSales(
         req.user.databaseName,
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId,
-        payments
+        payments,
+        outletId
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -336,12 +349,16 @@ const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect');
     }
+    if (!req.outletId) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     const salesId: number = parseInt(req.params.id);
     service.voidSales(
         req.user.databaseName,
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
-        salesId
+        salesId,
+        req.outletId
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -354,12 +371,16 @@ const returnSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect');
     }
+    if (!req.outletId) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     const salesId: number = parseInt(req.params.id);
     service.returnSales(
         req.user.databaseName,
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
-        salesId
+        salesId,
+        req.outletId
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -372,12 +393,16 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect');
     }
+    if (!req.outletId) {
+        throw new RequestValidateError('Outlet ID is required');
+    }
     const salesId: number = parseInt(req.params.id);
     service.refundSales(
         req.user.databaseName,
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
-        salesId
+        salesId,
+        req.outletId
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -413,6 +438,11 @@ const confirmDeliveryBatch = (req: AuthRequest, res: Response, next: NextFunctio
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
+    // Body has no top-level `outletId` so the middleware's body-wins fallback
+    // is harmless here, but use the helper anyway for consistency with the
+    // rest of the round 4/5 hardened endpoints: header is the single source
+    // of truth, missing header → 400.
+    const outletId = requireOutletHeader(req);
     const { salesIds, deliveryNotes, deliveredAt } = req.body;
 
     if (!salesIds || !Array.isArray(salesIds) || salesIds.length === 0) {
@@ -426,6 +456,7 @@ const confirmDeliveryBatch = (req: AuthRequest, res: Response, next: NextFunctio
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username },
         salesIds,
+        outletId,
         deliveryNotes,
         deliveredAtDate
     )

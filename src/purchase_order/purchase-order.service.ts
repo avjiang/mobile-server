@@ -688,7 +688,7 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
     }
 }
 
-let cancel = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => {
+let cancel = async (purchaseOrder: PurchaseOrderInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = purchaseOrder;
@@ -697,10 +697,11 @@ let cancel = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
             throw new RequestValidateError('Purchase order ID is required');
         }
 
-        // Single query to get existing purchase order with related data
-        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findUnique({
+        // Scope by outletId so cross-outlet cancellations surface as 404.
+        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findFirst({
             where: {
                 id: id,
+                outletId: outletId,
                 deleted: false
             },
         });
@@ -753,7 +754,7 @@ let cancel = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
 }
 
 
-let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => {
+let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = purchaseOrder;
@@ -762,10 +763,11 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
             throw new RequestValidateError('Purchase order ID is required');
         }
 
-        // Single query to get existing purchase order with related data
-        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findUnique({
+        // Get existing purchase order, scoped to the requesting outlet.
+        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findFirst({
             where: {
                 id: id,
+                outletId: outletId,
                 deleted: false
             },
             include: {
@@ -965,17 +967,18 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
     }
 }
 
-let deletePurchaseOrder = async (id: number, databaseName: string): Promise<string> => {
+let deletePurchaseOrder = async (id: number, databaseName: string, outletId: number): Promise<string> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         if (!id) {
             throw new RequestValidateError('Purchase order ID is required');
         }
 
-        // Check if purchase order exists and is not already deleted
-        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findUnique({
+        // Scope by outletId so cross-outlet deletions surface as 404.
+        const existingPurchaseOrder = await tenantPrisma.purchaseOrder.findFirst({
             where: {
                 id: id,
+                outletId: outletId,
                 deleted: false
             },
             include: {

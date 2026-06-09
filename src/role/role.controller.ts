@@ -4,6 +4,7 @@ import service from "./role.service"
 import { Category, RolePermission, Role } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
 import { AssignRoleRequestBody, CreateRoleRequestBody } from "./role.request"
@@ -15,6 +16,10 @@ let getAllRole = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
+    // Notification topics are per-outlet (see role.service.ts::generateNotificationTopics).
+    // Require X-Outlet-ID so the topic set always reflects the user's current outlet —
+    // without this, a stale header could subscribe the device to the wrong outlet.
+    const outletId = requireOutletHeader(req);
     const syncRequest: SyncRequest = {
         lastSyncTimestamp: req.query.lastSyncTimestamp as string,
         lastVersion: req.query.lastVersion ? parseInt(req.query.lastVersion as string) : undefined,
@@ -22,10 +27,10 @@ let getAllRole = (req: AuthRequest, res: Response, next: NextFunction) => {
         take: req.query.take ? parseInt(req.query.take as string) : undefined,
     };
     service
-        .getAll(req.user.databaseName, req.user.userId, req.user.tenantId, req.user.planName, syncRequest)
+        .getAll(req.user.databaseName, req.user.userId, req.user.tenantId, req.user.planName, outletId, syncRequest)
         .then(({ roles, total, serverTimestamp, notificationTopics }) => {
             const response: any = { data: roles, total, serverTimestamp };
-            // Only include notificationTopics if it exists (current user affected or initial sync)
+            // Only include notificationTopics if it exists (Pro plan + first page).
             if (notificationTopics !== undefined) {
                 response.notificationTopics = notificationTopics;
             }

@@ -46,6 +46,13 @@ app.use('/version', require('./version/version.controller'))
 //authentication middleware
 app.use(authorizeMiddleware)
 
+// Admin routes are mounted BEFORE requireOutletAccess so the outlet middleware
+// never inspects admin URLs. Admin endpoints carry a global tenant_outlet.id in
+// path params which would never match a JWT's tenant-local allowedOutletIds.
+// Admin auth gating happens inside authorizeMiddleware (admin role check).
+app.use('/admin', require('./admin/admin.controller'))
+app.use('/admin', require('./admin/version/admin-version.controller'))
+
 import { requireOutletAccess } from './middleware/outlet-authorization.middleware'
 app.use(requireOutletAccess)
 
@@ -54,8 +61,6 @@ app.use(requireOutletAccess)
 app.use(idempotencyMiddleware)
 
 // all api routes that need authorize should place here
-app.use('/admin', require('./admin/admin.controller'))
-app.use('/admin', require('./admin/version/admin-version.controller'))
 app.use('/account', require('./account/account.controller'))
 app.use('/user', require('./user/user.controller'))
 app.use('/item', require('./item/item.controller'))

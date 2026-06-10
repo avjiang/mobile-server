@@ -768,10 +768,14 @@ const reduceStockBalancesAndCreateMovements = async (
         stockBalanceMap.set(key, balance);
     });
 
-    // Get all stock receipts for this invoice's delivery orders
+    // Get all stock receipts for this invoice's delivery orders.
+    // outletId guard: transfers preserve deliveryOrderId provenance on recreated
+    // receipts at other locations — the return must only shrink receipts at the
+    // returning outlet, never a transferred layer elsewhere.
     const stockReceipts = await tx.stockReceipt.findMany({
         where: {
             deliveryOrderId: { in: deliveryOrderIds },
+            outletId: purchaseReturn.outletId,
             deleted: false
         }
     });

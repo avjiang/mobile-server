@@ -37,10 +37,13 @@ export interface FifoLayer {
     quantity: Decimal;
     cost: Decimal;
     receiptDate?: Date;
+    // Procurement provenance — preserved across moves so invoice re-pricing can
+    // find and re-cost a layer wherever it currently sits (see sales-cost-restatement.ts).
+    deliveryOrderId?: number | null;
 }
 
 export interface ConsumeResult {
-    layers: { quantityUsed: Decimal; cost: Decimal; receiptDate: Date }[];
+    layers: { quantityUsed: Decimal; cost: Decimal; receiptDate: Date; deliveryOrderId: number | null }[];
     totalCost: Decimal;
 }
 
@@ -121,6 +124,7 @@ export async function receiveLayers(
             quantity: layer.quantity,
             cost: layer.cost,
             receiptDate: layer.receiptDate ?? now,
+            deliveryOrderId: layer.deliveryOrderId ?? null,
             deleted: false,
             version: 1,
         };
@@ -221,10 +225,10 @@ export async function consumeFIFO(
     const receipts = await ref.receipt.findMany({
         where: { ...where, quantity: { gt: 0 } },
         orderBy: { receiptDate: "asc" },
-        select: { id: true, quantity: true, cost: true, receiptDate: true },
+        select: { id: true, quantity: true, cost: true, receiptDate: true, deliveryOrderId: true },
     });
 
-    const layers: { quantityUsed: Decimal; cost: Decimal; receiptDate: Date }[] = [];
+    const layers: { quantityUsed: Decimal; cost: Decimal; receiptDate: Date; deliveryOrderId: number | null }[] = [];
     let totalCost = new Decimal(0);
     let remaining = p.quantity;
 
@@ -233,7 +237,7 @@ export async function consumeFIFO(
         const avail = new Decimal(r.quantity);
         const used = Decimal.min(avail, remaining);
         const cost = new Decimal(r.cost);
-        layers.push({ quantityUsed: used, cost, receiptDate: r.receiptDate });
+        layers.push({ quantityUsed: used, cost, receiptDate: r.receiptDate, deliveryOrderId: r.deliveryOrderId ?? null });
         totalCost = totalCost.add(cost.times(used));
         remaining = remaining.sub(used);
         const newQty = avail.sub(used);
@@ -250,7 +254,7 @@ export async function consumeFIFO(
 
     if (remaining.greaterThan(0)) {
         totalCost = totalCost.add(p.fallbackCost.times(remaining));
-        layers.push({ quantityUsed: remaining, cost: p.fallbackCost, receiptDate: now });
+        layers.push({ quantityUsed: remaining, cost: p.fallbackCost, receiptDate: now, deliveryOrderId: null });
         remaining = new Decimal(0);
     }
 

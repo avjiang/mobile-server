@@ -1719,6 +1719,10 @@ async function completeNewSales(
                         const receiptQuantity = new Decimal(receipt.quantityUsed);
                         const receiptCost = new Decimal(receipt.cost);
 
+                        // Cost provenance: link the line to the receipt that priced it
+                        // (id -1 = fallback cost, no receipt → stays NULL).
+                        const receiptSource = receipt.id !== -1 ? sources[receipt.srcIndex] : null;
+
                         const revenueForQuantity = new Decimal(item.price).times(receiptQuantity);
                         const costForQuantity = receiptCost.times(receiptQuantity);
                         const totalDiscountForQuantity = discountPerUnit.times(receiptQuantity);
@@ -1754,6 +1758,8 @@ async function completeNewSales(
                             stockConsumptionQty: null,
                             unitOfMeasure: item.unitOfMeasure || null,
                             loadWeightKg: item.loadWeightKg ?? null,
+                            stockReceiptId: receiptSource?.kind === 'OUTLET' ? receipt.id : null,
+                            warehouseStockReceiptId: receiptSource?.kind === 'WAREHOUSE' ? receipt.id : null,
                         });
                     });
                 }

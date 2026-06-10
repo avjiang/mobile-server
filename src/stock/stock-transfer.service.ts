@@ -112,6 +112,9 @@ async function transferStock(databaseName: string, body: TransferBody) {
                     quantity: l.quantityUsed,
                     cost: l.cost,
                     receiptDate: l.receiptDate,
+                    // Preserve procurement provenance across the move so invoice
+                    // re-pricing reaches transferred layers at their new location.
+                    deliveryOrderId: l.deliveryOrderId,
                 })),
                 movementType: "Transfer In",
                 reason: body.reason || `Transfer from ${src.label}`,

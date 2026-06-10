@@ -740,7 +740,9 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             await receiveLayers(ref, {
                 itemId: item.itemId,
                 itemVariantId: item.itemVariantId || null,
-                layers: [{ quantity: qty, cost: perUnitCost, receiptDate: new Date() }],
+                // deliveryOrderId provenance is what lets invoice re-pricing find and
+                // re-cost this receipt later (supplier discount → cost adjustment).
+                layers: [{ quantity: qty, cost: perUnitCost, receiptDate: new Date(), deliveryOrderId: deliveryOrder.id }],
                 movementType: 'Delivery Receipt',
                 documentId: deliveryOrder.id,
                 reason: `Stock received from delivery order #${deliveryOrder.id}`,
@@ -970,10 +972,14 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
         await tx.stockMovement.createMany({ data: movementOperations });
     }
 
-    // Soft delete existing stock receipts for this delivery order
+    // Soft delete existing stock receipts for this delivery order.
+    // outletId guard: transfers preserve deliveryOrderId provenance on receipts they
+    // recreate at other locations — this reversal decrements only this outlet's
+    // balances, so it must only delete this outlet's receipts.
     await tx.stockReceipt.updateMany({
         where: {
             deliveryOrderId: deliveryOrder.id,
+            outletId: deliveryOrder.outletId,
             deleted: false
         },
         data: {

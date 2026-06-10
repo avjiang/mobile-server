@@ -599,6 +599,11 @@ model SalesItem {
   itemStatus          String?             @map("ITEM_STATUS")
   priority            String?             @map("PRIORITY") // e.g., "NORMAL", "RUSH"
   estimatedPrepTime   Int?                @map("ESTIMATED_PREP_TIME") // In minutes
+  // FIFO cost provenance — which receipt this line's cost snapshot came from (piece-based
+  // lines only; consumption/weighted-avg and fallback-cost lines stay NULL). Enables exact
+  // sales cost+profit restatement when invoice re-pricing changes a receipt's cost.
+  stockReceiptId          Int?            @map("STOCK_RECEIPT_ID")
+  warehouseStockReceiptId Int?            @map("WAREHOUSE_STOCK_RECEIPT_ID")
   sales               Sales               @relation(fields: [salesId], references: [id])
   itemVariant         ItemVariant?        @relation(fields: [itemVariantId], references: [id])
   selectedModifiers   SalesItemModifier[]
@@ -609,6 +614,8 @@ model SalesItem {
   @@index([itemVariantId])
   @@index([quantity])
   @@index([profit])
+  @@index([stockReceiptId])
+  @@index([warehouseStockReceiptId])
   @@map("sales_item")
 }
 

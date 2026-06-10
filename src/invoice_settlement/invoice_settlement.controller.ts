@@ -7,7 +7,7 @@ import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
-import { CreateInvoiceSettlementRequestBody, InvoiceSettlementInput } from "./invoice_settlement.request"
+import { AddSettlementPaymentInput, CreateInvoiceSettlementRequestBody, InvoiceSettlementInput } from "./invoice_settlement.request"
 
 const router = express.Router()
 
@@ -128,11 +128,28 @@ const updateSettlement = (req: NetworkRequest<InvoiceSettlementInput>, res: Resp
         .catch(next)
 }
 
+const addPayment = (req: NetworkRequest<AddSettlementPaymentInput>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+    const settlementId: number = parseInt(req.params.id)
+    service.addPayment(req.user.databaseName, settlementId, req.body)
+        .then((settlement: any) => sendResponse(res, settlement))
+        .catch(next)
+}
+
 // Settlement routes
 router.get('/sync', getAllSettlements)
 router.get('/dateRange', getAllSettlementsByDateRange)
 router.get('/:id', getSettlementById)
 router.post('/create', createSettlement)
+router.post('/:id/payment', addPayment)
 router.put('/update', updateSettlement)
 
 export = router

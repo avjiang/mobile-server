@@ -256,17 +256,25 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
             if (bestPlan === 'Pro') break;
         }
 
-        // Determine loyalty tier based on plan + add-on
+        // Determine loyalty tier based on plan + plan type + add-on
         let loyaltyTier: 'none' | 'basic' | 'advanced' = 'none';
         if (bestPlan === 'Pro') {
             loyaltyTier = 'basic'; // Pro plan gets basic loyalty
 
-            // Check if tenant has Advanced Loyalty add-on (ID 4)
-            const loyaltyAddOn = await globalPrisma.tenantAddOn.findUnique({
-                where: { tenantId_addOnId: { tenantId, addOnId: 4 } } // ADD_ON_IDS.ADVANCED_LOYALTY
-            });
-            if (loyaltyAddOn) {
+            // Laundry Pro includes the full advanced loyalty suite (membership
+            // tiers, points multipliers, prepaid packages) built-in — packages are
+            // the core retention/cashflow lever for laundry, so no add-on required.
+            // Other plan types keep advanced loyalty behind the Advanced Loyalty
+            // add-on (ID 4).
+            if (bestPlanType === 'Laundry') {
                 loyaltyTier = 'advanced';
+            } else {
+                const loyaltyAddOn = await globalPrisma.tenantAddOn.findUnique({
+                    where: { tenantId_addOnId: { tenantId, addOnId: 4 } } // ADD_ON_IDS.ADVANCED_LOYALTY
+                });
+                if (loyaltyAddOn) {
+                    loyaltyTier = 'advanced';
+                }
             }
         }
 

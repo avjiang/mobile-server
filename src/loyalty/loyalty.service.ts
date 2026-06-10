@@ -824,10 +824,28 @@ const assignTier = async (db: string, accountId: number, data: ManualTierAssignR
         if (!tier) throw new NotFoundError('Loyalty tier');
     }
 
+    // Switching back to AUTOMATIC means "the system decides now" — recompute
+    // the qualifying tier from totalSpend immediately instead of trusting the
+    // client-sent tierId (the FE sends null, which would strand the customer
+    // tierless until their next sale triggers checkTierUpgrade).
+    let tierIdToSet: number | null | undefined = data.loyaltyTierId;
+    if (data.isManualTier === false) {
+        const account = await prisma.loyaltyAccount.findUnique({
+            where: { id: accountId },
+            select: { totalSpend: true },
+        });
+        if (!account) throw new NotFoundError('Loyalty account');
+        const program = await getCachedProgram(db);
+        const qualifying = program?.tiers?.length
+            ? selectHighestQualifyingTier(toDecimalNumber(account.totalSpend), program.tiers)
+            : null;
+        tierIdToSet = qualifying?.id ?? null;
+    }
+
     const updatedAccount = await prisma.loyaltyAccount.update({
         where: { id: accountId },
         data: {
-            loyaltyTierId: data.loyaltyTierId,
+            loyaltyTierId: tierIdToSet,
             isManualTier: data.isManualTier,
         },
         include: {

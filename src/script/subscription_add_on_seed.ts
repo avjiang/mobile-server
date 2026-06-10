@@ -28,7 +28,7 @@ const subscriptionAddOns = [
     {
         name: "Advanced Loyalty",
         addOnType: "feature",
-        pricePerUnit: 150000,
+        pricePerUnit: 100000,
         maxQuantity: 1,
         scope: "tenant",
         description: "Advanced loyalty features: tiers, multipliers, subscription packages"

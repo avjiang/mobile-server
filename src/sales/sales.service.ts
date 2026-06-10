@@ -306,8 +306,92 @@ async function sendInventoryNotification(
 // ============================================
 
 /**
+ * Credit earned points for a fully-paid sale — or just bump totalSpend when
+ * rounding yields 0 points (small tickets must still progress toward tier
+ * auto-upgrade). Shared by the creation path (processLoyaltyForSale step 4)
+ * and the pay-on-collection completion path (addPaymentToPartiallyPaidSales)
+ * so both apply calcPointsEarned with the tenant's rounding mode — points are
+ * whole numbers only (docs LOYALTY.md §2).
+ * `account` must include `loyaltyTier` when the tenant is on advanced loyalty.
+ * Returns the whole-number points credited.
+ */
+async function creditEarnedPoints(
+    tx: any,
+    account: any,
+    program: any,
+    salesId: number,
+    totalAmount: Decimal,
+    performedBy: PerformedBy,
+): Promise<number> {
+    const toNum = loyaltyService.toDecimalNumber;
+    let pointsMultiplier = 1.0;
+    if (performedBy.loyaltyTier === 'advanced' && account.loyaltyTier) {
+        pointsMultiplier = toNum(account.loyaltyTier.pointsMultiplier);
+    }
+    const pointsEarned = calcPointsEarned(
+        totalAmount,
+        toNum(program.pointsPerCurrency),
+        pointsMultiplier,
+        program.pointsRoundingMode,
+    );
+
+    if (pointsEarned > 0) {
+        const expiresAt = program.pointsExpiryDays
+            ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
+            : null;
+
+        await tx.loyaltyPointBatch.create({
+            data: {
+                loyaltyAccountId: account.id,
+                originalPoints: pointsEarned,
+                remainingPoints: pointsEarned,
+                expiresAt,
+                salesId,
+            },
+        });
+
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: {
+                currentPoints: { increment: pointsEarned },
+                totalEarned: { increment: pointsEarned },
+                totalSpend: { increment: totalAmount.toNumber() },
+            },
+        });
+
+        const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
+
+        await tx.loyaltyTransaction.create({
+            data: {
+                loyaltyAccountId: account.id,
+                type: 'EARN',
+                points: pointsEarned,
+                balanceAfter: toNum(finalAccount?.currentPoints ?? 0),
+                salesId,
+                description: `Earned from sale #${salesId}`,
+                performedBy: performedBy.username,
+            },
+        });
+    } else {
+        // Sale paid but earned 0 points after rounding — still bump totalSpend for tier eligibility.
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: { totalSpend: { increment: totalAmount.toNumber() } },
+        });
+    }
+    return pointsEarned;
+}
+
+/**
  * Process loyalty earn/redeem/subscription within a sales transaction.
- * Called inside $transaction for completeNewSales when status = "Completed".
+ * Called inside $transaction by completeNewSales for ANY sale with a customer
+ * (Completed, Partially Paid, pay-on-collection): the discount legs (tier /
+ * voucher / redemption / subscription, steps 0-3) are locked into the price
+ * at creation, so their deductions MUST execute at creation too — otherwise a
+ * deferred-payment sale grants the discount without burning points / quota /
+ * voucher. Only the EARN leg (step 4) is gated on `includeEarn` (= fully
+ * paid); for deferred sales it runs later via addPaymentToPartiallyPaidSales
+ * when the balance clears.
  * Returns loyalty data to store on the Sales record.
  */
 async function processLoyaltyForSale(
@@ -317,7 +401,8 @@ async function processLoyaltyForSale(
     customerId: number,
     totalAmount: Decimal,
     salesBody: CreateSalesRequest,
-    performedBy: PerformedBy
+    performedBy: PerformedBy,
+    includeEarn: boolean
 ): Promise<{
     loyaltyPointsEarned: Decimal;
     loyaltyPointsRedeemed: Decimal;
@@ -377,10 +462,25 @@ async function processLoyaltyForSale(
         const tier = (account as any).loyaltyTier;
         const actualPercentage = tier ? toNum(tier.discountPercentage) : 0;
         validateTierMatch(salesBody.loyaltyTierDiscountPercentage, actualPercentage);
-        // Recompute amount from authoritative percentage × totalAmount. Audit r1-#9:
-        // client-supplied amount was previously stored as-is and could be inflated.
+        // Recompute amount from the authoritative percentage (audit r1-#9: the
+        // client-sent amount could be inflated) — but on the SAME base the FE
+        // stacking uses: the pre-loyalty total. `totalAmount` here is the FINAL
+        // figure (after tier, subscription, and redemption), so reverse the
+        // waterfall: base = (final + redemption + subscription) / (1 - pct/100).
+        // Using final directly understated the stored amount (e.g. 2% on a
+        // 30,000 cart with 5,000 redeemed stored 488 instead of 600, and
+        // subtotal - discounts no longer reconciled to the total).
         result.loyaltyTierDiscountPercent = new Decimal(actualPercentage);
-        result.loyaltyTierDiscountAmount = totalAmount.times(actualPercentage).dividedBy(100);
+        if (actualPercentage > 0 && actualPercentage < 100) {
+            const redemptionValue = new Decimal(salesBody.loyaltyPointsToRedeem || 0)
+                .times(toNum(program.currencyPerPoint));
+            const subDiscount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+            const preLoyaltyBase = totalAmount.plus(redemptionValue).plus(subDiscount)
+                .dividedBy(new Decimal(1).minus(new Decimal(actualPercentage).dividedBy(100)));
+            result.loyaltyTierDiscountAmount = preLoyaltyBase.times(actualPercentage).dividedBy(100);
+        } else {
+            result.loyaltyTierDiscountAmount = totalAmount.times(actualPercentage).dividedBy(100);
+        }
     }
 
     // 2. VALIDATE + EXECUTE point redemption
@@ -483,7 +583,65 @@ async function processLoyaltyForSale(
             throw new BusinessLogicError('Subscription does not belong to this customer');
         }
 
-        const quantityUsed = salesBody.subscriptionQuantityUsed || 1;
+        // Server-authoritative quota: for USAGE packages, recompute the credits
+        // to deduct from the cart itself — one credit per unit of a matching-
+        // category item with subtotal > 0 (zero-priced bundled lines like free
+        // detergent get no benefit and must not burn quota). Coverage is capped
+        // at remainingQuota, most expensive units first (mirrors the FE
+        // `_usageCoverage`): a cart with more eligible units than credits gets
+        // only the covered units free and the rest stay payable. The client-sent
+        // subscriptionQuantityUsed is ignored; legacy clients hardcode 1, which
+        // under-deducts multi-item carts. TIME packages keep usedQuota as a
+        // plain per-sale counter (1).
+        let quantityUsed = 1;
+        // Upper bound for the USAGE discount: value of the covered units only.
+        let usageCoveredValue: Decimal | null = null;
+        if (subscription.subscriptionPackage.packageType === 'USAGE') {
+            const packageCategoryIds = new Set(
+                subscription.subscriptionPackage.categories.map((c: any) => c.categoryId),
+            );
+            const cartItemIds = (salesBody.salesItems ?? [])
+                .filter((it: any) => !it.deleted)
+                .map((it: any) => it.itemId);
+            const cartItems = await tx.item.findMany({
+                where: { id: { in: cartItemIds } },
+                select: { id: true, categoryId: true },
+            });
+            const itemCategoryById = new Map(cartItems.map((it: any) => [it.id, it.categoryId]));
+            const eligible: { unitPrice: Decimal; quantity: number }[] = [];
+            for (const it of salesBody.salesItems ?? []) {
+                if ((it as any).deleted) continue;
+                const categoryId = itemCategoryById.get(it.itemId);
+                const subtotal = new Decimal(it.subtotalAmount ?? 0);
+                const quantity = new Decimal(it.quantity ?? 0).toNumber();
+                if (categoryId != null && packageCategoryIds.has(categoryId) && subtotal.gt(0) && quantity > 0) {
+                    eligible.push({ unitPrice: subtotal.dividedBy(quantity), quantity });
+                }
+            }
+            if (eligible.length === 0) {
+                throw new BusinessLogicError(
+                    'Subscription cannot be used: no items in this sale match the package categories',
+                );
+            }
+            eligible.sort((a, b) => b.unitPrice.comparedTo(a.unitPrice));
+            let remaining = subscription.remainingQuota ?? Number.POSITIVE_INFINITY;
+            let unitsCovered = 0;
+            let coveredValue = new Decimal(0);
+            for (const line of eligible) {
+                if (remaining <= 0) break;
+                const take = Math.min(line.quantity, remaining);
+                coveredValue = coveredValue.plus(line.unitPrice.times(take));
+                unitsCovered += take;
+                remaining -= take;
+            }
+            quantityUsed = Math.ceil(unitsCovered);
+            usageCoveredValue = coveredValue;
+            if (quantityUsed <= 0) {
+                throw new BusinessLogicError(
+                    'Subscription cannot be used: no remaining quota covers any item in this sale',
+                );
+            }
+        }
 
         // For USAGE packages, check and deduct quota
         if (subscription.subscriptionPackage.packageType === 'USAGE') {
@@ -562,8 +720,10 @@ async function processLoyaltyForSale(
                 maxSubDiscount = new Decimal(0);
             }
         } else {
-            // USAGE — 100% off matching items, bounded by the pre-discount cart total.
-            maxSubDiscount = preDiscountTotal;
+            // USAGE — 100% off the quota-covered units only (computed above),
+            // never the whole matching subtotal: with 8 credits left and 11
+            // eligible washes, only 8 units' value is discountable.
+            maxSubDiscount = usageCoveredValue ?? preDiscountTotal;
         }
         if (sentSubDiscount.gt(maxSubDiscount.plus(0.01))) {
             throw new BusinessLogicError(
@@ -573,67 +733,13 @@ async function processLoyaltyForSale(
         result.subscriptionDiscountAmount = sentSubDiscount;
     }
 
-    // 4. EARN points on finalTotalAmount (after ALL discounts)
-    // totalSpend must accumulate on every paid sale, even when rounding produces 0 points —
-    // otherwise small-ticket merchants never trigger tier auto-upgrade.
-    if (totalAmount.gt(0)) {
-        let pointsMultiplier = 1.0;
-        if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
-            pointsMultiplier = toNum((account as any).loyaltyTier.pointsMultiplier);
-        }
-        const pointsEarned = calcPointsEarned(
-            totalAmount,
-            toNum(program.pointsPerCurrency),
-            pointsMultiplier,
-            program.pointsRoundingMode,
-        );
-
+    // 4. EARN points on finalTotalAmount (after ALL discounts) — only when the
+    // sale is fully paid at creation. Deferred-payment sales earn later via
+    // addPaymentToPartiallyPaidSales once the balance clears.
+    if (includeEarn && totalAmount.gt(0)) {
+        const pointsEarned = await creditEarnedPoints(tx, account, program, salesId, totalAmount, performedBy);
         if (pointsEarned > 0) {
-            const expiresAt = program.pointsExpiryDays
-                ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
-                : null;
-
-            await tx.loyaltyPointBatch.create({
-                data: {
-                    loyaltyAccountId: account.id,
-                    originalPoints: pointsEarned,
-                    remainingPoints: pointsEarned,
-                    expiresAt,
-                    salesId,
-                },
-            });
-
-            await tx.loyaltyAccount.update({
-                where: { id: account.id },
-                data: {
-                    currentPoints: { increment: pointsEarned },
-                    totalEarned: { increment: pointsEarned },
-                    totalSpend: { increment: totalAmount.toNumber() },
-                },
-            });
-
-            const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
-            const finalBalance = toNum(finalAccount.currentPoints);
-
-            await tx.loyaltyTransaction.create({
-                data: {
-                    loyaltyAccountId: account.id,
-                    type: 'EARN',
-                    points: pointsEarned,
-                    balanceAfter: finalBalance,
-                    salesId,
-                    description: `Earned from sale #${salesId}`,
-                    performedBy: performedBy.username,
-                },
-            });
-
             result.loyaltyPointsEarned = new Decimal(pointsEarned);
-        } else {
-            // Sale paid but earned 0 points after rounding — still bump totalSpend for tier eligibility.
-            await tx.loyaltyAccount.update({
-                where: { id: account.id },
-                data: { totalSpend: { increment: totalAmount.toNumber() } },
-            });
         }
     }
 
@@ -779,7 +885,13 @@ async function reverseLoyaltyForSale(
                 data: {
                     remainingQuota: { increment: quantityToRestore },
                     usedQuota: { decrement: quantityToRestore },
-                    ...(subscription.status === 'EXPIRED' ? { status: 'ACTIVE' } : {}),
+                    // Reactivate only if quota exhaustion was the reason it expired —
+                    // a subscription past its validity endDate stays EXPIRED even
+                    // though the quota is restored.
+                    ...(subscription.status === 'EXPIRED' &&
+                        (!subscription.endDate || subscription.endDate > new Date())
+                        ? { status: 'ACTIVE' }
+                        : {}),
                 },
             });
 
@@ -1286,6 +1398,11 @@ async function completeNewSales(
 
     // Store stock updates outside transaction for notification use
     let stockUpdatesForNotification: any[] = [];
+    // Loyalty follow-ups fire AFTER commit — scheduling them inside the tx
+    // callback runs them pre-commit (stale totalSpend can miss a threshold
+    // upgrade) and loses them if the process dies before commit.
+    let postCommitTierAccountId: number | null = null;
+    let postCommitMilestoneCustomerId: number | null = null;
 
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -1801,11 +1918,15 @@ async function completeNewSales(
             });
 
             // ── Loyalty Block ──
+            // Runs for ANY sale with a customer — Partially Paid / pay-on-collection
+            // included. The discounts are already locked into totalAmount by the FE,
+            // so redemption / subscription quota / voucher must be deducted NOW;
+            // only the earn leg waits for full payment (includeEarn).
             const isFullyPaid = salesStatus === 'Completed';
-            if (isFullyPaid && performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && salesBody.customerId) {
+            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && salesBody.customerId) {
                 const loyaltyResult = await processLoyaltyForSale(
                     tx, databaseName, createdSales.id, salesBody.customerId,
-                    totalSalesAmount, salesBody, performedBy
+                    totalSalesAmount, salesBody, performedBy, isFullyPaid
                 );
 
                 // Update sales record with loyalty + voucher data
@@ -1825,25 +1946,13 @@ async function completeNewSales(
                     },
                 });
 
-                // Fire-and-forget: check tier auto-upgrade (advanced only)
+                // Tier auto-upgrade + voucher milestones are deferred to after
+                // the transaction commits (see postCommit* declarations above).
                 if (performedBy.loyaltyTier === 'advanced' && loyaltyResult.loyaltyAccountId) {
-                    const accountIdForTier = loyaltyResult.loyaltyAccountId;
-                    // Post-transaction, non-blocking
-                    setImmediate(() => {
-                        loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
-                            console.error('Tier auto-upgrade check failed:', err)
-                        );
-                    });
+                    postCommitTierAccountId = loyaltyResult.loyaltyAccountId;
                 }
-
-                // Fire-and-forget: check voucher milestones
                 if (loyaltyResult.loyaltyAccountId && salesBody.customerId) {
-                    const custId = salesBody.customerId;
-                    setImmediate(() => {
-                        voucherService.checkMilestones(databaseName, custId).catch(err =>
-                            console.error('Voucher milestone check failed:', err)
-                        );
-                    });
+                    postCommitMilestoneCustomerId = salesBody.customerId;
                 }
             }
             // ── End Loyalty Block ──
@@ -1951,6 +2060,24 @@ async function completeNewSales(
 
             return createdSales;
         });
+
+        // ── Post-commit loyalty follow-ups (fire-and-forget) ──
+        if (postCommitTierAccountId !== null) {
+            const accountIdForTier = postCommitTierAccountId;
+            setImmediate(() => {
+                loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
+                    console.error('Tier auto-upgrade check failed:', err)
+                );
+            });
+        }
+        if (postCommitMilestoneCustomerId !== null) {
+            const custId = postCommitMilestoneCustomerId;
+            setImmediate(() => {
+                voucherService.checkMilestones(databaseName, custId).catch(err =>
+                    console.error('Voucher milestone check failed:', err)
+                );
+            });
+        }
 
         // Prepare all notifications
         const outOfStockItems = stockUpdatesForNotification.filter((u: any) => u.willBeOutOfStock);
@@ -2420,6 +2547,9 @@ let addPaymentToPartiallyPaidSales = async (
     payments: Payment[]
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    // Loyalty follow-ups fire AFTER commit (see completeNewSales note).
+    let postCommitTierAccountId: number | null = null;
+    let postCommitMilestoneCustomerId: number | null = null;
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
             // Get the sales record
@@ -2477,8 +2607,11 @@ let addPaymentToPartiallyPaidSales = async (
             });
 
             // ── Loyalty Earn on Completion ──
+            // Steps 0-3 (redeem / subscription / voucher) already ran at sale
+            // creation; only the EARN leg was deferred until full payment.
+            // creditEarnedPoints applies calcPointsEarned with the tenant's
+            // rounding mode — the previous inline math credited fractional points.
             if (isFullyPaid && performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
-                const toNum = loyaltyService.toDecimalNumber;
                 const account = await tx.loyaltyAccount.findFirst({
                     where: { customerId: sales.customerId, deleted: false },
                     include: performedBy.loyaltyTier === 'advanced' ? { loyaltyTier: true } : undefined,
@@ -2488,70 +2621,25 @@ let addPaymentToPartiallyPaidSales = async (
                     const program = await loyaltyService.getCachedProgram(databaseName);
                     if (program && program.isActive) {
                         const saleTotal = new Decimal(sales.totalAmount);
-                        let pointsMultiplier = 1.0;
-                        if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
-                            pointsMultiplier = toNum((account as any).loyaltyTier.pointsMultiplier);
-                        }
-                        const pointsEarned = saleTotal.toNumber() * toNum(program.pointsPerCurrency) * pointsMultiplier;
+                        if (saleTotal.gt(0)) {
+                            const pointsEarned = await creditEarnedPoints(
+                                tx, account, program, salesId, saleTotal, performedBy
+                            );
 
-                        if (pointsEarned > 0) {
-                            const expiresAt = program.pointsExpiryDays
-                                ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
-                                : null;
-
-                            await tx.loyaltyPointBatch.create({
-                                data: {
-                                    loyaltyAccountId: account.id,
-                                    originalPoints: pointsEarned,
-                                    remainingPoints: pointsEarned,
-                                    expiresAt,
-                                    salesId,
-                                },
-                            });
-
-                            await tx.loyaltyAccount.update({
-                                where: { id: account.id },
-                                data: {
-                                    currentPoints: { increment: pointsEarned },
-                                    totalEarned: { increment: pointsEarned },
-                                    totalSpend: { increment: saleTotal.toNumber() },
-                                },
-                            });
-
-                            const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
-
-                            await tx.loyaltyTransaction.create({
-                                data: {
-                                    loyaltyAccountId: account.id,
-                                    type: 'EARN',
-                                    points: pointsEarned,
-                                    balanceAfter: toNum(finalAccount?.currentPoints ?? 0),
-                                    salesId,
-                                    description: `Earned from completed sale #${salesId}`,
-                                    performedBy: performedBy.username,
-                                },
-                            });
-
-                            await tx.sales.update({
-                                where: { id: salesId },
-                                data: { loyaltyPointsEarned: pointsEarned },
-                            });
-
-                            // Fire-and-forget tier upgrade check
-                            if (performedBy.loyaltyTier === 'advanced') {
-                                setImmediate(() => {
-                                    loyaltyService.checkTierUpgrade(databaseName, account.id).catch(err =>
-                                        console.error('Tier auto-upgrade check failed:', err)
-                                    );
+                            if (pointsEarned > 0) {
+                                await tx.sales.update({
+                                    where: { id: salesId },
+                                    data: { loyaltyPointsEarned: pointsEarned },
                                 });
                             }
 
-                            // Fire-and-forget: check voucher milestones
-                            setImmediate(() => {
-                                voucherService.checkMilestones(databaseName, sales.customerId!).catch(err =>
-                                    console.error('Voucher milestone check failed:', err)
-                                );
-                            });
+                            // Tier upgrade + milestones deferred to post-commit
+                            // (pre-commit scheduling reads stale totals and is
+                            // lost on process restart).
+                            if (performedBy.loyaltyTier === 'advanced') {
+                                postCommitTierAccountId = account.id;
+                            }
+                            postCommitMilestoneCustomerId = sales.customerId;
                         }
                     }
                 }
@@ -2560,6 +2648,24 @@ let addPaymentToPartiallyPaidSales = async (
 
             return { updatedSales, totalNewPaymentAmount, remainingAmount };
         });
+
+        // ── Post-commit loyalty follow-ups (fire-and-forget) ──
+        if (postCommitTierAccountId !== null) {
+            const accountIdForTier = postCommitTierAccountId;
+            setImmediate(() => {
+                loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
+                    console.error('Tier auto-upgrade check failed:', err)
+                );
+            });
+        }
+        if (postCommitMilestoneCustomerId !== null) {
+            const custId = postCommitMilestoneCustomerId;
+            setImmediate(() => {
+                voucherService.checkMilestones(databaseName, custId).catch(err =>
+                    console.error('Voucher milestone check failed:', err)
+                );
+            });
+        }
 
         // Send notification after successful transaction
         const isCompleted = result.updatedSales.status === 'Completed';

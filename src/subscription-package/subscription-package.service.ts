@@ -13,6 +13,7 @@ import {
     SubscribeCustomerRequest,
     RecordUsageRequest,
 } from './subscription-package.request';
+import loyaltyService from '../loyalty/loyalty.service';
 
 const { getTenantPrisma } = require('../db');
 
@@ -235,6 +236,17 @@ const createPackage = async (db: string, data: CreatePackageRequest): Promise<Su
         throw new RequestValidateError('TIME packages require durationDays > 0');
     }
 
+    // Reject duplicate names among live packages — two identically-named
+    // packages are indistinguishable to cashiers at checkout. (MySQL's default
+    // collation makes the equality case-insensitive.)
+    const duplicate = await prisma.subscriptionPackage.findFirst({
+        where: { name: data.name, deleted: false },
+        select: { id: true },
+    });
+    if (duplicate) {
+        throw new RequestValidateError(`A package named "${data.name}" already exists`);
+    }
+
     const pkg = await prisma.$transaction(async (tx: any) => {
         const created = await tx.subscriptionPackage.create({
             data: {
@@ -283,6 +295,18 @@ const updatePackage = async (db: string, packageId: number, data: UpdatePackageR
     const pkg = await prisma.$transaction(async (tx: any) => {
         const existing = await tx.subscriptionPackage.findUnique({ where: { id: packageId } });
         if (!existing || existing.deleted) throw new NotFoundError('Subscription package');
+
+        // Renaming onto another live package's name is the same cashier-confusion
+        // hazard as creating a duplicate.
+        if (data.name !== undefined) {
+            const duplicate = await tx.subscriptionPackage.findFirst({
+                where: { name: data.name, deleted: false, id: { not: packageId } },
+                select: { id: true },
+            });
+            if (duplicate) {
+                throw new RequestValidateError(`A package named "${data.name}" already exists`);
+            }
+        }
 
         await tx.subscriptionPackage.update({
             where: { id: packageId },
@@ -375,10 +399,42 @@ const deletePackage = async (db: string, packageId: number): Promise<void> => {
 // Customer Subscription Management
 // ============================================
 
-const subscribeCustomer = async (db: string, data: SubscribeCustomerRequest): Promise<CustomerSubscriptionResponse> => {
+/**
+ * Points earned on a package purchase — same formula and tenant rounding mode
+ * as a sale (docs LOYALTY.md §2: points are whole numbers only). Mirrors
+ * sales.service `calcPointsEarned`; kept local to avoid importing the sales
+ * module here. Earn-at-purchase is the "money-in" loyalty model: the prepaid
+ * sessions themselves total Rp 0 at checkout and earn nothing, so the package
+ * sale is the once-and-only-once earn moment.
+ */
+const calcPackagePointsEarned = (
+    paidAmount: number,
+    pointsPerCurrency: number,
+    pointsMultiplier: number,
+    roundingMode: string,
+): number => {
+    if (paidAmount <= 0 || pointsPerCurrency <= 0 || pointsMultiplier <= 0) return 0;
+    const raw = paidAmount * pointsPerCurrency * pointsMultiplier;
+    switch (roundingMode) {
+        case 'CEIL':
+            return Math.ceil(raw);
+        case 'ROUND':
+            return Math.round(raw);
+        case 'FLOOR':
+        default:
+            return Math.floor(raw);
+    }
+};
+
+const subscribeCustomer = async (db: string, data: SubscribeCustomerRequest, performedBy?: string): Promise<CustomerSubscriptionResponse> => {
     const prisma = getTenantDb(db);
 
-    return await prisma.$transaction(async (tx: any) => {
+    // Set inside the transaction, fired AFTER commit — scheduling the tier
+    // check from within the tx callback runs it pre-commit, where it reads
+    // stale totalSpend and dies silently if the process restarts mid-flight.
+    let tierCheckAccountId: number | null = null;
+
+    const response = await prisma.$transaction(async (tx: any) => {
         // Verify customer
         const customer = await tx.customer.findUnique({
             where: { id: data.customerId },
@@ -401,6 +457,38 @@ const subscribeCustomer = async (db: string, data: SubscribeCustomerRequest): Pr
         if (!pkg || pkg.deleted || !pkg.isActive) throw new NotFoundError('Subscription package');
 
         const now = new Date();
+
+        // Validate the recorded payment: non-negative and never above the
+        // package price (a lower amount is allowed — cashier-discretion promo).
+        if (data.paidAmount == null || data.paidAmount < 0) {
+            throw new RequestValidateError('Paid amount must be zero or greater');
+        }
+        if (data.paidAmount > toDecimalNumber(pkg.price)) {
+            throw new RequestValidateError(
+                `Paid amount (${data.paidAmount}) cannot exceed the package price (${toDecimalNumber(pkg.price)})`,
+            );
+        }
+
+        // One live subscription per customer per package — a second concurrent
+        // purchase of the same package is almost always a cashier mistake and
+        // makes the checkout dropdown ambiguous. (Expired-by-date-but-not-yet-
+        // cronned rows don't block a repurchase.)
+        const existingActive = await tx.customerSubscription.findFirst({
+            where: {
+                customerId: data.customerId,
+                subscriptionPackageId: data.subscriptionPackageId,
+                status: 'ACTIVE',
+                deleted: false,
+                OR: [{ endDate: null }, { endDate: { gt: now } }],
+            },
+            select: { id: true },
+        });
+        if (existingActive) {
+            throw new RequestValidateError(
+                'Customer already has an active subscription for this package',
+            );
+        }
+
         const endDate = calcSubscriptionEndDate(pkg.packageType, pkg.durationDays, pkg.validityDays, now);
         const packageSnapshot = buildPackageSnapshot(pkg);
 
@@ -421,8 +509,87 @@ const subscribeCustomer = async (db: string, data: SubscribeCustomerRequest): Pr
             },
         });
 
+        // ── Loyalty earn on package purchase (money-in model) ──
+        // Earn on what was ACTUALLY paid (already validated ≤ list price), with
+        // the customer's tier multiplier — exactly as a regular sale would.
+        // totalSpend also accumulates so prepaid customers progress toward tier
+        // auto-upgrade. Skipped when the customer isn't enrolled or the program
+        // is inactive.
+        if (data.paidAmount > 0) {
+            const account = await tx.loyaltyAccount.findFirst({
+                where: { customerId: data.customerId, deleted: false },
+                include: { loyaltyTier: true },
+            });
+            const program = account ? await loyaltyService.getCachedProgram(db) : null;
+            if (account && program?.isActive) {
+                const multiplier = account.loyaltyTier
+                    ? toDecimalNumber(account.loyaltyTier.pointsMultiplier)
+                    : 1.0;
+                const pointsEarned = calcPackagePointsEarned(
+                    data.paidAmount,
+                    toDecimalNumber(program.pointsPerCurrency),
+                    multiplier,
+                    program.pointsRoundingMode,
+                );
+
+                if (pointsEarned > 0) {
+                    const expiresAt = program.pointsExpiryDays
+                        ? new Date(now.getTime() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
+                        : null;
+
+                    await tx.loyaltyPointBatch.create({
+                        data: {
+                            loyaltyAccountId: account.id,
+                            originalPoints: pointsEarned,
+                            remainingPoints: pointsEarned,
+                            expiresAt,
+                        },
+                    });
+
+                    const updatedAccount = await tx.loyaltyAccount.update({
+                        where: { id: account.id },
+                        data: {
+                            currentPoints: { increment: pointsEarned },
+                            totalEarned: { increment: pointsEarned },
+                            totalSpend: { increment: data.paidAmount },
+                        },
+                    });
+
+                    await tx.loyaltyTransaction.create({
+                        data: {
+                            loyaltyAccountId: account.id,
+                            type: 'EARN',
+                            points: pointsEarned,
+                            balanceAfter: toDecimalNumber(updatedAccount.currentPoints),
+                            description: `Earned from package purchase: ${pkg.name}`,
+                            performedBy: performedBy ?? null,
+                        },
+                    });
+                } else {
+                    // Rounded to 0 points — still count the spend toward tier eligibility.
+                    await tx.loyaltyAccount.update({
+                        where: { id: account.id },
+                        data: { totalSpend: { increment: data.paidAmount } },
+                    });
+                }
+                tierCheckAccountId = account.id;
+            }
+        }
+
         return formatSubscription(subscription);
     });
+
+    // Fire-and-forget tier upgrade — AFTER commit, so it reads committed totals.
+    if (tierCheckAccountId !== null) {
+        const accountId = tierCheckAccountId;
+        setImmediate(() => {
+            loyaltyService.checkTierUpgrade(db, accountId).catch((err: any) =>
+                console.error('Tier auto-upgrade check failed:', err),
+            );
+        });
+    }
+
+    return response;
 };
 
 const getCustomerSubscriptions = async (

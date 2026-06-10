@@ -727,6 +727,10 @@ model InvoiceSettlement {
   rebateReason       String?          @map("REBATE_REASON") // Reason for rebate (e.g., "EARLY_PAYMENT", "BULK_DISCOUNT", "PRICE_ADJUSTMENT")
   totalInvoiceCount  Int              @default(0) @map("TOTAL_INVOICE_COUNT")
   totalInvoiceAmount Decimal          @default(0) @map("TOTAL_INVOICE_AMOUNT") @db.Decimal(15, 4)
+  // Partial-payment support: sum of all non-deleted payment rows. PAID when paidAmount >= settlementAmount.
+  paidAmount         Decimal          @default(0) @map("PAID_AMOUNT") @db.Decimal(15, 4)
+  transferFeeAmount  Decimal          @default(0) @map("TRANSFER_FEE_AMOUNT") @db.Decimal(15, 4) // Sum of bank/transfer fees across payments (bookkeeping only, not applied against invoices)
+  paymentStatus      String           @default("PAID") @map("PAYMENT_STATUS") // "PAID" | "PARTIAL" — orthogonal to `status` (tax-number completeness)
   deleted            Boolean          @default(false) @map("IS_DELETED")
   deletedAt          DateTime?        @map("DELETED_AT")
   createdAt          DateTime?        @default(now()) @map("CREATED_AT")
@@ -734,12 +738,39 @@ model InvoiceSettlement {
   version            Int?             @default(1) @map("VERSION")
   invoices           Invoice[]
   purchaseReturns    PurchaseReturn[]
+  payments           InvoiceSettlementPayment[]
 
   @@index([settlementDate])
   @@index([settlementType])
   @@index([status])
   @@index([createdAt, updatedAt, deletedAt])
   @@map("invoice_settlement")
+}
+
+// Payment ledger for an invoice settlement. The first row is created with the
+// settlement (down payment or full payment); subsequent rows come from the
+// add-payment endpoint until paidAmount covers settlementAmount.
+model InvoiceSettlementPayment {
+  id                  Int               @id @default(autoincrement()) @map("ID")
+  invoiceSettlementId Int               @map("INVOICE_SETTLEMENT_ID")
+  paymentDate         DateTime          @map("PAYMENT_DATE")
+  paymentMethod       String?           @map("PAYMENT_METHOD")
+  amount              Decimal           @map("AMOUNT") @db.Decimal(15, 4)
+  transferFeeAmount   Decimal           @default(0) @map("TRANSFER_FEE_AMOUNT") @db.Decimal(15, 4)
+  reference           String?           @map("REFERENCE")
+  remark              String?           @default("") @map("REMARK")
+  performedBy         String?           @default("") @map("PERFORMED_BY")
+  siteId              Int?              @map("SITE_ID") // Terminal that recorded this payment (RegisteredDevice.siteId)
+  deleted             Boolean           @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?         @map("DELETED_AT")
+  createdAt           DateTime?         @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?         @updatedAt @map("UPDATED_AT")
+  version             Int?              @default(1) @map("VERSION")
+  invoiceSettlement   InvoiceSettlement @relation(fields: [invoiceSettlementId], references: [id])
+
+  @@index([invoiceSettlementId])
+  @@index([createdAt, updatedAt, deletedAt])
+  @@map("invoice_settlement_payment")
 }
 
 model DeliveryOrder {

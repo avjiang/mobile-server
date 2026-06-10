@@ -4,7 +4,7 @@ import { getTenantPrisma } from '../db';
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
-import { CreateInvoiceSettlementRequestBody, InvoiceSettlementInput, SettlementSyncRequest } from "./invoice_settlement.request";
+import { AddSettlementPaymentInput, CreateInvoiceSettlementRequestBody, InvoiceSettlementInput, SettlementSyncRequest } from "./invoice_settlement.request";
 import { Decimal } from 'decimal.js';
 
 class RequestValidateError extends Error {
@@ -208,6 +208,7 @@ let getByDateRange = async (databaseName: string, request: { skip?: number, take
                 returnCount: returnData.count,
                 totalReturnAmount: returnData.totalAmount.toFixed(4),
                 netSettlementAmount: netSettlementAmount.toFixed(4),
+                outstandingAmount: new Decimal(settlement.settlementAmount || 0).minus(new Decimal(settlement.paidAmount || 0)).toFixed(4),
                 hasReturns: returnData.count > 0,
                 _count: undefined
             };
@@ -428,6 +429,7 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
                 returnCount: returnData.count,
                 totalReturnAmount: returnData.totalAmount.toFixed(4),
                 netSettlementAmount: netSettlementAmount.toFixed(4),
+                outstandingAmount: new Decimal(settlement.settlementAmount || 0).minus(new Decimal(settlement.paidAmount || 0)).toFixed(4),
                 hasReturns: returnData.count > 0,
                 _count: undefined
             };
@@ -453,6 +455,10 @@ let getSettlementById = async (id: number, databaseName: string) => {
                 deleted: false
             },
             include: {
+                payments: {
+                    where: { deleted: false },
+                    orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }]
+                },
                 invoices: {
                     where: { deleted: false },
                     include: {
@@ -630,6 +636,7 @@ let getSettlementById = async (id: number, databaseName: string) => {
             deliveryOrderCount: deliveryOrders.length,
             totalReturnAmount: totalSettlementReturnAmount.toFixed(4),
             netSettlementAmount: netSettlementAmount.toFixed(4),
+            outstandingAmount: new Decimal(settlement.settlementAmount || 0).minus(new Decimal((settlement as any).paidAmount || 0)).toFixed(4),
             returnCount: allPurchaseReturns.length
         };
     }
@@ -760,6 +767,21 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                 // Determine settlement status based on tax number completeness
                 const settlementStatus = hasIncompleteTaxNumbers ? 'INCOMPLETE' : (settlementData.status || 'COMPLETED');
 
+                // Partial-payment support: paidAmount defaults to the full settlement
+                // amount; anything less is a down payment.
+                const settlementAmountDec = new Decimal(settlementData.settlementAmount || 0);
+                const paidAmountDec = (settlementData.paidAmount !== undefined && settlementData.paidAmount !== null)
+                    ? new Decimal(settlementData.paidAmount)
+                    : settlementAmountDec;
+                if (paidAmountDec.lessThanOrEqualTo(0)) {
+                    throw new RequestValidateError('Payment amount must be greater than zero');
+                }
+                if (paidAmountDec.greaterThan(settlementAmountDec)) {
+                    throw new RequestValidateError('Payment amount cannot exceed settlement amount');
+                }
+                const transferFeeDec = new Decimal(settlementData.transferFeeAmount || 0);
+                const isFullyPaid = paidAmountDec.greaterThanOrEqualTo(settlementAmountDec);
+
                 // Create settlement
                 const newSettlement = await tx.invoiceSettlement.create({
                     data: {
@@ -778,7 +800,24 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                         totalRebateAmount: settlementData.totalRebateAmount || 0,
                         rebateReason: settlementData.rebateReason || null,
                         totalInvoiceCount: totalInvoiceCount,
-                        totalInvoiceAmount: totalInvoiceAmount
+                        totalInvoiceAmount: totalInvoiceAmount,
+                        paidAmount: paidAmountDec.toFixed(4),
+                        transferFeeAmount: transferFeeDec.toFixed(4),
+                        paymentStatus: isFullyPaid ? 'PAID' : 'PARTIAL'
+                    }
+                });
+
+                // Initial payment ledger row (down payment or full payment)
+                await tx.invoiceSettlementPayment.create({
+                    data: {
+                        invoiceSettlementId: newSettlement.id,
+                        paymentDate: settlementData.settlementDate,
+                        paymentMethod: settlementData.paymentMethod || null,
+                        amount: paidAmountDec.toFixed(4),
+                        transferFeeAmount: transferFeeDec.toFixed(4),
+                        reference: settlementData.reference || null,
+                        performedBy: settlementData.performedBy || null,
+                        siteId: settlementData.siteId ?? null
                     }
                 });
 
@@ -858,8 +897,8 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                             where: { id: invoice.id },
                             data: {
                                 invoiceSettlementId: newSettlement.id,
-                                status: 'Paid',
-                                paymentDate: settlementData.settlementDate,
+                                status: isFullyPaid ? 'Paid' : 'Partially Paid',
+                                paymentDate: isFullyPaid ? settlementData.settlementDate : null,
                                 discountType: 'FIXED',
                                 discountAmount: invoiceRebate,
                                 totalAmount: newTotalAmount,
@@ -876,8 +915,8 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                         },
                         data: {
                             invoiceSettlementId: newSettlement.id,
-                            status: 'Paid',
-                            paymentDate: settlementData.settlementDate
+                            status: isFullyPaid ? 'Paid' : 'Partially Paid',
+                            paymentDate: isFullyPaid ? settlementData.settlementDate : null
                         }
                     });
                 }
@@ -1064,4 +1103,105 @@ let updateSettlement = async (settlement: InvoiceSettlementInput, databaseName: 
     }
 }
 
-export = { getByDateRange, createSettlement, getSettlements, getSettlementById, updateSettlement };
+// Record a subsequent payment against a partially-paid settlement. When the
+// cumulative paid amount covers the settlement amount, the settlement flips to
+// PAID and all linked invoices become 'Paid' with paymentDate set.
+let addPayment = async (databaseName: string, settlementId: number, input: AddSettlementPaymentInput) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const settlement = await tenantPrisma.invoiceSettlement.findUnique({
+            where: { id: settlementId, deleted: false }
+        });
+
+        if (!settlement) {
+            throw new NotFoundError("Invoice Settlement");
+        }
+        if (settlement.status === 'CANCELLED') {
+            throw new RequestValidateError('Cannot add a payment to a cancelled settlement');
+        }
+
+        const settlementAmountDec = new Decimal(settlement.settlementAmount || 0);
+        const paidDec = new Decimal((settlement as any).paidAmount || 0);
+        const outstanding = settlementAmountDec.minus(paidDec);
+        if (outstanding.lessThanOrEqualTo(0)) {
+            throw new RequestValidateError('Settlement is already fully paid');
+        }
+
+        if (!input.paymentDate) {
+            throw new RequestValidateError('paymentDate is required');
+        }
+        const amountDec = new Decimal(input.amount || 0);
+        if (amountDec.lessThanOrEqualTo(0)) {
+            throw new RequestValidateError('Payment amount must be greater than zero');
+        }
+        if (amountDec.greaterThan(outstanding)) {
+            throw new RequestValidateError(`Payment amount exceeds outstanding amount (${outstanding.toFixed(4)})`);
+        }
+        const feeDec = new Decimal(input.transferFeeAmount || 0);
+        if (feeDec.lessThan(0)) {
+            throw new RequestValidateError('Transfer fee cannot be negative');
+        }
+
+        const newPaid = paidDec.plus(amountDec);
+        const fullyPaid = newPaid.greaterThanOrEqualTo(settlementAmountDec);
+
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            await tx.invoiceSettlementPayment.create({
+                data: {
+                    invoiceSettlementId: settlementId,
+                    paymentDate: input.paymentDate,
+                    paymentMethod: input.paymentMethod || null,
+                    amount: amountDec.toFixed(4),
+                    transferFeeAmount: feeDec.toFixed(4),
+                    reference: input.reference || null,
+                    remark: input.remark || null,
+                    performedBy: input.performedBy || null,
+                    siteId: input.siteId ?? null
+                }
+            });
+
+            if (fullyPaid) {
+                // Final payment received — settle all linked invoices.
+                await tx.invoice.updateMany({
+                    where: { invoiceSettlementId: settlementId, deleted: false },
+                    data: {
+                        status: 'Paid',
+                        paymentDate: input.paymentDate
+                    }
+                });
+            }
+
+            const updatedSettlement = await tx.invoiceSettlement.update({
+                where: { id: settlementId },
+                data: {
+                    paidAmount: newPaid.toFixed(4),
+                    transferFeeAmount: new Decimal((settlement as any).transferFeeAmount || 0).plus(feeDec).toFixed(4),
+                    paymentStatus: fullyPaid ? 'PAID' : 'PARTIAL',
+                    siteId: input.siteId ?? settlement.siteId, // latest-editor-wins terminal attribution
+                    version: { increment: 1 }
+                },
+                include: {
+                    payments: {
+                        where: { deleted: false },
+                        orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }]
+                    },
+                    invoices: {
+                        where: { deleted: false }
+                    }
+                }
+            });
+
+            return updatedSettlement;
+        });
+
+        return {
+            ...result,
+            outstandingAmount: settlementAmountDec.minus(newPaid).toFixed(4)
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+export = { getByDateRange, createSettlement, getSettlements, getSettlementById, updateSettlement, addPayment };

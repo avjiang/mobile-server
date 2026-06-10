@@ -85,7 +85,7 @@ const subscribeCustomer = async (req: AuthRequest, res: Response, next: NextFunc
         }
         const result = await service.subscribeCustomer(user.databaseName, {
             customerId, subscriptionPackageId, paidAmount,
-        });
+        }, user.username);
         sendResponse(res, result);
     } catch (error) { next(error); }
 };

@@ -540,8 +540,11 @@ let getById = async (id: number, databaseName: string) => {
                 new Decimal(0)
             ) || new Decimal(0);
 
-        // Calculate net amount (invoice total - returns)
-        const netAmount = new Decimal(invoice.totalAmount || 0).minus(totalReturnAmount);
+        // Calculate net amount (invoice total − returns − PO down payment applied).
+        // The DP credit reduces what the tenant still owes; it never touches totalAmount.
+        const netAmount = new Decimal(invoice.totalAmount || 0)
+            .minus(totalReturnAmount)
+            .minus(new Decimal((invoice as any).downPaymentApplied || 0));
 
         // Build a map of returned quantities per item (only from COMPLETED returns)
         // Key: itemId-itemVariantId, Value: total returned quantity
@@ -1004,6 +1007,27 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                 //     ? 'Completed'
                 //     : 'Incomplete';
 
+                // --- PO down payment draw (read via tx so sequential invoices in this
+                // request see the balance already reduced by earlier iterations) ---
+                // applied = min(PO.downPaymentPercentage% × invoiceTotal, remaining DP balance).
+                // DP is a payment credit: it is stamped on the invoice + decrements the PO
+                // balance, but NEVER mutates totalAmount/discount/cost.
+                let downPaymentApplied = new Decimal(0);
+                if (invoiceData.purchaseOrderId) {
+                    const po = await tx.purchaseOrder.findUnique({
+                        where: { id: invoiceData.purchaseOrderId, deleted: false },
+                        select: { downPaymentPercentage: true, downPaymentAmount: true, downPaymentApplied: true }
+                    });
+                    if (po && po.downPaymentPercentage) {
+                        const balance = new Decimal(po.downPaymentAmount || 0).minus(new Decimal(po.downPaymentApplied || 0));
+                        if (balance.greaterThan(0)) {
+                            const byRate = new Decimal(invoiceData.totalAmount || 0)
+                                .times(new Decimal(po.downPaymentPercentage)).dividedBy(100);
+                            downPaymentApplied = Decimal.min(byRate, balance);
+                        }
+                    }
+                }
+
                 const newInvoice = await tx.invoice.create({
                     data: {
                         invoiceNumber: invoiceData.invoiceNumber,
@@ -1017,6 +1041,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         discountAmount: invoiceData.discountAmount,
                         discountType: invoiceData.discountType || '',
                         totalAmount: invoiceData.totalAmount,
+                        downPaymentApplied: downPaymentApplied.toFixed(4),
                         currency: invoiceData.currency || 'IDR',
                         status: "Completed",
                         invoiceDate: invoiceData.invoiceDate,
@@ -1036,7 +1061,8 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                     }
                 });
 
-                // Update purchase order status to COMPLETED if purchaseOrderId exists
+                // Update purchase order status to COMPLETED if purchaseOrderId exists,
+                // and draw down the DP balance (version bump so delta sync notices).
                 if (invoiceData.purchaseOrderId) {
                     await tx.purchaseOrder.update({
                         where: {
@@ -1044,7 +1070,10 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                             deleted: false
                         },
                         data: {
-                            status: 'COMPLETED'
+                            status: 'COMPLETED',
+                            ...(downPaymentApplied.greaterThan(0)
+                                ? { downPaymentApplied: { increment: downPaymentApplied.toFixed(4) }, version: { increment: 1 } }
+                                : {})
                         }
                     });
                 }
@@ -1287,6 +1316,24 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
                         data: { invoiceId: null, version: { increment: 1 } }
                     });
                 }
+
+                // Restore the PO down-payment this invoice consumed. Guard against
+                // double-restore: skip if already CANCELLED or settlement-linked (status
+                // change is a no-op there), and zero the invoice field after restoring.
+                const dpApplied = new Decimal((existingInvoiceData as any).downPaymentApplied || 0);
+                if (existingInvoiceData.purchaseOrderId &&
+                    !existingInvoice.invoiceSettlementId &&
+                    (existingInvoiceData as any).status !== 'CANCELLED' &&
+                    dpApplied.greaterThan(0)) {
+                    await tx.purchaseOrder.update({
+                        where: { id: existingInvoiceData.purchaseOrderId },
+                        data: { downPaymentApplied: { decrement: dpApplied.toFixed(4) }, version: { increment: 1 } }
+                    });
+                    await tx.invoice.update({
+                        where: { id: id },
+                        data: { downPaymentApplied: 0 }
+                    });
+                }
             }
 
             // Handle invoice items
@@ -1478,6 +1525,16 @@ let deleteInvoice = async (id: number, databaseName: string): Promise<string> =>
 
         // Use transaction to ensure data consistency
         await tenantPrisma.$transaction(async (tx) => {
+            // Restore any PO down-payment this invoice consumed (additive — guard so a
+            // re-delete can't double-credit: zero the invoice field below in the same write).
+            const dpApplied = new Decimal((existingInvoice as any).downPaymentApplied || 0);
+            if (existingInvoice.purchaseOrderId && dpApplied.greaterThan(0)) {
+                await tx.purchaseOrder.update({
+                    where: { id: existingInvoice.purchaseOrderId },
+                    data: { downPaymentApplied: { decrement: dpApplied.toFixed(4) }, version: { increment: 1 } }
+                });
+            }
+
             // Soft delete all invoice items first
             await tx.invoiceItem.updateMany({
                 where: {
@@ -1511,12 +1568,14 @@ let deleteInvoice = async (id: number, databaseName: string): Promise<string> =>
                 }
             });
 
-            // Soft delete the invoice
+            // Soft delete the invoice (zero downPaymentApplied so a future un-delete/re-delete
+            // cannot double-credit the PO balance)
             await tx.invoice.update({
                 where: { id: id },
                 data: {
                     deleted: true,
                     deletedAt: new Date(),
+                    downPaymentApplied: 0,
                     version: { increment: 1 }
                 }
             });

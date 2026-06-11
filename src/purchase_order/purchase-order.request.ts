@@ -39,7 +39,23 @@ export interface PurchaseOrderInput {
     // Terminal attribution — the terminal that created/edited this PO
     // (RegisteredDevice.siteId). Optional; nullable on the column.
     siteId?: number;
+    // PO down payment (supplier advance). downPaymentPercentage = draw rate (snapshot from supplier, editable).
+    // initialDownPayment = optional first DP payment captured on the PO creation form.
+    downPaymentPercentage?: number;
+    initialDownPayment?: DownPaymentInput;
     purchaseOrderItems?: PurchaseOrderItemInput[]; // Add items here
+}
+
+// Body of POST /purchaseOrder/:id/downPayment, and the optional initial DP captured at PO creation.
+export interface DownPaymentInput {
+    paymentDate: Date;
+    paymentMethod?: string;
+    amount: number;
+    transferFeeAmount?: number;
+    reference?: string;
+    remark?: string;
+    performedBy?: string;
+    siteId?: number;
 }
 
 export interface CreatePurchaseOrderRequestBody {

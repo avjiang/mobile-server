@@ -231,6 +231,8 @@ model Supplier {
   email                   String?          @map("EMAIL")
   remark                  String?          @map("REMARK")
   hasTax                  Boolean          @map("HAS_TAX")
+  // Default PO down-payment draw rate (%) for this supplier — snapshotted onto a PO at creation, overridable. Null/0 = feature dormant.
+  defaultDownPaymentPercentage Decimal?    @map("DEFAULT_DOWN_PAYMENT_PERCENTAGE") @db.Decimal(15, 4)
   deleted                 Boolean          @default(false) @map("IS_DELETED")
   deletedAt               DateTime?        @map("DELETED_AT")
   createdAt               DateTime?        @default(now()) @map("CREATED_AT")
@@ -656,6 +658,9 @@ model Invoice {
   discountType        String?            @default("") @map("DISCOUNT_TYPE") // e.g., "PERCENTAGE", "FIXED_AMOUNT"
   discountAmount      Decimal            @map("DISCOUNT_AMOUNT") @db.Decimal(15, 4)
   totalAmount         Decimal            @map("TOTAL_AMOUNT") @db.Decimal(15, 4)
+  // Amount this invoice drew from its PO's down-payment balance (payment credit, NOT a discount —
+  // totalAmount stays gross). Net payable = totalAmount − downPaymentApplied − returns.
+  downPaymentApplied  Decimal            @default(0) @map("DOWN_PAYMENT_APPLIED") @db.Decimal(15, 4)
   currency            String             @map("CURRENCY")
   status              String             @map("STATUS")
   invoiceDate         DateTime?          @map("INVOICE_DATE")
@@ -950,18 +955,50 @@ model PurchaseOrder {
   version             Int?                @default(1) @map("VERSION")
   isTaxInclusive      Boolean?            @default(false) @map("IS_TAX_INCLUSIVE")
   quotationId         Int?                @map("QUOTATION_ID") // Reference to source quotation
+  // PO down payment (supplier advance). downPaymentAmount = Σ DownPayment ledger rows (paid to supplier);
+  // downPaymentApplied = Σ consumed by invoices; balance = amount − applied. downPaymentPercentage = draw rate
+  // (snapshot from supplier, editable). DP is a PAYMENT CREDIT — it NEVER mutates totalAmount/discount/cost.
+  downPaymentPercentage Decimal?          @map("DOWN_PAYMENT_PERCENTAGE") @db.Decimal(15, 4)
+  downPaymentAmount     Decimal           @default(0) @map("DOWN_PAYMENT_AMOUNT") @db.Decimal(15, 4)
+  downPaymentApplied    Decimal           @default(0) @map("DOWN_PAYMENT_APPLIED") @db.Decimal(15, 4)
   quotation           Quotation?          @relation(fields: [quotationId], references: [id])
   session             Session?            @relation(fields: [sessionId], references: [id])
   supplier            Supplier            @relation(fields: [supplierId], references: [id])
   purchaseOrderItems  PurchaseOrderItem[]
   deliveryOrders      DeliveryOrder[]
   invoices            Invoice[]
+  downPayments        PurchaseOrderPayment[]
 
   @@index([supplierId])
   @@index([outletId])
   @@index([createdAt, updatedAt, deletedAt])
   @@index([outletId, purchaseOrderDate])
   @@map("purchase_order")
+}
+
+// Down-payment ledger for a PurchaseOrder — one row per advance paid to the supplier.
+// Mirrors InvoiceSettlementPayment. The PO's downPaymentAmount is the Σ of these rows.
+model PurchaseOrderPayment {
+  id                Int           @id @default(autoincrement()) @map("ID")
+  purchaseOrderId   Int           @map("PURCHASE_ORDER_ID")
+  paymentDate       DateTime      @map("PAYMENT_DATE")
+  paymentMethod     String?       @map("PAYMENT_METHOD")
+  amount            Decimal       @map("AMOUNT") @db.Decimal(15, 4)
+  transferFeeAmount Decimal       @default(0) @map("TRANSFER_FEE_AMOUNT") @db.Decimal(15, 4)
+  reference         String?       @map("REFERENCE")
+  remark            String?       @default("") @map("REMARK")
+  performedBy       String?       @default("") @map("PERFORMED_BY")
+  siteId            Int?          @map("SITE_ID") // Terminal that recorded this payment (RegisteredDevice.siteId)
+  deleted           Boolean       @default(false) @map("IS_DELETED")
+  deletedAt         DateTime?     @map("DELETED_AT")
+  createdAt         DateTime?     @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?     @updatedAt @map("UPDATED_AT")
+  version           Int?          @default(1) @map("VERSION")
+  purchaseOrder     PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([createdAt, updatedAt, deletedAt])
+  @@map("purchase_order_payment")
 }
 
 model PurchaseOrderItem {

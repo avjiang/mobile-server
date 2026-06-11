@@ -604,8 +604,10 @@ let getSettlementById = async (id: number, databaseName: string) => {
                 new Decimal(0)
             );
 
-            // Calculate net amount for this invoice
-            const invoiceNetAmount = new Decimal(invoice.totalAmount || 0).minus(invoiceReturnAmount);
+            // Calculate net amount for this invoice (total − returns − PO down payment applied)
+            const invoiceNetAmount = new Decimal(invoice.totalAmount || 0)
+                .minus(invoiceReturnAmount)
+                .minus(new Decimal((invoice as any).downPaymentApplied || 0));
 
             return {
                 ...invoiceWithoutRelations,
@@ -692,6 +694,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                 id: true,
                 invoiceNumber: true,
                 totalAmount: true,
+                downPaymentApplied: true,
                 supplierId: true,
                 invoiceSettlementId: true,
                 remark: true
@@ -758,9 +761,11 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                     sortedInvoiceIds.includes(inv.id)
                 );
 
-                // Calculate totals
+                // Calculate totals — NET of any PO down payment already applied to each
+                // invoice, so the settlement reflects what the tenant still owes the supplier
+                // (the DP credit isn't paid again at settlement time).
                 const totalInvoiceAmount = settlementInvoices.reduce((sum, inv) =>
-                    sum + Number(inv.totalAmount), 0
+                    sum + Number(inv.totalAmount) - Number((inv as any).downPaymentApplied || 0), 0
                 );
                 const totalInvoiceCount = settlementInvoices.length;
 

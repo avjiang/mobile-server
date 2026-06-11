@@ -457,6 +457,10 @@ let getById = async (id: number, databaseName: string) => {
                         },
                         invoiceSettlement: true
                     }
+                },
+                downPayments: {
+                    where: { deleted: false },
+                    orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }]
                 }
             }
         });
@@ -532,7 +536,10 @@ let getById = async (id: number, databaseName: string) => {
             // Purchase return summary
             returnCount: purchaseReturns.length,
             totalReturnAmount: totalReturnAmount.toFixed(4),
-            hasReturns: purchaseReturns.length > 0
+            hasReturns: purchaseReturns.length > 0,
+            // Down-payment balance remaining (amount paid − consumed by invoices)
+            downPaymentBalance: new Decimal(purchaseOrder.downPaymentAmount || 0)
+                .minus(new Decimal(purchaseOrder.downPaymentApplied || 0)).toFixed(4)
         };
     }
     catch (error) {
@@ -636,6 +643,11 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         performedBy: purchaseOrderData.performedBy,
                         siteId: purchaseOrderData.siteId ?? null, // Terminal attribution
                         isTaxInclusive: purchaseOrderData.isTaxInclusive !== undefined ? purchaseOrderData.isTaxInclusive : true,
+                        // PO down payment: draw rate snapshot + optional initial advance.
+                        downPaymentPercentage: (purchaseOrderData.downPaymentPercentage !== undefined && purchaseOrderData.downPaymentPercentage !== null)
+                            ? new Decimal(purchaseOrderData.downPaymentPercentage) : null,
+                        downPaymentAmount: purchaseOrderData.initialDownPayment
+                            ? new Decimal(purchaseOrderData.initialDownPayment.amount || 0) : new Decimal(0),
                     },
                     include: {
                         purchaseOrderItems: {
@@ -645,6 +657,24 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                         }
                     }
                 });
+
+                // Record the initial DP payment in the ledger (if any).
+                if (purchaseOrderData.initialDownPayment && Number(purchaseOrderData.initialDownPayment.amount) > 0) {
+                    const dp = purchaseOrderData.initialDownPayment;
+                    await tx.purchaseOrderPayment.create({
+                        data: {
+                            purchaseOrderId: newPurchaseOrder.id,
+                            paymentDate: dp.paymentDate,
+                            paymentMethod: dp.paymentMethod || null,
+                            amount: new Decimal(dp.amount),
+                            transferFeeAmount: new Decimal(dp.transferFeeAmount || 0),
+                            reference: dp.reference || null,
+                            remark: dp.remark || null,
+                            performedBy: dp.performedBy || purchaseOrderData.performedBy || null,
+                            siteId: dp.siteId ?? purchaseOrderData.siteId ?? null,
+                        }
+                    });
+                }
 
                 // Create purchase order items if provided
                 if (purchaseOrderData.purchaseOrderItems && Array.isArray(purchaseOrderData.purchaseOrderItems) && purchaseOrderData.purchaseOrderItems.length > 0) {
@@ -896,6 +926,11 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                     performedBy: updateData.performedBy,
                     siteId: updateData.siteId ?? null, // Terminal attribution (latest editor)
                     isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
+                    // DP draw rate is editable; DP amount/applied are NOT (they change only via the
+                    // down-payment ledger + invoice draws, never on a plain PO edit).
+                    downPaymentPercentage: updateData.downPaymentPercentage !== undefined
+                        ? (updateData.downPaymentPercentage !== null ? new Decimal(updateData.downPaymentPercentage) : null)
+                        : undefined,
                     version: { increment: 1 }
                 }
             });
@@ -1032,4 +1067,192 @@ let deletePurchaseOrder = async (id: number, databaseName: string): Promise<stri
     }
 }
 
-export = { getAll, getByDateRange, getById, createMany, cancel, update, deletePurchaseOrder };
+// Record a down-payment (supplier advance) against a PurchaseOrder. Guardrails:
+// PO not CANCELLED, amount > 0, and total DP must not exceed the PO total.
+// The payment increases downPaymentAmount (the un-applied balance grows); it does
+// NOT retroactively touch already-issued invoices — draws happen at invoice-create time.
+let addDownPayment = async (databaseName: string, purchaseOrderId: number, input: import("./purchase-order.request").DownPaymentInput) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const po = await tenantPrisma.purchaseOrder.findUnique({
+            where: { id: purchaseOrderId, deleted: false }
+        });
+        if (!po) {
+            throw new NotFoundError("Purchase Order");
+        }
+        if (po.status === 'CANCELLED') {
+            throw new RequestValidateError('Cannot add a down payment to a cancelled purchase order');
+        }
+        if (!input.paymentDate) {
+            throw new RequestValidateError('paymentDate is required');
+        }
+        const amount = new Decimal(input.amount || 0);
+        if (amount.lessThanOrEqualTo(0)) {
+            throw new RequestValidateError('Down payment amount must be greater than zero');
+        }
+        const fee = new Decimal(input.transferFeeAmount || 0);
+        if (fee.lessThan(0)) {
+            throw new RequestValidateError('Transfer fee cannot be negative');
+        }
+        // Guardrail: total DP must not exceed the PO total (can't prepay more than the order is worth).
+        const poTotal = new Decimal(po.totalAmount || 0);
+        const newDpTotal = new Decimal(po.downPaymentAmount || 0).plus(amount);
+        if (newDpTotal.greaterThan(poTotal)) {
+            const headroom = poTotal.minus(new Decimal(po.downPaymentAmount || 0));
+            throw new RequestValidateError(`Down payment would exceed the PO total; max top-up is ${headroom.toFixed(4)}`);
+        }
+
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            await tx.purchaseOrderPayment.create({
+                data: {
+                    purchaseOrderId,
+                    paymentDate: input.paymentDate,
+                    paymentMethod: input.paymentMethod || null,
+                    amount: amount.toFixed(4),
+                    transferFeeAmount: fee.toFixed(4),
+                    reference: input.reference || null,
+                    remark: input.remark || null,
+                    performedBy: input.performedBy || null,
+                    siteId: input.siteId ?? null
+                }
+            });
+            return await tx.purchaseOrder.update({
+                where: { id: purchaseOrderId },
+                data: {
+                    downPaymentAmount: { increment: amount.toFixed(4) },
+                    siteId: input.siteId ?? po.siteId,
+                    version: { increment: 1 }
+                },
+                include: {
+                    downPayments: {
+                        where: { deleted: false },
+                        orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }]
+                    }
+                }
+            });
+        });
+
+        return {
+            ...result,
+            downPaymentBalance: new Decimal(result.downPaymentAmount || 0)
+                .minus(new Decimal(result.downPaymentApplied || 0)).toFixed(4)
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+// Edit an existing DP payment row. The PO's downPaymentAmount is recomputed from
+// the ledger; the new total must stay within [downPaymentApplied, PO total] — you
+// cannot shrink the advance below what invoices have already drawn.
+let editDownPayment = async (databaseName: string, purchaseOrderId: number, paymentId: number, input: import("./purchase-order.request").DownPaymentInput) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const po = await tenantPrisma.purchaseOrder.findUnique({ where: { id: purchaseOrderId, deleted: false } });
+        if (!po) throw new NotFoundError("Purchase Order");
+        if (po.status === 'CANCELLED') {
+            throw new RequestValidateError('Cannot edit a down payment on a cancelled purchase order');
+        }
+        const payment = await tenantPrisma.purchaseOrderPayment.findFirst({
+            where: { id: paymentId, purchaseOrderId, deleted: false }
+        });
+        if (!payment) throw new NotFoundError("Down payment");
+
+        if (!input.paymentDate) throw new RequestValidateError('paymentDate is required');
+        const newAmount = new Decimal(input.amount || 0);
+        if (newAmount.lessThanOrEqualTo(0)) {
+            throw new RequestValidateError('Down payment amount must be greater than zero');
+        }
+        const fee = new Decimal(input.transferFeeAmount || 0);
+        if (fee.lessThan(0)) throw new RequestValidateError('Transfer fee cannot be negative');
+
+        // New DP total = current total − old amount + new amount.
+        const newTotal = new Decimal(po.downPaymentAmount || 0)
+            .minus(new Decimal(payment.amount || 0))
+            .plus(newAmount);
+        const applied = new Decimal(po.downPaymentApplied || 0);
+        if (newTotal.lessThan(applied)) {
+            throw new RequestValidateError(`Down payment cannot be reduced below the amount already drawn by invoices (${applied.toFixed(4)})`);
+        }
+        const poTotal = new Decimal(po.totalAmount || 0);
+        if (newTotal.greaterThan(poTotal)) {
+            const maxAmount = poTotal.minus(new Decimal(po.downPaymentAmount || 0)).plus(new Decimal(payment.amount || 0));
+            throw new RequestValidateError(`Down payment would exceed the PO total; max amount for this payment is ${maxAmount.toFixed(4)}`);
+        }
+
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            await tx.purchaseOrderPayment.update({
+                where: { id: paymentId },
+                data: {
+                    paymentDate: input.paymentDate,
+                    paymentMethod: input.paymentMethod || null,
+                    amount: newAmount.toFixed(4),
+                    transferFeeAmount: fee.toFixed(4),
+                    reference: input.reference || null,
+                    remark: input.remark || null,
+                    siteId: input.siteId ?? payment.siteId,
+                    version: { increment: 1 }
+                }
+            });
+            return await tx.purchaseOrder.update({
+                where: { id: purchaseOrderId },
+                data: { downPaymentAmount: newTotal.toFixed(4), siteId: input.siteId ?? po.siteId, version: { increment: 1 } },
+                include: { downPayments: { where: { deleted: false }, orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }] } }
+            });
+        });
+
+        return {
+            ...result,
+            downPaymentBalance: new Decimal(result.downPaymentAmount || 0).minus(new Decimal(result.downPaymentApplied || 0)).toFixed(4)
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+// Soft-delete a DP payment row and recompute the PO's downPaymentAmount. The
+// remaining DP total must still cover what invoices have already drawn.
+let deleteDownPayment = async (databaseName: string, purchaseOrderId: number, paymentId: number, siteId?: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const po = await tenantPrisma.purchaseOrder.findUnique({ where: { id: purchaseOrderId, deleted: false } });
+        if (!po) throw new NotFoundError("Purchase Order");
+        if (po.status === 'CANCELLED') {
+            throw new RequestValidateError('Cannot delete a down payment on a cancelled purchase order');
+        }
+        const payment = await tenantPrisma.purchaseOrderPayment.findFirst({
+            where: { id: paymentId, purchaseOrderId, deleted: false }
+        });
+        if (!payment) throw new NotFoundError("Down payment");
+
+        const newTotal = new Decimal(po.downPaymentAmount || 0).minus(new Decimal(payment.amount || 0));
+        const applied = new Decimal(po.downPaymentApplied || 0);
+        if (newTotal.lessThan(applied)) {
+            throw new RequestValidateError(`Cannot delete — the remaining down payment would fall below the amount already drawn by invoices (${applied.toFixed(4)})`);
+        }
+
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            await tx.purchaseOrderPayment.update({
+                where: { id: paymentId },
+                data: { deleted: true, deletedAt: new Date(), version: { increment: 1 } }
+            });
+            return await tx.purchaseOrder.update({
+                where: { id: purchaseOrderId },
+                data: { downPaymentAmount: newTotal.toFixed(4), siteId: siteId ?? po.siteId, version: { increment: 1 } },
+                include: { downPayments: { where: { deleted: false }, orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }] } }
+            });
+        });
+
+        return {
+            ...result,
+            downPaymentBalance: new Decimal(result.downPaymentAmount || 0).minus(new Decimal(result.downPaymentApplied || 0)).toFixed(4)
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+export = { getAll, getByDateRange, getById, createMany, cancel, update, deletePurchaseOrder, addDownPayment, editDownPayment, deleteDownPayment };

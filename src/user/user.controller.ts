@@ -8,6 +8,8 @@ import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { UpdateUserRequestBody, ChangePasswordRequest } from "./user.request"
+import { requirePermission } from "../middleware/require-permission.middleware"
+import { PERMISSION } from "../permission/permission-names"
 
 const router = express.Router()
 
@@ -77,8 +79,12 @@ const changePassword = (req: AuthRequest, res: Response, next: NextFunction) => 
 }
 
 //routes
+// Reads stay open. `update` (editing another user's profile/roles) is an admin
+// action gated by Manage Users. `change-password` is intentionally NOT gated —
+// it is self-service (a user changing their own password); gating it with
+// Manage Users would lock non-admins out of their own password reset.
 router.get('/sync', getAll)
 router.get('/:id', getById)
-router.put('/update/:id', update)
+router.put('/update/:id', requirePermission(PERMISSION.MANAGE_USERS), update)
 router.post('/:id/change-password', changePassword)
 export = router

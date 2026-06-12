@@ -1,6 +1,6 @@
 import { getGlobalPrisma, disconnectAllPrismaClients } from '../db';
 
-const permissions = [
+export const permissions = [
     {
         name: "View Dashboard",
         category: "Dashboard",

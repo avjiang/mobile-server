@@ -94,9 +94,9 @@ Permissions for managing the loyalty program, customer loyalty accounts, point a
 | ID | Name | Description | Status |
 |----|------|-------------|--------|
 | 10 | ~~Manage Customers~~ | ~~Add, edit, and delete customers~~ | **DEPRECATED** (soft-deleted) |
-| 22 | Add Customer | Add new customers | Active |
-| 23 | Edit Customer | Edit existing customers | Active |
-| 24 | Delete Customer | Delete customers | Active |
+| 22 | Add Client | Add new clients | Active |
+| 23 | Edit Client | Edit existing clients | Active |
+| 24 | Delete Client | Delete clients | Active |
 
 ### Outlet Management Permissions
 
@@ -250,7 +250,7 @@ The "Manage Customers" permission (ID 10) has been soft-deleted and replaced by 
 
 | Old Permission | New Permissions |
 |---------------|----------------|
-| Manage Customers (ID 10) | Add Customer (ID 22), Edit Customer (ID 23), Delete Customer (ID 24) |
+| Manage Customers (ID 10) | Add Client (ID 22), Edit Client (ID 23), Delete Client (ID 24) |
 
 **Impact on Tenant Databases:**
 - Existing `role_permission` records referencing permission ID 10 become inert (the permission is soft-deleted in the global DB).
@@ -277,3 +277,4 @@ WHERE PERMISSION_ID = 10 AND IS_DELETED = 0;
 | 2026-02-27 | 1.4 | Deprecated "Manage Customers" (ID 10); added granular customer permissions: Add Customer (ID 22), Edit Customer (ID 23), Delete Customer (ID 24) |
 | 2026-03-02 | 1.5 | Added Loyalty permissions (IDs 25-30): Manage Loyalty Program, View Loyalty Accounts, Adjust Loyalty Points, Manage Subscription Packages, View Customer Subscriptions, Manage Customer Subscriptions |
 | 2026-05-14 | 1.6 | Added Sales permission (ID 31): Print Bill — print pre-payment bill from cart, default unassigned (allowed_roles="") |
+| 2026-06-09 | 1.7 | Doc fix: IDs 22/23/24 are named **Add/Edit/Delete Client** (not "Customer") — the seed has always used "Client"; this doc was stale. Aligned the FE `AppPermission` enum `.value` strings (`lib/enum/app_permission_enum.dart`) to match, fixing permanently-hidden client CRUD buttons for non-super-admin users. Notification perm values (`Receive Sales Notification`, `Receive Inventory Notification`) also aligned. |

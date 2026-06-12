@@ -350,6 +350,14 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     salesType: true,
                     customerName: true,
                     phoneNumber: true,
+                    shipStreet: true,
+                    subtotalAmount: true,
+                    taxAmount: true,
+                    discountAmount: true,
+                    loyaltyTierDiscountAmount: true,
+                    voucherDiscountAmount: true,
+                    subscriptionDiscountAmount: true,
+                    loyaltyPointsRedemptionValue: true,
                     totalAmount: true,
                     paidAmount: true,
                     profitAmount: true,
@@ -968,6 +976,23 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 salesType: sale.salesType,
                 customerName: sale.customerName || 'Guest',
                 phoneNumber: sale.phoneNumber || '',
+                // Street address of the sale (delivery/customer street). Prod data
+                // shows tenants fill SHIP_STREET only (bill_* unused) — verified
+                // against audio_technic_db 2026-06-09: 5,496/6,136 rows.
+                shipStreet: sale.shipStreet || '',
+                subtotalAmount: sale.subtotalAmount.toNumber(),
+                taxAmount: sale.taxAmount.toNumber(),
+                // Every discount applied BELOW the subtotal (sale-level + tier/
+                // voucher [mutually exclusive] + subscription + points redemption).
+                // Reconciles the report: subtotal − totalDiscountAmount (+ charges,
+                // + tax if exclusive) = totalAmount. Item-level discounts are NOT
+                // included — subtotal is already net of them.
+                totalDiscountAmount: (sale.discountAmount || new Decimal(0))
+                    .plus(sale.loyaltyTierDiscountAmount || 0)
+                    .plus(sale.voucherDiscountAmount || 0)
+                    .plus(sale.subscriptionDiscountAmount || 0)
+                    .plus(sale.loyaltyPointsRedemptionValue || 0)
+                    .toNumber(),
                 totalAmount: sale.totalAmount.toNumber(),
                 paidAmount: sale.paidAmount.toNumber(),
                 profitAmount: sale.profitAmount.toNumber(),
@@ -992,9 +1017,258 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
     }
 }
 
+// ─── Outlet-report cache (fingerprint-validated) ────────────────────────────
+//
+// Generating an outlet report costs ~26 tenant-DB queries. Users can re-request
+// the same monthly report freely (no FE debounce), so closed periods are cached
+// in-memory and validated with a cheap data fingerprint instead of a TTL:
+// correctness is guaranteed by data state, not by hoping nothing changed.
+//
+// A closed period is NOT immutable — a backdated sale can be inserted into it,
+// and a past sale can be voided/returned/refunded/edited/soft-deleted later.
+// Every such write path either inserts rows (COUNT moves) or updates the sales
+// row in the same transaction (Prisma @updatedAt bumps UPDATED_AT) — verified
+// across sales.service.ts (void/return/refund/update/remove all tx.sales.update).
+// So COUNT(*) + MAX(UPDATED_AT) over (outletId, businessDate range) on sales +
+// payment is a complete change detector. Both fingerprint queries are index
+// range seeks (sales: composite (outletId, businessDate, status); payment:
+// businessDate index) — ~1-2ms each.
+//
+// Only periods that ended before today (UTC) are cached; Today / This week /
+// This month change constantly and would never hit. The "today's PO/DO/Invoice"
+// and stockBalance sections are LIVE snapshots (not period-scoped), so the hit
+// path re-fetches them via the shared helpers below and splices — a hit costs
+// 6 small queries instead of ~26.
+//
+// In-memory Map is sufficient: prod runs a single App Service instance; a
+// restart just means one regeneration. Known cosmetic limit: item renames /
+// recategorisation after caching keep the old name in cached rankings until any
+// sale in the period changes (stock + today sections are always live).
+
+interface OutletReportCacheEntry {
+    fingerprint: string;
+    payload: Record<string, unknown>;
+    // itemId -> quantity sold in the period; needed to rebuild the live
+    // stockBalance section on a cache hit.
+    soldQty: Record<number, number>;
+    lastAccessed: number;
+}
+
+const outletReportCache = new Map<string, OutletReportCacheEntry>();
+const OUTLET_REPORT_CACHE_MAX_ENTRIES = 100;
+const outletReportCacheStats = { hits: 0, misses: 0 };
+
+const getOutletReportCacheStats = () => ({
+    ...outletReportCacheStats,
+    entries: outletReportCache.size,
+});
+
+// endDate strictly before today's UTC midnight = the period can no longer gain
+// same-day sales through normal (non-backdated) flow. Backdated inserts are
+// still caught by the fingerprint.
+const isClosedPeriod = (endDate: Date): boolean => {
+    const now = new Date();
+    const startOfTodayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    return endDate.getTime() < startOfTodayUtc.getTime();
+};
+
+// Deliberately NO `deleted: false` filter: a soft delete is an UPDATE, and the
+// report's results change with it, so its UPDATED_AT bump must invalidate.
+const computeOutletReportFingerprint = async (
+    tenantPrisma: PrismaClient, outletId: number, startDate: Date, endDate: Date,
+): Promise<string> => {
+    const range = { outletId: outletId, businessDate: { gte: startDate, lte: endDate } };
+    const [s, p] = await Promise.all([
+        tenantPrisma.sales.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
+        tenantPrisma.payment.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
+    ]);
+    return [
+        s._count.id, s._max.updatedAt?.toISOString() ?? '',
+        p._count.id, p._max.updatedAt?.toISOString() ?? '',
+    ].join('|');
+};
+
+const setOutletReportCacheEntry = (key: string, entry: OutletReportCacheEntry) => {
+    if (!outletReportCache.has(key) && outletReportCache.size >= OUTLET_REPORT_CACHE_MAX_ENTRIES) {
+        // Evict the least-recently-accessed entry (bounded memory, no timer).
+        let lruKey: string | null = null;
+        let lruAccessed = Infinity;
+        for (const [k, e] of outletReportCache) {
+            if (e.lastAccessed < lruAccessed) { lruAccessed = e.lastAccessed; lruKey = k; }
+        }
+        if (lruKey) outletReportCache.delete(lruKey);
+    }
+    outletReportCache.set(key, entry);
+};
+
+// Live "entered today" snapshot (PO/DO/invoices created today for the outlet).
+// Request-day scoped, independent of the report period — shared by the build
+// path and the cache-hit splice so both always serve a fresh snapshot.
+const fetchTodayOps = async (tenantPrisma: PrismaClient, outletId: number) => {
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    const todayWindow = { gte: startOfDay, lte: endOfDay };
+
+    const [todayPurchaseOrders, todayDeliveryOrders, todayInvoices] = await Promise.all([
+        tenantPrisma.purchaseOrder.findMany({
+            where: { outletId: outletId, createdAt: todayWindow, deleted: false },
+            select: {
+                id: true,
+                purchaseOrderNumber: true,
+                totalAmount: true,
+                status: true,
+                createdAt: true,
+                supplier: { select: { companyName: true } },
+                purchaseOrderItems: { select: { quantity: true } }
+            }
+        }),
+        tenantPrisma.deliveryOrder.findMany({
+            where: { outletId: outletId, createdAt: todayWindow, deleted: false },
+            select: {
+                id: true,
+                trackingNumber: true,
+                status: true,
+                createdAt: true,
+                deliveryDate: true,
+                supplierId: true,
+                deliveryOrderItems: { select: { receivedQuantity: true } }
+            }
+        }),
+        tenantPrisma.invoice.findMany({
+            where: { outletId: outletId, createdAt: todayWindow, deleted: false },
+            select: {
+                id: true,
+                invoiceNumber: true,
+                totalAmount: true,
+                status: true,
+                createdAt: true,
+                supplier: { select: { companyName: true } },
+                invoiceItems: { select: { quantity: true } }
+            }
+        })
+    ]);
+
+    return {
+        todayPurchaseOrders: {
+            count: todayPurchaseOrders.length,
+            totalAmount: todayPurchaseOrders.reduce((sum, po) => sum.plus(po.totalAmount || new Decimal(0)), new Decimal(0)).toNumber(),
+            totalItems: todayPurchaseOrders.reduce((sum, po) =>
+                sum + po.purchaseOrderItems.reduce((itemSum, item) => itemSum + item.quantity.toNumber(), 0), 0),
+            orders: todayPurchaseOrders.map(po => ({
+                id: po.id,
+                purchaseOrderNumber: po.purchaseOrderNumber,
+                totalAmount: (po.totalAmount || new Decimal(0)).toNumber(),
+                status: po.status,
+                supplierName: po.supplier?.companyName || 'Unknown',
+                createdAt: po.createdAt,
+                itemCount: po.purchaseOrderItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
+            }))
+        },
+        todayDeliveryOrders: {
+            count: todayDeliveryOrders.length,
+            totalItems: todayDeliveryOrders.reduce((sum, order) =>
+                sum + order.deliveryOrderItems.reduce((itemSum, item) => itemSum + item.receivedQuantity, 0), 0),
+            orders: todayDeliveryOrders.map(order => ({
+                id: order.id,
+                trackingNumber: order.trackingNumber,
+                status: order.status,
+                deliveryDate: order.deliveryDate,
+                createdAt: order.createdAt,
+                supplierId: order.supplierId,
+                itemCount: order.deliveryOrderItems.reduce((sum, item) => sum + item.receivedQuantity, 0)
+            }))
+        },
+        todayInvoices: {
+            count: todayInvoices.length,
+            totalAmount: todayInvoices.reduce((sum, invoice) => sum.plus(invoice.totalAmount || new Decimal(0)), new Decimal(0)).toNumber(),
+            totalItems: todayInvoices.reduce((sum, invoice) =>
+                sum + invoice.invoiceItems.reduce((itemSum, item) => itemSum + item.quantity.toNumber(), 0), 0),
+            invoices: todayInvoices.map(invoice => ({
+                id: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                totalAmount: (invoice.totalAmount || new Decimal(0)).toNumber(),
+                status: invoice.status,
+                supplierName: invoice.supplier?.companyName || 'Unknown',
+                createdAt: invoice.createdAt,
+                itemCount: invoice.invoiceItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
+            }))
+        }
+    };
+};
+
+// Live current-stock section for the items sold in the period. Stock levels and
+// In/Low/Out status reflect NOW, not the period — shared by build + cache-hit
+// paths. soldQty: itemId -> total quantity sold in the period.
+const fetchStockBalanceSection = async (
+    tenantPrisma: PrismaClient, outletId: number, soldQty: Record<number, number>,
+) => {
+    const soldItemIds = Object.keys(soldQty).map(Number);
+    const stockBalanceItems = await tenantPrisma.stockBalance.findMany({
+        where: {
+            deleted: false,
+            outletId: outletId,
+            itemId: { in: soldItemIds }
+        },
+        select: {
+            availableQuantity: true,
+            onHandQuantity: true,
+            reorderThreshold: true,
+            itemId: true,
+            item: {
+                select: {
+                    id: true,
+                    itemName: true,
+                    itemCode: true,
+                    itemBrand: true,
+                }
+            },
+            outlet: {
+                select: {
+                    id: true,
+                    outletName: true
+                }
+            }
+        }
+    });
+    return stockBalanceItems.map(stock => ({
+        itemId: stock.item.id,
+        itemName: stock.item.itemName,
+        itemCode: stock.item.itemCode,
+        itemBrand: stock.item.itemBrand,
+        quantitySold: soldQty[stock.item.id] || 0,
+        availableQuantity: stock.availableQuantity.toNumber(),
+        status: stock.availableQuantity.lte(0) ? 'Out of Stock' :
+            (stock.reorderThreshold && stock.availableQuantity.lte(stock.reorderThreshold)) ? 'Low Stock' : 'In Stock'
+    }));
+};
+
 let generateOutletReport = async (databaseName: string, outletId: number, startDate?: Date, endDate?: Date, planType?: string | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // ── Cache check (closed periods only) ──
+        // Fingerprint is computed BEFORE building so a write racing the build can
+        // only make the stored fingerprint stale-early (next request rebuilds),
+        // never stale-late (serving old data as current).
+        const cacheKey = startDate && endDate
+            ? `${databaseName}|${outletId}|${startDate.toISOString()}|${endDate.toISOString()}|${planType ?? ''}`
+            : null;
+        let fingerprint: string | null = null;
+        if (cacheKey && startDate && endDate && isClosedPeriod(endDate)) {
+            fingerprint = await computeOutletReportFingerprint(tenantPrisma, outletId, startDate, endDate);
+            const cached = outletReportCache.get(cacheKey);
+            if (cached && cached.fingerprint === fingerprint) {
+                cached.lastAccessed = Date.now();
+                outletReportCacheStats.hits++;
+                // Serve cached period data, but splice in the live snapshots.
+                const [todayOps, stockBalance] = await Promise.all([
+                    fetchTodayOps(tenantPrisma, outletId),
+                    fetchStockBalanceSection(tenantPrisma, outletId, cached.soldQty),
+                ]);
+                return { ...cached.payload, ...todayOps, stockBalance };
+            }
+            outletReportCacheStats.misses++;
+        }
         // Laundry accounts split each wash into a service line (revenue) + consumable
         // depletion lines (detergent COGS). For item rankings those consumable lines
         // would surface as "sold"/"loss" items, so we exclude them (stockConsumptionQty
@@ -1011,9 +1285,18 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             throw new NotFoundError('Outlet');
         }
 
-        // Date filtering - default to all time if not provided
+        // Date filtering - default to all time if not provided.
+        //
+        // Filter on businessDate (NOT createdAt): it is the POS business day the
+        // sale/payment belongs to (handles backdated sales correctly) and it is
+        // what the rest of the app reports on (session reports, dashboard revenue
+        // trend). It also lets these queries ride the composite index
+        // @@index([outletId, businessDate, status]) on Sales — outletId equality +
+        // businessDate range seek — instead of scanning every row for the outlet.
+        // Both Sales and Payment carry businessDate (each with its own index), so
+        // the same filter is valid wherever outletFilter is spread below.
         const dateFilter = startDate && endDate ? {
-            createdAt: {
+            businessDate: {
                 gte: startDate,
                 lte: endDate
             }
@@ -1022,13 +1305,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
         // All queries will filter by this outlet ID
         const outletFilter = { outletId: outletId, ...dateFilter };
 
-        // Get today's date for PO/DO/Invoice filtering
-        const today = new Date();
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
-
-        // Run all queries concurrently for better performance
-        const [
+        // Run all queries concurrently for better performance. The live
+        // "today's PO/DO/Invoice" snapshot runs alongside via its shared helper.
+        const [[
             voidedSales,
             returnedSales,
             refundedSales,
@@ -1041,11 +1320,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             salesSummary,
             paymentBreakdown,
             salesItems,
-            todayPurchaseOrders,
-            todayDeliveryOrders,
-            todayInvoices,
             allSales
-        ] = await Promise.all([
+        ], todayOps] = await Promise.all([Promise.all([
             // Voided sales
             tenantPrisma.sales.aggregate({
                 where: {
@@ -1250,94 +1526,11 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 }
             }),
 
-            // Today's Purchase Orders
-            tenantPrisma.purchaseOrder.findMany({
-                where: {
-                    outletId: outletId,
-                    createdAt: {
-                        gte: startOfDay,
-                        lte: endOfDay
-                    },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    purchaseOrderNumber: true,
-                    totalAmount: true,
-                    status: true,
-                    createdAt: true,
-                    supplier: {
-                        select: {
-                            companyName: true
-                        }
-                    },
-                    purchaseOrderItems: {
-                        select: {
-                            quantity: true
-                        }
-                    }
-                }
-            }),
-
-            // Today's Delivery Orders
-            tenantPrisma.deliveryOrder.findMany({
-                where: {
-                    outletId: outletId,
-                    createdAt: {
-                        gte: startOfDay,
-                        lte: endOfDay
-                    },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    trackingNumber: true,
-                    status: true,
-                    createdAt: true,
-                    deliveryDate: true,
-                    supplierId: true,
-                    deliveryOrderItems: {
-                        select: {
-                            receivedQuantity: true
-                        }
-                    }
-                }
-            }),
-
-            // Today's Invoices
-            tenantPrisma.invoice.findMany({
-                where: {
-                    outletId: outletId,
-                    createdAt: {
-                        gte: startOfDay,
-                        lte: endOfDay
-                    },
-                    deleted: false
-                },
-                select: {
-                    id: true,
-                    invoiceNumber: true,
-                    totalAmount: true,
-                    status: true,
-                    createdAt: true,
-                    supplier: {
-                        select: {
-                            companyName: true
-                        }
-                    },
-                    invoiceItems: {
-                        select: {
-                            quantity: true
-                        }
-                    }
-                }
-            }),
-
             // All sales for the outlet
             tenantPrisma.sales.findMany({
                 where: {
                     ...outletFilter,
-                    deleted: false
+                    deleted: false,
                 },
                 select: {
                     id: true,
@@ -1345,6 +1538,14 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     salesType: true,
                     customerName: true,
                     phoneNumber: true,
+                    shipStreet: true,
+                    subtotalAmount: true,
+                    taxAmount: true,
+                    discountAmount: true,
+                    loyaltyTierDiscountAmount: true,
+                    voucherDiscountAmount: true,
+                    subscriptionDiscountAmount: true,
+                    loyaltyPointsRedemptionValue: true,
                     totalAmount: true,
                     paidAmount: true,
                     profitAmount: true,
@@ -1368,7 +1569,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     createdAt: 'desc'
                 }
             })
-        ]);
+        ]), fetchTodayOps(tenantPrisma, outletId)]);
 
         // Get detailed sales information for each status
         const [returnedSalesDetails, refundedSalesDetails, partiallyPaidSalesDetails, voidedSalesDetails, deliveredSalesDetails] = await Promise.all([
@@ -1486,6 +1687,12 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             }
             itemQuantitiesSold[item.itemId] = itemQuantitiesSold[item.itemId].plus(item.quantity);
         });
+        // Plain-number copy: feeds the live stockBalance helper and is stored in
+        // the cache entry so a hit can rebuild the stock section without rerunning
+        // the period's salesItem scan. Includes 0-qty items so soldItemIds is
+        // preserved exactly (keys = distinct items sold).
+        const soldQty: Record<number, number> = {};
+        soldItemIds.forEach(id => { soldQty[id] = (itemQuantitiesSold[id] || new Decimal(0)).toNumber(); });
 
         // Calculate top-selling categories
         const categorySales: Record<number, { categoryName: string, quantitySold: Decimal, revenue: Decimal }> = {};
@@ -1525,36 +1732,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"].includes(sale.status)
         ).length;
 
-        // Get stock information for items sold in this outlet (reuse soldItemIds)
-        const stockBalanceItems = await tenantPrisma.stockBalance.findMany({
-            where: {
-                deleted: false,
-                outletId: outletId,
-                itemId: {
-                    in: soldItemIds
-                }
-            },
-            select: {
-                availableQuantity: true,
-                onHandQuantity: true,
-                reorderThreshold: true,
-                itemId: true,
-                item: {
-                    select: {
-                        id: true,
-                        itemName: true,
-                        itemCode: true,
-                        itemBrand: true,
-                    }
-                },
-                outlet: {
-                    select: {
-                        id: true,
-                        outletName: true
-                    }
-                }
-            }
-        });
+        // Get current stock for items sold in the period (live snapshot; shared
+        // with the cache-hit path)
+        const stockBalance = await fetchStockBalanceSection(tenantPrisma, outletId, soldQty);
 
         // Calculate metrics
         const totalOutstandingAmount = (partiallyPaidSales._sum?.totalAmount || new Decimal(0)).minus(partiallyPaidSales._sum?.paidAmount || new Decimal(0));
@@ -1707,7 +1887,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             .sort((a, b) => (a.siteId ?? 0) - (b.siteId ?? 0));
 
         // Prepare response object
-        return {
+        const payload = {
             // Laundry operations block (null for non-laundry accounts)
             laundryOps,
 
@@ -1866,64 +2046,10 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 amount: (payment._sum.paidAmount || new Decimal(0)).toNumber()
             })),
 
-            stockBalance: stockBalanceItems.map(stock => ({
-                itemId: stock.item.id,
-                itemName: stock.item.itemName,
-                itemCode: stock.item.itemCode,
-                itemBrand: stock.item.itemBrand,
-                quantitySold: (itemQuantitiesSold[stock.item.id] || new Decimal(0)).toNumber(),
-                availableQuantity: stock.availableQuantity.toNumber(),
-                status: stock.availableQuantity.lte(0) ? 'Out of Stock' :
-                    (stock.reorderThreshold && stock.availableQuantity.lte(stock.reorderThreshold)) ? 'Low Stock' : 'In Stock'
-            })),
+            stockBalance,
 
-            // Today's operations
-            todayPurchaseOrders: {
-                count: todayPurchaseOrders.length,
-                totalAmount: todayPurchaseOrders.reduce((sum, po) => sum.plus(po.totalAmount || new Decimal(0)), new Decimal(0)).toNumber(),
-                totalItems: todayPurchaseOrders.reduce((sum, po) =>
-                    sum + po.purchaseOrderItems.reduce((itemSum, item) => itemSum + item.quantity.toNumber(), 0), 0),
-                orders: todayPurchaseOrders.map(po => ({
-                    id: po.id,
-                    purchaseOrderNumber: po.purchaseOrderNumber,
-                    totalAmount: (po.totalAmount || new Decimal(0)).toNumber(),
-                    status: po.status,
-                    supplierName: po.supplier?.companyName || 'Unknown',
-                    createdAt: po.createdAt,
-                    itemCount: po.purchaseOrderItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
-                }))
-            },
-
-            todayDeliveryOrders: {
-                count: todayDeliveryOrders.length,
-                totalItems: todayDeliveryOrders.reduce((sum, order) =>
-                    sum + order.deliveryOrderItems.reduce((itemSum, item) => itemSum + item.receivedQuantity, 0), 0),
-                orders: todayDeliveryOrders.map(order => ({
-                    id: order.id,
-                    trackingNumber: order.trackingNumber,
-                    status: order.status,
-                    deliveryDate: order.deliveryDate,
-                    createdAt: order.createdAt,
-                    supplierId: order.supplierId,
-                    itemCount: order.deliveryOrderItems.reduce((sum, item) => sum + item.receivedQuantity, 0)
-                }))
-            },
-
-            todayInvoices: {
-                count: todayInvoices.length,
-                totalAmount: todayInvoices.reduce((sum, invoice) => sum.plus(invoice.totalAmount || new Decimal(0)), new Decimal(0)).toNumber(),
-                totalItems: todayInvoices.reduce((sum, invoice) =>
-                    sum + invoice.invoiceItems.reduce((itemSum, item) => itemSum + item.quantity.toNumber(), 0), 0),
-                invoices: todayInvoices.map(invoice => ({
-                    id: invoice.id,
-                    invoiceNumber: invoice.invoiceNumber,
-                    totalAmount: (invoice.totalAmount || new Decimal(0)).toNumber(),
-                    status: invoice.status,
-                    supplierName: invoice.supplier?.companyName || 'Unknown',
-                    createdAt: invoice.createdAt,
-                    itemCount: invoice.invoiceItems.reduce((sum, item) => sum + item.quantity.toNumber(), 0)
-                }))
-            },
+            // Today's operations (live request-day snapshot — see fetchTodayOps)
+            ...todayOps,
 
             // Sales array
             sales: allSales.map(sale => ({
@@ -1932,6 +2058,23 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 salesType: sale.salesType,
                 customerName: sale.customerName || 'Guest',
                 phoneNumber: sale.phoneNumber || '',
+                // Street address of the sale (delivery/customer street). Prod data
+                // shows tenants fill SHIP_STREET only (bill_* unused) — verified
+                // against audio_technic_db 2026-06-09: 5,496/6,136 rows.
+                shipStreet: sale.shipStreet || '',
+                subtotalAmount: sale.subtotalAmount.toNumber(),
+                taxAmount: sale.taxAmount.toNumber(),
+                // Every discount applied BELOW the subtotal (sale-level + tier/
+                // voucher [mutually exclusive] + subscription + points redemption).
+                // Reconciles the report: subtotal − totalDiscountAmount (+ charges,
+                // + tax if exclusive) = totalAmount. Item-level discounts are NOT
+                // included — subtotal is already net of them.
+                totalDiscountAmount: (sale.discountAmount || new Decimal(0))
+                    .plus(sale.loyaltyTierDiscountAmount || 0)
+                    .plus(sale.voucherDiscountAmount || 0)
+                    .plus(sale.subscriptionDiscountAmount || 0)
+                    .plus(sale.loyaltyPointsRedemptionValue || 0)
+                    .toNumber(),
                 totalAmount: sale.totalAmount.toNumber(),
                 paidAmount: sale.paidAmount.toNumber(),
                 profitAmount: sale.profitAmount.toNumber(),
@@ -1950,6 +2093,20 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 }))
             }))
         };
+
+        // Store closed-period reports for fingerprint-validated reuse. The
+        // fingerprint was computed before the build, so a write racing the build
+        // at worst invalidates early (rebuild next request) — never serves stale.
+        if (cacheKey && fingerprint) {
+            setOutletReportCacheEntry(cacheKey, {
+                fingerprint,
+                payload,
+                soldQty,
+                lastAccessed: Date.now(),
+            });
+        }
+
+        return payload;
     }
     catch (error) {
         throw error;
@@ -2019,6 +2176,14 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                     salesType: true,
                     customerName: true,
                     phoneNumber: true,
+                    shipStreet: true,
+                    subtotalAmount: true,
+                    taxAmount: true,
+                    discountAmount: true,
+                    loyaltyTierDiscountAmount: true,
+                    voucherDiscountAmount: true,
+                    subscriptionDiscountAmount: true,
+                    loyaltyPointsRedemptionValue: true,
                     totalAmount: true,
                     paidAmount: true,
                     profitAmount: true,
@@ -2172,6 +2337,23 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                 salesType: sale.salesType,
                 customerName: sale.customerName || 'Guest',
                 phoneNumber: sale.phoneNumber || '',
+                // Same per-sale address/amount fields as the full reports — the
+                // shared PDF per-order card prints them (address is genuinely
+                // useful on laundry orders).
+                shipStreet: sale.shipStreet || '',
+                subtotalAmount: sale.subtotalAmount.toNumber(),
+                taxAmount: sale.taxAmount.toNumber(),
+                // Every discount applied BELOW the subtotal (sale-level + tier/
+                // voucher [mutually exclusive] + subscription + points redemption).
+                // Reconciles the report: subtotal − totalDiscountAmount (+ charges,
+                // + tax if exclusive) = totalAmount. Item-level discounts are NOT
+                // included — subtotal is already net of them.
+                totalDiscountAmount: (sale.discountAmount || new Decimal(0))
+                    .plus(sale.loyaltyTierDiscountAmount || 0)
+                    .plus(sale.voucherDiscountAmount || 0)
+                    .plus(sale.subscriptionDiscountAmount || 0)
+                    .plus(sale.loyaltyPointsRedemptionValue || 0)
+                    .toNumber(),
                 totalAmount: sale.totalAmount.toNumber(),
                 paidAmount: sale.paidAmount.toNumber(),
                 profitAmount: sale.profitAmount.toNumber(),
@@ -2196,4 +2378,4 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
     }
 }
 
-export = { generateReport, generateOutletReport, generateLaundryReport }
+export = { generateReport, generateOutletReport, generateLaundryReport, getOutletReportCacheStats }

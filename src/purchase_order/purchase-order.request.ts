@@ -56,6 +56,9 @@ export interface DownPaymentInput {
     remark?: string;
     performedBy?: string;
     siteId?: number;
+    // Optional draw rate to set on the PO alongside this payment — used when adding the
+    // first down payment to a PO that was created without a rate (so future invoices draw).
+    downPaymentPercentage?: number;
 }
 
 export interface CreatePurchaseOrderRequestBody {

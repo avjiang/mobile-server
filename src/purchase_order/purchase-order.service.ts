@@ -487,9 +487,22 @@ let getById = async (id: number, databaseName: string) => {
                 invoiceSettlements.map(async (settlement) => {
                     const invoices = await tenantPrisma.invoice.findMany({
                         where: { invoiceSettlementId: settlement.id, deleted: false },
-                        select: { id: true, invoiceNumber: true, subtotalAmount: true, totalAmount: true, status: true, taxInvoiceNumber: true }
+                        // downPaymentApplied is required so the FE settlement form can show the
+                        // net payable (total − DP) and the "DP applied" breakdown line; without it
+                        // the per-invoice figure renders as gross and no longer tallies with the
+                        // (net) settlement amount.
+                        select: { id: true, invoiceNumber: true, subtotalAmount: true, totalAmount: true, downPaymentApplied: true, status: true, taxInvoiceNumber: true }
                     });
-                    return { ...settlement, invoices };
+                    // Surface a server-computed netAmount (total − DP) for parity with the
+                    // settlement getById payload. Returns aren't joined in this lightweight
+                    // query, so net here is gross − DP only (matches the FE fallback).
+                    const invoicesWithNet = invoices.map(inv => ({
+                        ...inv,
+                        netAmount: new Decimal(inv.totalAmount || 0)
+                            .minus(new Decimal((inv as any).downPaymentApplied || 0))
+                            .toFixed(4),
+                    }));
+                    return { ...settlement, invoices: invoicesWithNet };
                 })
             ),
             // Batch fetch purchase returns for all invoices
@@ -1120,6 +1133,11 @@ let addDownPayment = async (databaseName: string, purchaseOrderId: number, input
                 where: { id: purchaseOrderId },
                 data: {
                     downPaymentAmount: { increment: amount.toFixed(4) },
+                    // Set/override the draw rate when supplied (e.g. first DP on a PO created
+                    // without a rate). Future invoices draw at this rate; not retroactive.
+                    ...(input.downPaymentPercentage !== undefined && input.downPaymentPercentage !== null
+                        ? { downPaymentPercentage: new Decimal(input.downPaymentPercentage) }
+                        : {}),
                     siteId: input.siteId ?? po.siteId,
                     version: { increment: 1 }
                 },

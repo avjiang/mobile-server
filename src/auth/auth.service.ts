@@ -7,7 +7,8 @@ import { AuthenticateRequestBody, RefreshTokenRequestBody, TokenRequestBody } fr
 import { TokenResponseBody } from "./auth.response"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
-import { User, PrismaClient as TenantPrismaClient } from "../../prisma/client/generated/client"
+import { User } from "../../prisma/client/generated/client"
+import { resolvePermissions } from "./permission-cache"
 const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -419,45 +420,14 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
     }
 }
 
-// Fetch the user's effective permission names from the tenant DB. Super-admin (role id 1)
-// and the avjiang god-account get a single '*' entry, which requirePermission treats as
-// a wildcard. Any failure falls back to [] (no permissions) — never to '*'.
+// Stamp the user's effective permissions into the JWT at login. The live
+// resolver lives in permission-cache.ts (the same one requirePermission uses);
+// here we wrap it so login NEVER throws — a transient DB failure stamps [] and
+// logs, rather than breaking authentication. Super-admin (role id 1) and the
+// avjiang god-account resolve to '*', which requirePermission treats as a wildcard.
 async function fetchUserPermissions(db: string, userId: number, username: string): Promise<string[]> {
-    if (username === 'avjiang') return ['*'];
     try {
-        const tenantPrisma: TenantPrismaClient = getTenantPrisma(db);
-        const userWithRoles = await tenantPrisma.user.findUnique({
-            where: { id: userId },
-            select: {
-                roles: {
-                    where: { deleted: false },
-                    select: {
-                        id: true,
-                        permission: {
-                            where: { deleted: false },
-                            select: { permissionId: true },
-                        },
-                    },
-                },
-            },
-        });
-        if (!userWithRoles) return [];
-
-        // Super-admin role id is 1 — wildcard match, no DB lookup needed.
-        if (userWithRoles.roles.some((r: any) => r.id === 1)) return ['*'];
-
-        const permissionIds = new Set<number>();
-        userWithRoles.roles.forEach((role: any) => {
-            role.permission.forEach((rp: any) => permissionIds.add(rp.permissionId));
-        });
-        if (permissionIds.size === 0) return [];
-
-        const globalPrisma = getGlobalPrisma();
-        const permissions = await globalPrisma.permission.findMany({
-            where: { id: { in: Array.from(permissionIds) }, deleted: false },
-            select: { name: true },
-        });
-        return permissions.map((p: any) => p.name);
+        return await resolvePermissions(db, userId, username);
     } catch (error) {
         console.error('fetchUserPermissions failed:', error);
         return [];

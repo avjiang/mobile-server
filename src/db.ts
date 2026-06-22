@@ -102,6 +102,30 @@ export async function evictIdleTenantClients(
   return evictedNames.length;
 }
 
+/**
+ * Disconnect and forget a single tenant's cached Prisma client.
+ *
+ * For the daily tenant-walking crons: they touch every (or many) tenant DB
+ * in one sweep, which would otherwise leave one cached client — and its ~3
+ * pooled MySQL connections — per tenant simultaneously, pushing total
+ * connections toward `max_connections` (171 on the B1ms) as the tenant count
+ * grows. Releasing after each tenant bounds a cron to ~one tenant's worth of
+ * connections at a time. Safe: `getTenantPrisma` transparently re-creates the
+ * client on the next request (~200-500ms cold start). Deletes from the map
+ * too — disconnecting without deleting would leave a dead client cached.
+ */
+export async function disconnectTenantClient(tenantDbName: string): Promise<void> {
+  const entry = tenantPrismaInstances.get(tenantDbName);
+  if (!entry) return;
+  try {
+    await entry.client.$disconnect();
+  } catch (err) {
+    console.error(`Error disconnecting tenant ${tenantDbName}:`, err);
+  } finally {
+    tenantPrismaInstances.delete(tenantDbName);
+  }
+}
+
 export function startTenantClientEviction(): void {
   if (evictionInterval) return;
   evictionInterval = setInterval(() => {

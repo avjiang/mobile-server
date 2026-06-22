@@ -2,9 +2,10 @@ import {
   S3Client,
   PutObjectCommand,
   ListObjectsV2Command,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { BusinessLogicError } from "../api-helpers/error";
+import { BusinessLogicError, CatalogueStorageLimitError } from "../api-helpers/error";
 
 /**
  * Cloudflare R2 storage for online-catalogue item/variant images.
@@ -24,9 +25,12 @@ import { BusinessLogicError } from "../api-helpers/error";
 const UPLOAD_URL_TTL_SECONDS = 300; // 5 min to complete the PUT
 const ALLOWED_CONTENT_TYPE = "image/webp"; // FE downsamples to WebP before upload
 
-// Per-tenant R2 storage cap (abuse guardrail, NOT a billing axis). At ~100KB/WebP
-// this is ~5,000 images — generous for a catalogue, protects the free 10GB tier.
-export const CATALOGUE_STORAGE_LIMIT_BYTES = 500 * 1024 * 1024; // 500 MB
+// Per-tenant catalogue storage cap (the free base). 50 MB ≈ ~420 compressed
+// photos — beyond a typical UMKM catalogue, yet reachable enough that the future
+// "+50 MB block" add-on has a reason to exist. Chosen over 500 MB deliberately;
+// see docs/future/ONLINE_CATALOGUE.md. (Until the add-on ships, a maxed-out tenant
+// frees space by deleting photos via the Catalogue Storage screen.)
+export const CATALOGUE_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
 
 let _client: S3Client | null = null;
 
@@ -52,7 +56,10 @@ function getClient(): S3Client {
  * Computed on demand via ListObjectsV2 (no stored counter to drift; reflects
  * deletes/replaces exactly). Paginates past 1,000 objects.
  */
-export async function getStorageUsage(tenantId: number): Promise<number> {
+export async function getStorageUsage(
+  tenantId: number,
+  excludeKey?: string
+): Promise<number> {
   const bucket = process.env.R2_BUCKET;
   if (!bucket) {
     throw new BusinessLogicError("R2 storage is not configured on the server");
@@ -70,11 +77,81 @@ export async function getStorageUsage(tenantId: number): Promise<number> {
       })
     );
     for (const obj of res.Contents ?? []) {
+      // Optionally exclude one key — used by the upload pre-check so a re-upload
+      // (stable key, replaces in place) doesn't count its OLD bytes on top of new.
+      if (excludeKey && obj.Key === excludeKey) continue;
       total += obj.Size ?? 0;
     }
     token = res.IsTruncated ? res.NextContinuationToken : undefined;
   } while (token);
   return total;
+}
+
+/** A single stored object under a tenant's `<tenantId>/` prefix. */
+export interface StorageObject {
+  key: string;
+  sizeBytes: number;
+  lastModified?: string; // ISO timestamp
+}
+
+/**
+ * List every object a tenant has stored under its `<tenantId>/` prefix.
+ * (Laundry photos are keyed `laundry/<tenantId>/…` so they fall OUTSIDE this
+ * prefix and are correctly excluded.) Paginates past 1,000 objects.
+ */
+export async function listStorageObjects(
+  tenantId: number
+): Promise<StorageObject[]> {
+  const bucket = process.env.R2_BUCKET;
+  if (!bucket) {
+    throw new BusinessLogicError("R2 storage is not configured on the server");
+  }
+  const client = getClient();
+  const prefix = `${tenantId}/`;
+  const out: StorageObject[] = [];
+  let token: string | undefined = undefined;
+  do {
+    const res: any = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: token,
+      })
+    );
+    for (const obj of res.Contents ?? []) {
+      if (!obj.Key) continue;
+      out.push({
+        key: obj.Key,
+        sizeBytes: obj.Size ?? 0,
+        lastModified:
+          obj.LastModified instanceof Date
+            ? obj.LastModified.toISOString()
+            : undefined,
+      });
+    }
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token);
+  return out;
+}
+
+/**
+ * Delete one stored object. Guards that the key belongs to THIS tenant's
+ * prefix so a caller can never delete another tenant's (or a laundry) object.
+ */
+export async function deleteStorageObject(
+  tenantId: number,
+  key: string
+): Promise<void> {
+  const bucket = process.env.R2_BUCKET;
+  if (!bucket) {
+    throw new BusinessLogicError("R2 storage is not configured on the server");
+  }
+  if (!key.startsWith(`${tenantId}/`)) {
+    throw new BusinessLogicError("That photo does not belong to this account");
+  }
+  await getClient().send(
+    new DeleteObjectCommand({ Bucket: bucket, Key: key })
+  );
 }
 
 export type ImageTargetKind = "item" | "variant";
@@ -99,8 +176,9 @@ export async function createImageUploadTicket(params: {
   kind: ImageTargetKind;
   targetId: number;
   contentType: string;
+  contentLength?: number; // compressed byte size the client is about to PUT
 }): Promise<UploadTicket> {
-  const { tenantId, kind, targetId, contentType } = params;
+  const { tenantId, kind, targetId, contentType, contentLength } = params;
 
   const bucket = process.env.R2_BUCKET;
   const publicBase = process.env.R2_PUBLIC_BASE_URL;
@@ -113,16 +191,21 @@ export async function createImageUploadTicket(params: {
     );
   }
 
-  // Abuse guardrail: block new uploads once over the per-tenant cap.
-  const used = await getStorageUsage(tenantId);
-  if (used >= CATALOGUE_STORAGE_LIMIT_BYTES) {
-    throw new BusinessLogicError(
+  const folder = kind === "variant" ? "variants" : "items";
+  const key = `${tenantId}/${folder}/${targetId}.webp`;
+
+  // Hard cap: project usage AFTER this upload and block if it would exceed the
+  // limit. Exclude THIS key from current usage (uploads replace in place via the
+  // stable key, so the old object's bytes are superseded, not added). When the
+  // client doesn't report a size, fall back to the over-limit guard on its own.
+  const incoming =
+    typeof contentLength === "number" && contentLength > 0 ? contentLength : 0;
+  const usedExcludingTarget = await getStorageUsage(tenantId, key);
+  if (usedExcludingTarget + incoming > CATALOGUE_STORAGE_LIMIT_BYTES) {
+    throw new CatalogueStorageLimitError(
       "Storage limit reached. Delete some product photos before uploading more."
     );
   }
-
-  const folder = kind === "variant" ? "variants" : "items";
-  const key = `${tenantId}/${folder}/${targetId}.webp`;
 
   const uploadUrl = await getSignedUrl(
     getClient(),
@@ -139,6 +222,54 @@ export async function createImageUploadTicket(params: {
     contentType,
     expiresIn: UPLOAD_URL_TTL_SECONDS,
   };
+}
+
+export type BrandingKind = "logo" | "cover";
+
+/**
+ * Mint a pre-signed PUT URL for a tenant's storefront branding image
+ * (logo or cover). Stable key `<tenantId>/branding/<kind>.webp` → one object
+ * per slot, replaced in place on re-upload. Counts against the tenant's
+ * catalogue storage cap like any other object under `<tenantId>/`.
+ */
+export async function createBrandingUploadTicket(params: {
+  tenantId: number;
+  kind: BrandingKind;
+  contentType: string;
+  contentLength?: number;
+}): Promise<UploadTicket> {
+  const { tenantId, kind, contentType, contentLength } = params;
+
+  const bucket = process.env.R2_BUCKET;
+  const publicBase = process.env.R2_PUBLIC_BASE_URL;
+  if (!bucket || !publicBase) {
+    throw new BusinessLogicError("R2 storage is not configured on the server");
+  }
+  if (contentType !== ALLOWED_CONTENT_TYPE) {
+    throw new BusinessLogicError(
+      `Unsupported content type '${contentType}'. Only ${ALLOWED_CONTENT_TYPE} is allowed.`
+    );
+  }
+
+  const key = `${tenantId}/branding/${kind}.webp`;
+
+  const incoming =
+    typeof contentLength === "number" && contentLength > 0 ? contentLength : 0;
+  const usedExcludingTarget = await getStorageUsage(tenantId, key);
+  if (usedExcludingTarget + incoming > CATALOGUE_STORAGE_LIMIT_BYTES) {
+    throw new CatalogueStorageLimitError(
+      "Storage limit reached. Delete some product photos before uploading more."
+    );
+  }
+
+  const uploadUrl = await getSignedUrl(
+    getClient(),
+    new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),
+    { expiresIn: UPLOAD_URL_TTL_SECONDS }
+  );
+
+  const publicUrl = `${publicBase.replace(/\/+$/, "")}/${key}`;
+  return { uploadUrl, publicUrl, key, contentType, expiresIn: UPLOAD_URL_TTL_SECONDS };
 }
 
 /**

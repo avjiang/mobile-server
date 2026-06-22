@@ -4,7 +4,7 @@
  * Only processes tenant DBs with Advanced Loyalty add-on.
  */
 
-const { getGlobalPrisma, getTenantPrisma } = require('../db');
+const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
 import { ADD_ON_IDS } from '../constants/add-on-ids';
 
 async function processSubscriptionExpiry(): Promise<void> {
@@ -34,6 +34,9 @@ async function processSubscriptionExpiry(): Promise<void> {
                 }
             } catch (error) {
                 console.error(`[Cron] Error processing subscription expiry for tenant ${dbName}:`, error);
+            } finally {
+                // Release the tenant client after processing — bounds cron connection use (see db.ts).
+                await disconnectTenantClient(dbName);
             }
         }
 

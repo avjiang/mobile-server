@@ -369,6 +369,11 @@ model Item {
   // Laundry vertical: default machine-load weight (kg) for a "service" item, used to
   // prefill the consumption dialog at sale time. Null for non-laundry items.
   defaultLoadWeightKg     Decimal?                 @map("DEFAULT_LOAD_WEIGHT_KG") @db.Decimal(15, 4)
+  // How PRICE becomes a line total at sale time. null/'per_piece' = legacy
+  // (price × qty, or × machine capacity for a wash service); 'flat_per_load' =
+  // PRICE is the per-load total charged as-is; 'per_kg' = price × actual load
+  // weight (reserved). Set by the aceh_wash price backfill script.
+  pricingMode             String?                  @map("PRICING_MODE")
   deleted                 Boolean                  @default(false) @map("IS_DELETED")
   deletedAt               DateTime?                @map("DELETED_AT")
   createdAt               DateTime?                @default(now()) @map("CREATED_AT")
@@ -415,8 +420,9 @@ model ItemConsumable {
   id               Int       @id @default(autoincrement()) @map("ID")
   serviceItemId    Int       @map("SERVICE_ITEM_ID")
   consumableItemId Int       @map("CONSUMABLE_ITEM_ID")
-  ratePerKg        Decimal   @map("RATE_PER_KG") @db.Decimal(15, 4) // amount of `unit` consumed per kg of load
-  unit             String    @default("Milliliter") @map("UNIT") // UOM api-key of the consumable (e.g. "Milliliter")
+  ratePerKg        Decimal   @map("RATE_PER_KG") @db.Decimal(15, 4) // generic consumption rate; interpreted by consumptionBasis (name kept for back-compat)
+  unit             String    @default("Milliliter") @map("UNIT") // UOM api-key of the consumable (e.g. "Milliliter", "Tank")
+  consumptionBasis String    @default("perKg") @map("CONSUMPTION_BASIS") // 'perKg' (rate × load weight) | 'perLoad' (flat per wash, e.g. 1 tabung LPG)
   deleted          Boolean   @default(false) @map("IS_DELETED")
   deletedAt        DateTime? @map("DELETED_AT")
   createdAt        DateTime? @default(now()) @map("CREATED_AT")

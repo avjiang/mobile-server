@@ -11,7 +11,7 @@
  * CREATED_AT means the DELETE ... WHERE CREATED_AT < ? is a range scan.
  */
 
-const { getGlobalPrisma, getTenantPrisma } = require('../db');
+const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
 
 const RETENTION_HOURS = 24;
 
@@ -45,6 +45,10 @@ async function processIdempotencyCleanup(): Promise<void> {
                     `[Cron] Failed cleanup for ${tenant.databaseName}:`,
                     err
                 );
+            } finally {
+                // Release this tenant's client so its connections don't
+                // accumulate across the whole-fleet sweep (see db.ts).
+                await disconnectTenantClient(tenant.databaseName);
             }
         }
 

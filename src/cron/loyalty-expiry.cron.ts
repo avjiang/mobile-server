@@ -4,7 +4,7 @@
  * Only processes tenant DBs where planName = 'Pro' and subscription is active.
  */
 
-const { getGlobalPrisma, getTenantPrisma } = require('../db');
+const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
 
 const BATCH_SIZE = 100;
 
@@ -48,6 +48,9 @@ async function processPointExpiry(): Promise<void> {
                 }
             } catch (error) {
                 console.error(`[Cron] Error processing point expiry for tenant ${dbName}:`, error);
+            } finally {
+                // Release the tenant client after processing — bounds cron connection use (see db.ts).
+                await disconnectTenantClient(dbName);
             }
         }
 

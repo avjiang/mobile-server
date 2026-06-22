@@ -11,6 +11,10 @@ export class ItemConsumableDto {
 
     @Expose()
     unit: string = "Milliliter";
+
+    // 'perKg' (rate × load weight) | 'perLoad' (flat amount per wash).
+    @Expose()
+    consumptionBasis: string = "perKg";
 }
 
 export class ItemSoldRankingResponseBody {
@@ -106,6 +110,11 @@ export class ItemDto {
     // Laundry: default machine-load weight (kg) for a service item; prefills the sale dialog.
     @Expose()
     defaultLoadWeightKg: number | undefined = undefined;
+
+    // How PRICE becomes a line total: null/'per_piece' (legacy), 'flat_per_load'
+    // (price charged as-is per load), 'per_kg' (price × actual weight, reserved).
+    @Expose()
+    pricingMode: string | undefined = undefined;
 
     // Laundry: recipe lines for a service item (the supplies it consumes).
     @Expose()

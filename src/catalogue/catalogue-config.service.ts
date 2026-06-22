@@ -27,8 +27,21 @@ export interface CatalogueConfig {
   slug: string | null;
   whatsappNumber: string | null;
   catalogueEnabled: boolean;
+  logoUrl: string | null;
+  coverUrl: string | null;
   storageUsedBytes: number;
   storageLimitBytes: number;
+}
+
+// Branding image URLs must be R2 https URLs (or null to clear). Reject anything
+// else a client might try to persist on the tenant row.
+function normalizeBrandingUrl(v: string | null | undefined): string | null | undefined {
+  if (v === undefined) return undefined; // not provided → leave unchanged
+  if (v === null || v === "") return null; // explicit clear
+  if (typeof v !== "string" || !v.startsWith("https://")) {
+    throw new BusinessLogicError("Image URL must be a valid https link.");
+  }
+  return v;
 }
 
 function slugify(input: string): string {
@@ -54,13 +67,21 @@ function normalizeWhatsapp(v: string | null | undefined): string | null {
 export async function getCatalogueConfig(tenantId: number): Promise<CatalogueConfig> {
   const t = await getGlobalPrisma().tenant.findUnique({
     where: { id: tenantId },
-    select: { slug: true, whatsappNumber: true, catalogueEnabled: true },
+    select: {
+      slug: true,
+      whatsappNumber: true,
+      catalogueEnabled: true,
+      logoUrl: true,
+      coverUrl: true,
+    },
   });
   if (!t) throw new BusinessLogicError("Tenant not found");
   return {
     slug: t.slug,
     whatsappNumber: t.whatsappNumber,
     catalogueEnabled: t.catalogueEnabled === true,
+    logoUrl: t.logoUrl ?? null,
+    coverUrl: t.coverUrl ?? null,
     storageUsedBytes: await getStorageUsage(tenantId),
     storageLimitBytes: CATALOGUE_STORAGE_LIMIT_BYTES,
   };
@@ -68,13 +89,26 @@ export async function getCatalogueConfig(tenantId: number): Promise<CatalogueCon
 
 export async function updateCatalogueConfig(
   tenantId: number,
-  input: { slug?: string; whatsappNumber?: string | null; catalogueEnabled?: boolean }
+  input: {
+    slug?: string;
+    whatsappNumber?: string | null;
+    catalogueEnabled?: boolean;
+    logoUrl?: string | null;
+    coverUrl?: string | null;
+  }
 ): Promise<CatalogueConfig> {
   const data: {
     slug?: string;
     whatsappNumber?: string | null;
     catalogueEnabled?: boolean;
+    logoUrl?: string | null;
+    coverUrl?: string | null;
   } = {};
+
+  const logo = normalizeBrandingUrl(input.logoUrl);
+  if (logo !== undefined) data.logoUrl = logo;
+  const cover = normalizeBrandingUrl(input.coverUrl);
+  if (cover !== undefined) data.coverUrl = cover;
 
   if (input.slug !== undefined) {
     const slug = slugify(input.slug);
@@ -104,27 +138,41 @@ export async function updateCatalogueConfig(
     data.catalogueEnabled = input.catalogueEnabled === true;
   }
 
-  // Can't enable a catalogue with no public link.
+  // Can't enable a catalogue with no public link or no WhatsApp number — without
+  // WhatsApp every product's "order" CTA is dead, so the catalogue is unusable.
   if (data.catalogueEnabled === true) {
     const current = await getGlobalPrisma().tenant.findUnique({
       where: { id: tenantId },
-      select: { slug: true },
+      select: { slug: true, whatsappNumber: true },
     });
     const finalSlug = data.slug ?? current?.slug;
     if (!finalSlug) {
       throw new BusinessLogicError("Set a catalogue link before enabling it.");
+    }
+    const finalWhatsapp =
+      data.whatsappNumber !== undefined ? data.whatsappNumber : current?.whatsappNumber;
+    if (!finalWhatsapp) {
+      throw new BusinessLogicError("Add a WhatsApp number before enabling the catalogue.");
     }
   }
 
   const updated = await getGlobalPrisma().tenant.update({
     where: { id: tenantId },
     data,
-    select: { slug: true, whatsappNumber: true, catalogueEnabled: true },
+    select: {
+      slug: true,
+      whatsappNumber: true,
+      catalogueEnabled: true,
+      logoUrl: true,
+      coverUrl: true,
+    },
   });
   return {
     slug: updated.slug,
     whatsappNumber: updated.whatsappNumber,
     catalogueEnabled: updated.catalogueEnabled === true,
+    logoUrl: updated.logoUrl ?? null,
+    coverUrl: updated.coverUrl ?? null,
     storageUsedBytes: await getStorageUsage(tenantId),
     storageLimitBytes: CATALOGUE_STORAGE_LIMIT_BYTES,
   };

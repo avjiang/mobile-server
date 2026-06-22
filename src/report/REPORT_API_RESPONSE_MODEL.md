@@ -64,6 +64,8 @@ This document describes the complete JSON response models for both `generateRepo
   "grossRevenue": number,                // Gross revenue from all sales
   "returnRefundImpact": number,          // Revenue impact from returns/refunds
   "totalProfit": number,                 // Total profit = totalProfitGains + totalProfitLosses
+  "totalCogs": number,                   // Cost of goods sold = totalRevenue − totalProfit
+  "grossMargin": number,                 // Gross margin % = totalProfit / totalRevenue × 100 (0 if revenue 0)
   "totalProfitGains": number,            // Sum of all positive profits from completed sales
   "totalProfitLosses": number,           // Sum of all negative profits (will be negative)
   "averageTransactionValue": number,     // Average per completed transaction
@@ -250,7 +252,11 @@ This document describes the complete JSON response models for both `generateRepo
       "itemName": string,
       "itemCode": string,
       "itemBrand": string,
-      "profit": number                   // Always positive
+      "profit": number,                  // Always positive
+      "revenue": number,                 // Σ subtotalAmount (selling price) for this item
+      "cost": number,                    // Σ COGS for this item
+      "quantity": number,                // Σ quantity sold
+      "margin": number                   // profit / revenue × 100 (0 if revenue 0)
     }
   ],
 
@@ -263,9 +269,56 @@ This document describes the complete JSON response models for both `generateRepo
       "itemName": string,
       "itemCode": string,
       "itemBrand": string,
-      "loss": number                     // Always negative
+      "loss": number,                    // Always negative
+      "revenue": number,                 // Σ subtotalAmount (selling price) for this item
+      "cost": number,                    // Σ COGS for this item
+      "quantity": number,                // Σ quantity sold
+      "margin": number                   // loss / revenue × 100 (0 if revenue 0)
     }
   ],
+
+  // ===================
+  // LAUNDRY OPS (laundry accounts only; null otherwise)
+  // ===================
+  "laundryOps": {
+    "totalKgProcessed": number,
+    "totalLoads": number,
+    "averageKgPerLoad": number,
+    "suppliesConsumed": [
+      {
+        "itemId": number,
+        "itemName": string,
+        "unitOfMeasure": string,
+        "totalConsumed": number,         // base units (ml/g); FE converts to L/kg
+        "cost": number                   // NEW: Σ COGS of this supply consumed
+      }
+    ]
+  },
+
+  // ===================
+  // LAUNDRY PROFIT BREAKDOWN (laundry accounts only; null otherwise)
+  // Where the profit comes from: serviceRevenue − supplyCost = netProfit
+  // ===================
+  "laundryProfit": {
+    "serviceRevenue": number,            // Σ revenue of wash/jasa service lines
+    "supplyCost": number,                // Σ COGS of consumable lines
+    "netProfit": number,                 // serviceRevenue − supplyCost
+    "margin": number,                    // netProfit / serviceRevenue × 100 (0 if revenue 0)
+    "services": [
+      {
+        "itemId": number,
+        "itemName": string,
+        "itemCode": string,
+        "itemBrand": string,
+        "quantity": number,
+        "loads": number,
+        "totalKg": number,
+        "revenue": number,
+        "cost": number,                    // supply cost attributed to this service via its recipe (ItemConsumable)
+        "profit": number                   // revenue − cost (so per-service margin reflects consumables used)
+      }
+    ]
+  },
 
   // ===================
   // PAYMENT BREAKDOWN

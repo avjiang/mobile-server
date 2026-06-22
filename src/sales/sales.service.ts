@@ -3,6 +3,7 @@ import { Decimal } from 'decimal.js';
 import { BusinessLogicError, NotFoundError, InsufficientPointsError, TierMismatchError, SubscriptionExpiredError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
+import { getEffectivePermissions } from '../auth/permission-cache';
 import { SyncRequest } from "src/item/item.request";
 import PushyService from '../pushy/pushy.service';
 import { randomUUID } from 'crypto';
@@ -1396,6 +1397,23 @@ async function completeNewSales(
     validateSalesItemNumerics(salesBody.salesItems);
     validatePaymentNumerics(payments);
 
+    // Resolve the stock-source override permission LIVE (cached ~5 min) rather than
+    // from the JWT, so a grant/revoke takes effect within the cache TTL instead of
+    // waiting for the 1-day token to reissue. Falls back to the token-stamped
+    // permissions if the live resolve fails (transient DB error → previous behavior).
+    let effectivePermissions: string[];
+    try {
+        effectivePermissions = await getEffectivePermissions(
+            databaseName, performedBy.userId, performedBy.username,
+        );
+    } catch (error) {
+        console.error('completeNewSales live-resolve failed, falling back to JWT:', error);
+        effectivePermissions = performedBy.permissions ?? [];
+    }
+    const canOverride = effectivePermissions.some(
+        (p) => p === '*' || p === OVERRIDE_STOCK_SOURCE_PERMISSION,
+    );
+
     // Store stock updates outside transaction for notification use
     let stockUpdatesForNotification: any[] = [];
     // Loyalty follow-ups fire AFTER commit — scheduling them inside the tx
@@ -1411,9 +1429,7 @@ async function completeNewSales(
             // warehouse and no override is in effect, `sources` is just [outlet] and every
             // read/write below is byte-for-byte the historical outlet-only path.
             // See docs/future/WAREHOUSE_COMPLETION.md §A.
-            const canOverride = (performedBy.permissions ?? []).some(
-                (p) => p === '*' || p === OVERRIDE_STOCK_SOURCE_PERMISSION
-            );
+            // `canOverride` is resolved live above (before the tx), not from the JWT.
             const overrideRequested =
                 salesBody.stockSourceType === 'OUTLET' || salesBody.stockSourceType === 'WAREHOUSE';
             const overrideActive = overrideRequested && canOverride;

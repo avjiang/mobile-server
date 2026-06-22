@@ -39,6 +39,36 @@ const settingDefinitions = [
         isRequired: false
     },
     {
+        // Display/entry lens for fractional stock units. false (default) = price &
+        // count detergent etc. by the large unit (L/kg); true = use the small stock
+        // unit directly (ml/g). Display + entry only — stored values stay canonical
+        // (per-ml/g), so this never changes FIFO/cost/consumption math.
+        key: 'use_fine_grained_units',
+        category: 'Inventory',
+        type: 'BOOLEAN',
+        defaultValue: 'false',
+        description: 'Show and enter inventory in small units (ml/g) instead of large units (L/kg)',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        // Rounds computed line prices to the nearest N rupiah. Per-kg laundry
+        // pricing (rate × load) produces repeating-decimal cents — e.g.
+        // 5833.33 × 6 = 34999.98 — which this scrubs to a clean 35000. 0 disables
+        // rounding. TENANT scope; default 100.
+        key: 'price_rounding_increment',
+        category: 'Financial',
+        type: 'INT',
+        defaultValue: '100',
+        description: 'Round computed prices to the nearest N rupiah (0 disables)',
+        scope: 'TENANT',
+        isRequired: false,
+        validationRules: JSON.stringify({
+            min: 0,
+            max: 100000
+        })
+    },
+    {
         key: 'service_charge_rate',
         category: 'Financial',
         type: 'DOUBLE',

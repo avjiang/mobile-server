@@ -1,0 +1,19 @@
+# Cloudflare Worker — public catalogue subdomain router.
+# Deploy:  cd workers/catalogue-subdomain && npx wrangler deploy
+# Requires a WRITE-scoped Cloudflare API token (the .env CLOUDFLARE_API_TOKEN is
+# read-only). See README.md for the exact token scopes + full runbook.
+
+name = "catalogue-subdomain"
+main = "src/index.js"
+compatibility_date = "2026-06-18"
+
+# Route every *.bayaryuk.net request through this Worker. The script itself skips
+# RESERVED subdomains (images/www/api/…). To stop image loads from even invoking
+# the Worker (quota), ALSO add a more-specific "no worker" route for
+# images.bayaryuk.net/* — that cannot be expressed here; do it in the dashboard
+# or via API (see README §4). More-specific route wins.
+routes = [
+  { pattern = "*.bayaryuk.net/*", zone_name = "bayaryuk.net" },
+]
+
+# No KV / D1 / R2 bindings — this Worker is a pure stateless reverse proxy.

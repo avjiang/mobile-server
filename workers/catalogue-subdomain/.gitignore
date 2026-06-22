@@ -1,0 +1,4 @@
+# Wrangler local cache + deploy state — not source.
+.wrangler/
+node_modules/
+.dev.vars

@@ -8,8 +8,16 @@ import idempotencyMiddleware from './middleware/idempotency-middleware'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients, startTenantClientEviction, getTenantClientStats } from './db';
 import { initCronJobs } from './cron/cron-manager';
+import { CLOUDFLARE_IP_RANGES } from './constants/cloudflare-ips';
 const app = express()
 const port = process.env.PORT || 8080;
+
+// Trust ONLY Cloudflare edge IPs as proxies, so `req.ip` reflects the real client
+// only when traffic genuinely arrived via Cloudflare. Requests hitting the Azure
+// origin directly cannot spoof their source — closes the public-endpoint rate-limit
+// bypass (security review H-1). The POS API (direct to Azure) is unaffected: for
+// those, the peer isn't a trusted proxy so req.ip = the real socket address.
+app.set('trust proxy', CLOUDFLARE_IP_RANGES);
 
 // Enable gzip compression for all responses
 app.use(compression({

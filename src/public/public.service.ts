@@ -13,8 +13,14 @@ import { NotFoundError } from "../api-helpers/error";
  * See docs/future/ONLINE_CATALOGUE.md.
  */
 
-// One-level DNS label: lowercase alnum + hyphens, 1–63 chars, no leading/trailing hyphen.
-const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+// One-level DNS label: lowercase alnum + hyphens, 3–63 chars, no leading/trailing
+// hyphen. Kept IN SYNC with the write-path regex in catalogue-config.service.ts
+// (a 1–2 char slug can never be created, so the read path must not serve one).
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/;
+
+// Hard cap on catalogue items returned to an unauthenticated caller — bounds the
+// response size (no per-plan product limit exists) and the work per cache-miss.
+const MAX_PUBLIC_ITEMS = 1000;
 
 export interface PublicCatalogueVariant {
   id: number;
@@ -33,17 +39,27 @@ export interface PublicCatalogueItem {
   categoryName: string | null;
   hasVariants: boolean;
   variants: PublicCatalogueVariant[];
+  inStock: boolean; // false → shown greyed with a "Habis" badge (not hidden)
 }
 
 export interface PublicCatalogue {
-  business: { name: string; slug: string; whatsappNumber: string | null };
+  business: {
+    name: string;
+    slug: string;
+    whatsappNumber: string | null;
+    logoUrl: string | null;
+    coverUrl: string | null;
+    currency: string; // ISO code from the tenant's default_currency setting (e.g. IDR, MYR)
+  };
   // NOTE: deliberately named `products`, NOT `items` — NetworkResponse magic-unwraps
   // any payload containing an `items` array and drops sibling keys (e.g. `business`).
   products: PublicCatalogueItem[];
 }
 
 function imageOrNull(v: string | null | undefined): string | null {
-  return v && v.length > 0 ? v : null;
+  // Only surface absolute HTTPS URLs (all catalogue images are R2 https URLs).
+  // Rejects any non-https value a rogue tenant might store in item.image.
+  return v && v.startsWith("https://") ? v : null;
 }
 
 // Prisma Decimal | number | null -> number
@@ -66,6 +82,8 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       tenantName: true,
       whatsappNumber: true,
       catalogueEnabled: true,
+      logoUrl: true,
+      coverUrl: true,
     },
   });
   if (!tenant || tenant.catalogueEnabled !== true || !tenant.databaseName) {
@@ -73,6 +91,28 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
   }
 
   const prisma = getTenantPrisma(tenant.databaseName);
+
+  // Currency is the tenant's CONFIGURED currency (default_currency setting),
+  // NOT inferred from the WhatsApp number. SettingDefinition lives in the global
+  // db; the value lives in the tenant db. Falls back to IDR.
+  let currency = "IDR";
+  try {
+    const def = await getGlobalPrisma().settingDefinition.findUnique({
+      where: { key: "default_currency" },
+      select: { id: true, defaultValue: true },
+    });
+    if (def) {
+      const setting = await prisma.setting.findFirst({
+        where: { settingDefinitionId: def.id, deleted: false },
+        select: { value: true },
+        orderBy: { id: "asc" },
+      });
+      currency = (setting?.value || def.defaultValue || "IDR").toUpperCase();
+    }
+  } catch {
+    /* keep IDR on any settings lookup failure */
+  }
+
   const rows = await prisma.item.findMany({
     where: { deleted: false },
     select: {
@@ -103,6 +143,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       },
     },
     orderBy: { itemName: "asc" },
+    take: MAX_PUBLIC_ITEMS,
   });
 
   const items: PublicCatalogueItem[] = [];
@@ -126,10 +167,13 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
         (sb) => sb.itemVariantId == null && toNumber(sb.availableQuantity) > 0
       );
 
-    const include = r.hasVariants
+    // Same rule the app's sales screen uses (warehouse aside): variant items are
+    // available if any variant has stock; simple items by their own balance;
+    // untracked items always. Sold-out items are NOT hidden — they render greyed
+    // with a "Habis" badge, mirroring the sales grid.
+    const inStock = r.hasVariants
       ? untracked || variants.some((v) => v.inStock)
       : itemLevelInStock;
-    if (!include) continue;
 
     items.push({
       id: r.id,
@@ -140,6 +184,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       categoryName: r.category?.name ?? null,
       hasVariants: r.hasVariants,
       variants: r.hasVariants ? variants : [],
+      inStock,
     });
   }
 
@@ -148,6 +193,9 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       name: tenant.tenantName,
       slug,
       whatsappNumber: tenant.whatsappNumber ?? null,
+      logoUrl: imageOrNull(tenant.logoUrl),
+      coverUrl: imageOrNull(tenant.coverUrl),
+      currency,
     },
     products: items,
   };

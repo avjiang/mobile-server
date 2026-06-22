@@ -156,6 +156,14 @@ export const permissions = [
         name: "Manage Customer Subscriptions",
         category: "Loyalty",
         description: "Subscribe, cancel, and manage customer subscriptions"
+    },
+    // Online Catalogue (Pro feature) — gates the FE catalogue entry (settings +
+    // storage). Pro is account-level; this restricts WHICH roles can manage the
+    // storefront. Name must match FE AppPermission.manageOnlineCatalogue.
+    {
+        name: "Manage Online Catalogue",
+        category: "Online Catalogue",
+        description: "Manage the online catalogue storefront and its media storage"
     }
 ];
 

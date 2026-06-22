@@ -53,6 +53,8 @@ export const PERMISSION = {
     MANAGE_SUBSCRIPTION_PACKAGES: 'Manage Subscription Packages',
     VIEW_CUSTOMER_SUBSCRIPTIONS: 'View Customer Subscriptions',
     MANAGE_CUSTOMER_SUBSCRIPTIONS: 'Manage Customer Subscriptions',
+    // Online Catalogue
+    MANAGE_ONLINE_CATALOGUE: 'Manage Online Catalogue',
 } as const;
 
 export type PermissionName = (typeof PERMISSION)[keyof typeof PERMISSION];

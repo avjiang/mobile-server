@@ -748,6 +748,13 @@ model InvoiceSettlement {
   // Partial-payment support: sum of all non-deleted payment rows. PAID when paidAmount >= settlementAmount.
   paidAmount         Decimal          @default(0) @map("PAID_AMOUNT") @db.Decimal(15, 4)
   transferFeeAmount  Decimal          @default(0) @map("TRANSFER_FEE_AMOUNT") @db.Decimal(15, 4) // Sum of bank/transfer fees across payments (bookkeeping only, not applied against invoices)
+  // "Mark as fully paid" rounding write-off. paidAmount stays the REAL cash received;
+  // writeOffAmount is the small remainder forgiven so the doc can close. Fully paid when
+  // round(paidAmount + writeOffAmount) >= round(settlementAmount). Audited via *By/*At.
+  writeOffAmount     Decimal          @default(0) @map("WRITE_OFF_AMOUNT") @db.Decimal(15, 4)
+  writeOffBy         String?          @map("WRITE_OFF_BY")
+  writeOffAt         DateTime?        @map("WRITE_OFF_AT")
+  writeOffReason     String?          @map("WRITE_OFF_REASON") // default "ROUNDING"
   paymentStatus      String           @default("PAID") @map("PAYMENT_STATUS") // "PAID" | "PARTIAL" — orthogonal to `status` (tax-number completeness)
   deleted            Boolean          @default(false) @map("IS_DELETED")
   deletedAt          DateTime?        @map("DELETED_AT")

@@ -313,6 +313,42 @@ const settingDefinitions = [
         scope: 'TENANT',
         isRequired: false
     },
+    {
+        key: 'receipt_address',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Business address printed on the receipt header',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        key: 'receipt_phone',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Business phone printed on the receipt header',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        key: 'receipt_terms',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Terms & conditions block on the receipt (newline-separated; e.g. laundry liability clauses)',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        key: 'receipt_logo_url',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Public R2 URL of the receipt header logo (set via the branding upload flow)',
+        scope: 'TENANT',
+        isRequired: false
+    },
     // {
     //     key: 'invoice_prefix',
     //     category: 'System',

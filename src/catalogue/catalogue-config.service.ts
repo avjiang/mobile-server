@@ -29,6 +29,7 @@ export interface CatalogueConfig {
   catalogueEnabled: boolean;
   logoUrl: string | null;
   coverUrl: string | null;
+  priceVisible: boolean;
   storageUsedBytes: number;
   storageLimitBytes: number;
 }
@@ -73,6 +74,7 @@ export async function getCatalogueConfig(tenantId: number): Promise<CatalogueCon
       catalogueEnabled: true,
       logoUrl: true,
       coverUrl: true,
+      cataloguePriceVisible: true,
     },
   });
   if (!t) throw new BusinessLogicError("Tenant not found");
@@ -82,6 +84,7 @@ export async function getCatalogueConfig(tenantId: number): Promise<CatalogueCon
     catalogueEnabled: t.catalogueEnabled === true,
     logoUrl: t.logoUrl ?? null,
     coverUrl: t.coverUrl ?? null,
+    priceVisible: t.cataloguePriceVisible !== false,
     storageUsedBytes: await getStorageUsage(tenantId),
     storageLimitBytes: CATALOGUE_STORAGE_LIMIT_BYTES,
   };
@@ -95,6 +98,7 @@ export async function updateCatalogueConfig(
     catalogueEnabled?: boolean;
     logoUrl?: string | null;
     coverUrl?: string | null;
+    priceVisible?: boolean;
   }
 ): Promise<CatalogueConfig> {
   const data: {
@@ -103,6 +107,7 @@ export async function updateCatalogueConfig(
     catalogueEnabled?: boolean;
     logoUrl?: string | null;
     coverUrl?: string | null;
+    cataloguePriceVisible?: boolean;
   } = {};
 
   const logo = normalizeBrandingUrl(input.logoUrl);
@@ -138,6 +143,10 @@ export async function updateCatalogueConfig(
     data.catalogueEnabled = input.catalogueEnabled === true;
   }
 
+  if (input.priceVisible !== undefined) {
+    data.cataloguePriceVisible = input.priceVisible === true;
+  }
+
   // Can't enable a catalogue with no public link or no WhatsApp number — without
   // WhatsApp every product's "order" CTA is dead, so the catalogue is unusable.
   if (data.catalogueEnabled === true) {
@@ -165,6 +174,7 @@ export async function updateCatalogueConfig(
       catalogueEnabled: true,
       logoUrl: true,
       coverUrl: true,
+      cataloguePriceVisible: true,
     },
   });
   return {
@@ -173,6 +183,7 @@ export async function updateCatalogueConfig(
     catalogueEnabled: updated.catalogueEnabled === true,
     logoUrl: updated.logoUrl ?? null,
     coverUrl: updated.coverUrl ?? null,
+    priceVisible: updated.cataloguePriceVisible !== false,
     storageUsedBytes: await getStorageUsage(tenantId),
     storageLimitBytes: CATALOGUE_STORAGE_LIMIT_BYTES,
   };

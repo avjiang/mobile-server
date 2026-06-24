@@ -144,12 +144,31 @@ const addPayment = (req: NetworkRequest<AddSettlementPaymentInput>, res: Respons
         .catch(next)
 }
 
+const markAsPaid = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    const settlementId: number = parseInt(req.params.id)
+    const body = (req.body || {}) as { performedBy?: string; siteId?: number; reason?: string }
+    service.markSettlementAsPaid(req.user.databaseName, settlementId, {
+        performedBy: body.performedBy,
+        siteId: body.siteId,
+        reason: body.reason,
+    })
+        .then((settlement: any) => sendResponse(res, settlement))
+        .catch(next)
+}
+
 // Settlement routes
 router.get('/sync', getAllSettlements)
 router.get('/dateRange', getAllSettlementsByDateRange)
 router.get('/:id', getSettlementById)
 router.post('/create', createSettlement)
 router.post('/:id/payment', addPayment)
+router.post('/:id/markAsPaid', markAsPaid)
 router.put('/update', updateSettlement)
 
 export = router

@@ -281,8 +281,15 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
 
         return { planName: bestPlan, planType: bestPlanType, globalOutletId, loyaltyTier };
     } catch (error) {
+        // FAIL CLOSED. Previously this swallowed any DB error into a null-plan
+        // result, which the client then persists as a downgrade (Pro → "Trial",
+        // menus gone). A transient DB error must NEVER be allowed to mint a token
+        // with a degraded plan claim — rethrow so the login/refresh request fails
+        // and the client keeps its last good token and retries. A genuine
+        // "no active subscription" still returns null above (no throw), so this
+        // only affects real errors (e.g. connection-pool teardown, timeouts).
         console.error('Error getting tenant subscription info:', error);
-        return { planName: null, planType: null, globalOutletId: null, loyaltyTier: 'none' };
+        throw error;
     }
 }
 

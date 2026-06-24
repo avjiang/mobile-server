@@ -139,7 +139,7 @@ const updateSettings = (req: AuthRequest, res: Response, next: NextFunction) => 
   if (!req.user) {
     throw new RequestValidateError("User not authenticated");
   }
-  const { slug, whatsappNumber, catalogueEnabled, logoUrl, coverUrl } =
+  const { slug, whatsappNumber, catalogueEnabled, logoUrl, coverUrl, priceVisible } =
     req.body ?? {};
   updateCatalogueConfig(req.user.tenantId, {
     slug,
@@ -147,6 +147,7 @@ const updateSettings = (req: AuthRequest, res: Response, next: NextFunction) => 
     catalogueEnabled,
     logoUrl,
     coverUrl,
+    priceVisible,
   })
     .then((config) => sendResponse(res, config))
     .catch(next);

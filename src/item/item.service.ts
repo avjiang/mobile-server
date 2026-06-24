@@ -401,6 +401,43 @@ let getAllByCategoryId = async (databaseName: string, categoryId: number) => {
     }
 }
 
+/**
+ * Current unit cost of each "supply" item, for the laundry recipe cost estimate.
+ * A stock-tracked supply stores cost: 0 on the item row by design — its real cost
+ * lives in StockReceipt (FIFO batches). We surface the LATEST receipt cost (most
+ * recent purchase price) per supply, in the supply's stock unit (per-ml/g/tank),
+ * which is the same unit the recipe rate is entered in — so the client can
+ * estimate a line's cost as cost × rate with no conversion. Returns 0 for a
+ * supply that has no receipts yet (no cost recorded). Always fresh (computed on
+ * read), so it is immune to the delta-sync staleness that would affect item.cost.
+ */
+let getSupplyCosts = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const supplies = await tenantPrisma.item.findMany({
+            where: { itemType: 'supply', deleted: false },
+            select: { id: true },
+        });
+        if (supplies.length === 0) return [] as { itemId: number; cost: number }[];
+        const ids = supplies.map(s => s.id);
+        // Ordered latest-first; the first receipt seen per item is its current cost.
+        const receipts = await tenantPrisma.stockReceipt.findMany({
+            where: { itemId: { in: ids }, deleted: false },
+            select: { itemId: true, cost: true },
+            orderBy: [{ receiptDate: 'desc' }, { id: 'desc' }],
+        });
+        const costByItem: Record<number, number> = {};
+        for (const r of receipts) {
+            if (costByItem[r.itemId] === undefined) {
+                costByItem[r.itemId] = Number(r.cost);
+            }
+        }
+        return ids.map(id => ({ itemId: id, cost: costByItem[id] ?? 0 }));
+    } catch (error) {
+        throw error;
+    }
+};
+
 let getById = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -1757,4 +1794,5 @@ export = {
     getLowStockItems,
     getAllByCategoryId,
     getVariantAttributeValues,
+    getSupplyCosts,
 }

@@ -137,9 +137,14 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
     } catch (error) {
         console.error('Error fetching outlet details:', error);
         throw error;
-    } finally {
-        await prisma.$disconnect();
     }
+    // NOTE: do NOT $disconnect() here. `prisma` is the process-wide GLOBAL
+    // singleton shared by EVERY module (auth, admin, billing, …). Disconnecting
+    // it per-request tears down the shared connection pool and makes any auth
+    // query that is in-flight at that moment throw — which getTenantSubscriptionInfo
+    // used to swallow into a null plan, intermittently downgrading Pro tenants to
+    // "Trial" with missing menus. The pool is owned for the process lifetime and
+    // closed centrally via disconnectAllPrismaClients() on shutdown (src/index.ts).
 }
 
 export = { getAccountDetails }

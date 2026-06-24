@@ -241,6 +241,88 @@ function makeSaleStockSource(tx: any, kind: SaleSourceKind, locationId: number):
 }
 
 // Helper function to send sales notifications (non-blocking)
+/**
+ * Classifies the laundry SERVICE items among the given sales' line items:
+ *   'wash' — a service item with a machine capacity (`defaultLoadWeightKg > 0`)
+ *   'jasa' — a service item without one (flat or per-kg per-piece service)
+ * Supplies and retail products are omitted (not in the map). A load weight alone
+ * can't classify an order — a per-kg jasa also carries a weight — so the machine
+ * capacity is the reliable signal. One indexed `IN (...)` query; empty map for
+ * retail tenants / item-less orders. The caller folds these per line into a single
+ * per-order kind (wash / jasa / mixed) so a combined order isn't mislabelled.
+ */
+async function loadLaundryServiceKinds(
+    tenantPrisma: PrismaClient,
+    sales: Array<{ salesItems: Array<{ itemId: number }> }>,
+): Promise<Map<number, 'wash' | 'jasa'>> {
+    const kinds = new Map<number, 'wash' | 'jasa'>();
+    const itemIds = [...new Set(sales.flatMap(s => s.salesItems.map(si => si.itemId)))];
+    if (itemIds.length === 0) return kinds;
+    const items = await tenantPrisma.item.findMany({
+        where: { id: { in: itemIds }, itemType: 'service' },
+        select: { id: true, defaultLoadWeightKg: true },
+    });
+    for (const it of items) {
+        kinds.set(it.id, Number(it.defaultLoadWeightKg ?? 0) > 0 ? 'wash' : 'jasa');
+    }
+    return kinds;
+}
+
+/**
+ * Folds the per-item kinds into a single per-order tag:
+ *   'wash'  — only wash service line(s)
+ *   'jasa'  — only per-piece/per-kg service line(s)
+ *   'mixed' — both (e.g. a wash + an ironing add-on)
+ *   null    — neither (retail / supplies only)
+ */
+/// A laundry supply-depletion line: the consumable consumed by a wash/service —
+/// zero price, no processed weight, but a tracked consumption quantity (matches
+/// the FE `_isLaundrySupplyLine` / pickup-screen reconstruction). Retail has none.
+function isSupplyLine(
+    it: { price: any; loadWeightKg: any; stockConsumptionQty: any },
+): boolean {
+    return (
+        Number(it.price ?? 0) === 0 &&
+        (it.loadWeightKg == null || Number(it.loadWeightKg) === 0) &&
+        it.stockConsumptionQty != null &&
+        Number(it.stockConsumptionQty) > 0
+    );
+}
+
+/// Count of products/services actually sold, excluding supply lines. Allocation-
+/// free single pass. For retail there are no supply lines → full count unchanged.
+function countBillableSalesItems(
+    salesItems: Array<{ price: any; loadWeightKg: any; stockConsumptionQty: any }>,
+): number {
+    let n = 0;
+    for (const it of salesItems) if (!isSupplyLine(it)) n++;
+    return n;
+}
+
+/// Single in-memory pass over an order's lines producing every per-order field the
+/// sales-list payload needs: billable `totalItems` (supplies excluded), total
+/// processed `loadWeightKg` (sum of wash-service weights; null for retail), and the
+/// `laundryServiceKind` ('wash' | 'jasa' | 'mixed' | null). Replaces three separate
+/// scans (count + weight reduce + kind classify) with one loop.
+function summarizeSalesLines(
+    salesItems: Array<{ itemId: number; price: any; loadWeightKg: any; stockConsumptionQty: any }>,
+    serviceKinds: Map<number, 'wash' | 'jasa'>,
+): { totalItems: number; loadWeightKg: number | null; laundryServiceKind: 'wash' | 'jasa' | 'mixed' | null } {
+    let totalItems = 0;
+    let weight = 0;
+    let hasWash = false;
+    let hasJasa = false;
+    for (const it of salesItems) {
+        if (!isSupplyLine(it)) totalItems++;
+        weight += Number(it.loadWeightKg ?? 0);
+        const k = serviceKinds.get(it.itemId);
+        if (k === 'wash') hasWash = true;
+        else if (k === 'jasa') hasJasa = true;
+    }
+    const laundryServiceKind = hasWash && hasJasa ? 'mixed' : hasWash ? 'wash' : hasJasa ? 'jasa' : null;
+    return { totalItems, loadWeightKg: weight > 0 ? weight : null, laundryServiceKind };
+}
+
 async function sendSalesNotification(
     tenantId: number,
     outletId: number,
@@ -1000,6 +1082,13 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             ]
         })
 
+        // Laundry: classify each order as a machine "wash", a per-piece/per-kg
+        // "service" (jasa), or "mixed". A processed weight alone can't tell them
+        // apart — a per-kg jasa (e.g. ironing charged by the kg) also carries a load
+        // weight — so the real signal is the item's machine capacity, which only a
+        // wash has. One batched, indexed lookup; empty for retail tenants.
+        const serviceKinds = await loadLaundryServiceKinds(tenantPrisma, salesArray);
+
         // Transform results to include customerName
         const transformedSales = salesArray.map(sale => ({
             id: sale.id,
@@ -1019,14 +1108,11 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             discountAmount: sale.discountAmount,
             totalItemDiscountAmount: sale.totalItemDiscountAmount,
             remark: sale.remark,
-            totalItems: sale.salesItems.length,
-            // Laundry: total processed weight = sum of LOAD_WEIGHT_KG across the
-            // wash-service line(s). null for non-laundry (sum 0) so retail payloads
-            // stay identical. salesItems already loaded above — in-memory reduce.
-            loadWeightKg: (() => {
-                const w = sale.salesItems.reduce((sum, it) => sum + Number(it.loadWeightKg ?? 0), 0);
-                return w > 0 ? w : null;
-            })(),
+            // Laundry per-order rollups (billable item count with supplies
+            // excluded, total processed weight, and service kind) computed in a
+            // single in-memory pass over the already-loaded lines. null weight/kind
+            // for retail → payload unchanged.
+            ...summarizeSalesLines(sale.salesItems, serviceKinds),
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
             // Terminal attribution
@@ -1152,6 +1238,10 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             take,
         });
 
+        // Laundry order kind classification — see loadLaundryServiceKinds. Batched
+        // lookup so the partial-payment / pickup queue can label Wash vs Jasa too.
+        const serviceKinds = await loadLaundryServiceKinds(tenantPrisma, salesArray);
+
         // Transform results to include customerName
         const transformedSales = salesArray.map(sale => ({
             id: sale.id,
@@ -1171,14 +1261,11 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             paidAmount: sale.paidAmount,
             status: sale.status,
             remark: sale.remark,
-            totalItems: sale.salesItems.length,
-            // Laundry: total processed weight = sum of LOAD_WEIGHT_KG across the
-            // wash-service line(s). null for non-laundry (sum 0) so retail payloads
-            // stay identical. salesItems already loaded above — in-memory reduce.
-            loadWeightKg: (() => {
-                const w = sale.salesItems.reduce((sum, it) => sum + Number(it.loadWeightKg ?? 0), 0);
-                return w > 0 ? w : null;
-            })(),
+            // Laundry per-order rollups (billable item count with supplies
+            // excluded, total processed weight, and service kind) computed in a
+            // single in-memory pass over the already-loaded lines. null weight/kind
+            // for retail → payload unchanged.
+            ...summarizeSalesLines(sale.salesItems, serviceKinds),
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
             // Terminal attribution
@@ -1299,7 +1386,7 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
             paidAmount: sale.paidAmount,
             status: sale.status,
             remark: sale.remark,
-            totalItems: sale.salesItems.length,
+            totalItems: countBillableSalesItems(sale.salesItems),
             siteId: sale.siteId,
             payments: sale.payments || []
         }));
@@ -1553,6 +1640,18 @@ async function completeNewSales(
             const stockItems = salesBody.salesItems.filter(i => itemTrackStockMap.get(i.itemId)?.trackStock !== false);
             const nonStockItems = salesBody.salesItems.filter(i => itemTrackStockMap.get(i.itemId)?.trackStock === false);
 
+            // Preserve the caller's line order through the stock/non-stock split and
+            // the FIFO row expansion below. salesItemData is otherwise built as
+            // [all stock rows] + [all non-stock rows], which separates a laundry
+            // service line from the supply lines it consumed (a service may be
+            // non-stock while its consumables are stock-tracked, or vice versa) — so
+            // on reload the service↔supply grouping is lost. We tag every produced
+            // row with its original payload index and restore that order before
+            // createMany. Keyed by object reference (the filtered arrays reuse the
+            // same item objects).
+            const originalLineIndex = new Map<any, number>();
+            salesBody.salesItems.forEach((it, idx) => originalLineIndex.set(it, idx));
+
             // Validate stockConsumptionQty values (only for stock-tracked items)
             for (const item of stockItems) {
                 if (item.stockConsumptionQty != null) {
@@ -1617,6 +1716,7 @@ async function completeNewSales(
             // later lines for the same item see depletion (fixes duplicate-item FIFO bug).
             const salesItemsWithFIFOCost: Array<typeof salesBody.salesItems[0] & {
                 usedReceipts: { srcIndex: number; id: number; quantityUsed: Decimal; cost: Decimal }[]
+                __order: number
             }> = [];
 
             for (const item of stockItems) {
@@ -1664,7 +1764,7 @@ async function completeNewSales(
                     throw new BusinessLogicError(`Insufficient combined stock for item ${item.itemName || item.itemId}`);
                 }
 
-                salesItemsWithFIFOCost.push({ ...item, usedReceipts });
+                salesItemsWithFIFOCost.push({ ...item, usedReceipts, __order: originalLineIndex.get(item) ?? 0 });
             }
 
             // Calculate payments and sales status
@@ -1723,6 +1823,7 @@ async function completeNewSales(
                         stockConsumptionQty: item.stockConsumptionQty,
                         unitOfMeasure: item.unitOfMeasure || null,
                         loadWeightKg: item.loadWeightKg ?? null,
+                        __order: item.__order,
                     });
                 } else {
                     // ── Piece-based items: existing multi-row FIFO split ──
@@ -1776,6 +1877,7 @@ async function completeNewSales(
                             loadWeightKg: item.loadWeightKg ?? null,
                             stockReceiptId: receiptSource?.kind === 'OUTLET' ? receipt.id : null,
                             warehouseStockReceiptId: receiptSource?.kind === 'WAREHOUSE' ? receipt.id : null,
+                            __order: item.__order,
                         });
                     });
                 }
@@ -1831,6 +1933,7 @@ async function completeNewSales(
                     stockConsumptionQty: null,
                     unitOfMeasure: item.unitOfMeasure || null,
                     loadWeightKg: item.loadWeightKg ?? null,
+                    __order: originalLineIndex.get(item) ?? 0,
                 });
             }
 
@@ -1920,9 +2023,16 @@ async function completeNewSales(
                 },
             });
 
+            // Restore the caller's line order so persisted rows keep the cart's
+            // interleaving (service line followed by the supplies it consumed).
+            // Stable sort: multiple FIFO-split rows for one piece-based line share
+            // an __order and keep their relative split order. __order is stripped
+            // before the insert (it is not a column).
+            salesItemData.sort((a, b) => a.__order - b.__order);
+
             // Batch create sales items
             await tx.salesItem.createMany({
-                data: salesItemData.map(item => ({
+                data: salesItemData.map(({ __order, ...item }) => ({
                     ...item,
                     salesId: createdSales.id,
                 }))

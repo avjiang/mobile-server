@@ -81,6 +81,7 @@ interface Strings {
   sortExpensive: string;
   ogDesc: (name: string) => string;
   waText: (name: string, price: string) => string;
+  waTextNoPrice: (name: string) => string;
 }
 
 const ID_STRINGS: Strings = {
@@ -105,6 +106,7 @@ const ID_STRINGS: Strings = {
   sortExpensive: "Termahal",
   ogDesc: (name) => `Lihat katalog produk ${name} dan pesan langsung lewat WhatsApp.`,
   waText: (name, price) => `Halo, saya tertarik dengan ${name} (${price}). Apakah tersedia?`,
+  waTextNoPrice: (name) => `Halo, saya tertarik dengan ${name}. Berapa harganya dan apakah tersedia?`,
 };
 
 const MS_STRINGS: Strings = {
@@ -129,6 +131,7 @@ const MS_STRINGS: Strings = {
   sortExpensive: "Termahal",
   ogDesc: (name) => `Lihat katalog produk ${name} dan tempah terus melalui WhatsApp.`,
   waText: (name, price) => `Hai, saya berminat dengan ${name} (${price}). Adakah stok masih ada?`,
+  waTextNoPrice: (name) => `Hai, saya berminat dengan ${name}. Berapakah harganya dan adakah stok ada?`,
 };
 
 function localeFor(currencyCode: string): { fmt: (n: number) => string; t: Strings } {
@@ -173,6 +176,7 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
   const { business, products } = catalogue;
   const wa = business.whatsappNumber;
   const { fmt, t } = localeFor(business.currency);
+  const showPrice = business.priceVisible !== false; // tenant "Show Price" toggle
 
   // Unique categories, first-seen order — used for the filter tabs.
   const categories: string[] = [];
@@ -198,23 +202,29 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
       minVariantPrice != null && maxVariantPrice != null && maxVariantPrice !== minVariantPrice
         ? `${fmt(minVariantPrice)} – ${fmt(maxVariantPrice)}`
         : fmt(displayPrice);
+    // Brand · Model subtitle (either may be absent); also folded into the WA order text.
+    const sub = [p.brand, p.model].filter(Boolean).join(" · ");
+    const waName = sub ? `${p.name} (${sub})` : p.name;
+    const waFor = (name: string, price: number) =>
+      waLink(wa, showPrice ? t.waText(name, fmt(price)) : t.waTextNoPrice(name));
     return {
       n: p.name,
+      sub,
       c: p.categoryName ?? "",
       d: p.description ?? "",
       img: p.imageUrl ?? "",
-      p: priceLabel,
-      pr: rangeLabel,
+      p: showPrice ? priceLabel : "",
+      pr: showPrice ? rangeLabel : "",
       sp: displayPrice,
       oos: !p.inStock,
-      w: waLink(wa, t.waText(p.name, fmt(displayPrice))),
+      w: waFor(waName, displayPrice),
       v:
         p.hasVariants && p.variants.length
           ? p.variants.map((v) => ({
               n: v.name,
-              p: fmt(v.price),
+              p: showPrice ? fmt(v.price) : "",
               s: v.inStock,
-              w: v.inStock ? waLink(wa, t.waText(`${p.name} — ${v.name}`, fmt(v.price))) : "",
+              w: v.inStock ? waFor(`${waName} — ${v.name}`, v.price) : "",
             }))
           : [],
     };
@@ -225,7 +235,7 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
       const d = data[i];
       const img = p.imageUrl
         ? `<img class="thumb" loading="lazy" decoding="async" src="${esc(p.imageUrl)}" alt="${esc(p.name)}">`
-        : `<div class="thumb thumb--empty">${PLACEHOLDER_ICON}</div>`;
+        : `<div class="thumb thumb--empty"><span class="ph-disc">${PLACEHOLDER_ICON}</span></div>`;
       const vcount =
         p.hasVariants && p.variants.length
           ? `<span class="vcount">${p.variants.length} ${esc(t.options)}</span>`
@@ -242,8 +252,9 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
     <div class="body">
       ${p.categoryName ? `<span class="cat">${esc(p.categoryName)}</span>` : ""}
       <h2 class="name">${esc(p.name)}</h2>
+      ${d.sub ? `<span class="sub">${esc(d.sub)}</span>` : ""}
       ${vcount}
-      <div class="foot"><span class="price">${esc(d.p)}</span><span class="chev" aria-hidden="true">›</span></div>
+      ${showPrice ? `<div class="foot"><span class="price">${esc(d.p)}</span><span class="chev" aria-hidden="true">›</span></div>` : ""}
     </div>
   </div>
 </article>`;
@@ -266,11 +277,11 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
     <div class="tb-brand"><div class="monogram monogram--sm">${initial}</div><span class="tb-name">${esc(business.name)}</span></div>
     <div class="tb-row">
       <div class="searchbox">${SEARCH_ICON}<input id="q" class="search" type="search" inputmode="search" autocomplete="off" placeholder="${esc(t.searchPlaceholder)}" aria-label="${esc(t.searchPlaceholder)}"></div>
-      <select id="sort" class="sort" aria-label="${esc(t.sortBy)}">
+      ${showPrice ? `<select id="sort" class="sort" aria-label="${esc(t.sortBy)}">
         <option value="def">${esc(t.sortDefault)}</option>
         <option value="asc">${esc(t.sortCheap)}</option>
         <option value="desc">${esc(t.sortExpensive)}</option>
-      </select>
+      </select>` : ""}
     </div>
     ${tabs}
   </div></div>`
@@ -313,8 +324,7 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
         ...(p.categoryName ? { category: p.categoryName } : {}),
         offers: {
           "@type": "Offer",
-          price: String(data[i].sp),
-          priceCurrency: business.currency,
+          ...(showPrice ? { price: String(data[i].sp), priceCurrency: business.currency } : {}),
           availability: p.inStock
             ? "https://schema.org/InStock"
             : "https://schema.org/OutOfStock",
@@ -335,6 +345,7 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
     <div class="sheet-body">
       <span class="cat" id="m-cat"></span>
       <h2 id="m-name"></h2>
+      <div class="msub" id="m-sub"></div>
       <div class="price-row"><div class="price price--lg" id="m-price"></div><span class="oos-tag" id="m-oos" hidden>${esc(t.outOfStock)}</span></div>
       <p class="m-desc" id="m-desc"></p>
       <div id="m-variants"></div>
@@ -475,11 +486,15 @@ ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ""}
     padding:6px 8px; box-shadow:0 3px 8px rgba(0,0,0,.35); pointer-events:none;
     font-family:'Gilroy',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
   .thumb{ width:100%; aspect-ratio:1/1; object-fit:cover; background:#f0f1f5; display:block; }
-  .thumb--empty{ display:grid; place-items:center; color:#c4cad6; background:linear-gradient(135deg,#f6f7fb,#eef0f6); }
-  .thumb--empty svg{ width:38px; height:38px; }
+  /* No-photo placeholder — matches the in-app sales card: white field with a
+     centred circular disc holding a soft picture glyph. */
+  .thumb--empty{ display:grid; place-items:center; background:#fff; }
+  .ph-disc{ width:46%; max-width:92px; aspect-ratio:1/1; border-radius:50%; background:#e9ebf0; color:#aeb4bc; display:grid; place-items:center; }
+  .ph-disc svg{ width:50%; height:50%; }
   .body{ padding:13px; display:flex; flex-direction:column; gap:5px; flex:1; }
   .cat{ font-size:10.5px; color:var(--red); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
   .name{ font-size:15px; margin:0; line-height:1.25; font-weight:700; }
+  .sub{ font-size:11.5px; color:var(--muted); font-weight:600; line-height:1.2; }
   .vcount{ font-size:11px; color:var(--muted); font-weight:600; }
   .foot{ margin-top:auto; padding-top:8px; display:flex; align-items:center; justify-content:space-between; }
   .price{ font-weight:800; font-size:16px; letter-spacing:-.01em; }
@@ -508,8 +523,7 @@ ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ""}
   .lightbox.open{ opacity:1; }
   .lightbox[hidden]{ display:none; }
   .lightbox img{ max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; }
-  .sheet-img--empty{ display:grid; place-items:center; color:#c4cad6; background:linear-gradient(135deg,#f6f7fb,#eef0f6); }
-  .sheet-img--empty svg{ width:72px; height:72px; }
+  .sheet-img--empty{ display:grid; place-items:center; background:#fff; }
   .sheet-body{ padding:18px 18px 24px; display:flex; flex-direction:column; gap:8px; }
   .sheet-body h2{ margin:0; font-size:21px; font-weight:800; letter-spacing:-.02em; line-height:1.2; }
   .price--lg{ font-size:22px; color:var(--red); }
@@ -517,6 +531,7 @@ ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ""}
   .oos-tag{ background:var(--brand-light); color:var(--red); font-weight:800; font-size:11px; letter-spacing:.4px; text-transform:uppercase;
     padding:4px 10px; border-radius:999px; }
   .oos-tag[hidden]{ display:none; }
+  .msub{ margin:3px 0 0; font-size:13px; color:var(--muted); font-weight:600; }
   .m-desc{ margin:2px 0 0; font-size:14px; line-height:1.5; color:#525a68; white-space:pre-line; }
   .vlabel{ margin-top:10px; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
   .vrow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; margin-top:8px;
@@ -661,10 +676,11 @@ ${products.length ? `<div class="lightbox" id="lightbox" hidden><img id="lb-img"
     var imgWrap = document.getElementById('m-img');
     imgWrap.innerHTML = '';
     if (d.img){ imgWrap.className = 'sheet-img'; var im = el('img'); im.src = d.img; im.alt = d.n; imgWrap.appendChild(im); }
-    else { imgWrap.className = 'sheet-img sheet-img--empty'; imgWrap.innerHTML = PH; }
+    else { imgWrap.className = 'sheet-img sheet-img--empty'; imgWrap.innerHTML = '<span class="ph-disc">' + PH + '</span>'; }
     var cat = document.getElementById('m-cat'); cat.textContent = d.c || ''; cat.style.display = d.c ? '' : 'none';
     document.getElementById('m-name').textContent = d.n || '';
-    document.getElementById('m-price').textContent = d.pr || d.p || '';
+    var msub = document.getElementById('m-sub'); msub.textContent = d.sub || ''; msub.style.display = d.sub ? '' : 'none';
+    var mprice = document.getElementById('m-price'); mprice.textContent = d.pr || d.p || ''; mprice.style.display = (d.pr || d.p) ? '' : 'none';
     var oosTag = document.getElementById('m-oos'); if (oosTag) oosTag.hidden = !d.oos;
     var desc = document.getElementById('m-desc'); desc.textContent = d.d || ''; desc.style.display = d.d ? '' : 'none';
     var vc = document.getElementById('m-variants'); vc.innerHTML = '';

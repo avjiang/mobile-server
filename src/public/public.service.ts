@@ -33,6 +33,8 @@ export interface PublicCatalogueVariant {
 export interface PublicCatalogueItem {
   id: number;
   name: string;
+  brand: string | null; // itemBrand — shown as a subtitle when present
+  model: string | null; // itemModel — shown as a subtitle when present
   description: string | null;
   price: number;
   imageUrl: string | null;
@@ -50,6 +52,7 @@ export interface PublicCatalogue {
     logoUrl: string | null;
     coverUrl: string | null;
     currency: string; // ISO code from the tenant's default_currency setting (e.g. IDR, MYR)
+    priceVisible: boolean; // false → catalogue hides all prices (+ price sort + WA price)
   };
   // NOTE: deliberately named `products`, NOT `items` — NetworkResponse magic-unwraps
   // any payload containing an `items` array and drops sibling keys (e.g. `business`).
@@ -84,6 +87,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       catalogueEnabled: true,
       logoUrl: true,
       coverUrl: true,
+      cataloguePriceVisible: true,
     },
   });
   if (!tenant || tenant.catalogueEnabled !== true || !tenant.databaseName) {
@@ -118,6 +122,8 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
     select: {
       id: true,
       itemName: true,
+      itemBrand: true,
+      itemModel: true,
       itemDescription: true,
       price: true,
       image: true,
@@ -178,6 +184,8 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
     items.push({
       id: r.id,
       name: r.itemName,
+      brand: r.itemBrand && r.itemBrand.length > 0 ? r.itemBrand : null,
+      model: r.itemModel && r.itemModel.length > 0 ? r.itemModel : null,
       description: r.itemDescription && r.itemDescription.length > 0 ? r.itemDescription : null,
       price: toNumber(r.price),
       imageUrl: imageOrNull(r.image),
@@ -196,6 +204,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       logoUrl: imageOrNull(tenant.logoUrl),
       coverUrl: imageOrNull(tenant.coverUrl),
       currency,
+      priceVisible: tenant.cataloguePriceVisible !== false, // default visible
     },
     products: items,
   };

@@ -374,6 +374,12 @@ model Item {
   // PRICE is the per-load total charged as-is; 'per_kg' = price × actual load
   // weight (reserved). Set by the aceh_wash price backfill script.
   pricingMode             String?                  @map("PRICING_MODE")
+  // Retail / F&B online-catalogue product specifications: a single free-text
+  // block (the whole spec sheet, pasted by the user). Presentational only —
+  // edited as a whole with the item and rendered on the public catalogue detail
+  // sheet, never queried/filtered (no child table). Null for laundry tenants
+  // (the Specifications tab is hidden there).
+  specifications          String?                  @map("SPECIFICATIONS") @db.Text
   deleted                 Boolean                  @default(false) @map("IS_DELETED")
   deletedAt               DateTime?                @map("DELETED_AT")
   createdAt               DateTime?                @default(now()) @map("CREATED_AT")

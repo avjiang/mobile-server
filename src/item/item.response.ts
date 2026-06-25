@@ -116,6 +116,14 @@ export class ItemDto {
     @Expose()
     pricingMode: string | undefined = undefined;
 
+    // Retail / F&B online-catalogue product specifications: a single free-text
+    // block (the whole spec sheet) stored in the JSON column as a JSON string.
+    // Must be @Expose'd or class-transformer (excludeExtraneousValues on the
+    // create path) drops it before createMany. The update path passes req.body
+    // raw, so it flows there regardless.
+    @Expose()
+    specifications: string | undefined = undefined;
+
     // Laundry: recipe lines for a service item (the supplies it consumes).
     @Expose()
     @Type(() => ItemConsumableDto)

@@ -42,6 +42,9 @@ export interface PublicCatalogueItem {
   hasVariants: boolean;
   variants: PublicCatalogueVariant[];
   inStock: boolean; // false → shown greyed with a "Habis" badge (not hidden)
+  // Free-text product specifications (the whole spec sheet) rendered in the
+  // detail sheet. Null/empty when the item has none (or for laundry tenants).
+  specifications: string | null;
 }
 
 export interface PublicCatalogue {
@@ -69,6 +72,14 @@ function imageOrNull(v: string | null | undefined): string | null {
 function toNumber(v: any): number {
   if (v == null) return 0;
   return typeof v === "number" ? v : Number(v.toString());
+}
+
+// Item.specifications (TEXT) -> the trimmed free-text spec sheet, or null when
+// blank. The column is plain TEXT, so this is just a trim/empty guard.
+function normalizeSpecifications(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const str = String(raw).trim();
+  return str.length > 0 ? str : null;
 }
 
 export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalogue> {
@@ -127,6 +138,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       itemDescription: true,
       price: true,
       image: true,
+      specifications: true,
       hasVariants: true,
       trackStock: true,
       category: { select: { name: true } },
@@ -193,6 +205,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
       hasVariants: r.hasVariants,
       variants: r.hasVariants ? variants : [],
       inStock,
+      specifications: normalizeSpecifications(r.specifications),
     });
   }
 

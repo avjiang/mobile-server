@@ -67,6 +67,7 @@ interface Strings {
   all: string;
   options: string; // "N pilihan" prefix label (count rendered separately)
   optionsLabel: string; // heading above the variant list in the sheet
+  specsLabel: string; // heading above the specifications list in the sheet
   askStock: string;
   outOfStock: string;
   poweredBy: string;
@@ -92,6 +93,7 @@ const ID_STRINGS: Strings = {
   all: "Semua",
   options: "pilihan",
   optionsLabel: "Pilihan tersedia",
+  specsLabel: "Spesifikasi",
   askStock: "Tanya stok via WhatsApp",
   outOfStock: "Habis",
   poweredBy: "Didukung oleh",
@@ -117,6 +119,7 @@ const MS_STRINGS: Strings = {
   all: "Semua",
   options: "pilihan",
   optionsLabel: "Pilihan tersedia",
+  specsLabel: "Spesifikasi",
   askStock: "Tanya stok via WhatsApp",
   outOfStock: "Habis",
   poweredBy: "Dikuasakan oleh",
@@ -216,6 +219,9 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
       p: showPrice ? priceLabel : "",
       pr: showPrice ? rangeLabel : "",
       sp: displayPrice,
+      // Free-text product specifications for the detail sheet. `spc` since `sp`
+      // is already the numeric sort price above.
+      spc: p.specifications ?? "",
       oos: !p.inStock,
       w: waFor(waName, displayPrice),
       v:
@@ -348,6 +354,7 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
       <div class="msub" id="m-sub"></div>
       <div class="price-row"><div class="price price--lg" id="m-price"></div><span class="oos-tag" id="m-oos" hidden>${esc(t.outOfStock)}</span></div>
       <p class="m-desc" id="m-desc"></p>
+      <div class="specs" id="m-specs" hidden></div>
       <div id="m-variants"></div>
       <a class="wa wa--lg" id="m-wa" target="_blank" rel="noopener">${WA_ICON}<span>${esc(t.askStock)}</span></a>
     </div>
@@ -533,6 +540,11 @@ ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ""}
   .oos-tag[hidden]{ display:none; }
   .msub{ margin:3px 0 0; font-size:13px; color:var(--muted); font-weight:600; }
   .m-desc{ margin:2px 0 0; font-size:14px; line-height:1.5; color:#525a68; white-space:pre-line; }
+  .specs[hidden]{ display:none; }
+  .specs{ margin-top:14px; }
+  .specs-title{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .spec-body{ font-size:14px; line-height:1.55; color:#525a68; white-space:pre-line; word-break:break-word;
+    background:var(--input); border-radius:12px; padding:12px 14px; }
   .vlabel{ margin-top:10px; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
   .vrow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; margin-top:8px;
     background:var(--input); border-radius:12px; text-decoration:none; color:var(--ink); transition:background .16s; }
@@ -614,6 +626,7 @@ ${products.length ? `<div class="lightbox" id="lightbox" hidden><img id="lb-img"
   var P = ${dataJson};
   var OOS = ${JSON.stringify(t.outOfStock)};
   var VLABEL = ${JSON.stringify(t.optionsLabel)};
+  var SPECLABEL = ${JSON.stringify(t.specsLabel)};
   var PH = ${JSON.stringify(PLACEHOLDER_ICON)};
   var SHARE_URL = ${JSON.stringify(canonicalUrl)};
   var SHARE_TITLE = ${JSON.stringify(`${business.name} — Katalog`)};
@@ -683,6 +696,12 @@ ${products.length ? `<div class="lightbox" id="lightbox" hidden><img id="lb-img"
     var mprice = document.getElementById('m-price'); mprice.textContent = d.pr || d.p || ''; mprice.style.display = (d.pr || d.p) ? '' : 'none';
     var oosTag = document.getElementById('m-oos'); if (oosTag) oosTag.hidden = !d.oos;
     var desc = document.getElementById('m-desc'); desc.textContent = d.d || ''; desc.style.display = d.d ? '' : 'none';
+    var sc = document.getElementById('m-specs'); sc.innerHTML = '';
+    if (d.spc){
+      var slab = el('div', 'specs-title'); slab.textContent = SPECLABEL; sc.appendChild(slab);
+      var sbody = el('div', 'spec-body'); sbody.textContent = d.spc; sc.appendChild(sbody);
+      sc.hidden = false;
+    } else { sc.hidden = true; }
     var vc = document.getElementById('m-variants'); vc.innerHTML = '';
     if (d.v && d.v.length){
       var lab = el('div', 'vlabel'); lab.textContent = VLABEL; vc.appendChild(lab);

@@ -1099,8 +1099,13 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 });
             }
 
-            // Handle variants update/creation if provided
-            if (variants && Array.isArray(variants)) {
+            // Handle variants update/creation if provided.
+            // NOTE: an EMPTY array means "no variant changes" — never enter the
+            // block, or the auto-flag below wrongly sets hasVariants=true on a
+            // variant-less item (e.g. saving its spec/photo from the details
+            // dialog, which round-trips the item with `variants: []`). Deletions
+            // are sent as `[{id, deleted:true}]`, so a real change is length > 0.
+            if (variants && Array.isArray(variants) && variants.length > 0) {
                 // ===== Batch validate variant ownership (security) =====
                 // Performance: Single query validates ALL variant IDs at once
                 const variantIdsToValidate = variants

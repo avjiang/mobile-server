@@ -3,6 +3,7 @@ import NetworkResponse from "../api-helpers/network-response";
 import { BaseError, ResponseError, AuthenticationError, VersionMismatchError } from "../api-helpers/error";
 import { Prisma } from "../../prisma/client/generated/client";
 import { sendErrorResponse } from "../api-helpers/network";
+import jwt from "jsonwebtoken";
 
 export default (error: Error, req: Request, res: Response, next: NextFunction) => {
     let statusCode: number = 500;
@@ -89,6 +90,15 @@ export default (error: Error, req: Request, res: Response, next: NextFunction) =
         // Handle AuthenticationError
         responseError = new ResponseError(error.name, `Authorization error: ${error.message}`);
         statusCode = 401; // Assuming AuthenticationError uses 401
+    } else if (error instanceof jwt.JsonWebTokenError) {
+        // Raw jsonwebtoken errors (TokenExpiredError / NotBeforeError both extend
+        // JsonWebTokenError) thrown by jwt.verify in authService.validateToken.
+        // An expired or invalid token is a normal, expected client condition — it
+        // must surface as 401 Unauthorized, not fall through to the 500 fallback
+        // below (which was firing the App Service Http5xx alert on every expiry).
+        const message = error instanceof jwt.TokenExpiredError ? 'Token has expired' : 'Invalid authentication token';
+        responseError = new ResponseError(error.name, message);
+        statusCode = 401;
     } else {
         // Fallback for unknown errors
         responseError = new ResponseError(error.name, error.message);

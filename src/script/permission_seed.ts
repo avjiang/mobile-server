@@ -164,6 +164,39 @@ export const permissions = [
         name: "Manage Online Catalogue",
         category: "Online Catalogue",
         description: "Manage the online catalogue storefront and its media storage"
+    },
+    // Expenses (Pro feature) — operating-cost / expense module. Read path is
+    // gated with hasAnyPermission([View, Manage]) on the FE because permissions
+    // are a flat set (Manage does NOT imply View). Names MUST match FE
+    // AppPermission.viewExpenses / manageExpenses.
+    {
+        name: "View Expenses",
+        category: "Expenses",
+        description: "View the expense ledger and expense categories"
+    },
+    {
+        name: "Manage Expenses",
+        category: "Expenses",
+        description: "Create, edit, and delete expenses and expense categories"
+    },
+    // Cash reconciliation at session close (opening float + counted-cash variance).
+    {
+        name: "Perform Cash Reconciliation",
+        category: "Sales",
+        description: "Count the cash drawer and record the variance when closing a session"
+    },
+    // Monetary visibility (UI-only masking) — see docs/future/MONETARY_VISIBILITY_PERMISSIONS.md.
+    // Absence hides the figures in the FE only (the API still returns them). Names MUST
+    // match FE AppPermission.viewCostProfit / viewSalesAmounts.
+    {
+        name: "View Cost & Profit",
+        category: "Financial",
+        description: "View item cost, profit, and margin figures"
+    },
+    {
+        name: "View Sales Amounts",
+        category: "Financial",
+        description: "View transaction totals in sales history"
     }
 ];
 

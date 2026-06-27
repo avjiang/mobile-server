@@ -740,6 +740,9 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             }))
             .sort((a, b) => (a.siteId ?? 0) - (b.siteId ?? 0));
 
+        // Operating expenses for this session (Net Profit = gross profit − OpEx).
+        const operatingExpenses = await sumSessionOperatingExpenses(tenantPrisma, sessionId);
+
         // Prepare response object
         return {
             // Laundry operations block (null for non-laundry accounts)
@@ -754,6 +757,11 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             returnRefundImpact: returnRefundImpact.toNumber(),
             totalProfit: totalProfit.toNumber(),
             totalCogs: netRevenue.minus(totalProfit).toNumber(), // Revenue − Profit = Cost of Goods Sold
+            // Operating expenses (Class B per-shift) + Net Profit. Session
+            // granularity nets per-shift expenses only; monthly overhead appears
+            // in the outlet/month report. See EXPENSE_AND_CASH_RECONCILIATION.md §5.
+            operatingExpenses: operatingExpenses,
+            netProfit: totalProfit.minus(new Decimal(operatingExpenses)).toNumber(),
             grossMargin: netRevenue.gt(0) ? totalProfit.dividedBy(netRevenue).times(100).toNumber() : 0,
             totalProfitGains: totalGains.toNumber(), // Sum of all positive profits
             totalProfitLosses: totalLosses.toNumber(), // Sum of all negative profits (will be negative)
@@ -1107,14 +1115,47 @@ const computeOutletReportFingerprint = async (
     tenantPrisma: PrismaClient, outletId: number, startDate: Date, endDate: Date,
 ): Promise<string> => {
     const range = { outletId: outletId, businessDate: { gte: startDate, lte: endDate } };
-    const [s, p] = await Promise.all([
+    // v2: expenses are part of the report now (Net Profit), so adding/editing an
+    // expense in a CLOSED period must invalidate the cache — include the expense
+    // table in the fingerprint. See docs/future/EXPENSE_AND_CASH_RECONCILIATION.md §5.
+    const [s, p, e] = await Promise.all([
         tenantPrisma.sales.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
         tenantPrisma.payment.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
+        tenantPrisma.expense.aggregate({ where: { outletId, businessDate: { gte: startDate, lte: endDate } }, _count: { id: true }, _max: { updatedAt: true } }),
     ]);
     return [
+        'v2',
         s._count.id, s._max.updatedAt?.toISOString() ?? '',
         p._count.id, p._max.updatedAt?.toISOString() ?? '',
+        e._count.id, e._max.updatedAt?.toISOString() ?? '',
     ].join('|');
+};
+
+/// Sum of operating expenses (Class B + C) for a session, in rupiah. Net Profit
+/// at the session/shift granularity nets only session-scoped expenses (the
+/// per-shift cash expenses entered at close). Monthly Class-C overhead is added
+/// only in the month/outlet report.
+const sumSessionOperatingExpenses = async (
+    tenantPrisma: PrismaClient, sessionId: number,
+): Promise<number> => {
+    const agg = await tenantPrisma.expense.aggregate({
+        where: { sessionId, deleted: false },
+        _sum: { amount: true },
+    });
+    return (agg._sum.amount ?? new Decimal(0)).toNumber();
+};
+
+/// Sum of operating expenses for an outlet over a local-day date range
+/// (businessDate bucketed). Includes Class-C monthly overhead whose businessDate
+/// falls in the range.
+const sumRangeOperatingExpenses = async (
+    tenantPrisma: PrismaClient, outletId: number, startDate: Date, endDate: Date,
+): Promise<number> => {
+    const agg = await tenantPrisma.expense.aggregate({
+        where: { outletId, businessDate: { gte: startDate, lte: endDate }, deleted: false },
+        _sum: { amount: true },
+    });
+    return (agg._sum.amount ?? new Decimal(0)).toNumber();
 };
 
 const setOutletReportCacheEntry = (key: string, entry: OutletReportCacheEntry) => {
@@ -2011,6 +2052,12 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             }))
             .sort((a, b) => (a.siteId ?? 0) - (b.siteId ?? 0));
 
+        // Operating expenses for the period (Class B + C). Month/outlet
+        // granularity includes monthly overhead whose businessDate falls in range.
+        const operatingExpenses = (startDate && endDate)
+            ? await sumRangeOperatingExpenses(tenantPrisma, outletId, startDate, endDate)
+            : (await tenantPrisma.expense.aggregate({ where: { outletId, deleted: false }, _sum: { amount: true } }))._sum.amount?.toNumber() ?? 0;
+
         // Prepare response object
         const payload = {
             // Laundry operations block (null for non-laundry accounts)
@@ -2028,6 +2075,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             returnRefundImpact: returnRefundImpact.toNumber(),
             totalProfit: totalProfit.toNumber(),
             totalCogs: netRevenue.minus(totalProfit).toNumber(), // Revenue − Profit = Cost of Goods Sold
+            // Operating expenses (Class B + C for the period) + Net Profit.
+            operatingExpenses: operatingExpenses,
+            netProfit: totalProfit.minus(new Decimal(operatingExpenses)).toNumber(),
             grossMargin: netRevenue.gt(0) ? totalProfit.dividedBy(netRevenue).times(100).toNumber() : 0,
             totalProfitGains: totalGains.toNumber(), // Sum of all positive profits
             totalProfitLosses: totalLosses.toNumber(), // Sum of all negative profits (will be negative)
@@ -2581,6 +2631,9 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
             }))
             .sort((a, b) => (a.siteId ?? 0) - (b.siteId ?? 0));
 
+        // Operating expenses for this laundry session (Net Profit = profit − OpEx).
+        const operatingExpenses = await sumSessionOperatingExpenses(tenantPrisma, sessionId);
+
         return {
             laundryOps: {
                 totalKgProcessed: totalKg,
@@ -2601,6 +2654,9 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
             grossRevenue: totalCompletedRevenue.toNumber(),
             returnRefundImpact: 0,
             totalProfit: totalProfit.toNumber(),
+            // Operating expenses (Class B per-shift) + Net Profit.
+            operatingExpenses: operatingExpenses,
+            netProfit: totalProfit.minus(new Decimal(operatingExpenses)).toNumber(),
             totalProfitGains: totalGains.toNumber(),
             totalProfitLosses: totalLosses.toNumber(),
             averageTransactionValue: averageTransactionValue.toNumber(),

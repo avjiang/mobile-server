@@ -374,6 +374,10 @@ model Item {
   // PRICE is the per-load total charged as-is; 'per_kg' = price × actual load
   // weight (reserved). Set by the aceh_wash price backfill script.
   pricingMode             String?                  @map("PRICING_MODE")
+  // Laundry: whether this service includes ironing (gosok). Drives the Phase-6
+  // per-kg ironing cost rate (CostRate basis 'perKg' sums kg of ironing-flagged
+  // lines). Nullable/false for non-laundry items. See EXPENSE §4.
+  includesIroning         Boolean?                 @default(false) @map("INCLUDES_IRONING")
   // Retail / F&B online-catalogue product specifications: a single free-text
   // block (the whole spec sheet, pasted by the user). Presentational only —
   // edited as a whole with the item and rendered on the public catalogue detail
@@ -458,6 +462,112 @@ model Category {
   subscriptionPackageCategories SubscriptionPackageCategory[]
 
   @@map("item_category")
+}
+
+// Operating-cost / expense module (Pro-only). See
+// docs/future/EXPENSE_AND_CASH_RECONCILIATION.md §7.
+// ExpenseCategory mirrors Category (tenant-scoped, lazy-seeded per-vertical
+// defaults). `kind` separates ordinary opex from the auto-posted wastage class;
+// `vertical` lets per-vertical default seeds group correctly in reports.
+model ExpenseCategory {
+  id        Int       @id @default(autoincrement()) @map("ID")
+  name      String    @map("NAME")
+  kind      String    @default("opex") @map("KIND") // 'opex' | 'cogs-wastage'
+  vertical  String?   @map("VERTICAL") // 'retail' | 'laundry' | 'fnb' | null (generic)
+  deleted   Boolean   @default(false) @map("IS_DELETED")
+  deletedAt DateTime? @map("DELETED_AT")
+  createdAt DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt DateTime? @updatedAt @map("UPDATED_AT")
+  version            Int?                       @default(1) @map("VERSION")
+  expenses           Expense[]
+  recurringTemplates ExpenseRecurringTemplate[]
+  costRates          CostRate[]
+
+  @@map("expense_category")
+}
+
+// A single operating-cost entry. `cadence` distinguishes Class B (per-shift /
+// variable) from Class C (monthly / fixed). `paymentSource` is cash vs non-cash
+// (NOT cash|bank) so e-wallet/QRIS expenses have a home; only the cash ones feed
+// drawer reconciliation. `businessDate` shares the report local-day boundary;
+// monthly rows also carry `periodMonth` (YYYY-MM). recurringTemplateId /
+// sourceMovementId / receiptUrl are forward-compat (Phases 4-5), nullable now.
+model Expense {
+  id                  Int             @id @default(autoincrement()) @map("ID")
+  outletId            Int             @default(1) @map("OUTLET_ID")
+  sessionId           Int?            @map("SESSION_ID")
+  expenseCategoryId   Int             @map("EXPENSE_CATEGORY_ID")
+  cadence             String          @default("oneoff") @map("CADENCE") // 'oneoff' | 'perShift' | 'monthly'
+  amount              Decimal         @map("AMOUNT") @db.Decimal(15, 4)
+  businessDate        DateTime        @map("BUSINESS_DATE")
+  periodMonth         String?         @map("PERIOD_MONTH") // 'YYYY-MM' for monthly rows
+  note                String?         @default("") @map("NOTE")
+  paymentSource       String          @default("cash") @map("PAYMENT_SOURCE") // 'cash' | 'noncash'
+  recurringTemplateId Int?            @map("RECURRING_TEMPLATE_ID") // Phase 4 (loose link)
+  sourceMovementId    Int?            @map("SOURCE_MOVEMENT_ID") // Phase 5 wastage link (loose)
+  receiptUrl          String?         @map("RECEIPT_URL")
+  performedBy         Int?            @map("PERFORMED_BY")
+  deleted             Boolean         @default(false) @map("IS_DELETED")
+  deletedAt           DateTime?       @map("DELETED_AT")
+  createdAt           DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt           DateTime?       @updatedAt @map("UPDATED_AT")
+  version             Int?            @default(1) @map("VERSION")
+  expenseCategory     ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
+
+  @@index([outletId, businessDate])
+  @@index([sessionId])
+  @@index([updatedAt])
+  // Idempotency for recurring posting: at most one row per (template, month).
+  // Manual rows have a NULL templateId — MySQL allows many NULLs in a UNIQUE
+  // index, so they never collide. See EXPENSE_AND_CASH_RECONCILIATION.md §7.
+  @@unique([recurringTemplateId, periodMonth])
+  @@map("expense")
+}
+
+// Class C convenience (Phase 4). Effective-dated so a rent/salary change doesn't
+// rewrite history. Posting is idempotent on the Expense (templateId, periodMonth)
+// unique index. See EXPENSE_AND_CASH_RECONCILIATION.md §7.
+model ExpenseRecurringTemplate {
+  id                Int             @id @default(autoincrement()) @map("ID")
+  outletId          Int             @default(1) @map("OUTLET_ID")
+  expenseCategoryId Int             @map("EXPENSE_CATEGORY_ID")
+  amount            Decimal         @map("AMOUNT") @db.Decimal(15, 4)
+  dayOfMonth        Int?            @map("DAY_OF_MONTH")
+  effectiveFrom     DateTime        @map("EFFECTIVE_FROM")
+  effectiveTo       DateTime?       @map("EFFECTIVE_TO")
+  active            Boolean         @default(true) @map("ACTIVE")
+  deleted           Boolean         @default(false) @map("IS_DELETED")
+  deletedAt         DateTime?       @map("DELETED_AT")
+  createdAt         DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?       @updatedAt @map("UPDATED_AT")
+  version           Int?            @default(1) @map("VERSION")
+  expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
+
+  @@index([updatedAt])
+  @@map("expense_recurring_template")
+}
+
+// Class B auto-compute (Phase 6). `basis` is an open enum (perKg / perTransaction
+// / percentOfSales / perShift / perDay). `rate` is the configured rate; the
+// generated expense = rate × driverQuantity(session|period). See §4.
+model CostRate {
+  id                Int             @id @default(autoincrement()) @map("ID")
+  outletId          Int             @default(1) @map("OUTLET_ID")
+  expenseCategoryId Int             @map("EXPENSE_CATEGORY_ID")
+  costType          String          @map("COST_TYPE")
+  basis             String          @map("BASIS") // perKg | perTransaction | percentOfSales | perShift | perDay
+  rate              Decimal         @map("RATE") @db.Decimal(15, 4)
+  effectiveFrom     DateTime        @map("EFFECTIVE_FROM")
+  active            Boolean         @default(true) @map("ACTIVE")
+  deleted           Boolean         @default(false) @map("IS_DELETED")
+  deletedAt         DateTime?       @map("DELETED_AT")
+  createdAt         DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt         DateTime?       @updatedAt @map("UPDATED_AT")
+  version           Int?            @default(1) @map("VERSION")
+  expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
+
+  @@index([updatedAt])
+  @@map("cost_rate")
 }
 
 model Sales {

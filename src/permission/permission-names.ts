@@ -55,6 +55,14 @@ export const PERMISSION = {
     MANAGE_CUSTOMER_SUBSCRIPTIONS: 'Manage Customer Subscriptions',
     // Online Catalogue
     MANAGE_ONLINE_CATALOGUE: 'Manage Online Catalogue',
+    // Expenses (Pro feature)
+    VIEW_EXPENSES: 'View Expenses',
+    MANAGE_EXPENSES: 'Manage Expenses',
+    // Sales — cash reconciliation at session close
+    PERFORM_CASH_RECONCILIATION: 'Perform Cash Reconciliation',
+    // Financial — UI-only monetary masking (see docs/future/MONETARY_VISIBILITY_PERMISSIONS.md)
+    VIEW_COST_PROFIT: 'View Cost & Profit',
+    VIEW_SALES_AMOUNTS: 'View Sales Amounts',
 } as const;
 
 export type PermissionName = (typeof PERMISSION)[keyof typeof PERMISSION];

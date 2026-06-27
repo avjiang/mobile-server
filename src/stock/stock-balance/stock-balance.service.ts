@@ -165,6 +165,11 @@ let getStockByItemId = async (databaseName: string, itemId: number, itemVariantI
 async function stockAdjustment(databaseName: string, stockAdjustments: StockAdjustment[]): Promise<number> {
     const tenantPrisma = getTenantPrisma(databaseName);
     let adjustedCount = 0;
+    // Wastage auto-expense (Phase 5): negative adjustQuantity write-offs accrue
+    // the FIFO cost removed here, then post a Class-C "Wastage" expense AFTER the
+    // stock transaction commits. Override recounts are excluded (not waste). See
+    // docs/future/EXPENSE_AND_CASH_RECONCILIATION.md §3 rule #3.
+    const wastageEntries: { itemId: number; outletId: number; cost: Decimal; reason: string }[] = [];
 
     try {
         await tenantPrisma.$transaction(async (tx) => {
@@ -378,6 +383,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                 } else if (deltaQuantity.lessThan(0)) {
                     // Handle negative adjustments
                     let remainingReduction = deltaQuantity.abs();
+                    let fifoCostRemoved = new Decimal(0);
                     for (const receipt of receipts) {
                         if (remainingReduction.lessThanOrEqualTo(0)) break;
                         const reduction = Decimal.min(receipt.quantity, remainingReduction);
@@ -388,11 +394,21 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                             deleted: newQuantity.equals(0) ? true : undefined,
                             deletedAt: newQuantity.equals(0) ? new Date() : undefined,
                         });
+                        // Accrue the FIFO cost of the stock being written off.
+                        fifoCostRemoved = fifoCostRemoved.plus(reduction.times(receipt.cost ?? new Decimal(0)));
                         remainingReduction = remainingReduction.sub(reduction);
                     }
                     if (remainingReduction.greaterThan(0)) {
                         const variantInfo = adjustment.itemVariantId ? ` variantId ${adjustment.itemVariantId}` : '';
                         throw new RequestValidateError(`Insufficient StockReceipt quantity for item ${adjustment.itemId}${variantInfo}`);
+                    }
+                    if (fifoCostRemoved.greaterThan(0)) {
+                        wastageEntries.push({
+                            itemId: adjustment.itemId,
+                            outletId: adjustment.outletId,
+                            cost: fifoCostRemoved,
+                            reason: adjustment.reason || 'Stock write-off',
+                        });
                     }
                 } else if (deltaQuantity.greaterThan(0)) {
                     // Handle positive adjustments
@@ -471,9 +487,58 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
             adjustedCount = stockUpdates.length;
         });
 
+        // Phase 5: post wastage expenses for the write-offs (after the stock tx
+        // commits, so a failed adjustment never leaves an orphan expense).
+        await postWastageExpenses(tenantPrisma, wastageEntries);
+
         return adjustedCount;
     } catch (error) {
         throw error;
+    }
+}
+
+// Auto-post Class-C "Wastage" expenses for negative stock adjustments. Gated on
+// the tenant actually using the expense module (has ≥1 category) so tenants that
+// never opened Expenses don't accrue noise. The written-off stock is removed
+// from FIFO receipts (never sold → never COGS), so this is the only P&L hit — no
+// double-count. Best-effort: a failure here never rolls back the stock change.
+async function postWastageExpenses(
+    tenantPrisma: any,
+    entries: { itemId: number; outletId: number; cost: Decimal; reason: string }[],
+): Promise<void> {
+    if (entries.length === 0) return;
+    try {
+        const categoryCount = await tenantPrisma.expenseCategory.count({ where: { deleted: false } });
+        if (categoryCount === 0) return; // tenant isn't using the expense module
+
+        let wastage = await tenantPrisma.expenseCategory.findFirst({
+            where: { kind: 'cogs-wastage', deleted: false },
+        });
+        if (!wastage) {
+            wastage = await tenantPrisma.expenseCategory.create({
+                data: { name: 'Wastage', kind: 'cogs-wastage' },
+            });
+        }
+
+        const now = new Date();
+        const periodMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        for (const e of entries) {
+            await tenantPrisma.expense.create({
+                data: {
+                    outletId: e.outletId,
+                    expenseCategoryId: wastage.id,
+                    cadence: 'monthly',
+                    amount: e.cost,
+                    businessDate: now,
+                    periodMonth,
+                    paymentSource: 'noncash',
+                    note: `Wastage: ${e.reason}`,
+                },
+            });
+        }
+    } catch (err) {
+        // Non-blocking: the stock write-off already succeeded.
+        console.error('[wastage auto-expense] failed to post:', err);
     }
 }
 

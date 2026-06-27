@@ -102,6 +102,10 @@ app.use('/loyalty', require('./loyalty/loyalty.controller'))
 app.use('/subscription', require('./subscription-package/subscription-package.controller'))
 app.use('/voucher', require('./voucher/voucher.controller'))
 app.use('/catalogue', require('./catalogue/catalogue.controller'))
+app.use('/expenseCategory', require('./expense-category/expense-category.controller'))
+app.use('/expense', require('./expense/expense.controller'))
+app.use('/expenseRecurringTemplate', require('./expense-recurring-template/expense-recurring-template.controller'))
+app.use('/costRate', require('./cost-rate/cost-rate.controller'))
 
 // error middleware
 app.use(errorMiddleware)

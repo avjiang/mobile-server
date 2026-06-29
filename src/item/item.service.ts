@@ -894,7 +894,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
             // Detect trackStock transition
             const currentItem = await tx.item.findUnique({
                 where: { id },
-                select: { trackStock: true, cost: true, hasVariants: true }
+                select: { trackStock: true, cost: true, hasVariants: true, itemType: true, unitOfMeasure: true }
             });
             const oldTrackStock = currentItem!.trackStock;
             const newTrackStock = updateData.trackStock;
@@ -935,6 +935,34 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 },
                 data: itemUpdateData
             });
+
+            // Laundry: a supply's unit (Liquid/Weight/Tabung/Piece) is echoed onto
+            // every recipe line that consumes it as a DISPLAY label — the consumption
+            // math uses ratePerKg + consumptionBasis, never the unit. When the supply's
+            // unit changes, cascade it onto those recipe lines so the recipe builder and
+            // reports don't show a stale unit. Quantities/rates are intentionally left
+            // as-is (units across dimensions don't auto-convert; the FE warns the user).
+            if (currentItem!.itemType === 'supply' &&
+                itemUpdate.unitOfMeasure !== currentItem!.unitOfMeasure) {
+                const affected = await tx.itemConsumable.findMany({
+                    where: { consumableItemId: id, deleted: false },
+                    select: { serviceItemId: true },
+                });
+                await tx.itemConsumable.updateMany({
+                    where: { consumableItemId: id, deleted: false },
+                    data: { unit: itemUpdate.unitOfMeasure, updatedAt: new Date() },
+                });
+                // Bump the owning service items' updatedAt so the relabelled recipe
+                // lines re-sync to clients — consumables only travel inside their
+                // parent service item's delta-sync payload, never on their own.
+                const serviceIds = [...new Set(affected.map(a => a.serviceItemId))];
+                if (serviceIds.length > 0) {
+                    await tx.item.updateMany({
+                        where: { id: { in: serviceIds } },
+                        data: { updatedAt: new Date() },
+                    });
+                }
+            }
 
             // Laundry: replace recipe lines when the client sends a consumables array.
             // Hard delete + recreate keeps the @@unique(serviceItemId, consumableItemId)

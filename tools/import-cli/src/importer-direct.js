@@ -28,6 +28,14 @@ function normalizeUOM(value) {
   return UOM_NORMALIZATION_MAP[value] || value;
 }
 
+// Normalize a name used as a lookup key: trim surrounding whitespace + lowercase.
+// Without the trim, "Minuman" and "Minuman " resolve to different keys and the
+// importer silently creates duplicate categories/suppliers. Used consistently
+// for BOTH map construction and lookups so they always agree.
+function norm(value) {
+  return (value ?? '').toString().trim().toLowerCase();
+}
+
 /**
  * Look up tenant database name from Global DB
  * @param {number|null} tenantId - Tenant ID to look up
@@ -137,10 +145,10 @@ export async function importDirectToDB(data, options) {
     const existingVariants = await prisma.itemVariant.findMany({ where: { deleted: false } });
 
     // Create maps for lookups
-    const categoryMap = new Map(existingCategories.map(c => [c.name.toLowerCase(), c]));
-    const supplierMap = new Map(existingSuppliers.map(s => [s.companyName.toLowerCase(), s]));
-    const itemCodeMap = new Map(existingItems.map(i => [i.itemCode.toLowerCase(), i]));
-    const variantSkuMap = new Map(existingVariants.map(v => [v.variantSku.toLowerCase(), v]));
+    const categoryMap = new Map(existingCategories.map(c => [norm(c.name), c]));
+    const supplierMap = new Map(existingSuppliers.map(s => [norm(s.companyName), s]));
+    const itemCodeMap = new Map(existingItems.map(i => [norm(i.itemCode), i]));
+    const variantSkuMap = new Map(existingVariants.map(v => [norm(v.variantSku), v]));
 
     // 1. Import Categories
     if (data.categories.length > 0) {
@@ -148,18 +156,19 @@ export async function importDirectToDB(data, options) {
       progress.start(data.categories.length, 0);
 
       for (const category of data.categories) {
-        const existing = categoryMap.get(category.name.toLowerCase());
+        const key = norm(category.name);
+        const existing = categoryMap.get(key);
         if (existing) {
-          categoryMap.set(category.name.toLowerCase(), existing);
+          categoryMap.set(key, existing);
           results.categories.existing++;
         } else {
           const created = await prisma.category.create({
             data: {
-              name: category.name,
+              name: category.name.toString().trim(),
               description: category.description || '',
             }
           });
-          categoryMap.set(category.name.toLowerCase(), created);
+          categoryMap.set(key, created);
           results.categories.created++;
         }
         progress.increment();
@@ -175,14 +184,15 @@ export async function importDirectToDB(data, options) {
       progress.start(data.suppliers.length, 0);
 
       for (const supplier of data.suppliers) {
-        const existing = supplierMap.get(supplier.companyName.toLowerCase());
+        const key = norm(supplier.companyName);
+        const existing = supplierMap.get(key);
         if (existing) {
-          supplierMap.set(supplier.companyName.toLowerCase(), existing);
+          supplierMap.set(key, existing);
           results.suppliers.existing++;
         } else {
           const created = await prisma.supplier.create({
             data: {
-              companyName: supplier.companyName,
+              companyName: supplier.companyName.toString().trim(),
               companyStreet: supplier.companyStreet || null,
               companyCity: supplier.companyCity || null,
               companyState: supplier.companyState || null,
@@ -197,7 +207,7 @@ export async function importDirectToDB(data, options) {
               hasTax: supplier.hasTax === true || supplier.hasTax === 'true',
             }
           });
-          supplierMap.set(supplier.companyName.toLowerCase(), created);
+          supplierMap.set(key, created);
           results.suppliers.created++;
         }
         progress.increment();
@@ -216,13 +226,14 @@ export async function importDirectToDB(data, options) {
       progress.start(data.items.length, 0);
 
       for (const item of data.items) {
-        const existing = itemCodeMap.get(item.itemCode.toLowerCase());
+        const itemKey = norm(item.itemCode);
+        const existing = itemCodeMap.get(itemKey);
         if (existing) {
-          itemCodeMap.set(item.itemCode.toLowerCase(), existing);
+          itemCodeMap.set(itemKey, existing);
           results.items.existing++;
         } else {
-          const category = categoryMap.get(item.categoryName.toLowerCase());
-          const supplier = supplierMap.get(item.supplierName.toLowerCase());
+          const category = categoryMap.get(norm(item.categoryName));
+          const supplier = supplierMap.get(norm(item.supplierName));
 
           if (!category) {
             console.log(chalk.yellow(`\n  Warning: Category "${item.categoryName}" not found for item "${item.itemCode}"`));
@@ -240,8 +251,8 @@ export async function importDirectToDB(data, options) {
 
           const created = await prisma.item.create({
             data: {
-              itemName: item.itemName,
-              itemCode: item.itemCode.toString(),
+              itemName: item.itemName.toString().trim(),
+              itemCode: item.itemCode.toString().trim(),
               itemType: item.itemType || '',
               itemModel: item.itemModel || '',
               itemBrand: item.itemBrand || '',
@@ -259,14 +270,33 @@ export async function importDirectToDB(data, options) {
             }
           });
 
-          itemCodeMap.set(item.itemCode.toLowerCase(), created);
+          itemCodeMap.set(itemKey, created);
           results.items.created++;
+
+          const reorder = (item.reorderThreshold !== undefined && item.reorderThreshold !== '' && !isNaN(parseFloat(item.reorderThreshold)))
+            ? parseFloat(item.reorderThreshold)
+            : null;
+          const targetOutletId = parseInt(item.outletId) || outletId;
 
           // Create stock records if item has stock, no variants, and tracks stock
           const stockQty = parseFloat(item.stockQuantity) || 0;
           if (stockQty > 0 && !hasVariants && trackStock !== false) {
-            const targetOutletId = parseInt(item.outletId) || outletId;
-            await createStockRecords(prisma, created.id, null, targetOutletId, stockQty, parseFloat(item.cost) || 0, results);
+            await createStockRecords(prisma, created.id, null, targetOutletId, stockQty, parseFloat(item.cost) || 0, results, reorder);
+          } else if (reorder !== null && !hasVariants) {
+            // No opening stock but a reorder threshold was supplied — create a
+            // zero-quantity StockBalance so the low-stock alert level (which lives
+            // on StockBalance, not Item) isn't silently dropped.
+            await prisma.stockBalance.create({
+              data: {
+                itemId: created.id,
+                outletId: targetOutletId,
+                itemVariantId: null,
+                availableQuantity: 0,
+                onHandQuantity: 0,
+                reorderThreshold: reorder,
+              }
+            });
+            results.stockBalances.created++;
           }
         }
         progress.increment();
@@ -286,12 +316,13 @@ export async function importDirectToDB(data, options) {
       progress.start(data.variants.length, 0);
 
       for (const variant of data.variants) {
-        const existing = variantSkuMap.get(variant.variantSku.toLowerCase());
+        const variantKey = norm(variant.variantSku);
+        const existing = variantSkuMap.get(variantKey);
         if (existing) {
-          variantSkuMap.set(variant.variantSku.toLowerCase(), existing);
+          variantSkuMap.set(variantKey, existing);
           results.variants.existing++;
         } else {
-          const parentItem = itemCodeMap.get(variant.parentItemCode.toLowerCase());
+          const parentItem = itemCodeMap.get(norm(variant.parentItemCode));
           if (!parentItem) {
             console.log(chalk.yellow(`\n  Warning: Parent item "${variant.parentItemCode}" not found for variant "${variant.variantSku}"`));
             progress.increment();
@@ -309,7 +340,7 @@ export async function importDirectToDB(data, options) {
           const created = await prisma.itemVariant.create({
             data: {
               itemId: parentItem.id,
-              variantSku: variant.variantSku.toString(),
+              variantSku: variant.variantSku.toString().trim(),
               variantName: variant.variantName,
               cost: variant.cost ? parseFloat(variant.cost) : null,
               price: variant.price ? parseFloat(variant.price) : null,
@@ -317,7 +348,7 @@ export async function importDirectToDB(data, options) {
             }
           });
 
-          variantSkuMap.set(variant.variantSku.toLowerCase(), created);
+          variantSkuMap.set(variantKey, created);
           results.variants.created++;
 
           // Create variant attributes
@@ -328,7 +359,7 @@ export async function importDirectToDB(data, options) {
           if (stockQty > 0) {
             const targetOutletId = parseInt(variant.outletId) || outletId;
             const cost = variant.cost ? parseFloat(variant.cost) : parseFloat(parentItem.cost) || 0;
-            await createStockRecords(prisma, parentItem.id, created.id, targetOutletId, stockQty, cost, results);
+            await createStockRecords(prisma, parentItem.id, created.id, targetOutletId, stockQty, cost, results, null);
           }
         }
         progress.increment();
@@ -395,11 +426,11 @@ async function createMissingDependencies(items, categoryMap, supplierMap, prisma
   const missingSuppliers = new Set();
 
   for (const item of items) {
-    if (item.categoryName && !categoryMap.has(item.categoryName.toLowerCase())) {
-      missingCategories.add(item.categoryName);
+    if (item.categoryName && !categoryMap.has(norm(item.categoryName))) {
+      missingCategories.add(item.categoryName.toString().trim());
     }
-    if (item.supplierName && !supplierMap.has(item.supplierName.toLowerCase())) {
-      missingSuppliers.add(item.supplierName);
+    if (item.supplierName && !supplierMap.has(norm(item.supplierName))) {
+      missingSuppliers.add(item.supplierName.toString().trim());
     }
   }
 
@@ -408,7 +439,7 @@ async function createMissingDependencies(items, categoryMap, supplierMap, prisma
     const created = await prisma.category.create({
       data: { name, description: '' }
     });
-    categoryMap.set(name.toLowerCase(), created);
+    categoryMap.set(norm(name), created);
     console.log(chalk.yellow(`  Auto-created category: ${name}`));
   }
 
@@ -417,7 +448,7 @@ async function createMissingDependencies(items, categoryMap, supplierMap, prisma
     const created = await prisma.supplier.create({
       data: { companyName: name, hasTax: false }
     });
-    supplierMap.set(name.toLowerCase(), created);
+    supplierMap.set(norm(name), created);
     console.log(chalk.yellow(`  Auto-created supplier: ${name}`));
   }
 }
@@ -425,8 +456,8 @@ async function createMissingDependencies(items, categoryMap, supplierMap, prisma
 /**
  * Create stock records for item/variant
  */
-async function createStockRecords(prisma, itemId, itemVariantId, outletId, quantity, cost, results) {
-  // Create StockBalance
+async function createStockRecords(prisma, itemId, itemVariantId, outletId, quantity, cost, results, reorderThreshold = null) {
+  // Create StockBalance (reorderThreshold lives here, per-outlet — not on Item)
   await prisma.stockBalance.create({
     data: {
       itemId,
@@ -434,6 +465,7 @@ async function createStockRecords(prisma, itemId, itemVariantId, outletId, quant
       itemVariantId,
       availableQuantity: quantity,
       onHandQuantity: quantity,
+      reorderThreshold: reorderThreshold,
       lastRestockDate: new Date(),
     }
   });

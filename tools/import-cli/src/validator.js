@@ -9,10 +9,15 @@ const VALID_ATTRIBUTE_TYPES = [
   'Weight', 'Length', 'Width', 'Height', 'Capacity'
 ];
 
-// Standardized UOM values (English capitalized full names)
+// Standardized UOM values (English capitalized full names) plus the common
+// Indonesian/short aliases the importer auto-normalizes (UOM_NORMALIZATION_MAP
+// in importer-direct.js). Listing them here keeps the dropdown values in the
+// Indonesian template (Pcs, Kg, ml…) from raising a false "not standardized"
+// warning, since they normalize cleanly on import.
 const VALID_UOM_VALUES = [
   'Piece', 'Pair', 'Box', 'Meter', 'Dozen', 'Set', 'Pack',
-  'Milliliter', 'Liter', 'Gram', 'Kilogram'
+  'Milliliter', 'Liter', 'Gram', 'Kilogram',
+  'Pcs', 'Kg', 'ml', 'Lusin', 'Pasang', 'Buah', 'Kotak', 'Paket'
 ];
 
 /**

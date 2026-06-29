@@ -16,7 +16,7 @@ const COLUMN_MAPPINGS = {
   companyPostalCode: ['companypostalcode', 'company_postal_code', 'postal_code', 'postalcode', 'zip', 'kode_pos'],
   companyCountry: ['companycountry', 'company_country', 'country', 'negara'],
   companyRegisterNumber: ['companyregisternumber', 'company_register_number', 'register_number', 'npwp', 'tax_id'],
-  personInChargeFirstName: ['personinchargefirstname', 'person_in_charge_first_name', 'pic_first_name', 'contact_first_name', 'nama_depan_pic'],
+  personInChargeFirstName: ['personinchargefirstname', 'person_in_charge_first_name', 'pic_first_name', 'contact_first_name', 'nama_depan_pic', 'nama_pic'],
   personInChargeLastName: ['personinchargelastname', 'person_in_charge_last_name', 'pic_last_name', 'contact_last_name', 'nama_belakang_pic'],
   mobile: ['mobile', 'phone', 'telephone', 'hp', 'handphone', 'no_hp', 'nomor_hp'],
   email: ['email', 'e-mail', 'email_address'],
@@ -31,19 +31,20 @@ const COLUMN_MAPPINGS = {
   itemBrand: ['itembrand', 'item_brand', 'brand', 'merek', 'merk'],
   itemDescription: ['itemdescription', 'item_description', 'description', 'desc', 'deskripsi'],
   categoryName: ['categoryname', 'category_name', 'category', 'kategori', 'nama_kategori'],
-  supplierName: ['suppliername', 'supplier_name', 'supplier', 'vendor', 'pemasok', 'nama_supplier'],
+  supplierName: ['suppliername', 'supplier_name', 'supplier', 'vendor', 'pemasok', 'nama_supplier', 'nama_pemasok'],
   cost: ['cost', 'buy_price', 'purchase_price', 'harga_beli', 'modal', 'hpp'],
   price: ['price', 'sell_price', 'selling_price', 'harga_jual', 'harga'],
   currency: ['currency', 'mata_uang'],
   unitOfMeasure: ['unitofmeasure', 'unit_of_measure', 'unit', 'uom', 'satuan'],
   barcode: ['barcode', 'alternatelookup', 'alternate_lookup', 'alternate_look_up'],
-  stockQuantity: ['stockquantity', 'stock_quantity', 'stock', 'qty', 'quantity', 'stok', 'jumlah', 'opening_stock', 'initial_stock'],
+  stockQuantity: ['stockquantity', 'stock_quantity', 'stock', 'qty', 'quantity', 'stok', 'stok_awal', 'jumlah', 'opening_stock', 'initial_stock'],
   outletId: ['outletid', 'outlet_id', 'outlet', 'store_id', 'store'],
-  reorderThreshold: ['reorderthreshold', 'reorder_threshold', 'reorder_level', 'min_stock', 'minimum_stock'],
-  hasVariants: ['hasvariants', 'has_variants', 'with_variants', 'ada_varian'],
+  reorderThreshold: ['reorderthreshold', 'reorder_threshold', 'reorder_level', 'min_stock', 'minimum_stock', 'stok_minimum'],
+  trackStock: ['trackstock', 'track_stock', 'lacak_stok'],
+  hasVariants: ['hasvariants', 'has_variants', 'with_variants', 'ada_varian', 'punya_varian'],
 
   // Variant columns
-  parentItemCode: ['parentitemcode', 'parent_item_code', 'parent_sku', 'parent_code', 'item_code', 'kode_induk'],
+  parentItemCode: ['parentitemcode', 'parent_item_code', 'parent_sku', 'parent_code', 'item_code', 'kode_induk', 'kode_produk_induk'],
   variantSku: ['variantsku', 'variant_sku', 'sku', 'variant_code', 'kode_varian'],
   variantName: ['variantname', 'variant_name', 'variant', 'nama_varian'],
   attribute1Type: ['attribute1type', 'attribute1_type', 'attr1_type', 'attribute_type_1', 'tipe_atribut_1'],
@@ -59,7 +60,7 @@ const COLUMN_MAPPINGS = {
   salutation: ['salutation', 'title', 'sapaan'],
   gender: ['gender', 'jenis_kelamin'],
   billStreet: ['billstreet', 'bill_street', 'billing_street', 'alamat_tagihan'],
-  billCity: ['billcity', 'bill_city', 'billing_city', 'kota_tagihan'],
+  billCity: ['billcity', 'bill_city', 'billing_city', 'kota_tagihan', 'kota'],
   billState: ['billstate', 'bill_state', 'billing_state', 'provinsi_tagihan'],
   billPostalCode: ['billpostalcode', 'bill_postal_code', 'billing_postal_code', 'kode_pos_tagihan'],
   billCountry: ['billcountry', 'bill_country', 'billing_country', 'negara_tagihan'],
@@ -113,8 +114,27 @@ function createColumnMap(headers, targetFields) {
  * @param {string[]} targetFields - Array of target field names
  * @returns {Object[]} - Array of parsed rows with mapped field names
  */
+// Sheet-tab name aliases — the canonical (English) key plus any localized tab
+// names a tenant might receive. The Indonesian onboarding template uses the
+// localized tabs (Kategori / Pemasok / Produk / Varian Produk / Pelanggan).
+const SHEET_ALIASES = {
+  Categories: ['Categories', 'Kategori'],
+  Suppliers: ['Suppliers', 'Pemasok'],
+  Items: ['Items', 'Produk'],
+  Item_Variants: ['Item_Variants', 'Varian Produk', 'Varian'],
+  Customers: ['Customers', 'Pelanggan'],
+};
+
+function resolveSheet(workbook, sheetName) {
+  const candidates = SHEET_ALIASES[sheetName] || [sheetName];
+  for (const candidate of candidates) {
+    if (workbook.Sheets[candidate]) return workbook.Sheets[candidate];
+  }
+  return null;
+}
+
 function parseSheet(workbook, sheetName, targetFields) {
-  const sheet = workbook.Sheets[sheetName];
+  const sheet = resolveSheet(workbook, sheetName);
   if (!sheet) {
     return [];
   }
@@ -158,9 +178,9 @@ function parseSheet(workbook, sheetName, targetFields) {
         // Convert boolean strings
         if (typeof value === 'string') {
           const lowerValue = value.toLowerCase().trim();
-          if (lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1') {
+          if (lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1' || lowerValue === 'ya') {
             value = true;
-          } else if (lowerValue === 'false' || lowerValue === 'no' || lowerValue === '0') {
+          } else if (lowerValue === 'false' || lowerValue === 'no' || lowerValue === '0' || lowerValue === 'tidak') {
             value = false;
           }
         }
@@ -204,7 +224,7 @@ function parseItems(workbook) {
     'itemName', 'itemCode', 'itemType', 'itemModel', 'itemBrand',
     'itemDescription', 'categoryName', 'supplierName', 'cost', 'price',
     'currency', 'unitOfMeasure', 'barcode', 'stockQuantity', 'outletId',
-    'reorderThreshold', 'hasTax', 'hasVariants'
+    'reorderThreshold', 'hasTax', 'hasVariants', 'trackStock'
   ];
   return parseSheet(workbook, 'Items', targetFields);
 }

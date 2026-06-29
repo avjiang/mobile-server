@@ -12,7 +12,8 @@
     "validate": "node index.js validate",
     "import:direct": "node index.js import --direct",
     "import:api": "node index.js import",
-    "generate-template": "node scripts/generate-template.js"
+    "generate-template": "node scripts/generate-template.js",
+    "generate-template-id": "node scripts/generate-template-id.js"
   },
   "keywords": [
     "import",
@@ -29,6 +30,7 @@
     "cli-progress": "^3.12.0",
     "commander": "^12.0.0",
     "dotenv": "^16.3.0",
+    "exceljs": "^4.4.0",
     "xlsx": "^0.18.5"
   }
 }

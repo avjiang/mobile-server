@@ -179,3 +179,11 @@ export class ConfirmDeliveryBatchRequest {
     @Expose() deliveryNotes?: string;
     @Expose() deliveredAt?: Date;
 }
+
+// Contact-only edit of an existing sale (PATCH /sales/:salesId/contact).
+// Both fields optional — only provided fields are updated. The single allowed
+// mutation of an otherwise-immutable sale snapshot (walk-in name/phone typo fix).
+export class UpdateSalesContactRequest {
+    @Expose() customerName?: string;
+    @Expose() phoneNumber?: string;
+}

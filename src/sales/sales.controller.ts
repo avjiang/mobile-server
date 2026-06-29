@@ -6,7 +6,7 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
-import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
+import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody, UpdateSalesContactRequest } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
 import { Payment, Prisma, Sales } from "../../prisma/client/generated/client"
 import { AuthRequest } from "src/middleware/auth-request"
@@ -479,6 +479,49 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next);
 }
 
+// Edit ONLY the contact fields (customerName / phoneNumber) of an existing sale —
+// the single sanctioned mutation of an otherwise-immutable sale snapshot, used to
+// fix walk-in name/phone typos. Auth is the global JWT middleware (same as
+// void/return/refund); no extra per-route gate. Online-only on the client.
+const updateSalesContact = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.salesId)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    const salesId: number = parseInt(req.params.salesId);
+
+    const body = (req.body ?? {}) as UpdateSalesContactRequest;
+    const contact: { customerName?: string; phoneNumber?: string } = {};
+
+    if (body.customerName !== undefined) {
+        if (typeof body.customerName !== 'string') {
+            throw new RequestValidateError('customerName must be a string');
+        }
+        const name = body.customerName.trim();
+        if (name.length > 191) {
+            throw new RequestValidateError('customerName too long (max 191 characters)');
+        }
+        contact.customerName = name;
+    }
+
+    if (body.phoneNumber !== undefined) {
+        if (typeof body.phoneNumber !== 'string') {
+            throw new RequestValidateError('phoneNumber must be a string');
+        }
+        const phone = body.phoneNumber.trim();
+        if (phone.length > 191) {
+            throw new RequestValidateError('phoneNumber too long (max 191 characters)');
+        }
+        contact.phoneNumber = phone;
+    }
+
+    service.updateSalesContact(req.user.databaseName, salesId, contact)
+        .then((sales) => sendResponse(res, sales))
+        .catch(next);
+}
+
 const getDeliveryList = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -596,6 +639,10 @@ router.put('/update', update)
 router.put('/void/:id', voidSales)
 router.put('/return/:id', returnSales)
 router.put('/refund/:id', refundSales)
+// Contact-only edit (name/phone typo fix). Static '/contact' suffix keeps it
+// distinct from the catch-all '/:id' route. PUT to match the FE's initiatePUT
+// path and the sibling void/return/refund verbs above.
+router.put('/:salesId/contact', updateSalesContact)
 router.delete('/:id', remove)
 
 export = router

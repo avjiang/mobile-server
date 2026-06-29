@@ -3545,10 +3545,60 @@ let confirmDeliveryBatch = async (
     }
 }
 
+/**
+ * Edit ONLY the contact fields (customerName / phoneNumber) of an existing sale.
+ *
+ * This is the single sanctioned path for mutating an otherwise-immutable sale
+ * snapshot — used to fix walk-in typos in the captured name/phone. It deliberately
+ * touches NOTHING else: not customerId, addresses, amounts, status, or items.
+ *
+ * `updatedAt` is bumped automatically by Prisma's `@updatedAt` on the Sales model.
+ *
+ * @throws NotFoundError if no non-deleted sale with `salesId` exists in the tenant.
+ */
+let updateSalesContact = async (
+    databaseName: string,
+    salesId: number,
+    contact: { customerName?: string; phoneNumber?: string }
+) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    // Build a minimal patch containing only the provided fields (trimmed).
+    const data: { customerName?: string; phoneNumber?: string } = {};
+    if (contact.customerName !== undefined) {
+        data.customerName = contact.customerName.trim();
+    }
+    if (contact.phoneNumber !== undefined) {
+        data.phoneNumber = contact.phoneNumber.trim();
+    }
+
+    // Guard: the sale must exist and not be soft-deleted in this tenant.
+    const existing = await tenantPrisma.sales.findUnique({
+        where: { id: salesId, deleted: false },
+        select: { id: true },
+    });
+    if (!existing) {
+        throw new NotFoundError("Sales");
+    }
+
+    // No-op patch (neither field provided) — return current snapshot unchanged.
+    if (Object.keys(data).length === 0) {
+        return getById(databaseName, salesId);
+    }
+
+    await tenantPrisma.sales.update({
+        where: { id: salesId },
+        data, // @updatedAt bumps UPDATED_AT automatically
+    });
+
+    return getById(databaseName, salesId);
+}
+
 export = {
     getAll,
     getByDateRange,
     getById,
+    updateSalesContact,
     getByRef,
     collect,
     calculateSales,

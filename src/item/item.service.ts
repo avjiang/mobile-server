@@ -1536,6 +1536,21 @@ let remove = async (databaseName: string, id: number) => {
                     deletedAt: new Date(),
                 },
             }),
+            // Laundry: cascade-clean recipe lines (item_consumable) that touch
+            // this item — whether it was a supply (consumableItemId) or a service
+            // (serviceItemId). Leaving them orphaned makes the app reference a
+            // deleted supply and false-trip the sale-time "stok bahan tidak cukup"
+            // check. Matches the client-side cleanup in DeleteItemCubit.
+            tenantPrisma.itemConsumable.updateMany({
+                where: {
+                    deleted: false,
+                    OR: [{ consumableItemId: id }, { serviceItemId: id }],
+                },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                },
+            }),
         ]);
 
         return updatedItem[0];

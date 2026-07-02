@@ -4,8 +4,9 @@ import { getTenantPrisma } from '../db';
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
-import { CreateInvoiceSettlementRequestBody, InvoiceSettlementInput, SettlementSyncRequest } from "./invoice_settlement.request";
+import { AddSettlementPaymentInput, CreateInvoiceSettlementRequestBody, InvoiceSettlementInput, SettlementSyncRequest } from "./invoice_settlement.request";
 import { Decimal } from 'decimal.js';
+import { evaluateMarkAsPaid, roundToCurrency } from '../api-helpers/money';
 
 class RequestValidateError extends Error {
     constructor(message: string) {
@@ -13,6 +14,24 @@ class RequestValidateError extends Error {
         this.name = 'RequestValidateError';
     }
 }
+
+// Payment-state fields exposed on every settlement DTO. Outstanding is computed
+// currency-rounded (kills sub-unit phantoms) and nets the audited write-off, so a
+// rounded-down transfer no longer reads as "still owing". `canMarkAsPaid` tells the FE
+// when to offer the "mark as fully paid" action (server is authoritative on the cap).
+const settlementPaymentFields = (s: any) => {
+    const settled = new Decimal(s.paidAmount || 0).plus(new Decimal(s.writeOffAmount || 0));
+    const ev = evaluateMarkAsPaid(s.settlementAmount || 0, settled, s.currency);
+    const isPartial = (s.paymentStatus || 'PAID') === 'PARTIAL';
+    const notCancelled = (s.status || '').toUpperCase() !== 'CANCELLED';
+    const canMarkAsPaid = isPartial && notCancelled && ev.status === 'CAN_MARK_PAID';
+    const outstanding = ev.outstanding.greaterThan(0) ? ev.outstanding : new Decimal(0);
+    return {
+        outstandingAmount: outstanding.toFixed(4),
+        canMarkAsPaid,
+        markAsPaidWriteOff: canMarkAsPaid ? ev.writeOff.toFixed(4) : '0.0000',
+    };
+};
 
 // Helper function to filter valid InvoiceSettlement fields
 const getValidSettlementFields = (data: any) => {
@@ -28,6 +47,7 @@ const getValidSettlementFields = (data: any) => {
         'remark',
         'status',
         'performedBy',
+        'siteId', // Terminal attribution — whitelist or the update silently drops it
         'totalRebateAmount',
         'rebateReason',
         'totalInvoiceCount',
@@ -207,6 +227,7 @@ let getByDateRange = async (databaseName: string, request: { skip?: number, take
                 returnCount: returnData.count,
                 totalReturnAmount: returnData.totalAmount.toFixed(4),
                 netSettlementAmount: netSettlementAmount.toFixed(4),
+                ...settlementPaymentFields(settlement),
                 hasReturns: returnData.count > 0,
                 _count: undefined
             };
@@ -427,6 +448,7 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
                 returnCount: returnData.count,
                 totalReturnAmount: returnData.totalAmount.toFixed(4),
                 netSettlementAmount: netSettlementAmount.toFixed(4),
+                ...settlementPaymentFields(settlement),
                 hasReturns: returnData.count > 0,
                 _count: undefined
             };
@@ -452,6 +474,10 @@ let getSettlementById = async (id: number, databaseName: string) => {
                 deleted: false
             },
             include: {
+                payments: {
+                    where: { deleted: false },
+                    orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }]
+                },
                 invoices: {
                     where: { deleted: false },
                     include: {
@@ -597,8 +623,10 @@ let getSettlementById = async (id: number, databaseName: string) => {
                 new Decimal(0)
             );
 
-            // Calculate net amount for this invoice
-            const invoiceNetAmount = new Decimal(invoice.totalAmount || 0).minus(invoiceReturnAmount);
+            // Calculate net amount for this invoice (total − returns − PO down payment applied)
+            const invoiceNetAmount = new Decimal(invoice.totalAmount || 0)
+                .minus(invoiceReturnAmount)
+                .minus(new Decimal((invoice as any).downPaymentApplied || 0));
 
             return {
                 ...invoiceWithoutRelations,
@@ -629,6 +657,7 @@ let getSettlementById = async (id: number, databaseName: string) => {
             deliveryOrderCount: deliveryOrders.length,
             totalReturnAmount: totalSettlementReturnAmount.toFixed(4),
             netSettlementAmount: netSettlementAmount.toFixed(4),
+            ...settlementPaymentFields(settlement),
             returnCount: allPurchaseReturns.length
         };
     }
@@ -684,6 +713,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                 id: true,
                 invoiceNumber: true,
                 totalAmount: true,
+                downPaymentApplied: true,
                 supplierId: true,
                 invoiceSettlementId: true,
                 remark: true
@@ -750,14 +780,31 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                     sortedInvoiceIds.includes(inv.id)
                 );
 
-                // Calculate totals
+                // Calculate totals — NET of any PO down payment already applied to each
+                // invoice, so the settlement reflects what the tenant still owes the supplier
+                // (the DP credit isn't paid again at settlement time).
                 const totalInvoiceAmount = settlementInvoices.reduce((sum, inv) =>
-                    sum + Number(inv.totalAmount), 0
+                    sum + Number(inv.totalAmount) - Number((inv as any).downPaymentApplied || 0), 0
                 );
                 const totalInvoiceCount = settlementInvoices.length;
 
                 // Determine settlement status based on tax number completeness
                 const settlementStatus = hasIncompleteTaxNumbers ? 'INCOMPLETE' : (settlementData.status || 'COMPLETED');
+
+                // Partial-payment support: paidAmount defaults to the full settlement
+                // amount; anything less is a down payment.
+                const settlementAmountDec = new Decimal(settlementData.settlementAmount || 0);
+                const paidAmountDec = (settlementData.paidAmount !== undefined && settlementData.paidAmount !== null)
+                    ? new Decimal(settlementData.paidAmount)
+                    : settlementAmountDec;
+                if (paidAmountDec.lessThanOrEqualTo(0)) {
+                    throw new RequestValidateError('Payment amount must be greater than zero');
+                }
+                if (paidAmountDec.greaterThan(settlementAmountDec)) {
+                    throw new RequestValidateError('Payment amount cannot exceed settlement amount');
+                }
+                const transferFeeDec = new Decimal(settlementData.transferFeeAmount || 0);
+                const isFullyPaid = paidAmountDec.greaterThanOrEqualTo(settlementAmountDec);
 
                 // Create settlement
                 const newSettlement = await tx.invoiceSettlement.create({
@@ -773,10 +820,28 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                         remark: settlementData.remark || null,
                         status: settlementStatus,
                         performedBy: settlementData.performedBy || null,
+                        siteId: settlementData.siteId ?? null, // Terminal attribution
                         totalRebateAmount: settlementData.totalRebateAmount || 0,
                         rebateReason: settlementData.rebateReason || null,
                         totalInvoiceCount: totalInvoiceCount,
-                        totalInvoiceAmount: totalInvoiceAmount
+                        totalInvoiceAmount: totalInvoiceAmount,
+                        paidAmount: paidAmountDec.toFixed(4),
+                        transferFeeAmount: transferFeeDec.toFixed(4),
+                        paymentStatus: isFullyPaid ? 'PAID' : 'PARTIAL'
+                    }
+                });
+
+                // Initial payment ledger row (down payment or full payment)
+                await tx.invoiceSettlementPayment.create({
+                    data: {
+                        invoiceSettlementId: newSettlement.id,
+                        paymentDate: settlementData.settlementDate,
+                        paymentMethod: settlementData.paymentMethod || null,
+                        amount: paidAmountDec.toFixed(4),
+                        transferFeeAmount: transferFeeDec.toFixed(4),
+                        reference: settlementData.reference || null,
+                        performedBy: settlementData.performedBy || null,
+                        siteId: settlementData.siteId ?? null
                     }
                 });
 
@@ -856,8 +921,8 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                             where: { id: invoice.id },
                             data: {
                                 invoiceSettlementId: newSettlement.id,
-                                status: 'Paid',
-                                paymentDate: settlementData.settlementDate,
+                                status: isFullyPaid ? 'Paid' : 'Partially Paid',
+                                paymentDate: isFullyPaid ? settlementData.settlementDate : null,
                                 discountType: 'FIXED',
                                 discountAmount: invoiceRebate,
                                 totalAmount: newTotalAmount,
@@ -874,8 +939,8 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                         },
                         data: {
                             invoiceSettlementId: newSettlement.id,
-                            status: 'Paid',
-                            paymentDate: settlementData.settlementDate
+                            status: isFullyPaid ? 'Paid' : 'Partially Paid',
+                            paymentDate: isFullyPaid ? settlementData.settlementDate : null
                         }
                     });
                 }
@@ -1062,4 +1127,185 @@ let updateSettlement = async (settlement: InvoiceSettlementInput, databaseName: 
     }
 }
 
-export = { getByDateRange, createSettlement, getSettlements, getSettlementById, updateSettlement };
+// Record a subsequent payment against a partially-paid settlement. When the
+// cumulative paid amount covers the settlement amount, the settlement flips to
+// PAID and all linked invoices become 'Paid' with paymentDate set.
+let addPayment = async (databaseName: string, settlementId: number, input: AddSettlementPaymentInput) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const settlement = await tenantPrisma.invoiceSettlement.findUnique({
+            where: { id: settlementId, deleted: false }
+        });
+
+        if (!settlement) {
+            throw new NotFoundError("Invoice Settlement");
+        }
+        if (settlement.status === 'CANCELLED') {
+            throw new RequestValidateError('Cannot add a payment to a cancelled settlement');
+        }
+
+        const settlementAmountDec = new Decimal(settlement.settlementAmount || 0);
+        const paidDec = new Decimal((settlement as any).paidAmount || 0);
+        const outstanding = settlementAmountDec.minus(paidDec);
+        if (outstanding.lessThanOrEqualTo(0)) {
+            throw new RequestValidateError('Settlement is already fully paid');
+        }
+
+        if (!input.paymentDate) {
+            throw new RequestValidateError('paymentDate is required');
+        }
+        const amountDec = new Decimal(input.amount || 0);
+        if (amountDec.lessThanOrEqualTo(0)) {
+            throw new RequestValidateError('Payment amount must be greater than zero');
+        }
+        if (amountDec.greaterThan(outstanding)) {
+            throw new RequestValidateError(`Payment amount exceeds outstanding amount (${outstanding.toFixed(4)})`);
+        }
+        const feeDec = new Decimal(input.transferFeeAmount || 0);
+        if (feeDec.lessThan(0)) {
+            throw new RequestValidateError('Transfer fee cannot be negative');
+        }
+
+        const newPaid = paidDec.plus(amountDec);
+        const fullyPaid = newPaid.greaterThanOrEqualTo(settlementAmountDec);
+
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            await tx.invoiceSettlementPayment.create({
+                data: {
+                    invoiceSettlementId: settlementId,
+                    paymentDate: input.paymentDate,
+                    paymentMethod: input.paymentMethod || null,
+                    amount: amountDec.toFixed(4),
+                    transferFeeAmount: feeDec.toFixed(4),
+                    reference: input.reference || null,
+                    remark: input.remark || null,
+                    performedBy: input.performedBy || null,
+                    siteId: input.siteId ?? null
+                }
+            });
+
+            if (fullyPaid) {
+                // Final payment received — settle all linked invoices.
+                await tx.invoice.updateMany({
+                    where: { invoiceSettlementId: settlementId, deleted: false },
+                    data: {
+                        status: 'Paid',
+                        paymentDate: input.paymentDate
+                    }
+                });
+            }
+
+            const updatedSettlement = await tx.invoiceSettlement.update({
+                where: { id: settlementId },
+                data: {
+                    paidAmount: newPaid.toFixed(4),
+                    transferFeeAmount: new Decimal((settlement as any).transferFeeAmount || 0).plus(feeDec).toFixed(4),
+                    paymentStatus: fullyPaid ? 'PAID' : 'PARTIAL',
+                    siteId: input.siteId ?? settlement.siteId, // latest-editor-wins terminal attribution
+                    version: { increment: 1 }
+                },
+                include: {
+                    payments: {
+                        where: { deleted: false },
+                        orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }]
+                    },
+                    invoices: {
+                        where: { deleted: false }
+                    }
+                }
+            });
+
+            return updatedSettlement;
+        });
+
+        return {
+            ...result,
+            outstandingAmount: settlementAmountDec.minus(newPaid).toFixed(4)
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+/**
+ * "Mark as fully paid" — close a PARTIAL settlement whose remaining shortfall is a
+ * rounding-scale amount (e.g. the supplier transfer rounded the bill down by a few
+ * rupiah). The remainder is recorded as an audited write-off; paidAmount is NOT
+ * inflated (it stays the real cash received), so bank reconciliation remains honest.
+ *
+ * Guardrails (see api-helpers/money.ts + docs/future/CATALOGUE_AND_SETTLEMENT_ENHANCEMENTS.md §3):
+ *  - only PARTIAL, non-CANCELLED settlements (state guard);
+ *  - outstanding recomputed server-side inside the txn (no client amount trusted);
+ *  - shortfall only, and only up to the currency-aware cap (else BLOCKED_TOO_LARGE).
+ */
+let markSettlementAsPaid = async (
+    databaseName: string,
+    settlementId: number,
+    input: { performedBy?: string; siteId?: number; reason?: string },
+) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const settlement = await tenantPrisma.invoiceSettlement.findFirst({
+            where: { id: settlementId, deleted: false },
+        });
+        if (!settlement) {
+            throw new NotFoundError("Invoice Settlement");
+        }
+        if ((settlement.status || '').toUpperCase() === 'CANCELLED') {
+            throw new RequestValidateError('Cannot mark a cancelled settlement as paid');
+        }
+        if ((settlement.paymentStatus || 'PAID') !== 'PARTIAL') {
+            throw new RequestValidateError('Settlement is already fully paid');
+        }
+
+        const settled = new Decimal((settlement as any).paidAmount || 0)
+            .plus(new Decimal((settlement as any).writeOffAmount || 0));
+        const ev = evaluateMarkAsPaid(settlement.settlementAmount || 0, settled, settlement.currency);
+
+        if (ev.status === 'ALREADY_PAID') {
+            throw new RequestValidateError('Settlement is already fully paid');
+        }
+        if (ev.status === 'BLOCKED_TOO_LARGE') {
+            throw new RequestValidateError(
+                `Outstanding ${ev.outstanding.toFixed(4)} exceeds the write-off limit (${ev.cap!.toFixed(4)}). Record a payment or rebate instead.`
+            );
+        }
+
+        // ev.status === 'CAN_MARK_PAID' — write off exactly the rounded remainder.
+        const newWriteOff = new Decimal((settlement as any).writeOffAmount || 0).plus(ev.writeOff);
+
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            await tx.invoice.updateMany({
+                where: { invoiceSettlementId: settlementId, deleted: false },
+                data: { status: 'Paid', paymentDate: new Date() }
+            });
+            return await tx.invoiceSettlement.update({
+                where: { id: settlementId },
+                data: {
+                    writeOffAmount: newWriteOff.toFixed(4),
+                    writeOffBy: input.performedBy ?? null,
+                    writeOffAt: new Date(),
+                    writeOffReason: input.reason || 'ROUNDING',
+                    paymentStatus: 'PAID',
+                    siteId: input.siteId ?? settlement.siteId, // latest-editor-wins terminal attribution
+                    version: { increment: 1 }
+                },
+                include: {
+                    payments: { where: { deleted: false }, orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }] },
+                    invoices: { where: { deleted: false } }
+                }
+            });
+        });
+
+        return {
+            ...result,
+            ...settlementPaymentFields(result),
+        };
+    }
+    catch (error) {
+        throw error;
+    }
+}
+
+export = { getByDateRange, createSettlement, getSettlements, getSettlementById, updateSettlement, addPayment, markSettlementAsPaid };

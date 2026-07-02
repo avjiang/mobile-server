@@ -38,6 +38,9 @@ export interface QuotationInput {
     remark?: string;
     currency?: string;
     performedBy?: string;
+    // Terminal attribution — the terminal that created/edited this quotation
+    // (RegisteredDevice.siteId). Optional; nullable on the column.
+    siteId?: number;
     convertedToPOAt?: Date; // When converted to Purchase Order
     convertedPOId?: number; // Reference to created Purchase Order
     quotationItems?: QuotationItemInput[]; // Add items here

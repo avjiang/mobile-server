@@ -5,6 +5,13 @@ import { RequestValidateError } from '../api-helpers/error';
 import { AuthRequest } from '../middleware/auth-request';
 import { UserInfo } from '../middleware/authorize-middleware';
 import { requireLoyalty } from '../middleware/loyalty-gate.middleware';
+import { requirePermission } from '../middleware/require-permission.middleware';
+
+const P = {
+    MANAGE_PROGRAM: 'Manage Loyalty Program',
+    VIEW_ACCOUNTS: 'View Loyalty Accounts',
+    ADJUST_POINTS: 'Adjust Loyalty Points',
+};
 
 const router = express.Router();
 
@@ -87,11 +94,11 @@ const issueVoucher = async (req: AuthRequest, res: Response, next: NextFunction)
 // Route Registration
 // ============================================
 
-router.get('/rules', requireLoyalty('basic'), getRewardRules);
-router.post('/rule', requireLoyalty('basic'), createRewardRule);
-router.put('/rule/:id', requireLoyalty('basic'), updateRewardRule);
-router.delete('/rule/:id', requireLoyalty('basic'), deleteRewardRule);
-router.get('/customer/:customerId', requireLoyalty('basic'), getVouchersByCustomerId);
-router.post('/issue', requireLoyalty('basic'), issueVoucher);
+router.get('/rules', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getRewardRules);
+router.post('/rule', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), createRewardRule);
+router.put('/rule/:id', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), updateRewardRule);
+router.delete('/rule/:id', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), deleteRewardRule);
+router.get('/customer/:customerId', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getVouchersByCustomerId);
+router.post('/issue', requireLoyalty('basic'), requirePermission(P.ADJUST_POINTS), issueVoucher);
 
 module.exports = router;

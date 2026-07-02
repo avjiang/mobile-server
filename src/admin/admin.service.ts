@@ -22,7 +22,8 @@ import {
     TenantOverviewResponse
 } from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
-import { ADD_ON_IDS } from "../constants/add-on-ids";
+import { ADD_ON_IDS, isLaundryBundledAddOn } from "../constants/add-on-ids";
+import { drainAllWarehousesToOutlet } from "../stock/stock-transfer.service";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -302,13 +303,20 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
         // Calculate outlet count
         const outletCount = tenant.tenantOutlets.length;
 
+        // Advanced Loyalty is bundled into Laundry Pro — exclude it from billing.
+        const billingPlanType = tenant.tenantOutlets
+            .flatMap(o => o.subscriptions)
+            .find(s => s.subscriptionPlan?.planType)?.subscriptionPlan?.planType ?? null;
+
         // Build tenant-level add-ons
-        const tenantAddOns = tenant.tenantAddOns.map(({ addOn, quantity }) => ({
-            name: addOn.name,
-            quantity,
-            pricePerUnit: addOn.pricePerUnit,
-            totalCost: addOn.pricePerUnit * quantity,
-        }));
+        const tenantAddOns = tenant.tenantAddOns
+            .filter(({ addOn }) => !isLaundryBundledAddOn(addOn.id, billingPlanType))
+            .map(({ addOn, quantity }) => ({
+                name: addOn.name,
+                quantity,
+                pricePerUnit: addOn.pricePerUnit,
+                totalCost: addOn.pricePerUnit * quantity,
+            }));
         const totalAddOnCost = tenantAddOns.reduce((sum, a) => sum + a.totalCost, 0);
 
         const response: TenantCostResponse = {
@@ -503,6 +511,18 @@ const getAllTenantCost = async () => {
           FROM tenant_add_on ta
           JOIN SUBSCRIPTION_ADD_ON sa ON ta.ADD_ON_ID = sa.ID
           WHERE ta.TENANT_ID = t.ID
+            -- Advanced Loyalty (ID 4) is bundled into Laundry Pro, never billed.
+            AND NOT (
+              ta.ADD_ON_ID = 4
+              AND EXISTS (
+                SELECT 1 FROM TENANT_OUTLET o3
+                JOIN TENANT_SUBSCRIPTION ts3 ON ts3.OUTLET_ID = o3.ID
+                JOIN SUBSCRIPTION_PLAN sp3 ON ts3.SUBSCRIPTION_PLAN_ID = sp3.ID
+                WHERE o3.TENANT_ID = t.ID AND o3.IS_ACTIVE = true
+                  AND ts3.STATUS IN ('active', 'trial')
+                  AND sp3.PLAN_TYPE = 'Laundry'
+              )
+            )
         ), 0) AS totalMonthlyCost,
         -- totalCostBeforeDiscount = plan costs + tenant add-on costs
         COALESCE(SUM(COALESCE(ts.CUSTOM_PRICE, sp.PRICE)), 0)
@@ -511,6 +531,18 @@ const getAllTenantCost = async () => {
           FROM tenant_add_on ta
           JOIN SUBSCRIPTION_ADD_ON sa ON ta.ADD_ON_ID = sa.ID
           WHERE ta.TENANT_ID = t.ID
+            -- Advanced Loyalty (ID 4) is bundled into Laundry Pro, never billed.
+            AND NOT (
+              ta.ADD_ON_ID = 4
+              AND EXISTS (
+                SELECT 1 FROM TENANT_OUTLET o3
+                JOIN TENANT_SUBSCRIPTION ts3 ON ts3.OUTLET_ID = o3.ID
+                JOIN SUBSCRIPTION_PLAN sp3 ON ts3.SUBSCRIPTION_PLAN_ID = sp3.ID
+                WHERE o3.TENANT_ID = t.ID AND o3.IS_ACTIVE = true
+                  AND ts3.STATUS IN ('active', 'trial')
+                  AND sp3.PLAN_TYPE = 'Laundry'
+              )
+            )
         ), 0) AS totalCostBeforeDiscount,
         -- totalDiscount (plan discounts only)
         COALESCE(SUM(
@@ -1084,6 +1116,15 @@ let createWarehouseForTenant = async (
             throw new NotFoundError('Tenant not found');
         }
 
+        // Warehouses are a Retail/F&B feature only. Laundry tenants have the
+        // warehouse UI hidden client-side and must never be billed for the Extra
+        // Warehouse add-on, so block warehouse creation server-side as well.
+        const { primarySubscription } = await getPrimarySubscription(tenantId);
+        const planType = primarySubscription?.subscriptionPlan?.planType ?? 'Retail';
+        if (planType === 'Laundry') {
+            throw new RequestValidateError('Warehouses are not available for laundry businesses.');
+        }
+
         const databaseName = tenant.databaseName;
         const tenantPrisma: TenantPrismaClient = getTenantPrisma(databaseName);
 
@@ -1372,7 +1413,40 @@ const handleDowngradeToBasic = async (
         }
     });
 
-    // Step 2: Deactivate all warehouses in GLOBAL DB
+    // Step 2: AUTO-DRAIN warehouse stock back to an outlet, then deactivate tenant
+    // warehouses — atomically in one tenant transaction (AD4). Never strand stock:
+    // refuse the downgrade if warehouse stock exists but there is no active outlet
+    // to receive it. Drain reuses the shared transfer engine (FIFO cost + receiptDate
+    // preserved, paired Transfer Out/In movements).
+    let drainSummary = { itemsDrained: 0, totalQuantity: "0", totalValue: "0" };
+    await tenantPrisma.$transaction(async (tenantTx: any) => {
+        const hasWarehouseStock = await tenantTx.warehouseStockBalance.findFirst({
+            where: { deleted: false, availableQuantity: { gt: 0 } },
+            select: { id: true },
+        });
+        if (hasWarehouseStock) {
+            const targetOutlet = await tenantTx.outlet.findFirst({
+                where: { deleted: false },
+                orderBy: { id: "asc" },
+                select: { id: true },
+            });
+            if (!targetOutlet) {
+                throw new RequestValidateError(
+                    "Cannot downgrade: warehouse holds stock but the tenant has no active outlet " +
+                    "to receive it. Restore an outlet or clear warehouse stock first."
+                );
+            }
+            drainSummary = await drainAllWarehousesToOutlet(tenantTx, targetOutlet.id, "SYSTEM");
+        }
+
+        // Deactivate all warehouses in TENANT DB (after draining)
+        await tenantTx.warehouse.updateMany({
+            where: { deleted: false },
+            data: { deleted: true, deletedAt: new Date() },
+        });
+    });
+
+    // Step 3: Deactivate all warehouses in GLOBAL DB
     await globalTx.tenantWarehouse.updateMany({
         where: {
             tenantId,
@@ -1381,17 +1455,6 @@ const handleDowngradeToBasic = async (
         },
         data: {
             isActive: false,
-            deleted: true,
-            deletedAt: new Date()
-        }
-    });
-
-    // Step 3: Deactivate all warehouses in TENANT DB
-    await tenantPrisma.warehouse.updateMany({
-        where: {
-            deleted: false
-        },
-        data: {
             deleted: true,
             deletedAt: new Date()
         }
@@ -1414,6 +1477,7 @@ const handleDowngradeToBasic = async (
     return {
         warehousesDeactivated: warehouseCount,
         addOnsRemoved: addOnDeleteResult.count,
+        drain: drainSummary,
     };
 };
 
@@ -1664,14 +1728,19 @@ const buildCostSnapshot = (subscription: any, tenantAddOns: any[]): CostSnapshot
     const basePlanCost = subscription.customPrice ?? standardPlanPrice;
     const isCustomPrice = subscription.customPrice != null;
 
+    // Advanced Loyalty is bundled into Laundry Pro — never invoice it as an add-on.
+    const snapshotPlanType = subscription.subscriptionPlan?.planType ?? null;
+
     // Add-ons from tenant-level (not per-subscription)
-    const addOns = tenantAddOns.map((ta: any) => ({
-        addOnId: ta.addOn?.id || ta.addOnId,
-        name: ta.addOn?.name || 'Unknown',
-        quantity: ta.quantity,
-        pricePerUnit: ta.addOn?.pricePerUnit || 0,
-        totalCost: (ta.addOn?.pricePerUnit || 0) * ta.quantity
-    }));
+    const addOns = tenantAddOns
+        .filter((ta: any) => !isLaundryBundledAddOn(ta.addOn?.id ?? ta.addOnId, snapshotPlanType))
+        .map((ta: any) => ({
+            addOnId: ta.addOn?.id || ta.addOnId,
+            name: ta.addOn?.name || 'Unknown',
+            quantity: ta.quantity,
+            pricePerUnit: ta.addOn?.pricePerUnit || 0,
+            totalCost: (ta.addOn?.pricePerUnit || 0) * ta.quantity
+        }));
 
     const discounts: CostSnapshot['discounts'] = [];
     if (subscription.discount && (!subscription.discount.endDate || new Date() <= subscription.discount.endDate)) {
@@ -2027,13 +2096,20 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
         throw new NotFoundError('Tenant not found');
     }
 
+    // Advanced Loyalty is bundled into Laundry Pro — exclude it from billing.
+    const billingPlanType = tenant.tenantOutlets
+        .flatMap(o => o.subscriptions)
+        .find(s => s.subscriptionPlan?.planType)?.subscriptionPlan?.planType ?? null;
+
     // Build tenant-level add-ons
-    const tenantAddOns = tenant.tenantAddOns.map(({ addOn, quantity }) => ({
-        name: addOn.name,
-        quantity,
-        pricePerUnit: addOn.pricePerUnit,
-        totalCost: addOn.pricePerUnit * quantity,
-    }));
+    const tenantAddOns = tenant.tenantAddOns
+        .filter(({ addOn }) => !isLaundryBundledAddOn(addOn.id, billingPlanType))
+        .map(({ addOn, quantity }) => ({
+            name: addOn.name,
+            quantity,
+            pricePerUnit: addOn.pricePerUnit,
+            totalCost: addOn.pricePerUnit * quantity,
+        }));
     const totalAddOnCost = tenantAddOns.reduce((sum, a) => sum + a.totalCost, 0);
 
     const now = new Date();
@@ -2241,6 +2317,18 @@ const getUpcomingPayments = async (options: {
                 FROM tenant_add_on ta
                 JOIN subscription_add_on sa ON ta.ADD_ON_ID = sa.ID
                 WHERE ta.TENANT_ID = t.ID
+                  -- Advanced Loyalty (ID 4) is bundled into Laundry Pro, never billed.
+                  AND NOT (
+                    ta.ADD_ON_ID = 4
+                    AND EXISTS (
+                      SELECT 1 FROM tenant_outlet o3
+                      JOIN tenant_subscription ts3 ON ts3.OUTLET_ID = o3.ID
+                      JOIN subscription_plan sp3 ON ts3.SUBSCRIPTION_PLAN_ID = sp3.ID
+                      WHERE o3.TENANT_ID = t.ID AND o3.IS_ACTIVE = true
+                        AND ts3.STATUS IN ('Active', 'active', 'trial')
+                        AND sp3.PLAN_TYPE = 'Laundry'
+                    )
+                  )
             ), 0) as totalMonthlyCost,
             MIN(ts.SUBSCRIPTION_VALID_UNTIL) as mostUrgentExpiry,
             CASE

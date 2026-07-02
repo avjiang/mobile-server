@@ -236,8 +236,18 @@ let getVariantAttributeValues = (req: AuthRequest, res: Response, next: NextFunc
         .catch(next);
 }
 
+let getSupplyCosts = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    service.getSupplyCosts(req.user.databaseName)
+        .then((costs) => sendResponse(res, costs))
+        .catch(next);
+}
+
 //routes
 router.get("/sync", getAll)
+router.get("/supplyCosts", getSupplyCosts)
 router.get("/getBySupplierId", getAllBySupplierId)
 router.get("/getByCategoryId", getAllByCategoryId)
 router.get("/getLowStockItemCount", getLowStockItemCount)

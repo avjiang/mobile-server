@@ -2,6 +2,7 @@ import { PrismaClient, Category } from "../../prisma/client/generated/client"
 import { PrismaClient as GlobalPrismaClient } from "../../prisma/global-client/generated/global";
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma, getGlobalPrisma } from '../db';
+import { invalidatePermissions } from '../auth/permission-cache';
 import { CreateRoleRequestBody } from "./role.request";
 import { SyncRequest } from "src/item/item.request";
 
@@ -375,6 +376,10 @@ let createMany = async (databaseName: string, roleData: CreateRoleRequestBody) =
             }
         });
 
+        // A new role (with its permissions) can immediately be assigned to users;
+        // drop the tenant's cached permissions so live-resolve picks it up at once.
+        invalidatePermissions(databaseName);
+
         return roleWithPermissions;
     }
     catch (error) {
@@ -442,6 +447,10 @@ let updateRole = async (databaseName: string, roleData: CreateRoleRequestBody) =
                 }
             }
         });
+
+        // Permission set for this role just changed → invalidate so every user
+        // holding it re-resolves live instead of serving the stale grant for ~5 min.
+        invalidatePermissions(databaseName);
 
         return roleWithPermissions;
     }
@@ -685,6 +694,10 @@ let assignRoleToUser = async (databaseName: string, userId: number, roleIds: num
             return user;
         });
 
+        // This user's role membership changed → invalidate so their next request
+        // resolves the new permission set live.
+        invalidatePermissions(databaseName);
+
         // Remove password field before returning
         const { password, ...userWithoutPassword } = updatedUser as any;
         return userWithoutPassword;
@@ -789,6 +802,10 @@ let removeRoleFromUser = async (databaseName: string, userId: number, roleIds: n
 
             return user;
         });
+
+        // This user's role membership changed → invalidate so their next request
+        // resolves the new permission set live.
+        invalidatePermissions(databaseName);
 
         // Remove password field before returning
         const { password, ...userWithoutPassword } = updatedUser as any;

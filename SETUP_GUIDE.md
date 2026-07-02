@@ -78,7 +78,9 @@ The setup script performs the following steps:
 | `company_name`        | System          | STRING  | My Company                   | TENANT | Company name for invoices and receipts     |
 | `receipt_footer`      | System          | STRING  | Thank you for your business! | TENANT | Footer text on receipts                    |
 
-### Permissions (21 permissions)
+### Permissions
+
+> **Authoritative list: [`src/script/permission_seed.ts`](src/script/permission_seed.ts)** (run `npm run seed_permissions`). The table below is a convenience snapshot and may lag — the seed file wins. As of 2026-06-08 it seeds **32** permissions (the loyalty/subscription set is not fully reproduced below).
 
 | Name                             | Category            | Description                                    |
 | -------------------------------- | ------------------- | ---------------------------------------------- |
@@ -91,6 +93,7 @@ The setup script performs the following steps:
 | Manage Inventory                 | Inventory           | Add, edit, and delete inventory items          |
 | Manage Suppliers                 | Inventory           | Add, edit, and delete suppliers                |
 | View Stock Amount                | Inventory           | View complete stock amount                     |
+| Override Stock Source            | Inventory           | Manually force a sale's stock source (outlet vs warehouse) |
 | Manage Customers                 | Customer Management | Add, edit, and delete customers                |
 | Manage Outlets                   | Outlet Management   | Create and manage outlet information           |
 | Process Sales                    | Sales               | Create and process sales transactions          |

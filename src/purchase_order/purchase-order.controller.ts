@@ -8,7 +8,7 @@ import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
-import { CreatePurchaseOrderRequestBody, PurchaseOrderInput } from "./purchase-order.request"
+import { CreatePurchaseOrderRequestBody, PurchaseOrderInput, DownPaymentInput } from "./purchase-order.request"
 import { validateDocumentNumber } from "../helpers/documentHelper"
 
 const router = express.Router()
@@ -182,12 +182,58 @@ let deletePurchaseOrder = (req: AuthRequest, res: Response, next: NextFunction) 
         .catch(next)
 }
 
+let addDownPayment = (req: NetworkRequest<DownPaymentInput>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+    const purchaseOrderId: number = parseInt(req.params.id)
+    service.addDownPayment(req.user.databaseName, purchaseOrderId, req.body)
+        .then((po: any) => sendResponse(res, po))
+        .catch(next)
+}
+
+let editDownPayment = (req: NetworkRequest<DownPaymentInput>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id) || !validator.isNumeric(req.params.paymentId)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    if (Object.keys(req.body).length === 0) {
+        throw new RequestValidateError('Request body is empty')
+    }
+    service.editDownPayment(req.user.databaseName, parseInt(req.params.id), parseInt(req.params.paymentId), req.body)
+        .then((po: any) => sendResponse(res, po))
+        .catch(next)
+}
+
+let deleteDownPayment = (req: NetworkRequest<{ siteId?: number }>, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id) || !validator.isNumeric(req.params.paymentId)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    service.deleteDownPayment(req.user.databaseName, parseInt(req.params.id), parseInt(req.params.paymentId), req.body?.siteId)
+        .then((po: any) => sendResponse(res, po))
+        .catch(next)
+}
+
 //routes
 router.get("/sync", getAll)
 router.get('/dateRange', getAllByDateRange)
 router.get('/:id', getById)
 router.post('/cancel', cancel)
 router.post('/create', createMany)
+router.post('/:id/downPayment', addDownPayment)
+router.put('/:id/downPayment/:paymentId', editDownPayment)
+router.delete('/:id/downPayment/:paymentId', deleteDownPayment)
 router.put('/update', update)
 router.delete('/:id', deletePurchaseOrder)
 export = router

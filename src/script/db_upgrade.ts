@@ -1,4 +1,28 @@
-import { updateAllTenantDatabases, disconnectAllPrismaClients } from "../db";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+type Target = "local" | "prod";
+
+const target: Target = (process.argv[2] as Target) || "local";
+
+if (target === "prod") {
+    if (!process.env.PROD_GLOBAL_DB_URL || !process.env.PROD_TENANT_DATABASE_URL) {
+        console.error("Missing PROD_GLOBAL_DB_URL or PROD_TENANT_DATABASE_URL in .env");
+        process.exit(1);
+    }
+    process.env.GLOBAL_DB_URL = process.env.PROD_GLOBAL_DB_URL;
+    process.env.TENANT_DATABASE_URL = process.env.PROD_TENANT_DATABASE_URL;
+    console.log("Target: PROD");
+} else if (target === "local") {
+    console.log("Target: LOCAL");
+} else {
+    console.error(`Unknown target "${target}". Use "local" or "prod".`);
+    process.exit(1);
+}
+
+// Load db.ts AFTER env override so getGlobalPrisma() resolves to the chosen target.
+const { updateAllTenantDatabases, disconnectAllPrismaClients } = require("../db") as typeof import("../db");
 
 async function runSchemaUpdates() {
     try {
@@ -9,15 +33,12 @@ async function runSchemaUpdates() {
         console.error('Error updating tenant schemas:', error);
         process.exit(1);
     } finally {
-        // Make sure to disconnect all Prisma clients to prevent hanging
         await disconnectAllPrismaClients();
     }
 }
 
-// Run the function if this script is executed directly
 if (require.main === module) {
     runSchemaUpdates();
 }
 
-// Also export the function so it can be imported elsewhere if needed
 export default runSchemaUpdates;

@@ -73,6 +73,16 @@ export class BusinessLogicError extends BaseError {
     }
 }
 
+// Catalogue per-tenant storage cap exceeded. Distinct `name` (BaseError otherwise
+// reports "Function") so the client can recognise it and show a specific,
+// localized "not enough space" message instead of a generic upload error.
+export class CatalogueStorageLimitError extends BaseError {
+    constructor(message: string) {
+        super(400, message)
+        this.name = 'CatalogueStorageLimitError'
+    }
+}
+
 // Loyalty-specific errors
 export class InsufficientPointsError extends BaseError {
     constructor(available: number, requested: number) {

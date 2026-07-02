@@ -8,6 +8,8 @@ import { sendResponse } from "../api-helpers/network"
 import { CreateCustomersRequestBody } from "./customer.request"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
+import { requirePermission } from "../middleware/require-permission.middleware"
+import { PERMISSION } from "../permission/permission-names"
 
 const router = express.Router()
 
@@ -98,10 +100,14 @@ let remove = (req: AuthRequest, res: Response, next: NextFunction) => {
 }
 
 //routes
+// Reads stay open (no "View Clients" permission exists; the client list must
+// sync for every authenticated user). Writes are gated by the granular
+// Add/Edit/Delete Client permissions — the same ones the FE uses to show/hide
+// these actions, so enforcement is consistent with the UI.
 router.get("/", getAll)
 router.get('/sync', getAllCustomer)
 router.get('/:id', getById)
-router.post('/create', createMany)
-router.put('/update', update)
-router.delete('/:id', remove)
+router.post('/create', requirePermission(PERMISSION.ADD_CLIENT), createMany)
+router.put('/update', requirePermission(PERMISSION.EDIT_CLIENT), update)
+router.delete('/:id', requirePermission(PERMISSION.DELETE_CLIENT), remove)
 export = router

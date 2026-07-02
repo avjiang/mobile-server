@@ -1,4 +1,21 @@
-import { Expose, Transform } from "class-transformer";
+import { Expose, Transform, Type } from "class-transformer";
+
+// Laundry vertical recipe line (bill-of-materials). Sent on create/update of a
+// "service" item, and echoed back on sync so the client can prefill the sale dialog.
+export class ItemConsumableDto {
+    @Expose()
+    consumableItemId: number = 0;
+
+    @Expose()
+    ratePerKg: number = 0;
+
+    @Expose()
+    unit: string = "Milliliter";
+
+    // 'perKg' (rate × load weight) | 'perLoad' (flat amount per wash).
+    @Expose()
+    consumptionBasis: string = "perKg";
+}
 
 export class ItemSoldRankingResponseBody {
     topSoldItems: ItemSoldObject[] = [];
@@ -83,6 +100,34 @@ export class ItemDto {
 
     @Expose()
     trackStock: boolean = true;
+
+    // Terminal attribution — the terminal that created this item (RegisteredDevice
+    // siteId). Must be @Expose'd or class-transformer (excludeExtraneousValues)
+    // drops it before createMany. Stamped on the item's stock movements.
+    @Expose()
+    siteId: number | undefined = undefined;
+
+    // Laundry: default machine-load weight (kg) for a service item; prefills the sale dialog.
+    @Expose()
+    defaultLoadWeightKg: number | undefined = undefined;
+
+    // How PRICE becomes a line total: null/'per_piece' (legacy), 'flat_per_load'
+    // (price charged as-is per load), 'per_kg' (price × actual weight, reserved).
+    @Expose()
+    pricingMode: string | undefined = undefined;
+
+    // Retail / F&B online-catalogue product specifications: a single free-text
+    // block (the whole spec sheet) stored in the JSON column as a JSON string.
+    // Must be @Expose'd or class-transformer (excludeExtraneousValues on the
+    // create path) drops it before createMany. The update path passes req.body
+    // raw, so it flows there regardless.
+    @Expose()
+    specifications: string | undefined = undefined;
+
+    // Laundry: recipe lines for a service item (the supplies it consumes).
+    @Expose()
+    @Type(() => ItemConsumableDto)
+    consumables: ItemConsumableDto[] | undefined = undefined;
 
     @Expose({ name: 'stockQuantity' })
     @Transform(({ value, obj }) => value !== undefined ? value : (obj.stock?.availableQuantity ?? 0), { toClassOnly: true })

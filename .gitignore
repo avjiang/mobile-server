@@ -5,6 +5,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Local DB backups (created by `npm run backup_db[_prod]`)
+backups/
+
 # Runtime data
 pids
 *.pid

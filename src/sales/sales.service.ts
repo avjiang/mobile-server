@@ -3,6 +3,7 @@ import { Decimal } from 'decimal.js';
 import { BusinessLogicError, NotFoundError, InsufficientPointsError, TierMismatchError, SubscriptionExpiredError } from "../api-helpers/error"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
+import { getEffectivePermissions } from '../auth/permission-cache';
 import { SyncRequest } from "src/item/item.request";
 import PushyService from '../pushy/pushy.service';
 import { randomUUID } from 'crypto';
@@ -188,9 +189,140 @@ interface PerformedBy {
     userId: number;
     username: string;
     loyaltyTier?: 'none' | 'basic' | 'advanced';
+    // Effective permission names from the JWT ('*' = super-admin wildcard). Used to gate
+    // the manual stock-source override (AD6 / F3). Missing/empty → no override.
+    permissions?: string[];
+}
+
+// ── Stock sourcing (AD6) ──────────────────────────────────────────────────────
+// A sale draws stock from the outlet first, then from warehouse(s) for any
+// remainder (automatic per-line split). A user holding this permission (or super
+// admin) may instead force a single explicit source for the whole sale.
+const OVERRIDE_STOCK_SOURCE_PERMISSION = 'Override Stock Source';
+
+type SaleSourceKind = 'OUTLET' | 'WAREHOUSE';
+
+/**
+ * One stock location a sale can draw from (outlet or a single warehouse), bundling
+ * its Prisma delegates + the in-memory FIFO/consumption state built during a sale.
+ * The two table-sets share identical FIFO mechanics, so the same loop drives both.
+ */
+interface SaleStockSource {
+    kind: SaleSourceKind;
+    locationId: number;
+    balanceDelegate: any;   // tx.stockBalance | tx.warehouseStockBalance
+    receiptDelegate: any;   // tx.stockReceipt | tx.warehouseStockReceipt
+    movementDelegate: any;  // tx.stockMovement | tx.warehouseStockMovement
+    locWhere: any;          // { outletId } | { warehouseId }
+    balanceMap: Map<string, any>;        // lookupKey -> balance row
+    receiptsByItem: Map<string, any[]>;  // lookupKey -> FIFO receipts (mutated in-memory)
+    originalReceiptQty: Map<number, Decimal>; // receiptId -> qty before this sale
+    remainingBalance: Map<string, Decimal>;   // lookupKey -> available left to allocate
+    receiptUpdateMap: Map<number, Decimal>;   // receiptId -> qty consumed this sale
+    consumedByItem: Map<string, Decimal>;     // lookupKey -> total consumed (for balance/movement)
+}
+
+function makeSaleStockSource(tx: any, kind: SaleSourceKind, locationId: number): SaleStockSource {
+    const isWh = kind === 'WAREHOUSE';
+    return {
+        kind,
+        locationId,
+        balanceDelegate: isWh ? tx.warehouseStockBalance : tx.stockBalance,
+        receiptDelegate: isWh ? tx.warehouseStockReceipt : tx.stockReceipt,
+        movementDelegate: isWh ? tx.warehouseStockMovement : tx.stockMovement,
+        locWhere: isWh ? { warehouseId: locationId } : { outletId: locationId },
+        balanceMap: new Map(),
+        receiptsByItem: new Map(),
+        originalReceiptQty: new Map(),
+        remainingBalance: new Map(),
+        receiptUpdateMap: new Map(),
+        consumedByItem: new Map(),
+    };
 }
 
 // Helper function to send sales notifications (non-blocking)
+/**
+ * Classifies the laundry SERVICE items among the given sales' line items:
+ *   'wash' — a service item with a machine capacity (`defaultLoadWeightKg > 0`)
+ *   'jasa' — a service item without one (flat or per-kg per-piece service)
+ * Supplies and retail products are omitted (not in the map). A load weight alone
+ * can't classify an order — a per-kg jasa also carries a weight — so the machine
+ * capacity is the reliable signal. One indexed `IN (...)` query; empty map for
+ * retail tenants / item-less orders. The caller folds these per line into a single
+ * per-order kind (wash / jasa / mixed) so a combined order isn't mislabelled.
+ */
+async function loadLaundryServiceKinds(
+    tenantPrisma: PrismaClient,
+    sales: Array<{ salesItems: Array<{ itemId: number }> }>,
+): Promise<Map<number, 'wash' | 'jasa'>> {
+    const kinds = new Map<number, 'wash' | 'jasa'>();
+    const itemIds = [...new Set(sales.flatMap(s => s.salesItems.map(si => si.itemId)))];
+    if (itemIds.length === 0) return kinds;
+    const items = await tenantPrisma.item.findMany({
+        where: { id: { in: itemIds }, itemType: 'service' },
+        select: { id: true, defaultLoadWeightKg: true },
+    });
+    for (const it of items) {
+        kinds.set(it.id, Number(it.defaultLoadWeightKg ?? 0) > 0 ? 'wash' : 'jasa');
+    }
+    return kinds;
+}
+
+/**
+ * Folds the per-item kinds into a single per-order tag:
+ *   'wash'  — only wash service line(s)
+ *   'jasa'  — only per-piece/per-kg service line(s)
+ *   'mixed' — both (e.g. a wash + an ironing add-on)
+ *   null    — neither (retail / supplies only)
+ */
+/// A laundry supply-depletion line: the consumable consumed by a wash/service —
+/// zero price, no processed weight, but a tracked consumption quantity (matches
+/// the FE `_isLaundrySupplyLine` / pickup-screen reconstruction). Retail has none.
+function isSupplyLine(
+    it: { price: any; loadWeightKg: any; stockConsumptionQty: any },
+): boolean {
+    return (
+        Number(it.price ?? 0) === 0 &&
+        (it.loadWeightKg == null || Number(it.loadWeightKg) === 0) &&
+        it.stockConsumptionQty != null &&
+        Number(it.stockConsumptionQty) > 0
+    );
+}
+
+/// Count of products/services actually sold, excluding supply lines. Allocation-
+/// free single pass. For retail there are no supply lines → full count unchanged.
+function countBillableSalesItems(
+    salesItems: Array<{ price: any; loadWeightKg: any; stockConsumptionQty: any }>,
+): number {
+    let n = 0;
+    for (const it of salesItems) if (!isSupplyLine(it)) n++;
+    return n;
+}
+
+/// Single in-memory pass over an order's lines producing every per-order field the
+/// sales-list payload needs: billable `totalItems` (supplies excluded), total
+/// processed `loadWeightKg` (sum of wash-service weights; null for retail), and the
+/// `laundryServiceKind` ('wash' | 'jasa' | 'mixed' | null). Replaces three separate
+/// scans (count + weight reduce + kind classify) with one loop.
+function summarizeSalesLines(
+    salesItems: Array<{ itemId: number; price: any; loadWeightKg: any; stockConsumptionQty: any }>,
+    serviceKinds: Map<number, 'wash' | 'jasa'>,
+): { totalItems: number; loadWeightKg: number | null; laundryServiceKind: 'wash' | 'jasa' | 'mixed' | null } {
+    let totalItems = 0;
+    let weight = 0;
+    let hasWash = false;
+    let hasJasa = false;
+    for (const it of salesItems) {
+        if (!isSupplyLine(it)) totalItems++;
+        weight += Number(it.loadWeightKg ?? 0);
+        const k = serviceKinds.get(it.itemId);
+        if (k === 'wash') hasWash = true;
+        else if (k === 'jasa') hasJasa = true;
+    }
+    const laundryServiceKind = hasWash && hasJasa ? 'mixed' : hasWash ? 'wash' : hasJasa ? 'jasa' : null;
+    return { totalItems, loadWeightKg: weight > 0 ? weight : null, laundryServiceKind };
+}
+
 async function sendSalesNotification(
     tenantId: number,
     outletId: number,
@@ -257,8 +389,92 @@ async function sendInventoryNotification(
 // ============================================
 
 /**
+ * Credit earned points for a fully-paid sale — or just bump totalSpend when
+ * rounding yields 0 points (small tickets must still progress toward tier
+ * auto-upgrade). Shared by the creation path (processLoyaltyForSale step 4)
+ * and the pay-on-collection completion path (addPaymentToPartiallyPaidSales)
+ * so both apply calcPointsEarned with the tenant's rounding mode — points are
+ * whole numbers only (docs LOYALTY.md §2).
+ * `account` must include `loyaltyTier` when the tenant is on advanced loyalty.
+ * Returns the whole-number points credited.
+ */
+async function creditEarnedPoints(
+    tx: any,
+    account: any,
+    program: any,
+    salesId: number,
+    totalAmount: Decimal,
+    performedBy: PerformedBy,
+): Promise<number> {
+    const toNum = loyaltyService.toDecimalNumber;
+    let pointsMultiplier = 1.0;
+    if (performedBy.loyaltyTier === 'advanced' && account.loyaltyTier) {
+        pointsMultiplier = toNum(account.loyaltyTier.pointsMultiplier);
+    }
+    const pointsEarned = calcPointsEarned(
+        totalAmount,
+        toNum(program.pointsPerCurrency),
+        pointsMultiplier,
+        program.pointsRoundingMode,
+    );
+
+    if (pointsEarned > 0) {
+        const expiresAt = program.pointsExpiryDays
+            ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
+            : null;
+
+        await tx.loyaltyPointBatch.create({
+            data: {
+                loyaltyAccountId: account.id,
+                originalPoints: pointsEarned,
+                remainingPoints: pointsEarned,
+                expiresAt,
+                salesId,
+            },
+        });
+
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: {
+                currentPoints: { increment: pointsEarned },
+                totalEarned: { increment: pointsEarned },
+                totalSpend: { increment: totalAmount.toNumber() },
+            },
+        });
+
+        const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
+
+        await tx.loyaltyTransaction.create({
+            data: {
+                loyaltyAccountId: account.id,
+                type: 'EARN',
+                points: pointsEarned,
+                balanceAfter: toNum(finalAccount?.currentPoints ?? 0),
+                salesId,
+                description: `Earned from sale #${salesId}`,
+                performedBy: performedBy.username,
+            },
+        });
+    } else {
+        // Sale paid but earned 0 points after rounding — still bump totalSpend for tier eligibility.
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: { totalSpend: { increment: totalAmount.toNumber() } },
+        });
+    }
+    return pointsEarned;
+}
+
+/**
  * Process loyalty earn/redeem/subscription within a sales transaction.
- * Called inside $transaction for completeNewSales when status = "Completed".
+ * Called inside $transaction by completeNewSales for ANY sale with a customer
+ * (Completed, Partially Paid, pay-on-collection): the discount legs (tier /
+ * voucher / redemption / subscription, steps 0-3) are locked into the price
+ * at creation, so their deductions MUST execute at creation too — otherwise a
+ * deferred-payment sale grants the discount without burning points / quota /
+ * voucher. Only the EARN leg (step 4) is gated on `includeEarn` (= fully
+ * paid); for deferred sales it runs later via addPaymentToPartiallyPaidSales
+ * when the balance clears.
  * Returns loyalty data to store on the Sales record.
  */
 async function processLoyaltyForSale(
@@ -268,7 +484,8 @@ async function processLoyaltyForSale(
     customerId: number,
     totalAmount: Decimal,
     salesBody: CreateSalesRequest,
-    performedBy: PerformedBy
+    performedBy: PerformedBy,
+    includeEarn: boolean
 ): Promise<{
     loyaltyPointsEarned: Decimal;
     loyaltyPointsRedeemed: Decimal;
@@ -328,8 +545,25 @@ async function processLoyaltyForSale(
         const tier = (account as any).loyaltyTier;
         const actualPercentage = tier ? toNum(tier.discountPercentage) : 0;
         validateTierMatch(salesBody.loyaltyTierDiscountPercentage, actualPercentage);
-        result.loyaltyTierDiscountPercent = new Decimal(salesBody.loyaltyTierDiscountPercentage);
-        result.loyaltyTierDiscountAmount = new Decimal(salesBody.loyaltyTierDiscountAmount || 0);
+        // Recompute amount from the authoritative percentage (audit r1-#9: the
+        // client-sent amount could be inflated) — but on the SAME base the FE
+        // stacking uses: the pre-loyalty total. `totalAmount` here is the FINAL
+        // figure (after tier, subscription, and redemption), so reverse the
+        // waterfall: base = (final + redemption + subscription) / (1 - pct/100).
+        // Using final directly understated the stored amount (e.g. 2% on a
+        // 30,000 cart with 5,000 redeemed stored 488 instead of 600, and
+        // subtotal - discounts no longer reconciled to the total).
+        result.loyaltyTierDiscountPercent = new Decimal(actualPercentage);
+        if (actualPercentage > 0 && actualPercentage < 100) {
+            const redemptionValue = new Decimal(salesBody.loyaltyPointsToRedeem || 0)
+                .times(toNum(program.currencyPerPoint));
+            const subDiscount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+            const preLoyaltyBase = totalAmount.plus(redemptionValue).plus(subDiscount)
+                .dividedBy(new Decimal(1).minus(new Decimal(actualPercentage).dividedBy(100)));
+            result.loyaltyTierDiscountAmount = preLoyaltyBase.times(actualPercentage).dividedBy(100);
+        } else {
+            result.loyaltyTierDiscountAmount = totalAmount.times(actualPercentage).dividedBy(100);
+        }
     }
 
     // 2. VALIDATE + EXECUTE point redemption
@@ -395,8 +629,10 @@ async function processLoyaltyForSale(
             },
         });
 
+        // Recompute redemption value server-side. Audit r1-#5: client-trusted value
+        // could be inflated independently of pointsToRedeem.
         result.loyaltyPointsRedeemed = new Decimal(pointsToRedeem);
-        result.loyaltyPointsRedemptionValue = new Decimal(salesBody.loyaltyPointsRedemptionValue || 0);
+        result.loyaltyPointsRedemptionValue = new Decimal(pointsToRedeem).times(toNum(program.currencyPerPoint));
     }
 
     // 3. VALIDATE + EXECUTE subscription usage (advanced only)
@@ -421,11 +657,74 @@ async function processLoyaltyForSale(
         if (subscription.status !== 'ACTIVE') {
             throw new SubscriptionExpiredError();
         }
+        // Audit r2-#2: status may still read ACTIVE if the daily expiry cron has not run yet.
+        // Also defend against device-clock skew that lets a stale FE submit a past-end-date sub.
+        if (subscription.endDate && new Date() > subscription.endDate) {
+            throw new SubscriptionExpiredError();
+        }
         if (subscription.customerId !== customerId) {
             throw new BusinessLogicError('Subscription does not belong to this customer');
         }
 
-        const quantityUsed = salesBody.subscriptionQuantityUsed || 1;
+        // Server-authoritative quota: for USAGE packages, recompute the credits
+        // to deduct from the cart itself — one credit per unit of a matching-
+        // category item with subtotal > 0 (zero-priced bundled lines like free
+        // detergent get no benefit and must not burn quota). Coverage is capped
+        // at remainingQuota, most expensive units first (mirrors the FE
+        // `_usageCoverage`): a cart with more eligible units than credits gets
+        // only the covered units free and the rest stay payable. The client-sent
+        // subscriptionQuantityUsed is ignored; legacy clients hardcode 1, which
+        // under-deducts multi-item carts. TIME packages keep usedQuota as a
+        // plain per-sale counter (1).
+        let quantityUsed = 1;
+        // Upper bound for the USAGE discount: value of the covered units only.
+        let usageCoveredValue: Decimal | null = null;
+        if (subscription.subscriptionPackage.packageType === 'USAGE') {
+            const packageCategoryIds = new Set(
+                subscription.subscriptionPackage.categories.map((c: any) => c.categoryId),
+            );
+            const cartItemIds = (salesBody.salesItems ?? [])
+                .filter((it: any) => !it.deleted)
+                .map((it: any) => it.itemId);
+            const cartItems = await tx.item.findMany({
+                where: { id: { in: cartItemIds } },
+                select: { id: true, categoryId: true },
+            });
+            const itemCategoryById = new Map(cartItems.map((it: any) => [it.id, it.categoryId]));
+            const eligible: { unitPrice: Decimal; quantity: number }[] = [];
+            for (const it of salesBody.salesItems ?? []) {
+                if ((it as any).deleted) continue;
+                const categoryId = itemCategoryById.get(it.itemId);
+                const subtotal = new Decimal(it.subtotalAmount ?? 0);
+                const quantity = new Decimal(it.quantity ?? 0).toNumber();
+                if (categoryId != null && packageCategoryIds.has(categoryId) && subtotal.gt(0) && quantity > 0) {
+                    eligible.push({ unitPrice: subtotal.dividedBy(quantity), quantity });
+                }
+            }
+            if (eligible.length === 0) {
+                throw new BusinessLogicError(
+                    'Subscription cannot be used: no items in this sale match the package categories',
+                );
+            }
+            eligible.sort((a, b) => b.unitPrice.comparedTo(a.unitPrice));
+            let remaining = subscription.remainingQuota ?? Number.POSITIVE_INFINITY;
+            let unitsCovered = 0;
+            let coveredValue = new Decimal(0);
+            for (const line of eligible) {
+                if (remaining <= 0) break;
+                const take = Math.min(line.quantity, remaining);
+                coveredValue = coveredValue.plus(line.unitPrice.times(take));
+                unitsCovered += take;
+                remaining -= take;
+            }
+            quantityUsed = Math.ceil(unitsCovered);
+            usageCoveredValue = coveredValue;
+            if (quantityUsed <= 0) {
+                throw new BusinessLogicError(
+                    'Subscription cannot be used: no remaining quota covers any item in this sale',
+                );
+            }
+        }
 
         // For USAGE packages, check and deduct quota
         if (subscription.subscriptionPackage.packageType === 'USAGE') {
@@ -435,7 +734,10 @@ async function processLoyaltyForSale(
                 );
             }
 
-            await tx.customerSubscription.update({
+            // Optimistic-lock with assertion: prisma.update silently no-ops on 0 matches
+            // when a composite where misses, so we use updateMany and check count.
+            // Race: two cashiers both reading version=N — the second update sees 0 rows.
+            const decrementResult = await tx.customerSubscription.updateMany({
                 where: { id: subscription.id, version: subscription.version },
                 data: {
                     remainingQuota: { decrement: quantityUsed },
@@ -443,6 +745,11 @@ async function processLoyaltyForSale(
                     version: { increment: 1 },
                 },
             });
+            if (decrementResult.count !== 1) {
+                throw new BusinessLogicError(
+                    'Subscription was modified concurrently. Please retry the sale.'
+                );
+            }
 
             // Check if quota depleted
             if ((subscription.remainingQuota - quantityUsed) <= 0) {
@@ -476,64 +783,45 @@ async function processLoyaltyForSale(
         });
 
         result.customerSubscriptionId = subscription.id;
-        result.subscriptionDiscountAmount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+        // Audit r1-#4: subscriptionDiscountAmount was previously stored as-sent. Bound it.
+        // The package category × item matching is item-level; doing a full recompute here
+        // would require per-item category lookups. Instead we apply a tight upper bound:
+        //   - TIME + fixed: discount ≤ package.discountAmount
+        //   - TIME + %: discount ≤ preDiscountTotal × pct / 100
+        //   - USAGE: discount ≤ preDiscountTotal (100% of matching items, max = full cart)
+        // preDiscountTotal = the cart total before THIS subscription discount was applied.
+        const sentSubDiscount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+        const preDiscountTotal = totalAmount.plus(sentSubDiscount);
+        const pkg = subscription.subscriptionPackage;
+        let maxSubDiscount: Decimal;
+        if (pkg.packageType === 'TIME') {
+            if (pkg.discountPercentage && toNum(pkg.discountPercentage) > 0) {
+                maxSubDiscount = preDiscountTotal.times(toNum(pkg.discountPercentage)).dividedBy(100);
+            } else if (pkg.discountAmount && toNum(pkg.discountAmount) > 0) {
+                maxSubDiscount = new Decimal(toNum(pkg.discountAmount));
+            } else {
+                maxSubDiscount = new Decimal(0);
+            }
+        } else {
+            // USAGE — 100% off the quota-covered units only (computed above),
+            // never the whole matching subtotal: with 8 credits left and 11
+            // eligible washes, only 8 units' value is discountable.
+            maxSubDiscount = usageCoveredValue ?? preDiscountTotal;
+        }
+        if (sentSubDiscount.gt(maxSubDiscount.plus(0.01))) {
+            throw new BusinessLogicError(
+                `Subscription discount exceeds maximum allowed: sent ${sentSubDiscount}, max ${maxSubDiscount}`
+            );
+        }
+        result.subscriptionDiscountAmount = sentSubDiscount;
     }
 
-    // 4. EARN points on finalTotalAmount (after ALL discounts)
-    if (totalAmount.gt(0)) {
-        let pointsMultiplier = 1.0;
-        if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
-            pointsMultiplier = toNum((account as any).loyaltyTier.pointsMultiplier);
-        }
-        const pointsEarned = calcPointsEarned(
-            totalAmount,
-            toNum(program.pointsPerCurrency),
-            pointsMultiplier,
-            program.pointsRoundingMode,
-        );
-
+    // 4. EARN points on finalTotalAmount (after ALL discounts) — only when the
+    // sale is fully paid at creation. Deferred-payment sales earn later via
+    // addPaymentToPartiallyPaidSales once the balance clears.
+    if (includeEarn && totalAmount.gt(0)) {
+        const pointsEarned = await creditEarnedPoints(tx, account, program, salesId, totalAmount, performedBy);
         if (pointsEarned > 0) {
-            const expiresAt = program.pointsExpiryDays
-                ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
-                : null;
-
-            // Create point batch
-            await tx.loyaltyPointBatch.create({
-                data: {
-                    loyaltyAccountId: account.id,
-                    originalPoints: pointsEarned,
-                    remainingPoints: pointsEarned,
-                    expiresAt,
-                    salesId,
-                },
-            });
-
-            // Update account totals
-            await tx.loyaltyAccount.update({
-                where: { id: account.id },
-                data: {
-                    currentPoints: { increment: pointsEarned },
-                    totalEarned: { increment: pointsEarned },
-                    totalSpend: { increment: totalAmount.toNumber() },
-                },
-            });
-
-            const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
-            const finalBalance = toNum(finalAccount.currentPoints);
-
-            // Create EARN transaction
-            await tx.loyaltyTransaction.create({
-                data: {
-                    loyaltyAccountId: account.id,
-                    type: 'EARN',
-                    points: pointsEarned,
-                    balanceAfter: finalBalance,
-                    salesId,
-                    description: `Earned from sale #${salesId}`,
-                    performedBy: performedBy.username,
-                },
-            });
-
             result.loyaltyPointsEarned = new Decimal(pointsEarned);
         }
     }
@@ -562,45 +850,52 @@ async function reverseLoyaltyForSale(
 
     // 1. Reverse EARNED points
     const pointsEarned = sale.loyaltyPointsEarned ? new Decimal(sale.loyaltyPointsEarned).toNumber() : 0;
+    const saleTotalForReversal = sale.totalAmount ? new Decimal(sale.totalAmount).toNumber() : 0;
     if (pointsEarned > 0) {
-        // Find the point batch for this sale and deduct
         const earnBatch = await tx.loyaltyPointBatch.findFirst({
             where: { loyaltyAccountId: account.id, salesId: sale.id, deleted: false },
         });
 
+        // remainingInBatch = points the customer hadn't spent yet from this earn.
+        // Those are the only points we can claw back from currentPoints; the rest were
+        // already redeemed elsewhere and stay redeemed.
+        let remainingInBatch = 0;
         if (earnBatch) {
-            const remainingInBatch = toNum(earnBatch.remainingPoints);
-            // Deduct remaining (may be less than original if partially spent)
+            remainingInBatch = Math.max(toNum(earnBatch.remainingPoints), 0);
             await tx.loyaltyPointBatch.update({
                 where: { id: earnBatch.id },
                 data: { remainingPoints: 0, deleted: true, deletedAt: new Date() },
             });
-
-            // Decrement account.currentPoints by whatever was still remaining
-            await tx.loyaltyAccount.update({
-                where: { id: account.id },
-                data: {
-                    currentPoints: { decrement: Math.max(remainingInBatch, 0) },
-                    totalSpend: { decrement: new Decimal(sale.totalAmount).toNumber() },
-                },
-            });
         }
+
+        // Account totals: always reverse the full earn (totalEarned) and the full sale spend
+        // (totalSpend) regardless of whether the batch still existed. Only currentPoints is
+        // bounded by what's still in the batch.
+        await tx.loyaltyAccount.update({
+            where: { id: account.id },
+            data: {
+                currentPoints: { decrement: remainingInBatch },
+                totalEarned: { decrement: pointsEarned },
+                totalSpend: { decrement: saleTotalForReversal },
+            },
+        });
 
         const updatedAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
 
-        // Create EARN_REVERSAL transaction (idempotent check)
         const existingReversal = await tx.loyaltyTransaction.findFirst({
             where: { salesId: sale.id, type: 'EARN_REVERSAL', deleted: false },
         });
         if (!existingReversal) {
+            // points field reflects actual balance impact (what we took back from currentPoints),
+            // matching balanceAfter. The original earn amount is recoverable via the sale record.
             await tx.loyaltyTransaction.create({
                 data: {
                     loyaltyAccountId: account.id,
                     type: 'EARN_REVERSAL',
-                    points: -pointsEarned,
+                    points: -remainingInBatch,
                     balanceAfter: toNum(updatedAccount?.currentPoints ?? 0),
                     salesId: sale.id,
-                    description: `Earn reversed for sale #${sale.id}`,
+                    description: `Earn reversed for sale #${sale.id} (original ${pointsEarned}, clawed back ${remainingInBatch})`,
                     performedBy: performedBy.username,
                 },
             });
@@ -673,7 +968,13 @@ async function reverseLoyaltyForSale(
                 data: {
                     remainingQuota: { increment: quantityToRestore },
                     usedQuota: { decrement: quantityToRestore },
-                    ...(subscription.status === 'EXPIRED' ? { status: 'ACTIVE' } : {}),
+                    // Reactivate only if quota exhaustion was the reason it expired —
+                    // a subscription past its validity endDate stays EXPIRED even
+                    // though the quota is restored.
+                    ...(subscription.status === 'EXPIRED' &&
+                        (!subscription.endDate || subscription.endDate > new Date())
+                        ? { status: 'ACTIVE' }
+                        : {}),
                 },
             });
 
@@ -748,6 +1049,13 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                 totalItemDiscountAmount: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Terminal attribution (silent-drop fix: in BOTH select and transform)
+                siteId: true,
+                // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
+                // must be in BOTH select and transform or it never reaches the client)
+                orderRef: true,
+                friendlyNumber: true,
+                collectedAt: true,
                 // Loyalty fields
                 loyaltyPointsEarned: true,
                 loyaltyPointsRedeemed: true,
@@ -775,6 +1083,13 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             ]
         })
 
+        // Laundry: classify each order as a machine "wash", a per-piece/per-kg
+        // "service" (jasa), or "mixed". A processed weight alone can't tell them
+        // apart — a per-kg jasa (e.g. ironing charged by the kg) also carries a load
+        // weight — so the real signal is the item's machine capacity, which only a
+        // wash has. One batched, indexed lookup; empty for retail tenants.
+        const serviceKinds = await loadLaundryServiceKinds(tenantPrisma, salesArray);
+
         // Transform results to include customerName
         const transformedSales = salesArray.map(sale => ({
             id: sale.id,
@@ -795,9 +1110,19 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             discountAmount: sale.discountAmount,
             totalItemDiscountAmount: sale.totalItemDiscountAmount,
             remark: sale.remark,
-            totalItems: sale.salesItems.length,
+            // Laundry per-order rollups (billable item count with supplies
+            // excluded, total processed weight, and service kind) computed in a
+            // single in-memory pass over the already-loaded lines. null weight/kind
+            // for retail → payload unchanged.
+            ...summarizeSalesLines(sale.salesItems, serviceKinds),
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Terminal attribution
+            siteId: sale.siteId,
+            // Laundry intake→pickup identity
+            orderRef: sale.orderRef,
+            friendlyNumber: sale.friendlyNumber,
+            collectedAt: sale.collectedAt,
             // Loyalty fields
             loyaltyPointsEarned: sale.loyaltyPointsEarned,
             loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
@@ -886,6 +1211,13 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                 remark: true,
                 deliveredAt: true,
                 deliveredBy: true,
+                // Terminal attribution (silent-drop fix: in BOTH select and transform)
+                siteId: true,
+                // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
+                // must be in BOTH select and transform or it never reaches the client)
+                orderRef: true,
+                friendlyNumber: true,
+                collectedAt: true,
                 // Loyalty fields
                 loyaltyPointsEarned: true,
                 loyaltyPointsRedeemed: true,
@@ -909,6 +1241,10 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             take,
         });
 
+        // Laundry order kind classification — see loadLaundryServiceKinds. Batched
+        // lookup so the partial-payment / pickup queue can label Wash vs Jasa too.
+        const serviceKinds = await loadLaundryServiceKinds(tenantPrisma, salesArray);
+
         // Transform results to include customerName
         const transformedSales = salesArray.map(sale => ({
             id: sale.id,
@@ -929,9 +1265,19 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
             paidAmount: sale.paidAmount,
             status: sale.status,
             remark: sale.remark,
-            totalItems: sale.salesItems.length,
+            // Laundry per-order rollups (billable item count with supplies
+            // excluded, total processed weight, and service kind) computed in a
+            // single in-memory pass over the already-loaded lines. null weight/kind
+            // for retail → payload unchanged.
+            ...summarizeSalesLines(sale.salesItems, serviceKinds),
             deliveredAt: sale.deliveredAt,
             deliveredBy: sale.deliveredBy,
+            // Terminal attribution
+            siteId: sale.siteId,
+            // Laundry intake→pickup identity
+            orderRef: sale.orderRef,
+            friendlyNumber: sale.friendlyNumber,
+            collectedAt: sale.collectedAt,
             // Loyalty fields
             loyaltyPointsEarned: sale.loyaltyPointsEarned,
             loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
@@ -1007,6 +1353,8 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
                 paidAmount: true,
                 status: true,
                 remark: true,
+                // Terminal attribution (silent-drop fix: in BOTH select and transform)
+                siteId: true,
                 // customer: {
                 //     select: {
                 //         firstName: true,
@@ -1044,7 +1392,8 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
             paidAmount: sale.paidAmount,
             status: sale.status,
             remark: sale.remark,
-            totalItems: sale.salesItems.length,
+            totalItems: countBillableSalesItems(sale.salesItems),
+            siteId: sale.siteId,
             payments: sale.payments || []
         }));
 
@@ -1083,6 +1432,52 @@ let getById = async (databaseName: string, id: number) => {
     }
 }
 
+/**
+ * Laundry pickup: fetch a sale by its client-minted orderRef (the QR scan key).
+ * Mirrors getById but keyed by the unique orderRef column.
+ */
+let getByRef = async (databaseName: string, orderRef: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const sales = await tenantPrisma.sales.findUnique({
+        where: { orderRef },
+        include: {
+            salesItems: true,
+            payments: true,
+            registerLogs: true,
+        },
+    })
+    if (!sales) {
+        throw new NotFoundError("Sales")
+    }
+    return sales
+}
+
+/**
+ * Laundry pickup: mark an order collected by orderRef.
+ *
+ * Sets `collectedAt` and, only when the sale is already fully paid, transitions
+ * status → Completed. Outstanding balances are settled separately via the
+ * existing add-payment flow BEFORE collect is called, so we never force a
+ * still-owed sale to Completed here.
+ */
+let collect = async (databaseName: string, orderRef: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const sale = await tenantPrisma.sales.findUnique({ where: { orderRef } })
+    if (!sale) {
+        throw new NotFoundError("Sales")
+    }
+    const fullyPaid = new Decimal(sale.paidAmount.toString())
+        .gte(new Decimal(sale.totalAmount.toString()))
+    await tenantPrisma.sales.update({
+        where: { orderRef },
+        data: {
+            collectedAt: new Date(),
+            ...(fullyPaid ? { status: 'Completed' } : {}),
+        },
+    })
+    return getByRef(databaseName, orderRef)
+}
+
 async function completeNewSales(
     databaseName: string,
     tenantId: number,
@@ -1095,62 +1490,118 @@ async function completeNewSales(
     validateSalesItemNumerics(salesBody.salesItems);
     validatePaymentNumerics(payments);
 
+    // Resolve the stock-source override permission LIVE (cached ~5 min) rather than
+    // from the JWT, so a grant/revoke takes effect within the cache TTL instead of
+    // waiting for the 1-day token to reissue. Falls back to the token-stamped
+    // permissions if the live resolve fails (transient DB error → previous behavior).
+    let effectivePermissions: string[];
+    try {
+        effectivePermissions = await getEffectivePermissions(
+            databaseName, performedBy.userId, performedBy.username,
+        );
+    } catch (error) {
+        console.error('completeNewSales live-resolve failed, falling back to JWT:', error);
+        effectivePermissions = performedBy.permissions ?? [];
+    }
+    const canOverride = effectivePermissions.some(
+        (p) => p === '*' || p === OVERRIDE_STOCK_SOURCE_PERMISSION,
+    );
+
     // Store stock updates outside transaction for notification use
     let stockUpdatesForNotification: any[] = [];
+    // Loyalty follow-ups fire AFTER commit — scheduling them inside the tx
+    // callback runs them pre-commit (stale totalSpend can miss a threshold
+    // upgrade) and loses them if the process dies before commit.
+    let postCommitTierAccountId: number | null = null;
+    let postCommitMilestoneCustomerId: number | null = null;
 
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Batch all initial queries
-            const [stockBalances, stockReceipts, customer, itemTrackStockData, outlet] = await Promise.all([
-                // Get stock balances for validation (with variant support)
-                tx.stockBalance.findMany({
-                    where: {
-                        OR: salesBody.salesItems.map(item => ({
-                            itemId: item.itemId,
-                            itemVariantId: item.itemVariantId || null,
-                            outletId: salesBody.outletId,
-                            deleted: false,
-                        })),
-                    },
-                    select: {
-                        id: true, // Added for direct updates
-                        itemId: true,
-                        itemVariantId: true, // Added for variant support
-                        availableQuantity: true,
-                        reorderThreshold: true, // For low stock notifications
-                        item: {
-                            select: {
-                                itemName: true,
-                                itemCode: true,
-                                cost: true, // Fallback cost
-                                unitOfMeasure: true, // For consumption-based stock deduction
-                            },
-                        },
-                    },
-                }),
+            // ── Stock sourcing (AD6): automatic per-line "outlet-first → warehouse split",
+            // with a permission-gated whole-sale override. When the tenant has no active
+            // warehouse and no override is in effect, `sources` is just [outlet] and every
+            // read/write below is byte-for-byte the historical outlet-only path.
+            // See docs/future/WAREHOUSE_COMPLETION.md §A.
+            // `canOverride` is resolved live above (before the tx), not from the JWT.
+            const overrideRequested =
+                salesBody.stockSourceType === 'OUTLET' || salesBody.stockSourceType === 'WAREHOUSE';
+            const overrideActive = overrideRequested && canOverride;
 
-                // Get all stock receipts needed for FIFO in one query (with variant support)
-                tx.stockReceipt.findMany({
-                    where: {
-                        OR: salesBody.salesItems.map(item => ({
-                            itemId: item.itemId,
-                            itemVariantId: item.itemVariantId || null,
-                            outletId: salesBody.outletId,
-                            deleted: false,
-                            quantity: { gt: 0 },
-                        })),
-                    },
-                    select: {
-                        id: true,
-                        itemId: true,
-                        itemVariantId: true, // Added for variant support
-                        quantity: true,
-                        cost: true,
-                        receiptDate: true,
-                        createdAt: true,
-                    },
-                    orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
-                }),
+            const sources: SaleStockSource[] = [];
+            if (overrideActive && salesBody.stockSourceType === 'WAREHOUSE') {
+                // Manual override → that warehouse only, no fallback.
+                const whId = salesBody.stockSourceWarehouseId ?? 0;
+                const wh = await tx.warehouse.findFirst({ where: { id: whId, deleted: false }, select: { id: true } });
+                if (!wh) throw new BusinessLogicError(`Warehouse ${whId} not found or inactive`);
+                sources.push(makeSaleStockSource(tx, 'WAREHOUSE', whId));
+            } else if (overrideActive) {
+                // Manual override → outlet only, no fallback.
+                sources.push(makeSaleStockSource(tx, 'OUTLET', salesBody.outletId));
+            } else {
+                // Automatic: outlet first, then every active warehouse (FIFO split-fill).
+                // F1-ready: this is the candidate-warehouse list (single warehouse in v1).
+                sources.push(makeSaleStockSource(tx, 'OUTLET', salesBody.outletId));
+                const activeWarehouses = await tx.warehouse.findMany({
+                    where: { deleted: false },
+                    select: { id: true },
+                    orderBy: { id: 'asc' },
+                });
+                for (const w of activeWarehouses) sources.push(makeSaleStockSource(tx, 'WAREHOUSE', w.id));
+            }
+            // splitCapable = more than one source participates (≥1 warehouse joined the resolver).
+            const splitCapable = sources.length > 1;
+
+            const balanceSelect = {
+                id: true,
+                itemId: true,
+                itemVariantId: true,
+                availableQuantity: true,
+                reorderThreshold: true,
+                item: { select: { itemName: true, itemCode: true, cost: true, unitOfMeasure: true } },
+            };
+            const receiptSelect = {
+                id: true,
+                itemId: true,
+                itemVariantId: true,
+                quantity: true,
+                cost: true,
+                receiptDate: true,
+                createdAt: true,
+            };
+
+            // Batch-load balances + receipts for every source (parallel), plus customer +
+            // item flags. Typed loosely (delegates resolved dynamically per source).
+            const [perSourceResults, customer, itemTrackStockData, outlet]: [Array<[any[], any[]]>, any, any[], any] = await Promise.all([
+                Promise.all(
+                    sources.map((src) =>
+                        Promise.all([
+                            src.balanceDelegate.findMany({
+                                where: {
+                                    OR: salesBody.salesItems.map(item => ({
+                                        itemId: item.itemId,
+                                        itemVariantId: item.itemVariantId || null,
+                                        ...src.locWhere,
+                                        deleted: false,
+                                    })),
+                                },
+                                select: balanceSelect,
+                            }),
+                            src.receiptDelegate.findMany({
+                                where: {
+                                    OR: salesBody.salesItems.map(item => ({
+                                        itemId: item.itemId,
+                                        itemVariantId: item.itemVariantId || null,
+                                        ...src.locWhere,
+                                        deleted: false,
+                                        quantity: { gt: 0 },
+                                    })),
+                                },
+                                select: receiptSelect,
+                                orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
+                            }),
+                        ])
+                    )
+                ) as Promise<Array<[any[], any[]]>>,
 
                 // Validate customer if provided
                 salesBody.customerId ? tx.customer.findUnique({
@@ -1192,20 +1643,20 @@ async function completeNewSales(
                 throw new Error(`Invalid customerId: ${salesBody.customerId}`);
             }
 
-            // Create lookup maps for better performance (with variant support using composite keys)
-            const stockBalanceMap = new Map(
-                stockBalances.map(sb => [
-                    `${sb.itemId}-${sb.itemVariantId || 'null'}`, // Composite key
-                    sb
-                ])
-            );
-            const stockReceiptsByItem = new Map<string, typeof stockReceipts>();
-            stockReceipts.forEach(receipt => {
-                const lookupKey = `${receipt.itemId}-${receipt.itemVariantId || 'null'}`;
-                if (!stockReceiptsByItem.has(lookupKey)) {
-                    stockReceiptsByItem.set(lookupKey, []);
+            // Build per-source lookup maps (composite key itemId-variant). Receipts are
+            // mutated in-memory during FIFO so later lines for the same item see depletion.
+            sources.forEach((src, i) => {
+                const [balances, receipts] = perSourceResults[i];
+                src.balanceMap = new Map(
+                    balances.map((sb: any) => [`${sb.itemId}-${sb.itemVariantId || 'null'}`, sb])
+                );
+                src.receiptsByItem = new Map();
+                for (const r of receipts) {
+                    const key = `${r.itemId}-${r.itemVariantId || 'null'}`;
+                    if (!src.receiptsByItem.has(key)) src.receiptsByItem.set(key, []);
+                    src.receiptsByItem.get(key)!.push(r);
                 }
-                stockReceiptsByItem.get(lookupKey)!.push(receipt);
+                src.originalReceiptQty = new Map(receipts.map((r: any) => [r.id, new Decimal(r.quantity)]));
             });
 
             // Build trackStock lookup map
@@ -1216,6 +1667,18 @@ async function completeNewSales(
             // Split sales items into stock-tracked and non-stock-tracked groups
             const stockItems = salesBody.salesItems.filter(i => itemTrackStockMap.get(i.itemId)?.trackStock !== false);
             const nonStockItems = salesBody.salesItems.filter(i => itemTrackStockMap.get(i.itemId)?.trackStock === false);
+
+            // Preserve the caller's line order through the stock/non-stock split and
+            // the FIFO row expansion below. salesItemData is otherwise built as
+            // [all stock rows] + [all non-stock rows], which separates a laundry
+            // service line from the supply lines it consumed (a service may be
+            // non-stock while its consumables are stock-tracked, or vice versa) — so
+            // on reload the service↔supply grouping is lost. We tag every produced
+            // row with its original payload index and restore that order before
+            // createMany. Keyed by object reference (the filtered arrays reuse the
+            // same item objects).
+            const originalLineIndex = new Map<any, number>();
+            salesBody.salesItems.forEach((it, idx) => originalLineIndex.set(it, idx));
 
             // Validate stockConsumptionQty values (only for stock-tracked items)
             for (const item of stockItems) {
@@ -1240,21 +1703,34 @@ async function completeNewSales(
                 aggregatedEffectiveQtyMap.set(lookupKey, current.plus(effectiveQty));
             }
 
-            // Validate stock availability using aggregated quantities
+            // Validate COMBINED availability across all sources (atomic — fail before any
+            // write). Also seed each source's remainingBalance ledger used by the split.
             const stockValidationErrors: string[] = [];
             for (const [lookupKey, totalEffectiveQty] of aggregatedEffectiveQtyMap) {
-                const stockBalance = stockBalanceMap.get(lookupKey);
-                if (!stockBalance) {
-                    const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                let combinedAvail = new Decimal(0);
+                let anyBalance = false;
+                let itemInfo: any = null;
+                for (const src of sources) {
+                    const b = src.balanceMap.get(lookupKey);
+                    if (b) {
+                        anyBalance = true;
+                        itemInfo = itemInfo || b.item;
+                        combinedAvail = combinedAvail.plus(new Decimal(b.availableQuantity));
+                    }
+                    src.remainingBalance.set(lookupKey, b ? new Decimal(b.availableQuantity) : new Decimal(0));
+                }
+                const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                if (!anyBalance) {
                     const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
                     stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}${variantInfo}`);
                     continue;
                 }
-                if (new Decimal(stockBalance.availableQuantity).lt(totalEffectiveQty)) {
-                    const variantInfo = stockBalance.itemVariantId ? ` (variant)` : '';
+                if (combinedAvail.lt(totalEffectiveQty)) {
+                    const variantInfo = item.itemVariantId ? ` (variant)` : '';
+                    const srcNote = splitCapable ? ' (outlet + warehouse)' : '';
                     stockValidationErrors.push(
-                        `Insufficient stock for ${stockBalance.item.itemName}${variantInfo} (${stockBalance.item.itemCode}). ` +
-                        `Available: ${stockBalance.availableQuantity}, Required: ${totalEffectiveQty}`
+                        `Insufficient stock for ${itemInfo?.itemName || item.itemName}${variantInfo} (${itemInfo?.itemCode || item.itemCode}). ` +
+                        `Available: ${combinedAvail}${srcNote}, Required: ${totalEffectiveQty}`
                     );
                 }
             }
@@ -1262,69 +1738,61 @@ async function completeNewSales(
                 throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
             }
 
-            // Snapshot original receipt quantities BEFORE FIFO mutation
-            // (FIFO loop mutates receipt.quantity in-memory for duplicate-item handling)
-            const originalReceiptQtyMap = new Map<number, Decimal>();
-            for (const receipt of stockReceipts) {
-                originalReceiptQtyMap.set(receipt.id, new Decimal(receipt.quantity));
-            }
-
-            // Calculate FIFO costs for each sales item
-            // Receipt quantities are mutated in-memory so subsequent items with the same
-            // itemId see reduced quantities (fixes duplicate-item FIFO bug)
+            // Calculate FIFO costs for each sales line, splitting across sources in priority
+            // order (outlet first, then warehouse). Each used-receipt is tagged with its
+            // source index. Receipt quantities + remainingBalance are mutated in-memory so
+            // later lines for the same item see depletion (fixes duplicate-item FIFO bug).
             const salesItemsWithFIFOCost: Array<typeof salesBody.salesItems[0] & {
-                usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[]
+                usedReceipts: { srcIndex: number; id: number; quantityUsed: Decimal; cost: Decimal }[]
+                __order: number
             }> = [];
 
             for (const item of stockItems) {
                 const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
-                const stockBalance = stockBalanceMap.get(lookupKey)!;
                 const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
+                const fallbackCost = new Decimal(itemTrackStockMap.get(item.itemId)?.cost || 0);
+                let remaining = effectiveQty;
+                const usedReceipts: { srcIndex: number; id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
 
-                const itemReceipts = stockReceiptsByItem.get(lookupKey) || [];
-                let remainingQuantity = effectiveQty;
-                let usedReceipts: { id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
+                for (let si = 0; si < sources.length && remaining.gt(0); si++) {
+                    const src = sources[si];
+                    const avail = src.remainingBalance.get(lookupKey) || new Decimal(0);
+                    const take = Decimal.min(remaining, avail);
+                    if (take.lte(0)) continue;
 
-                if (itemReceipts.length === 0) {
-                    // Fallback to item cost
-                    usedReceipts.push({
-                        id: -1,
-                        quantityUsed: remainingQuantity,
-                        cost: new Decimal(stockBalance.item.cost || 0)
-                    });
-                } else {
-                    // Use FIFO — receipt.quantity is mutated in-memory for subsequent items
-                    for (const receipt of itemReceipts) {
-                        if (remainingQuantity.lte(0)) break;
-
-                        const availableInReceipt = new Decimal(receipt.quantity);
-                        if (availableInReceipt.lte(0)) continue;
-
-                        const quantityToUse = Decimal.min(remainingQuantity, availableInReceipt);
-                        remainingQuantity = remainingQuantity.minus(quantityToUse);
-
-                        // Mutate receipt quantity in-memory for subsequent items with same itemId
-                        (receipt as any).quantity = availableInReceipt.minus(quantityToUse);
-
-                        usedReceipts.push({
-                            id: receipt.id,
-                            quantityUsed: quantityToUse,
-                            cost: new Decimal(receipt.cost),
-                        });
+                    const itemReceipts = src.receiptsByItem.get(lookupKey) || [];
+                    let need = take;
+                    if (itemReceipts.length === 0) {
+                        // Source has balance but no FIFO receipts → fall back to item cost.
+                        usedReceipts.push({ srcIndex: si, id: -1, quantityUsed: need, cost: fallbackCost });
+                        need = new Decimal(0);
+                    } else {
+                        for (const receipt of itemReceipts) {
+                            if (need.lte(0)) break;
+                            const availableInReceipt = new Decimal(receipt.quantity);
+                            if (availableInReceipt.lte(0)) continue;
+                            const quantityToUse = Decimal.min(need, availableInReceipt);
+                            need = need.minus(quantityToUse);
+                            (receipt as any).quantity = availableInReceipt.minus(quantityToUse);
+                            usedReceipts.push({ srcIndex: si, id: receipt.id, quantityUsed: quantityToUse, cost: new Decimal(receipt.cost) });
+                        }
+                        // Receipts short within this source's portion → last receipt's cost.
+                        if (need.gt(0)) {
+                            const lastReceipt = itemReceipts[itemReceipts.length - 1];
+                            usedReceipts.push({ srcIndex: si, id: -1, quantityUsed: need, cost: new Decimal(lastReceipt.cost) });
+                            need = new Decimal(0);
+                        }
                     }
-
-                    // If still remaining, use last receipt's cost
-                    if (remainingQuantity.gt(0) && itemReceipts.length > 0) {
-                        const lastReceipt = itemReceipts[itemReceipts.length - 1];
-                        usedReceipts.push({
-                            id: -1,
-                            quantityUsed: remainingQuantity,
-                            cost: new Decimal(lastReceipt.cost),
-                        });
-                    }
+                    src.remainingBalance.set(lookupKey, avail.minus(take));
+                    remaining = remaining.minus(take);
                 }
 
-                salesItemsWithFIFOCost.push({ ...item, usedReceipts });
+                if (remaining.gt(0)) {
+                    // Unreachable after combined validation — defensive guard.
+                    throw new BusinessLogicError(`Insufficient combined stock for item ${item.itemName || item.itemId}`);
+                }
+
+                salesItemsWithFIFOCost.push({ ...item, usedReceipts, __order: originalLineIndex.get(item) ?? 0 });
             }
 
             // Calculate payments and sales status
@@ -1336,9 +1804,6 @@ async function completeNewSales(
             // Calculate total profit and prepare sales item data
             let totalProfit = new Decimal(0);
             const salesItemData: any[] = [];
-            // Aggregate receipt updates by receipt ID to prevent duplicate updates
-            // when multiple sales items consume from the same receipt
-            const stockReceiptUpdateMap = new Map<number, Decimal>();
 
             salesItemsWithFIFOCost.forEach((item) => {
                 const isConsumptionItem = item.stockConsumptionQty != null;
@@ -1385,15 +1850,9 @@ async function completeNewSales(
                         deleted: false,
                         stockConsumptionQty: item.stockConsumptionQty,
                         unitOfMeasure: item.unitOfMeasure || null,
+                        loadWeightKg: item.loadWeightKg ?? null,
+                        __order: item.__order,
                     });
-
-                    // Track receipt updates for consumption item
-                    for (const receipt of item.usedReceipts) {
-                        if (receipt.id !== -1) {
-                            const current = stockReceiptUpdateMap.get(receipt.id) || new Decimal(0);
-                            stockReceiptUpdateMap.set(receipt.id, current.plus(receipt.quantityUsed));
-                        }
-                    }
                 } else {
                     // ── Piece-based items: existing multi-row FIFO split ──
                     const totalQuantity = new Decimal(item.quantity);
@@ -1404,6 +1863,10 @@ async function completeNewSales(
                     item.usedReceipts.forEach((receipt) => {
                         const receiptQuantity = new Decimal(receipt.quantityUsed);
                         const receiptCost = new Decimal(receipt.cost);
+
+                        // Cost provenance: link the line to the receipt that priced it
+                        // (id -1 = fallback cost, no receipt → stays NULL).
+                        const receiptSource = receipt.id !== -1 ? sources[receipt.srcIndex] : null;
 
                         const revenueForQuantity = new Decimal(item.price).times(receiptQuantity);
                         const costForQuantity = receiptCost.times(receiptQuantity);
@@ -1439,16 +1902,28 @@ async function completeNewSales(
                             deleted: false,
                             stockConsumptionQty: null,
                             unitOfMeasure: item.unitOfMeasure || null,
+                            loadWeightKg: item.loadWeightKg ?? null,
+                            stockReceiptId: receiptSource?.kind === 'OUTLET' ? receipt.id : null,
+                            warehouseStockReceiptId: receiptSource?.kind === 'WAREHOUSE' ? receipt.id : null,
+                            __order: item.__order,
                         });
-
-                        // Track receipt updates for piece-based item
-                        if (receipt.id !== -1) {
-                            const current = stockReceiptUpdateMap.get(receipt.id) || new Decimal(0);
-                            stockReceiptUpdateMap.set(receipt.id, current.plus(receipt.quantityUsed));
-                        }
                     });
                 }
             });
+
+            // Consolidate FIFO consumption per source: receiptUpdateMap (receipt depletion)
+            // and consumedByItem (balance decrement + movement). Driven off the source-tagged
+            // usedReceipts so a split line records against each actual location.
+            for (const fifoItem of salesItemsWithFIFOCost) {
+                const lookupKey = `${fifoItem.itemId}-${fifoItem.itemVariantId || 'null'}`;
+                for (const ur of fifoItem.usedReceipts) {
+                    const src = sources[ur.srcIndex];
+                    if (ur.id !== -1) {
+                        src.receiptUpdateMap.set(ur.id, (src.receiptUpdateMap.get(ur.id) || new Decimal(0)).plus(ur.quantityUsed));
+                    }
+                    src.consumedByItem.set(lookupKey, (src.consumedByItem.get(lookupKey) || new Decimal(0)).plus(ur.quantityUsed));
+                }
+            }
 
             // ── Non-stock items: use item.cost directly, no FIFO/stock operations ──
             for (const item of nonStockItems) {
@@ -1485,21 +1960,49 @@ async function completeNewSales(
                     deleted: false,
                     stockConsumptionQty: null,
                     unitOfMeasure: item.unitOfMeasure || null,
+                    loadWeightKg: item.loadWeightKg ?? null,
+                    __order: originalLineIndex.get(item) ?? 0,
                 });
             }
 
-            // Convert aggregated receipt update map to final update list
-            const stockReceiptUpdates: { id: number; newQuantity: Decimal }[] = [];
-            for (const [receiptId, totalUsed] of stockReceiptUpdateMap) {
-                const originalQty = originalReceiptQtyMap.get(receiptId) || new Decimal(0);
-                stockReceiptUpdates.push({ id: receiptId, newQuantity: originalQty.minus(totalUsed) });
+            // Compute sale-level stock-source provenance from what was ACTUALLY consumed.
+            const consumedFrom = (s: SaleStockSource) =>
+                [...s.consumedByItem.values()].some((q) => q.gt(0));
+            const outletUsed = sources.some((s) => s.kind === 'OUTLET' && consumedFrom(s));
+            const warehouseUsedSource = sources.find((s) => s.kind === 'WAREHOUSE' && consumedFrom(s));
+            const warehouseUsed = !!warehouseUsedSource;
+
+            let saleStockSourceType: string | null;
+            let saleStockSourceOutletId: number | null;
+            let saleStockSourceWarehouseId: number | null;
+            if (overrideActive) {
+                // Manual whole-sale override → record the chosen single source verbatim.
+                saleStockSourceType = salesBody.stockSourceType ?? 'OUTLET';
+                saleStockSourceOutletId = saleStockSourceType === 'OUTLET' ? salesBody.outletId : null;
+                saleStockSourceWarehouseId = saleStockSourceType === 'WAREHOUSE' ? (salesBody.stockSourceWarehouseId ?? null) : null;
+            } else if (!splitCapable) {
+                // No active warehouse → byte-for-byte the historical outlet path (null source).
+                saleStockSourceType = salesBody.stockSourceType ?? null;
+                saleStockSourceOutletId = salesBody.stockSourceOutletId ?? null;
+                saleStockSourceWarehouseId = null;
+            } else if (outletUsed && warehouseUsed) {
+                saleStockSourceType = 'MIXED';
+                saleStockSourceOutletId = salesBody.outletId;
+                saleStockSourceWarehouseId = warehouseUsedSource!.locationId;
+            } else if (warehouseUsed) {
+                saleStockSourceType = 'WAREHOUSE';
+                saleStockSourceOutletId = null;
+                saleStockSourceWarehouseId = warehouseUsedSource!.locationId;
+            } else {
+                saleStockSourceType = 'OUTLET';
+                saleStockSourceOutletId = salesBody.outletId;
+                saleStockSourceWarehouseId = null;
             }
 
             // Create sales record
             const createdSales = await tx.sales.create({
                 data: {
                     outletId: salesBody.outletId,
-                    stockSourceOutletId: salesBody.stockSourceOutletId ?? null,
                     businessDate: salesBody.businessDate,
                     salesType: salesBody.salesType.replace(/\b\w/g, (char) => char.toUpperCase()),
                     customerName: salesBody.customerName || '',
@@ -1533,14 +2036,31 @@ async function completeNewSales(
                     eodId: salesBody.eodId,
                     salesQuotationId: salesBody.salesQuotationId,
                     performedBy: salesBody.performedBy,
+                    // Terminal attribution — which terminal rang this sale (client-supplied).
+                    siteId: salesBody.siteId ?? null,
                     deleted: false,
                     profitAmount: totalProfit,
+                    // Laundry intake→pickup identity (null for retail / when not sent)
+                    orderRef: salesBody.orderRef || null,
+                    friendlyNumber: salesBody.friendlyNumber || null,
+                    // Stock-source provenance — computed from actual per-line consumption
+                    // (OUTLET / WAREHOUSE / MIXED), or null for non-warehouse tenants.
+                    stockSourceType: saleStockSourceType,
+                    stockSourceOutletId: saleStockSourceOutletId,
+                    stockSourceWarehouseId: saleStockSourceWarehouseId,
                 },
             });
 
+            // Restore the caller's line order so persisted rows keep the cart's
+            // interleaving (service line followed by the supplies it consumed).
+            // Stable sort: multiple FIFO-split rows for one piece-based line share
+            // an __order and keep their relative split order. __order is stripped
+            // before the insert (it is not a column).
+            salesItemData.sort((a, b) => a.__order - b.__order);
+
             // Batch create sales items
             await tx.salesItem.createMany({
-                data: salesItemData.map(item => ({
+                data: salesItemData.map(({ __order, ...item }) => ({
                     ...item,
                     salesId: createdSales.id,
                 }))
@@ -1551,15 +2071,22 @@ async function completeNewSales(
                 data: payments.map(payment => ({
                     ...payment,
                     salesId: createdSales.id,
+                    // Terminal attribution — the terminal that took the payment.
+                    // Prefer a payment-level siteId; fall back to the sale's terminal.
+                    siteId: (payment as any).siteId ?? salesBody.siteId ?? null,
                 }))
             });
 
             // ── Loyalty Block ──
+            // Runs for ANY sale with a customer — Partially Paid / pay-on-collection
+            // included. The discounts are already locked into totalAmount by the FE,
+            // so redemption / subscription quota / voucher must be deducted NOW;
+            // only the earn leg waits for full payment (includeEarn).
             const isFullyPaid = salesStatus === 'Completed';
-            if (isFullyPaid && performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && salesBody.customerId) {
+            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && salesBody.customerId) {
                 const loyaltyResult = await processLoyaltyForSale(
                     tx, databaseName, createdSales.id, salesBody.customerId,
-                    totalSalesAmount, salesBody, performedBy
+                    totalSalesAmount, salesBody, performedBy, isFullyPaid
                 );
 
                 // Update sales record with loyalty + voucher data
@@ -1579,122 +2106,138 @@ async function completeNewSales(
                     },
                 });
 
-                // Fire-and-forget: check tier auto-upgrade (advanced only)
+                // Tier auto-upgrade + voucher milestones are deferred to after
+                // the transaction commits (see postCommit* declarations above).
                 if (performedBy.loyaltyTier === 'advanced' && loyaltyResult.loyaltyAccountId) {
-                    const accountIdForTier = loyaltyResult.loyaltyAccountId;
-                    // Post-transaction, non-blocking
-                    setImmediate(() => {
-                        loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
-                            console.error('Tier auto-upgrade check failed:', err)
-                        );
-                    });
+                    postCommitTierAccountId = loyaltyResult.loyaltyAccountId;
                 }
-
-                // Fire-and-forget: check voucher milestones
                 if (loyaltyResult.loyaltyAccountId && salesBody.customerId) {
-                    const custId = salesBody.customerId;
-                    setImmediate(() => {
-                        voucherService.checkMilestones(databaseName, custId).catch(err =>
-                            console.error('Voucher milestone check failed:', err)
-                        );
-                    });
+                    postCommitMilestoneCustomerId = salesBody.customerId;
                 }
             }
             // ── End Loyalty Block ──
 
-            // Batch update stock receipts (parallel execution for performance)
-            if (stockReceiptUpdates.length > 0) {
-                await Promise.all(
-                    stockReceiptUpdates.map((update) =>
-                        tx.stockReceipt.update({
-                            where: { id: update.id },
+            // ── Per-source stock writes (receipts → balances → movements). For a normal
+            // outlet-only sale `sources` is just [outlet] → identical to the legacy path;
+            // a split sale writes against each location it actually drew from.
+            const receiptUpdateOps: Promise<any>[] = [];
+            for (const src of sources) {
+                for (const [receiptId, totalUsed] of src.receiptUpdateMap) {
+                    const originalQty = src.originalReceiptQty.get(receiptId) || new Decimal(0);
+                    const newQuantity = originalQty.minus(totalUsed);
+                    receiptUpdateOps.push(
+                        src.receiptDelegate.update({
+                            where: { id: receiptId },
                             data: {
-                                quantity: update.newQuantity,
+                                quantity: newQuantity,
                                 updatedAt: new Date(),
                                 version: { increment: 1 },
-                                deleted: update.newQuantity.eq(0) ? true : undefined,
-                                deletedAt: update.newQuantity.eq(0) ? new Date() : undefined,
+                                deleted: newQuantity.eq(0) ? true : undefined,
+                                deletedAt: newQuantity.eq(0) ? new Date() : undefined,
                             },
                         })
-                    )
-                );
+                    );
+                }
+            }
+            if (receiptUpdateOps.length > 0) {
+                await Promise.all(receiptUpdateOps);
             }
 
-            // Prepare stock balance updates and movements (with variant support)
-            // Aggregate per unique item to handle duplicate itemIds (consumption items)
-            const stockUpdates: any[] = [];
-            for (const [lookupKey, totalEffectiveQty] of aggregatedEffectiveQtyMap) {
-                const stockBalance = stockBalanceMap.get(lookupKey)!;
-                const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
-                const newAvailableQuantity = new Decimal(stockBalance.availableQuantity)
-                    .minus(totalEffectiveQty);
+            // Build balance decrements + movements per source + collect notification
+            // candidates (outlet only drives low/out-of-stock alerts in v1).
+            const balanceOps: Promise<any>[] = [];
+            const movementOps: Promise<any>[] = [];
+            const stockUpdatesForNotif: any[] = [];
+            for (const src of sources) {
+                const movementData: any[] = [];
+                for (const [lookupKey, consumedQty] of src.consumedByItem) {
+                    if (consumedQty.lte(0)) continue;
+                    const balance = src.balanceMap.get(lookupKey)!;
+                    const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                    const prev = new Decimal(balance.availableQuantity);
+                    const newAvail = prev.minus(consumedQty);
+                    const reorderThreshold = balance.reorderThreshold ? new Decimal(balance.reorderThreshold) : null;
+                    const needsReorder = reorderThreshold
+                        ? newAvail.lte(reorderThreshold) && prev.gt(reorderThreshold)
+                        : false;
 
-                // Check reorder threshold
-                const reorderThreshold = stockBalance.reorderThreshold
-                    ? new Decimal(stockBalance.reorderThreshold)
-                    : null;
+                    balanceOps.push(
+                        src.balanceDelegate.update({
+                            where: { id: balance.id },
+                            data: {
+                                availableQuantity: { decrement: consumedQty.toNumber() },
+                                onHandQuantity: { decrement: consumedQty.toNumber() },
+                                version: { increment: 1 },
+                                updatedAt: new Date(),
+                            },
+                        })
+                    );
 
-                const needsReorder = reorderThreshold
-                    ? newAvailableQuantity.lte(reorderThreshold) &&
-                    new Decimal(stockBalance.availableQuantity).gt(reorderThreshold)
-                    : false;
-
-                stockUpdates.push({
-                    stockBalanceId: stockBalance.id,
-                    outletId: salesBody.outletId,
-                    itemId: item.itemId,
-                    itemVariantId: item.itemVariantId || null,
-                    itemName: stockBalance.item.itemName,
-                    itemCode: stockBalance.item.itemCode,
-                    variantName: item.variantName || null,
-                    quantity: totalEffectiveQty,
-                    previousAvailable: new Decimal(stockBalance.availableQuantity),
-                    previousOnHand: new Decimal(stockBalance.availableQuantity),
-                    newAvailableQuantity: newAvailableQuantity,
-                    reorderThreshold: reorderThreshold?.toNumber(),
-                    willBeOutOfStock: newAvailableQuantity.lte(0),
-                    needsReorder: needsReorder,
-                });
-            }
-
-            // Store for notifications outside transaction
-            stockUpdatesForNotification = stockUpdates;
-
-            // Batch update stock balances and create movements
-            await Promise.all([
-                // Update stock balances directly using stored IDs
-                ...stockUpdates.map((update) =>
-                    tx.stockBalance.update({
-                        where: { id: update.stockBalanceId },
-                        data: {
-                            availableQuantity: { decrement: update.quantity.toNumber() },
-                            onHandQuantity: { decrement: update.quantity.toNumber() },
-                            version: { increment: 1 },
-                            updatedAt: new Date(),
-                        },
-                    })
-                ),
-
-                // Batch create stock movements
-                tx.stockMovement.createMany({
-                    data: stockUpdates.map(update => ({
-                        itemId: update.itemId,
-                        itemVariantId: update.itemVariantId,
-                        outletId: update.outletId,
-                        previousAvailableQuantity: update.previousAvailable.toNumber(),
-                        previousOnHandQuantity: update.previousOnHand.toNumber(),
-                        availableQuantityDelta: -update.quantity.toNumber(),
-                        onHandQuantityDelta: -update.quantity.toNumber(),
+                    movementData.push({
+                        itemId: item.itemId,
+                        itemVariantId: item.itemVariantId || null,
+                        ...src.locWhere,
+                        previousAvailableQuantity: prev.toNumber(),
+                        previousOnHandQuantity: prev.toNumber(),
+                        availableQuantityDelta: -consumedQty.toNumber(),
+                        onHandQuantityDelta: -consumedQty.toNumber(),
                         movementType: 'Sales',
                         documentId: createdSales.id,
                         reason: 'Sales transaction',
                         remark: `Sales #${createdSales.id}`,
-                    }))
-                })
-            ]);
+                        // Outlet movements carry terminal attribution (siteId); warehouse
+                        // movements carry performedBy (no siteId column).
+                        ...(src.kind === 'OUTLET'
+                            ? { siteId: salesBody.siteId ?? null }
+                            : { performedBy: performedBy.username }),
+                    });
+
+                    if (src.kind === 'OUTLET') {
+                        stockUpdatesForNotif.push({
+                            itemId: item.itemId,
+                            itemVariantId: item.itemVariantId || null,
+                            itemName: balance.item.itemName,
+                            itemCode: balance.item.itemCode,
+                            variantName: item.variantName || null,
+                            quantity: consumedQty,
+                            previousAvailable: prev,
+                            newAvailableQuantity: newAvail,
+                            reorderThreshold: reorderThreshold?.toNumber(),
+                            willBeOutOfStock: newAvail.lte(0),
+                            needsReorder,
+                        });
+                    }
+                }
+                if (movementData.length > 0) {
+                    movementOps.push(src.movementDelegate.createMany({ data: movementData }));
+                }
+            }
+
+            // Store for notifications outside transaction
+            stockUpdatesForNotification = stockUpdatesForNotif;
+
+            await Promise.all([...balanceOps, ...movementOps]);
 
             return createdSales;
         });
+
+        // ── Post-commit loyalty follow-ups (fire-and-forget) ──
+        if (postCommitTierAccountId !== null) {
+            const accountIdForTier = postCommitTierAccountId;
+            setImmediate(() => {
+                loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
+                    console.error('Tier auto-upgrade check failed:', err)
+                );
+            });
+        }
+        if (postCommitMilestoneCustomerId !== null) {
+            const custId = postCommitMilestoneCustomerId;
+            setImmediate(() => {
+                voucherService.checkMilestones(databaseName, custId).catch(err =>
+                    console.error('Voucher milestone check failed:', err)
+                );
+            });
+        }
 
         // Prepare all notifications
         const outOfStockItems = stockUpdatesForNotification.filter((u: any) => u.willBeOutOfStock);
@@ -2096,6 +2639,83 @@ let getTotalSalesData = async (databaseName: string, sessionID: number, loyaltyT
     }
 }
 
+/**
+ * Daily revenue trend for the dashboard sparkline + "vs yesterday" chip.
+ *
+ * Performance / cost notes:
+ * - Single parameterised aggregate query. Day-bucketing + SUM happen IN MySQL,
+ *   so the wire transfers at most `days` rows (not every sale row).
+ * - Rides the existing composite index @@index([outletId, businessDate, status]):
+ *   outletId equality + businessDate range seek; STATUS filtered via index-condition
+ *   pushdown. Work scales with one outlet × N days, never the whole table.
+ * - Days are bucketed by UTC calendar day to stay consistent with the rest of the
+ *   app (session.businessDate = getUTCStartOfDay, outlet reports use UTC bounds).
+ * - Revenue definition matches getTotalSalesData (SUM(totalAmount) of active sales:
+ *   Completed + Partially Paid + Delivered) so the graph agrees with the headline.
+ */
+let getRevenueTrend = async (databaseName: string, outletId: number, days: number = 7) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        // Clamp to a sane window (defensive; avoids an unbounded scan if a bad value slips through).
+        const windowDays = Math.min(Math.max(Math.trunc(days) || 7, 1), 31);
+
+        // [start, end) in UTC: start = midnight of (today - (windowDays - 1)), end = midnight of tomorrow.
+        const now = new Date();
+        const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (windowDays - 1), 0, 0, 0, 0));
+
+        // Aggregate in the DB. DATE() truncation isn't expressible via Prisma groupBy, so use a
+        // parameterised raw query (still safe — values are bound, not interpolated).
+        const rows = await tenantPrisma.$queryRaw<Array<{ day: Date | string; revenue: Prisma.Decimal | string | null }>>(
+            Prisma.sql`
+                SELECT DATE(BUSINESS_DATE)                      AS day,
+                       CAST(SUM(TOTAL_AMOUNT) AS DECIMAL(18,4)) AS revenue
+                FROM   sales
+                WHERE  OUTLET_ID     = ${outletId}
+                  AND  BUSINESS_DATE >= ${start}
+                  AND  BUSINESS_DATE <  ${end}
+                  AND  STATUS IN ('Completed', 'Partially Paid', 'Delivered')
+                  AND  IS_DELETED = 0
+                GROUP BY DATE(BUSINESS_DATE)
+                ORDER BY day ASC
+            `
+        );
+
+        // Index returned rows by YYYY-MM-DD for zero-fill.
+        const byDay = new Map<string, number>();
+        for (const r of rows) {
+            const key = typeof r.day === 'string' ? r.day.slice(0, 10) : r.day.toISOString().slice(0, 10);
+            const rev = r.revenue == null ? 0 : Number(r.revenue);
+            byDay.set(key, rev);
+        }
+
+        // Build a dense, zero-filled series oldest→newest so the client can plot directly.
+        const series: Array<{ date: string; revenue: number }> = [];
+        for (let i = 0; i < windowDays; i++) {
+            const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (windowDays - 1 - i), 0, 0, 0, 0));
+            const key = d.toISOString().slice(0, 10);
+            series.push({ date: key, revenue: byDay.get(key) ?? 0 });
+        }
+
+        const todayRevenue = series[series.length - 1]?.revenue ?? 0;
+        const yesterdayRevenue = series.length >= 2 ? series[series.length - 2].revenue : 0;
+        // null trend when there's no baseline (avoids divide-by-zero / fake 100%).
+        const trendPct = yesterdayRevenue > 0
+            ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 1000) / 10
+            : null;
+
+        return {
+            series,
+            todayRevenue,
+            yesterdayRevenue,
+            trendPct,
+        };
+    }
+    catch (error) {
+        throw error
+    }
+}
+
 let addPaymentToPartiallyPaidSales = async (
     databaseName: string,
     tenantId: number,
@@ -2105,6 +2725,9 @@ let addPaymentToPartiallyPaidSales = async (
     outletId: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    // Loyalty follow-ups fire AFTER commit (see completeNewSales note).
+    let postCommitTierAccountId: number | null = null;
+    let postCommitMilestoneCustomerId: number | null = null;
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
             // Scope by outletId so the partially-paid sale must belong to the
@@ -2165,8 +2788,11 @@ let addPaymentToPartiallyPaidSales = async (
             });
 
             // ── Loyalty Earn on Completion ──
+            // Steps 0-3 (redeem / subscription / voucher) already ran at sale
+            // creation; only the EARN leg was deferred until full payment.
+            // creditEarnedPoints applies calcPointsEarned with the tenant's
+            // rounding mode — the previous inline math credited fractional points.
             if (isFullyPaid && performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
-                const toNum = loyaltyService.toDecimalNumber;
                 const account = await tx.loyaltyAccount.findFirst({
                     where: { customerId: sales.customerId, deleted: false },
                     include: performedBy.loyaltyTier === 'advanced' ? { loyaltyTier: true } : undefined,
@@ -2176,70 +2802,25 @@ let addPaymentToPartiallyPaidSales = async (
                     const program = await loyaltyService.getCachedProgram(databaseName);
                     if (program && program.isActive) {
                         const saleTotal = new Decimal(sales.totalAmount);
-                        let pointsMultiplier = 1.0;
-                        if (performedBy.loyaltyTier === 'advanced' && (account as any).loyaltyTier) {
-                            pointsMultiplier = toNum((account as any).loyaltyTier.pointsMultiplier);
-                        }
-                        const pointsEarned = saleTotal.toNumber() * toNum(program.pointsPerCurrency) * pointsMultiplier;
+                        if (saleTotal.gt(0)) {
+                            const pointsEarned = await creditEarnedPoints(
+                                tx, account, program, salesId, saleTotal, performedBy
+                            );
 
-                        if (pointsEarned > 0) {
-                            const expiresAt = program.pointsExpiryDays
-                                ? new Date(Date.now() + program.pointsExpiryDays * 24 * 60 * 60 * 1000)
-                                : null;
-
-                            await tx.loyaltyPointBatch.create({
-                                data: {
-                                    loyaltyAccountId: account.id,
-                                    originalPoints: pointsEarned,
-                                    remainingPoints: pointsEarned,
-                                    expiresAt,
-                                    salesId,
-                                },
-                            });
-
-                            await tx.loyaltyAccount.update({
-                                where: { id: account.id },
-                                data: {
-                                    currentPoints: { increment: pointsEarned },
-                                    totalEarned: { increment: pointsEarned },
-                                    totalSpend: { increment: saleTotal.toNumber() },
-                                },
-                            });
-
-                            const finalAccount = await tx.loyaltyAccount.findUnique({ where: { id: account.id } });
-
-                            await tx.loyaltyTransaction.create({
-                                data: {
-                                    loyaltyAccountId: account.id,
-                                    type: 'EARN',
-                                    points: pointsEarned,
-                                    balanceAfter: toNum(finalAccount?.currentPoints ?? 0),
-                                    salesId,
-                                    description: `Earned from completed sale #${salesId}`,
-                                    performedBy: performedBy.username,
-                                },
-                            });
-
-                            await tx.sales.update({
-                                where: { id: salesId },
-                                data: { loyaltyPointsEarned: pointsEarned },
-                            });
-
-                            // Fire-and-forget tier upgrade check
-                            if (performedBy.loyaltyTier === 'advanced') {
-                                setImmediate(() => {
-                                    loyaltyService.checkTierUpgrade(databaseName, account.id).catch(err =>
-                                        console.error('Tier auto-upgrade check failed:', err)
-                                    );
+                            if (pointsEarned > 0) {
+                                await tx.sales.update({
+                                    where: { id: salesId },
+                                    data: { loyaltyPointsEarned: pointsEarned },
                                 });
                             }
 
-                            // Fire-and-forget: check voucher milestones
-                            setImmediate(() => {
-                                voucherService.checkMilestones(databaseName, sales.customerId!).catch(err =>
-                                    console.error('Voucher milestone check failed:', err)
-                                );
-                            });
+                            // Tier upgrade + milestones deferred to post-commit
+                            // (pre-commit scheduling reads stale totals and is
+                            // lost on process restart).
+                            if (performedBy.loyaltyTier === 'advanced') {
+                                postCommitTierAccountId = account.id;
+                            }
+                            postCommitMilestoneCustomerId = sales.customerId;
                         }
                     }
                 }
@@ -2248,6 +2829,24 @@ let addPaymentToPartiallyPaidSales = async (
 
             return { updatedSales, totalNewPaymentAmount, remainingAmount };
         });
+
+        // ── Post-commit loyalty follow-ups (fire-and-forget) ──
+        if (postCommitTierAccountId !== null) {
+            const accountIdForTier = postCommitTierAccountId;
+            setImmediate(() => {
+                loyaltyService.checkTierUpgrade(databaseName, accountIdForTier).catch(err =>
+                    console.error('Tier auto-upgrade check failed:', err)
+                );
+            });
+        }
+        if (postCommitMilestoneCustomerId !== null) {
+            const custId = postCommitMilestoneCustomerId;
+            setImmediate(() => {
+                voucherService.checkMilestones(databaseName, custId).catch(err =>
+                    console.error('Voucher milestone check failed:', err)
+                );
+            });
+        }
 
         // Send notification after successful transaction
         const isCompleted = result.updatedSales.status === 'Completed';
@@ -2289,7 +2888,9 @@ let voidSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
-    outletId: number
+    outletId: number,
+    // Acting terminal performing the mutation (client-supplied, nullable).
+    actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -2383,6 +2984,9 @@ let voidSales = async (
                                 documentId: salesId,
                                 reason: '',
                                 remark: `Sales #${salesId} voided`,
+                                // Attributed to the acting terminal (the device performing
+                                // the reversal); falls back to the sale's terminal of record.
+                                siteId: actingSiteId ?? sales.siteId ?? null,
                             },
                         });
                     }
@@ -2432,7 +3036,9 @@ let returnSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
-    outletId: number
+    outletId: number,
+    // Acting terminal performing the mutation (client-supplied, nullable).
+    actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -2526,6 +3132,9 @@ let returnSales = async (
                                 documentId: salesId,
                                 reason: '',
                                 remark: `Sales #${salesId} returned`,
+                                // Attributed to the acting terminal (the device performing
+                                // the reversal); falls back to the sale's terminal of record.
+                                siteId: actingSiteId ?? sales.siteId ?? null,
                             },
                         });
                     }
@@ -2575,7 +3184,9 @@ let refundSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
-    outletId: number
+    outletId: number,
+    // Acting terminal performing the mutation (client-supplied, nullable).
+    actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -2668,6 +3279,9 @@ let refundSales = async (
                                 documentId: salesId,
                                 reason: '',
                                 remark: `Sales #${salesId} refunded`,
+                                // Attributed to the acting terminal (the device performing
+                                // the reversal); falls back to the sale's terminal of record.
+                                siteId: actingSiteId ?? sales.siteId ?? null,
                             },
                         });
                     }
@@ -2995,15 +3609,76 @@ let confirmDeliveryBatch = async (
     }
 }
 
+/**
+ * Edit ONLY the contact fields (customerName / phoneNumber) of an existing sale.
+ *
+ * This is the single sanctioned path for mutating an otherwise-immutable sale
+ * snapshot — used to fix walk-in typos in the captured name/phone. It deliberately
+ * touches NOTHING else: not customerId, addresses, amounts, status, or items.
+ *
+ * `updatedAt` is bumped automatically by Prisma's `@updatedAt` on the Sales model.
+ *
+ * @throws NotFoundError if no non-deleted sale with `salesId` exists in the tenant.
+ */
+let updateSalesContact = async (
+    databaseName: string,
+    salesId: number,
+    contact: { customerName?: string; phoneNumber?: string },
+    // Scopes the lookup to the requesting outlet so a user in outlet A cannot
+    // edit a sale belonging to outlet B by guessing its id (MULTI_OUTLET_BE.md §5.2).
+    outletId?: number
+) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    // Build a minimal patch containing only the provided fields (trimmed).
+    const data: { customerName?: string; phoneNumber?: string } = {};
+    if (contact.customerName !== undefined) {
+        data.customerName = contact.customerName.trim();
+    }
+    if (contact.phoneNumber !== undefined) {
+        data.phoneNumber = contact.phoneNumber.trim();
+    }
+
+    // Guard: the sale must exist, not be soft-deleted, and belong to the
+    // requesting outlet.
+    const existing = await tenantPrisma.sales.findFirst({
+        where: {
+            id: salesId,
+            deleted: false,
+            ...(outletId !== undefined ? { outletId } : {}),
+        },
+        select: { id: true },
+    });
+    if (!existing) {
+        throw new NotFoundError("Sales");
+    }
+
+    // No-op patch (neither field provided) — return current snapshot unchanged.
+    if (Object.keys(data).length === 0) {
+        return getById(databaseName, salesId);
+    }
+
+    await tenantPrisma.sales.update({
+        where: { id: salesId },
+        data, // @updatedAt bumps UPDATED_AT automatically
+    });
+
+    return getById(databaseName, salesId);
+}
+
 export = {
     getAll,
     getByDateRange,
     getById,
+    updateSalesContact,
+    getByRef,
+    collect,
     calculateSales,
     completeNewSales,
     update,
     remove,
     getTotalSalesData,
+    getRevenueTrend,
     getPartiallyPaidSales,
     addPaymentToPartiallyPaidSales,
     voidSales,

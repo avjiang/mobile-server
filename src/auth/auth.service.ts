@@ -8,6 +8,7 @@ import { TokenResponseBody } from "./auth.response"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
 import { User } from "../../prisma/client/generated/client"
+import { resolvePermissions } from "./permission-cache"
 const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -258,24 +259,39 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
             if (bestPlan === 'Pro') break;
         }
 
-        // Determine loyalty tier based on plan + add-on
+        // Determine loyalty tier based on plan + plan type + add-on
         let loyaltyTier: 'none' | 'basic' | 'advanced' = 'none';
         if (bestPlan === 'Pro') {
             loyaltyTier = 'basic'; // Pro plan gets basic loyalty
 
-            // Check if tenant has Advanced Loyalty add-on (ID 4)
-            const loyaltyAddOn = await globalPrisma.tenantAddOn.findUnique({
-                where: { tenantId_addOnId: { tenantId, addOnId: 4 } } // ADD_ON_IDS.ADVANCED_LOYALTY
-            });
-            if (loyaltyAddOn) {
+            // Laundry Pro includes the full advanced loyalty suite (membership
+            // tiers, points multipliers, prepaid packages) built-in — packages are
+            // the core retention/cashflow lever for laundry, so no add-on required.
+            // Other plan types keep advanced loyalty behind the Advanced Loyalty
+            // add-on (ID 4).
+            if (bestPlanType === 'Laundry') {
                 loyaltyTier = 'advanced';
+            } else {
+                const loyaltyAddOn = await globalPrisma.tenantAddOn.findUnique({
+                    where: { tenantId_addOnId: { tenantId, addOnId: 4 } } // ADD_ON_IDS.ADVANCED_LOYALTY
+                });
+                if (loyaltyAddOn) {
+                    loyaltyTier = 'advanced';
+                }
             }
         }
 
         return { planName: bestPlan, planType: bestPlanType, globalOutletId, loyaltyTier };
     } catch (error) {
+        // FAIL CLOSED. Previously this swallowed any DB error into a null-plan
+        // result, which the client then persists as a downgrade (Pro → "Trial",
+        // menus gone). A transient DB error must NEVER be allowed to mint a token
+        // with a degraded plan claim — rethrow so the login/refresh request fails
+        // and the client keeps its last good token and retries. A genuine
+        // "no active subscription" still returns null above (no throw), so this
+        // only affects real errors (e.g. connection-pool teardown, timeouts).
         console.error('Error getting tenant subscription info:', error);
-        return { planName: null, planType: null, globalOutletId: null, loyaltyTier: 'none' };
+        throw error;
     }
 }
 
@@ -418,6 +434,20 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string,
     }
 }
 
+// Stamp the user's effective permissions into the JWT at login. The live
+// resolver lives in permission-cache.ts (the same one requirePermission uses);
+// here we wrap it so login NEVER throws — a transient DB failure stamps [] and
+// logs, rather than breaking authentication. Super-admin (role id 1) and the
+// avjiang god-account resolve to '*', which requirePermission treats as a wildcard.
+async function fetchUserPermissions(db: string, userId: number, username: string): Promise<string[]> {
+    try {
+        return await resolvePermissions(db, userId, username);
+    } catch (error) {
+        console.error('fetchUserPermissions failed:', error);
+        return [];
+    }
+}
+
 let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) => {
     // Get notification topics for the user (skip for avjiang)
     let notificationTopics: string[] = [];
@@ -449,6 +479,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         }
     }
 
+    const permissions = await fetchUserPermissions(db, user.id, tenantUser.username);
+
     // Create a jwt token containing the user info that expires in 1 day
     const userInfo: UserInfo = {
         tenantUserId: tenantUser.id,
@@ -461,7 +493,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         planName,
         planType,
         loyaltyTier,
-        allowedOutletIds
+        allowedOutletIds,
+        permissions,
     }
     const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
     return { token, globalOutletId, loyaltyTier };

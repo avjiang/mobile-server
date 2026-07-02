@@ -6,6 +6,7 @@ import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request";
 import { Decimal } from 'decimal.js';
+import { restateSalesCostsForReceipts, ReceiptCostChange } from "../stock/sales-cost-restatement";
 
 class RequestValidateError extends Error {
     constructor(message: string) {
@@ -16,8 +17,87 @@ class RequestValidateError extends Error {
 
 
 
+// Variant-aware match key: receipts/items for different variants of the same item
+// must never share a cost adjustment.
+const receiptMatchKey = (itemId: number, itemVariantId?: number | null): string =>
+    `${itemId}_${itemVariantId ?? 'null'}`;
+
+const DO_ITEM_SELECT = {
+    id: true,
+    itemId: true,
+    itemVariantId: true,
+    receivedQuantity: true,
+    unitPrice: true,
+    deliveryFee: true,
+    deliveryOrderId: true
+} as const;
+
+const RECEIPT_SELECT = {
+    id: true,
+    itemId: true,
+    itemVariantId: true,
+    deliveryOrderId: true,
+    quantity: true,
+    cost: true
+} as const;
+
+const fetchDeliveryOrderItemsMap = async (
+    tx: Prisma.TransactionClient,
+    deliveryOrderIds: number[]
+): Promise<Map<string, any>> => {
+    const deliveryOrderItems = await tx.deliveryOrderItem.findMany({
+        where: { deliveryOrderId: { in: deliveryOrderIds }, deleted: false },
+        select: DO_ITEM_SELECT
+    });
+    const map = new Map<string, any>();
+    deliveryOrderItems.forEach(item => {
+        map.set(`${receiptMatchKey(item.itemId, item.itemVariantId)}_${item.deliveryOrderId}`, item);
+    });
+    return map;
+};
+
+// Goods can be received into outlet stock (StockReceipt) or warehouse stock
+// (WarehouseStockReceipt) depending on the DO destination — both must be adjusted.
+const fetchReceiptsBothLocations = async (
+    tx: Prisma.TransactionClient,
+    deliveryOrderIds: number[]
+): Promise<{ receipt: any; delegate: any; location: 'OUTLET' | 'WAREHOUSE' }[]> => {
+    const where = { deliveryOrderId: { in: deliveryOrderIds }, deleted: false };
+    const [outletReceipts, warehouseReceipts] = await Promise.all([
+        tx.stockReceipt.findMany({ where, select: RECEIPT_SELECT }),
+        tx.warehouseStockReceipt.findMany({ where, select: RECEIPT_SELECT })
+    ]);
+    return [
+        ...outletReceipts.map(receipt => ({ receipt, delegate: tx.stockReceipt, location: 'OUTLET' as const })),
+        ...warehouseReceipts.map(receipt => ({ receipt, delegate: tx.warehouseStockReceipt, location: 'WAREHOUSE' as const }))
+    ];
+};
+
+const deliveryFeePerUnitOf = (deliveryOrderItem: any): Decimal => {
+    const deliveryFee = new Decimal(deliveryOrderItem.deliveryFee || 0);
+    const deliveryOrderQuantity = new Decimal(deliveryOrderItem.receivedQuantity);
+    return deliveryOrderQuantity.gt(0) ? deliveryFee.div(deliveryOrderQuantity) : new Decimal(0);
+};
+
+const writeReceiptCost = async (delegate: any, receipt: any, newCost: Decimal): Promise<boolean> => {
+    if (newCost.equals(new Decimal(receipt.cost))) return false; // no-op, avoid version bumps
+    await delegate.update({
+        where: { id: receipt.id },
+        data: {
+            cost: newCost.toNumber(),
+            updatedAt: new Date(),
+            version: { increment: 1 }
+        }
+    });
+    return true;
+};
+
 /**
- * Updates stock receipt costs based on discounted invoice items and delivery fees
+ * Re-prices stock receipts from the final invoice item prices (the invoice is the
+ * financial source of truth, superseding the delivery-order estimate). Runs for every
+ * invoice with linked delivery orders — a supplier discount may arrive either as a
+ * discountAmount or as a directly lowered unit price, and both must flow into cost.
+ * New cost = effective invoice unit price + tax per unit (if exclusive) + delivery fee per unit.
  */
 const updateStockReceiptCosts = async (
     tx: Prisma.TransactionClient,
@@ -27,89 +107,45 @@ const updateStockReceiptCosts = async (
     isTaxInclusive: boolean
 ): Promise<void> => {
     try {
-        // Get delivery order items with their details
-        const deliveryOrderItems = await tx.deliveryOrderItem.findMany({
-            where: {
-                deliveryOrderId: { in: deliveryOrderIds },
-                deleted: false
-            },
-            select: {
-                id: true,
-                itemId: true,
-                receivedQuantity: true,
-                unitPrice: true,
-                deliveryFee: true,
-                deliveryOrderId: true
-            }
-        });
+        const deliveryOrderItemsMap = await fetchDeliveryOrderItemsMap(tx, deliveryOrderIds);
+        const receipts = await fetchReceiptsBothLocations(tx, deliveryOrderIds);
 
-        // Get stock receipts related to these delivery orders
-        const stockReceipts = await tx.stockReceipt.findMany({
-            where: {
-                deliveryOrderId: { in: deliveryOrderIds },
-                deleted: false
-            },
-            select: {
-                id: true,
-                itemId: true,
-                deliveryOrderId: true,
-                quantity: true,
-                cost: true
-            }
-        });
-
-        // Create maps for quick lookup
-        const invoiceItemsMap = new Map();
+        const invoiceItemsMap = new Map<string, any>();
         invoiceItems.forEach(item => {
-            invoiceItemsMap.set(item.itemId, item);
+            invoiceItemsMap.set(receiptMatchKey(item.itemId, item.itemVariantId), item);
         });
 
-        const deliveryOrderItemsMap = new Map();
-        deliveryOrderItems.forEach(item => {
-            deliveryOrderItemsMap.set(`${item.itemId}_${item.deliveryOrderId}`, item);
-        });
+        const costChanges: ReceiptCostChange[] = [];
 
-        // Update stock receipt costs
-        for (const stockReceipt of stockReceipts) {
-            const invoiceItem = invoiceItemsMap.get(stockReceipt.itemId);
-            const deliveryOrderItem = deliveryOrderItemsMap.get(`${stockReceipt.itemId}_${stockReceipt.deliveryOrderId}`);
+        for (const { receipt, delegate, location } of receipts) {
+            const key = receiptMatchKey(receipt.itemId, receipt.itemVariantId);
+            const invoiceItem = invoiceItemsMap.get(key);
+            const deliveryOrderItem = deliveryOrderItemsMap.get(`${key}_${receipt.deliveryOrderId}`);
 
-            if (invoiceItem && deliveryOrderItem && invoiceItem.discountAmount && invoiceItem.discountAmount > 0) {
-                // Calculate discounted unit price using Decimal for precision
-                const originalUnitPrice = new Decimal(invoiceItem.unitPrice);
-                const discountAmount = new Decimal(invoiceItem.discountAmount);
-                const quantity = new Decimal(invoiceItem.quantity);
+            if (!invoiceItem || !deliveryOrderItem) continue; // item not on this invoice → keep DO cost
 
-                // Calculate discount per unit
-                const discountPerUnit = discountAmount.div(quantity);
-                const discountedUnitPrice = originalUnitPrice.sub(discountPerUnit);
+            const quantity = new Decimal(invoiceItem.quantity);
+            if (!quantity.gt(0)) continue;
 
-                // Calculate tax per unit if tax is exclusive
-                let taxPerUnit = new Decimal(0);
-                if (!isTaxInclusive && invoiceItem.taxAmount) {
-                    const taxAmount = new Decimal(invoiceItem.taxAmount);
-                    taxPerUnit = taxAmount.div(quantity);
-                }
+            const unitPrice = new Decimal(invoiceItem.unitPrice);
+            const discountAmount = new Decimal(invoiceItem.discountAmount || 0);
+            const effectiveUnitPrice = unitPrice.sub(discountAmount.div(quantity));
 
-                // Calculate delivery fee per unit
-                const deliveryFee = new Decimal(deliveryOrderItem.deliveryFee || 0);
-                const deliveryOrderQuantity = new Decimal(deliveryOrderItem.receivedQuantity);
-                const deliveryFeePerUnit = deliveryOrderQuantity.gt(0) ? deliveryFee.div(deliveryOrderQuantity) : new Decimal(0);
+            let taxPerUnit = new Decimal(0);
+            if (!isTaxInclusive && invoiceItem.taxAmount) {
+                taxPerUnit = new Decimal(invoiceItem.taxAmount).div(quantity);
+            }
 
-                // Calculate new cost: discounted unit price + tax per unit (if exclusive) + delivery fee per unit
-                const newCost = discountedUnitPrice.add(taxPerUnit).add(deliveryFeePerUnit);
-
-                // Update stock receipt cost
-                await tx.stockReceipt.update({
-                    where: { id: stockReceipt.id },
-                    data: {
-                        cost: newCost.toNumber(),
-                        updatedAt: new Date(),
-                        version: { increment: 1 }
-                    }
-                });
+            const newCost = effectiveUnitPrice.add(taxPerUnit).add(deliveryFeePerUnitOf(deliveryOrderItem));
+            if (await writeReceiptCost(delegate, receipt, newCost)) {
+                costChanges.push({ location, receiptId: receipt.id, newCost });
             }
         }
+
+        // Restate cost+profit on sales lines that already consumed the re-priced
+        // receipts (gap sales between DO receipt and this invoice), so reports
+        // aggregate correct profit immediately.
+        await restateSalesCostsForReceipts(tx, costChanges);
     } catch (error) {
         console.error('Error updating stock receipt costs:', error);
         throw error;
@@ -117,85 +153,34 @@ const updateStockReceiptCosts = async (
 };
 
 /**
- * Reverts stock receipt costs to original values when invoice is cancelled
+ * Reverts stock receipt costs to their delivery-order values (DO unit price +
+ * delivery fee per unit) when an invoice is cancelled or deleted, so the receipts
+ * fall back to the pre-invoice estimate.
  */
 const revertStockReceiptCosts = async (
     tx: Prisma.TransactionClient,
     invoiceId: number,
-    deliveryOrderIds: number[],
-    invoiceItems: any[]
+    deliveryOrderIds: number[]
 ): Promise<void> => {
     try {
-        // Get delivery order items with their details
-        const deliveryOrderItems = await tx.deliveryOrderItem.findMany({
-            where: {
-                deliveryOrderId: { in: deliveryOrderIds },
-                deleted: false
-            },
-            select: {
-                id: true,
-                itemId: true,
-                receivedQuantity: true,
-                unitPrice: true,
-                deliveryFee: true,
-                deliveryOrderId: true
-            }
-        });
+        const deliveryOrderItemsMap = await fetchDeliveryOrderItemsMap(tx, deliveryOrderIds);
+        const receipts = await fetchReceiptsBothLocations(tx, deliveryOrderIds);
 
-        // Get stock receipts related to these delivery orders
-        const stockReceipts = await tx.stockReceipt.findMany({
-            where: {
-                deliveryOrderId: { in: deliveryOrderIds },
-                deleted: false
-            },
-            select: {
-                id: true,
-                itemId: true,
-                deliveryOrderId: true,
-                quantity: true,
-                cost: true
-            }
-        });
+        const costChanges: ReceiptCostChange[] = [];
 
-        // Create maps for quick lookup
-        const invoiceItemsMap = new Map();
-        invoiceItems.forEach(item => {
-            invoiceItemsMap.set(item.itemId, item);
-        });
+        for (const { receipt, delegate, location } of receipts) {
+            const key = receiptMatchKey(receipt.itemId, receipt.itemVariantId);
+            const deliveryOrderItem = deliveryOrderItemsMap.get(`${key}_${receipt.deliveryOrderId}`);
+            if (!deliveryOrderItem) continue;
 
-        const deliveryOrderItemsMap = new Map();
-        deliveryOrderItems.forEach(item => {
-            deliveryOrderItemsMap.set(`${item.itemId}_${item.deliveryOrderId}`, item);
-        });
-
-        // Revert stock receipt costs to original values
-        for (const stockReceipt of stockReceipts) {
-            const invoiceItem = invoiceItemsMap.get(stockReceipt.itemId);
-            const deliveryOrderItem = deliveryOrderItemsMap.get(`${stockReceipt.itemId}_${stockReceipt.deliveryOrderId}`);
-
-            if (invoiceItem && deliveryOrderItem && invoiceItem.discountAmount && invoiceItem.discountAmount > 0) {
-                // Calculate original cost using delivery order item's unit price + delivery fee per unit
-                const originalUnitPrice = new Decimal(deliveryOrderItem.unitPrice);
-
-                // Calculate delivery fee per unit
-                const deliveryFee = new Decimal(deliveryOrderItem.deliveryFee || 0);
-                const deliveryOrderQuantity = new Decimal(deliveryOrderItem.receivedQuantity);
-                const deliveryFeePerUnit = deliveryOrderQuantity.gt(0) ? deliveryFee.div(deliveryOrderQuantity) : new Decimal(0);
-
-                // Calculate original cost: original unit price + delivery fee per unit
-                const originalCost = originalUnitPrice.add(deliveryFeePerUnit);
-
-                // Update stock receipt cost back to original
-                await tx.stockReceipt.update({
-                    where: { id: stockReceipt.id },
-                    data: {
-                        cost: originalCost.toNumber(),
-                        updatedAt: new Date(),
-                        version: { increment: 1 }
-                    }
-                });
+            const originalCost = new Decimal(deliveryOrderItem.unitPrice).add(deliveryFeePerUnitOf(deliveryOrderItem));
+            if (await writeReceiptCost(delegate, receipt, originalCost)) {
+                costChanges.push({ location, receiptId: receipt.id, newCost: originalCost });
             }
         }
+
+        // Restate sales lines back to the delivery-order cost as well
+        await restateSalesCostsForReceipts(tx, costChanges);
     } catch (error) {
         console.error('Error reverting stock receipt costs:', error);
         throw error;
@@ -555,8 +540,11 @@ let getById = async (id: number, databaseName: string) => {
                 new Decimal(0)
             ) || new Decimal(0);
 
-        // Calculate net amount (invoice total - returns)
-        const netAmount = new Decimal(invoice.totalAmount || 0).minus(totalReturnAmount);
+        // Calculate net amount (invoice total − returns − PO down payment applied).
+        // The DP credit reduces what the tenant still owes; it never touches totalAmount.
+        const netAmount = new Decimal(invoice.totalAmount || 0)
+            .minus(totalReturnAmount)
+            .minus(new Decimal((invoice as any).downPaymentApplied || 0));
 
         // Build a map of returned quantities per item (only from COMPLETED returns)
         // Key: itemId-itemVariantId, Value: total returned quantity
@@ -1019,6 +1007,27 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                 //     ? 'Completed'
                 //     : 'Incomplete';
 
+                // --- PO down payment draw (read via tx so sequential invoices in this
+                // request see the balance already reduced by earlier iterations) ---
+                // applied = min(PO.downPaymentPercentage% × invoiceTotal, remaining DP balance).
+                // DP is a payment credit: it is stamped on the invoice + decrements the PO
+                // balance, but NEVER mutates totalAmount/discount/cost.
+                let downPaymentApplied = new Decimal(0);
+                if (invoiceData.purchaseOrderId) {
+                    const po = await tx.purchaseOrder.findUnique({
+                        where: { id: invoiceData.purchaseOrderId, deleted: false },
+                        select: { downPaymentPercentage: true, downPaymentAmount: true, downPaymentApplied: true }
+                    });
+                    if (po && po.downPaymentPercentage) {
+                        const balance = new Decimal(po.downPaymentAmount || 0).minus(new Decimal(po.downPaymentApplied || 0));
+                        if (balance.greaterThan(0)) {
+                            const byRate = new Decimal(invoiceData.totalAmount || 0)
+                                .times(new Decimal(po.downPaymentPercentage)).dividedBy(100);
+                            downPaymentApplied = Decimal.min(byRate, balance);
+                        }
+                    }
+                }
+
                 const newInvoice = await tx.invoice.create({
                     data: {
                         invoiceNumber: invoiceData.invoiceNumber,
@@ -1032,6 +1041,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         discountAmount: invoiceData.discountAmount,
                         discountType: invoiceData.discountType || '',
                         totalAmount: invoiceData.totalAmount,
+                        downPaymentApplied: downPaymentApplied.toFixed(4),
                         currency: invoiceData.currency || 'IDR',
                         status: "Completed",
                         invoiceDate: invoiceData.invoiceDate,
@@ -1039,6 +1049,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         dueDate: invoiceData.dueDate,
                         remark: invoiceData.remark,
                         performedBy: invoiceData.performedBy,
+                        siteId: invoiceData.siteId ?? null, // Terminal attribution
                         isTaxInclusive: invoiceData.isTaxInclusive !== undefined ? invoiceData.isTaxInclusive : true,
                     },
                     include: {
@@ -1050,7 +1061,8 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                     }
                 });
 
-                // Update purchase order status to COMPLETED if purchaseOrderId exists
+                // Update purchase order status to COMPLETED if purchaseOrderId exists,
+                // and draw down the DP balance (version bump so delta sync notices).
                 if (invoiceData.purchaseOrderId) {
                     await tx.purchaseOrder.update({
                         where: {
@@ -1058,7 +1070,10 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                             deleted: false
                         },
                         data: {
-                            status: 'COMPLETED'
+                            status: 'COMPLETED',
+                            ...(downPaymentApplied.greaterThan(0)
+                                ? { downPaymentApplied: { increment: downPaymentApplied.toFixed(4) }, version: { increment: 1 } }
+                                : {})
                         }
                     });
                 }
@@ -1095,13 +1110,9 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         })),
                     });
 
-                    // Check if any invoice item has discount
-                    const hasDiscountedItems = invoiceData.invoiceItems.some(item =>
-                        (item.discountAmount && item.discountAmount > 0)
-                    );
-
-                    // Update stock receipt costs if there are discounted items and delivery orders are linked
-                    if (hasDiscountedItems && invoiceData.deliveryOrderIds && invoiceData.deliveryOrderIds.length > 0) {
+                    // Re-price stock receipts from invoice item prices whenever delivery
+                    // orders are linked — covers discounts AND directly-lowered unit prices.
+                    if (invoiceData.deliveryOrderIds && invoiceData.deliveryOrderIds.length > 0) {
                         await updateStockReceiptCosts(
                             tx,
                             newInvoice.id,
@@ -1283,6 +1294,7 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
                     dueDate: updateData.dueDate,
                     remark: updateData.remark,
                     performedBy: updateData.performedBy,
+                    siteId: updateData.siteId ?? null, // Terminal attribution (latest editor)
                     isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
                     version: { increment: 1 }
                 }
@@ -1291,18 +1303,10 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
             // Handle stock receipt cost reversion if status is being changed to cancelled
             if (updateData.status === 'CANCELLED' && existingInvoiceData) {
                 const existingDeliveryOrderIds = existingInvoiceData.deliveryOrders.map(do_ => do_.id);
-                const existingInvoiceItems = existingInvoiceData.invoiceItems;
 
-                // Check if any existing invoice item has discount
-                const hasDiscountedItems = existingInvoiceItems.some(item =>
-                    item.discountAmount && (typeof item.discountAmount === 'number' ?
-                        item.discountAmount > 0 :
-                        new Decimal(item.discountAmount).gt(0))
-                );
-
-                // Revert stock receipt costs if there are discounted items and delivery orders
-                if (hasDiscountedItems && existingDeliveryOrderIds.length > 0) {
-                    await revertStockReceiptCosts(tx, id, existingDeliveryOrderIds, existingInvoiceItems);
+                // Revert stock receipt costs back to delivery-order values
+                if (existingDeliveryOrderIds.length > 0) {
+                    await revertStockReceiptCosts(tx, id, existingDeliveryOrderIds);
                 }
 
                 // Unlink delivery orders so they can be reselected on a new invoice
@@ -1310,6 +1314,24 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
                     await tx.deliveryOrder.updateMany({
                         where: { invoiceId: id, deleted: false },
                         data: { invoiceId: null, version: { increment: 1 } }
+                    });
+                }
+
+                // Restore the PO down-payment this invoice consumed. Guard against
+                // double-restore: skip if already CANCELLED or settlement-linked (status
+                // change is a no-op there), and zero the invoice field after restoring.
+                const dpApplied = new Decimal((existingInvoiceData as any).downPaymentApplied || 0);
+                if (existingInvoiceData.purchaseOrderId &&
+                    !existingInvoice.invoiceSettlementId &&
+                    (existingInvoiceData as any).status !== 'CANCELLED' &&
+                    dpApplied.greaterThan(0)) {
+                    await tx.purchaseOrder.update({
+                        where: { id: existingInvoiceData.purchaseOrderId },
+                        data: { downPaymentApplied: { decrement: dpApplied.toFixed(4) }, version: { increment: 1 } }
+                    });
+                    await tx.invoice.update({
+                        where: { id: id },
+                        data: { downPaymentApplied: 0 }
                     });
                 }
             }
@@ -1416,13 +1438,9 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
                         });
                     }
 
-                    // Check if any invoice item has discount and update stock receipt costs accordingly
-                    // Only apply discount if status is not cancelled
-                    const hasDiscountedItems = updateData.invoiceItems.some(item =>
-                        (item.discountAmount && item.discountAmount > 0)
-                    );
-
-                    if (hasDiscountedItems &&
+                    // Re-price stock receipts from the updated invoice item prices —
+                    // also restores cost when a discount is removed on edit.
+                    if (updateData.status !== 'CANCELLED' &&
                         updateData.deliveryOrderIds &&
                         updateData.deliveryOrderIds.length > 0) {
                         await updateStockReceiptCosts(
@@ -1508,6 +1526,16 @@ let deleteInvoice = async (id: number, databaseName: string, outletId: number): 
 
         // Use transaction to ensure data consistency
         await tenantPrisma.$transaction(async (tx) => {
+            // Restore any PO down-payment this invoice consumed (additive — guard so a
+            // re-delete can't double-credit: zero the invoice field below in the same write).
+            const dpApplied = new Decimal((existingInvoice as any).downPaymentApplied || 0);
+            if (existingInvoice.purchaseOrderId && dpApplied.greaterThan(0)) {
+                await tx.purchaseOrder.update({
+                    where: { id: existingInvoice.purchaseOrderId },
+                    data: { downPaymentApplied: { decrement: dpApplied.toFixed(4) }, version: { increment: 1 } }
+                });
+            }
+
             // Soft delete all invoice items first
             await tx.invoiceItem.updateMany({
                 where: {
@@ -1521,6 +1549,15 @@ let deleteInvoice = async (id: number, databaseName: string, outletId: number): 
                 }
             });
 
+            // Revert stock receipt costs back to delivery-order values before unlinking
+            const linkedDeliveryOrders = await tx.deliveryOrder.findMany({
+                where: { invoiceId: id, deleted: false },
+                select: { id: true }
+            });
+            if (linkedDeliveryOrders.length > 0) {
+                await revertStockReceiptCosts(tx, id, linkedDeliveryOrders.map(do_ => do_.id));
+            }
+
             // Unlink delivery orders from this invoice
             await tx.deliveryOrder.updateMany({
                 where: {
@@ -1532,12 +1569,14 @@ let deleteInvoice = async (id: number, databaseName: string, outletId: number): 
                 }
             });
 
-            // Soft delete the invoice
+            // Soft delete the invoice (zero downPaymentApplied so a future un-delete/re-delete
+            // cannot double-credit the PO balance)
             await tx.invoice.update({
                 where: { id: id },
                 data: {
                     deleted: true,
                     deletedAt: new Date(),
+                    downPaymentApplied: 0,
                     version: { increment: 1 }
                 }
             });

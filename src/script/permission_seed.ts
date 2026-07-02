@@ -1,6 +1,6 @@
 import { getGlobalPrisma, disconnectAllPrismaClients } from '../db';
 
-const permissions = [
+export const permissions = [
     {
         name: "View Dashboard",
         category: "Dashboard",
@@ -45,6 +45,11 @@ const permissions = [
         name: "View Stock Amount",
         category: "Inventory",
         description: "View complete stock amount"
+    },
+    {
+        name: "Override Stock Source",
+        category: "Inventory",
+        description: "Manually force a sale's stock source (outlet vs warehouse), overriding the automatic resolver"
     },
     {
         name: "Add Client",
@@ -151,6 +156,47 @@ const permissions = [
         name: "Manage Customer Subscriptions",
         category: "Loyalty",
         description: "Subscribe, cancel, and manage customer subscriptions"
+    },
+    // Online Catalogue (Pro feature) — gates the FE catalogue entry (settings +
+    // storage). Pro is account-level; this restricts WHICH roles can manage the
+    // storefront. Name must match FE AppPermission.manageOnlineCatalogue.
+    {
+        name: "Manage Online Catalogue",
+        category: "Online Catalogue",
+        description: "Manage the online catalogue storefront and its media storage"
+    },
+    // Expenses (Pro feature) — operating-cost / expense module. Read path is
+    // gated with hasAnyPermission([View, Manage]) on the FE because permissions
+    // are a flat set (Manage does NOT imply View). Names MUST match FE
+    // AppPermission.viewExpenses / manageExpenses.
+    {
+        name: "View Expenses",
+        category: "Expenses",
+        description: "View the expense ledger and expense categories"
+    },
+    {
+        name: "Manage Expenses",
+        category: "Expenses",
+        description: "Create, edit, and delete expenses and expense categories"
+    },
+    // Cash reconciliation at session close (opening float + counted-cash variance).
+    {
+        name: "Perform Cash Reconciliation",
+        category: "Sales",
+        description: "Count the cash drawer and record the variance when closing a session"
+    },
+    // Monetary visibility (UI-only masking) — see docs/future/MONETARY_VISIBILITY_PERMISSIONS.md.
+    // Absence hides the figures in the FE only (the API still returns them). Names MUST
+    // match FE AppPermission.viewCostProfit / viewSalesAmounts.
+    {
+        name: "View Cost & Profit",
+        category: "Financial",
+        description: "View item cost, profit, and margin figures"
+    },
+    {
+        name: "View Sales Amounts",
+        category: "Financial",
+        description: "View transaction totals in sales history"
     }
 ];
 

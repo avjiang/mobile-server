@@ -2,6 +2,69 @@
 
 Bulk import data from Excel files to the POS system.
 
+## Onboarding a Retail tenant — standard procedure (Indonesian template)
+
+This is the canonical, operator-run flow for seeding a new Retail tenant's
+categories, suppliers, products, opening stock, and customers. The tenant only
+ever touches a spreadsheet — they never run a command and never deal with IDs
+(category/supplier are linked **by name** via dropdowns).
+
+> Background + vertical decisions for the first such tenant (a toko bahan kue):
+> see the frontend repo `docs/future/BAHAN_KUE_ONBOARDING.md` §4.
+
+```bash
+# 0. One-time setup (deps are NOT committed)
+cd tools/import-cli
+npm install
+
+# 1. Generate the Indonesian templates (regenerable; dropdowns survive)
+npm run generate-template-id
+#    -> templates/TEMPLATE_KOSONG.xlsx   (send THIS to the tenant to fill)
+#    -> templates/CONTOH_TERISI.xlsx     (filled bahan-kue example; reference only)
+
+# 2. Tenant fills TEMPLATE_KOSONG.xlsx and sends it back.
+
+# 3. ALWAYS validate first (parse + reference checks, no DB writes)
+node index.js validate --file=/path/to/tenant_file.xlsx
+
+# 4. Dry-run against the real tenant (confirms tenant + row counts, no writes)
+node index.js import --file=/path/to/tenant_file.xlsx --direct --tenant-name="<tenant>" --dry-run
+
+# 5. Import for real
+node index.js import --file=/path/to/tenant_file.xlsx --direct --tenant-name="<tenant>"
+```
+
+### Why two files
+`TEMPLATE_KOSONG.xlsx` has headers + dropdowns but **no example rows**, so there
+is nothing for the tenant to forget to delete — no example data can leak into the
+import. `CONTOH_TERISI.xlsx` is the filled reference; **never import it**.
+
+### Tenant-facing template (Indonesian tabs/headers)
+Tabs: `Kategori`, `Pemasok`, `Produk`, `Varian Produk`, `Pelanggan`. Headers are
+Indonesian (`nama_produk`, `harga_beli`, `harga_jual`, `stok_awal`, `satuan`,
+`lacak_stok`, `stok_minimum`, `kena_pajak` = `Ya`/`Tidak`, …). The parser maps
+these back to the canonical fields (`src/parser.js` `SHEET_ALIASES` +
+`COLUMN_MAPPINGS`); booleans accept `Ya`/`Tidak`.
+
+### What gets created
+- Categories → Suppliers → Items, in that order (dependencies first).
+- `stok_awal` seeds real opening inventory: a `StockBalance` + a
+  `StockMovement` ("Import Opening Balance") + a `StockReceipt` carrying `cost`
+  (keeps FIFO costing truthful) — not a flat number.
+- `lacak_stok` (trackStock) and `stok_minimum` (per-outlet `reorderThreshold` on
+  `StockBalance`) are honored.
+
+### Barcode policy
+Leave `barcode` **blank** on import unless the tenant supplies real barcodes.
+Blank rows import with no barcode; the tenant generates + prints in-app later
+(in-store `200`-prefix EAN-13). The importer does not auto-generate barcodes.
+
+### Modeling (bahan kue / variable pack sizes)
+Use **Model B**: each pack size is its own item ("Tepung Terigu 1kg", `satuan` =
+`Pack`, `stok_awal` = whole count of packs). Avoids decimal-at-cart and
+bulk-break conversion, which the platform doesn't support. See §2 of the bahan
+kue doc.
+
 ## Quick Start
 
 ```bash

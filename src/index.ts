@@ -6,10 +6,18 @@ import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import idempotencyMiddleware from './middleware/idempotency-middleware'
 import 'reflect-metadata';
-import { disconnectAllPrismaClients } from './db';
+import { disconnectAllPrismaClients, startTenantClientEviction, getTenantClientStats } from './db';
 import { initCronJobs } from './cron/cron-manager';
+import { CLOUDFLARE_IP_RANGES } from './constants/cloudflare-ips';
 const app = express()
 const port = process.env.PORT || 8080;
+
+// Trust ONLY Cloudflare edge IPs as proxies, so `req.ip` reflects the real client
+// only when traffic genuinely arrived via Cloudflare. Requests hitting the Azure
+// origin directly cannot spoof their source — closes the public-endpoint rate-limit
+// bypass (security review H-1). The POS API (direct to Azure) is unaffected: for
+// those, the peer isn't a trusted proxy so req.ip = the real socket address.
+app.set('trust proxy', CLOUDFLARE_IP_RANGES);
 
 // Enable gzip compression for all responses
 app.use(compression({
@@ -40,8 +48,19 @@ app.get('/', (req, res) => res.json({
   version: require('../package.json').version,
   startedAt: serverStartTime,
 }))
+
+// Liveness probe for Azure App Service healthCheckPath. Must stay cheap —
+// no DB calls — so a transient DB hiccup doesn't trigger an instance restart.
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  uptime: process.uptime(),
+  tenants: getTenantClientStats().activeTenants,
+}))
+
 app.use('/auth', require('./auth/auth.controller'))
 app.use('/version', require('./version/version.controller'))
+// Public online catalogue — tokenless by design; MUST stay above the auth middleware.
+app.use('/public', require('./public/public.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)
@@ -83,12 +102,18 @@ app.use('/invoice', require('./invoice/invoice.controller'))
 app.use('/invoiceSettlement', require('./invoice_settlement/invoice_settlement.controller'))
 app.use('/quotation', require('./quotation/quotation.controller'))
 app.use('/pushy', require('./pushy/device.controller'))
+app.use('/device', require('./device/device.controller'))
 app.use('/settings', require('./settings/settings.controller'))
 app.use('/warehouses', require('./warehouse/warehouse.controller'))
 app.use('/purchaseReturn', require('./purchase_return/purchase-return.controller'))
 app.use('/loyalty', require('./loyalty/loyalty.controller'))
 app.use('/subscription', require('./subscription-package/subscription-package.controller'))
 app.use('/voucher', require('./voucher/voucher.controller'))
+app.use('/catalogue', require('./catalogue/catalogue.controller'))
+app.use('/expenseCategory', require('./expense-category/expense-category.controller'))
+app.use('/expense', require('./expense/expense.controller'))
+app.use('/expenseRecurringTemplate', require('./expense-recurring-template/expense-recurring-template.controller'))
+app.use('/costRate', require('./cost-rate/cost-rate.controller'))
 
 // error middleware
 app.use(errorMiddleware)
@@ -96,6 +121,7 @@ app.use(errorMiddleware)
 const server = app.listen(port, () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
   initCronJobs();
+  startTenantClientEviction();
 });
 
 server.on('error', (err) => {

@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs"
 import { AuthRequest } from "src/middleware/auth-request";
 import { AccountRequest } from "./account.request";
 import { OutletDetailsResponse } from "./account.response";
+import { isLaundryBundledAddOn } from "../constants/add-on-ids";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -43,7 +44,7 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
                 subscriptions: {
                     where: { status: { in: ['active', 'trial'] } },
                     include: {
-                        subscriptionPlan: { select: { planName: true, price: true } },
+                        subscriptionPlan: { select: { planName: true, planType: true, price: true } },
                         discount: true,
                     },
                 },
@@ -61,14 +62,22 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
         });
 
         const subscription = outlet.subscriptions[0];
-        const totalAddOnCost = tenantAddOns.reduce((sum, ta) => sum + ta.addOn.pricePerUnit * ta.quantity, 0);
+
+        // Advanced Loyalty is bundled into Laundry Pro, so it is never billed as
+        // an add-on for Laundry tenants — drop it from the breakdown entirely.
+        const planType = subscription?.subscriptionPlan?.planType ?? null;
+        const billableAddOns = tenantAddOns.filter(
+            ta => !isLaundryBundledAddOn(ta.addOn.id, planType),
+        );
+
+        const totalAddOnCost = billableAddOns.reduce((sum, ta) => sum + ta.addOn.pricePerUnit * ta.quantity, 0);
         const response: OutletDetailsResponse = {
             outletId: outlet.id,
             outletName: outlet.outletName,
             isActive: outlet.isActive,
             serverTime: new Date().toISOString(),
             subscription: null,
-            addOns: tenantAddOns.map(ta => ({
+            addOns: billableAddOns.map(ta => ({
                 id: ta.addOn.id,
                 name: ta.addOn.name,
                 addOnType: ta.addOn.addOnType,
@@ -150,9 +159,14 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
     } catch (error) {
         console.error('Error fetching outlet details:', error);
         throw error;
-    } finally {
-        await prisma.$disconnect();
     }
+    // NOTE: do NOT $disconnect() here. `prisma` is the process-wide GLOBAL
+    // singleton shared by EVERY module (auth, admin, billing, …). Disconnecting
+    // it per-request tears down the shared connection pool and makes any auth
+    // query that is in-flight at that moment throw — which getTenantSubscriptionInfo
+    // used to swallow into a null plan, intermittently downgrading Pro tenants to
+    // "Trial" with missing menus. The pool is owned for the process lifetime and
+    // closed centrally via disconnectAllPrismaClients() on shutdown (src/index.ts).
 }
 
 export = { getAccountDetails }

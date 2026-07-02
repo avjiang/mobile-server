@@ -37,6 +37,13 @@ export interface InvoiceInput {
     dueDate?: Date;
     remark?: string;
     performedBy?: string;
+    // Terminal attribution — the terminal that created/edited this invoice
+    // (RegisteredDevice.siteId). Optional; nullable on the column.
+    siteId?: number;
+    // PO down payment is computed + stamped server-side at create time (downPaymentApplied =
+    // min(PO.downPaymentPercentage% × totalAmount, PO balance)). Not a client input — present here
+    // only so the field is recognized on read/round-trip.
+    downPaymentApplied?: number;
     invoiceItems?: InvoiceItemInput[]; // Add items here
 }
 

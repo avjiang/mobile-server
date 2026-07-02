@@ -120,7 +120,8 @@ async function createVariantStockRecords(
     itemId: number,
     variantIds: number[],
     outletId: number,
-    variantStockData?: Map<number, { stockQuantity: number; cost: number }>
+    variantStockData?: Map<number, { stockQuantity: number; cost: number }>,
+    siteId: number | null = null
 ): Promise<void> {
     if (variantIds.length === 0) return;
 
@@ -159,6 +160,8 @@ async function createVariantStockRecords(
                 movementType: "Create Variant",
                 reason: "",
                 remark: "",
+                // Terminal attribution — the terminal that created the variant.
+                siteId: siteId,
                 deleted: false,
             };
         }),
@@ -265,6 +268,16 @@ let getAll = async (
                         },
                     },
                 },
+                // Laundry recipe lines (only present on service items).
+                serviceConsumables: {
+                    where: { deleted: false },
+                    select: {
+                        consumableItemId: true,
+                        ratePerKg: true,
+                        unit: true,
+                        consumptionBasis: true,
+                    },
+                },
             },
         });
 
@@ -299,6 +312,18 @@ let getAll = async (
                 stockQuantity: baseItemStock, // Add stock quantity for base item
                 stockBalance: undefined, // Remove raw field
                 variants: transformedVariants,
+                // Flatten recipe lines for the client (drops raw relation field).
+                // Only emit `consumables` for laundry service items so retail items
+                // carry no recipe key (avoids a redundant local delete on each sync).
+                consumables: item.itemType === 'service'
+                    ? (item.serviceConsumables?.map(c => ({
+                        consumableItemId: c.consumableItemId,
+                        ratePerKg: Number(c.ratePerKg),
+                        unit: c.unit,
+                        consumptionBasis: c.consumptionBasis,
+                    })) ?? [])
+                    : undefined,
+                serviceConsumables: undefined,
             };
         });
         // Return with server timestamp
@@ -396,6 +421,43 @@ let getAllByCategoryId = async (databaseName: string, categoryId: number, outlet
         throw error
     }
 }
+
+/**
+ * Current unit cost of each "supply" item, for the laundry recipe cost estimate.
+ * A stock-tracked supply stores cost: 0 on the item row by design — its real cost
+ * lives in StockReceipt (FIFO batches). We surface the LATEST receipt cost (most
+ * recent purchase price) per supply, in the supply's stock unit (per-ml/g/tank),
+ * which is the same unit the recipe rate is entered in — so the client can
+ * estimate a line's cost as cost × rate with no conversion. Returns 0 for a
+ * supply that has no receipts yet (no cost recorded). Always fresh (computed on
+ * read), so it is immune to the delta-sync staleness that would affect item.cost.
+ */
+let getSupplyCosts = async (databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const supplies = await tenantPrisma.item.findMany({
+            where: { itemType: 'supply', deleted: false },
+            select: { id: true },
+        });
+        if (supplies.length === 0) return [] as { itemId: number; cost: number }[];
+        const ids = supplies.map(s => s.id);
+        // Ordered latest-first; the first receipt seen per item is its current cost.
+        const receipts = await tenantPrisma.stockReceipt.findMany({
+            where: { itemId: { in: ids }, deleted: false },
+            select: { itemId: true, cost: true },
+            orderBy: [{ receiptDate: 'desc' }, { id: 'desc' }],
+        });
+        const costByItem: Record<number, number> = {};
+        for (const r of receipts) {
+            if (costByItem[r.itemId] === undefined) {
+                costByItem[r.itemId] = Number(r.cost);
+            }
+        }
+        return ids.map(id => ({ itemId: id, cost: costByItem[id] ?? 0 }));
+    } catch (error) {
+        throw error;
+    }
+};
 
 let getById = async (databaseName: string, id: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -582,10 +644,44 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[], outletId
                 }
             }
 
+            // Resolve fallback supplier/category for accounts that don't track them (e.g. laundry).
+            // Item.supplierId and Item.categoryId are NOT NULL columns, so when the client omits
+            // them we attach a tenant-level "Laundry" default (find-or-create by unique name).
+            const needsDefaultSupplier = itemBodyArray.some((i: any) => !i.supplierId);
+            const needsDefaultCategory = itemBodyArray.some((i: any) => !i.categoryId);
+
+            let defaultSupplierId: number | undefined;
+            if (needsDefaultSupplier) {
+                const defaultSupplier = await tx.supplier.upsert({
+                    where: { companyName: "Laundry" },
+                    update: { deleted: false },
+                    create: { companyName: "Laundry", hasTax: false, deleted: false },
+                    select: { id: true },
+                });
+                defaultSupplierId = defaultSupplier.id;
+            }
+
+            let defaultCategoryId: number | undefined;
+            if (needsDefaultCategory) {
+                const defaultCategory = await tx.category.upsert({
+                    where: { name: "Laundry" },
+                    update: { deleted: false },
+                    create: { name: "Laundry", deleted: false },
+                    select: { id: true },
+                });
+                defaultCategoryId = defaultCategory.id;
+            }
+
             // Create items with nested relations in parallel
             return Promise.all(
                 itemBodyArray.map(async (itemBody) => {
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, ...itemWithoutId } = itemBody as any;
+                    // siteId is destructured OUT so it never spreads into tx.item.create
+                    // (Item has no siteId column); it's stamped on the stock movements only.
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, siteId, ...itemWithoutId } = itemBody as any;
+
+                    // Fall back to the tenant default when supplier/category were not provided.
+                    const effectiveSupplierId = supplierId || defaultSupplierId;
+                    const effectiveCategoryId = categoryId || defaultCategoryId;
 
                     // Auto-flag hasVariants if variants array exists
                     const hasVariants = variants && Array.isArray(variants) && variants.length > 0;
@@ -629,15 +725,16 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[], outletId
                                         reason: "",
                                         remark: "",
                                         outletId: outletId,
+                                        siteId: siteId ?? null,
                                         deleted: false,
                                     },
                                 },
                             } : {}),
                             supplier: {
-                                connect: { id: supplierId },
+                                connect: { id: effectiveSupplierId },
                             },
                             category: {
-                                connect: { id: categoryId },
+                                connect: { id: effectiveCategoryId },
                             },
                             createdAt: new Date(),
                             updatedAt: new Date(),
@@ -731,8 +828,25 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[], outletId
 
                         // Create StockBalance, StockMovement, and StockReceipt for all variants (batch operation)
                         if (shouldTrackStock) {
-                            await createVariantStockRecords(tx, createdItem.id, createdVariantIds, outletId, variantStockDataMap);
+                            await createVariantStockRecords(tx, createdItem.id, createdVariantIds, outletId, variantStockDataMap, siteId ?? null);
                         }
+                    }
+
+                    // Laundry: create recipe lines (bill-of-materials) for a service item.
+                    // consumableItemId references already-persisted "supply" items (created
+                    // inline by the client just before the service). Distinct from F&B Recipe.
+                    if (Array.isArray(consumables) && consumables.length > 0) {
+                        await tx.itemConsumable.createMany({
+                            data: consumables.map((c: any) => ({
+                                serviceItemId: createdItem.id,
+                                consumableItemId: c.consumableItemId,
+                                ratePerKg: c.ratePerKg ?? 0,
+                                unit: c.unit || "Milliliter",
+                                consumptionBasis: c.consumptionBasis || "perKg",
+                                deleted: false,
+                            })),
+                            skipDuplicates: true,
+                        });
                     }
 
                     return createdItem;
@@ -764,7 +878,9 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
     try {
         // Extract id, version, and relation fields from the item object
         // stockQuantity is a virtual field (not a DB column) — must be extracted to prevent Prisma errors
-        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, ...updateData } = item as any;
+        // siteId is destructured OUT so it never spreads into tx.item.update
+        // (Item has no siteId column); it's stamped on the stock movements only.
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, siteId, ...updateData } = item as any;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Check if alternateLookUp is being updated and not empty
@@ -803,7 +919,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
             // Detect trackStock transition
             const currentItem = await tx.item.findUnique({
                 where: { id },
-                select: { trackStock: true, cost: true, hasVariants: true }
+                select: { trackStock: true, cost: true, hasVariants: true, itemType: true, unitOfMeasure: true }
             });
             const oldTrackStock = currentItem!.trackStock;
             const newTrackStock = updateData.trackStock;
@@ -845,6 +961,55 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 data: itemUpdateData
             });
 
+            // Laundry: a supply's unit (Liquid/Weight/Tabung/Piece) is echoed onto
+            // every recipe line that consumes it as a DISPLAY label — the consumption
+            // math uses ratePerKg + consumptionBasis, never the unit. When the supply's
+            // unit changes, cascade it onto those recipe lines so the recipe builder and
+            // reports don't show a stale unit. Quantities/rates are intentionally left
+            // as-is (units across dimensions don't auto-convert; the FE warns the user).
+            if (currentItem!.itemType === 'supply' &&
+                itemUpdate.unitOfMeasure !== currentItem!.unitOfMeasure) {
+                const affected = await tx.itemConsumable.findMany({
+                    where: { consumableItemId: id, deleted: false },
+                    select: { serviceItemId: true },
+                });
+                await tx.itemConsumable.updateMany({
+                    where: { consumableItemId: id, deleted: false },
+                    data: { unit: itemUpdate.unitOfMeasure, updatedAt: new Date() },
+                });
+                // Bump the owning service items' updatedAt so the relabelled recipe
+                // lines re-sync to clients — consumables only travel inside their
+                // parent service item's delta-sync payload, never on their own.
+                const serviceIds = [...new Set(affected.map(a => a.serviceItemId))];
+                if (serviceIds.length > 0) {
+                    await tx.item.updateMany({
+                        where: { id: { in: serviceIds } },
+                        data: { updatedAt: new Date() },
+                    });
+                }
+            }
+
+            // Laundry: replace recipe lines when the client sends a consumables array.
+            // Hard delete + recreate keeps the @@unique(serviceItemId, consumableItemId)
+            // constraint clean. The item.update above bumped updatedAt, so the service
+            // re-syncs to clients with its new recipe.
+            if (consumables !== undefined && Array.isArray(consumables)) {
+                await tx.itemConsumable.deleteMany({ where: { serviceItemId: id } });
+                if (consumables.length > 0) {
+                    await tx.itemConsumable.createMany({
+                        data: consumables.map((c: any) => ({
+                            serviceItemId: id,
+                            consumableItemId: c.consumableItemId,
+                            ratePerKg: c.ratePerKg ?? 0,
+                            unit: c.unit || "Milliliter",
+                            consumptionBasis: c.consumptionBasis || "perKg",
+                            deleted: false,
+                        })),
+                        skipDuplicates: true,
+                    });
+                }
+            }
+
             // ===== trackStock transition: ON → OFF =====
             if (turningOff) {
                 const now = new Date();
@@ -882,7 +1047,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         documentId: 0,
                         movementType: "Stock Tracking Disabled",
                         reason: "trackStock changed from on to off",
-                        remark: "", deleted: false,
+                        remark: "", deleted: false, siteId: siteId ?? null,
                     }
                 });
             }
@@ -911,7 +1076,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         documentId: 0,
                         movementType: "Stock Tracking Enabled",
                         reason: "trackStock changed from off to on",
-                        remark: "", deleted: false,
+                        remark: "", deleted: false, siteId: siteId ?? null,
                     }
                 });
 
@@ -987,8 +1152,13 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 });
             }
 
-            // Handle variants update/creation if provided
-            if (variants && Array.isArray(variants)) {
+            // Handle variants update/creation if provided.
+            // NOTE: an EMPTY array means "no variant changes" — never enter the
+            // block, or the auto-flag below wrongly sets hasVariants=true on a
+            // variant-less item (e.g. saving its spec/photo from the details
+            // dialog, which round-trips the item with `variants: []`). Deletions
+            // are sent as `[{id, deleted:true}]`, so a real change is length > 0.
+            if (variants && Array.isArray(variants) && variants.length > 0) {
                 // ===== Batch validate variant ownership (security) =====
                 // Performance: Single query validates ALL variant IDs at once
                 const variantIdsToValidate = variants
@@ -1279,7 +1449,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                 // Create StockBalance, StockMovement, and StockReceipt for all new variants (only for stock-tracked items)
                 // Skip when turningOn — step 6 below handles ALL variants during off→on transition
                 if (newVariantIds.length > 0 && itemUpdate.trackStock !== false && !turningOn) {
-                    await createVariantStockRecords(tx, id, newVariantIds, outletId, variantStockDataMap);
+                    await createVariantStockRecords(tx, id, newVariantIds, outletId, variantStockDataMap, siteId ?? null);
                 }
 
                 // ===== trackStock transition: OFF → ON (variant items) =====
@@ -1310,7 +1480,8 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         tx, id,
                         allActiveVariants.map(v => v.id),
                         outletId,
-                        variantStockDataMap
+                        variantStockDataMap,
+                        siteId ?? null
                     );
 
                     // Zero out ALL variant costs (FIFO is now the cost source)
@@ -1329,7 +1500,7 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                             documentId: 0,
                             movementType: "Stock Tracking Enabled",
                             reason: "trackStock changed from off to on",
-                            remark: "", deleted: false,
+                            remark: "", deleted: false, siteId: siteId ?? null,
                         }
                     });
                 }
@@ -1388,6 +1559,21 @@ let remove = async (databaseName: string, id: number) => {
             // stock_balance row tied to this item across all outlets.
             tenantPrisma.stockBalance.updateMany({
                 where: { itemId: id },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date(),
+                },
+            }),
+            // Laundry: cascade-clean recipe lines (item_consumable) that touch
+            // this item — whether it was a supply (consumableItemId) or a service
+            // (serviceItemId). Leaving them orphaned makes the app reference a
+            // deleted supply and false-trip the sale-time "stok bahan tidak cukup"
+            // check. Matches the client-side cleanup in DeleteItemCubit.
+            tenantPrisma.itemConsumable.updateMany({
+                where: {
+                    deleted: false,
+                    OR: [{ consumableItemId: id }, { serviceItemId: id }],
+                },
                 data: {
                     deleted: true,
                     deletedAt: new Date(),
@@ -1691,4 +1877,5 @@ export = {
     getLowStockItems,
     getAllByCategoryId,
     getVariantAttributeValues,
+    getSupplyCosts,
 }

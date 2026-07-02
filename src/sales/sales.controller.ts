@@ -1,12 +1,13 @@
 import express, { NextFunction, Request, Response } from "express"
 import validator from "validator"
 import service from "./sales.service"
+import photoService from "./sales-photo.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
 import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
-import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody } from "./sales.request"
+import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody, UpdateSalesContactRequest } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
 import { Payment, Prisma, Sales } from "../../prisma/client/generated/client"
 import { AuthRequest } from "src/middleware/auth-request"
@@ -114,6 +115,80 @@ const getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+// Laundry pickup: fetch a sale by its client-minted orderRef (QR scan key).
+const getByRef = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.params.orderRef ?? '').trim()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    service.getByRef(req.user.databaseName, orderRef)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next)
+}
+
+// Laundry pickup: mark an order collected (+ status→Completed if fully paid).
+const collect = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.params.orderRef ?? '').trim()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    service.collect(req.user.databaseName, orderRef)
+        .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next)
+}
+
+// Laundry photos: mint a pre-signed R2 PUT URL for photo #index of an order.
+const photoUploadUrl = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.body?.orderRef ?? '').toString().trim()
+    const index = parseInt((req.body?.index ?? '0').toString())
+    const contentType = (req.body?.contentType ?? 'image/webp').toString()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    photoService.mintUploadTicket(req.user.tenantId, orderRef, isNaN(index) ? 0 : index, contentType)
+        .then((ticket) => sendResponse(res, ticket))
+        .catch(next)
+}
+
+// Laundry photos: persist a photo URL after the client's direct R2 PUT.
+const registerPhoto = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.body?.orderRef ?? '').toString().trim()
+    const photoUrl = (req.body?.photoUrl ?? '').toString().trim()
+    const salesId = req.body?.salesId ? parseInt(req.body.salesId.toString()) : undefined
+    if (!orderRef || !photoUrl) {
+        throw new RequestValidateError('orderRef and photoUrl are required')
+    }
+    photoService.register(req.user.databaseName, { orderRef, salesId, photoUrl })
+        .then((photo) => sendResponse(res, photo))
+        .catch(next)
+}
+
+// Laundry photos: list an order's photos.
+const listPhotos = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.params.orderRef ?? '').trim()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    photoService.listByRef(req.user.databaseName, orderRef)
+        .then((photos) => sendResponse(res, photos))
+        .catch(next)
+}
+
 // const create = (req: NetworkRequest<SalesCreationRequest>, res: Response, next: NextFunction) => {
 //     if (!req.user) {
 //         throw new RequestValidateError('User not authenticated');
@@ -165,7 +240,7 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
     service.completeNewSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier, permissions: req.user.permissions },
         sales,
         payments
     )
@@ -275,6 +350,21 @@ const getTotalSalesData = (req: AuthRequest, res: Response, next: NextFunction) 
         .catch(next)
 }
 
+const getRevenueTrend = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const { outletId, days } = req.query
+    const outletIdNum = typeof outletId === 'string' && validator.isNumeric(outletId) ? parseInt(outletId) : undefined
+    if (outletIdNum === undefined) {
+        throw new RequestValidateError('outletId is required and must be a number')
+    }
+    const daysNum = typeof days === 'string' && validator.isNumeric(days) ? parseInt(days) : 7
+    service.getRevenueTrend(req.user.databaseName, outletIdNum, daysNum)
+        .then((trend) => sendResponse(res, trend))
+        .catch(next)
+}
+
 const getPartiallyPaidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -358,7 +448,9 @@ const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId,
-        req.outletId
+        req.outletId,
+        // Acting terminal performing the void (client-supplied, nullable).
+        (req.body as any)?.siteId ?? null
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -380,7 +472,9 @@ const returnSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId,
-        req.outletId
+        req.outletId,
+        // Acting terminal performing the return (client-supplied, nullable).
+        (req.body as any)?.siteId ?? null
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -402,9 +496,57 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId,
-        req.outletId
+        req.outletId,
+        // Acting terminal performing the refund (client-supplied, nullable).
+        (req.body as any)?.siteId ?? null
     )
         .then((sales: Sales) => sendResponse(res, sales))
+        .catch(next);
+}
+
+// Edit ONLY the contact fields (customerName / phoneNumber) of an existing sale —
+// the single sanctioned mutation of an otherwise-immutable sale snapshot, used to
+// fix walk-in name/phone typos. Auth is the global JWT middleware (same as
+// void/return/refund); no extra per-route gate. Online-only on the client.
+const updateSalesContact = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.salesId)) {
+        throw new RequestValidateError('ID format incorrect');
+    }
+    const salesId: number = parseInt(req.params.salesId);
+    // Contact edit is a sales mutation → outlet-scoped like void/return/refund
+    // (MULTI_OUTLET_BE.md §5.2/§9). Header is authoritative.
+    const outletId = requireOutletHeader(req);
+
+    const body = (req.body ?? {}) as UpdateSalesContactRequest;
+    const contact: { customerName?: string; phoneNumber?: string } = {};
+
+    if (body.customerName !== undefined) {
+        if (typeof body.customerName !== 'string') {
+            throw new RequestValidateError('customerName must be a string');
+        }
+        const name = body.customerName.trim();
+        if (name.length > 191) {
+            throw new RequestValidateError('customerName too long (max 191 characters)');
+        }
+        contact.customerName = name;
+    }
+
+    if (body.phoneNumber !== undefined) {
+        if (typeof body.phoneNumber !== 'string') {
+            throw new RequestValidateError('phoneNumber must be a string');
+        }
+        const phone = body.phoneNumber.trim();
+        if (phone.length > 191) {
+            throw new RequestValidateError('phoneNumber too long (max 191 characters)');
+        }
+        contact.phoneNumber = phone;
+    }
+
+    service.updateSalesContact(req.user.databaseName, salesId, contact, outletId)
+        .then((sales) => sendResponse(res, sales))
         .catch(next);
 }
 
@@ -503,6 +645,7 @@ const getDeliveredList = (req: AuthRequest, res: Response, next: NextFunction) =
 
 // sales routes
 router.get('/getTotalSalesData', getTotalSalesData)
+router.get('/getRevenueTrend', getRevenueTrend)
 router.get('/getPartiallyPaidSales', getPartiallyPaidSales)
 router.get('/outlet', getAll)
 router.get('/dateRange', getAllByDateRange)
@@ -512,6 +655,16 @@ router.get('/delivery/list', getDeliveryList);
 router.get('/delivery/history', getDeliveredList);
 router.post('/delivery/confirm', confirmDeliveryBatch);
 
+// laundry pickup: fetch-by-ref + collect (MUST be before the catch-all /:id,
+// otherwise "ref" would be parsed as an :id)
+router.get('/ref/:orderRef', getByRef)
+router.put('/ref/:orderRef/collect', collect)
+
+// laundry photos (named paths — safe before /:id)
+router.post('/photo/upload-url', photoUploadUrl)
+router.post('/photo/register', registerPhoto)
+router.get('/photo/list/:orderRef', listPhotos)
+
 router.get('/:id', getById)
 router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
@@ -520,6 +673,10 @@ router.put('/update', update)
 router.put('/void/:id', voidSales)
 router.put('/return/:id', returnSales)
 router.put('/refund/:id', refundSales)
+// Contact-only edit (name/phone typo fix). Static '/contact' suffix keeps it
+// distinct from the catch-all '/:id' route. PUT to match the FE's initiatePUT
+// path and the sibling void/return/refund verbs above.
+router.put('/:salesId/contact', updateSalesContact)
 router.delete('/:id', remove)
 
 export = router

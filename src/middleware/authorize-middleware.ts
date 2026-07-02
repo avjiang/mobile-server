@@ -21,7 +21,13 @@ export interface UserInfo {
     planName?: string | null,
     planType?: string | null,
     loyaltyTier?: 'none' | 'basic' | 'advanced',
-    allowedOutletIds: number[]
+    // Optional: tokens issued before the multi-outlet rollout (or Lite plans) lack
+    // this field — callers must handle undefined, never assume it is present.
+    allowedOutletIds?: number[]
+    // Stamped at login. '*' = wildcard (super-admin / god-account); empty/undefined
+    // = no permissions. Tokens older than the rollout will lack this field — treat
+    // missing as empty.
+    permissions?: string[]
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {

@@ -30,6 +30,13 @@ export interface DeliveryOrderInput {
     status?: string;
     remark?: string;
     performedBy?: string;
+    // Terminal attribution — the terminal that received/edited this delivery
+    // order (RegisteredDevice.siteId). Stamped on the resulting stock movements.
+    siteId?: number;
+    // Goods-receipt destination (Pro warehouse feature). 'OUTLET' (default) receives
+    // into outletId; 'WAREHOUSE' receives into warehouseId instead.
+    destinationLocationType?: string;
+    warehouseId?: number;
     deliveryOrderItems?: DeliveryOrderItemInput[]; // Add items here
 }
 

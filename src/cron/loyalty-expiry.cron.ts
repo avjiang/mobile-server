@@ -4,7 +4,7 @@
  * Only processes tenant DBs where planName = 'Pro' and subscription is active.
  */
 
-const { getGlobalPrisma, getTenantPrisma } = require('../db');
+const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
 
 const BATCH_SIZE = 100;
 
@@ -48,6 +48,9 @@ async function processPointExpiry(): Promise<void> {
                 }
             } catch (error) {
                 console.error(`[Cron] Error processing point expiry for tenant ${dbName}:`, error);
+            } finally {
+                // Release the tenant client after processing — bounds cron connection use (see db.ts).
+                await disconnectTenantClient(dbName);
             }
         }
 
@@ -112,22 +115,27 @@ async function expirePointsForTenant(dbName: string): Promise<number> {
                 }
 
                 if (totalExpiredPoints > 0) {
-                    // Decrement account points (clamp to 0)
-                    const account = await tx.loyaltyAccount.findUnique({
+                    // Atomic decrement with floor-at-zero via raw SQL. Audit r1-#7: prior
+                    // read-then-write let a concurrent EARN slip in between SELECT and
+                    // UPDATE, erasing the earn. GREATEST() pins the floor at zero so we
+                    // also tolerate a redeem that already drained currentPoints below the
+                    // batch total (over-expiry would otherwise produce a negative balance).
+                    await tx.$executeRaw`
+                        UPDATE loyalty_account
+                        SET CURRENT_POINTS = GREATEST(CURRENT_POINTS - ${totalExpiredPoints}, 0),
+                            UPDATED_AT = NOW()
+                        WHERE ID = ${accountId}
+                    `;
+
+                    // Re-read for the ledger entry's balanceAfter — accepts the post-clamp value.
+                    const updated = await tx.loyaltyAccount.findUnique({
                         where: { id: accountId },
                         select: { currentPoints: true },
                     });
-                    const currentPoints = typeof account.currentPoints === 'number'
-                        ? account.currentPoints
-                        : Number(account.currentPoints);
-                    const newBalance = Math.max(currentPoints - totalExpiredPoints, 0);
+                    const newBalance = typeof updated?.currentPoints === 'number'
+                        ? updated.currentPoints
+                        : Number(updated?.currentPoints ?? 0);
 
-                    await tx.loyaltyAccount.update({
-                        where: { id: accountId },
-                        data: { currentPoints: newBalance },
-                    });
-
-                    // Create EXPIRE transaction
                     await tx.loyaltyTransaction.create({
                         data: {
                             loyaltyAccountId: accountId,

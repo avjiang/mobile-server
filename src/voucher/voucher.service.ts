@@ -334,15 +334,20 @@ const validateAndRedeemVoucher = async (
         }
     }
 
-    // Mark voucher as redeemed
-    await tx.voucher.update({
-        where: { id: voucherId },
+    // Atomic test-and-set: only flip ACTIVE → REDEEMED. Concurrent sales for the same
+    // voucher each enter this block, but only the first updateMany matches; the second
+    // sees count === 0 because status is now REDEEMED.
+    const redeemResult = await tx.voucher.updateMany({
+        where: { id: voucherId, status: 'ACTIVE', deleted: false },
         data: {
             status: 'REDEEMED',
             redeemedAt: new Date(),
             redeemedInSalesId: salesId,
         },
     });
+    if (redeemResult.count !== 1) {
+        throw new BusinessLogicError('Voucher was already redeemed by another sale');
+    }
 
     return {
         voucherId: voucher.id,
@@ -404,31 +409,54 @@ const checkMilestones = async (db: string, customerId: number) => {
 
         const threshold = new Decimal(rule.spendThreshold.toString());
 
+        // Audit r2-#5: count must INCLUDE soft-deleted vouchers — an admin who revoked
+        // a milestone voucher must not cause a re-issue. Without this, deleting a
+        // legitimately-earned voucher silently grants another one.
+        // Audit r2-#4: per-issuance work is wrapped in a transaction that re-counts and
+        // inserts only if still short — concurrent setImmediate callbacks dedupe themselves.
         if (!rule.isRepeatable) {
-            // Non-repeatable: check if customer already has a voucher from this rule
-            const existing = await prisma.voucher.findFirst({
-                where: { customerId, rewardRuleId: rule.id, deleted: false },
-            });
-            if (existing) continue;
-
-            if (totalSpend.gte(threshold)) {
-                await issueVoucherFromRule(prisma, rule, customerId, account.id, totalSpend);
-            }
+            const issuedOnce = await issueIfMissing(
+                prisma, rule, customerId, account.id, totalSpend, threshold, 1,
+            );
+            if (!issuedOnce) continue;
         } else {
-            // Repeatable: calculate expected count vs existing count
-            const existingCount = await prisma.voucher.count({
-                where: { customerId, rewardRuleId: rule.id, deleted: false },
-            });
             const expectedCount = expectedRepeatableVoucherCount(totalSpend, threshold);
-
-            if (expectedCount > existingCount) {
-                const toIssue = expectedCount - existingCount;
-                for (let i = 0; i < toIssue; i++) {
-                    await issueVoucherFromRule(prisma, rule, customerId, account.id, totalSpend);
-                }
+            // Loop attempts, each idempotent. The first call that loses the race
+            // returns false, breaking the loop.
+            for (let i = 1; i <= expectedCount; i++) {
+                const issued = await issueIfMissing(
+                    prisma, rule, customerId, account.id, totalSpend, threshold, i,
+                );
+                if (!issued) continue; // skip and try next slot — already exists
             }
         }
     }
+};
+
+/**
+ * Atomic-by-transaction milestone issuance. Re-counts inside the tx; only issues
+ * if existing count (including soft-deleted) is still below the target slot.
+ * Returns true when a new voucher was inserted, false when the slot was already
+ * filled by a concurrent caller.
+ */
+const issueIfMissing = async (
+    prisma: PrismaClient,
+    rule: any,
+    customerId: number,
+    loyaltyAccountId: number,
+    totalSpend: Decimal,
+    threshold: Decimal,
+    targetSlot: number,
+): Promise<boolean> => {
+    if (totalSpend.lt(threshold.times(targetSlot))) return false;
+    return await prisma.$transaction(async (tx: any) => {
+        const existingCount = await tx.voucher.count({
+            where: { customerId, rewardRuleId: rule.id },
+        });
+        if (existingCount >= targetSlot) return false;
+        await issueVoucherFromRule(tx, rule, customerId, loyaltyAccountId, totalSpend);
+        return true;
+    });
 };
 
 // ============================================
@@ -436,7 +464,7 @@ const checkMilestones = async (db: string, customerId: number) => {
 // ============================================
 
 const issueVoucherFromRule = async (
-    prisma: PrismaClient,
+    prisma: PrismaClient | any, // accepts $transaction tx client too
     rule: any,
     customerId: number,
     loyaltyAccountId: number,

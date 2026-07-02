@@ -21,11 +21,6 @@ interface RegisterDeviceRequest {
   appVersion?: string;
 }
 
-interface UpdateDeviceRequest {
-  isActive?: boolean;
-  platform?: string;
-}
-
 const registerDevice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userInfo = req.user as UserInfo;
   const { deviceToken, platform, deviceFingerprint } = req.body as RegisterDeviceRequest;
@@ -65,14 +60,12 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
       const isSameUser = existingDeviceByFingerprint.tenantUserId === userInfo.tenantUserId;
       const wasInactive = !existingDeviceByFingerprint.isActive;
 
-      // If device is being transferred to different user OR being reactivated
-      if (!isSameUser || wasInactive) {
-        // Check if we need quota (only if reactivating an inactive device from different user)
-        if (!isSameUser && wasInactive) {
-          const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
-          if (!limitCheck.canAddDevice) {
-            return next(new BusinessLogicError(limitCheck.message || 'Device limit reached'));
-          }
+      // Reactivating an inactive device consumes a quota slot regardless of user
+      // (devices are deallocated on logout, so the freed slot may already be taken)
+      if (wasInactive) {
+        const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
+        if (!limitCheck.canAddDevice) {
+          return next(new BusinessLogicError(limitCheck.message || 'Device limit reached'));
         }
       }
 
@@ -397,18 +390,22 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
       if (existingDevice) {
         const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
 
-        // Check if device was deleted by admin (inactive or no allocation)
+        // Device exists but is inactive or unallocated (released at logout or
+        // removed by admin) — re-registration is allowed when quota permits,
+        // same as a new device
         if (!existingDevice.isActive || !existingDevice.allocation) {
           return sendResponse(res, {
-            canRegister: false,
-            reason: 'Your device has been removed by administrator. Push notifications are disabled for this device.',
-            isDeleted: true,
+            canRegister: limitCheck.canAddDevice,
+            reason: limitCheck.canAddDevice
+              ? 'Inactive device can be re-registered'
+              : limitCheck.message || 'Device limit reached',
+            isReinstall: true,
             deviceUsage: {
               current: limitCheck.currentCount,
               maximum: limitCheck.maxAllowed
             },
-            requiresPayment: false,
-            additionalCost: 0
+            requiresPayment: limitCheck.requiresPayment || false,
+            additionalCost: limitCheck.additionalCost || 0
           });
         }
 
@@ -451,115 +448,6 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
     });
   } catch (error) {
     console.error('Error checking device eligibility:', error);
-    next(error);
-  }
-};
-
-const getTenantDeviceStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userInfo = req.user as UserInfo;
-
-  // Check if user has admin permissions
-  if (userInfo.role !== 'admin') {
-    return next(new BusinessLogicError('Admin access required'));
-  }
-
-  try {
-    const stats = await deviceLimitService.getTenantDeviceStats(userInfo.tenantId);
-    const limitCheck = await deviceLimitService.checkDeviceLimit(userInfo.tenantId);
-
-    return sendResponse(res, {
-      stats: {
-        ...stats,
-        limit: {
-          currentCount: limitCheck.currentCount,
-          maxAllowed: limitCheck.maxAllowed,
-          canAddDevice: limitCheck.canAddDevice,
-          requiresPayment: limitCheck.requiresPayment,
-          additionalCost: limitCheck.additionalCost
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Error getting tenant device stats:', error);
-    next(error);
-  }
-};
-
-const purchaseAdditionalDevice = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userInfo = req.user as UserInfo;
-  const { quantity = 1 } = req.body;
-
-  // Check if user has admin permissions
-  if (userInfo.role !== 'admin') {
-    return next(new BusinessLogicError('Admin access required'));
-  }
-
-  try {
-    const result = await deviceLimitService.purchaseAdditionalDevice(
-      userInfo.tenantId,
-      quantity
-    );
-
-    return sendResponse(res, result);
-  } catch (error) {
-    console.error('Error purchasing additional device:', error);
-    next(error);
-  }
-};
-
-const updateDeviceStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userInfo = req.user as UserInfo;
-  const { deviceToken } = req.params;
-  const { isActive } = req.body as UpdateDeviceRequest;
-
-  if (!deviceToken) {
-    return next(new RequestValidateError('Device token is required'));
-  }
-
-  try {
-    const device = await globalPrisma.pushyDevice.findUnique({
-      where: {
-        deviceToken
-      }
-    });
-
-    if (!device) {
-      return next(new NotFoundError('Device'));
-    }
-
-    if (device.tenantUserId !== userInfo.tenantUserId) {
-      return next(new BusinessLogicError('Unauthorized to update this device'));
-    }
-
-    const updatedDevice = await globalPrisma.pushyDevice.update({
-      where: {
-        id: device.id
-      },
-      data: {
-        isActive,
-        lastActiveAt: new Date()
-      }
-    });
-
-    // Handle topic subscriptions based on active status
-    const topics = await getUserTopics(userInfo);
-    // if (isActive && topics.length > 0) {
-    //   await PushyService.subscribeToTopics(deviceToken, topics);
-    // } else if (!isActive && topics.length > 0) {
-    //   await PushyService.unsubscribeFromTopics(deviceToken, topics);
-    // }
-
-    return sendResponse(res, {
-      message: 'Device status updated successfully',
-      device: {
-        id: updatedDevice.id,
-        deviceToken: updatedDevice.deviceToken,
-        platform: updatedDevice.platform,
-        isActive: updatedDevice.isActive
-      }
-    });
-  } catch (error) {
-    console.error('Error updating device status:', error);
     next(error);
   }
 };
@@ -791,27 +679,9 @@ router.get('/devices/checkQuota', checkDeviceEligibility);
 router.post('/devices/register', registerDevice);
 router.delete('/devices/unregisterDevice/:deviceToken', unregisterDevice);
 router.get('/devices/user', getUserDevices);
-router.patch('/devices/:deviceToken/status', updateDeviceStatus);
 
 // Tenant device management (no role check - frontend controls visibility)
 router.get('/devices/', getAllTenantDevices);
 router.delete('/devices/removeDevice/:deviceId', deleteDeviceById);
-
-// Admin routes
-router.get('/admin/devices/stats', getTenantDeviceStats);
-router.post('/admin/devices/purchase', purchaseAdditionalDevice);
-
-// Debug routes
-router.get('/debug/topics', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userInfo = req.user as UserInfo;
-
-  try {
-    const result = await PushyService.debugTopicSubscriptions(userInfo.tenantId);
-    return sendResponse(res, result);
-  } catch (error) {
-    console.error('Error debugging topic subscriptions:', error);
-    next(error);
-  }
-});
 
 export = router;

@@ -22,7 +22,7 @@ let generateReport = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('Valid sessionId is required');
     }
 
-    service.generateReport(req.user.databaseName, parseInt(sessionId.toString()))
+    service.generateReport(req.user.databaseName, parseInt(sessionId.toString()), req.user.planType)
         .then((reportData) => sendResponse(res, reportData))
         .catch(next)
 }
@@ -60,8 +60,25 @@ let generateOutletReport = (req: AuthRequest, res: Response, next: NextFunction)
         req.user.databaseName,
         parseInt(outletId.toString()),
         parsedStartDate,
-        parsedEndDate
+        parsedEndDate,
+        req.user.planType
     )
+        .then((reportData) => sendResponse(res, reportData))
+        .catch(next)
+}
+
+let generateLaundryReport = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    const sessionId = req.query.sessionId;
+
+    if (!sessionId || !validator.isNumeric(sessionId.toString())) {
+        throw new RequestValidateError('Valid sessionId is required');
+    }
+
+    service.generateLaundryReport(req.user.databaseName, parseInt(sessionId.toString()))
         .then((reportData) => sendResponse(res, reportData))
         .catch(next)
 }
@@ -69,4 +86,5 @@ let generateOutletReport = (req: AuthRequest, res: Response, next: NextFunction)
 // routes
 router.get('/generate', generateReport)
 router.get('/generateOutletReport', generateOutletReport)
+router.get('/generateLaundryReport', generateLaundryReport)
 export = router

@@ -1,0 +1,56 @@
+-- Expense module Phases 4 + 6: recurring templates (Class C convenience) +
+-- cost rates (Class B auto-compute) + laundry ironing flag for the per-kg rate.
+-- Additive only. See docs/future/EXPENSE_AND_CASH_RECONCILIATION.md §4/§7 and
+-- docs/modules/EXPENSE.md. Backup runs first per standing rule.
+
+-- CreateTable
+CREATE TABLE `expense_recurring_template` (
+    `ID` INTEGER NOT NULL AUTO_INCREMENT,
+    `OUTLET_ID` INTEGER NOT NULL DEFAULT 1,
+    `EXPENSE_CATEGORY_ID` INTEGER NOT NULL,
+    `AMOUNT` DECIMAL(15, 4) NOT NULL,
+    `DAY_OF_MONTH` INTEGER NULL,
+    `EFFECTIVE_FROM` DATETIME(3) NOT NULL,
+    `EFFECTIVE_TO` DATETIME(3) NULL,
+    `ACTIVE` BOOLEAN NOT NULL DEFAULT true,
+    `IS_DELETED` BOOLEAN NOT NULL DEFAULT false,
+    `DELETED_AT` DATETIME(3) NULL,
+    `CREATED_AT` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `UPDATED_AT` DATETIME(3) NULL,
+    `VERSION` INTEGER NULL DEFAULT 1,
+
+    INDEX `expense_recurring_template_UPDATED_AT_idx`(`UPDATED_AT`),
+    PRIMARY KEY (`ID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `cost_rate` (
+    `ID` INTEGER NOT NULL AUTO_INCREMENT,
+    `OUTLET_ID` INTEGER NOT NULL DEFAULT 1,
+    `EXPENSE_CATEGORY_ID` INTEGER NOT NULL,
+    `COST_TYPE` VARCHAR(191) NOT NULL,
+    `BASIS` VARCHAR(191) NOT NULL,
+    `RATE` DECIMAL(15, 4) NOT NULL,
+    `EFFECTIVE_FROM` DATETIME(3) NOT NULL,
+    `ACTIVE` BOOLEAN NOT NULL DEFAULT true,
+    `IS_DELETED` BOOLEAN NOT NULL DEFAULT false,
+    `DELETED_AT` DATETIME(3) NULL,
+    `CREATED_AT` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `UPDATED_AT` DATETIME(3) NULL,
+    `VERSION` INTEGER NULL DEFAULT 1,
+
+    INDEX `cost_rate_UPDATED_AT_idx`(`UPDATED_AT`),
+    PRIMARY KEY (`ID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AlterTable: laundry ironing flag (Phase 6 per-kg rate driver)
+ALTER TABLE `item` ADD COLUMN `INCLUDES_IRONING` BOOLEAN NULL DEFAULT false;
+
+-- CreateIndex: idempotent recurring posting (NULL templateId never collides)
+CREATE UNIQUE INDEX `expense_RECURRING_TEMPLATE_ID_PERIOD_MONTH_key` ON `expense`(`RECURRING_TEMPLATE_ID`, `PERIOD_MONTH`);
+
+-- AddForeignKey
+ALTER TABLE `expense_recurring_template` ADD CONSTRAINT `expense_recurring_template_EXPENSE_CATEGORY_ID_fkey` FOREIGN KEY (`EXPENSE_CATEGORY_ID`) REFERENCES `expense_category`(`ID`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `cost_rate` ADD CONSTRAINT `cost_rate_EXPENSE_CATEGORY_ID_fkey` FOREIGN KEY (`EXPENSE_CATEGORY_ID`) REFERENCES `expense_category`(`ID`) ON DELETE RESTRICT ON UPDATE CASCADE;

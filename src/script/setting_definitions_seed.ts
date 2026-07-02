@@ -39,6 +39,36 @@ const settingDefinitions = [
         isRequired: false
     },
     {
+        // Display/entry lens for fractional stock units. false (default) = price &
+        // count detergent etc. by the large unit (L/kg); true = use the small stock
+        // unit directly (ml/g). Display + entry only — stored values stay canonical
+        // (per-ml/g), so this never changes FIFO/cost/consumption math.
+        key: 'use_fine_grained_units',
+        category: 'Inventory',
+        type: 'BOOLEAN',
+        defaultValue: 'false',
+        description: 'Show and enter inventory in small units (ml/g) instead of large units (L/kg)',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        // Rounds computed line prices to the nearest N rupiah. Per-kg laundry
+        // pricing (rate × load) produces repeating-decimal cents — e.g.
+        // 5833.33 × 6 = 34999.98 — which this scrubs to a clean 35000. 0 disables
+        // rounding. TENANT scope; default 100.
+        key: 'price_rounding_increment',
+        category: 'Financial',
+        type: 'INT',
+        defaultValue: '100',
+        description: 'Round computed prices to the nearest N rupiah (0 disables)',
+        scope: 'TENANT',
+        isRequired: false,
+        validationRules: JSON.stringify({
+            min: 0,
+            max: 100000
+        })
+    },
+    {
         key: 'service_charge_rate',
         category: 'Financial',
         type: 'DOUBLE',
@@ -280,6 +310,42 @@ const settingDefinitions = [
         type: 'STRING',
         defaultValue: 'Thank you for your business!',
         description: 'Footer text on receipts',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        key: 'receipt_address',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Business address printed on the receipt header',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        key: 'receipt_phone',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Business phone printed on the receipt header',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        key: 'receipt_terms',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Terms & conditions block on the receipt (newline-separated; e.g. laundry liability clauses)',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
+        key: 'receipt_logo_url',
+        category: 'System',
+        type: 'STRING',
+        defaultValue: '',
+        description: 'Public R2 URL of the receipt header logo (set via the branding upload flow)',
         scope: 'TENANT',
         isRequired: false
     },

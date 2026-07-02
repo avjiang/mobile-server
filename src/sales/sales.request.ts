@@ -22,7 +22,6 @@ export interface SalesRequestBody {
 export class CreateSalesRequest {
     @Expose() id: number = 0;
     @Expose() outletId: number = 0;
-    @Expose() stockSourceOutletId?: number;
     @Expose() businessDate: Date = new Date();
     @Expose() salesType: string = "";
     @Expose() customerId?: number;
@@ -56,6 +55,10 @@ export class CreateSalesRequest {
     @Expose() eodId: number = 0;
     @Expose() salesQuotationId: number | undefined;
     @Expose() performedBy: string = "";
+    // Terminal attribution — the originating terminal number (RegisteredDevice.siteId),
+    // cached at login. Must be @Expose'd or class-transformer drops it before
+    // tx.sales.create. Nullable: omitted by devices that haven't registered yet.
+    @Expose() siteId?: number;
     @Expose() deleted: boolean | undefined;
     // Loyalty fields (optional — only sent when loyalty is enabled)
     @Expose() loyaltyPointsToRedeem?: number;
@@ -69,6 +72,17 @@ export class CreateSalesRequest {
     @Expose() voucherId?: number;
     @Expose() voucherDiscountPercentage?: number;
     @Expose() voucherDiscountAmount?: number;
+    // Laundry intake→pickup identity (optional — only sent by laundry tenants).
+    // class-transformer drops any non-@Expose field, so these MUST be decorated
+    // or they silently never reach tx.sales.create.
+    @Expose() orderRef?: string;
+    @Expose() friendlyNumber?: string;
+    // Stock source (optional — Pro tenants). When stockSourceType === 'WAREHOUSE',
+    // stock is deducted from stockSourceWarehouseId instead of the outlet. Defaults
+    // to outlet behaviour when omitted.
+    @Expose() stockSourceType?: string;
+    @Expose() stockSourceOutletId?: number;
+    @Expose() stockSourceWarehouseId?: number;
     @Expose()
     @Type(() => CreateSalesItemRequest)
     salesItems: CreateSalesItemRequest[] = [];
@@ -105,6 +119,9 @@ export class CreateSalesItemRequest {
     @Expose() deleted: boolean | undefined;
     @Expose() stockConsumptionQty?: PrismaDecimal;
     @Expose() unitOfMeasure?: string;
+    // Laundry: actual processed weight (kg) on a wash-service line. The charged
+    // price is fixed to the machine load; this is captured only for KG reporting.
+    @Expose() loadWeightKg?: PrismaDecimal;
 }
 
 export class CalculateSalesObject {
@@ -161,4 +178,12 @@ export class ConfirmDeliveryBatchRequest {
     @Expose() salesIds: number[] = [];
     @Expose() deliveryNotes?: string;
     @Expose() deliveredAt?: Date;
+}
+
+// Contact-only edit of an existing sale (PATCH /sales/:salesId/contact).
+// Both fields optional — only provided fields are updated. The single allowed
+// mutation of an otherwise-immutable sale snapshot (walk-in name/phone typo fix).
+export class UpdateSalesContactRequest {
+    @Expose() customerName?: string;
+    @Expose() phoneNumber?: string;
 }

@@ -56,8 +56,7 @@ src/stock/
 │   └── stock-balance.request.ts      # Request types
 ├── stock-movement/
 │   ├── stock-movement.controller.ts  # HTTP routes
-│   ├── stock-movement.service.ts     # Business logic
-│   └── stock-movement.request.ts     # Request types
+│   └── stock-movement.service.ts     # Business logic
 ├── stock-receipt/
 │   ├── stock-receipt.controller.ts   # HTTP routes
 │   ├── stock-receipt.service.ts      # Business logic
@@ -201,9 +200,7 @@ model StockSnapshot {
 
 | Method | Endpoint                | Description                  |
 | ------ | ----------------------- | ---------------------------- |
-| GET    | `/stockMovement/`       | Get all stock movements      |
-| GET    | `/stockMovement/find`   | Get movements by item/outlet |
-| PUT    | `/stockMovement/update` | Update movements             |
+| GET    | `/stockMovement/find`   | Get movements by item/outlet (latest 25) |
 
 ### Stock Receipt Endpoints
 

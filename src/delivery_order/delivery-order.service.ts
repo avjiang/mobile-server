@@ -6,6 +6,7 @@ import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request";
+import { warehouseRef, receiveLayers, consumeFIFO } from "../stock/location-stock-engine";
 
 class RequestValidateError extends Error {
     constructor(message: string) {
@@ -128,6 +129,8 @@ let getAll = async (
                     status: true,
                     remark: true,
                     performedBy: true,
+                    destinationLocationType: true,
+                    warehouseId: true,
                     version: true,
                     createdAt: true,
                     updatedAt: true,
@@ -460,6 +463,8 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                 status: true,
                 remark: true,
                 performedBy: true,
+                destinationLocationType: true,
+                warehouseId: true,
                 version: true,
                 createdAt: true,
                 updatedAt: true,
@@ -620,6 +625,22 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
             const createdDeliveryOrders: any[] = [];
 
             for (const deliveryOrderData of deliveryOrders) {
+                // Resolve goods-receipt destination (default outlet). When warehouse,
+                // validate the warehouse exists + is active before any stock moves.
+                const destinationLocationType =
+                    deliveryOrderData.destinationLocationType === 'WAREHOUSE' ? 'WAREHOUSE' : 'OUTLET';
+                let warehouseId: number | null = null;
+                if (destinationLocationType === 'WAREHOUSE') {
+                    warehouseId = deliveryOrderData.warehouseId ?? 0;
+                    const wh = await tx.warehouse.findFirst({
+                        where: { id: warehouseId, deleted: false },
+                        select: { id: true },
+                    });
+                    if (!wh) {
+                        throw new RequestValidateError(`Warehouse ${warehouseId} not found or inactive`);
+                    }
+                }
+
                 // Create delivery order
                 const newDeliveryOrder = await tx.deliveryOrder.create({
                     data: {
@@ -637,7 +658,10 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         trackingNumber: deliveryOrderData.trackingNumber,
                         status: deliveryOrderData.status || 'Pending',
                         remark: deliveryOrderData.remark,
-                        performedBy: deliveryOrderData.performedBy
+                        performedBy: deliveryOrderData.performedBy,
+                        siteId: deliveryOrderData.siteId ?? null, // Terminal attribution
+                        destinationLocationType,
+                        warehouseId,
                     }
                 });
 
@@ -665,7 +689,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                     });
 
                     // Batch stock operations for better performance
-                    await updateStockBalancesAndMovements(tx, deliveryOrderData.deliveryOrderItems, newDeliveryOrder, deliveryOrderData.performedBy || "Cashier");
+                    await updateStockBalancesAndMovements(tx, deliveryOrderData.deliveryOrderItems, newDeliveryOrder, deliveryOrderData.performedBy || "Cashier", deliveryOrderData.siteId ?? null);
 
                     // Check purchase order status with partial delivery support
                     if (newDeliveryOrder.purchaseOrderId) {
@@ -690,7 +714,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
 }
 
 // Optimized helper function for batch stock operations
-const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string) => {
+const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string, siteId: number | null = null) => {
     const movementOperations = [];
     const receiptOperations = [];
 
@@ -700,6 +724,34 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
         select: { id: true, trackStock: true }
     });
     const trackStockMap = new Map(itemTrackStockData.map((i: any) => [i.id, i.trackStock]));
+
+    // ── Warehouse destination → receive into warehouse stock via the shared FIFO
+    // engine, then return. (Outlet destination keeps the original inline path below,
+    // byte-for-byte.) Per-unit cost = unitPrice + deliveryFee / receivedQuantity.
+    if (deliveryOrder.destinationLocationType === 'WAREHOUSE' && deliveryOrder.warehouseId) {
+        const ref = warehouseRef(tx, deliveryOrder.warehouseId);
+        for (const item of items) {
+            if (trackStockMap.get(item.itemId) === false) continue;
+            if (!(item.receivedQuantity > 0)) continue;
+            const qty = new Decimal(item.receivedQuantity);
+            const deliveryFee = new Decimal(item.deliveryFee || 0);
+            const unitPrice = new Decimal(item.unitPrice || 0);
+            const perUnitCost = unitPrice.plus(deliveryFee.div(qty));
+            await receiveLayers(ref, {
+                itemId: item.itemId,
+                itemVariantId: item.itemVariantId || null,
+                // deliveryOrderId provenance is what lets invoice re-pricing find and
+                // re-cost this receipt later (supplier discount → cost adjustment).
+                layers: [{ quantity: qty, cost: perUnitCost, receiptDate: new Date(), deliveryOrderId: deliveryOrder.id }],
+                movementType: 'Delivery Receipt',
+                documentId: deliveryOrder.id,
+                reason: `Stock received from delivery order #${deliveryOrder.id}`,
+                remark: item.remark || '',
+                performedBy: performedBy || 'SYSTEM',
+            });
+        }
+        return;
+    }
 
     // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
@@ -782,7 +834,9 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 documentId: deliveryOrder.id,
                 reason: `Stock received from delivery order #${deliveryOrder.id}`,
                 remark: item.remark || '',
-                performedBy: performedBy || 'SYSTEM'
+                performedBy: performedBy || 'SYSTEM',
+                // Terminal attribution — the terminal that received the delivery.
+                siteId: siteId
             });
 
             // Prepare receipt operation with per-unit cost
@@ -806,8 +860,42 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
 };
 
 // Helper function to reverse stock operations when delivery order is cancelled
-const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string) => {
+const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string, siteId: number | null = null) => {
     const movementOperations = [];
+
+    // ── Warehouse destination → reverse from warehouse stock (FIFO), capped at what's
+    // available (lenient, mirroring the outlet clamp-to-zero below), then return.
+    if (deliveryOrder.destinationLocationType === 'WAREHOUSE' && deliveryOrder.warehouseId) {
+        const ref = warehouseRef(tx, deliveryOrder.warehouseId);
+        for (const item of items) {
+            if (!(item.receivedQuantity > 0)) continue;
+            const balance = await ref.balance.findFirst({
+                where: {
+                    warehouseId: deliveryOrder.warehouseId,
+                    itemId: item.itemId,
+                    itemVariantId: item.itemVariantId || null,
+                    deleted: false,
+                },
+                select: { availableQuantity: true },
+            });
+            if (!balance) continue;
+            const avail = new Decimal(balance.availableQuantity);
+            if (avail.lte(0)) continue;
+            const toRemove = Decimal.min(avail, new Decimal(item.receivedQuantity));
+            await consumeFIFO(ref, {
+                itemId: item.itemId,
+                itemVariantId: item.itemVariantId || null,
+                quantity: toRemove,
+                fallbackCost: new Decimal(item.unitPrice || 0),
+                movementType: 'Delivery Cancellation',
+                documentId: deliveryOrder.id,
+                reason: `Stock adjustment for cancelled delivery order #${deliveryOrder.id}`,
+                remark: item.remark || 'Delivery order cancelled',
+                performedBy: performedBy || 'SYSTEM',
+            });
+        }
+        return;
+    }
 
     // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
@@ -871,7 +959,9 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                     documentId: deliveryOrder.id,
                     reason: `Stock adjustment for cancelled delivery order #${deliveryOrder.id}`,
                     remark: item.remark || 'Delivery order cancelled',
-                    performedBy: performedBy || 'SYSTEM'
+                    performedBy: performedBy || 'SYSTEM',
+                    // Terminal attribution — the terminal that cancelled the delivery.
+                    siteId: siteId
                 });
             }
         }
@@ -882,10 +972,14 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
         await tx.stockMovement.createMany({ data: movementOperations });
     }
 
-    // Soft delete existing stock receipts for this delivery order
+    // Soft delete existing stock receipts for this delivery order.
+    // outletId guard: transfers preserve deliveryOrderId provenance on receipts they
+    // recreate at other locations — this reversal decrements only this outlet's
+    // balances, so it must only delete this outlet's receipts.
     await tx.stockReceipt.updateMany({
         where: {
             deliveryOrderId: deliveryOrder.id,
+            outletId: deliveryOrder.outletId,
             deleted: false
         },
         data: {
@@ -1076,6 +1170,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
             if (updateData.status !== undefined) updateFields.status = updateData.status;
             if (updateData.remark !== undefined) updateFields.remark = updateData.remark;
             if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;
+            if (updateData.siteId !== undefined) updateFields.siteId = updateData.siteId; // Terminal attribution (latest editor)
 
             // Update delivery order
             const updatedDeliveryOrder = await tx.deliveryOrder.update({
@@ -1089,7 +1184,8 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
                     tx,
                     existingDeliveryOrder.deliveryOrderItems,
                     updatedDeliveryOrder,
-                    updateData.performedBy || "SYSTEM"
+                    updateData.performedBy || "SYSTEM",
+                    updateData.siteId ?? null
                 );
             }
 
@@ -1128,7 +1224,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
 
                         // Update stock balances for new items (only if not cancelled)
                         if (!isBeingCancelled) {
-                            await updateStockBalancesAndMovements(tx, updateData.deliveryOrderItems, updatedDeliveryOrder, updateData.performedBy || "SYSTEM");
+                            await updateStockBalancesAndMovements(tx, updateData.deliveryOrderItems, updatedDeliveryOrder, updateData.performedBy || "SYSTEM", updateData.siteId ?? null);
                         }
                     }
                 }
@@ -1423,6 +1519,8 @@ let getUnInvoicedDeliveryOrders = async (
                     status: true,
                     remark: true,
                     performedBy: true,
+                    destinationLocationType: true,
+                    warehouseId: true,
                     version: true,
                     createdAt: true,
                     updatedAt: true,

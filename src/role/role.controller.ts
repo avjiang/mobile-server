@@ -9,6 +9,8 @@ import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
 import { AssignRoleRequestBody, CreateRoleRequestBody } from "./role.request"
 import { SyncRequest } from "src/item/item.request"
+import { requirePermission } from "../middleware/require-permission.middleware"
+import { PERMISSION } from "../permission/permission-names"
 
 const router = express.Router()
 
@@ -184,11 +186,14 @@ let getAllUsersByRoleID = (req: NetworkRequest<any>, res: Response, next: NextFu
 }
 
 //routes
+// Reads stay open (the FE syncs roles to resolve permissions for every user).
+// Creating/editing roles and assigning/removing them are admin actions gated
+// by Manage Roles.
 router.get('/sync', getAllRole)
 router.get('/user/:userId', getRoleByUserId)
 router.get('/users/:roleId', getAllUsersByRoleID)
-router.post('/create', createRole)
-router.put('/update', updateRole)
-router.post('/assign/:userId', assignRole)
-router.post('/remove/:userId', removeRole)
+router.post('/create', requirePermission(PERMISSION.MANAGE_ROLES), createRole)
+router.put('/update', requirePermission(PERMISSION.MANAGE_ROLES), updateRole)
+router.post('/assign/:userId', requirePermission(PERMISSION.MANAGE_ROLES), assignRole)
+router.post('/remove/:userId', requirePermission(PERMISSION.MANAGE_ROLES), removeRole)
 export = router

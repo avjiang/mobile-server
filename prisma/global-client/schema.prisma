@@ -48,6 +48,13 @@ model Tenant {
   tenantName        String                  @map("TENANT_NAME")
   databaseName      String?                 @unique @map("DATABASE_NAME")
   phoneNumber       String?                 @map("PHONE_NUMBER")
+  // --- Online catalogue (see docs/future/ONLINE_CATALOGUE.md) ---
+  slug              String?                 @unique @map("SLUG") // public catalogue subdomain key: <slug>.bayaryuk.net
+  whatsappNumber    String?                 @map("WHATSAPP_NUMBER") // intl format, digits only; powers the wa.me contact button
+  catalogueEnabled  Boolean                 @default(false) @map("CATALOGUE_ENABLED") // kill switch for the public catalogue
+  logoUrl           String?                 @map("LOGO_URL") // R2 https URL of the storefront logo (hero); falls back to monogram
+  coverUrl          String?                 @map("COVER_URL") // R2 https URL of the storefront cover/banner image behind the hero
+  cataloguePriceVisible Boolean             @default(true) @map("CATALOGUE_PRICE_VISIBLE") // false → public catalogue hides all prices (+ price sort + WA price)
   createdAt         DateTime                @default(dbgenerated("(UTC_TIMESTAMP())")) @map("CREATED_AT")
   tenantUsers       TenantUser[]
   subscription      TenantSubscription[]

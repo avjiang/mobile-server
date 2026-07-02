@@ -10,7 +10,14 @@ npm run dev                        # Start dev server (PM2 + tsx, port 8080, wat
 npm run build                      # TypeScript compilation (tsc → ./dist)
 npm start                          # Production mode (node dist/index.js)
 npm run generate_prisma            # Generate Prisma clients for both global and tenant schemas
-npm run upgrade_db                 # Run Prisma migrations on all databases
+
+# DB ops — `db_upgrade.ts` / `db_backup.ts` both accept target arg: `local` | `prod`
+npm run upgrade_db                 # Apply Prisma migrations to LOCAL global + every tenant DB
+npm run upgrade_db_prod            # Same, against PROD_* DB URLs from .env (Azure MySQL)
+npm run backup_db                  # mysqldump LOCAL global + each tenant → backups/local_<ts>/
+npm run backup_db_prod             # mysqldump PROD                       → backups/prod_<ts>/
+
+# Seeds
 npm run seed_permissions           # Seed permission definitions
 npm run seed_settings_definitions  # Seed settings
 npm run seed_subscription_plans    # Seed subscription plans
@@ -102,26 +109,65 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 
 ## Environment
 
-- `.env`: `TENANT_DATABASE_URL`, `GLOBAL_DB_URL`, `PORT`, `PUSHY_SECRET_API_KEY`
+- `.env` (local): `TENANT_DATABASE_URL`, `GLOBAL_DB_URL`, `PORT`, `PUSHY_SECRET_API_KEY`
+- `.env` (prod overrides): `PROD_GLOBAL_DB_URL`, `PROD_TENANT_DATABASE_URL` (consumed when `db_upgrade.ts` / `db_backup.ts` are invoked with the `prod` arg — they swap these into `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` at runtime)
 - `config.json`: `JWT_TOKEN_SECRET`
 - PM2 config in `ecosystem.config.js` (tsx interpreter, watch mode)
+- App Service env vars on Azure are managed separately — `az webapp config appsettings list --name BayarYuk --resource-group bayar-yuk`
+
+## Testing — LOCAL DB ONLY (hard rule)
+
+**When testing or verifying behavior — creating/inspecting/deleting test data, running ad-hoc queries, seeding, or confirming a fix — you MUST only access the LOCAL MySQL DB.** Never the production database.
+
+- **Local only:** `mysql -h127.0.0.1 -P3306 -uroot -prootroot <db>` — the `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` (`127.0.0.1:3306`) values, including any tenant DB such as `nanggroe_wash_db`.
+- **Never for testing:** the prod Azure MySQL host `*.mysql.database.azure.com` or the `PROD_GLOBAL_DB_URL` / `PROD_TENANT_DATABASE_URL` URLs. Do not connect to, query, or mutate it to "check" or "test" anything.
+- Production is touched **only** through the explicit, user-authorized release path in "Production DB Upgrade Workflow" below (`backup_db_prod` → `upgrade_db_prod`) — never for testing, verification, or convenience.
+- If a test seems to require prod data, stop and ask the user first.
+
+## Deployment
+
+Auto-deploys to Azure App Service `BayarYuk` (RG `bayar-yuk`, Southeast Asia) on `push` to `main` via [`.github/workflows/main_bayaryuk.yml`](../.github/workflows/main_bayaryuk.yml). Public host: `bayaryuk-c2c8d5acg8chaqfm.southeastasia-01.azurewebsites.net`. There is no manual deploy step.
+
+Health check: `GET /health`.
+
+## Production DB Upgrade Workflow
+
+For a coordinated release that includes schema changes:
+
+1. **Audit pending migrations first** — `prisma migrate status` against prod (read-only). All Prisma migrations *should* be backward-compatible (additive cols nullable or with defaults, new tables only). Anything else (NOT NULL adds, drops, type changes) needs a multi-step rollout.
+2. `npm run backup_db_prod` — produces `backups/prod_<ts>/global.sql` + one `<tenant>.sql` per tenant. **Verify files exist and are non-empty before continuing.**
+3. `npm run upgrade_db_prod` — applies migrations to global + every tenant DB. DB is now ahead of the still-running App Service code; safe if migrations are additive.
+4. `git push origin main` — CI/CD deploys the new server code that uses the new schema.
+5. Wait for green deploy + `curl https://bayaryuk-…/health`.
+6. Release the matching Flutter build.
+
+### Silent-failure caveat in `updateAllTenantDatabases()`
+
+[`src/db.ts:82`](../src/db.ts#L82) **catches per-tenant migration failures and logs them — it does NOT abort**. Always grep stdout of `upgrade_db_prod` for `Failed to update` after the run. A clean exit code does not mean every tenant migrated.
+
+### Rollback gap (current state)
+
+- Server code rollback is easy: `git revert <commit> && git push origin main` → CI/CD redeploys, or use App Service Deployment Center to redeploy a previous build.
+- **DB rollback has no script yet.** Restoring a backup requires manually piping each `.sql` file with the `mysql` CLI (`mysql -h … <db> < backups/prod_<ts>/<db>.sql`). The planned `db_restore.ts` is drafted in [`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md) §0.3 but not yet implemented. For additive-only migrations, hand-written reverse SQL (`DROP TABLE`, `DROP COLUMN`) is also valid and was used historically.
+
+### Azure free-tier expiry
+
+Current MySQL free tier on this subscription **expires Fri 4 Sep 2026**. Full migration runbook to a fresh subscription is in [`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md) (target cutover ~25 Aug 2026). Phase 0 tooling is partially built (`prod` target works; `newprod` target and `db_restore.ts` not yet).
 
 ## Module Documentation
 
-Module docs are **unified across backend and frontend** and live in the sibling Flutter repo:
-`../flutter-front-end/docs/modules/<MODULE>.md`
+**Entry point: [`../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md`](../../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md)** — the master dispatcher. It indexes every unified module doc (FE+BE), the file routing table (so `src/<module>/...` paths map straight to the right doc), and the cross-cutting docs. Module docs themselves live at `../flutter-front-end/docs/modules/<MODULE>.md` and cover both backend (`src/<module>/`) and frontend.
 
-The unified doc covers business rules, data model, API contract, backend implementation (this repo's `src/<module>/`), and frontend implementation. Structure follows `../flutter-front-end/docs/modules/_TEMPLATE.md`.
+### Rules — apply to EVERY change, always (new features, bug fixes, enhancements, amendments)
 
-### Rules — apply to EVERY module, always (new features, bug fixes, enhancements, amendments)
+For every task — even if the user does not explicitly tag the dispatcher — follow this workflow:
 
-1. **Before starting any work** on a module (e.g. anything under `src/<module>/`):
-   - Look for `../flutter-front-end/docs/modules/<MODULE>.md` (check `../flutter-front-end/docs/modules/README.md` for the index).
-   - If it exists → **read it first** to understand contract, business rules, edge cases.
-   - If it does not exist → create it as part of the work using `../flutter-front-end/docs/modules/_TEMPLATE.md`.
-2. **After finishing the work** → update the module doc to reflect the new behavior (including backend-side changes in the "Backend Implementation" and "API Contract" sections). Undocumented change = incomplete change.
-3. **One doc per module.** Never create a BE-only briefing or changelog doc in this repo. Extend the unified module doc instead.
-4. **Module name = `src/<module>/` folder name** (UPPER_SNAKE_CASE in the filename, e.g. `LOYALTY.md`).
+1. **Open `../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md`** and use §2 File Routing (Backend table) to find which module doc the touched `src/<module>/...` files belong to.
+2. **Read the matched module doc(s)** before writing any code, to understand contract, business rules, edge cases.
+3. **If no row matches** → create the module doc from `../flutter-front-end/docs/modules/_TEMPLATE.md` and add routing rows to `INTERNAL_DOCUMENTATION.md` §2 (Backend table).
+4. **After finishing the work** → update the module doc to reflect the new behavior (including backend-side changes in the "Backend Implementation" and "API Contract" sections). Undocumented change = incomplete change.
+5. **One doc per module.** Never create a BE-only briefing or changelog doc in this repo. Extend the unified module doc instead.
+6. **Module name = `src/<module>/` folder name** (UPPER_SNAKE_CASE in the filename, e.g. `LOYALTY.md`).
 
 ### BE-only infra docs (not feature docs) — stay in this repo
 
@@ -137,9 +183,10 @@ The unified doc covers business rules, data model, API contract, backend impleme
 ## Ground Rules
 
 - **Do not run any terminal commands** — the project owner executes all npm, prisma, and shell commands manually
+- **Always consult [`../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md`](../../flutter-front-end/docs/INTERNAL_DOCUMENTATION.md) at the start and end of every task** — it is the single dispatcher for all internal docs. Use §2 File Routing (Backend table) to find the right module doc(s) to read/update.
 - Prefer editing existing files over creating new ones
 - API contract changes (new fields, endpoints, request/response shape) are captured in the unified module doc at `../flutter-front-end/docs/modules/<MODULE>.md` (API Contract + Backend Implementation sections) — do NOT create a separate briefing file in this repo
-- Always update the unified module doc after making changes (see "Module Documentation" section); if none exists, create one from `../flutter-front-end/docs/modules/_TEMPLATE.md`
+- Always update the unified module doc after making changes; if none exists, create one from `../flutter-front-end/docs/modules/_TEMPLATE.md` and add routing rows to `INTERNAL_DOCUMENTATION.md` §2
 - Always be thorough — deep dive to check for missing pieces before considering something done
 - When compacting, always preserve the full list of modified files
 - When updating current endpoints or adding new ones, do not forget to always update the `postman.json`

@@ -680,6 +680,7 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
                         remark: quotationData.remark,
                         currency: quotationData.currency || 'IDR',
                         performedBy: quotationData.performedBy,
+                        siteId: quotationData.siteId ?? null, // Terminal attribution
                         isTaxInclusive: quotationData.isTaxInclusive !== undefined ? quotationData.isTaxInclusive : true,
                         convertedToPOAt: quotationData.convertedToPOAt,
                         convertedPOId: quotationData.convertedPOId,
@@ -941,6 +942,7 @@ let update = async (quotation: QuotationInput, databaseName: string, outletId: n
                     status: updateData.status,
                     remark: updateData.remark,
                     performedBy: updateData.performedBy,
+                    siteId: updateData.siteId ?? null, // Terminal attribution (latest editor)
                     isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
                     convertedToPOAt: updateData.convertedToPOAt,
                     convertedPOId: updateData.convertedPOId,

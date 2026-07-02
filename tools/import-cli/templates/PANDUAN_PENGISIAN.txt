@@ -1,0 +1,113 @@
+================================================================
+PANDUAN PENGISIAN DATA TOKO — Bayar Yuk!
+================================================================
+
+Halo! 👋
+File Excel ini dipakai untuk memasukkan data toko kamu (kategori,
+pemasok/supplier, produk, stok awal, dan pelanggan) sekaligus, biar
+nggak perlu input satu-satu di aplikasi.
+
+Ada 2 file:
+  • TEMPLATE_KOSONG.xlsx  -> INI yang kamu ISI lalu kirim balik ke kami.
+  • CONTOH_TERISI.xlsx    -> cuma CONTOH, buat lihat bentuk isian yang benar.
+                             JANGAN dikirim, cukup dijadikan panduan.
+
+Buka TEMPLATE_KOSONG.xlsx pakai Excel (atau WPS Office). Di bagian
+bawah ada tab-tab sheet: Kategori, Pemasok, Produk, Varian Produk,
+Pelanggan.
+
+----------------------------------------------------------------
+ATURAN PALING PENTING (baca dulu ya!)
+----------------------------------------------------------------
+1. Kolom dengan judul WARNA ORANYE = WAJIB diisi.
+   Kolom warna biru = boleh dikosongkan.
+
+2. Tulis angka tanpa titik, koma, atau "Rp".
+   BENAR  : 12000
+   SALAH  : 12.000   /   Rp 12.000   /   12,000
+
+3. JANGAN ubah nama judul kolom dan JANGAN ubah nama tab sheet.
+   Cukup isi barisnya saja.
+
+4. Isi urut: KATEGORI dulu -> PEMASOK -> baru PRODUK.
+   (Soalnya pas isi Produk, kategori & pemasok dipilih dari daftar
+   yang sudah kamu buat. Kalau belum ada, nanti nggak muncul.)
+
+----------------------------------------------------------------
+LANGKAH 1 — Isi sheet "Kategori"
+----------------------------------------------------------------
+Kategori = pengelompokan produk. Contoh: "Tepung & Gula",
+"Bahan Tambahan", "Kemasan".
+
+  • nama_kategori (wajib) : nama kelompoknya. Tulis 1 baris per kategori.
+  • deskripsi            : penjelasan singkat (boleh kosong).
+  • kategori_induk       : kosongkan saja kalau tidak perlu.
+
+----------------------------------------------------------------
+LANGKAH 2 — Isi sheet "Pemasok"
+----------------------------------------------------------------
+Pemasok = tempat kamu kulakan/beli barang.
+
+  • nama_pemasok (wajib) : nama toko/PT pemasok. 1 baris per pemasok.
+  • kena_pajak (wajib)   : pilih "Ya" atau "Tidak" dari daftar dropdown.
+  • kota, no_hp, email, dll : isi kalau ada, boleh dikosongkan.
+
+Belum tahu pemasoknya? Buat satu saja, misalnya tulis nama tokomu
+sendiri sebagai pemasok, lalu pilih itu untuk semua produk.
+
+----------------------------------------------------------------
+LANGKAH 3 — Isi sheet "Produk" (ini bagian utamanya)
+----------------------------------------------------------------
+Setiap baris = 1 produk yang kamu jual.
+
+Beberapa kolom ada TANDA PANAH KECIL di pojok kanan sel = artinya
+DIPILIH dari daftar (dropdown), bukan diketik:
+
+  • nama_kategori  -> pilih dari kategori yang tadi kamu buat di Langkah 1
+  • nama_pemasok   -> pilih dari pemasok yang tadi kamu buat di Langkah 2
+  • satuan         -> pilih: Pcs, Pack, Kg, Gram, Liter, dll
+  • kena_pajak     -> pilih Ya / Tidak
+  • punya_varian   -> pilih Ya / Tidak
+  • lacak_stok     -> pilih Ya / Tidak
+
+Kolom yang diketik sendiri:
+  • nama_produk (wajib) : nama lengkap produk.
+        TIPS: kalau ukurannya beda-beda, tulis ukuran di nama,
+        misal "Tepung Terigu Segitiga Biru 1kg", "Gula Pasir 1kg".
+        Tiap ukuran dibuat 1 baris produk sendiri.
+  • kode_produk (wajib) : kode unik/SKU tiap produk (bebas, asal beda).
+        Contoh: TPG-SB-1KG, GLA-1KG.
+  • harga_beli (wajib)  : harga modal/beli (angka saja).
+  • harga_jual (wajib)  : harga jual ke pembeli (angka saja).
+  • stok_awal           : jumlah stok yang ADA SEKARANG. Kosong = 0.
+  • barcode             : KOSONGKAN kalau belum punya barcode.
+                          (Nanti bisa dibuat & dicetak dari aplikasi.)
+  • lacak_stok          : "Ya" untuk barang biasa. "Tidak" hanya untuk
+                          jasa/layanan yang tidak punya stok.
+  • stok_minimum        : batas stok menipis buat pengingat (boleh kosong).
+
+----------------------------------------------------------------
+LANGKAH 4 — Sheet "Varian Produk" (OPSIONAL)
+----------------------------------------------------------------
+Isi HANYA kalau ada produk yang punya varian (misal 1 baju beda
+warna/ukuran) DAN kamu sudah pilih punya_varian = "Ya" di sheet Produk.
+
+Kalau semua produkmu dijual per kemasan/ukuran terpisah (seperti
+contoh bahan kue), sheet ini BIARKAN KOSONG saja.
+
+----------------------------------------------------------------
+LANGKAH 5 — Sheet "Pelanggan" (OPSIONAL)
+----------------------------------------------------------------
+Kalau kamu punya daftar pelanggan langganan, isi di sini
+(nama_depan & nama_belakang wajib). Kalau belum ada, lewati saja.
+
+----------------------------------------------------------------
+SELESAI — Kirim balik ke kami
+----------------------------------------------------------------
+1. Cek lagi: kolom oranye sudah terisi semua? Angka tanpa titik/Rp?
+2. Simpan file (Save) tetap dalam format Excel (.xlsx).
+3. Kirim file TEMPLATE_KOSONG.xlsx yang sudah terisi ke kami.
+
+Nanti data toko kamu kami masukkan ke sistem Bayar Yuk!, lengkap
+dengan stok awalnya. Kalau ada yang bingung, langsung tanya kami ya 🙂
+================================================================

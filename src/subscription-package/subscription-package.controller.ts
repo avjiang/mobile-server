@@ -5,6 +5,13 @@ import { RequestValidateError } from '../api-helpers/error';
 import { AuthRequest } from '../middleware/auth-request';
 import { UserInfo } from '../middleware/authorize-middleware';
 import { requireLoyalty } from '../middleware/loyalty-gate.middleware';
+import { requirePermission } from '../middleware/require-permission.middleware';
+
+const P = {
+    MANAGE_PACKAGES: 'Manage Subscription Packages',
+    VIEW_SUBSCRIPTIONS: 'View Customer Subscriptions',
+    MANAGE_SUBSCRIPTIONS: 'Manage Customer Subscriptions',
+};
 
 const router = express.Router();
 
@@ -78,7 +85,7 @@ const subscribeCustomer = async (req: AuthRequest, res: Response, next: NextFunc
         }
         const result = await service.subscribeCustomer(user.databaseName, {
             customerId, subscriptionPackageId, paidAmount,
-        });
+        }, user.username);
         sendResponse(res, result);
     } catch (error) { next(error); }
 };
@@ -134,19 +141,19 @@ const recordUsage = async (req: AuthRequest, res: Response, next: NextFunction) 
 // ============================================
 
 // Package CRUD
-router.get('/package', requireLoyalty('advanced'), getPackages);
-router.get('/package/:id', requireLoyalty('advanced'), getPackageById);
-router.post('/package', requireLoyalty('advanced'), createPackage);
-router.put('/package/:id', requireLoyalty('advanced'), updatePackage);
-router.delete('/package/:id', requireLoyalty('advanced'), deletePackage);
+router.get('/package', requireLoyalty('advanced'), requirePermission(P.VIEW_SUBSCRIPTIONS), getPackages);
+router.get('/package/:id', requireLoyalty('advanced'), requirePermission(P.VIEW_SUBSCRIPTIONS), getPackageById);
+router.post('/package', requireLoyalty('advanced'), requirePermission(P.MANAGE_PACKAGES), createPackage);
+router.put('/package/:id', requireLoyalty('advanced'), requirePermission(P.MANAGE_PACKAGES), updatePackage);
+router.delete('/package/:id', requireLoyalty('advanced'), requirePermission(P.MANAGE_PACKAGES), deletePackage);
 
 // Customer subscriptions
-router.post('/subscribe', requireLoyalty('advanced'), subscribeCustomer);
-router.get('/customer/:id', requireLoyalty('advanced'), getCustomerSubscriptions);
-router.get('/subscription/:id', requireLoyalty('advanced'), getSubscriptionById);
-router.put('/cancel/:id', requireLoyalty('advanced'), cancelSubscription);
+router.post('/subscribe', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), subscribeCustomer);
+router.get('/customer/:id', requireLoyalty('advanced'), requirePermission(P.VIEW_SUBSCRIPTIONS), getCustomerSubscriptions);
+router.get('/subscription/:id', requireLoyalty('advanced'), requirePermission(P.VIEW_SUBSCRIPTIONS), getSubscriptionById);
+router.put('/cancel/:id', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), cancelSubscription);
 
 // Usage tracking
-router.post('/usage', requireLoyalty('advanced'), recordUsage);
+router.post('/usage', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), recordUsage);
 
 module.exports = router;

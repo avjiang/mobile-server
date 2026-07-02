@@ -1,6 +1,7 @@
 import { PrismaClient } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma, getGlobalPrisma } from '../db';
+import { invalidatePermissions } from '../auth/permission-cache';
 import { SyncRequest } from "src/item/item.request";
 import { UpdateUserRequestBody, ChangePasswordRequest } from "./user.request";
 import NotificationService from '../pushy/notification.service';
@@ -255,6 +256,12 @@ let update = async (databaseName: string, userId: number, updateData: UpdateUser
                 roleCount: result?.roles.length ?? 0
             }
         });
+
+        // If this update changed the user's role membership, invalidate the
+        // tenant's cached permissions so the affected user re-resolves live.
+        if (roles && roles.length > 0) {
+            invalidatePermissions(databaseName);
+        }
 
         return updatedUser;
     }

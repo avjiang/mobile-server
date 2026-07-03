@@ -323,3 +323,65 @@ export async function createLaundryPhotoUploadTicket(params: {
     expiresIn: UPLOAD_URL_TTL_SECONDS,
   };
 }
+
+const RECEIPT_CONTENT_TYPE = "application/pdf";
+
+/**
+ * Mint a pre-signed PUT URL for a digital receipt PDF.
+ *
+ * ⛔ Load-bearing key shape: ONE stable object per order —
+ * `receipts/<tenantId>/<orderRef>.pdf`. The payment receipt and the later
+ * pickup receipt (received-by + date) are the SAME order, so the pickup PDF
+ * overwrites the payment PDF in place: exactly one receipt per order in R2, and
+ * the shared WhatsApp link always resolves to the latest state. Overwriting
+ * also resets the object's age, so an actively re-sent receipt keeps a fresh
+ * retention window.
+ *
+ * The `receipts/` prefix is expired at 60 days by the LIVE R2 object-lifecycle
+ * rule "Flush Receipts" (mirrors "Flush Laundry Images" on `laundry/`) — see
+ * tools/ensure-receipt-lifecycle.ts, docs/modules/SALES.md and
+ * reference_cloudflare_infra.md. Receipts fall OUTSIDE the `<tenantId>/`
+ * catalogue prefix so they never count against the catalogue storage cap.
+ */
+export async function createReceiptUploadTicket(params: {
+  tenantId: number;
+  orderRef: string;
+  contentType?: string;
+}): Promise<UploadTicket> {
+  const { tenantId, orderRef } = params;
+  const contentType = params.contentType ?? RECEIPT_CONTENT_TYPE;
+
+  const bucket = process.env.R2_BUCKET;
+  const publicBase = process.env.R2_PUBLIC_BASE_URL;
+  if (!bucket || !publicBase) {
+    throw new BusinessLogicError("R2 storage is not configured on the server");
+  }
+  if (contentType !== RECEIPT_CONTENT_TYPE) {
+    throw new BusinessLogicError(
+      `Unsupported content type '${contentType}'. Only ${RECEIPT_CONTENT_TYPE} is allowed.`
+    );
+  }
+  // Sanitize orderRef for safe key usage (UUIDs are already safe; guard anyway).
+  const safeRef = orderRef.replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!safeRef) {
+    throw new BusinessLogicError("Invalid orderRef");
+  }
+
+  const key = `receipts/${tenantId}/${safeRef}.pdf`;
+
+  const uploadUrl = await getSignedUrl(
+    getClient(),
+    new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),
+    { expiresIn: UPLOAD_URL_TTL_SECONDS }
+  );
+
+  const publicUrl = `${publicBase.replace(/\/+$/, "")}/${key}`;
+
+  return {
+    uploadUrl,
+    publicUrl,
+    key,
+    contentType,
+    expiresIn: UPLOAD_URL_TTL_SECONDS,
+  };
+}

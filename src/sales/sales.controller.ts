@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response } from "express"
 import validator from "validator"
 import service from "./sales.service"
 import photoService from "./sales-photo.service"
+import { createReceiptUploadTicket } from "../catalogue/catalogue-storage.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
 import { requireOutletHeader } from "../api-helpers/outlet-helper"
@@ -186,6 +187,25 @@ const listPhotos = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
     photoService.listByRef(req.user.databaseName, orderRef)
         .then((photos) => sendResponse(res, photos))
+        .catch(next)
+}
+
+// Digital receipt: mint a pre-signed R2 PUT URL for an order's receipt PDF.
+// ONE stable object per order (receipts/<tenantId>/<orderRef>.pdf) — the pickup
+// receipt overwrites the payment receipt in place, so the shared WhatsApp link
+// always resolves to the latest state. The client caches the returned publicUrl
+// and only re-uploads when the sale changes.
+const receiptUploadUrl = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated')
+    }
+    const orderRef = (req.body?.orderRef ?? '').toString().trim()
+    const contentType = (req.body?.contentType ?? 'application/pdf').toString()
+    if (!orderRef) {
+        throw new RequestValidateError('orderRef is required')
+    }
+    createReceiptUploadTicket({ tenantId: req.user.tenantId, orderRef, contentType })
+        .then((ticket) => sendResponse(res, ticket))
         .catch(next)
 }
 
@@ -664,6 +684,9 @@ router.put('/ref/:orderRef/collect', collect)
 router.post('/photo/upload-url', photoUploadUrl)
 router.post('/photo/register', registerPhoto)
 router.get('/photo/list/:orderRef', listPhotos)
+
+// digital receipt PDF upload URL (named path — safe before /:id)
+router.post('/receipt/upload-url', receiptUploadUrl)
 
 router.get('/:id', getById)
 router.post('/calculate', calculateSales)

@@ -1414,6 +1414,7 @@ model StockMovement {
 
   @@index([itemId, createdAt])
   @@index([outletId])
+  @@index([outletId, createdAt]) // Stock Movement Report — outlet + bounded-period scans
   @@index([itemVariantId])
   @@index([movementType])
   @@index([deleted])

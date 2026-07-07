@@ -15,6 +15,7 @@ When a plan is executed, either:
 | Doc | Trigger to execute | Status |
 |---|---|---|
 | [DB_MIGRATION_2026.md](DB_MIGRATION_2026.md) | New Azure account created; cutover window late August 2026 (must complete before Fri 4 Sep 2026 when current free tier expires) | Plan drafted 2026-05-25, awaiting Phase 0 (tooling) trigger |
+| [MULTI_OUTLET.md](MULTI_OUTLET.md) — single source of truth for all multi-outlet work | Super-admin change: before first multi-outlet tenant / owner self-service (safe anytime). Migration deploy: run when deploying to prod. | Drafted 2026-07-07: P0+P1 done, migration dry-run done; prod deploy + Set A/B + backlog pending |
 
 ---
 

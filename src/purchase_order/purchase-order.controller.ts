@@ -94,7 +94,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const purchaseOrderId: number = parseInt(req.params.id)
-    service.getById(purchaseOrderId, req.user.databaseName,)
+    service.getById(purchaseOrderId, req.user.databaseName, req.outletId)
         .then((purchaseOrder: PurchaseOrder) => sendResponse(res, purchaseOrder))
         .catch(next)
 }

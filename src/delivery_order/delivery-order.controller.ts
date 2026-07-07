@@ -47,7 +47,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const deliveryOrderId: number = parseInt(req.params.id)
-    service.getById(deliveryOrderId, req.user.databaseName,)
+    service.getById(deliveryOrderId, req.user.databaseName, req.outletId)
         .then((deliveryOrder: DeliveryOrder) => sendResponse(res, deliveryOrder))
         .catch(next)
 }

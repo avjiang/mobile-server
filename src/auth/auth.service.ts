@@ -389,6 +389,22 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string,
         // Add tenant-wide topic (for system-level notifications)
         topics.push(`tenant_${tenantId}`);
 
+        // H4: if the user has no outlet assignments yet (user_outlet seed not
+        // landed, or a pre-multi-outlet token), fall back to the tenant's primary
+        // outlet so outlet-scoped notifications (sales/inventory/order) still reach
+        // them instead of silently going nowhere. Safe while every tenant is
+        // single-outlet; revisit for genuine multi-outlet (see OUTLET_MERGE_AUDIT.md).
+        let effectiveOutletIds = allowedOutletIds;
+        if (!effectiveOutletIds || effectiveOutletIds.length === 0) {
+            const fallbackPrisma = getTenantPrisma(db);
+            const primaryOutlet = await fallbackPrisma.outlet.findFirst({
+                where: { deleted: false },
+                orderBy: { id: 'asc' },
+                select: { id: true },
+            });
+            if (primaryOutlet) effectiveOutletIds = [primaryOutlet.id];
+        }
+
         // Add permission-based topics
         notificationPermissions.forEach(permission => {
             // Convert permission name to topic: "Receive Sales Notification" -> "sales"
@@ -400,11 +416,10 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string,
 
             // Check if this permission is outlet-specific
             if (outletSpecificPermissions.includes(shortPermission)) {
-                // Add one outlet-specific topic per allowed outlet.
-                // If the user has no outlet assignments yet, emit NO outlet topics —
-                // do not silently subscribe them to outlet 1.
-                if (allowedOutletIds && allowedOutletIds.length > 0) {
-                    allowedOutletIds.forEach(outletId => {
+                // Add one outlet-specific topic per effective outlet (allowed
+                // outlets, or the primary-outlet fallback resolved above).
+                if (effectiveOutletIds && effectiveOutletIds.length > 0) {
+                    effectiveOutletIds.forEach(outletId => {
                         topics.push(`tenant_${tenantId}_outlet_${outletId}_${shortPermission}`);
                     });
                 }

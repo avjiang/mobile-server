@@ -3,12 +3,14 @@ import { NotFoundError } from "../api-helpers/error"
 import { CloseSessionRequest, OpenSessionRequest } from "./session.request"
 import { getTenantPrisma } from '../db';
 
-let getDeclarationsBySessionID = async (sessionID: number, databaseName: string) => {
+let getDeclarationsBySessionID = async (sessionID: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const session = await tenantPrisma.session.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const session = await tenantPrisma.session.findFirst({
             where: {
-                id: sessionID
+                id: sessionID,
+                outletId: outletId
             },
             include: {
                 declarations: true
@@ -26,12 +28,14 @@ let getDeclarationsBySessionID = async (sessionID: number, databaseName: string)
     }
 }
 
-let getSessionByID = async (sessionID: number, databaseName: string) => {
+let getSessionByID = async (sessionID: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const session = await tenantPrisma.session.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const session = await tenantPrisma.session.findFirst({
             where: {
-                id: sessionID
+                id: sessionID,
+                outletId: outletId
             },
             include: {
                 declarations: true

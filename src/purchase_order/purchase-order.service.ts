@@ -419,13 +419,15 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
     }
 }
 
-let getById = async (id: number, databaseName: string) => {
+let getById = async (id: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const purchaseOrder = await tenantPrisma.purchaseOrder.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const purchaseOrder = await tenantPrisma.purchaseOrder.findFirst({
             where: {
                 id: id,
-                deleted: false
+                deleted: false,
+                outletId: outletId
             },
             include: {
                 purchaseOrderItems: {

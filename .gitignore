@@ -89,3 +89,8 @@ prisma/**/generated/
 prisma/**/*.node
 prisma/**/index.js
 prisma/**/index.d.ts
+
+# Ignore dev symlinks (worktree tsc setup) — patterns above only match dirs
+/node_modules
+/prisma/client/generated
+/prisma/global-client/generated

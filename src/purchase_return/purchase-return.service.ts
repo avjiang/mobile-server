@@ -139,13 +139,15 @@ let getAll = async (
     }
 };
 
-let getById = async (id: number, databaseName: string) => {
+let getById = async (id: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const purchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const purchaseReturn = await tenantPrisma.purchaseReturn.findFirst({
             where: {
                 id: id,
-                deleted: false
+                deleted: false,
+                outletId: outletId
             },
             include: {
                 purchaseReturnItems: {

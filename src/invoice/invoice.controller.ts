@@ -47,7 +47,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const invoiceId: number = parseInt(req.params.id)
-    service.getById(invoiceId, req.user.databaseName,)
+    service.getById(invoiceId, req.user.databaseName, req.outletId)
         .then((invoice: Invoice) => sendResponse(res, invoice))
         .catch(next)
 }

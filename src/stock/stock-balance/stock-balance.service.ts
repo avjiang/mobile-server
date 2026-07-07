@@ -16,7 +16,8 @@ class RequestValidateError extends Error {
 // stock function
 let getAllStock = async (
     databaseName: string,
-    syncRequest: SyncRequest
+    syncRequest: SyncRequest,
+    outletId?: number
 ): Promise<{ stockBalances: any[]; total: number; serverTimestamp: string }> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     const { lastSyncTimestamp, lastVersion, skip = 0, take = 100 } = syncRequest;
@@ -26,10 +27,14 @@ let getAllStock = async (
         const lastSync = (lastSyncTimestamp && lastSyncTimestamp !== 'null') ?
             new Date(lastSyncTimestamp) : new Date(0);
 
-        // Build query conditions
-        const where = lastVersion
-            ? { version: { gt: lastVersion } }
+        // Build query conditions. Scope to the requested outlet (H3): the sync
+        // must not pull other outlets' stock_balance rows — the FE keys stock by
+        // itemId and would otherwise see merged/wrong quantities across outlets.
+        // (outletId undefined → no filter, single-outlet tenants unaffected.)
+        const where: Prisma.StockBalanceWhereInput = lastVersion
+            ? { version: { gt: lastVersion }, outletId }
             : {
+                outletId,
                 OR: [
                     { createdAt: { gte: lastSync } },
                     { updatedAt: { gte: lastSync } },

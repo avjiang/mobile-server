@@ -20,7 +20,7 @@ let getDeclarationsBySessionID = (req: AuthRequest, res: Response, next: NextFun
     }
     const sessionID: number = parseInt(req.params.id)
 
-    service.getDeclarationsBySessionID(sessionID, req.user.databaseName)
+    service.getDeclarationsBySessionID(sessionID, req.user.databaseName, req.outletId)
         .then((declarations: Declaration[]) => sendResponse(res, declarations))
         .catch(next)
 }
@@ -34,7 +34,7 @@ let getSessionByID = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
     const sessionID: number = parseInt(req.params.id)
 
-    service.getSessionByID(sessionID, req.user.databaseName)
+    service.getSessionByID(sessionID, req.user.databaseName, req.outletId)
         .then((session: Session) => sendResponse(res, session))
         .catch(next)
 }

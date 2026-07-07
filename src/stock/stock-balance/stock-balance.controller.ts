@@ -23,7 +23,7 @@ let getAllStock = (req: AuthRequest, res: Response, next: NextFunction) => {
         take: req.query.take ? parseInt(req.query.take as string) : undefined,
     };
     service
-        .getAllStock(req.user.databaseName, syncRequest)
+        .getAllStock(req.user.databaseName, syncRequest, req.outletId)
         .then(({ stockBalances, total, serverTimestamp }) => sendResponse(res, { data: stockBalances, total, serverTimestamp }))
         .catch(next);
 }

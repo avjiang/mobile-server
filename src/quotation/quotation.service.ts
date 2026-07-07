@@ -425,13 +425,15 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
     }
 }
 
-let getById = async (id: number, databaseName: string) => {
+let getById = async (id: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const quotation = await tenantPrisma.quotation.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const quotation = await tenantPrisma.quotation.findFirst({
             where: {
                 id: id,
-                deleted: false
+                deleted: false,
+                outletId: outletId
             },
             include: {
                 quotationItems: {

@@ -1408,12 +1408,15 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
     }
 }
 
-let getById = async (databaseName: string, id: number) => {
+let getById = async (databaseName: string, id: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const sales = await tenantPrisma.sales.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) so outlet A cannot read
+        // outlet B's sale by guessing the id (matches the write-path scoping).
+        const sales = await tenantPrisma.sales.findFirst({
             where: {
-                id: id
+                id: id,
+                outletId: outletId
             },
             include: {
                 salesItems: true,

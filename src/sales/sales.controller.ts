@@ -111,7 +111,7 @@ const getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const itemId: number = parseInt(req.params.id)
-    service.getById(req.user.databaseName, itemId)
+    service.getById(req.user.databaseName, itemId, req.outletId)
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }

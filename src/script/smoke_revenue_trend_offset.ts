@@ -25,7 +25,12 @@ import "reflect-metadata"; // sales.request.ts uses class-transformer decorators
 import dotenv from "dotenv";
 dotenv.config();
 
-import { Prisma } from "@prisma/client";
+// NOT "@prisma/client" — this repo generates its client to a custom output path
+// (see the generator block in prisma/client/schema.prisma). The stock package only
+// resolves locally because an old default `prisma generate` left a client behind in
+// node_modules; CI's `npm ci` installs the clean stub, where `Prisma.sql` does not
+// exist and the build fails. Every other file in src/ imports from this path.
+import { Prisma } from "../../prisma/client/generated/client";
 import { getTenantPrisma, disconnectAllPrismaClients } from "../db";
 import salesService = require("../sales/sales.service");
 

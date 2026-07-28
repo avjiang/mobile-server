@@ -741,6 +741,58 @@ await tenantPrisma.$transaction(async (tx) => {
 });
 ```
 
+### 5. Write balance changes RELATIVELY, never as a pre-computed absolute
+
+A transaction alone does **not** make `read → compute → write` safe. Under MySQL's
+default REPEATABLE READ a plain read takes no row lock, so a value derived from it
+silently clobbers anything that committed in between — a classic lost update.
+
+```typescript
+// ❌ WRONG — loses any concurrent change to this balance
+const newQty = new Decimal(balance.onHandQuantity).sub(qty);
+await tx.stockBalance.update({ where: { id }, data: { onHandQuantity: newQty } });
+
+// ✅ RIGHT — arithmetic happens inside the UPDATE, against the committed value
+await tx.stockBalance.update({
+  where: { id },
+  data: { onHandQuantity: { decrement: qty.toNumber() } },
+});
+```
+
+When the write must also **clamp** (Prisma can't express that), do both in one raw
+statement — and set `UPDATED_AT` by hand, because raw SQL bypasses Prisma's
+`@updatedAt` and delta sync depends on it:
+
+```typescript
+await tx.$executeRaw`
+    UPDATE stock_balance
+       SET ON_HAND_QUANTITY = GREATEST(0, ON_HAND_QUANTITY - ${qty}),
+           UPDATED_AT       = NOW(3)
+     WHERE ID = ${id}`;
+```
+
+Exceptions that are already safe: **stock adjustment** (guarded by an optimistic-lock
+`version` in the WHERE — a stale write matches 0 rows and throws) and **stock
+clearance** (sets an absolute zero, idempotent by nature).
+
+### 6. Guard document state transitions with a conditional UPDATE
+
+Anything that reverses stock exactly once (sale void/return/refund, purchase-return
+cancel, delivery-order cancel) must claim its transition in the WHERE clause, not
+via a prior read:
+
+```typescript
+const claimed = await tx.sales.updateMany({
+  where: { id, deleted: false, status: "Completed" }, // ← the guard
+  data: { status: "Returned" },
+});
+if (claimed.count === 0) throw new BusinessLogicError("…"); // lost the race
+```
+
+`findUnique` → `if (status !== …)` → `update` does **not** work: two concurrent
+requests both read the old status and both proceed. This is what caused sale #6068
+to restore stock twice on 2026-07-26 (see `docs/modules/SALES.md` §4.6).
+
 ---
 
 ## Testing Checklist
@@ -757,6 +809,9 @@ await tenantPrisma.$transaction(async (tx) => {
 - [ ] Validation errors for invalid variant ID
 - [ ] Consumption-based sale deducts by quantity \* stockConsumptionQty
 - [ ] Void/return/refund of consumption sale restores correct amount
+- [ ] Two **concurrent** void/return/refund of one sale restore stock **once** (`src/script/smoke_concurrent_sale_reversal.ts`)
+- [ ] Two **concurrent** purchase-return / delivery-order cancels reverse stock **once** (`smoke_procurement_stock_math.ts`, `smoke_do_cancel_stock_math.ts`)
+- [ ] A stock-moving document write racing an independent sale loses neither change
 - [ ] Duplicate itemId entries (different stockConsumptionQty) validate and deduct correctly
 
 ---

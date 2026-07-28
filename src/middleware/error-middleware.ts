@@ -15,8 +15,11 @@ export default (error: Error, req: Request, res: Response, next: NextFunction) =
         responseError = new ResponseError(error.name, error.message, error.mismatches);
         statusCode = error.statusCode;
     } else if (error instanceof BaseError) {
-        // Handle other BaseError instances
-        responseError = new ResponseError(error.name, error.message);
+        // Handle other BaseError instances. `errorCode`/`params` ride along when
+        // the thrower set them, so the client can render a translated message
+        // (see ErrorCode in api-helpers/error.ts); `errorMessage` stays the
+        // English fallback for clients that don't know the code.
+        responseError = new ResponseError(error.name, error.message, undefined, error.errorCode, error.params);
         statusCode = error.statusCode;
     } else if (error instanceof Prisma.PrismaClientValidationError) {
         const fieldMatch = error.message.match(/Argument `(\w+)`/) ||

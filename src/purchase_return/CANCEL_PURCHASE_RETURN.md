@@ -102,19 +102,30 @@ The three new cancel audit fields are now included in responses from all query e
 
 ### Flow:
 
-1. Find existing return (must exist, not deleted, not already cancelled)
+1. Find existing return (must exist, not deleted, not already cancelled). This read is
+   **outside** the transaction, so it is a fast-fail for a precise error message — **not**
+   the concurrency guard.
 2. Within a `$transaction`:
-   - Update status to `CANCELLED`
-   - Set `cancelledBy`, `cancelledAt`, `cancelReason`
-   - Increment `version`
+   - **Atomically claim the cancellation** — `updateMany` with
+     `{ id, deleted: false, status: { not: 'CANCELLED' } }` in the WHERE, setting
+     `CANCELLED` + `cancelledBy`/`cancelledAt`/`cancelReason` + `version` increment.
+     If `count === 0` this caller lost a race and throws `DOCUMENT_ALREADY_CANCELLED`
+     **before** touching stock.
    - Call `reverseStockOperationsForCancellation()` to reverse stock
 3. Return updated record with items, invoice, supplier
+
+> **Why the conditional update (2026-07-28).** The step-1 read cannot serialise two
+> concurrent cancels — both take their snapshot before either commits, both see
+> NOT-cancelled, and both reverse stock, restoring the returned quantity **twice**.
+> Same class of bug as sale #6068 (see `docs/modules/SALES.md` §4.6). Only the
+> conditional `UPDATE` inside the transaction makes exactly one caller the winner.
+> Do not "simplify" this back to `purchaseReturn.update()`.
 
 ### Stock Reversal (reuses existing `reverseStockOperationsForCancellation()`):
 
 | Operation | Detail |
 |-----------|--------|
-| **StockBalance** | Adds back `availableQuantity` and `onHandQuantity` |
+| **StockBalance** | Adds back `availableQuantity` and `onHandQuantity` via a **relative `increment`** (not a pre-computed absolute — that silently clobbered any concurrent change to the balance; fixed 2026-07-28) |
 | **StockMovement** | Creates record with type `"Purchase Return Reversal"` and positive delta |
 | **StockReceipt** (was soft-deleted) | Un-deletes and restores quantity |
 | **StockReceipt** (was reduced) | Adds back the returned quantity |
@@ -166,7 +177,7 @@ All external modules (invoice, PO, DO, settlement, quotation) filter returns by 
 The full cycle of cancel a purchase return then create a new one is verified to work correctly:
 
 1. **validateReturnQuantities:** Filters by `status: 'COMPLETED'` (line 591). Cancelled returns are excluded from already-returned tally.
-2. **StockBalance:** Restored on cancel, reduced again on new create. Arithmetic is correct.
+2. **StockBalance:** Restored on cancel, reduced again on new create. Arithmetic is correct. Both directions use relative `increment`/`decrement` (2026-07-28), so a sale landing mid-flight is no longer lost.
 3. **StockReceipt:** Restored on cancel (un-deleted or quantity added back). Found correctly on new create via `deleted: false` filter.
 4. **StockMovement:** Full audit trail — original create (negative), cancel (positive), new create (negative).
 

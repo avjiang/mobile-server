@@ -1,18 +1,11 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement, PurchaseOrder } from "../../prisma/client/generated/client"
-import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
+import { ErrorCode, ErrorEntity, NotFoundError, VersionMismatchDetail, VersionMismatchError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import Decimal from "decimal.js";
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreatePurchaseOrderRequestBody, PurchaseOrderInput } from "./purchase-order.request";
-
-class RequestValidateError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'RequestValidateError';
-    }
-}
 
 let getAll = async (
     databaseName: string,
@@ -586,7 +579,11 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
             const missingOutletIds = outletIds.filter(id => !existingOutletIds.has(id));
 
             if (missingOutletIds.length > 0) {
-                throw new RequestValidateError(`Outlets with IDs ${missingOutletIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `Outlets with IDs ${missingOutletIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Outlet, ids: missingOutletIds.join(', ') }
+                );
             }
         }
 
@@ -603,7 +600,11 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
             const missingSupplierIds = supplierIds.filter(id => !existingSupplierIds.has(id));
 
             if (missingSupplierIds.length > 0) {
-                throw new RequestValidateError(`Suppliers with IDs ${missingSupplierIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `Suppliers with IDs ${missingSupplierIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Supplier, ids: missingSupplierIds.join(', ') }
+                );
             }
         }
 
@@ -619,7 +620,11 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
 
         if (existingPurchaseOrders.length > 0) {
             const duplicateNumbers = existingPurchaseOrders.map(po => po.purchaseOrderNumber);
-            throw new RequestValidateError(`Purchase orders with numbers ${duplicateNumbers.join(', ')} already exist`);
+            throw new RequestValidateError(
+                    `Purchase orders with numbers ${duplicateNumbers.join(', ')} already exist`,
+                    ErrorCode.DocumentNumberDuplicate,
+                    { entity: ErrorEntity.PurchaseOrder, numbers: duplicateNumbers.join(', ') }
+                );
         }
 
         // Validate required fields
@@ -890,17 +895,29 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
             switch (result.type) {
                 case 'outlet':
                     if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Outlet with ID ${result.id} does not exist`);
+                        throw new RequestValidateError(
+                        `Outlet with ID ${result.id} does not exist`,
+                        ErrorCode.ReferenceNotFound,
+                        { entity: ErrorEntity.Outlet, ids: String(result.id) }
+                    );
                     }
                     break;
                 case 'supplier':
                     if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Supplier with ID ${result.id} does not exist`);
+                        throw new RequestValidateError(
+                        `Supplier with ID ${result.id} does not exist`,
+                        ErrorCode.ReferenceNotFound,
+                        { entity: ErrorEntity.Supplier, ids: String(result.id) }
+                    );
                     }
                     break;
                 case 'purchaseOrderNumber':
                     if ('exists' in result && 'value' in result && result.exists) {
-                        throw new RequestValidateError(`Purchase order with number ${result.value} already exists`);
+                        throw new RequestValidateError(
+                        `Purchase order with number ${result.value} already exists`,
+                        ErrorCode.DocumentNumberDuplicate,
+                        { entity: ErrorEntity.PurchaseOrder, numbers: String(result.value) }
+                    );
                     }
                     break;
                 case 'items':
@@ -908,7 +925,11 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                         const existingItemIds = new Set<number>(result.existing);
                         const missingItemIds = result.requested.filter((id: number) => !existingItemIds.has(id));
                         if (missingItemIds.length > 0) {
-                            throw new RequestValidateError(`Items with IDs ${missingItemIds.join(', ')} do not exist`);
+                            throw new RequestValidateError(
+                    `Items with IDs ${missingItemIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Item, ids: missingItemIds.join(', ') }
+                );
                         }
                     }
                     break;
@@ -1044,7 +1065,11 @@ let deletePurchaseOrder = async (id: number, databaseName: string): Promise<stri
 
         // Check if purchase order has related delivery orders or invoices
         if (existingPurchaseOrder.deliveryOrders.length > 0 || existingPurchaseOrder.invoices.length > 0) {
-            throw new RequestValidateError('Cannot delete purchase order with existing delivery orders or invoices');
+            throw new RequestValidateError(
+                'Cannot delete purchase order with existing delivery orders or invoices',
+                ErrorCode.DeleteBlockedHasDependents,
+                { entity: ErrorEntity.PurchaseOrder, dependents: 'delivery orders or invoices' }
+            );
         }
 
         // Use transaction to ensure data consistency
@@ -1094,25 +1119,39 @@ let addDownPayment = async (databaseName: string, purchaseOrderId: number, input
             throw new NotFoundError("Purchase Order");
         }
         if (po.status === 'CANCELLED') {
-            throw new RequestValidateError('Cannot add a down payment to a cancelled purchase order');
+            throw new RequestValidateError(
+                'Cannot add a down payment to a cancelled purchase order',
+                ErrorCode.DocumentCancelledNotEditable,
+                { entity: ErrorEntity.PurchaseOrder }
+            );
         }
         if (!input.paymentDate) {
             throw new RequestValidateError('paymentDate is required');
         }
         const amount = new Decimal(input.amount || 0);
         if (amount.lessThanOrEqualTo(0)) {
-            throw new RequestValidateError('Down payment amount must be greater than zero');
+            throw new RequestValidateError(
+                'Down payment amount must be greater than zero',
+                ErrorCode.DownPaymentNotPositive
+            );
         }
         const fee = new Decimal(input.transferFeeAmount || 0);
         if (fee.lessThan(0)) {
-            throw new RequestValidateError('Transfer fee cannot be negative');
+            throw new RequestValidateError(
+                'Transfer fee cannot be negative',
+                ErrorCode.TransferFeeNegative
+            );
         }
         // Guardrail: total DP must not exceed the PO total (can't prepay more than the order is worth).
         const poTotal = new Decimal(po.totalAmount || 0);
         const newDpTotal = new Decimal(po.downPaymentAmount || 0).plus(amount);
         if (newDpTotal.greaterThan(poTotal)) {
             const headroom = poTotal.minus(new Decimal(po.downPaymentAmount || 0));
-            throw new RequestValidateError(`Down payment would exceed the PO total; max top-up is ${headroom.toFixed(4)}`);
+            throw new RequestValidateError(
+                `Down payment would exceed the PO total; max top-up is ${headroom.toFixed(4)}`,
+                ErrorCode.DownPaymentExceedsTotal,
+                { max: headroom.toFixed(2) }
+            );
         }
 
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -1170,7 +1209,11 @@ let editDownPayment = async (databaseName: string, purchaseOrderId: number, paym
         const po = await tenantPrisma.purchaseOrder.findUnique({ where: { id: purchaseOrderId, deleted: false } });
         if (!po) throw new NotFoundError("Purchase Order");
         if (po.status === 'CANCELLED') {
-            throw new RequestValidateError('Cannot edit a down payment on a cancelled purchase order');
+            throw new RequestValidateError(
+                'Cannot edit a down payment on a cancelled purchase order',
+                ErrorCode.DocumentCancelledNotEditable,
+                { entity: ErrorEntity.PurchaseOrder }
+            );
         }
         const payment = await tenantPrisma.purchaseOrderPayment.findFirst({
             where: { id: paymentId, purchaseOrderId, deleted: false }
@@ -1180,10 +1223,13 @@ let editDownPayment = async (databaseName: string, purchaseOrderId: number, paym
         if (!input.paymentDate) throw new RequestValidateError('paymentDate is required');
         const newAmount = new Decimal(input.amount || 0);
         if (newAmount.lessThanOrEqualTo(0)) {
-            throw new RequestValidateError('Down payment amount must be greater than zero');
+            throw new RequestValidateError(
+                'Down payment amount must be greater than zero',
+                ErrorCode.DownPaymentNotPositive
+            );
         }
         const fee = new Decimal(input.transferFeeAmount || 0);
-        if (fee.lessThan(0)) throw new RequestValidateError('Transfer fee cannot be negative');
+        if (fee.lessThan(0)) throw new RequestValidateError('Transfer fee cannot be negative', ErrorCode.TransferFeeNegative);
 
         // New DP total = current total − old amount + new amount.
         const newTotal = new Decimal(po.downPaymentAmount || 0)
@@ -1191,12 +1237,20 @@ let editDownPayment = async (databaseName: string, purchaseOrderId: number, paym
             .plus(newAmount);
         const applied = new Decimal(po.downPaymentApplied || 0);
         if (newTotal.lessThan(applied)) {
-            throw new RequestValidateError(`Down payment cannot be reduced below the amount already drawn by invoices (${applied.toFixed(4)})`);
+            throw new RequestValidateError(
+                `Down payment cannot be reduced below the amount already drawn by invoices (${applied.toFixed(4)})`,
+                ErrorCode.DownPaymentBelowDrawn,
+                { drawn: applied.toFixed(2) }
+            );
         }
         const poTotal = new Decimal(po.totalAmount || 0);
         if (newTotal.greaterThan(poTotal)) {
             const maxAmount = poTotal.minus(new Decimal(po.downPaymentAmount || 0)).plus(new Decimal(payment.amount || 0));
-            throw new RequestValidateError(`Down payment would exceed the PO total; max amount for this payment is ${maxAmount.toFixed(4)}`);
+            throw new RequestValidateError(
+                `Down payment would exceed the PO total; max amount for this payment is ${maxAmount.toFixed(4)}`,
+                ErrorCode.DownPaymentExceedsTotal,
+                { max: maxAmount.toFixed(2) }
+            );
         }
 
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -1238,7 +1292,11 @@ let deleteDownPayment = async (databaseName: string, purchaseOrderId: number, pa
         const po = await tenantPrisma.purchaseOrder.findUnique({ where: { id: purchaseOrderId, deleted: false } });
         if (!po) throw new NotFoundError("Purchase Order");
         if (po.status === 'CANCELLED') {
-            throw new RequestValidateError('Cannot delete a down payment on a cancelled purchase order');
+            throw new RequestValidateError(
+                'Cannot delete a down payment on a cancelled purchase order',
+                ErrorCode.DocumentCancelledNotEditable,
+                { entity: ErrorEntity.PurchaseOrder }
+            );
         }
         const payment = await tenantPrisma.purchaseOrderPayment.findFirst({
             where: { id: paymentId, purchaseOrderId, deleted: false }
@@ -1248,7 +1306,11 @@ let deleteDownPayment = async (databaseName: string, purchaseOrderId: number, pa
         const newTotal = new Decimal(po.downPaymentAmount || 0).minus(new Decimal(payment.amount || 0));
         const applied = new Decimal(po.downPaymentApplied || 0);
         if (newTotal.lessThan(applied)) {
-            throw new RequestValidateError(`Cannot delete — the remaining down payment would fall below the amount already drawn by invoices (${applied.toFixed(4)})`);
+            throw new RequestValidateError(
+                `Cannot delete — the remaining down payment would fall below the amount already drawn by invoices (${applied.toFixed(4)})`,
+                ErrorCode.DownPaymentDeleteBelowDrawn,
+                { drawn: applied.toFixed(2) }
+            );
         }
 
         const result = await tenantPrisma.$transaction(async (tx) => {

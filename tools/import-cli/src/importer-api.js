@@ -283,6 +283,9 @@ export async function importViaApi(data, options) {
               itemBrand: item.itemBrand || '',
               itemDescription: item.itemDescription || '',
               categoryId: category.id,
+              // Sends the scalar only. The API path (item.service.ts createMany) derives
+              // the item_supplier junction row from it automatically, so unlike the
+              // direct-Prisma importer this needs no explicit `suppliers` array.
               supplierId: supplier.id,
               cost: parseFloat(item.cost) || 0,
               price: parseFloat(item.price) || 0,

@@ -17,6 +17,26 @@ export class ItemConsumableDto {
     consumptionBasis: string = "perKg";
 }
 
+// One item <-> supplier link. `cost` here is a REFERENCE price used to prefill a PO
+// line for this supplier — real COGS always comes from StockReceipt.cost at DO receipt.
+export class ItemSupplierDto {
+    @Expose()
+    supplierId: number = 0;
+
+    // Exactly one entry per item carries true; it mirrors Item.supplierId.
+    @Expose()
+    isPreferred: boolean = false;
+
+    @Expose()
+    supplierItemCode: string | null = null;
+
+    @Expose()
+    cost: number | null = null;
+
+    @Expose()
+    leadTimeDays: number | null = null;
+}
+
 export class ItemSoldRankingResponseBody {
     topSoldItems: ItemSoldObject[] = [];
     // leastSoldItem: ItemSoldObject | null = null;
@@ -92,8 +112,18 @@ export class ItemDto {
     // @Expose()
     // image: string | undefined = undefined;
 
+    // The PREFERRED supplier. Kept as a scalar forever — every display-only read site
+    // (POS tile, barcode print, dashboard stock lists) reads it instead of joining the
+    // junction, and old app binaries depend on it being present. Never remove.
     @Expose()
     supplierId: number = 0;
+
+    // Every supplier this item can be purchased from. Undefined = "not sent", which
+    // leaves the junction untouched server-side (old binaries, replayed outbox entries).
+    // An absent array must never be read as "remove all suppliers".
+    @Expose()
+    @Type(() => ItemSupplierDto)
+    suppliers: ItemSupplierDto[] | undefined = undefined;
 
     @Expose()
     deleted: boolean = false;

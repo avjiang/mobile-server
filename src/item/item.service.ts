@@ -8,6 +8,153 @@ import { getTenantPrisma } from '../db';
 import { SyncRequest } from "./item.request"
 import SimpleCacheService from '../cache/simple-cache.service';
 
+// One entry of the client's `suppliers[]` payload on an item create/update.
+// Local (not exported) — this module uses `export =`, which forbids other exports.
+interface ItemSupplierInput {
+    supplierId: number;
+    isPreferred?: boolean;
+    supplierItemCode?: string | null;
+    cost?: number | null;
+    leadTimeDays?: number | null;
+}
+
+/**
+ * Reconcile an item's `item_supplier` rows against the client's `suppliers[]` payload.
+ *
+ * Contract:
+ *  - `suppliers` undefined/null  → legacy payload. The junction's MEMBERSHIP is left
+ *    untouched (older binaries and replayed outbox entries predate the field; they must
+ *    not wipe a tenant's suppliers), but the scalar `supplierId` they did send is
+ *    honoured by re-pointing which row is preferred. See [syncLegacyPreferredSupplier].
+ *  - `suppliers` present         → it is the COMPLETE set. Rows not in it are soft-deleted.
+ *
+ * Gating: ONE supplier is available on every plan (it is a required field and always has
+ * been). Only the SECOND and beyond require Pro. Gating the whole junction would stop
+ * Basic tenants from saving an item at all.
+ *
+ * Invariant: exactly one live row is preferred, and `item.supplierId` mirrors it. Both are
+ * written inside the caller's transaction so they can never diverge.
+ *
+ * Returns the effective preferred supplier id, for the caller to write onto the item.
+ */
+async function syncItemSuppliers(
+    tx: Prisma.TransactionClient,
+    itemId: number,
+    suppliers: ItemSupplierInput[] | undefined | null,
+    fallbackSupplierId: number | undefined,
+    planName: string | null | undefined,
+): Promise<number | undefined> {
+    if (suppliers === undefined || suppliers === null) {
+        return syncLegacyPreferredSupplier(tx, itemId, fallbackSupplierId);
+    }
+
+    // De-dupe defensively — the unique index would throw a raw Prisma error otherwise.
+    const seen = new Set<number>();
+    const rows = suppliers.filter(s => {
+        if (s?.supplierId == null || seen.has(s.supplierId)) return false;
+        seen.add(s.supplierId);
+        return true;
+    });
+
+    if (rows.length === 0) return fallbackSupplierId;
+
+    const isPro = (planName ?? '').toLowerCase() === 'pro';
+    if (rows.length > 1 && !isPro) {
+        throw new BusinessLogicError(
+            'Multiple suppliers per item is a Pro feature. Upgrade to add more than one supplier.'
+        );
+    }
+
+    // Exactly one preferred: honour the client's flag, else keep the first row.
+    const preferredIdx = Math.max(0, rows.findIndex(s => s.isPreferred === true));
+    const preferredSupplierId = rows[preferredIdx].supplierId;
+
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const data = {
+            isPreferred: i === preferredIdx,
+            supplierItemCode: r.supplierItemCode ?? null,
+            cost: r.cost != null ? new Decimal(r.cost) : null,
+            leadTimeDays: r.leadTimeDays ?? null,
+            deleted: false,
+            deletedAt: null,
+        };
+        // Upsert on the unique pair so re-adding a previously removed supplier revives
+        // the soft-deleted row instead of colliding with the unique index.
+        await tx.itemSupplier.upsert({
+            where: { itemId_supplierId: { itemId, supplierId: r.supplierId } },
+            update: { ...data, version: { increment: 1 } },
+            create: { itemId, supplierId: r.supplierId, ...data, version: 1 },
+        });
+    }
+
+    // Soft-delete rows the client dropped (mirrors the variants strategy — the BE stays
+    // source of truth and the FE flags stale rows rather than hard-deleting them).
+    await tx.itemSupplier.updateMany({
+        where: { itemId, deleted: false, supplierId: { notIn: rows.map(r => r.supplierId) } },
+        data: { deleted: true, deletedAt: new Date() },
+    });
+
+    return preferredSupplierId;
+}
+
+/**
+ * Legacy-payload path for [syncItemSuppliers]: the client sent no `suppliers[]`, only the
+ * scalar `supplierId`. Pre-multi-supplier binaries and outbox entries queued before the
+ * feature shipped look like this, so this runs for the whole BE-deployed / APK-not-yet-
+ * shipped window.
+ *
+ * Without this, an old binary changing an item's supplier moved `item.supplierId` while
+ * the junction kept pointing at the OLD supplier. Since the PO/quotation item picker and
+ * `supplier.itemCount` both read the junction, the item would keep appearing under the
+ * old supplier and never under the new one — silently, until someone re-saved it from a
+ * new binary.
+ *
+ * What it does NOT do: change membership. A Pro tenant's extra suppliers are kept (the old
+ * binary has no idea they exist and must not be able to drop them) — only the `isPreferred`
+ * flag moves. As a side effect this also heals an item with no junction rows at all, which
+ * the migration backfill could leave behind for an item whose `SUPPLIER_ID` was dangling.
+ *
+ * Returns the effective preferred supplier id, for the caller to write onto the item.
+ */
+async function syncLegacyPreferredSupplier(
+    tx: Prisma.TransactionClient,
+    itemId: number,
+    fallbackSupplierId: number | undefined,
+): Promise<number | undefined> {
+    // Nothing asserted about the supplier — a partial update that omits it entirely.
+    if (fallbackSupplierId == null) return fallbackSupplierId;
+
+    const live = await tx.itemSupplier.findMany({
+        where: { itemId, deleted: false },
+        select: { supplierId: true, isPreferred: true },
+    });
+
+    // Already consistent: exactly the intended row is preferred. Most updates land here,
+    // so the common path costs one indexed read and no writes.
+    const preferred = live.filter(r => r.isPreferred);
+    if (preferred.length === 1 && preferred[0].supplierId === fallbackSupplierId) {
+        return fallbackSupplierId;
+    }
+
+    // Promote the scalar's supplier. Upsert (not update) so a soft-deleted row revives and
+    // an item with an empty junction gains its link.
+    await tx.itemSupplier.upsert({
+        where: { itemId_supplierId: { itemId, supplierId: fallbackSupplierId } },
+        update: { isPreferred: true, deleted: false, deletedAt: null, version: { increment: 1 } },
+        create: { itemId, supplierId: fallbackSupplierId, isPreferred: true, version: 1 },
+    });
+
+    // Demote every other live row — keeps the "exactly one preferred" invariant without
+    // removing suppliers the old binary can't see.
+    await tx.itemSupplier.updateMany({
+        where: { itemId, deleted: false, isPreferred: true, supplierId: { not: fallbackSupplierId } },
+        data: { isPreferred: false, version: { increment: 1 } },
+    });
+
+    return fallbackSupplierId;
+}
+
 /**
  * Convert string to Title Case to prevent duplicate attribute values
  * Examples: "green" → "Green", "rose gold" → "Rose Gold", "256gb" → "256gb"
@@ -267,6 +414,20 @@ let getAll = async (
                         consumptionBasis: true,
                     },
                 },
+                // Every supplier this item can be purchased from. Sent in full on each
+                // sync (not just changed rows) so the FE can soft-delete stale local
+                // rows — same contract as `variants`.
+                itemSuppliers: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        supplierId: true,
+                        isPreferred: true,
+                        supplierItemCode: true,
+                        cost: true,
+                        leadTimeDays: true,
+                    },
+                },
             },
         });
 
@@ -313,6 +474,17 @@ let getAll = async (
                     })) ?? [])
                     : undefined,
                 serviceConsumables: undefined,
+                // Flattened junction for the client. Always emitted (even for the
+                // single-supplier case) so the FE can reconcile stale local rows.
+                suppliers: (item.itemSuppliers ?? []).map(s => ({
+                    id: s.id,
+                    supplierId: s.supplierId,
+                    isPreferred: s.isPreferred,
+                    supplierItemCode: s.supplierItemCode,
+                    cost: s.cost != null ? Number(s.cost) : null,
+                    leadTimeDays: s.leadTimeDays,
+                })),
+                itemSuppliers: undefined,
             };
         });
         // Return with server timestamp
@@ -348,9 +520,15 @@ let getByIdRaw = async (databaseName: string, id: number) => {
 let getAllBySupplierId = async (databaseName: string, supplierId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Matches on the item_supplier junction, NOT item.supplierId — an item can be
+        // purchased from several suppliers and must appear for every one of them, not
+        // only the preferred one. Backfill guarantees each item has at least one row,
+        // so this is never narrower than the old scalar comparison.
         const items = await tenantPrisma.item.findMany({
             where: {
-                supplierId: supplierId
+                itemSuppliers: {
+                    some: { supplierId: supplierId, deleted: false }
+                }
             },
             include: {
                 stockBalance: {
@@ -471,6 +649,20 @@ let getById = async (databaseName: string, id: number) => {
                         },
                     },
                 },
+                // Supplier links, so a single-item fetch carries the same shape as
+                // the list sync. (The item form still hydrates them from Drift so it
+                // works offline — this keeps the endpoint's payload complete.)
+                itemSuppliers: {
+                    where: { deleted: false },
+                    select: {
+                        id: true,
+                        supplierId: true,
+                        isPreferred: true,
+                        supplierItemCode: true,
+                        cost: true,
+                        leadTimeDays: true,
+                    },
+                },
             }
         })
         if (!item) {
@@ -512,6 +704,16 @@ let getById = async (databaseName: string, id: number) => {
             reorderThreshold: Number(baseItemReorderThreshold),
             stockBalance: undefined, // Remove raw field
             variants: transformedVariants,
+            // Flattened junction — same key/shape the list sync emits.
+            suppliers: (item.itemSuppliers ?? []).map(s => ({
+                id: s.id,
+                supplierId: s.supplierId,
+                isPreferred: s.isPreferred,
+                supplierItemCode: s.supplierItemCode,
+                cost: s.cost != null ? Number(s.cost) : null,
+                leadTimeDays: s.leadTimeDays,
+            })),
+            itemSuppliers: undefined,
         };
         return rawItemWithStock
     }
@@ -520,7 +722,7 @@ let getById = async (databaseName: string, id: number) => {
     }
 }
 
-let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
+let createMany = async (databaseName: string, itemBodyArray: ItemDto[], planName?: string | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const createdItems = await tenantPrisma.$transaction(async (tx) => {
@@ -652,10 +854,17 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                 itemBodyArray.map(async (itemBody) => {
                     // siteId is destructured OUT so it never spreads into tx.item.create
                     // (Item has no siteId column); it's stamped on the stock movements only.
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, siteId, ...itemWithoutId } = itemBody as any;
+                    // `suppliers` is the item_supplier junction payload — destructured OUT
+                    // so it never spreads into tx.item.create (Item has no such column);
+                    // it's written via syncItemSuppliers after the item exists.
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, suppliers, siteId, ...itemWithoutId } = itemBody as any;
 
                     // Fall back to the tenant default when supplier/category were not provided.
-                    const effectiveSupplierId = supplierId || defaultSupplierId;
+                    // When a suppliers[] array is present, its preferred entry wins.
+                    const preferredFromList = Array.isArray(suppliers) && suppliers.length > 0
+                        ? (suppliers.find((s: any) => s?.isPreferred === true) ?? suppliers[0])?.supplierId
+                        : undefined;
+                    const effectiveSupplierId = preferredFromList || supplierId || defaultSupplierId;
                     const effectiveCategoryId = categoryId || defaultCategoryId;
 
                     // Auto-flag hasVariants if variants array exists
@@ -719,6 +928,19 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
                             stockBalance: true,
                         },
                     });
+
+                    // Junction rows. Always write at least the preferred one so no item is
+                    // ever left without a supplier link — an item with an empty junction is
+                    // invisible in the PO/quotation item picker.
+                    await syncItemSuppliers(
+                        tx,
+                        createdItem.id,
+                        Array.isArray(suppliers) && suppliers.length > 0
+                            ? suppliers
+                            : [{ supplierId: effectiveSupplierId, isPreferred: true }],
+                        effectiveSupplierId,
+                        planName,
+                    );
 
                     // Create StockReceipt if cost is provided and stockQuantity > 0 (only for stock-tracked simple items)
                     if (shouldTrackStock && cost !== undefined && cost > 0 && baseStockQuantity > 0) {
@@ -848,14 +1070,19 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[]) => {
     }
 };
 
-let update = async (databaseName: string, item: Item & { reorderThreshold?: number, variants?: any[] }) => {
+let update = async (
+    databaseName: string,
+    item: Item & { reorderThreshold?: number, variants?: any[] },
+    planName?: string | null,
+) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Extract id, version, and relation fields from the item object
         // stockQuantity is a virtual field (not a DB column) — must be extracted to prevent Prisma errors
         // siteId is destructured OUT so it never spreads into tx.item.update
         // (Item has no siteId column); it's stamped on the stock movements only.
-        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, siteId, ...updateData } = item as any;
+        // suppliers is the item_supplier junction payload — written via syncItemSuppliers.
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, suppliers, siteId, ...updateData } = item as any;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Check if alternateLookUp is being updated and not empty
@@ -901,6 +1128,15 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
             const turningOff = newTrackStock !== undefined && oldTrackStock === true && newTrackStock === false;
             const turningOn = newTrackStock !== undefined && oldTrackStock === false && newTrackStock === true;
 
+            // Reconcile the item_supplier junction BEFORE updating the item, so the
+            // preferred row it resolves can be written onto item.supplierId in the same
+            // statement — the scalar pointer and the junction can never diverge.
+            // A missing `suppliers` key leaves the junction untouched and falls back to
+            // the scalar (old binaries + outbox entries queued before this shipped).
+            const preferredSupplierId = await syncItemSuppliers(
+                tx, id, suppliers, supplierId, planName,
+            );
+
             // Prepare the item update data
             const itemUpdateData: any = {
                 ...updateData,
@@ -909,9 +1145,9 @@ let update = async (databaseName: string, item: Item & { reorderThreshold?: numb
                         connect: { id: categoryId }
                     }
                 }),
-                ...(supplierId && {
+                ...(preferredSupplierId && {
                     supplier: {
-                        connect: { id: supplierId }
+                        connect: { id: preferredSupplierId }
                     }
                 }),
                 updatedAt: new Date(),

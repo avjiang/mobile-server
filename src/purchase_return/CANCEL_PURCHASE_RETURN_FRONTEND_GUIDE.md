@@ -347,6 +347,7 @@ The sync endpoint (`GET /purchaseReturn/sync`) now includes the three new fields
 - [ ] Implement cancel API call: `PUT /purchaseReturn/cancel/:id`
 - [ ] Add cancel button on purchase return detail view (only for `status === 'COMPLETED'`)
 - [ ] Add confirmation dialog with optional cancel reason input
+- [ ] **Guard the confirm button against a double-tap** — cancelling reverses stock, and `Navigator.pop()` isn't synchronous, so a fast second tap can re-enter `onPressed` and fire a second request. Implemented via the shared `InFlightGuard` mixin on `CancelPurchaseReturnCubit` (key `pr-cancel-$id`) plus a `submitted` latch in the dialog. Do **not** try to solve this with a stable idempotency key — the middleware caches 4xx for 24 h. See `docs/modules/SALES.md` §4.6.
 - [ ] Handle error responses (already cancelled, not found)
 - [ ] Display cancelled status with visual indicator in list views
 - [ ] Show cancel audit info (`cancelledBy`, `cancelledAt`, `cancelReason`) in detail view

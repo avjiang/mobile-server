@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement, DeliveryOrder } from "../../prisma/client/generated/client"
 import { Decimal } from 'decimal.js';
-import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
+import { ErrorCode, ErrorEntity, NotFoundError, VersionMismatchDetail, VersionMismatchError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
@@ -8,12 +8,16 @@ import { create } from "domain";
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request";
 import { warehouseRef, receiveLayers, consumeFIFO } from "../stock/location-stock-engine";
 
-class RequestValidateError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'RequestValidateError';
-    }
-}
+/** Maps a batch-validation `result.type` onto a translatable entity key. */
+const REFERENCE_ENTITY: Record<string, ErrorEntity> = {
+    outlets: ErrorEntity.Outlet,
+    outlet: ErrorEntity.Outlet,
+    customers: ErrorEntity.Customer,
+    customer: ErrorEntity.Customer,
+    purchaseOrders: ErrorEntity.PurchaseOrder,
+    purchaseOrder: ErrorEntity.PurchaseOrder,
+    items: ErrorEntity.Item,
+};
 
 let getAll = async (
     databaseName: string,
@@ -616,7 +620,11 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
 
             if (missingIds.length > 0) {
                 const entityName = result.type.charAt(0).toUpperCase() + result.type.slice(1, -1); // Remove 's' and capitalize
-                throw new RequestValidateError(`${entityName} with IDs ${missingIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `${entityName} with IDs ${missingIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: REFERENCE_ENTITY[result.type] ?? result.type, ids: missingIds.join(', ') }
+                );
             }
         }
 
@@ -637,7 +645,11 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         select: { id: true },
                     });
                     if (!wh) {
-                        throw new RequestValidateError(`Warehouse ${warehouseId} not found or inactive`);
+                        throw new RequestValidateError(
+                `Warehouse ${warehouseId} not found or inactive`,
+                ErrorCode.ReferenceNotFound,
+                { entity: ErrorEntity.Warehouse, ids: String(warehouseId) }
+            );
                     }
                 }
 
@@ -786,10 +798,6 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             const previousOnHandQuantity = new Decimal(currentBalance?.onHandQuantity || 0);
             const quantityDelta = new Decimal(item.receivedQuantity);
 
-            // Use Decimal.add() for proper arithmetic
-            const newAvailableQuantity = previousAvailableQuantity.add(quantityDelta);
-            const newOnHandQuantity = previousOnHandQuantity.add(quantityDelta);
-
             // Calculate per-unit cost: unitPrice + (deliveryFee / quantity)
             const deliveryFee = new Decimal(item.deliveryFee || 0);
             const unitPrice = new Decimal(item.unitPrice || 0);
@@ -798,11 +806,15 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
             // Use update if balance exists (by id), otherwise create new
             // This avoids Prisma compound unique key issues with nullable fields
             if (currentBalance?.id) {
+                // Relative increment, not a pre-computed absolute:
+                // `currentBalance` came from a batch read above, and a sale
+                // landing between that read and this write would otherwise be
+                // silently overwritten (lost update).
                 await tx.stockBalance.update({
                     where: { id: currentBalance.id },
                     data: {
-                        availableQuantity: newAvailableQuantity,
-                        onHandQuantity: newOnHandQuantity,
+                        availableQuantity: { increment: quantityDelta.toNumber() },
+                        onHandQuantity: { increment: quantityDelta.toNumber() },
                         lastRestockDate: new Date(),
                         updatedAt: new Date()
                     }
@@ -928,23 +940,22 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                 const previousOnHandQuantity = new Decimal(currentBalance.onHandQuantity);
                 const quantityDelta = new Decimal(item.receivedQuantity);
 
-                // Subtract the previously received quantities
-                const newAvailableQuantity = previousAvailableQuantity.sub(quantityDelta);
-                const newOnHandQuantity = previousOnHandQuantity.sub(quantityDelta);
-
-                // Ensure quantities don't go negative
-                const finalAvailableQuantity = newAvailableQuantity.lt(0) ? new Decimal(0) : newAvailableQuantity;
-                const finalOnHandQuantity = newOnHandQuantity.lt(0) ? new Decimal(0) : newOnHandQuantity;
-
-                // Update stock balance by id (avoids Prisma compound unique key issues with nullable fields)
-                await tx.stockBalance.update({
-                    where: { id: currentBalance.id },
-                    data: {
-                        availableQuantity: finalAvailableQuantity,
-                        onHandQuantity: finalOnHandQuantity,
-                        updatedAt: new Date()
-                    }
-                });
+                // Subtract the previously received quantities, clamped at zero.
+                //
+                // Done in SQL rather than as a pre-computed absolute value:
+                // `currentBalance` came from a batch read above, so writing a
+                // value derived from it would clobber any concurrent change
+                // (lost update). Prisma's `decrement` can't express the
+                // clamp, so GREATEST(0, …) does both atomically in one
+                // statement. UPDATED_AT is set explicitly — raw SQL bypasses
+                // Prisma's @updatedAt, and delta sync depends on it.
+                const qty = quantityDelta.toNumber();
+                await tx.$executeRaw`
+                    UPDATE stock_balance
+                       SET AVAILABLE_QUANTITY = GREATEST(0, AVAILABLE_QUANTITY - ${qty}),
+                           ON_HAND_QUANTITY   = GREATEST(0, ON_HAND_QUANTITY - ${qty}),
+                           UPDATED_AT         = NOW(3)
+                     WHERE ID = ${currentBalance.id}`;
 
                 // Create negative movement to reverse the original receipt
                 movementOperations.push({
@@ -1135,10 +1146,18 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
                     const existingItemIds = new Set<number>(result.existing);
                     const missingItemIds = result.requested ? result.requested.filter((id: number) => !existingItemIds.has(id)) : [];
                     if (missingItemIds.length > 0) {
-                        throw new RequestValidateError(`Items with IDs ${missingItemIds.join(', ')} do not exist`);
+                        throw new RequestValidateError(
+                            `Items with IDs ${missingItemIds.join(', ')} do not exist`,
+                            ErrorCode.ReferenceNotFound,
+                            { entity: ErrorEntity.Item, ids: missingItemIds.join(', ') }
+                        );
                     }
                 } else if ('exists' in result && !result.exists) {
-                    throw new RequestValidateError(`${result.type} with ID ${result.id} does not exist`);
+                    throw new RequestValidateError(
+                        `${result.type} with ID ${result.id} does not exist`,
+                        ErrorCode.ReferenceNotFound,
+                        { entity: REFERENCE_ENTITY[result.type] ?? result.type, ids: String(result.id) }
+                    );
                 }
             }
         }
@@ -1146,10 +1165,6 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
         // Use transaction for consistency
         const result = await tenantPrisma.$transaction(async (tx) => {
             const isBeingCancelled = updateData.status === 'CANCELLED';
-            const wasAlreadyCancelled = existingDeliveryOrder.status === 'CANCELLED';
-
-            // Only reverse stock if changing TO cancelled (not if already cancelled)
-            const shouldReverseStock = isBeingCancelled && !wasAlreadyCancelled;
 
             // Prepare update data - only include defined fields
             const updateFields: any = {
@@ -1172,10 +1187,34 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;
             if (updateData.siteId !== undefined) updateFields.siteId = updateData.siteId; // Terminal attribution (latest editor)
 
-            // Update delivery order
-            const updatedDeliveryOrder = await tx.deliveryOrder.update({
-                where: { id: id },
-                data: updateFields
+            // Update delivery order.
+            //
+            // When this update IS the cancellation, express it as a conditional
+            // write. `existingDeliveryOrder` was read before the transaction
+            // opened, so a `wasAlreadyCancelled` flag derived from it cannot
+            // serialise two concurrent cancels — both would see NOT-cancelled
+            // and both would reverse stock, restoring the received quantity
+            // twice. `count > 0` means "this request is the one that actually
+            // performed the transition", which is exactly the condition for
+            // reversing stock.
+            let shouldReverseStock = false;
+            if (isBeingCancelled) {
+                const claimed = await tx.deliveryOrder.updateMany({
+                    where: { id: id, deleted: false, status: { not: 'CANCELLED' } },
+                    data: updateFields
+                });
+                shouldReverseStock = claimed.count > 0;
+                // Losing the race is not an error: the caller asked for
+                // CANCELLED and the document is CANCELLED. We simply must not
+                // reverse stock again.
+            } else {
+                await tx.deliveryOrder.update({
+                    where: { id: id },
+                    data: updateFields
+                });
+            }
+            const updatedDeliveryOrder = await tx.deliveryOrder.findUniqueOrThrow({
+                where: { id: id }
             });
 
             // Handle stock reversal if delivery order is being cancelled

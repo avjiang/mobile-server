@@ -238,7 +238,10 @@ model Supplier {
   createdAt               DateTime?        @default(now()) @map("CREATED_AT")
   updatedAt               DateTime?        @updatedAt @map("UPDATED_AT")
   version                 Int?             @default(1) @map("VERSION")
+  // Items where this supplier is the PREFERRED one (denormalized pointer). For "every
+  // item this supplier can supply", query `itemSuppliers` instead — `items` under-reports.
   items                   Item[]
+  itemSuppliers           ItemSupplier[]
   quotations              Quotation[]
   purchaseOrders          PurchaseOrder[]
   invoices                Invoice[]
@@ -411,6 +414,9 @@ model Item {
   // holds the recipe lines that reference it.
   serviceConsumables      ItemConsumable[]         @relation("ServiceRecipe")
   consumableOf            ItemConsumable[]         @relation("ConsumableOf")
+  // Every supplier this item can be purchased from. `supplier`/`supplierId` above is the
+  // preferred one and is always mirrored by the row here with isPreferred = true.
+  itemSuppliers           ItemSupplier[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -445,6 +451,48 @@ model ItemConsumable {
   @@index([serviceItemId])
   @@index([updatedAt])
   @@map("item_consumable")
+}
+
+// Many-to-many between an item and the suppliers it can be purchased from. Replaces the
+// "one supplier per item" limit of `Item.supplierId` WITHOUT dropping that column —
+// `Item.supplierId` is retained as a denormalized pointer to the row where
+// `isPreferred = true`, so every screen that only needs *a* supplier name to display
+// (POS tile, barcode print, dashboard stock lists) keeps reading the scalar and needs no
+// join. Rule of thumb: "which suppliers?" → this table; "show me a supplier name" →
+// Item.supplierId.
+//
+// INVARIANTS (enforced in item.service.ts, never split across transactions):
+//   - exactly one row per item has isPreferred = true, and it matches Item.supplierId
+//   - >1 non-deleted row per item requires a Pro subscription (the FIRST row is available
+//     on every plan — suppliers are not a Pro feature, *multiple* suppliers are)
+//   - any write here must also bump Item.updatedAt, or the FE delta sync never sees it
+//     (same reason the consumables writes bump it)
+//
+// `cost` is a REFERENCE price used to prefill a PO line for this supplier. It is NOT a
+// costing input — real COGS always comes from StockReceipt.cost written at DO receipt.
+model ItemSupplier {
+  id               Int       @id @default(autoincrement()) @map("ID")
+  itemId           Int       @map("ITEM_ID")
+  supplierId       Int       @map("SUPPLIER_ID")
+  // Mirrors Item.supplierId. Exactly one non-deleted row per item carries true.
+  isPreferred      Boolean   @default(false) @map("IS_PREFERRED")
+  // This supplier's own SKU/article number for the item, printed on their invoices.
+  supplierItemCode String?   @map("SUPPLIER_ITEM_CODE")
+  // Agreed purchase price from this supplier — prefills PurchaseOrderItem.unitPrice.
+  cost             Decimal?  @map("COST") @db.Decimal(15, 4)
+  leadTimeDays     Int?      @map("LEAD_TIME_DAYS")
+  deleted          Boolean   @default(false) @map("IS_DELETED")
+  deletedAt        DateTime? @map("DELETED_AT")
+  createdAt        DateTime? @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime? @updatedAt @map("UPDATED_AT")
+  version          Int?      @default(1) @map("VERSION")
+  item             Item      @relation(fields: [itemId], references: [id])
+  supplier         Supplier  @relation(fields: [supplierId], references: [id])
+
+  @@unique([itemId, supplierId])
+  @@index([supplierId])
+  @@index([updatedAt])
+  @@map("item_supplier")
 }
 
 model Category {

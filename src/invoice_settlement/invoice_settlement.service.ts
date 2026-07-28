@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement, Invoice } from "../../prisma/client/generated/client"
-import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
+import { ErrorCode, ErrorEntity, NotFoundError, VersionMismatchDetail, VersionMismatchError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
@@ -7,13 +7,6 @@ import { create } from "domain";
 import { AddSettlementPaymentInput, CreateInvoiceSettlementRequestBody, InvoiceSettlementInput, SettlementSyncRequest } from "./invoice_settlement.request";
 import { Decimal } from 'decimal.js';
 import { evaluateMarkAsPaid, roundToCurrency } from '../api-helpers/money';
-
-class RequestValidateError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'RequestValidateError';
-    }
-}
 
 // Payment-state fields exposed on every settlement DTO. Outstanding is computed
 // currency-rounded (kills sub-unit phantoms) and nets the audited write-off, so a
@@ -724,14 +717,22 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
         const missingInvoiceIds = allInvoiceIds.filter(id => !existingInvoiceIds.has(id));
 
         if (missingInvoiceIds.length > 0) {
-            throw new RequestValidateError(`Invoices with IDs ${missingInvoiceIds.join(', ')} do not exist or are not eligible for settlement`);
+            throw new RequestValidateError(
+                    `Invoices with IDs ${missingInvoiceIds.join(', ')} do not exist or are not eligible for settlement`,
+                    ErrorCode.InvoicesNotEligible,
+                    { ids: missingInvoiceIds.join(', ') }
+                );
         }
 
         // Check for already settled invoices
         const alreadySettledInvoices = existingInvoices.filter(inv => inv.invoiceSettlementId !== null);
         if (alreadySettledInvoices.length > 0) {
             const settledNumbers = alreadySettledInvoices.map(inv => inv.invoiceNumber);
-            throw new RequestValidateError(`Invoices ${settledNumbers.join(', ')} are already settled`);
+            throw new RequestValidateError(
+                    `Invoices ${settledNumbers.join(', ')} are already settled`,
+                    ErrorCode.InvoicesAlreadySettled,
+                    { ids: settledNumbers.join(', ') }
+                );
         }
 
         // Check for duplicate settlement numbers
@@ -747,7 +748,11 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
 
             if (existingSettlements.length > 0) {
                 const duplicateNumbers = existingSettlements.map(s => s.settlementNumber);
-                throw new RequestValidateError(`Settlement numbers already exist: ${duplicateNumbers.join(', ')}`);
+                throw new RequestValidateError(
+                    `Settlement numbers already exist: ${duplicateNumbers.join(', ')}`,
+                    ErrorCode.DocumentNumberDuplicate,
+                    { entity: ErrorEntity.InvoiceSettlement, numbers: duplicateNumbers.join(', ') }
+                );
             }
         }
 
@@ -798,10 +803,17 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                     ? new Decimal(settlementData.paidAmount)
                     : settlementAmountDec;
                 if (paidAmountDec.lessThanOrEqualTo(0)) {
-                    throw new RequestValidateError('Payment amount must be greater than zero');
+                    throw new RequestValidateError(
+                'Payment amount must be greater than zero',
+                ErrorCode.PaymentAmountNotPositive
+            );
                 }
                 if (paidAmountDec.greaterThan(settlementAmountDec)) {
-                    throw new RequestValidateError('Payment amount cannot exceed settlement amount');
+                    throw new RequestValidateError(
+                        'Payment amount cannot exceed settlement amount',
+                        ErrorCode.PaymentExceedsOutstanding,
+                        { outstanding: settlementAmountDec.toFixed(2) }
+                    );
                 }
                 const transferFeeDec = new Decimal(settlementData.transferFeeAmount || 0);
                 const isFullyPaid = paidAmountDec.greaterThanOrEqualTo(settlementAmountDec);
@@ -1038,7 +1050,11 @@ let updateSettlement = async (settlement: InvoiceSettlementInput, databaseName: 
             });
 
             if (duplicateSettlement) {
-                throw new RequestValidateError(`Settlement number ${updateData.settlementNumber} already exists`);
+                throw new RequestValidateError(
+                `Settlement number ${updateData.settlementNumber} already exists`,
+                ErrorCode.DocumentNumberDuplicate,
+                { entity: ErrorEntity.InvoiceSettlement, numbers: String(updateData.settlementNumber) }
+            );
             }
         }
 
@@ -1066,7 +1082,10 @@ let updateSettlement = async (settlement: InvoiceSettlementInput, databaseName: 
                 });
 
                 if (settlementInvoices.length !== invoiceIds.length) {
-                    throw new RequestValidateError('Some invoices do not belong to this settlement');
+                    throw new RequestValidateError(
+                    'Some invoices do not belong to this settlement',
+                    ErrorCode.InvoiceNotInSettlement
+                );
                 }
 
                 // Check for incomplete tax numbers to determine settlement status
@@ -1141,14 +1160,21 @@ let addPayment = async (databaseName: string, settlementId: number, input: AddSe
             throw new NotFoundError("Invoice Settlement");
         }
         if (settlement.status === 'CANCELLED') {
-            throw new RequestValidateError('Cannot add a payment to a cancelled settlement');
+            throw new RequestValidateError(
+                'Cannot add a payment to a cancelled settlement',
+                ErrorCode.DocumentCancelledNotEditable,
+                { entity: ErrorEntity.InvoiceSettlement }
+            );
         }
 
         const settlementAmountDec = new Decimal(settlement.settlementAmount || 0);
         const paidDec = new Decimal((settlement as any).paidAmount || 0);
         const outstanding = settlementAmountDec.minus(paidDec);
         if (outstanding.lessThanOrEqualTo(0)) {
-            throw new RequestValidateError('Settlement is already fully paid');
+            throw new RequestValidateError(
+                'Settlement is already fully paid',
+                ErrorCode.SettlementAlreadyPaid
+            );
         }
 
         if (!input.paymentDate) {
@@ -1156,14 +1182,24 @@ let addPayment = async (databaseName: string, settlementId: number, input: AddSe
         }
         const amountDec = new Decimal(input.amount || 0);
         if (amountDec.lessThanOrEqualTo(0)) {
-            throw new RequestValidateError('Payment amount must be greater than zero');
+            throw new RequestValidateError(
+                'Payment amount must be greater than zero',
+                ErrorCode.PaymentAmountNotPositive
+            );
         }
         if (amountDec.greaterThan(outstanding)) {
-            throw new RequestValidateError(`Payment amount exceeds outstanding amount (${outstanding.toFixed(4)})`);
+            throw new RequestValidateError(
+                `Payment amount exceeds outstanding amount (${outstanding.toFixed(4)})`,
+                ErrorCode.PaymentExceedsOutstanding,
+                { outstanding: outstanding.toFixed(2) }
+            );
         }
         const feeDec = new Decimal(input.transferFeeAmount || 0);
         if (feeDec.lessThan(0)) {
-            throw new RequestValidateError('Transfer fee cannot be negative');
+            throw new RequestValidateError(
+                'Transfer fee cannot be negative',
+                ErrorCode.TransferFeeNegative
+            );
         }
 
         const newPaid = paidDec.plus(amountDec);
@@ -1253,10 +1289,17 @@ let markSettlementAsPaid = async (
             throw new NotFoundError("Invoice Settlement");
         }
         if ((settlement.status || '').toUpperCase() === 'CANCELLED') {
-            throw new RequestValidateError('Cannot mark a cancelled settlement as paid');
+            throw new RequestValidateError(
+                'Cannot mark a cancelled settlement as paid',
+                ErrorCode.DocumentCancelledNotEditable,
+                { entity: ErrorEntity.InvoiceSettlement }
+            );
         }
         if ((settlement.paymentStatus || 'PAID') !== 'PARTIAL') {
-            throw new RequestValidateError('Settlement is already fully paid');
+            throw new RequestValidateError(
+                'Settlement is already fully paid',
+                ErrorCode.SettlementAlreadyPaid
+            );
         }
 
         const settled = new Decimal((settlement as any).paidAmount || 0)
@@ -1264,11 +1307,16 @@ let markSettlementAsPaid = async (
         const ev = evaluateMarkAsPaid(settlement.settlementAmount || 0, settled, settlement.currency);
 
         if (ev.status === 'ALREADY_PAID') {
-            throw new RequestValidateError('Settlement is already fully paid');
+            throw new RequestValidateError(
+                'Settlement is already fully paid',
+                ErrorCode.SettlementAlreadyPaid
+            );
         }
         if (ev.status === 'BLOCKED_TOO_LARGE') {
             throw new RequestValidateError(
-                `Outstanding ${ev.outstanding.toFixed(4)} exceeds the write-off limit (${ev.cap!.toFixed(4)}). Record a payment or rebate instead.`
+                `Outstanding ${ev.outstanding.toFixed(4)} exceeds the write-off limit (${ev.cap!.toFixed(4)}). Record a payment or rebate instead.`,
+                ErrorCode.WriteOffLimitExceeded,
+                { outstanding: ev.outstanding.toFixed(2), limit: ev.cap!.toFixed(2) }
             );
         }
 

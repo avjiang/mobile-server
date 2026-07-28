@@ -1,17 +1,10 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement } from "../../../prisma/client/generated/client"
 import { Decimal } from 'decimal.js';
-import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../../api-helpers/error"
+import { ErrorCode, NotFoundError, VersionMismatchDetail, VersionMismatchError, RequestValidateError } from "../../api-helpers/error"
 import { StockAdjustment, StockAdjustmentRequestBody } from "./stock-balance.request"
 import { getTenantPrisma } from '../../db';
 import { } from '../../db';
 import { SyncRequest } from "src/item/item.request";
-
-class RequestValidateError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'RequestValidateError';
-    }
-}
 
 // stock function
 let getAllStock = async (
@@ -189,7 +182,10 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     throw new RequestValidateError('Valid version number must be provided');
                 }
                 if (adjustment.overrideQuantity !== undefined && adjustment.overrideQuantity < 0) {
-                    throw new RequestValidateError('Override quantity cannot be negative');
+                    throw new RequestValidateError(
+                        'Override quantity cannot be negative',
+                        ErrorCode.OverrideQuantityNegative
+                    );
                 }
             }
 
@@ -211,12 +207,16 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                 if (item.hasVariants && (adjustment.itemVariantId === null || adjustment.itemVariantId === undefined)) {
                     throw new RequestValidateError(
                         `Item "${item.itemName}" has variants. You must specify itemVariantId to adjust variant stock. ` +
-                        `Adjusting main item stock directly is not allowed.`
+                        `Adjusting main item stock directly is not allowed.`,
+                        ErrorCode.VariantRequired,
+                        { item: item.itemName }
                     );
                 }
                 if (!item.hasVariants && adjustment.itemVariantId) {
                     throw new RequestValidateError(
-                        `Item "${item.itemName}" does not have variants. Remove itemVariantId from request.`
+                        `Item "${item.itemName}" does not have variants. Remove itemVariantId from request.`,
+                        ErrorCode.VariantNotSupported,
+                        { item: item.itemName }
                     );
                 }
             }
@@ -400,7 +400,11 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     }
                     if (remainingReduction.greaterThan(0)) {
                         const variantInfo = adjustment.itemVariantId ? ` variantId ${adjustment.itemVariantId}` : '';
-                        throw new RequestValidateError(`Insufficient StockReceipt quantity for item ${adjustment.itemId}${variantInfo}`);
+                        throw new RequestValidateError(
+                        `Insufficient StockReceipt quantity for item ${adjustment.itemId}${variantInfo}`,
+                        ErrorCode.StockReceiptInsufficient,
+                        { item: String(adjustment.itemId), detail: variantInfo.trim() }
+                    );
                     }
                     if (fifoCostRemoved.greaterThan(0)) {
                         wastageEntries.push({
@@ -565,12 +569,16 @@ async function clearStock(databaseName: string, stockClearance: StockAdjustment)
             // Validate variant rules
             if (item.hasVariants && (stockClearance.itemVariantId === null || stockClearance.itemVariantId === undefined)) {
                 throw new RequestValidateError(
-                    `Item "${item.itemName}" has variants. You must specify itemVariantId to clear variant stock.`
+                    `Item "${item.itemName}" has variants. You must specify itemVariantId to clear variant stock.`,
+                    ErrorCode.VariantRequired,
+                    { item: item.itemName }
                 );
             }
             if (!item.hasVariants && stockClearance.itemVariantId) {
                 throw new RequestValidateError(
-                    `Item "${item.itemName}" does not have variants. Remove itemVariantId from request.`
+                    `Item "${item.itemName}" does not have variants. Remove itemVariantId from request.`,
+                    ErrorCode.VariantNotSupported,
+                    { item: item.itemName }
                 );
             }
 

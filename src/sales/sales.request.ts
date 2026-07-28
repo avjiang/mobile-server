@@ -180,10 +180,19 @@ export class ConfirmDeliveryBatchRequest {
     @Expose() deliveredAt?: Date;
 }
 
-// Contact-only edit of an existing sale (PATCH /sales/:salesId/contact).
-// Both fields optional — only provided fields are updated. The single allowed
-// mutation of an otherwise-immutable sale snapshot (walk-in name/phone typo fix).
-export class UpdateSalesContactRequest {
+// Safe-metadata edit of an existing sale (PUT /sales/:salesId/contact).
+// All fields optional — only provided fields are updated. This is the ONLY
+// sanctioned mutation of an otherwise-immutable sale snapshot, gated behind the
+// "Modify Sales History" permission. Deliberately whitelists ONLY presentational
+// / contact metadata that touches NO downstream system (stock, payments, loyalty,
+// EOD/reports, receipts). Never add money/stock/item/status fields here.
+export class UpdateSalesDetailsRequest {
     @Expose() customerName?: string;
     @Expose() phoneNumber?: string;
+    @Expose() remark?: string;
+    @Expose() shipStreet?: string;
+    @Expose() shipCity?: string;
+    @Expose() shipState?: string;
+    @Expose() shipPostalCode?: string;
+    @Expose() shipCountry?: string;
 }

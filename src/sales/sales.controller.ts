@@ -7,11 +7,13 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
-import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody, UpdateSalesContactRequest } from "./sales.request"
+import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody, UpdateSalesDetailsRequest } from "./sales.request"
 import { validateDates } from "../helpers/dateHelper"
 import { Payment, Prisma, Sales } from "../../prisma/client/generated/client"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
+import { requirePermission } from "../middleware/require-permission.middleware"
+import { PERMISSION } from "../permission/permission-names"
 
 const router = express.Router()
 
@@ -363,13 +365,20 @@ const getRevenueTrend = (req: AuthRequest, res: Response, next: NextFunction) =>
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
     }
-    const { outletId, days } = req.query
+    const { outletId, days, utcOffsetMinutes } = req.query
     const outletIdNum = typeof outletId === 'string' && validator.isNumeric(outletId) ? parseInt(outletId) : undefined
     if (outletIdNum === undefined) {
         throw new RequestValidateError('outletId is required and must be a number')
     }
     const daysNum = typeof days === 'string' && validator.isNumeric(days) ? parseInt(days) : 7
-    service.getRevenueTrend(req.user.databaseName, outletIdNum, daysNum)
+    // Optional: the client's UTC offset in minutes, so days are bucketed by the
+    // user's calendar rather than UTC. `isNumeric` rejects a leading '-', so parse
+    // via isInt (offsets west of UTC are negative). Omitted/invalid => 0 = the
+    // previous UTC-day behaviour, which keeps older APKs working unchanged.
+    const offsetNum = typeof utcOffsetMinutes === 'string' && validator.isInt(utcOffsetMinutes)
+        ? parseInt(utcOffsetMinutes)
+        : 0
+    service.getRevenueTrend(req.user.databaseName, outletIdNum, daysNum, offsetNum)
         .then((trend) => sendResponse(res, trend))
         .catch(next)
 }
@@ -499,10 +508,13 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next);
 }
 
-// Edit ONLY the contact fields (customerName / phoneNumber) of an existing sale —
-// the single sanctioned mutation of an otherwise-immutable sale snapshot, used to
-// fix walk-in name/phone typos. Auth is the global JWT middleware (same as
-// void/return/refund); no extra per-route gate. Online-only on the client.
+// Edit the SAFE-METADATA fields of an existing sale — the single sanctioned
+// mutation of an otherwise-immutable sale snapshot. Gated behind the
+// "Modify Sales History" permission (see route). Whitelists ONLY presentational /
+// contact metadata (name, phone, remark, shipping address) that touches NO
+// downstream system (stock, payments, loyalty, EOD/reports, receipts). Only
+// provided fields are updated; anything else in the body is ignored. Online-first
+// on the client (offline-tolerant via the outbox).
 const updateSalesContact = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -512,32 +524,33 @@ const updateSalesContact = (req: AuthRequest, res: Response, next: NextFunction)
     }
     const salesId: number = parseInt(req.params.salesId);
 
-    const body = (req.body ?? {}) as UpdateSalesContactRequest;
-    const contact: { customerName?: string; phoneNumber?: string } = {};
+    const body = (req.body ?? {}) as UpdateSalesDetailsRequest;
+    const details: {
+        customerName?: string; phoneNumber?: string; remark?: string;
+        shipStreet?: string; shipCity?: string; shipState?: string;
+        shipPostalCode?: string; shipCountry?: string;
+    } = {};
 
-    if (body.customerName !== undefined) {
-        if (typeof body.customerName !== 'string') {
-            throw new RequestValidateError('customerName must be a string');
+    // Trimmed-string whitelist. Each field is optional and length-capped to the
+    // 191-char VARCHAR limit; only fields actually present in the body are patched.
+    const stringFields: Array<keyof typeof details> = [
+        'customerName', 'phoneNumber', 'remark',
+        'shipStreet', 'shipCity', 'shipState', 'shipPostalCode', 'shipCountry',
+    ];
+    for (const field of stringFields) {
+        const value = (body as Record<string, unknown>)[field];
+        if (value === undefined) continue;
+        if (typeof value !== 'string') {
+            throw new RequestValidateError(`${field} must be a string`);
         }
-        const name = body.customerName.trim();
-        if (name.length > 191) {
-            throw new RequestValidateError('customerName too long (max 191 characters)');
+        const trimmed = value.trim();
+        if (trimmed.length > 191) {
+            throw new RequestValidateError(`${field} too long (max 191 characters)`);
         }
-        contact.customerName = name;
+        details[field] = trimmed;
     }
 
-    if (body.phoneNumber !== undefined) {
-        if (typeof body.phoneNumber !== 'string') {
-            throw new RequestValidateError('phoneNumber must be a string');
-        }
-        const phone = body.phoneNumber.trim();
-        if (phone.length > 191) {
-            throw new RequestValidateError('phoneNumber too long (max 191 characters)');
-        }
-        contact.phoneNumber = phone;
-    }
-
-    service.updateSalesContact(req.user.databaseName, salesId, contact)
+    service.updateSalesContact(req.user.databaseName, salesId, details)
         .then((sales) => sendResponse(res, sales))
         .catch(next);
 }
@@ -662,10 +675,12 @@ router.put('/update', update)
 router.put('/void/:id', voidSales)
 router.put('/return/:id', returnSales)
 router.put('/refund/:id', refundSales)
-// Contact-only edit (name/phone typo fix). Static '/contact' suffix keeps it
-// distinct from the catch-all '/:id' route. PUT to match the FE's initiatePUT
-// path and the sibling void/return/refund verbs above.
-router.put('/:salesId/contact', updateSalesContact)
+// Safe-metadata edit of a sale (name/phone/remark/shipping address). Gated behind
+// "Modify Sales History" — the only permission-gated sales route. Static '/contact'
+// suffix (retained for backward-compat with older binaries) keeps it distinct from
+// the catch-all '/:id' route. PUT matches the FE's initiatePUT path and the sibling
+// void/return/refund verbs above.
+router.put('/:salesId/contact', requirePermission(PERMISSION.MODIFY_SALES_HISTORY), updateSalesContact)
 router.delete('/:id', remove)
 
 export = router

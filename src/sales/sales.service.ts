@@ -2603,35 +2603,59 @@ let getTotalSalesData = async (databaseName: string, sessionID: number, loyaltyT
  * - Rides the existing composite index @@index([outletId, businessDate, status]):
  *   outletId equality + businessDate range seek; STATUS filtered via index-condition
  *   pushdown. Work scales with one outlet × N days, never the whole table.
- * - Days are bucketed by UTC calendar day to stay consistent with the rest of the
- *   app (session.businessDate = getUTCStartOfDay, outlet reports use UTC bounds).
+ * - Days are bucketed by the CLIENT's calendar day when `utcOffsetMinutes` is
+ *   supplied (the app sends its device offset), so the sparkline agrees with the
+ *   outlet report and Sales History — both of which bound periods by the user's
+ *   local day. `businessDate` is stored as a UTC instant, so bucketing by the raw
+ *   UTC day skews every bar by the tenant's offset (7h for WIB) and pushes sales
+ *   rung up 00:00–06:59 local into the previous bar. Omitted => 0 => the previous
+ *   UTC-day behaviour, so older APKs are unaffected.
  * - Revenue definition matches getTotalSalesData (SUM(totalAmount) of active sales:
  *   Completed + Partially Paid + Delivered) so the graph agrees with the headline.
  */
-let getRevenueTrend = async (databaseName: string, outletId: number, days: number = 7) => {
+let getRevenueTrend = async (databaseName: string, outletId: number, days: number = 7, utcOffsetMinutes: number = 0) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         // Clamp to a sane window (defensive; avoids an unbounded scan if a bad value slips through).
         const windowDays = Math.min(Math.max(Math.trunc(days) || 7, 1), 31);
+        // Clamp to the real-world UTC offset range (-12:00 … +14:00). Defensive:
+        // a junk value would otherwise shift every bucket arbitrarily.
+        const offsetMinutes = Math.min(Math.max(Math.trunc(utcOffsetMinutes) || 0, -720), 840);
+        const offsetMs = offsetMinutes * 60_000;
 
-        // [start, end) in UTC: start = midnight of (today - (windowDays - 1)), end = midnight of tomorrow.
-        const now = new Date();
-        const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
-        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (windowDays - 1), 0, 0, 0, 0));
+        // Work in "shifted" time: adding the offset to a UTC instant makes its
+        // UTC-date fields read as the client's LOCAL calendar date, so the same
+        // Date.UTC arithmetic below yields local day boundaries. Subtracting the
+        // offset converts those boundaries back to real UTC instants for the query.
+        // offsetMinutes = 0 reduces to the original UTC-day behaviour exactly.
+        const nowShifted = new Date(Date.now() + offsetMs);
+        const y = nowShifted.getUTCFullYear();
+        const m = nowShifted.getUTCMonth();
+        const d = nowShifted.getUTCDate();
+
+        // [start, end) as real UTC instants bounding the client's local day window.
+        const end = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0) - offsetMs);
+        const start = new Date(Date.UTC(y, m, d - (windowDays - 1), 0, 0, 0, 0) - offsetMs);
 
         // Aggregate in the DB. DATE() truncation isn't expressible via Prisma groupBy, so use a
         // parameterised raw query (still safe — values are bound, not interpolated).
+        //
+        // NOTE: `GROUP BY day` groups by the SELECT alias, deliberately. Repeating the
+        // expression (`GROUP BY DATE(BUSINESS_DATE + INTERVAL ${offsetMinutes} MINUTE)`)
+        // fails under `sql_mode=only_full_group_by` with error 1055: the two `INTERVAL ?`
+        // placeholders are separate bound parameters, so MySQL does not recognise the
+        // two expressions as identical. Grouping by the alias sidesteps that.
         const rows = await tenantPrisma.$queryRaw<Array<{ day: Date | string; revenue: Prisma.Decimal | string | null }>>(
             Prisma.sql`
-                SELECT DATE(BUSINESS_DATE)                      AS day,
-                       CAST(SUM(TOTAL_AMOUNT) AS DECIMAL(18,4)) AS revenue
+                SELECT DATE(BUSINESS_DATE + INTERVAL ${offsetMinutes} MINUTE) AS day,
+                       CAST(SUM(TOTAL_AMOUNT) AS DECIMAL(18,4))               AS revenue
                 FROM   sales
                 WHERE  OUTLET_ID     = ${outletId}
                   AND  BUSINESS_DATE >= ${start}
                   AND  BUSINESS_DATE <  ${end}
                   AND  STATUS IN ('Completed', 'Partially Paid', 'Delivered')
                   AND  IS_DELETED = 0
-                GROUP BY DATE(BUSINESS_DATE)
+                GROUP BY day
                 ORDER BY day ASC
             `
         );
@@ -2644,11 +2668,13 @@ let getRevenueTrend = async (databaseName: string, outletId: number, days: numbe
             byDay.set(key, rev);
         }
 
-        // Build a dense, zero-filled series oldest→newest so the client can plot directly.
+        // Build a dense, zero-filled series oldest→newest so the client can plot
+        // directly. Keys are the client's LOCAL calendar dates — the same space the
+        // SQL now groups in — so `byDay` lookups line up.
         const series: Array<{ date: string; revenue: number }> = [];
         for (let i = 0; i < windowDays; i++) {
-            const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (windowDays - 1 - i), 0, 0, 0, 0));
-            const key = d.toISOString().slice(0, 10);
+            const dayDate = new Date(Date.UTC(y, m, d - (windowDays - 1 - i), 0, 0, 0, 0));
+            const key = dayDate.toISOString().slice(0, 10);
             series.push({ date: key, revenue: byDay.get(key) ?? 0 });
         }
 
@@ -2834,6 +2860,39 @@ let addPaymentToPartiallyPaidSales = async (
     }
 }
 
+/**
+ * Atomically claim a sale's reversal transition (Completed → Voided/Returned/Refunded).
+ *
+ * The three reversal endpoints used to read the sale, check
+ * `status === "Completed"`, then write the new status. Under MySQL's default
+ * REPEATABLE READ that read takes no lock, so two concurrent requests for the
+ * same sale could BOTH pass the check and BOTH restore stock — double-crediting
+ * inventory. That is exactly what happened to sale #6068 on 2026-07-26 (two taps
+ * 197ms apart, two distinct idempotency keys, stock restored twice).
+ *
+ * Expressing the transition as a single conditional write closes the window: the
+ * first request flips the row, the loser matches zero rows and throws before it
+ * can touch stock or loyalty.
+ *
+ * Returns the freshly-updated sale so callers keep their existing return shape.
+ */
+const claimSalesReversal = async (
+    tx: Prisma.TransactionClient,
+    salesId: number,
+    toStatus: string,
+    conflictMessage: string
+) => {
+    const claimed = await tx.sales.updateMany({
+        where: { id: salesId, deleted: false, status: "Completed" },
+        data: { status: toStatus },
+    });
+    if (claimed.count === 0) {
+        // Lost the race (or the status moved between the read and here).
+        throw new BusinessLogicError(conflictMessage);
+    }
+    return await tx.sales.findUniqueOrThrow({ where: { id: salesId } });
+};
+
 let voidSales = async (
     databaseName: string,
     tenantId: number,
@@ -2865,15 +2924,15 @@ let voidSales = async (
                 throw new BusinessLogicError("Only completed sales can be voided");
             }
 
-            // Update sales status to voided
-            const updatedSales = await tx.sales.update({
-                where: {
-                    id: salesId
-                },
-                data: {
-                    status: "Voided"
-                }
-            });
+            // Atomically claim the transition — see claimSalesReversal. The
+            // check above gives the precise error message; this is what makes
+            // a concurrent second void impossible.
+            const updatedSales = await claimSalesReversal(
+                tx,
+                salesId,
+                "Voided",
+                "Only completed sales can be voided"
+            );
 
             // Update payment status to voided
             await tx.payment.updateMany({
@@ -3009,15 +3068,15 @@ let returnSales = async (
                 throw new BusinessLogicError("Only completed sales can be returned");
             }
 
-            // Update sales status to returned
-            const updatedSales = await tx.sales.update({
-                where: {
-                    id: salesId
-                },
-                data: {
-                    status: "Returned"
-                }
-            });
+            // Atomically claim the transition — see claimSalesReversal. The
+            // check above gives the precise error message; this is what makes
+            // a concurrent second return impossible.
+            const updatedSales = await claimSalesReversal(
+                tx,
+                salesId,
+                "Returned",
+                "Only completed sales can be returned"
+            );
 
             // Update payment status to returned
             await tx.payment.updateMany({
@@ -3154,15 +3213,15 @@ let refundSales = async (
                 throw new BusinessLogicError("Only completed sales can be refunded");
             }
 
-            // Update sales status to refunded
-            const updatedSales = await tx.sales.update({
-                where: {
-                    id: salesId
-                },
-                data: {
-                    status: "Refunded"
-                }
-            });
+            // Atomically claim the transition — see claimSalesReversal. The
+            // check above gives the precise error message; this is what makes
+            // a concurrent second refund impossible.
+            const updatedSales = await claimSalesReversal(
+                tx,
+                salesId,
+                "Refunded",
+                "Only completed sales can be refunded"
+            );
 
             // Update payment status to refunded
             await tx.payment.updateMany({
@@ -3559,17 +3618,23 @@ let confirmDeliveryBatch = async (
 let updateSalesContact = async (
     databaseName: string,
     salesId: number,
-    contact: { customerName?: string; phoneNumber?: string }
+    details: {
+        customerName?: string; phoneNumber?: string; remark?: string;
+        shipStreet?: string; shipCity?: string; shipState?: string;
+        shipPostalCode?: string; shipCountry?: string;
+    }
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
-    // Build a minimal patch containing only the provided fields (trimmed).
-    const data: { customerName?: string; phoneNumber?: string } = {};
-    if (contact.customerName !== undefined) {
-        data.customerName = contact.customerName.trim();
-    }
-    if (contact.phoneNumber !== undefined) {
-        data.phoneNumber = contact.phoneNumber.trim();
+    // Build a minimal patch containing only the provided fields (already trimmed by
+    // the controller). Whitelisted to safe metadata only — never money/stock/status.
+    const data: typeof details = {};
+    const fields: Array<keyof typeof details> = [
+        'customerName', 'phoneNumber', 'remark',
+        'shipStreet', 'shipCity', 'shipState', 'shipPostalCode', 'shipCountry',
+    ];
+    for (const field of fields) {
+        if (details[field] !== undefined) data[field] = details[field];
     }
 
     // Guard: the sale must exist and not be soft-deleted in this tenant.
@@ -3625,5 +3690,7 @@ export = {
         pickBestDiscount,
         calcPointsEarned,
         validateTierMatch,
+        // Concurrency guard shared by void/return/refund
+        claimSalesReversal,
     },
 }

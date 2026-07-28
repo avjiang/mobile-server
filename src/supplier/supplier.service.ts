@@ -8,8 +8,10 @@ let getAll = async (databaseName: string) => {
     try {
         const suppliers = await tenantPrisma.supplier.findMany();
         const supplierWithCounts = await Promise.all(suppliers.map(async supplier => {
-            const itemCount = await tenantPrisma.item.count({
-                where: { supplierId: supplier.id }
+            // Counts via the junction, not item.supplierId — an item this supplier
+            // supplies as a non-preferred source still counts. The scalar under-reports.
+            const itemCount = await tenantPrisma.itemSupplier.count({
+                where: { supplierId: supplier.id, deleted: false, item: { deleted: false } }
             }) || 0;
 
             // Return the supplier object with itemCount added directly
@@ -65,7 +67,9 @@ let getAllSuppliers = async (
             take,
             include: {
                 _count: {
-                    select: { items: true }
+                    // Junction, not `items` — `items` only counts rows where this
+                    // supplier is the PREFERRED one and so under-reports.
+                    select: { itemSuppliers: true }
                 }
             }
         });
@@ -73,7 +77,7 @@ let getAllSuppliers = async (
         // Transform response to include itemCount at root level
         const transformedSuppliers = suppliers.map(supplier => ({
             ...supplier,
-            itemCount: supplier._count.items,
+            itemCount: supplier._count.itemSuppliers,
             _count: undefined
         }));
 
@@ -98,10 +102,9 @@ let getById = async (id: number, databaseName: string) => {
         if (!supplier) {
             throw new NotFoundError("Supplier");
         }
-        const itemCount = await tenantPrisma.item.count({
-            where: {
-                supplierId: id
-            }
+        // Junction, not item.supplierId — see getAll.
+        const itemCount = await tenantPrisma.itemSupplier.count({
+            where: { supplierId: id, deleted: false, item: { deleted: false } }
         }) || 0;
 
         // Return supplier with itemCount added
@@ -189,15 +192,54 @@ let update = async (supplier: Supplier, databaseName: string) => {
 let remove = async (id: number, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const updatedSupplier = await tenantPrisma.supplier.update({
-            where: {
-                id: id
-            },
-            data: {
-                deleted: true
+        return await tenantPrisma.$transaction(async (tx) => {
+            // Guard: refuse to delete a supplier that is some item's ONLY source. Doing so
+            // would leave that item with an empty junction — invisible in every PO and
+            // quotation item picker — and a dangling item.supplierId pointer.
+            const soleSourced = await tx.$queryRaw<{ ID: number; ITEM_NAME: string }[]>`
+                SELECT i.ID, i.ITEM_NAME
+                FROM item_supplier s
+                JOIN item i ON i.ID = s.ITEM_ID AND i.IS_DELETED = false
+                WHERE s.SUPPLIER_ID = ${id} AND s.IS_DELETED = false
+                  AND (SELECT COUNT(*) FROM item_supplier s2
+                       WHERE s2.ITEM_ID = s.ITEM_ID AND s2.IS_DELETED = false) = 1
+                LIMIT 5`;
+
+            if (soleSourced.length > 0) {
+                const names = soleSourced.map(r => `"${r.ITEM_NAME}" (ID: ${r.ID})`).join(', ');
+                throw new RequestValidateError(
+                    `Cannot delete this supplier — it is the only supplier for: ${names}. ` +
+                    `Assign another supplier to those items first.`
+                );
             }
-        })
-        return updatedSupplier
+
+            // Retire the supplier's remaining junction rows so it stops appearing as a
+            // purchase source for items that have other suppliers. UPDATED_AT is bumped
+            // on both the links and their items so the FE delta sync picks the change up
+            // (junction rows only travel inside their parent item's payload).
+            const affected = await tx.itemSupplier.findMany({
+                where: { supplierId: id, deleted: false },
+                select: { itemId: true },
+            });
+            const now = new Date();
+            if (affected.length > 0) {
+                await tx.itemSupplier.updateMany({
+                    where: { supplierId: id, deleted: false },
+                    data: { deleted: true, deletedAt: now, updatedAt: now },
+                });
+                await tx.item.updateMany({
+                    where: { id: { in: [...new Set(affected.map(a => a.itemId))] } },
+                    data: { updatedAt: now },
+                });
+            }
+
+            // updatedAt must be set explicitly — delta sync keys off it, and a raw
+            // `deleted: true` alone would never reach the clients.
+            return await tx.supplier.update({
+                where: { id: id },
+                data: { deleted: true, deletedAt: now, updatedAt: now },
+            });
+        });
     }
     catch (error) {
         throw error

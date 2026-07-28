@@ -1,18 +1,11 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement, Quotation } from "../../prisma/client/generated/client"
-import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
+import { ErrorCode, ErrorEntity, NotFoundError, VersionMismatchDetail, VersionMismatchError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import Decimal from "decimal.js";
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateQuotationRequestBody, QuotationInput } from "./quotation.request";
-
-class RequestValidateError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'RequestValidateError';
-    }
-}
 
 let getAll = async (
     databaseName: string,
@@ -613,7 +606,11 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
             const missingOutletIds = outletIds.filter(id => !existingOutletIds.has(id));
 
             if (missingOutletIds.length > 0) {
-                throw new RequestValidateError(`Outlets with IDs ${missingOutletIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `Outlets with IDs ${missingOutletIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Outlet, ids: missingOutletIds.join(', ') }
+                );
             }
         }
 
@@ -630,7 +627,11 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
             const missingSupplierIds = supplierIds.filter(id => !existingSupplierIds.has(id));
 
             if (missingSupplierIds.length > 0) {
-                throw new RequestValidateError(`Suppliers with IDs ${missingSupplierIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `Suppliers with IDs ${missingSupplierIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Supplier, ids: missingSupplierIds.join(', ') }
+                );
             }
         }
 
@@ -645,7 +646,11 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
 
         if (existingQuotations.length > 0) {
             const duplicateNumbers = existingQuotations.map(q => q.quotationNumber);
-            throw new RequestValidateError(`Quotations with numbers ${duplicateNumbers.join(', ')} already exist`);
+            throw new RequestValidateError(
+                    `Quotations with numbers ${duplicateNumbers.join(', ')} already exist`,
+                    ErrorCode.DocumentNumberDuplicate,
+                    { entity: ErrorEntity.Quotation, numbers: duplicateNumbers.join(', ') }
+                );
         }
 
         // Validate required fields
@@ -894,17 +899,29 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
             switch (result.type) {
                 case 'outlet':
                     if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Outlet with ID ${result.id} does not exist`);
+                        throw new RequestValidateError(
+                        `Outlet with ID ${result.id} does not exist`,
+                        ErrorCode.ReferenceNotFound,
+                        { entity: ErrorEntity.Outlet, ids: String(result.id) }
+                    );
                     }
                     break;
                 case 'supplier':
                     if ('exists' in result && 'id' in result && !result.exists) {
-                        throw new RequestValidateError(`Supplier with ID ${result.id} does not exist`);
+                        throw new RequestValidateError(
+                        `Supplier with ID ${result.id} does not exist`,
+                        ErrorCode.ReferenceNotFound,
+                        { entity: ErrorEntity.Supplier, ids: String(result.id) }
+                    );
                     }
                     break;
                 case 'quotationNumber':
                     if ('exists' in result && 'value' in result && result.exists) {
-                        throw new RequestValidateError(`Quotation with number ${result.value} already exists`);
+                        throw new RequestValidateError(
+                        `Quotation with number ${result.value} already exists`,
+                        ErrorCode.DocumentNumberDuplicate,
+                        { entity: ErrorEntity.Quotation, numbers: String(result.value) }
+                    );
                     }
                     break;
                 case 'items':
@@ -912,7 +929,11 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
                         const existingItemIds = new Set<number>(result.existing);
                         const missingItemIds = result.requested.filter((id: number) => !existingItemIds.has(id));
                         if (missingItemIds.length > 0) {
-                            throw new RequestValidateError(`Items with IDs ${missingItemIds.join(', ')} do not exist`);
+                            throw new RequestValidateError(
+                    `Items with IDs ${missingItemIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Item, ids: missingItemIds.join(', ') }
+                );
                         }
                     }
                     break;
@@ -1102,7 +1123,11 @@ let deleteQuotation = async (id: number, databaseName: string): Promise<string> 
 
         // Check if quotation has related purchase orders
         if (existingQuotation.purchaseOrders.length > 0) {
-            throw new RequestValidateError('Cannot delete quotation with existing purchase orders');
+            throw new RequestValidateError(
+                'Cannot delete quotation with existing purchase orders',
+                ErrorCode.DeleteBlockedHasDependents,
+                { entity: ErrorEntity.Quotation, dependents: 'purchase orders' }
+            );
         }
 
         // Use transaction to ensure data consistency

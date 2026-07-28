@@ -270,6 +270,16 @@ export async function importDirectToDB(data, options) {
             }
           });
 
+          // item_supplier junction row. REQUIRED — the PO/quotation item picker matches
+          // on this table, so an imported item with no link is invisible to every
+          // supplier. This importer writes raw Prisma and bypasses item.service.ts, so
+          // the link has to be created explicitly here.
+          await prisma.itemSupplier.upsert({
+            where: { itemId_supplierId: { itemId: created.id, supplierId: supplier.id } },
+            update: { isPreferred: true, deleted: false, deletedAt: null },
+            create: { itemId: created.id, supplierId: supplier.id, isPreferred: true, deleted: false },
+          });
+
           itemCodeMap.set(itemKey, created);
           results.items.created++;
 

@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement, Invoice } from "../../prisma/client/generated/client"
-import { NotFoundError, VersionMismatchDetail, VersionMismatchError } from "../api-helpers/error"
+import { ErrorCode, ErrorEntity, NotFoundError, VersionMismatchDetail, VersionMismatchError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
@@ -7,13 +7,6 @@ import { create } from "domain";
 import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request";
 import { Decimal } from 'decimal.js';
 import { restateSalesCostsForReceipts, ReceiptCostChange } from "../stock/sales-cost-restatement";
-
-class RequestValidateError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'RequestValidateError';
-    }
-}
 
 
 
@@ -420,6 +413,15 @@ let getById = async (id: number, databaseName: string) => {
                     where: {
                         deleted: false
                     },
+                    // Item name/code travel with the line so clients never have to
+                    // resolve them from a local cache. The purchase-return sheet
+                    // used to do exactly that and rendered "Item #19" whenever the
+                    // device hadn't synced the item yet.
+                    include: {
+                        item: {
+                            select: { itemName: true, itemCode: true }
+                        }
+                    }
                 },
                 purchaseOrder: {
                     select: {
@@ -568,8 +570,14 @@ let getById = async (id: number, databaseName: string) => {
             const originalQuantity = new Decimal(item.quantity || 0);
             const remainingQuantity = originalQuantity.minus(returnedQuantity);
 
+            // Flatten the joined item onto the line (itemName/itemCode) and drop
+            // the nested relation so the DTO shape stays flat like every other.
+            const { item: joinedItem, ...line } = item;
+
             return {
-                ...item,
+                ...line,
+                itemName: joinedItem?.itemName ?? null,
+                itemCode: joinedItem?.itemCode ?? null,
                 returnedQuantity: returnedQuantity.toFixed(4),
                 remainingQuantity: remainingQuantity.toFixed(4)
             };
@@ -916,7 +924,11 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
 
             if (existingInvoices.length > 0) {
                 const duplicateNumbers = existingInvoices.map(inv => inv.invoiceNumber);
-                throw new RequestValidateError(`Invoice numbers already exist: ${duplicateNumbers.join(', ')}`);
+                throw new RequestValidateError(
+                    `Invoice numbers already exist: ${duplicateNumbers.join(', ')}`,
+                    ErrorCode.DocumentNumberDuplicate,
+                    { entity: ErrorEntity.Invoice, numbers: duplicateNumbers.join(', ') }
+                );
             }
         }
 
@@ -933,7 +945,11 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const missingOutletIds = outletIds.filter(id => !existingOutletIds.has(id));
 
             if (missingOutletIds.length > 0) {
-                throw new RequestValidateError(`Outlets with IDs ${missingOutletIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `Outlets with IDs ${missingOutletIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Outlet, ids: missingOutletIds.join(', ') }
+                );
             }
         }
 
@@ -950,7 +966,11 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const missingSupplierIds = supplierIds.filter((id) => !existingSupplierIds.has(id));
 
             if (missingSupplierIds.length > 0) {
-                throw new RequestValidateError(`Suppliers with IDs ${missingSupplierIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `Suppliers with IDs ${missingSupplierIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.Supplier, ids: missingSupplierIds.join(', ') }
+                );
             }
         }
 
@@ -967,7 +987,11 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const missingPurchaseOrderIds = purchaseOrderIds.filter((id) => !existingPurchaseOrderIds.has(id));
 
             if (missingPurchaseOrderIds.length > 0) {
-                throw new RequestValidateError(`Purchase orders with IDs ${missingPurchaseOrderIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `Purchase orders with IDs ${missingPurchaseOrderIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: ErrorEntity.PurchaseOrder, ids: missingPurchaseOrderIds.join(', ') }
+                );
             }
         }
 
@@ -993,7 +1017,11 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             const missingDeliveryOrderIds = deliveryOrderIds.filter((id) => !existingDeliveryOrderIds.has(id));
 
             if (missingDeliveryOrderIds.length > 0) {
-                throw new RequestValidateError(`Delivery orders with IDs ${missingDeliveryOrderIds.join(', ')} do not exist or are already linked to an active invoice`);
+                throw new RequestValidateError(
+                    `Delivery orders with IDs ${missingDeliveryOrderIds.join(', ')} do not exist or are already linked to an active invoice`,
+                    ErrorCode.DeliveryOrdersNotEligible,
+                    { ids: missingDeliveryOrderIds.join(', ') }
+                );
             }
         }
 
@@ -1185,7 +1213,11 @@ let update = async (invoice: InvoiceInput, databaseName: string) => {
             });
 
             if (duplicateInvoice) {
-                throw new RequestValidateError(`Invoice number ${updateData.invoiceNumber} already exists`);
+                throw new RequestValidateError(
+                `Invoice number ${updateData.invoiceNumber} already exists`,
+                ErrorCode.DocumentNumberDuplicate,
+                { entity: ErrorEntity.Invoice, numbers: String(updateData.invoiceNumber) }
+            );
             }
         }
 
@@ -1520,7 +1552,11 @@ let deleteInvoice = async (id: number, databaseName: string): Promise<string> =>
 
         // Check if invoice has related invoice settlement
         if (existingInvoice.invoiceSettlement) {
-            throw new RequestValidateError('Cannot delete invoice with existing settlement');
+            throw new RequestValidateError(
+                'Cannot delete invoice with existing settlement',
+                ErrorCode.DeleteBlockedHasDependents,
+                { entity: ErrorEntity.Invoice, dependents: 'a settlement' }
+            );
         }
 
         // Use transaction to ensure data consistency

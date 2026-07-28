@@ -1,17 +1,18 @@
 import { Prisma, PrismaClient, PurchaseReturn } from "../../prisma/client/generated/client"
 import { Decimal } from 'decimal.js';
-import { NotFoundError } from "../api-helpers/error"
+import { ErrorCode, ErrorEntity, NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { CancelPurchaseReturnInput, CreatePurchaseReturnRequestBody, PurchaseReturnInput, PurchaseReturnSyncRequest } from "./purchase-return.request";
 
-class RequestValidateError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'RequestValidateError';
-    }
-}
-
 const VALID_RETURN_REASONS = ['DEFECT', 'SPOILT', 'BROKEN', 'WRONG_ITEM', 'OTHER'];
+
+/** Maps the batch-validation `result.type` onto a translatable entity key. */
+const REFERENCE_ENTITY: Record<string, ErrorEntity> = {
+    outlets: ErrorEntity.Outlet,
+    suppliers: ErrorEntity.Supplier,
+    invoices: ErrorEntity.Invoice,
+    items: ErrorEntity.Item,
+};
 
 let getAll = async (
     databaseName: string,
@@ -386,10 +387,17 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
             if (pr.purchaseReturnItems) {
                 for (const item of pr.purchaseReturnItems) {
                     if (!VALID_RETURN_REASONS.includes(item.returnReason)) {
-                        throw new RequestValidateError(`Invalid return reason: ${item.returnReason}. Valid reasons: ${VALID_RETURN_REASONS.join(', ')}`);
+                        throw new RequestValidateError(
+                            `Invalid return reason: ${item.returnReason}. Valid reasons: ${VALID_RETURN_REASONS.join(', ')}`,
+                            ErrorCode.ReturnReasonInvalid,
+                            { reason: String(item.returnReason), validReasons: VALID_RETURN_REASONS.join(', ') }
+                        );
                     }
                     if (item.returnReason === 'OTHER' && !item.remark) {
-                        throw new RequestValidateError('Remark is required when return reason is OTHER');
+                        throw new RequestValidateError(
+                            'Remark is required when return reason is OTHER',
+                            ErrorCode.ReturnReasonRemarkRequired
+                        );
                     }
                 }
             }
@@ -447,7 +455,11 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
 
             if (missingIds.length > 0) {
                 const entityName = result.type.charAt(0).toUpperCase() + result.type.slice(1, -1);
-                throw new RequestValidateError(`${entityName} with IDs ${missingIds.join(', ')} do not exist`);
+                throw new RequestValidateError(
+                    `${entityName} with IDs ${missingIds.join(', ')} do not exist`,
+                    ErrorCode.ReferenceNotFound,
+                    { entity: REFERENCE_ENTITY[result.type] ?? result.type, ids: missingIds.join(', ') }
+                );
             }
 
             // Additional validation for invoices - ensure they are PAID
@@ -456,7 +468,11 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                 for (const invoiceId of result.requested) {
                     const status = statuses[invoiceId];
                     if (status?.toUpperCase() !== 'PAID') {
-                        throw new RequestValidateError(`Invoice with ID ${invoiceId} is not settled. Only PAID invoices can have returns.`);
+                        throw new RequestValidateError(
+                            `Invoice with ID ${invoiceId} is not settled. Only PAID invoices can have returns.`,
+                            ErrorCode.InvoiceNotSettledForReturn,
+                            { invoiceId: String(invoiceId) }
+                        );
                     }
                 }
                 // Extract settlementIds for use during creation
@@ -709,7 +725,9 @@ const validateReturnQuantities = async (
         ).join('; ');
 
         throw new RequestValidateError(
-            `Return quantity exceeds available quantity for one or more items. ${errorDetails}`
+            `Return quantity exceeds available quantity for one or more items. ${errorDetails}`,
+            ErrorCode.ReturnQuantityExceeds,
+            { detail: errorDetails }
         );
     }
 };
@@ -737,17 +755,29 @@ const reduceStockBalancesAndCreateMovements = async (
     });
 
     if (deliveryOrders.length === 0) {
-        throw new RequestValidateError(`No delivery orders found for invoice ID ${invoiceId}`);
+        throw new RequestValidateError(
+            `No delivery orders found for invoice ID ${invoiceId}`,
+            ErrorCode.NoDeliveryOrdersForInvoice,
+            { invoiceId: String(invoiceId) }
+        );
     }
 
     const deliveryOrderIds = deliveryOrders.map(d => d.id);
 
-    // Fetch trackStock flags for all items (defensive guard for non-stock items)
+    // Fetch trackStock flags for all items (defensive guard for non-stock items).
+    // Name/code come along so stock rejections can name the item the cashier sees
+    // instead of an internal ID they cannot act on.
     const itemTrackStockData = await tx.item.findMany({
         where: { id: { in: items.map((i: any) => i.itemId) } },
-        select: { id: true, trackStock: true }
+        select: { id: true, trackStock: true, itemName: true, itemCode: true }
     });
     const trackStockMap = new Map(itemTrackStockData.map((i: any) => [i.id, i.trackStock]));
+    const itemInfoMap = new Map(itemTrackStockData.map((i: any) => [i.id, i]));
+    const describeItem = (itemId: number) => {
+        const info: any = itemInfoMap.get(itemId);
+        if (!info) return `item ID ${itemId}`;
+        return info.itemCode ? `${info.itemName} (${info.itemCode})` : info.itemName;
+    };
 
     // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
@@ -797,7 +827,11 @@ const reduceStockBalancesAndCreateMovements = async (
             const currentBalance = stockBalanceMap.get(balanceKey);
 
             if (!currentBalance) {
-                throw new RequestValidateError(`No stock balance found for item ID ${item.itemId}. Cannot process return.`);
+                throw new RequestValidateError(
+                    `No stock balance found for ${describeItem(item.itemId)}. Cannot process return.`,
+                    ErrorCode.StockBalanceMissingReturn,
+                    { item: describeItem(item.itemId) }
+                );
             }
 
             // Convert to Decimal objects for proper arithmetic
@@ -806,19 +840,31 @@ const reduceStockBalancesAndCreateMovements = async (
 
             // Check if we have enough stock to return
             if (previousAvailableQuantity.lt(returnQuantity)) {
-                throw new RequestValidateError(`Insufficient stock for item ID ${item.itemId}. Available: ${previousAvailableQuantity}, Requested return: ${returnQuantity}`);
+                throw new RequestValidateError(
+                    `Insufficient stock for ${describeItem(item.itemId)}. Available: ${previousAvailableQuantity}, Requested return: ${returnQuantity}. Some of the received quantity has already been sold or moved — return only what is still on hand.`,
+                    ErrorCode.StockInsufficientReturn,
+                    {
+                        item: describeItem(item.itemId),
+                        available: previousAvailableQuantity.toString(),
+                        requested: returnQuantity.toString(),
+                    }
+                );
             }
 
-            // Reduce stock quantities
-            const newAvailableQuantity = previousAvailableQuantity.sub(returnQuantity);
-            const newOnHandQuantity = previousOnHandQuantity.sub(returnQuantity);
-
-            // Update stock balance
+            // Reduce stock quantities.
+            //
+            // Applied as a relative decrement rather than writing a
+            // pre-computed absolute value: `currentBalance` was read earlier in
+            // this function, and any concurrent write (a sale, another receipt)
+            // between that read and this write would otherwise be silently
+            // clobbered — a classic lost update. `decrement` pushes the
+            // arithmetic into the single UPDATE statement, so it always applies
+            // to the committed value.
             await tx.stockBalance.update({
                 where: { id: currentBalance.id },
                 data: {
-                    availableQuantity: newAvailableQuantity,
-                    onHandQuantity: newOnHandQuantity,
+                    availableQuantity: { decrement: returnQuantity.toNumber() },
+                    onHandQuantity: { decrement: returnQuantity.toNumber() },
                     updatedAt: new Date()
                 }
             });
@@ -949,16 +995,15 @@ const reverseStockOperationsForCancellation = async (
                 const previousAvailableQuantity = new Decimal(currentBalance.availableQuantity);
                 const previousOnHandQuantity = new Decimal(currentBalance.onHandQuantity);
 
-                // Add back the returned quantities
-                const newAvailableQuantity = previousAvailableQuantity.add(quantity);
-                const newOnHandQuantity = previousOnHandQuantity.add(quantity);
-
-                // Update stock balance
+                // Add back the returned quantities as a relative increment —
+                // see the matching note in the return path above. Writing a
+                // pre-computed absolute here would clobber any concurrent
+                // change to this balance.
                 await tx.stockBalance.update({
                     where: { id: currentBalance.id },
                     data: {
-                        availableQuantity: newAvailableQuantity,
-                        onHandQuantity: newOnHandQuantity,
+                        availableQuantity: { increment: quantity.toNumber() },
+                        onHandQuantity: { increment: quantity.toNumber() },
                         updatedAt: new Date()
                     }
                 });
@@ -1062,7 +1107,11 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
         }
 
         if (existingPurchaseReturn.status === 'CANCELLED') {
-            throw new RequestValidateError('Cannot update a cancelled purchase return');
+            throw new RequestValidateError(
+                'Cannot update a cancelled purchase return',
+                ErrorCode.DocumentCancelledNotEditable,
+                { entity: ErrorEntity.PurchaseReturn }
+            );
         }
 
         // Use transaction for consistency
@@ -1159,7 +1208,11 @@ let deletePurchaseReturn = async (id: number, databaseName: string, performedBy?
         }
 
         if (existingPurchaseReturn.status === 'CANCELLED') {
-            throw new RequestValidateError('Purchase return is already cancelled');
+            throw new RequestValidateError(
+                'Purchase return is already cancelled',
+                ErrorCode.DocumentAlreadyCancelled,
+                { entity: ErrorEntity.PurchaseReturn }
+            );
         }
 
         // Use transaction to ensure consistency
@@ -1239,14 +1292,25 @@ let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseN
             throw new NotFoundError("Purchase Return");
         }
 
+        // Fast-fail with a precise message. This read is OUTSIDE the transaction,
+        // so it cannot be the concurrency guard — the authoritative check is the
+        // conditional update below.
         if (existingPurchaseReturn.status === 'CANCELLED') {
-            throw new RequestValidateError('Purchase return is already cancelled');
+            throw new RequestValidateError(
+                'Purchase return is already cancelled',
+                ErrorCode.DocumentAlreadyCancelled,
+                { entity: ErrorEntity.PurchaseReturn }
+            );
         }
 
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Update status to CANCELLED with audit fields
-            const updatedPurchaseReturn = await tx.purchaseReturn.update({
-                where: { id: id },
+            // Atomically claim the cancellation. Two concurrent cancels would
+            // otherwise both pass the check above (each reading a snapshot taken
+            // before either committed) and both reverse stock — restoring the
+            // returned quantity twice. `updateMany` with the expected status in
+            // the WHERE makes the loser match zero rows.
+            const claimed = await tx.purchaseReturn.updateMany({
+                where: { id: id, deleted: false, status: { not: 'CANCELLED' } },
                 data: {
                     status: 'CANCELLED',
                     cancelledBy: cancelData.performedBy || "SYSTEM",
@@ -1255,6 +1319,16 @@ let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseN
                     siteId: cancelData.siteId ?? null, // Terminal attribution (latest editor = canceller)
                     version: { increment: 1 }
                 }
+            });
+            if (claimed.count === 0) {
+                throw new RequestValidateError(
+                    'Purchase return is already cancelled',
+                    ErrorCode.DocumentAlreadyCancelled,
+                    { entity: ErrorEntity.PurchaseReturn }
+                );
+            }
+            const updatedPurchaseReturn = await tx.purchaseReturn.findUniqueOrThrow({
+                where: { id: id }
             });
 
             // Reverse stock operations

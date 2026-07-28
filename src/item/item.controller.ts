@@ -93,7 +93,9 @@ let createMany = (req: NetworkRequest<CreateItemsRequestBody>, res: Response, ne
         req.body,
         { excludeExtraneousValues: true }
     );
-    service.createMany(req.user.databaseName, requestBody.items)
+    // planName gates the SECOND supplier per item (multi-supplier is Pro-only); the
+    // first is available on every plan. See syncItemSuppliers in item.service.ts.
+    service.createMany(req.user.databaseName, requestBody.items, req.user.planName)
         .then((insertedItems: Item[]) => {
             // var message = `Successfully created ${insertedItems} items`
             // if (insertedRecordCount === 1) {
@@ -120,7 +122,7 @@ let update = (req: NetworkRequest<Item>, res: Response, next: NextFunction) => {
         throw new RequestValidateError('Update failed: [id] not found')
     }
 
-    service.update(req.user.databaseName, item)
+    service.update(req.user.databaseName, item, req.user.planName)
         .then((item: Item) => sendResponse(res, "Successfully updated"))
         .catch(next)
 }

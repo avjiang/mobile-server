@@ -191,6 +191,21 @@ let createTenant = async (body: CreateTenantRequest) => {
                 }
             })
 
+            // Multi-outlet: assign the owner to the outlet just created. Without this
+            // row `auth.service.getUserInfo` resolves `allowedOutletIds` to [] (it reads
+            // user_outlet), so every outlet-scoped authz check takes the empty-allow-list
+            // fall-through in requireOutletAccess instead of actually authorizing, and
+            // the JWT carries no outlet context. Migration 20260702_multi_outlet_fks_and_
+            // user_outlet only backfilled users that existed WHEN IT RAN — tenants created
+            // afterwards must write the row here or they are silently unassigned.
+            await tenantPrisma.userOutlet.create({
+                data: {
+                    userId: newUser.id,
+                    outletId: newOutlet.id,
+                    isPrimary: true,
+                }
+            })
+
             // Create warehouse for Pro plan users
             let createdWarehouse = null;
             if (tenant.plan === 'Pro') {
@@ -665,6 +680,25 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
             select: { id: true },
         });
         createdTenantDbUserId = createdUser.id;
+
+        // Multi-outlet: assign the new user to the tenant's primary (lowest-id live)
+        // outlet. Without a user_outlet row `allowedOutletIds` resolves to [] and
+        // `outlet.service.getOutletSync` filters on `id IN ()` — returning ZERO outlets,
+        // which the app reports as "No outlet access — contact your administrator" and
+        // refuses to complete login. Roles are still assigned separately afterwards;
+        // this only establishes outlet access. Idempotent via the composite PK.
+        const primaryOutlet = await tenantPrisma.outlet.findFirst({
+            where: { deleted: false },
+            orderBy: { id: 'asc' },
+            select: { id: true },
+        });
+        if (primaryOutlet) {
+            await tenantPrisma.userOutlet.upsert({
+                where: { userId_outletId: { userId: createdUser.id, outletId: primaryOutlet.id } },
+                update: {},
+                create: { userId: createdUser.id, outletId: primaryOutlet.id, isPrimary: true },
+            });
+        }
 
         // --- Begin: Tenant add-on logic for user overage ---
         // HYBRID MODEL: User limits are calculated as sum of all outlet subscriptions

@@ -157,8 +157,11 @@ export async function initializeTenantDatabase(tenantDbName: string) {
   const tenantUrl = process.env.TENANT_DATABASE_URL!.replace('{tenant_db_name}', tenantDbName);
 
   await globalPrisma.$executeRawUnsafe(`CREATE DATABASE IF NOT EXISTS \`${tenantDbName}\``);
-  await execAsync(`TENANT_DATABASE_URL="${tenantUrl}" npx prisma migrate deploy --schema=prisma/client/schema.prisma`);
-  // await execAsync(`npx prisma migrate deploy --schema=prisma/client/schema.prisma`, { env: { ...process.env, TENANT_DATABASE_URL: tenantUrl } }); //windows version
+  // Pass the URL via the child's env rather than a `VAR="x" cmd` shell prefix:
+  // that prefix is POSIX-only syntax and `exec` spawns cmd.exe on Windows, where
+  // it fails with "'TENANT_DATABASE_URL' is not recognized". The env-object form
+  // works on every platform.
+  await execAsync(`npx prisma migrate deploy --schema=prisma/client/schema.prisma`, { env: { ...process.env, TENANT_DATABASE_URL: tenantUrl } });
   console.log(`Created new tenant database: ${tenantDbName}`)
 }
 
@@ -181,10 +184,9 @@ export async function updateAllTenantDatabases(): Promise<void> {
   const globalUrl = process.env.GLOBAL_DB_URL!;
   console.log(`Applying migrations to global database...`);
   try {
-    const command = `TENANT_DATABASE_URL=${globalUrl} npx prisma migrate deploy --schema=prisma/global-client/schema.prisma`;
-    await execAsync(command);
-    // const command = `npx prisma migrate deploy --schema=prisma/global-client/schema.prisma`; //windows version
-    // await execAsync(command, { env: { ...process.env, TENANT_DATABASE_URL: globalUrl } }); //windows version
+    // Env-object form, not a POSIX `VAR=x cmd` prefix — see initializeTenantDatabase.
+    const command = `npx prisma migrate deploy --schema=prisma/global-client/schema.prisma`;
+    await execAsync(command, { env: { ...process.env, TENANT_DATABASE_URL: globalUrl } });
     console.log(`Successfully updated global database`);
   } catch (error) {
     console.error(`Failed to update global database: ${(error as Error).message}`);
@@ -198,10 +200,9 @@ export async function updateAllTenantDatabases(): Promise<void> {
     const tenantUrl = process.env.TENANT_DATABASE_URL!.replace('{tenant_db_name}', customer.databaseName);
     console.log(`Applying migrations to ${customer.databaseName}...`);
     try {
-      const command = `TENANT_DATABASE_URL=${tenantUrl} npx prisma migrate deploy --schema=prisma/client/schema.prisma`;
-      await execAsync(command);
-      // const command = `npx prisma migrate deploy --schema=prisma/client/schema.prisma`; //windows version
-      // await execAsync(command, { env: { ...process.env, TENANT_DATABASE_URL: tenantUrl } }); //windows version
+      // Env-object form, not a POSIX `VAR=x cmd` prefix — see initializeTenantDatabase.
+      const command = `npx prisma migrate deploy --schema=prisma/client/schema.prisma`;
+      await execAsync(command, { env: { ...process.env, TENANT_DATABASE_URL: tenantUrl } });
       console.log(`Successfully updated ${customer.databaseName}`);
     } catch (error) {
       console.error(`Failed to update ${customer.databaseName}: ${(error as Error).message}`);

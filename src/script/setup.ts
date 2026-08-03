@@ -50,10 +50,10 @@ async function createDatabaseIfNotExists(config: { host: string; port: number; u
     });
 }
 
-async function runCommand(command: string, description: string): Promise<void> {
+async function runCommand(command: string, description: string, env?: NodeJS.ProcessEnv): Promise<void> {
     console.log(`\n${description}...`);
     try {
-        const { stdout, stderr } = await execAsync(command);
+        const { stdout, stderr } = await execAsync(command, env ? { env: { ...process.env, ...env } } : undefined);
         if (stdout) console.log(stdout);
         if (stderr) console.error(stderr);
         console.log(`Done.`);
@@ -91,9 +91,12 @@ async function setup(): Promise<void> {
     );
 
     // Step 3: Run migrations for global database
+    // Env-object form, not a POSIX `VAR="x" cmd` prefix: that syntax is not valid in
+    // cmd.exe, which is what `exec` spawns on Windows.
     await runCommand(
-        `TENANT_DATABASE_URL="${globalDbUrl}" npx prisma migrate deploy --schema=prisma/global-client/schema.prisma`,
-        'Step 3: Running migrations for global database'
+        `npx prisma migrate deploy --schema=prisma/global-client/schema.prisma`,
+        'Step 3: Running migrations for global database',
+        { TENANT_DATABASE_URL: globalDbUrl }
     );
 
     // Step 4: Seed setting definitions

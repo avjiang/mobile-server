@@ -37,7 +37,14 @@ export const requireOutletAccess = async (req: AuthRequest, res: Response, next:
             req.params?.outletId ??
             req.headers['x-outlet-id'];
 
-        if (rawOutletId !== undefined && rawOutletId !== null && rawOutletId !== '') {
+        // 0 / "0" is the clients' "no outlet selected" sentinel (the Flutter app's
+        // initiateGET/POST/PUT/DEL default `outletId` to 0). Treat it as ABSENT so it
+        // falls through to resolveDefaultOutletId() below rather than being read as an
+        // explicit outlet context and 403-ing. Without this, a client that has not yet
+        // selected an outlet can never load /outlet/sync to pick one — a login deadlock.
+        const isUnsetSentinel = rawOutletId === 0 || rawOutletId === '0';
+
+        if (rawOutletId !== undefined && rawOutletId !== null && rawOutletId !== '' && !isUnsetSentinel) {
             // ── Explicit outlet context: validate + authorize ──
             const requestedOutletId = parseInt(String(rawOutletId), 10);
 

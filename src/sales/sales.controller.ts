@@ -17,6 +17,10 @@ import { PERMISSION } from "../permission/permission-names"
 
 const router = express.Router()
 
+// Hard ceiling on any client-supplied `take`, so a client bug or a hostile caller
+// can't request an unbounded page. Applied to every paginated sales read below.
+const MAX_SALES_PAGE_SIZE = 500
+
 interface SelectedSales {
     id: number;
     businessDate: Date;
@@ -43,7 +47,10 @@ const getAll = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
 
     const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
-    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+    const takeNum = Math.min(
+        take && validator.isNumeric(take as string) ? parseInt(take as string) : 100,
+        MAX_SALES_PAGE_SIZE,
+    );
 
     const syncRequest = {
         outletId: outletId as string,
@@ -88,7 +95,10 @@ const getAllByDateRange = (req: AuthRequest, res: Response, next: NextFunction) 
         throw new RequestValidateError(`Date validation error`);
     }
     const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
-    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+    const takeNum = Math.min(
+        take && validator.isNumeric(take as string) ? parseInt(take as string) : 100,
+        MAX_SALES_PAGE_SIZE,
+    );
     const dateRangeRequest = {
         outletId: outletId as string,
         skip: skipNum,
@@ -396,7 +406,10 @@ const getPartiallyPaidSales = (req: AuthRequest, res: Response, next: NextFuncti
     }
 
     const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
-    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+    const takeNum = Math.min(
+        take && validator.isNumeric(take as string) ? parseInt(take as string) : 100,
+        MAX_SALES_PAGE_SIZE,
+    );
 
     const paginationRequest = {
         outletId: outletId as string,
@@ -624,7 +637,10 @@ const getDeliveredList = (req: AuthRequest, res: Response, next: NextFunction) =
     }
 
     const skipNum = skip && validator.isNumeric(skip as string) ? parseInt(skip as string) : 0;
-    const takeNum = take && validator.isNumeric(take as string) ? parseInt(take as string) : 100;
+    const takeNum = Math.min(
+        take && validator.isNumeric(take as string) ? parseInt(take as string) : 100,
+        MAX_SALES_PAGE_SIZE,
+    );
 
     service.getDeliveredList(
         req.user.databaseName,

@@ -38,6 +38,66 @@ import voucherService from '../voucher/voucher.service';
  */
 const activeSalesItems = { where: { deleted: false } } as const;
 
+// How many sales a device pulls on its FIRST sync (no cursor yet — fresh install
+// or reinstall). Bounded by COUNT, deliberately not by date: a date window's cost
+// depends on how busy the tenant is, so it is unbounded and unpredictable, while a
+// count window costs the same for a warung and a chain. Anything older stays on the
+// server and is reachable via GET /sales/dateRange (the app's date filter), which
+// ignores the sync cursor entirely.
+// See docs/future/SYNC_COLD_START_AND_SCALABILITY.md.
+const COLD_START_SALES_CAP = 100;
+
+// The projection every sales-sync read returns. Extracted so the cold-start and
+// delta paths cannot drift apart — a field missing from one of them is a silent
+// data-loss bug on the client (see SALES.md §4.4: a field must be in BOTH the
+// select and the transform or it never reaches the app).
+const salesSyncSelect = {
+    id: true,
+    businessDate: true,
+    salesType: true,
+    customerId: true,
+    customerName: true,
+    phoneNumber: true,
+    totalAmount: true,
+    paidAmount: true,
+    status: true,
+    remark: true,
+    shipStreet: true,
+    isTaxInclusive: true,
+    taxAmount: true,
+    serviceChargeAmount: true,
+    subtotalAmount: true,
+    discountAmount: true,
+    totalItemDiscountAmount: true,
+    deliveredAt: true,
+    deliveredBy: true,
+    // Terminal attribution (silent-drop fix: in BOTH select and transform)
+    siteId: true,
+    // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
+    // must be in BOTH select and transform or it never reaches the client)
+    orderRef: true,
+    friendlyNumber: true,
+    collectedAt: true,
+    // Loyalty fields
+    loyaltyPointsEarned: true,
+    loyaltyPointsRedeemed: true,
+    loyaltyPointsRedemptionValue: true,
+    loyaltyTierDiscountPercent: true,
+    loyaltyTierDiscountAmount: true,
+    customerSubscriptionId: true,
+    subscriptionDiscountAmount: true,
+    // Voucher fields
+    voucherId: true,
+    voucherDiscountPercentage: true,
+    voucherDiscountAmount: true,
+    payments: {
+        select: {
+            method: true
+        }
+    },
+    salesItems: activeSalesItems
+} as const;
+
 // Helper: calculate effective stock quantity for deduction/restoration
 // For consumption items: quantity * stockConsumptionQty (e.g., 3 orders × 50ml = 150ml)
 // For piece-based items (null): quantity as-is (e.g., 3 pieces)
@@ -1015,93 +1075,89 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
     const { outletId, skip = 0, take = 100, lastSyncTimestamp } = request;
 
     try {
-        // Parse last sync timestamp with optimization for null/first sync
-        let lastSync: Date;
-
-        if (lastSyncTimestamp && lastSyncTimestamp !== 'null') {
-            lastSync = new Date(lastSyncTimestamp);
-        } else {
-            // Option 1: Limit to recent data (e.g., last 30 days) for first sync
-            // const daysBack = 30;
-            // lastSync = new Date();
-            // lastSync.setDate(lastSync.getDate() - daysBack);
-
-            // Option 2: Or use current business date only
-            lastSync = new Date();
-            lastSync.setHours(0, 0, 0, 0); // Start of today
-        }
-
         // Ensure outletId is a number
         const parsedOutletId = typeof outletId === 'string' ? parseInt(outletId, 10) : outletId;
 
-        // Build query conditions
-        const where = {
-            outletId: parsedOutletId,
-            deleted: false,
-            OR: [
-                { createdAt: { gte: lastSync } },
-                { updatedAt: { gte: lastSync } }
-            ],
-        };
+        // No cursor yet = fresh install / reinstall. Previously this fell back to
+        // "start of today", which left a merchant staring at an almost-empty Sales
+        // History and reading it as data loss. Now it returns a bounded slice of
+        // recent history instead. See docs/future/SYNC_COLD_START_AND_SCALABILITY.md.
+        const isColdStart = !lastSyncTimestamp || lastSyncTimestamp === 'null';
 
-        // Count total records
-        const total = await tenantPrisma.sales.count({ where });
+        let salesArray;
+        let total: number;
 
-        const salesArray = await tenantPrisma.sales.findMany({
-            where,
-            select: {
-                id: true,
-                businessDate: true,
-                salesType: true,
-                customerId: true,
-                customerName: true,
-                phoneNumber: true,
-                totalAmount: true,
-                paidAmount: true,
-                status: true,
-                remark: true,
-                shipStreet: true,
-                isTaxInclusive: true,
-                taxAmount: true,
-                serviceChargeAmount: true,
-                subtotalAmount: true,
-                discountAmount: true,
-                totalItemDiscountAmount: true,
-                deliveredAt: true,
-                deliveredBy: true,
-                // Terminal attribution (silent-drop fix: in BOTH select and transform)
-                siteId: true,
-                // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
-                // must be in BOTH select and transform or it never reaches the client)
-                orderRef: true,
-                friendlyNumber: true,
-                collectedAt: true,
-                // Loyalty fields
-                loyaltyPointsEarned: true,
-                loyaltyPointsRedeemed: true,
-                loyaltyPointsRedemptionValue: true,
-                loyaltyTierDiscountPercent: true,
-                loyaltyTierDiscountAmount: true,
-                customerSubscriptionId: true,
-                subscriptionDiscountAmount: true,
-                // Voucher fields
-                voucherId: true,
-                voucherDiscountPercentage: true,
-                voucherDiscountAmount: true,
-                payments: {
-                    select: {
-                        method: true
-                    }
+        if (isColdStart) {
+            // Newest N by ID. Ordering by `id` (the primary key) rather than
+            // `updatedAt` is deliberate and load-bearing: there is no index on
+            // UPDATED_AT, so ordering by it forces a filesort over the outlet's whole
+            // history to return a handful of rows (measured on prod: 22.9ms / 3,139
+            // rows scanned vs 0.86ms / 200 rows for this plan). A PK backward scan
+            // also cannot be un-chosen by the optimiser as the table grows.
+            // IDs are auto-increment, so newest-by-id == newest-created, and the app
+            // already sorts its local list by salesId DESC — the order matches.
+            const recentSales = await tenantPrisma.sales.findMany({
+                where: { outletId: parsedOutletId, deleted: false },
+                select: salesSyncSelect,
+                orderBy: { id: 'desc' },
+                take: Math.min(take, COLD_START_SALES_CAP),
+            });
+
+            // ...plus every order still awaiting collection, however old. The laundry
+            // pending-pickup queue reads ONLY from the device's local database (no
+            // server call), so any uncollected order that falls outside the newest-N
+            // window would vanish from that queue — the shop would lose track of
+            // garments physically in the shop. Bounded by real-world work in progress,
+            // not by history length. Empty for retail tenants (no orderRef).
+            const uncollectedOrders = await tenantPrisma.sales.findMany({
+                where: {
+                    outletId: parsedOutletId,
+                    deleted: false,
+                    collectedAt: null,
+                    orderRef: { not: null },
                 },
-                salesItems: activeSalesItems
-            },
-            skip,
-            take,
-            orderBy: [
-                { updatedAt: 'desc' },
-                { createdAt: 'desc' }
-            ]
-        })
+                select: salesSyncSelect,
+                orderBy: { id: 'desc' },
+            });
+
+            // Union, newest first. The two sets overlap for recent uncollected orders.
+            const byId = new Map<number, typeof recentSales[number]>();
+            for (const sale of recentSales) byId.set(sale.id, sale);
+            for (const sale of uncollectedOrders) byId.set(sale.id, sale);
+            salesArray = Array.from(byId.values()).sort((a, b) => b.id - a.id);
+
+            // Report what we actually sent, so the client's pagination loop
+            // (`if (skip >= total) break`) terminates after this single page. A real
+            // COUNT here would scan the outlet's entire history to serve a capped
+            // page — measured at 17.9ms on prod, i.e. more than the query itself.
+            // `total` is only ever used to end that loop; it is never displayed.
+            total = salesArray.length;
+        } else {
+            const lastSync = new Date(lastSyncTimestamp as string);
+
+            const where = {
+                outletId: parsedOutletId,
+                deleted: false,
+                OR: [
+                    { createdAt: { gte: lastSync } },
+                    { updatedAt: { gte: lastSync } }
+                ],
+            };
+
+            // Count total records
+            total = await tenantPrisma.sales.count({ where });
+
+            salesArray = await tenantPrisma.sales.findMany({
+                where,
+                select: salesSyncSelect,
+                skip,
+                take,
+                orderBy: [
+                    { updatedAt: 'desc' },
+                    { createdAt: 'desc' }
+                ]
+            });
+        }
 
         // Laundry: classify each order as a machine "wash", a per-piece/per-kg
         // "service" (jasa), or "mixed". A processed weight alone can't tell them
@@ -1162,7 +1218,7 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             data: transformedSales,
             total,
             serverTimestamp: new Date().toISOString(),
-            isFirstSync: !lastSyncTimestamp || lastSyncTimestamp === 'null'
+            isFirstSync: isColdStart
         };
     }
     catch (error) {

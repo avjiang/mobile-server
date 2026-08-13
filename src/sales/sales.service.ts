@@ -17,6 +17,27 @@ import {
 import loyaltyService from '../loyalty/loyalty.service';
 import voucherService from '../voucher/voucher.service';
 
+/**
+ * Standard `include` for a sale's line items — excludes soft-deleted lines.
+ *
+ * `sales_item.IS_DELETED` soft-deletes ONE line without voiding the whole sale.
+ * There is no UI or API for this: it is an operator-only data fix applied by raw
+ * SQL (drop an erroneous line, then recalculate the sale's totals). The flag is
+ * also set in bulk by `remove()`, which cascades it to every line of a deleted
+ * sale.
+ *
+ * Every read that surfaces lines to a client — detail, receipts, delta sync,
+ * reports — must exclude them, matching the convention already used by
+ * `cost-rate.service`, `item.service` (top-sold) and `sales-cost-restatement`.
+ *
+ * DELIBERATELY NOT USED by void/return/refund: those reverse stock per line, and
+ * whether a soft-deleted line's stock was already corrected by hand is unknown
+ * (no SOP exists — the operation is ad-hoc). Filtering there could permanently
+ * lose stock, so they keep reversing every line. See the comment at the restore
+ * loop in `voidSales`.
+ */
+const activeSalesItems = { where: { deleted: false } } as const;
+
 // Helper: calculate effective stock quantity for deduction/restoration
 // For consumption items: quantity * stockConsumptionQty (e.g., 3 orders × 50ml = 150ml)
 // For piece-based items (null): quantity as-is (e.g., 3 pieces)
@@ -1072,7 +1093,7 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                         method: true
                     }
                 },
-                salesItems: true
+                salesItems: activeSalesItems
             },
             skip,
             take,
@@ -1232,7 +1253,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
                         method: true
                     }
                 },
-                salesItems: true
+                salesItems: activeSalesItems
             },
             skip,
             take,
@@ -1361,7 +1382,7 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
                         method: true
                     }
                 },
-                salesItems: true
+                salesItems: activeSalesItems
             },
             skip,
             take,
@@ -1410,7 +1431,7 @@ let getById = async (databaseName: string, id: number) => {
                 id: id
             },
             include: {
-                salesItems: true,
+                salesItems: activeSalesItems,
                 payments: true,
                 registerLogs: true
             }
@@ -1435,7 +1456,7 @@ let getByRef = async (databaseName: string, orderRef: string) => {
     const sales = await tenantPrisma.sales.findUnique({
         where: { orderRef },
         include: {
-            salesItems: true,
+            salesItems: activeSalesItems,
             payments: true,
             registerLogs: true,
         },
@@ -2944,7 +2965,15 @@ let voidSales = async (
                 }
             });
 
-            // Restore stock for each sales item (with variant support)
+            // Restore stock for each sales item (with variant support).
+            //
+            // NOTE: this deliberately reads UNFILTERED lines (`salesItems: true`
+            // above, not `activeSalesItems`). A soft-deleted line's stock may or
+            // may not have already been corrected by the operator who deleted it —
+            // the operation is ad-hoc raw SQL with no SOP — so skipping it here
+            // could permanently lose stock. Reversing every line at worst
+            // double-restores in a rare hand-patched sale, which is recoverable;
+            // under-restoring is not. Revisit if a real remove-line feature lands.
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
                     const restoreQty = getEffectiveStockQty(
@@ -3088,7 +3117,15 @@ let returnSales = async (
                 }
             });
 
-            // Restore stock for each sales item (with variant support)
+            // Restore stock for each sales item (with variant support).
+            //
+            // NOTE: this deliberately reads UNFILTERED lines (`salesItems: true`
+            // above, not `activeSalesItems`). A soft-deleted line's stock may or
+            // may not have already been corrected by the operator who deleted it —
+            // the operation is ad-hoc raw SQL with no SOP — so skipping it here
+            // could permanently lose stock. Reversing every line at worst
+            // double-restores in a rare hand-patched sale, which is recoverable;
+            // under-restoring is not. Revisit if a real remove-line feature lands.
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
                     const restoreQty = getEffectiveStockQty(
@@ -3233,7 +3270,15 @@ let refundSales = async (
                 }
             });
 
-            // Restore stock for each sales item (with variant support)
+            // Restore stock for each sales item (with variant support).
+            //
+            // NOTE: this deliberately reads UNFILTERED lines (`salesItems: true`
+            // above, not `activeSalesItems`). A soft-deleted line's stock may or
+            // may not have already been corrected by the operator who deleted it —
+            // the operation is ad-hoc raw SQL with no SOP — so skipping it here
+            // could permanently lose stock. Reversing every line at worst
+            // double-restores in a rare hand-patched sale, which is recoverable;
+            // under-restoring is not. Revisit if a real remove-line feature lands.
             await Promise.all(
                 sales.salesItems.map(async (salesItem) => {
                     const restoreQty = getEffectiveStockQty(

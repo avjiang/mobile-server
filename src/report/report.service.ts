@@ -375,6 +375,10 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     remark: true,
                     completedSessionId: true,
                     salesItems: {
+                        // Exclude operator soft-deleted lines (sales_item.IS_DELETED) so revenue,
+                        // cost and profit match the recalculated sale totals. Matches the
+                        // convention in cost-rate.service and item.service (top-sold).
+                        where: { deleted: false },
                         select: {
                             id: true,
                             itemName: true,
@@ -1632,6 +1636,10 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     status: true,
                     remark: true,
                     salesItems: {
+                        // Exclude operator soft-deleted lines (sales_item.IS_DELETED) so revenue,
+                        // cost and profit match the recalculated sale totals. Matches the
+                        // convention in cost-rate.service and item.service (top-sold).
+                        where: { deleted: false },
                         select: {
                             id: true,
                             itemName: true,
@@ -2462,6 +2470,10 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                     remark: true,
                     completedSessionId: true,
                     salesItems: {
+                        // Exclude operator soft-deleted lines (sales_item.IS_DELETED) so revenue,
+                        // cost and profit match the recalculated sale totals. Matches the
+                        // convention in cost-rate.service and item.service (top-sold).
+                        where: { deleted: false },
                         select: {
                             id: true,
                             itemName: true,

@@ -43,6 +43,11 @@ const COLUMN_MAPPINGS = {
   trackStock: ['trackstock', 'track_stock', 'lacak_stok'],
   hasVariants: ['hasvariants', 'has_variants', 'with_variants', 'ada_varian', 'punya_varian'],
 
+  // Item-supplier junction columns (extra suppliers beyond the preferred one on
+  // the Items sheet). `itemCode`, `supplierName` and `cost` reuse the mappings above.
+  supplierItemCode: ['supplieritemcode', 'supplier_item_code', 'supplier_sku', 'kode_produk_pemasok', 'kode_pemasok'],
+  leadTimeDays: ['leadtimedays', 'lead_time_days', 'lead_time', 'lead_time_hari', 'waktu_kirim_hari'],
+
   // Variant columns
   parentItemCode: ['parentitemcode', 'parent_item_code', 'parent_sku', 'parent_code', 'item_code', 'kode_induk', 'kode_produk_induk'],
   variantSku: ['variantsku', 'variant_sku', 'sku', 'variant_code', 'kode_varian'],
@@ -122,6 +127,7 @@ const SHEET_ALIASES = {
   Suppliers: ['Suppliers', 'Pemasok'],
   Items: ['Items', 'Produk'],
   Item_Variants: ['Item_Variants', 'Varian Produk', 'Varian'],
+  Item_Suppliers: ['Item_Suppliers', 'Pemasok Produk', 'Pemasok Tambahan'],
   Customers: ['Customers', 'Pelanggan'],
 };
 
@@ -244,6 +250,21 @@ function parseVariants(workbook) {
 }
 
 /**
+ * Parse extra item→supplier links from the workbook.
+ *
+ * The Items sheet's own `supplierName` is the PREFERRED supplier and is imported with
+ * the item itself. This sheet carries only the ADDITIONAL suppliers, one row per
+ * (item, supplier) pair — the multi-supplier feature is Pro-only, so a sheet with rows
+ * here is rejected for Basic/Trial tenants (see importer-direct.js `assertProPlan`).
+ */
+function parseItemSuppliers(workbook) {
+  const targetFields = [
+    'itemCode', 'supplierName', 'supplierItemCode', 'cost', 'leadTimeDays'
+  ];
+  return parseSheet(workbook, 'Item_Suppliers', targetFields);
+}
+
+/**
  * Parse customers from the workbook
  */
 function parseCustomers(workbook) {
@@ -272,6 +293,7 @@ export function parseExcel(filePath) {
     suppliers: parseSuppliers(workbook),
     items: parseItems(workbook),
     variants: parseVariants(workbook),
+    itemSuppliers: parseItemSuppliers(workbook),
     customers: parseCustomers(workbook),
   };
 
@@ -281,6 +303,7 @@ export function parseExcel(filePath) {
   console.log(`   - ${data.suppliers.length} suppliers`);
   console.log(`   - ${data.items.length} items`);
   console.log(`   - ${data.variants.length} variants`);
+  console.log(`   - ${data.itemSuppliers.length} extra item-supplier links`);
   console.log(`   - ${data.customers.length} customers`);
 
   return data;
@@ -297,8 +320,9 @@ export function getDataSummary(data) {
     suppliers: data.suppliers.length,
     items: data.items.length,
     variants: data.variants.length,
+    itemSuppliers: data.itemSuppliers.length,
     customers: data.customers.length,
     total: data.categories.length + data.suppliers.length + data.items.length +
-           data.variants.length + data.customers.length
+           data.variants.length + data.itemSuppliers.length + data.customers.length
   };
 }

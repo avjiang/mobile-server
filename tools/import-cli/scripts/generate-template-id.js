@@ -58,6 +58,14 @@ const SHEETS = {
     ['barcode', false, 16], ['tipe_atribut_1', false, 14], ['nilai_atribut_1', false, 14],
     ['tipe_atribut_2', false, 14], ['nilai_atribut_2', false, 14],
   ],
+  // Extra suppliers per product (Pro only). The main supplier stays on the Produk tab —
+  // this tab lists ONLY the additional ones, so a tenant with a single supplier per
+  // product never has to touch it and older filled templates still import unchanged.
+  'Pemasok Produk': [
+    ['kode_produk', true, 18], ['nama_pemasok', true, 26],
+    ['kode_produk_pemasok', false, 20], ['harga_beli', false, 14],
+    ['lead_time_hari', false, 14],
+  ],
   Pelanggan: [
     ['nama_depan', true, 16], ['nama_belakang', true, 16], ['no_hp', false, 18],
     ['email', false, 24], ['kota', false, 16],
@@ -72,6 +80,7 @@ const EXAMPLES = {
   ],
   Pemasok: [
     ['PT Bogasari Mitra', 'Jakarta', 'DKI Jakarta', 'Indonesia', 'Sari', '+628123456789', 'sari@bogasari.co.id', 'Ya', ''],
+    ['CV Sumber Rejeki', 'Bandung', 'Jawa Barat', 'Indonesia', 'Budi', '+628987654321', 'budi@sumberrejeki.co.id', 'Tidak', 'Pemasok cadangan'],
   ],
   Produk: [
     ['Tepung Terigu Segitiga Biru 1kg', 'TPG-SB-1KG', 'Tepung & Gula', 'PT Bogasari Mitra', 12000, 14000, 50, 'Pack', '2000000000018', 'Segitiga Biru', 'Tidak', 'Tidak', 'Ya', 10],
@@ -79,6 +88,10 @@ const EXAMPLES = {
     ['Ragi Instan Fermipan 11g', 'RAG-11G', 'Bahan Tambahan', 'PT Bogasari Mitra', 4000, 6000, 100, 'Pcs', '', 'Fermipan', 'Tidak', 'Tidak', 'Ya', 20],
   ],
   'Varian Produk': [],
+  'Pemasok Produk': [
+    ['TPG-SB-1KG', 'CV Sumber Rejeki', 'SR-TERIGU-1', 12500, 3],
+    ['GLA-1KG', 'CV Sumber Rejeki', 'SR-GULA-1', 13200, 3],
+  ],
   Pelanggan: [
     ['Andi', 'Wijaya', '+628111222333', 'andi@mail.com', 'Jakarta'],
   ],
@@ -96,6 +109,10 @@ const DROPDOWNS = {
   },
   Pemasok: {
     8: `"${YN}"`,                     // kena_pajak
+  },
+  'Pemasok Produk': {
+    1: `Produk!$B$2:$B$${LAST}`,      // kode_produk
+    2: `Pemasok!$A$2:$A$${LAST}`,     // nama_pemasok
   },
   'Varian Produk': {
     1: `Produk!$B$2:$B$${LAST}`,      // kode_produk_induk

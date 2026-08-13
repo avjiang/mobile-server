@@ -73,6 +73,77 @@ async function getTenantDbName(tenantId, tenantName) {
 }
 
 /**
+ * Resolve the tenant's plan name from the Global DB and refuse a multi-supplier import
+ * on anything but Pro.
+ *
+ * Multiple suppliers per item is a Pro feature, gated in `syncItemSuppliers`
+ * (src/item/item.service.ts) on the SECOND link — one supplier is available on every
+ * plan. This importer writes raw Prisma and never goes through that service, so
+ * without this check an operator-run import would silently hand a Basic/Trial tenant a
+ * Pro feature. Mirrors `getTenantSubscriptionInfo` in src/auth/auth.service.ts:
+ * active/trial subscriptions of active outlets, Pro wins over Basic.
+ *
+ * Called BEFORE the dry-run early-return so `--dry-run` catches the problem too.
+ *
+ * @param {number|null} tenantId
+ * @param {string|null} tenantName
+ * @param {number} extraLinkCount - number of rows on the Item_Suppliers sheet
+ */
+async function assertProPlanForExtraSuppliers(tenantId, tenantName, extraLinkCount) {
+  if (extraLinkCount === 0) return;
+
+  const globalDbUrl = process.env.GLOBAL_DB_URL;
+  if (!globalDbUrl) {
+    throw new Error('GLOBAL_DB_URL not found in environment variables');
+  }
+
+  const globalPrisma = new GlobalPrismaClient({
+    datasources: { db: { url: globalDbUrl } }
+  });
+
+  try {
+    const where = tenantId ? { id: tenantId } : { tenantName };
+    const tenant = await globalPrisma.tenant.findFirst({ where });
+    if (!tenant) {
+      throw new Error(`Tenant not found: ${tenantId ? `ID ${tenantId}` : `name "${tenantName}"`}`);
+    }
+
+    const outlets = await globalPrisma.tenantOutlet.findMany({
+      where: { tenantId: tenant.id, isActive: true },
+      include: {
+        subscriptions: {
+          where: { status: { in: ['Active', 'active', 'trial'] } },
+          include: { subscriptionPlan: true },
+        },
+      },
+    });
+
+    let planName = null;
+    for (const outlet of outlets) {
+      for (const subscription of outlet.subscriptions) {
+        const name = subscription.subscriptionPlan?.planName;
+        if (!name) continue;
+        if (name.toLowerCase() === 'pro') { planName = name; break; }
+        if (!planName) planName = name;
+      }
+      if (planName?.toLowerCase() === 'pro') break;
+    }
+
+    if ((planName ?? '').toLowerCase() !== 'pro') {
+      throw new Error(
+        `Multiple suppliers per item is a Pro feature, but tenant "${tenant.tenantName}" is on ` +
+        `plan "${planName ?? 'none'}". The file has ${extraLinkCount} extra supplier link(s) on the ` +
+        `Item_Suppliers ("Pemasok Produk") sheet. Remove that sheet's rows, or upgrade the tenant to Pro.`
+      );
+    }
+
+    console.log(chalk.green(`✅ Plan check: ${tenant.tenantName} is on "${planName}" — extra suppliers allowed`));
+  } finally {
+    await globalPrisma.$disconnect();
+  }
+}
+
+/**
  * Construct tenant database URL
  * @param {string} databaseName - The database name
  * @returns {string} - Full database URL
@@ -115,6 +186,9 @@ export async function importDirectToDB(data, options) {
   const databaseName = await getTenantDbName(tenantId, tenantName);
   const tenantDbUrl = constructTenantDbUrl(databaseName);
 
+  // Pro gate — before the dry-run return so --dry-run surfaces it too.
+  await assertProPlanForExtraSuppliers(tenantId, tenantName, (data.itemSuppliers || []).length);
+
   if (dryRun) {
     console.log(chalk.yellow('\n🔍 DRY RUN - No data will be imported\n'));
     return { dryRun: true, databaseName };
@@ -131,6 +205,7 @@ export async function importDirectToDB(data, options) {
     suppliers: { created: 0, existing: 0 },
     items: { created: 0, existing: 0 },
     variants: { created: 0, existing: 0 },
+    itemSuppliers: { created: 0, existing: 0, skipped: 0 },
     customers: { created: 0, existing: 0 },
     stockBalances: { created: 0 },
     stockMovements: { created: 0 },
@@ -217,8 +292,12 @@ export async function importDirectToDB(data, options) {
       console.log(chalk.green(`  Suppliers: ${results.suppliers.created} created, ${results.suppliers.existing} existing ✅`));
     }
 
-    // Also create any categories/suppliers referenced in items but not in sheets
-    await createMissingDependencies(data.items, categoryMap, supplierMap, prisma);
+    // Also create any categories/suppliers referenced in items but not in sheets.
+    // Item_Suppliers rows are included so a supplier named only there is auto-created
+    // too (those rows carry no categoryName, so the category half just skips them).
+    await createMissingDependencies(
+      [...data.items, ...(data.itemSuppliers || [])], categoryMap, supplierMap, prisma
+    );
 
     // 3. Import Items
     if (data.items.length > 0) {
@@ -377,6 +456,79 @@ export async function importDirectToDB(data, options) {
 
       progress.stop();
       console.log(chalk.green(`  Variants: ${results.variants.created} created, ${results.variants.existing} existing ✅`));
+    }
+
+    // 4b. Import extra item→supplier links (Pro; gated above by assertProPlanForExtraSuppliers).
+    //
+    // Deliberately its OWN pass rather than part of the item-creation branch above: that
+    // branch is skipped wholesale for an item code that already exists, so nesting these
+    // writes there would make "send an updated sheet to add a supplier to the existing
+    // catalogue" — the most likely real use — a silent no-op. Resolving against
+    // itemCodeMap (which is seeded with the tenant's existing items) means this sheet
+    // also works on its own, with the Items sheet left empty.
+    //
+    // The preferred link is NOT touched here. It is written with the item from the Items
+    // sheet's own supplier column, which keeps the one-preferred-row invariant structural.
+    if ((data.itemSuppliers || []).length > 0) {
+      const progress = createProgressBar('Item sup');
+      progress.start(data.itemSuppliers.length, 0);
+
+      for (const link of data.itemSuppliers) {
+        const item = itemCodeMap.get(norm(link.itemCode));
+        const supplier = supplierMap.get(norm(link.supplierName));
+
+        if (!item) {
+          console.log(chalk.yellow(`\n  Warning: Item "${link.itemCode}" not found — skipping extra supplier "${link.supplierName}"`));
+          results.itemSuppliers.skipped++;
+          progress.increment();
+          continue;
+        }
+        if (!supplier) {
+          console.log(chalk.yellow(`\n  Warning: Supplier "${link.supplierName}" not found — skipping link for item "${link.itemCode}"`));
+          results.itemSuppliers.skipped++;
+          progress.increment();
+          continue;
+        }
+
+        const cost = (link.cost !== undefined && link.cost !== '' && !isNaN(parseFloat(link.cost)))
+          ? parseFloat(link.cost)
+          : null;
+        const leadTimeDays = (link.leadTimeDays !== undefined && link.leadTimeDays !== '' && !isNaN(parseInt(link.leadTimeDays)))
+          ? parseInt(link.leadTimeDays)
+          : null;
+
+        // A row naming the item's own preferred supplier must not demote it, so
+        // isPreferred is only ever set on create — never forced to false on update.
+        const existingLink = await prisma.itemSupplier.findUnique({
+          where: { itemId_supplierId: { itemId: item.id, supplierId: supplier.id } },
+        });
+
+        const payload = {
+          supplierItemCode: link.supplierItemCode ? link.supplierItemCode.toString().trim() : null,
+          cost,
+          leadTimeDays,
+          deleted: false,
+          deletedAt: null,
+        };
+
+        if (existingLink) {
+          await prisma.itemSupplier.update({
+            where: { id: existingLink.id },
+            data: { ...payload, version: { increment: 1 } },
+          });
+          results.itemSuppliers.existing++;
+        } else {
+          await prisma.itemSupplier.create({
+            data: { itemId: item.id, supplierId: supplier.id, isPreferred: false, ...payload, version: 1 },
+          });
+          results.itemSuppliers.created++;
+        }
+
+        progress.increment();
+      }
+
+      progress.stop();
+      console.log(chalk.green(`  Extra suppliers: ${results.itemSuppliers.created} created, ${results.itemSuppliers.existing} updated, ${results.itemSuppliers.skipped} skipped ✅`));
     }
 
     // 5. Import Customers

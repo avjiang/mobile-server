@@ -14,7 +14,7 @@ Ada 2 file:
 
 Buka TEMPLATE_KOSONG.xlsx pakai Excel (atau WPS Office). Di bagian
 bawah ada tab-tab sheet: Kategori, Pemasok, Produk, Varian Produk,
-Pelanggan.
+Pemasok Produk, Pelanggan.
 
 ----------------------------------------------------------------
 ATURAN PALING PENTING (baca dulu ya!)
@@ -96,7 +96,33 @@ Kalau semua produkmu dijual per kemasan/ukuran terpisah (seperti
 contoh bahan kue), sheet ini BIARKAN KOSONG saja.
 
 ----------------------------------------------------------------
-LANGKAH 5 — Sheet "Pelanggan" (OPSIONAL)
+LANGKAH 5 — Sheet "Pemasok Produk" (OPSIONAL, khusus paket PRO)
+----------------------------------------------------------------
+Isi HANYA kalau ada produk yang kamu beli dari LEBIH DARI SATU
+pemasok.
+
+Pemasok UTAMA setiap produk sudah diisi di kolom nama_pemasok pada
+sheet Produk — JANGAN diulang di sini. Sheet ini khusus untuk
+pemasok TAMBAHANnya.
+
+Setiap baris = 1 pasangan produk + pemasok tambahan. Kalau satu
+produk punya 2 pemasok tambahan, buat 2 baris dengan kode_produk
+yang sama.
+
+- kode_produk (wajib)        -> pilih dari dropdown (sheet Produk)
+- nama_pemasok (wajib)       -> pilih dari dropdown (sheet Pemasok)
+- kode_produk_pemasok        -> kode barang versi pemasok itu
+- harga_beli                 -> harga beli dari pemasok ini
+- lead_time_hari             -> lama barang datang (angka bulat)
+
+PENTING: fitur banyak pemasok per produk HANYA tersedia di paket
+Pro. Kalau tokomu masih paket Basic, kosongkan sheet ini — impor
+akan ditolak kalau ada isinya.
+
+Kalau setiap produk cuma punya 1 pemasok, BIARKAN KOSONG saja.
+
+----------------------------------------------------------------
+LANGKAH 6 — Sheet "Pelanggan" (OPSIONAL)
 ----------------------------------------------------------------
 Kalau kamu punya daftar pelanggan langganan, isi di sini
 (nama_depan & nama_belakang wajib). Kalau belum ada, lewati saja.

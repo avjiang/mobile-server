@@ -243,8 +243,36 @@ export async function importViaApi(data, options) {
     console.log(chalk.green(`  Suppliers: ${results.suppliers.created} created, ${results.suppliers.existing} existing ✅`));
   }
 
-  // Also create any categories/suppliers referenced in items but not yet created
-  await createMissingDependencies(data.items, categoryMap, supplierMap, client, batchSize);
+  // Also create any categories/suppliers referenced in items but not yet created.
+  // Item_Suppliers rows are included so a supplier named only on that sheet exists by
+  // the time the item payload needs to resolve its id.
+  await createMissingDependencies(
+    [...data.items, ...(data.itemSuppliers || [])], categoryMap, supplierMap, client, batchSize
+  );
+
+  // Extra item→supplier links, grouped by item code. Sent as the item's `suppliers[]`
+  // so item.service.ts writes the junction (and enforces the Pro gate) for us — the API
+  // path never touches item_supplier directly.
+  //
+  // Limitation: createMany only runs for NEW item codes, so on this path extra suppliers
+  // can only be attached while the item is first created. Use --direct to add suppliers
+  // to an already-imported catalogue.
+  const extraSuppliersByItem = new Map();
+  for (const link of data.itemSuppliers || []) {
+    if (!link.itemCode || !link.supplierName) continue;
+    const key = link.itemCode.toString().toLowerCase();
+    if (!extraSuppliersByItem.has(key)) extraSuppliersByItem.set(key, []);
+    extraSuppliersByItem.get(key).push(link);
+  }
+  if (extraSuppliersByItem.size > 0) {
+    const orphaned = [...extraSuppliersByItem.keys()].filter(code => itemCodeMap.has(code));
+    if (orphaned.length > 0) {
+      console.log(chalk.yellow(
+        `\n  Warning: ${orphaned.length} item(s) with extra suppliers already exist — API mode cannot ` +
+        `update them. Re-run with --direct to attach those links.`
+      ));
+    }
+  }
 
   // 3. Import Items
   if (data.items.length > 0) {
@@ -275,7 +303,32 @@ export async function importViaApi(data, options) {
             const hasVariants = item.hasVariants === true || item.hasVariants === 'true' || item.hasVariants === 'TRUE';
             const trackStock = item.trackStock === undefined || item.trackStock === '' ? true : (item.trackStock === true || item.trackStock === 'true' || item.trackStock === 'TRUE');
 
+            // Only send `suppliers[]` when this item actually has extra links. Sending it
+            // for every item would be harmless but syncItemSuppliers treats the array as
+            // the complete desired set, so an accidental empty/partial array soft-deletes
+            // links — leaving it undefined means "not sent" and the server derives the
+            // preferred row from supplierId alone.
+            const extras = extraSuppliersByItem.get(item.itemCode.toString().toLowerCase()) || [];
+            const suppliers = extras.length === 0 ? undefined : [
+              { supplierId: supplier.id, isPreferred: true },
+              ...extras.reduce((acc, link) => {
+                const extra = supplierMap.get(link.supplierName.toString().toLowerCase());
+                // Skip a row naming the preferred supplier again — it would collide with
+                // the entry above and syncItemSuppliers de-dupes to the first anyway.
+                if (!extra || extra.id === supplier.id) return acc;
+                acc.push({
+                  supplierId: extra.id,
+                  isPreferred: false,
+                  supplierItemCode: link.supplierItemCode ? link.supplierItemCode.toString().trim() : null,
+                  cost: (link.cost !== undefined && link.cost !== '' && !isNaN(parseFloat(link.cost))) ? parseFloat(link.cost) : null,
+                  leadTimeDays: (link.leadTimeDays !== undefined && link.leadTimeDays !== '' && !isNaN(parseInt(link.leadTimeDays))) ? parseInt(link.leadTimeDays) : null,
+                });
+                return acc;
+              }, []),
+            ];
+
             return {
+              suppliers,
               itemName: item.itemName,
               itemCode: item.itemCode.toString(),
               itemType: item.itemType || '',

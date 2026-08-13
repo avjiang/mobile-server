@@ -128,6 +128,9 @@ function validateSuppliers(suppliers, result) {
 function validateItems(items, categoryNames, supplierNames, result) {
   const itemCodes = new Set();
   const itemsWithVariants = new Set();
+  // item code (lowercased) -> its preferred supplier name (lowercased). Used by
+  // validateItemSuppliers to spot rows that just repeat the preferred supplier.
+  const preferredSupplierByItem = new Map();
 
   items.forEach((item, index) => {
     const row = item._rowNumber || index + 2;
@@ -167,6 +170,12 @@ function validateItems(items, categoryNames, supplierNames, result) {
     } else if (!supplierNames.has(item.supplierName.toLowerCase())) {
       result.addWarning('Items', row, 'supplierName', item.supplierName, `Supplier "${item.supplierName}" not found in Suppliers sheet, will be created`);
     }
+    if (!isEmpty(item.itemCode) && !isEmpty(item.supplierName)) {
+      preferredSupplierByItem.set(
+        item.itemCode.toString().toLowerCase(),
+        item.supplierName.toString().toLowerCase()
+      );
+    }
 
     // Required: cost (must be a valid positive number)
     if (isEmpty(item.cost)) {
@@ -203,7 +212,71 @@ function validateItems(items, categoryNames, supplierNames, result) {
     }
   });
 
-  return { itemCodes, itemsWithVariants };
+  return { itemCodes, itemsWithVariants, preferredSupplierByItem };
+}
+
+/**
+ * Validate the extra item→supplier links (Item_Suppliers / "Pemasok Produk").
+ *
+ * Unlike the other sheets this one is entirely optional, and an unknown item code is
+ * only a WARNING: the sheet is also usable on its own to attach suppliers to items
+ * that already exist in the tenant DB but aren't in this file. Only the tenant DB can
+ * settle that, so validation (which is fully offline) can't turn it into an error.
+ */
+function validateItemSuppliers(itemSuppliers, itemCodes, supplierNames, preferredSupplierByItem, result) {
+  const pairs = new Set();
+
+  itemSuppliers.forEach((link, index) => {
+    const row = link._rowNumber || index + 2;
+
+    // Required: itemCode
+    if (isEmpty(link.itemCode)) {
+      result.addError('Item_Suppliers', row, 'itemCode', link.itemCode, 'Item code is required');
+    } else if (!itemCodes.has(link.itemCode.toString().toLowerCase())) {
+      result.addWarning('Item_Suppliers', row, 'itemCode', link.itemCode, `Item "${link.itemCode}" is not in the Items sheet — it must already exist in the tenant, or this row is skipped`);
+    }
+
+    // Required: supplierName
+    if (isEmpty(link.supplierName)) {
+      result.addError('Item_Suppliers', row, 'supplierName', link.supplierName, 'Supplier name is required');
+    } else if (!supplierNames.has(link.supplierName.toString().toLowerCase())) {
+      result.addWarning('Item_Suppliers', row, 'supplierName', link.supplierName, `Supplier "${link.supplierName}" not found in Suppliers sheet, will be created`);
+    }
+
+    if (isEmpty(link.itemCode) || isEmpty(link.supplierName)) return;
+
+    const itemKey = link.itemCode.toString().toLowerCase();
+    const supplierKey = link.supplierName.toString().toLowerCase();
+
+    // Duplicate (item, supplier) pair — the junction has a unique index on it.
+    const pairKey = `${itemKey} ${supplierKey}`;
+    if (pairs.has(pairKey)) {
+      result.addError('Item_Suppliers', row, 'supplierName', link.supplierName, `Duplicate row: "${link.supplierName}" is already listed for item "${link.itemCode}"`);
+    }
+    pairs.add(pairKey);
+
+    // Repeating the item's preferred supplier is harmless (the importer just refreshes
+    // that row's cost/code) but almost always a misunderstanding — warn, don't fail.
+    if (preferredSupplierByItem.get(itemKey) === supplierKey) {
+      result.addWarning('Item_Suppliers', row, 'supplierName', link.supplierName, `"${link.supplierName}" is already the main supplier for "${link.itemCode}" on the Items sheet — this row only updates its cost/code`);
+    }
+
+    // Optional numerics
+    if (!isEmpty(link.cost) && !isValidPositiveNumber(link.cost)) {
+      result.addError('Item_Suppliers', row, 'cost', link.cost, 'Cost must be a valid positive number');
+    }
+    if (!isEmpty(link.leadTimeDays)) {
+      if (!isValidPositiveNumber(link.leadTimeDays) || !Number.isInteger(Number(link.leadTimeDays))) {
+        result.addError('Item_Suppliers', row, 'leadTimeDays', link.leadTimeDays, 'Lead time must be a whole number of days');
+      }
+    }
+  });
+
+  // Multi-supplier is Pro-only. Validation is offline so the plan is unknown here —
+  // the importer enforces it for real (importer-direct.js `assertProPlan`).
+  if (itemSuppliers.length > 0) {
+    result.addWarning('Item_Suppliers', 1, 'plan', '', `${itemSuppliers.length} extra supplier link(s) found — multiple suppliers per item is a Pro feature; the import will be rejected for a Basic/Trial tenant`);
+  }
 }
 
 /**
@@ -333,8 +406,9 @@ export function validate(data) {
   // Validate each entity type and collect reference sets
   const categoryNames = validateCategories(data.categories, result);
   const supplierNames = validateSuppliers(data.suppliers, result);
-  const { itemCodes, itemsWithVariants } = validateItems(data.items, categoryNames, supplierNames, result);
+  const { itemCodes, itemsWithVariants, preferredSupplierByItem } = validateItems(data.items, categoryNames, supplierNames, result);
   validateVariants(data.variants, itemCodes, itemsWithVariants, result);
+  validateItemSuppliers(data.itemSuppliers || [], itemCodes, supplierNames, preferredSupplierByItem, result);
   validateCustomers(data.customers, result);
 
   return result;

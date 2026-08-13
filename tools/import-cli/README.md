@@ -40,7 +40,7 @@ is nothing for the tenant to forget to delete — no example data can leak into 
 import. `CONTOH_TERISI.xlsx` is the filled reference; **never import it**.
 
 ### Tenant-facing template (Indonesian tabs/headers)
-Tabs: `Kategori`, `Pemasok`, `Produk`, `Varian Produk`, `Pelanggan`. Headers are
+Tabs: `Kategori`, `Pemasok`, `Produk`, `Varian Produk`, `Pemasok Produk`, `Pelanggan`. Headers are
 Indonesian (`nama_produk`, `harga_beli`, `harga_jual`, `stok_awal`, `satuan`,
 `lacak_stok`, `stok_minimum`, `kena_pajak` = `Ya`/`Tidak`, …). The parser maps
 these back to the canonical fields (`src/parser.js` `SHEET_ALIASES` +
@@ -53,6 +53,43 @@ these back to the canonical fields (`src/parser.js` `SHEET_ALIASES` +
   (keeps FIFO costing truthful) — not a flat number.
 - `lacak_stok` (trackStock) and `stok_minimum` (per-outlet `reorderThreshold` on
   `StockBalance`) are honored.
+
+### Multiple suppliers per item (`Pemasok Produk` — Pro only)
+
+One product can be purchased from several suppliers (SPRINT_007). The split:
+
+- **`Produk.nama_pemasok` = the PREFERRED supplier.** Still required, unchanged, imported
+  with the item, and mirrored to both `item.SUPPLIER_ID` and the item's one
+  `IS_PREFERRED = 1` junction row. Keeping it here makes the one-preferred invariant
+  structural instead of something the sheet has to police — and every previously-filled
+  template still imports correctly, since a file with no `Pemasok Produk` tab simply
+  produces zero extra links.
+- **`Pemasok Produk` lists only the ADDITIONAL suppliers**, one row per (item, supplier):
+  `kode_produk`, `nama_pemasok` (both dropdowns), plus optional `kode_produk_pemasok`
+  (`supplierItemCode`), `harga_beli` (`ItemSupplier.cost` — the PO prefill price, NOT the
+  item's own cost) and `lead_time_hari` (`leadTimeDays`).
+
+**Pro gate.** `syncItemSuppliers` in `src/item/item.service.ts` gates the SECOND supplier
+on Pro, but `--direct` writes raw Prisma and never reaches that service. So the importer
+resolves the tenant's plan from the Global DB itself (`assertProPlanForExtraSuppliers`,
+mirroring `getTenantSubscriptionInfo` in `auth.service.ts`) and **aborts before any writes**
+if a non-Pro tenant's file has rows on this tab. The check runs before the `--dry-run`
+early return, so `--dry-run` catches it too. On the `--api` path the server enforces it.
+
+**This tab works on its own.** Extra links are imported in their own pass, resolved
+against the tenant's *existing* items — not only the ones in this file. So a file
+containing nothing but a filled `Pemasok Produk` tab is a valid "attach suppliers to the
+catalogue I already imported" run. Rows are upserted (a previously removed link is
+revived, an existing one has its cost/code/lead-time refreshed), and a row naming the
+item's own preferred supplier only refreshes that row — it never demotes it.
+
+Unknown item code or supplier → the row is skipped with a warning, not a hard failure.
+`validate` runs offline so it can only warn about an item code that isn't in the file;
+it cannot know what already exists in the tenant, nor what plan the tenant is on.
+
+> `--api` mode can only attach extra suppliers while an item is being **created** (it
+> sends them as the item's `suppliers[]`). To add suppliers to an already-imported
+> catalogue, use `--direct`.
 
 ### Barcode policy
 Leave `barcode` **blank** on import unless the tenant supplies real barcodes.

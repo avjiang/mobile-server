@@ -11,7 +11,7 @@ Ada **2 file**:
 | **`TEMPLATE_KOSONG.xlsx`** | ✅ Ini yang kamu **ISI** lalu kirim balik ke kami. |
 | **`CONTOH_TERISI.xlsx`** | 👀 Cuma **CONTOH**, buat lihat bentuk isian yang benar. Jangan dikirim. |
 
-Buka `TEMPLATE_KOSONG.xlsx` pakai **Excel** atau **WPS Office**. Di bagian bawah ada tab sheet: **Kategori, Pemasok, Produk, Varian Produk, Pelanggan**.
+Buka `TEMPLATE_KOSONG.xlsx` pakai **Excel** atau **WPS Office**. Di bagian bawah ada tab sheet: **Kategori, Pemasok, Produk, Varian Produk, Pemasok Produk, Pelanggan**.
 
 > 💡 **Saran:** pakai Excel atau WPS Office di HP/laptop. Kalau buka lewat Google Sheets, daftar pilihan (dropdown) kadang nggak muncul sempurna.
 
@@ -87,7 +87,35 @@ Kalau semua produkmu dijual per kemasan/ukuran terpisah (seperti contoh bahan ku
 
 ---
 
-## Langkah 5 — Sheet **Pelanggan** (opsional)
+## Langkah 5 — Sheet **Pemasok Produk** (opsional, khusus paket **Pro**)
+
+Isi **hanya** kalau ada produk yang kamu beli dari **lebih dari satu pemasok**.
+
+Pemasok **utama** setiap produk sudah kamu isi di kolom `nama_pemasok` pada sheet Produk —
+**jangan diulang di sini**. Sheet ini khusus untuk pemasok **tambahannya**.
+
+Setiap baris = **1 pasangan produk + pemasok tambahan**. Kalau satu produk punya 2 pemasok
+tambahan, buat **2 baris** dengan `kode_produk` yang sama.
+
+| Kolom | Wajib? | Isi |
+|---|---|---|
+| `kode_produk` | ✅ | pilih dari dropdown (kode produk di sheet Produk) |
+| `nama_pemasok` | ✅ | pilih dari dropdown (pemasok di sheet Pemasok) |
+| `kode_produk_pemasok` | — | kode barang versi pemasok itu (yang tertulis di nota mereka) |
+| `harga_beli` | — | harga beli **dari pemasok ini** (angka saja) |
+| `lead_time_hari` | — | perkiraan lama barang datang, dalam hari (angka bulat) |
+
+Contoh: *Tepung Terigu 1kg* utamanya dibeli dari **PT Bogasari Mitra** (diisi di sheet Produk),
+tapi kadang juga dari **CV Sumber Rejeki** → tulis 1 baris di sini untuk CV Sumber Rejeki saja.
+
+> ⚠️ Fitur **banyak pemasok per produk hanya tersedia di paket Pro**. Kalau tokomu masih di
+> paket Basic, kosongkan sheet ini (impor akan ditolak kalau ada isinya).
+
+Kalau setiap produk cuma punya 1 pemasok, **biarkan kosong** saja.
+
+---
+
+## Langkah 6 — Sheet **Pelanggan** (opsional)
 
 Kalau punya daftar pelanggan langganan, isi di sini (`nama_depan` & `nama_belakang` wajib). Kalau belum ada, lewati saja.
 

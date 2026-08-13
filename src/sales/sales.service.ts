@@ -1135,13 +1135,27 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
         } else {
             const lastSync = new Date(lastSyncTimestamp as string);
 
+            // Filter on `updatedAt` alone — NOT `createdAt OR updatedAt`.
+            //
+            // Prisma's @updatedAt sets the column on INSERT as well as UPDATE, so
+            // `createdAt` was always redundant. Verified on prod 2026-08-13 across
+            // all 15 tenant DBs: 0 rows with a null UPDATED_AT, 0 with
+            // UPDATED_AT < CREATED_AT.
+            //
+            // The `OR` is what blocked the index: MySQL cannot serve an OR across
+            // two columns from one index, so it fell back to `(OUTLET_ID)` and a
+            // filesort. Benchmarked on a 22,016-row copy — the OR form ignores
+            // `(OUTLET_ID, UPDATED_AT)` entirely (24.6ms, 10,844 rows examined,
+            // filesort); this form uses it (0.97ms, 324 rows, backward index scan,
+            // no sort). The index and this simplification only pay off together.
+            //
+            // ⚠️ House rule dependency: every raw-SQL `UPDATE` on `sales` must set
+            // `UPDATED_AT = NOW()`. A hand-patched row that skips it is now
+            // invisible to delta sync rather than merely mis-ordered.
             const where = {
                 outletId: parsedOutletId,
                 deleted: false,
-                OR: [
-                    { createdAt: { gte: lastSync } },
-                    { updatedAt: { gte: lastSync } }
-                ],
+                updatedAt: { gte: lastSync },
             };
 
             // Count total records

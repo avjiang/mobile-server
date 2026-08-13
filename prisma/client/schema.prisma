@@ -713,6 +713,8 @@ model Sales {
   @@index([businessDate])
   @@index([outletId])
   @@index([outletId, businessDate, status]) // Outlet report range filter (any account type) — covers outlet + date-range + status in one index
+  @@index([outletId, updatedAt]) // Delta sync: serves the outlet filter AND the ORDER BY UPDATED_AT in one index (was a filesort — `sales` was the only transaction table with no sync index)
+  @@index([outletId, collectedAt]) // Laundry pending-pickup: uncollected orders must all reach the device (the queue reads local-only), and that predicate was a full scan
   @@index([sessionId, completedSessionId])
   @@index([stockSourceType])
   @@index([stockSourceWarehouseId])

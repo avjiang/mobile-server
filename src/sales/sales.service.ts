@@ -1100,7 +1100,7 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
                 where: { outletId: parsedOutletId, deleted: false },
                 select: salesSyncSelect,
                 orderBy: { id: 'desc' },
-                take: Math.min(take, COLD_START_SALES_CAP),
+                take: COLD_START_SALES_CAP,
             });
 
             // ...plus every order still awaiting collection, however old. The laundry
@@ -1124,14 +1124,25 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
             const byId = new Map<number, typeof recentSales[number]>();
             for (const sale of recentSales) byId.set(sale.id, sale);
             for (const sale of uncollectedOrders) byId.set(sale.id, sale);
-            salesArray = Array.from(byId.values()).sort((a, b) => b.id - a.id);
+            const coldStartSet = Array.from(byId.values()).sort((a, b) => b.id - a.id);
 
-            // Report what we actually sent, so the client's pagination loop
-            // (`if (skip >= total) break`) terminates after this single page. A real
-            // COUNT here would scan the outlet's entire history to serve a capped
-            // page — measured at 17.9ms on prod, i.e. more than the query itself.
-            // `total` is only ever used to end that loop; it is never displayed.
-            total = salesArray.length;
+            // `total` is the size of the whole cold-start set, and the rows returned
+            // are a proper `skip`/`take` slice of it — so the client's pagination loop
+            // (`skip += take; if (skip >= total) break`) walks it exactly once with no
+            // repeats. Slicing in memory rather than re-querying is safe because the
+            // set is bounded by construction: at most COLD_START_SALES_CAP recent rows
+            // plus however much laundry is physically in the shop.
+            //
+            // Do NOT "optimise" this back to `total = salesArray.length` with `skip`
+            // ignored: for a retail tenant the set is exactly `take` so the loop ends
+            // after one request and the bug is invisible, but a laundry tenant with
+            // more than `take` uncollected orders would make the client request page
+            // after page and receive the identical full set each time.
+            //
+            // No COUNT(*) is issued either way — on prod that costs 17.9ms, more than
+            // the row fetch itself, to serve a deliberately capped page.
+            total = coldStartSet.length;
+            salesArray = coldStartSet.slice(skip, skip + take);
         } else {
             const lastSync = new Date(lastSyncTimestamp as string);
 

@@ -7,6 +7,46 @@ import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreatePurchaseOrderRequestBody, PurchaseOrderInput } from "./purchase-order.request";
 
+/**
+ * What a PO update should write to `downPaymentPercentage` in the main update statement.
+ *
+ *   undefined -> field absent from the request; leave the column untouched.
+ *   a number  -> set it.
+ *   null      -> ALSO leave untouched here. Clearing is handled separately by
+ *                `clearDownPaymentPercentageIfUnused`, which guards on the advance.
+ *
+ * Never throws: a stale client that blindly round-trips a null still saves its other
+ * edits instead of erroring out.
+ */
+function resolveDownPaymentPercentageUpdate(incoming: number | null | undefined): Decimal | undefined {
+    if (incoming === undefined || incoming === null) return undefined;
+    return new Decimal(incoming);
+}
+
+/**
+ * Clears `downPaymentPercentage`, but only on a PO with no outstanding advance.
+ *
+ * Clearing the rate while `downPaymentAmount > 0` strands the advance: every invoice then
+ * draws `min(0% x total, balance) = 0`, so money already paid to the supplier can never be
+ * applied. A FE-only guard shipped 2026-07-06 but the same tenant hit this again on
+ * 2026-08-15, so the rule lives server-side where no client build can bypass it.
+ *
+ * The `downPaymentAmount: 0` predicate is part of the WHERE, so the check and the write are
+ * one atomic statement — a concurrent `addDownPayment` cannot slip in between them (which a
+ * read-then-write guard would allow, and that race is precisely the bug being prevented).
+ * Returns the number of rows cleared: 0 means the guard refused.
+ */
+async function clearDownPaymentPercentageIfUnused(
+    tx: Prisma.TransactionClient,
+    purchaseOrderId: number
+): Promise<number> {
+    const { count } = await tx.purchaseOrder.updateMany({
+        where: { id: purchaseOrderId, downPaymentAmount: { lte: 0 } },
+        data: { downPaymentPercentage: null },
+    });
+    return count;
+}
+
 let getAll = async (
     databaseName: string,
     syncRequest: SyncRequest
@@ -962,12 +1002,17 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string) => 
                     isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
                     // DP draw rate is editable; DP amount/applied are NOT (they change only via the
                     // down-payment ledger + invoice draws, never on a plain PO edit).
-                    downPaymentPercentage: updateData.downPaymentPercentage !== undefined
-                        ? (updateData.downPaymentPercentage !== null ? new Decimal(updateData.downPaymentPercentage) : null)
-                        : undefined,
+                    // A null rate is NOT cleared here — see clearDownPaymentPercentageIfUnused below.
+                    downPaymentPercentage: resolveDownPaymentPercentageUpdate(updateData.downPaymentPercentage),
                     version: { increment: 1 }
                 }
             });
+
+            // An explicit null rate only clears when no advance is outstanding. Done as its
+            // own guarded statement so the check and the write are atomic (see the helper).
+            if (updateData.downPaymentPercentage === null) {
+                await clearDownPaymentPercentageIfUnused(tx, id);
+            }
 
             // Handle purchase order items if provided
             if (updateData.purchaseOrderItems && Array.isArray(updateData.purchaseOrderItems)) {
@@ -1269,7 +1314,18 @@ let editDownPayment = async (databaseName: string, purchaseOrderId: number, paym
             });
             return await tx.purchaseOrder.update({
                 where: { id: purchaseOrderId },
-                data: { downPaymentAmount: newTotal.toFixed(4), siteId: input.siteId ?? po.siteId, version: { increment: 1 } },
+                data: {
+                    downPaymentAmount: newTotal.toFixed(4),
+                    // Allow setting the draw rate here too. Without this, a PO that ended up
+                    // with an advance but no rate is unrepairable in-app: the rate field is
+                    // create-only on the PO form and add-only on the DP sheet, so the advance
+                    // would be stranded forever (it never draws against any invoice).
+                    ...(input.downPaymentPercentage !== undefined && input.downPaymentPercentage !== null
+                        ? { downPaymentPercentage: new Decimal(input.downPaymentPercentage) }
+                        : {}),
+                    siteId: input.siteId ?? po.siteId,
+                    version: { increment: 1 }
+                },
                 include: { downPayments: { where: { deleted: false }, orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }] } }
             });
         });
@@ -1335,4 +1391,8 @@ let deleteDownPayment = async (databaseName: string, purchaseOrderId: number, pa
     }
 }
 
-export = { getAll, getByDateRange, getById, createMany, cancel, update, deletePurchaseOrder, addDownPayment, editDownPayment, deleteDownPayment };
+export = {
+    getAll, getByDateRange, getById, createMany, cancel, update, deletePurchaseOrder,
+    addDownPayment, editDownPayment, deleteDownPayment,
+    __testables: { resolveDownPaymentPercentageUpdate, clearDownPaymentPercentageIfUnused },
+};

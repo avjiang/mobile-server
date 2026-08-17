@@ -8,6 +8,35 @@ import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request";
 import { Decimal } from 'decimal.js';
 import { restateSalesCostsForReceipts, ReceiptCostChange } from "../stock/sales-cost-restatement";
 
+/**
+ * How much of a PO's down-payment balance this invoice draws:
+ *   min(downPaymentPercentage% x invoiceTotal, downPaymentAmount - downPaymentApplied)
+ *
+ * Returns 0 when the PO has no draw rate. That is a real production failure mode,
+ * not a theoretical one: a PO can carry an advance with a null rate (see
+ * docs/modules/PROCUREMENT.md), in which case the advance is inert and the UI must
+ * warn rather than silently show nothing.
+ */
+type DownPaymentSource = {
+    downPaymentPercentage: Prisma.Decimal | number | string | null;
+    downPaymentAmount: Prisma.Decimal | number | string | null;
+    downPaymentApplied: Prisma.Decimal | number | string | null;
+} | null;
+
+function calcDownPaymentDraw(po: DownPaymentSource, invoiceTotal: number | string | null | undefined): Decimal {
+    if (!po || !po.downPaymentPercentage) return new Decimal(0);
+    const rate = new Decimal(po.downPaymentPercentage.toString());
+    if (rate.lessThanOrEqualTo(0)) return new Decimal(0);
+
+    const balance = new Decimal((po.downPaymentAmount ?? 0).toString())
+        .minus(new Decimal((po.downPaymentApplied ?? 0).toString()));
+    if (balance.lessThanOrEqualTo(0)) return new Decimal(0);
+
+    const byRate = new Decimal((invoiceTotal ?? 0).toString()).times(rate).dividedBy(100);
+    if (byRate.lessThanOrEqualTo(0)) return new Decimal(0);
+    return Decimal.min(byRate, balance);
+}
+
 
 
 // Variant-aware match key: receipts/items for different variants of the same item
@@ -1046,14 +1075,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                         where: { id: invoiceData.purchaseOrderId, deleted: false },
                         select: { downPaymentPercentage: true, downPaymentAmount: true, downPaymentApplied: true }
                     });
-                    if (po && po.downPaymentPercentage) {
-                        const balance = new Decimal(po.downPaymentAmount || 0).minus(new Decimal(po.downPaymentApplied || 0));
-                        if (balance.greaterThan(0)) {
-                            const byRate = new Decimal(invoiceData.totalAmount || 0)
-                                .times(new Decimal(po.downPaymentPercentage)).dividedBy(100);
-                            downPaymentApplied = Decimal.min(byRate, balance);
-                        }
-                    }
+                    downPaymentApplied = calcDownPaymentDraw(po, invoiceData.totalAmount);
                 }
 
                 const newInvoice = await tx.invoice.create({
@@ -1624,4 +1646,7 @@ let deleteInvoice = async (id: number, databaseName: string): Promise<string> =>
     }
 }
 
-export = { getAll, getById, getByDateRange, getCompleted, createMany, update, deleteInvoice };
+export = {
+    getAll, getById, getByDateRange, getCompleted, createMany, update, deleteInvoice,
+    __testables: { calcDownPaymentDraw },
+};

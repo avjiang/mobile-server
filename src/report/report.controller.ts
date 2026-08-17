@@ -6,6 +6,8 @@ import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
+import { requirePermission } from "../middleware/require-permission.middleware"
+import { PERMISSION } from "../permission/permission-names"
 
 const router = express.Router()
 
@@ -85,6 +87,10 @@ let generateLaundryReport = (req: AuthRequest, res: Response, next: NextFunction
 
 // routes
 router.get('/generate', generateReport)
-router.get('/generateOutletReport', generateOutletReport)
+// Mirrors the frontend gate on the Function screen's "Reports" section
+// (AppPermission.viewFinancialReports). Without this the FE gate only hid the
+// button — any authenticated user of the tenant could call the endpoint and
+// read outlet financials directly.
+router.get('/generateOutletReport', requirePermission(PERMISSION.VIEW_FINANCIAL_REPORTS), generateOutletReport)
 router.get('/generateLaundryReport', generateLaundryReport)
 export = router

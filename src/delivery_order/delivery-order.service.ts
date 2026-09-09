@@ -277,6 +277,14 @@ let getById = async (id: number, databaseName: string) => {
                         remark: true,
                         currency: true,
                         supplierId: true,
+                        // PO down-payment credit. The invoice form derives the "Down Payment
+                        // Applied / Net Payable" preview from these three fields; omitting them
+                        // makes the rate read null and the balance compute to 0, so the rows —
+                        // and even the missing-rate warning — silently disappear when the
+                        // invoice is created from the delivery order instead of the PO.
+                        downPaymentPercentage: true,
+                        downPaymentAmount: true,
+                        downPaymentApplied: true,
                         purchaseOrderItems: {
                             where: { deleted: false },
                             select: {
@@ -309,6 +317,10 @@ let getById = async (id: number, databaseName: string) => {
                         discountType: true,
                         discountAmount: true,
                         totalAmount: true,
+                        // Confirmed DP credit drawn by this invoice — without it a saved
+                        // invoice reads back as downPaymentApplied = 0 and the credit stays
+                        // invisible on the delivery-order screen.
+                        downPaymentApplied: true,
                         currency: true,
                         status: true,
                         remark: true,
@@ -1613,6 +1625,11 @@ let getUnInvoicedDeliveryOrders = async (
                             updatedAt: true,
                             version: true,
                             isTaxInclusive: true,
+                            // Same DP credit fields as getById — the invoice form can also be
+                            // fed by delivery orders picked from this endpoint.
+                            downPaymentPercentage: true,
+                            downPaymentAmount: true,
+                            downPaymentApplied: true,
                             purchaseOrderItems: {
                                 where: { deleted: false },
                                 select: {

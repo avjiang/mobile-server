@@ -180,6 +180,7 @@ export async function disconnectAllPrismaClients(): Promise<void> {
 export async function updateAllTenantDatabases(): Promise<void> {
   const globalPrisma = getGlobalPrisma();
   const customers = await globalPrisma.tenant.findMany();
+  const failed: string[] = []; // summarised at the end; any entry → throw (non-zero exit)
 
   const globalUrl = process.env.GLOBAL_DB_URL!;
   console.log(`Applying migrations to global database...`);
@@ -190,6 +191,7 @@ export async function updateAllTenantDatabases(): Promise<void> {
     console.log(`Successfully updated global database`);
   } catch (error) {
     console.error(`Failed to update global database: ${(error as Error).message}`);
+    failed.push('global');
   }
 
   for (const customer of customers) {
@@ -206,7 +208,12 @@ export async function updateAllTenantDatabases(): Promise<void> {
       console.log(`Successfully updated ${customer.databaseName}`);
     } catch (error) {
       console.error(`Failed to update ${customer.databaseName}: ${(error as Error).message}`);
+      failed.push(customer.databaseName);
     }
   }
   console.log('All tenant databases updated.');
+  if (failed.length) {
+    console.error(`\nMIGRATION FAILED for ${failed.length} database(s):\n  - ${failed.join('\n  - ')}`);
+    throw new Error(`Migration failed for ${failed.length} database(s): ${failed.join(', ')}`);
+  }
 }

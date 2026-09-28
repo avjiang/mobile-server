@@ -69,7 +69,8 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                 planType: decodedToken.user?.planType,
                 databaseName: tenantUser?.tenant?.databaseName || '',
                 globalOutletId,
-                loyaltyTier
+                loyaltyTier,
+                allowedOutletIds: decodedToken.user?.allowedOutletIds
             }
             return response
         } catch (error) {
@@ -136,7 +137,8 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             planType: decodedToken.user?.planType,
             databaseName: tenantUser.tenant?.databaseName || '',
             globalOutletId,
-            loyaltyTier
+            loyaltyTier,
+            allowedOutletIds: decodedToken.user?.allowedOutletIds
         }
         return response
     }
@@ -293,7 +295,7 @@ let getTenantSubscriptionInfo = async (tenantId: number): Promise<TenantSubscrip
     }
 }
 
-let getNotificationTopics = async (tenantId: number, userId: number, db: string) => {
+let getNotificationTopics = async (tenantId: number, userId: number, db: string, allowedOutletIds: number[]) => {
     try {
         // Generate notification topics regardless of plan
         // Frontend will control whether to use them based on plan from JWT
@@ -387,6 +389,22 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
         // Add tenant-wide topic (for system-level notifications)
         topics.push(`tenant_${tenantId}`);
 
+        // H4: if the user has no outlet assignments yet (user_outlet seed not
+        // landed, or a pre-multi-outlet token), fall back to the tenant's primary
+        // outlet so outlet-scoped notifications (sales/inventory/order) still reach
+        // them instead of silently going nowhere. Safe while every tenant is
+        // single-outlet; revisit for genuine multi-outlet (see OUTLET_MERGE_AUDIT.md).
+        let effectiveOutletIds = allowedOutletIds;
+        if (!effectiveOutletIds || effectiveOutletIds.length === 0) {
+            const fallbackPrisma = getTenantPrisma(db);
+            const primaryOutlet = await fallbackPrisma.outlet.findFirst({
+                where: { deleted: false },
+                orderBy: { id: 'asc' },
+                select: { id: true },
+            });
+            if (primaryOutlet) effectiveOutletIds = [primaryOutlet.id];
+        }
+
         // Add permission-based topics
         notificationPermissions.forEach(permission => {
             // Convert permission name to topic: "Receive Sales Notification" -> "sales"
@@ -398,9 +416,13 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string)
 
             // Check if this permission is outlet-specific
             if (outletSpecificPermissions.includes(shortPermission)) {
-                // Add outlet-specific topic (default to outlet_1)
-                // TODO: In future, detect user's actual outlet from session/context
-                topics.push(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+                // Add one outlet-specific topic per effective outlet (allowed
+                // outlets, or the primary-outlet fallback resolved above).
+                if (effectiveOutletIds && effectiveOutletIds.length > 0) {
+                    effectiveOutletIds.forEach(outletId => {
+                        topics.push(`tenant_${tenantId}_outlet_${outletId}_${shortPermission}`);
+                    });
+                }
             } else {
                 // Add tenant-wide topic for financial, staff, system alerts
                 topics.push(`tenant_${tenantId}_${shortPermission}`);
@@ -450,6 +472,8 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
 
     let loyaltyTier: 'none' | 'basic' | 'advanced' = 'none';
 
+    let allowedOutletIds: number[] = [];
+
     if (tenantUser.username !== "avjiang") {
         const subscriptionInfo = await getTenantSubscriptionInfo(tenantUser.tenantId);
         planName = subscriptionInfo.planName;
@@ -457,8 +481,16 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         globalOutletId = subscriptionInfo.globalOutletId;
         loyaltyTier = subscriptionInfo.loyaltyTier;
 
+        const tenantPrisma = getTenantPrisma(db);
+        const userOutlets = await tenantPrisma.userOutlet.findMany({
+            where: { userId: user.id, deleted: false },
+            select: { outletId: true }
+        });
+        allowedOutletIds = userOutlets.map((uo: any) => uo.outletId);
+        await tenantPrisma.$disconnect();
+
         if (planName === "Pro") {
-            notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db);
+            notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db, allowedOutletIds);
         }
     }
 
@@ -476,6 +508,7 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         planName,
         planType,
         loyaltyTier,
+        allowedOutletIds,
         permissions,
     }
     const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });

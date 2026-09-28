@@ -177,7 +177,7 @@ async function main() {
         await runCase(
             prisma,
             "RETURN",
-            (id) => service.returnSales(TENANT_DB, 1, performedBy, id, null),
+            (id) => service.returnSales(TENANT_DB, 1, performedBy, id, outletId, null),
             item.id,
             outletId,
             "Sales Return"
@@ -185,7 +185,7 @@ async function main() {
         await runCase(
             prisma,
             "VOID",
-            (id) => service.voidSales(TENANT_DB, 1, performedBy, id, null),
+            (id) => service.voidSales(TENANT_DB, 1, performedBy, id, outletId, null),
             item.id,
             outletId,
             "Sales Void"
@@ -193,7 +193,7 @@ async function main() {
         await runCase(
             prisma,
             "REFUND",
-            (id) => service.refundSales(TENANT_DB, 1, performedBy, id, null),
+            (id) => service.refundSales(TENANT_DB, 1, performedBy, id, outletId, null),
             item.id,
             outletId,
             "Sales Refund"

@@ -8389,6 +8389,95 @@
 							"body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": 1,\n            \"tenantOutletId\": 1,\n            \"outletName\": \"Main Outlet\",\n            \"street\": \"123 Main Street\",\n            \"city\": \"\",\n            \"state\": \"\",\n            \"postalCode\": \"\",\n            \"country\": \"\",\n            \"outletTel\": \"123-456-7890\",\n            \"outletEmail\": \"\",\n            \"deleted\": false,\n            \"deletedAt\": null,\n            \"createdAt\": \"2025-06-11T05:30:55.287Z\",\n            \"updatedAt\": \"2025-06-11T05:30:55.287Z\",\n            \"version\": 1\n        }\n    ]\n}"
 						}
 					]
+				},
+				{
+					"name": "Create Outlet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"outletName\": \"New Branch\",\n    \"planName\": \"Basic\",\n    \"planType\": \"Retail\",\n    \"city\": \"Jakarta\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{basedUrl}}/outlet",
+							"host": [
+								"{{basedUrl}}"
+							],
+							"path": [
+								"outlet"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Outlet",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"outletName\": \"Updated Branch\",\n    \"city\": \"Bandung\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{basedUrl}}/outlet/1",
+							"host": [
+								"{{basedUrl}}"
+							],
+							"path": [
+								"outlet",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Outlet",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{basedUrl}}/outlet/1",
+							"host": [
+								"{{basedUrl}}"
+							],
+							"path": [
+								"outlet",
+								"1"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

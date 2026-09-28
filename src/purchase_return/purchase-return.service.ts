@@ -140,13 +140,15 @@ let getAll = async (
     }
 };
 
-let getById = async (id: number, databaseName: string) => {
+let getById = async (id: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const purchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const purchaseReturn = await tenantPrisma.purchaseReturn.findFirst({
             where: {
                 id: id,
-                deleted: false
+                deleted: false,
+                outletId: outletId
             },
             include: {
                 purchaseReturnItems: {
@@ -1065,7 +1067,7 @@ const reverseStockOperationsForCancellation = async (
     }
 };
 
-let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) => {
+let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = purchaseReturn;
@@ -1078,8 +1080,8 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
             throw new RequestValidateError('Use the cancel endpoint to cancel a purchase return');
         }
 
-        const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
-            where: { id: id, deleted: false },
+        const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findFirst({
+            where: { id: id, outletId: outletId, deleted: false },
             select: {
                 id: true,
                 returnNumber: true,
@@ -1191,11 +1193,11 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string) =
     }
 }
 
-let deletePurchaseReturn = async (id: number, databaseName: string, performedBy?: string): Promise<string> => {
+let deletePurchaseReturn = async (id: number, databaseName: string, outletId: number, performedBy?: string): Promise<string> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
-            where: { id: id, deleted: false },
+        const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findFirst({
+            where: { id: id, outletId: outletId, deleted: false },
             include: {
                 purchaseReturnItems: {
                     where: { deleted: false }
@@ -1261,11 +1263,12 @@ let deletePurchaseReturn = async (id: number, databaseName: string, performedBy?
     }
 }
 
-let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseName: string) => {
+let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findUnique({
-            where: { id: id, deleted: false },
+        // Scope by outletId so cross-outlet cancellations surface as 404.
+        const existingPurchaseReturn = await tenantPrisma.purchaseReturn.findFirst({
+            where: { id: id, outletId: outletId, deleted: false },
             select: {
                 id: true,
                 returnNumber: true,

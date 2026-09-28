@@ -11,12 +11,38 @@ const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('
 const prisma: PrismaClient = getGlobalPrisma()
 
 let getAccountDetails = async (syncRequest: AccountRequest) => {
-    const { outletId, tenantId } = syncRequest;
+    const { outletId, tenantId, databaseName } = syncRequest;
 
     try {
+        // Resolve the request `outletId` to a **global** `tenant_outlet.id`, which
+        // is what the subscription data in the global DB is keyed by.
+        //
+        // Backward-compat (BE-3): the CURRENT app sends a **tenant-local**
+        // `outlet.id`, which we resolve to global via the outlet's
+        // `tenantOutletId` FK. The **released** app sends the **global**
+        // `tenant_outlet.id` directly. So: try to resolve it as a tenant-local
+        // outlet first; if there's no such local outlet, treat the id as already
+        // global. Either way the `outlet.tenant.id !== tenantId` ownership check
+        // below is authoritative, so a stray/foreign id can't leak another
+        // tenant's billing. (Do NOT $disconnect the tenant client here — it is a
+        // shared cached client; disconnecting it breaks concurrent requests.)
+        let globalOutletId: number | undefined = outletId;
+        if (outletId !== undefined && databaseName) {
+            const tenantPrisma = getTenantPrisma(databaseName);
+            const localOutlet = await tenantPrisma.outlet.findUnique({
+                where: { id: outletId },
+                select: { tenantOutletId: true },
+            });
+            if (localOutlet) {
+                globalOutletId = localOutlet.tenantOutletId;
+            }
+            // else: no tenant-local outlet with this id → assume it's already a
+            // global tenant_outlet.id (released-app id-space).
+        }
+
         // Fetch outlet from global DB
         const outlet = await prisma.tenantOutlet.findUnique({
-            where: { id: outletId },
+            where: { id: globalOutletId },
             include: {
                 tenant: { select: { id: true } },
                 subscriptions: {

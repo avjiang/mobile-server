@@ -66,8 +66,9 @@ async function freshDO(prisma: any, startQty: number) {
     return { deliveryOrder, itemId: item.itemId, outletId: deliveryOrder.outletId, received: Number(item.receivedQuantity) };
 }
 
-const cancel = (id: number) =>
-    doService.update({ id, status: "CANCELLED", performedBy: "smoke" }, TENANT_DB);
+// Multi-outlet: update() is outlet-scoped — pass the DO's own outlet.
+const cancel = (id: number, outletId: number) =>
+    doService.update({ id, status: "CANCELLED", performedBy: "smoke" }, TENANT_DB, outletId);
 
 async function main() {
     console.log(`Target tenant DB: ${TENANT_DB} (LOCAL)`);
@@ -78,7 +79,7 @@ async function main() {
         const START = 10;
         const { deliveryOrder, itemId, outletId, received } = await freshDO(prisma, START);
         console.log(`\nDO #${deliveryOrder.id} received ${received}, stock set to ${START}`);
-        await cancel(deliveryOrder.id);
+        await cancel(deliveryOrder.id, outletId);
         const after = await onHand(prisma, itemId, outletId);
         check(
             `cancel removes exactly the received qty (${START} → ${START - received})`,
@@ -92,7 +93,7 @@ async function main() {
         const START = 1; // less than received → naive subtraction would go negative
         const { deliveryOrder, itemId, outletId, received } = await freshDO(prisma, START);
         console.log(`\nDO #${deliveryOrder.id} received ${received}, stock set to ${START} (under-stocked)`);
-        await cancel(deliveryOrder.id);
+        await cancel(deliveryOrder.id, outletId);
         const after = await onHand(prisma, itemId, outletId);
         check(`clamp floors at 0 instead of going negative`, after === 0, `(got ${after})`);
     }
@@ -104,7 +105,7 @@ async function main() {
         const balanceId = (await prisma.stockBalance.findFirst({ where: { itemId, outletId } })).id;
         console.log(`\nDO #${deliveryOrder.id} received ${received}, stock ${START} — cancel racing a sale of 1`);
         await Promise.all([
-            cancel(deliveryOrder.id),
+            cancel(deliveryOrder.id, outletId),
             prisma.stockBalance.update({
                 where: { id: balanceId },
                 data: { availableQuantity: { decrement: 1 }, onHandQuantity: { decrement: 1 } },
@@ -126,7 +127,7 @@ async function main() {
         const START = 10;
         const { deliveryOrder, itemId, outletId, received } = await freshDO(prisma, START);
         console.log(`\nDO #${deliveryOrder.id} received ${received}, stock ${START} — two concurrent cancels`);
-        await Promise.allSettled([cancel(deliveryOrder.id), cancel(deliveryOrder.id)]);
+        await Promise.allSettled([cancel(deliveryOrder.id, outletId), cancel(deliveryOrder.id, outletId)]);
         const after = await onHand(prisma, itemId, outletId);
         check(
             `concurrent cancels reverse stock once (${START} → ${START - received})`,

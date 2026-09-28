@@ -4,6 +4,7 @@ import service from "./invoice_settlement.service"
 import { Invoice, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
+import { validateDocumentNumber } from "../helpers/documentHelper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
@@ -19,6 +20,13 @@ const createSettlement = (req: NetworkRequest<CreateInvoiceSettlementRequestBody
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
+    if (requestBody.settlements && requestBody.settlements.length > 0) {
+        // InvoiceSettlement is not outlet-scoped on the BE schema, so we only
+        // validate document number format (no outletId cross-check).
+        requestBody.settlements.forEach((s: InvoiceSettlementInput) => {
+            validateDocumentNumber(s.settlementNumber);
+        });
+    }
     service.createSettlement(req.user.databaseName, requestBody)
         .then((response) => {
             sendResponse(res, response)
@@ -122,6 +130,9 @@ const updateSettlement = (req: NetworkRequest<InvoiceSettlementInput>, res: Resp
     }
     if (!settlement.id) {
         throw new RequestValidateError('Update failed: [id] not found')
+    }
+    if (settlement.settlementNumber) {
+        validateDocumentNumber(settlement.settlementNumber);
     }
     service.updateSettlement(settlement, req.user.databaseName)
         .then((updatedSettlement: any) => sendResponse(res, updatedSettlement))

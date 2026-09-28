@@ -191,6 +191,21 @@ let createTenant = async (body: CreateTenantRequest) => {
                 }
             })
 
+            // Multi-outlet: assign the owner to the outlet just created. Without this
+            // row `auth.service.getUserInfo` resolves `allowedOutletIds` to [] (it reads
+            // user_outlet), so every outlet-scoped authz check takes the empty-allow-list
+            // fall-through in requireOutletAccess instead of actually authorizing, and
+            // the JWT carries no outlet context. Migration 20260702_multi_outlet_fks_and_
+            // user_outlet only backfilled users that existed WHEN IT RAN — tenants created
+            // afterwards must write the row here or they are silently unassigned.
+            await tenantPrisma.userOutlet.create({
+                data: {
+                    userId: newUser.id,
+                    outletId: newOutlet.id,
+                    isPrimary: true,
+                }
+            })
+
             // Create warehouse for Pro plan users
             let createdWarehouse = null;
             if (tenant.plan === 'Pro') {
@@ -665,6 +680,25 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
             select: { id: true },
         });
         createdTenantDbUserId = createdUser.id;
+
+        // Multi-outlet: assign the new user to the tenant's primary (lowest-id live)
+        // outlet. Without a user_outlet row `allowedOutletIds` resolves to [] and
+        // `outlet.service.getOutletSync` filters on `id IN ()` — returning ZERO outlets,
+        // which the app reports as "No outlet access — contact your administrator" and
+        // refuses to complete login. Roles are still assigned separately afterwards;
+        // this only establishes outlet access. Idempotent via the composite PK.
+        const primaryOutlet = await tenantPrisma.outlet.findFirst({
+            where: { deleted: false },
+            orderBy: { id: 'asc' },
+            select: { id: true },
+        });
+        if (primaryOutlet) {
+            await tenantPrisma.userOutlet.upsert({
+                where: { userId_outletId: { userId: createdUser.id, outletId: primaryOutlet.id } },
+                update: {},
+                create: { userId: createdUser.id, outletId: primaryOutlet.id, isPrimary: true },
+            });
+        }
 
         // --- Begin: Tenant add-on logic for user overage ---
         // HYBRID MODEL: User limits are calculated as sum of all outlet subscriptions
@@ -2373,7 +2407,9 @@ const getUpcomingPayments = async (options: {
 };
 
 /**
- * Get all users for a tenant
+ * Get all users for a tenant. Also returns `outletCount` per user (the number
+ * of non-deleted UserOutlet rows in the tenant DB) so the admin portal can
+ * surface assignment state without a per-row fetch.
  */
 const getTenantUsers = async (tenantId: number, includeDeleted: boolean = false): Promise<TenantUsersResponse> => {
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
@@ -2392,12 +2428,49 @@ const getTenantUsers = async (tenantId: number, includeDeleted: boolean = false)
         orderBy: { id: 'asc' }
     });
 
+    // Resolve per-user outlet counts from the tenant DB. The two id-spaces
+    // are joined via `username` (the only field shared across both DBs).
+    let countByUsername = new Map<string, number>();
+    if (tenant.databaseName && users.length > 0) {
+        const tenantPrisma = getTenantPrisma(tenant.databaseName);
+        try {
+            const dbUsers = await tenantPrisma.user.findMany({
+                where: { deleted: false },
+                select: { id: true, username: true },
+            });
+            const userIds = dbUsers.map((u: any) => u.id);
+            if (userIds.length > 0) {
+                const counts = await tenantPrisma.userOutlet.groupBy({
+                    by: ['userId'],
+                    where: { userId: { in: userIds }, deleted: false },
+                    _count: { outletId: true },
+                });
+                const usernameById = new Map<number, string>(
+                    dbUsers.map((u: any) => [u.id, u.username]),
+                );
+                countByUsername = new Map(
+                    counts.map((c: any) => [
+                        usernameById.get(c.userId) ?? '',
+                        c._count.outletId,
+                    ]),
+                );
+            }
+        } finally {
+            await tenantPrisma.$disconnect();
+        }
+    }
+
+    const enriched = users.map((u: any) => ({
+        ...u,
+        outletCount: countByUsername.get(u.username) ?? 0,
+    }));
+
     return {
         tenantId,
         tenantName: tenant.tenantName,
-        users,
-        total: users.length,
-        activeCount: users.filter(u => !u.isDeleted).length
+        users: enriched as any,
+        total: enriched.length,
+        activeCount: enriched.filter((u: any) => !u.isDeleted).length
     };
 };
 
@@ -2634,6 +2707,369 @@ const removeAdvancedLoyalty = async (tenantId: number) => {
     };
 };
 
+/**
+ * Create a new outlet for a tenant, including its global record and subscription.
+ */
+let createOutletForTenant = async (
+    tenantId: number,
+    data: {
+        outletName: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
+        outletTel?: string;
+        outletEmail?: string;
+    }
+) => {
+    // 1. Get tenant database name
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+
+    if (!tenant || !tenant.databaseName) {
+        throw new NotFoundError('Tenant not found');
+    }
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+
+    // 2. Get existing subscription to determine the plan
+    const { primarySubscription } = await getPrimarySubscription(tenantId);
+    const subscriptionPlanId = primarySubscription.subscriptionPlanId;
+
+    return await prisma.$transaction(async (globalTx) => {
+        return await tenantPrisma.$transaction(async (tenantTx: any) => {
+            // 3. Create global record
+            const globalOutlet = await globalTx.tenantOutlet.create({
+                data: {
+                    tenantId,
+                    outletName: data.outletName,
+                    address: `${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || null,
+                    isActive: true,
+                }
+            });
+
+            // 4. Create subscription for the new outlet
+            const now = new Date();
+            const nextPaymentDate = new Date(now);
+            nextPaymentDate.setDate(now.getDate() + 30);
+            const subscriptionValidUntil = new Date(nextPaymentDate);
+
+            await globalTx.tenantSubscription.create({
+                data: {
+                    tenantId,
+                    outletId: globalOutlet.id,
+                    subscriptionPlanId,
+                    status: 'Active',
+                    nextPaymentDate,
+                    subscriptionValidUntil,
+                }
+            });
+
+            // 5. Create operational outlet in tenant DB
+            const outlet = await tenantTx.outlet.create({
+                data: {
+                    tenantOutletId: globalOutlet.id,
+                    outletName: data.outletName,
+                    street: data.street || '',
+                    city: data.city || '',
+                    state: data.state || '',
+                    postalCode: data.postalCode || '',
+                    country: data.country || '',
+                    outletTel: data.outletTel || '',
+                    outletEmail: data.outletEmail || '',
+                    deleted: false,
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Outlet created successfully',
+                outlet: {
+                    ...outlet,
+                    globalOutletId: globalOutlet.id
+                }
+            };
+        });
+    });
+};
+
+/**
+ * Update an existing outlet in both global and tenant databases.
+ */
+let updateOutletForTenant = async (
+    tenantId: number,
+    outletId: number,
+    data: {
+        outletName?: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
+        outletTel?: string;
+        outletEmail?: string;
+    }
+) => {
+    // 1. Validate outlet exists and belongs to tenant
+    const globalOutlet = await prisma.tenantOutlet.findFirst({
+        where: { id: outletId, tenantId }
+    });
+
+    if (!globalOutlet) {
+        throw new NotFoundError('Outlet not found for this tenant');
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant!.databaseName!);
+
+    return await prisma.$transaction(async (globalTx) => {
+        return await tenantPrisma.$transaction(async (tenantTx: any) => {
+            // 2. Update global record if name or address changed
+            if (data.outletName || data.street || data.city || data.state || data.postalCode) {
+                await globalTx.tenantOutlet.update({
+                    where: { id: outletId },
+                    data: {
+                        outletName: data.outletName,
+                        address: data.outletName ? (`${data.street || ''}, ${data.city || ''}, ${data.state || ''} ${data.postalCode || ''}`.trim() || undefined) : undefined
+                    }
+                });
+            }
+
+            // 3. Update tenant DB record
+            const updatedOutlet = await tenantTx.outlet.updateMany({
+                where: { tenantOutletId: outletId },
+                data: {
+                    ...data,
+                    version: { increment: 1 }
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Outlet updated successfully'
+            };
+        });
+    });
+};
+
+/**
+ * Soft-delete an outlet and deactivate its subscription.
+ */
+let deleteOutletForTenant = async (tenantId: number, outletId: number) => {
+    // 1. Safety check: prevent deleting the last active outlet
+    const activeOutlets = await prisma.tenantOutlet.count({
+        where: { tenantId, isActive: true }
+    });
+
+    if (activeOutlets <= 1) {
+        throw new RequestValidateError('Cannot delete the last active outlet');
+    }
+
+    // 2. Get tenant database
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant!.databaseName!);
+
+    return await prisma.$transaction(async (globalTx) => {
+        return await tenantPrisma.$transaction(async (tenantTx: any) => {
+            // 3. Deactivate global records
+            await globalTx.tenantOutlet.update({
+                where: { id: outletId },
+                data: { isActive: false }
+            });
+
+            await globalTx.tenantSubscription.updateMany({
+                where: { outletId, status: { in: ['Active', 'active', 'trial'] } },
+                data: { status: 'expired' }
+            });
+
+            // 4. Soft-delete in tenant DB
+            await tenantTx.outlet.updateMany({
+                where: { tenantOutletId: outletId },
+                data: {
+                    deleted: true,
+                    deletedAt: new Date()
+                }
+            });
+
+            return {
+                success: true,
+                message: 'Outlet soft-deleted successfully'
+            };
+        });
+    });
+};
+
+// The admin portal passes the global TenantUser.id and global TenantOutlet.id,
+// but the UserOutlet junction table lives in the tenant DB and references
+// tenant-DB user.id / outlet.id. These helpers resolve the global IDs to their
+// tenant-DB counterparts (users via username, outlets via outlet.tenantOutletId).
+const resolveTenantDbUserId = async (
+    tenantPrisma: TenantPrismaClient,
+    tenantId: number,
+    globalUserId: number,
+): Promise<number> => {
+    const globalUser = await prisma.tenantUser.findUnique({
+        where: { id: globalUserId },
+        select: { username: true, tenantId: true },
+    });
+    if (!globalUser || globalUser.tenantId !== tenantId) {
+        throw new NotFoundError('User not found');
+    }
+    const dbUser = await tenantPrisma.user.findUnique({
+        where: { username: globalUser.username },
+        select: { id: true },
+    });
+    if (!dbUser) throw new NotFoundError('User not found in tenant database');
+    return dbUser.id;
+};
+
+const resolveTenantDbOutletId = async (
+    tenantPrisma: TenantPrismaClient,
+    globalOutletId: number,
+): Promise<number> => {
+    const dbOutlet = await tenantPrisma.outlet.findFirst({
+        where: { tenantOutletId: globalOutletId, deleted: false },
+        select: { id: true },
+    });
+    if (!dbOutlet) throw new NotFoundError(`Outlet ${globalOutletId} not found in tenant database`);
+    return dbOutlet.id;
+};
+
+let getUserOutlets = async (tenantId: number, globalUserId: number) => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+    if (!tenant?.databaseName) throw new NotFoundError('Tenant not found');
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+    try {
+        const dbUserId = await resolveTenantDbUserId(tenantPrisma, tenantId, globalUserId);
+        const rows = await tenantPrisma.userOutlet.findMany({
+            where: { userId: dbUserId, deleted: false },
+            include: { outlet: true },
+        });
+        // Echo back the global outlet id so the admin portal can match against
+        // the outletId it shows in tenant detail (which is TenantOutlet.id).
+        return rows.map((r: any) => ({
+            ...r,
+            outlet: r.outlet
+                ? { ...r.outlet, globalOutletId: r.outlet.tenantOutletId }
+                : r.outlet,
+        }));
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
+let assignUserOutlets = async (tenantId: number, globalUserId: number, globalOutletIds: number[]) => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+    if (!tenant?.databaseName) throw new NotFoundError('Tenant not found');
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+    try {
+        const dbUserId = await resolveTenantDbUserId(tenantPrisma, tenantId, globalUserId);
+        const dbOutletIds = await Promise.all(
+            globalOutletIds.map((oid) => resolveTenantDbOutletId(tenantPrisma, oid))
+        );
+        const results = await tenantPrisma.$transaction(
+            dbOutletIds.map((outletId) =>
+                tenantPrisma.userOutlet.upsert({
+                    where: { userId_outletId: { userId: dbUserId, outletId } },
+                    create: { userId: dbUserId, outletId, isPrimary: false, deleted: false },
+                    update: { deleted: false },
+                })
+            )
+        );
+        return results;
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
+let removeUserOutlet = async (tenantId: number, globalUserId: number, globalOutletId: number) => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+    if (!tenant?.databaseName) throw new NotFoundError('Tenant not found');
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+    try {
+        const dbUserId = await resolveTenantDbUserId(tenantPrisma, tenantId, globalUserId);
+        const dbOutletId = await resolveTenantDbOutletId(tenantPrisma, globalOutletId);
+        return await tenantPrisma.userOutlet.update({
+            where: { userId_outletId: { userId: dbUserId, outletId: dbOutletId } },
+            data: { deleted: true, deletedAt: new Date() },
+        });
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
+// Lists all non-deleted tenant users and flags whether each is currently
+// assigned to the given outlet. Returns global TenantUser.id (admin-portal
+// friendly) — the join through tenant DB is hidden inside the service.
+let getOutletUsers = async (tenantId: number, globalOutletId: number) => {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { databaseName: true }
+    });
+    if (!tenant?.databaseName) throw new NotFoundError('Tenant not found');
+
+    const tenantPrisma: TenantPrismaClient = getTenantPrisma(tenant.databaseName);
+    try {
+        const dbOutletId = await resolveTenantDbOutletId(tenantPrisma, globalOutletId);
+
+        const [globalUsers, dbUsers, assignments] = await Promise.all([
+            prisma.tenantUser.findMany({
+                where: { tenantId, isDeleted: false },
+                select: { id: true, username: true, role: true },
+                orderBy: { id: 'asc' },
+            }),
+            tenantPrisma.user.findMany({
+                where: { deleted: false },
+                select: { id: true, username: true },
+            }),
+            tenantPrisma.userOutlet.findMany({
+                where: { outletId: dbOutletId, deleted: false },
+                select: { userId: true },
+            }),
+        ]);
+
+        const dbUserIdByUsername = new Map(dbUsers.map((u: any) => [u.username, u.id]));
+        const assignedDbUserIds = new Set(assignments.map((a: any) => a.userId));
+
+        return {
+            users: globalUsers.map((gu: any) => {
+                const dbId = dbUserIdByUsername.get(gu.username);
+                return {
+                    id: gu.id,
+                    username: gu.username,
+                    role: gu.role,
+                    isAssigned: dbId !== undefined && assignedDbUserIds.has(dbId),
+                };
+            }),
+        };
+    } finally {
+        await tenantPrisma.$disconnect();
+    }
+};
+
 export = {
     createTenant,
     createTenantUser,
@@ -2646,6 +3082,9 @@ export = {
     createWarehouseForTenant,
     deleteWarehouseForTenant,
     getTenantWarehouses,
+    createOutletForTenant,
+    updateOutletForTenant,
+    deleteOutletForTenant,
     changeTenantPlan,
     // Payment Management
     recordPayment,
@@ -2663,5 +3102,10 @@ export = {
     forgotTenantUserPassword,
     // Advanced Loyalty Add-On
     addAdvancedLoyalty,
-    removeAdvancedLoyalty
+    removeAdvancedLoyalty,
+    // UserOutlet management
+    getUserOutlets,
+    assignUserOutlets,
+    removeUserOutlet,
+    getOutletUsers,
 }

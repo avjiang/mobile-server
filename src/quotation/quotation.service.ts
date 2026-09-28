@@ -418,13 +418,15 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
     }
 }
 
-let getById = async (id: number, databaseName: string) => {
+let getById = async (id: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const quotation = await tenantPrisma.quotation.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const quotation = await tenantPrisma.quotation.findFirst({
             where: {
                 id: id,
-                deleted: false
+                deleted: false,
+                outletId: outletId
             },
             include: {
                 quotationItems: {
@@ -744,7 +746,7 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
     }
 }
 
-let cancel = async (quotation: QuotationInput, databaseName: string) => {
+let cancel = async (quotation: QuotationInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = quotation;
@@ -753,10 +755,11 @@ let cancel = async (quotation: QuotationInput, databaseName: string) => {
             throw new RequestValidateError('Quotation ID is required');
         }
 
-        // Single query to get existing quotation with related data
-        const existingQuotation = await tenantPrisma.quotation.findUnique({
+        // Scope by outletId so cross-outlet cancellations surface as 404.
+        const existingQuotation = await tenantPrisma.quotation.findFirst({
             where: {
                 id: id,
+                outletId: outletId,
                 deleted: false
             },
         });
@@ -803,7 +806,7 @@ let cancel = async (quotation: QuotationInput, databaseName: string) => {
     }
 }
 
-let update = async (quotation: QuotationInput, databaseName: string) => {
+let update = async (quotation: QuotationInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = quotation;
@@ -812,10 +815,12 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
             throw new RequestValidateError('Quotation ID is required');
         }
 
-        // Single query to get existing quotation with related data
-        const existingQuotation = await tenantPrisma.quotation.findUnique({
+        // Single query to get existing quotation with related data, scoped to
+        // the requesting outlet so cross-outlet quotations surface as 404.
+        const existingQuotation = await tenantPrisma.quotation.findFirst({
             where: {
                 id: id,
+                outletId: outletId,
                 deleted: false
             },
             include: {
@@ -1097,17 +1102,19 @@ let update = async (quotation: QuotationInput, databaseName: string) => {
     }
 }
 
-let deleteQuotation = async (id: number, databaseName: string): Promise<string> => {
+let deleteQuotation = async (id: number, databaseName: string, outletId: number): Promise<string> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         if (!id) {
             throw new RequestValidateError('Quotation ID is required');
         }
 
-        // Check if quotation exists and is not already deleted
-        const existingQuotation = await tenantPrisma.quotation.findUnique({
+        // Scope by outletId so a user in outlet A cannot soft-delete a
+        // quotation belonging to outlet B by guessing its id.
+        const existingQuotation = await tenantPrisma.quotation.findFirst({
             where: {
                 id: id,
+                outletId: outletId,
                 deleted: false
             },
             include: {

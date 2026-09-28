@@ -3,7 +3,7 @@
  * BE-1 PRE-DEPLOY PROBE — READ-ONLY. Runs zero writes (SELECT only).
  *
  * Enumerates every tenant DB and reports the three things that decide whether
- * the multi-outlet migration (20260928120000_multi_outlet_fks_and_user_outlet)
+ * the multi-outlet migration (20260928130000_multi_outlet_fks_and_user_outlet)
  * is safe to deploy:
  *   1. Is there a resolvable primary outlet?  (@primary_outlet = MIN(ID) WHERE IS_DELETED=false)
  *      A tenant with NO live outlet is NO-GO when it has any outlet-scoped rows
@@ -71,7 +71,7 @@ function tryq(url, sql){ try { return q(url, sql); } catch(e){ return "ERR:"+Str
 
 // The 9 tables that receive a RESTRICT FK on OUTLET_ID.
 const FK_TABLES = ["sales","payment","session","invoice","delivery_order","quotation","purchase_order","register_log","menu_profile_outlet"];
-const MIGRATION = "20260928120000_multi_outlet_fks_and_user_outlet";
+const MIGRATION = "20260928130000_multi_outlet_fks_and_user_outlet";
 
 console.log("=".repeat(60));
 console.log("BE-1 PRE-DEPLOY PROBE  (READ-ONLY)  target="+(LOCAL?"LOCAL":"PROD"));

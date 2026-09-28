@@ -47,7 +47,7 @@ for (const [id, name, db] of tenants){
   const fails = [];
   console.log("-".repeat(56)+`\n#${id} ${name} / ${db}`);
 
-  const rec = tryq(url, "SELECT IF(finished_at IS NULL,'FAILED','ok') FROM _prisma_migrations WHERE migration_name='20260928120000_multi_outlet_fks_and_user_outlet' AND rolled_back_at IS NULL ORDER BY started_at DESC LIMIT 1;");
+  const rec = tryq(url, "SELECT IF(finished_at IS NULL,'FAILED','ok') FROM _prisma_migrations WHERE migration_name='20260928130000_multi_outlet_fks_and_user_outlet' AND rolled_back_at IS NULL ORDER BY started_at DESC LIMIT 1;");
   if (rec !== "ok") fails.push("migration not recorded ok (got: "+(rec||"missing")+")");
   console.log("  migration recorded: "+(rec||"MISSING"));
 

@@ -60,6 +60,7 @@ const PRESERVED_TABLES = new Set([
     '_user_roles', 'user', 'role', 'role_permission',   // login + RBAC
     'outlet', 'setting', 'company', 'warehouse',        // tenant setup created by createTenant
     'registered_device', 'notification_preference',
+    'user_outlet',                                       // user ↔ outlet access (multi-outlet)
 ]);
 
 export interface DemoSeedResult {
@@ -225,7 +226,11 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
 
     const now = new Date();
     const today = wibToday(now);
-    const outletId = 1;
+    // The tenant's primary outlet (lowest live id) — outlet.ID is auto-increment and
+    // not guaranteed to be 1 (the `outlet` table is preserved across re-seeds).
+    const primaryOutlet = await prisma.outlet.findFirst({ where: { deleted: false }, orderBy: { id: 'asc' }, select: { id: true } });
+    if (!primaryOutlet) throw new Error('Demo seed: tenant has no live outlet');
+    const outletId: number = primaryOutlet.id;
     const owner = await prisma.user.findFirst({ orderBy: { id: 'asc' } });
     const performedBy = owner ? [owner.firstName, owner.lastName].filter(Boolean).join(' ') || owner.username : 'Demo';
     const ownerId = owner?.id ?? 1;

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ForbiddenError, RequestValidateError } from "../api-helpers/error";
 import { AuthRequest } from "./auth-request";
-import { getTenantPrisma } from "../db";
+import { resolveAllowedOutletIds } from "../api-helpers/outlet-access";
 
 /**
  * Outlet-authorization + default-resolution middleware.
@@ -9,7 +9,8 @@ import { getTenantPrisma } from "../db";
  * Two responsibilities:
  *  1. When the request carries an explicit outlet context (body → query → params
  *     → `X-Outlet-ID` header), validate it and authorize it against the caller's
- *     `allowedOutletIds` (admins bypass).
+ *     allowed outlets (admins bypass). A token without `allowedOutletIds` resolves
+ *     them from user_outlet / the tenant's primary outlet (api-helpers/outlet-access.ts).
  *  2. When it does NOT (the currently-released app sends no `X-Outlet-ID`), resolve
  *     a DEFAULT outlet server-side so outlet-scoped endpoints keep working instead
  *     of 400-ing. The default is the caller's PRIMARY outlet — from the JWT
@@ -54,14 +55,12 @@ export const requireOutletAccess = async (req: AuthRequest, res: Response, next:
 
             req.outletId = requestedOutletId;
 
-            // Admin users bypass outlet restrictions
-            if (req.user?.role !== "admin") {
-                const allowedOutletIds = req.user?.allowedOutletIds || [];
-
-                // Empty allow-list = pre-multi-outlet token; can't authorize a specific
-                // id against it, so fall through (single-outlet reality). Once tokens
-                // reliably carry allowedOutletIds this branch stops being reachable.
-                if (allowedOutletIds.length > 0 && !allowedOutletIds.includes(requestedOutletId)) {
+            // Admin users bypass outlet restrictions (resolve → null). A token without
+            // allowedOutletIds (issued before the multi-outlet deploy) is resolved from
+            // user_outlet / the tenant's primary outlet — see api-helpers/outlet-access.ts.
+            if (req.user) {
+                const allowedOutletIds = await resolveAllowedOutletIds(req.user);
+                if (allowedOutletIds !== null && !allowedOutletIds.includes(requestedOutletId)) {
                     throw new ForbiddenError("Outlet access denied");
                 }
             }
@@ -89,33 +88,11 @@ async function resolveDefaultOutletId(req: AuthRequest): Promise<number | undefi
         return fromToken;
     }
 
-    // 2. Pre-multi-outlet token (no allowedOutletIds): resolve from the tenant DB.
-    const databaseName = req.user?.databaseName;
-    const userId = req.user?.userId;
-    if (!databaseName) return undefined;
-
-    try {
-        const tenantPrisma = getTenantPrisma(databaseName);
-
-        // Prefer the user's own primary user_outlet row…
-        if (typeof userId === 'number') {
-            const primary = await tenantPrisma.userOutlet.findFirst({
-                where: { userId, isPrimary: true, deleted: false },
-                select: { outletId: true },
-            });
-            if (primary) return primary.outletId;
-        }
-
-        // …otherwise the tenant's lowest live outlet id.
-        const anyOutlet = await tenantPrisma.outlet.findFirst({
-            where: { deleted: false },
-            orderBy: { id: 'asc' },
-            select: { id: true },
-        });
-        return anyOutlet?.id;
-    } catch {
-        // Never block the request on a default-resolution failure; downstream
-        // endpoints that truly require an outlet will surface their own error.
-        return undefined;
-    }
+    // 2. Token without allowedOutletIds: the shared allow-list rule, whose first entry
+    //    is the user's primary user_outlet row, else the tenant's primary outlet.
+    //    Never throws (lookup failures resolve to []), so a default-resolution failure
+    //    never blocks the request; endpoints that need an outlet surface their own error.
+    if (!req.user) return undefined;
+    const allowed = await resolveAllowedOutletIds(req.user);
+    return allowed?.[0];
 }

@@ -6,6 +6,7 @@ import { createReceiptUploadTicket } from "../catalogue/catalogue-storage.servic
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
 import { requireOutletHeader } from "../api-helpers/outlet-helper"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 import { sendResponse } from "../api-helpers/network"
 import { SalesAnalyticResponseBody } from "./sales.response"
 import { CalculateSalesDto, CompleteNewSalesRequest, CompleteSalesRequest, SalesCreationRequest, SalesRequestBody, UpdateSalesDetailsRequest } from "./sales.request"
@@ -262,20 +263,18 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
     // Defence-in-depth: stockSourceOutletId must also be in the user's allowedOutletIds.
     // The global outlet-authz middleware validates body.outletId but does not look at
     // additional outlet references on the payload.
-    if (sales.stockSourceOutletId !== undefined && sales.stockSourceOutletId !== null) {
-        const allowed = req.user.allowedOutletIds ?? [];
-        if (!allowed.includes(sales.stockSourceOutletId)) {
-            throw new ForbiddenError("Outlet access denied");
-        }
-    }
+    // Same rule as the middleware (admin bypass; tokens without allowedOutletIds resolve).
+    const hasStockSource = sales.stockSourceOutletId !== undefined && sales.stockSourceOutletId !== null
+    const user = req.user
     const payments = requestBody.payments
-    service.completeNewSales(
-        req.user.databaseName,
-        req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier, permissions: req.user.permissions },
-        sales,
-        payments
-    )
+    assertOutletsAllowed(req, hasStockSource ? [sales.stockSourceOutletId] : [])
+        .then(() => service.completeNewSales(
+            user.databaseName,
+            user.tenantId,
+            { userId: user.userId, username: user.username, loyaltyTier: user.loyaltyTier, permissions: user.permissions },
+            sales,
+            payments
+        ))
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next)
 }

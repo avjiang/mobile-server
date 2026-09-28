@@ -3,13 +3,15 @@ import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import { UserInfo } from "../middleware/authorize-middleware";
 import { SyncRequest } from "src/item/item.request";
+import { resolveAllowedOutletIds } from "../api-helpers/outlet-access";
 
 let getAll = async (databaseName: string, user: UserInfo) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const whereClause: any = { deleted: false };
-        if (user.role !== "admin") {
-            whereClause.id = { in: user.allowedOutletIds || [] };
+        const allowedOutletIds = await resolveAllowedOutletIds(user);
+        if (allowedOutletIds !== null) {
+            whereClause.id = { in: allowedOutletIds };
         }
 
         const outlets = await tenantPrisma.outlet.findMany({
@@ -58,10 +60,13 @@ let getOutletSync = async (
             };
     }
 
-    if (user.role !== "admin") {
+    // Tokens issued before the multi-outlet deploy carry no allowedOutletIds; the
+    // shared rule resolves them (user_outlet → tenant primary) instead of [].
+    const allowedOutletIds = await resolveAllowedOutletIds(user);
+    if (allowedOutletIds !== null) {
         where = Object.keys(where).length === 0
-            ? { id: { in: user.allowedOutletIds || [] } }
-            : { AND: [where, { id: { in: user.allowedOutletIds || [] } }] };
+            ? { id: { in: allowedOutletIds } }
+            : { AND: [where, { id: { in: allowedOutletIds } }] };
     }
 
     const total = await tenantPrisma.outlet.count({ where });

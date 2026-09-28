@@ -481,12 +481,33 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         globalOutletId = subscriptionInfo.globalOutletId;
         loyaltyTier = subscriptionInfo.loyaltyTier;
 
+        // Same rule as api-helpers/outlet-access.ts: the user's user_outlet rows, else
+        // the tenant's primary outlet — the token never carries an empty list for a
+        // tenant that has an outlet. A tenant the multi-outlet migration hasn't reached
+        // (no user_outlet table) must not fail login, so the lookup is guarded.
         const tenantPrisma = getTenantPrisma(db);
-        const userOutlets = await tenantPrisma.userOutlet.findMany({
-            where: { userId: user.id, deleted: false },
-            select: { outletId: true }
-        });
-        allowedOutletIds = userOutlets.map((uo: any) => uo.outletId);
+        try {
+            const userOutlets = await tenantPrisma.userOutlet.findMany({
+                where: { userId: user.id, deleted: false },
+                select: { outletId: true },
+                orderBy: [{ isPrimary: 'desc' }, { outletId: 'asc' }],
+            });
+            allowedOutletIds = userOutlets.map((uo: any) => uo.outletId);
+        } catch (error) {
+            console.error(`generateJwtToken: user_outlet lookup failed for ${db} (user ${user.id}):`, error);
+        }
+        if (allowedOutletIds.length === 0) {
+            try {
+                const primaryOutlet = await tenantPrisma.outlet.findFirst({
+                    where: { deleted: false },
+                    orderBy: { id: 'asc' },
+                    select: { id: true },
+                });
+                if (primaryOutlet) allowedOutletIds = [primaryOutlet.id];
+            } catch (error) {
+                console.error(`generateJwtToken: primary outlet lookup failed for ${db}:`, error);
+            }
+        }
         await tenantPrisma.$disconnect();
 
         if (planName === "Pro") {

@@ -190,6 +190,20 @@ model UserOutlet {
   @@map("user_outlet")
 }
 
+// Server-assigned procurement document numbers: one counter per
+// (outlet, prefix, local business date yyyyMMdd). Written only through
+// src/helpers/documentNumber.ts (raw SQL under the row lock).
+model DocumentSequence {
+  outletId  Int       @map("OUTLET_ID")
+  prefix    String    @map("PREFIX") @db.VarChar(10)
+  seqDate   String    @map("SEQ_DATE") @db.Char(8)
+  lastValue Int       @map("LAST_VALUE")
+  updatedAt DateTime? @map("UPDATED_AT") @db.DateTime(3)
+
+  @@id([outletId, prefix, seqDate])
+  @@map("document_sequence")
+}
+
 model OverrideLog {
   id         Int      @id @default(autoincrement()) @map("ID")
   userId     Int      @map("USER_ID") // Cashier requesting

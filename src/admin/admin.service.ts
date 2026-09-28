@@ -195,8 +195,8 @@ let createTenant = async (body: CreateTenantRequest) => {
             // row `auth.service.getUserInfo` resolves `allowedOutletIds` to [] (it reads
             // user_outlet), so every outlet-scoped authz check takes the empty-allow-list
             // fall-through in requireOutletAccess instead of actually authorizing, and
-            // the JWT carries no outlet context. Migration 20260702_multi_outlet_fks_and_
-            // user_outlet only backfilled users that existed WHEN IT RAN — tenants created
+            // the JWT carries no outlet context. Migration 20260928120000_multi_outlet_fks_
+            // and_user_outlet only backfilled users that existed WHEN IT RAN — tenants created
             // afterwards must write the row here or they are silently unassigned.
             await tenantPrisma.userOutlet.create({
                 data: {

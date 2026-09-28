@@ -54,17 +54,21 @@ ON DUPLICATE KEY UPDATE `IS_PRIMARY` = VALUES(`IS_PRIMARY`);
 
 -- ── Backfill orphan OUTLET_ID rows to the primary outlet before adding RESTRICT
 --    FKs (no-op when there are no orphans, or on a zero-outlet DB). ──
-UPDATE `sales` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `payment` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `session` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `invoice` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `delivery_order` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `quotation` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `purchase_order` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `register_log` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
-UPDATE `menu_profile_outlet` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `sales` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `payment` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `session` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `invoice` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `delivery_order` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `quotation` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `purchase_order` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `register_log` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
+UPDATE `menu_profile_outlet` t LEFT JOIN `outlet` o ON t.`OUTLET_ID` = o.`ID` SET t.`OUTLET_ID` = @primary_outlet, t.`UPDATED_AT` = NOW(3) WHERE o.`ID` IS NULL AND @primary_outlet IS NOT NULL;
 -- STOCK_SOURCE_OUTLET_ID is nullable with an ON DELETE SET NULL FK: null out orphans, keep valid refs.
-UPDATE `sales` t LEFT JOIN `outlet` o ON t.`STOCK_SOURCE_OUTLET_ID` = o.`ID` SET t.`STOCK_SOURCE_OUTLET_ID` = NULL WHERE t.`STOCK_SOURCE_OUTLET_ID` IS NOT NULL AND o.`ID` IS NULL;
+UPDATE `sales` t LEFT JOIN `outlet` o ON t.`STOCK_SOURCE_OUTLET_ID` = o.`ID` SET t.`STOCK_SOURCE_OUTLET_ID` = NULL, t.`UPDATED_AT` = NOW(3) WHERE t.`STOCK_SOURCE_OUTLET_ID` IS NOT NULL AND o.`ID` IS NULL;
+
+-- menu_profile_outlet rows whose menu profile no longer exists would abort the
+-- MENU_PROFILE_ID RESTRICT FK below; they are dangling junction rows — remove them.
+DELETE mpo FROM `menu_profile_outlet` mpo LEFT JOIN `menu_profile` mp ON mp.`ID` = mpo.`MENU_PROFILE_ID` WHERE mp.`ID` IS NULL;
 
 -- ── Indexes (guarded; MySQL has no CREATE INDEX IF NOT EXISTS) ──
 SET @idx := (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payment' AND INDEX_NAME = 'payment_OUTLET_ID_idx');
@@ -145,3 +149,19 @@ PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
 -- Note: Session open-per-user-outlet uniqueness is enforced at the application layer
 -- in session.service.ts (MySQL does not support partial unique indexes with WHERE clauses).
+
+-- ── document_sequence: server-assigned procurement document numbers ──
+-- One counter per (outlet, prefix, local business date). The server formats
+-- {PREFIX}-OUT{OUTLET_ID}-{SEQ_DATE}-{LAST_VALUE padded to 4} and increments
+-- the row under its X-lock inside the document's create transaction, so
+-- concurrent creates can never be handed the same number.
+-- Prefixes: INV, PO, QT, DO, RTN, SET.
+CREATE TABLE IF NOT EXISTS `document_sequence` (
+    `OUTLET_ID` INTEGER NOT NULL,
+    `PREFIX` VARCHAR(10) NOT NULL,
+    `SEQ_DATE` CHAR(8) NOT NULL,
+    `LAST_VALUE` INTEGER NOT NULL,
+    `UPDATED_AT` DATETIME(3) NULL,
+
+    PRIMARY KEY (`OUTLET_ID`, `PREFIX`, `SEQ_DATE`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

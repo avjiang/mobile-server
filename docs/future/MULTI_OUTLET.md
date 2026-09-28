@@ -93,7 +93,7 @@ Pure code change, no schema/data migration — revert the commit.
 
 ## 3. BE-1 migration — prod deploy runbook
 
-The migration `20260702000000_multi_outlet_fks_and_user_outlet` (adds `user_outlet` + outlet FKs across 9 tables) is **rewritten prod-safe + idempotent** and dry-run-verified locally. It is still **pending on prod** (13 tenant DBs). Deploy touches prod **DB only** (no app release needed — the released binary keeps working via the BE-2 primary-outlet default).
+The migration `20260928120000_multi_outlet_fks_and_user_outlet` (adds `user_outlet` + outlet FKs across 9 tables + the `document_sequence` table behind server-assigned procurement numbers) is **rewritten prod-safe + idempotent** and dry-run-verified locally. It was re-stamped from `20260702000000_…` on 2026-09-28 so it sorts after `20260728`/`20260813` (it had never reached prod). It is still **pending on prod**. It ships with the sprint-008 backend, which is deployed **before** the new app; the released 1.1.0+16 app is not kept compatible (testers reinstall).
 
 **Azure client gotcha:** Azure MySQL needs the `mysql_native_password` plugin, dropped by Homebrew `mysql` 9.x (`ERROR 2059`). Use the 8.4 client:
 ```bash
@@ -112,11 +112,11 @@ npm run upgrade_db_prod                        # expect "successfully applied"
 # 4. READ-ONLY verify — user_outlet seeded, FKs present, 0 orphans per tenant
 node docs/future/be1_verify_post.js            # expect "ALL TENANTS PASS ✅"
 ```
-**Probe verdicts:** GO = safe · SKIP = already applied · NO-GO = scoped rows but no resolvable outlet, or probe errored → stop. A **MULTI-OUTLET** note = a tenant has >1 live outlet (none expected today) → pause and confirm.
+**Probe verdicts:** GO = safe · SKIP = already applied (per `_prisma_migrations`: finished and not rolled back) · NO-GO = no live outlet while the tenant has scoped rows or live users, >1 live outlet, a FAILED migration record, or a probe error → stop. Dangling `menu_profile_outlet` rows (menu profile gone) are reported as auto-cleaned: the migration deletes them before adding the FK.
 
-**Rollback:** BE-1 is idempotent → first re-run `upgrade_db_prod` (guards make applied statements no-ops). If a tenant is corrupted, restore its dump; if Prisma marks it FAILED, `npx prisma migrate resolve --rolled-back 20260702000000_multi_outlet_fks_and_user_outlet --schema=prisma/client/schema.prisma` then re-run.
+**Rollback / failed run:** BE-1 is idempotent. If Prisma records it FAILED for a tenant, `migrate deploy` refuses to continue for that DB until the record is resolved: run `npx prisma migrate resolve --rolled-back 20260928120000_multi_outlet_fks_and_user_outlet --schema=prisma/client/schema.prisma` against that tenant's URL, fix the cause, then redeploy (`upgrade_db_prod`) — the guards make already-applied statements no-ops. If a tenant is corrupted, restore its dump first.
 
-> ⚠️ Author-machine only (not prod): BE-1's SQL was rewritten after it was applied to local `demo_laundry_db`/`demo_retail_db`, so their Prisma checksum drifts → the author machine's next local `upgrade_db` errors on those two. Fix by re-seeding them or `prisma migrate resolve`. The deploy machine has no local DBs, so it can't hit this.
+> ⚠️ Author-machine only (not prod): local DBs that applied the old `20260702000000_…` name keep that record; `migrate deploy` then applies `20260928120000_…` as a new migration, which is a no-op re-run apart from creating `document_sequence`. The deploy machine has no local DBs, so it can't hit this.
 
 ---
 
@@ -167,7 +167,7 @@ Findings from the peer's multi-outlet merge that are **tracked but not blocking*
 | Create outlet (no auto-assign) | `src/admin/admin.service.ts:2680-2762` |
 | Assign user↔outlet (admin-only today) | `src/admin/admin.service.ts:2942`; route `admin.controller.ts:773` |
 | Permission-gate pattern (Set B) | `src/middleware/require-permission.middleware.ts`; usage `src/user/user.controller.ts:88` |
-| Migration | `prisma/client/migrations/20260702000000_multi_outlet_fks_and_user_outlet/migration.sql` |
+| Migration | `prisma/client/migrations/20260928120000_multi_outlet_fks_and_user_outlet/migration.sql` |
 | Test fixture builder | `src/script/create_multi_outlet_test_tenant.ts` |
 
 FE companion memory: `bayaryuk-frontend/.claude/memory/reference_multi_outlet_roles.md`.

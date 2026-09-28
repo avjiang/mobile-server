@@ -3,11 +3,18 @@
  * BE-1 PRE-DEPLOY PROBE — READ-ONLY. Runs zero writes (SELECT only).
  *
  * Enumerates every tenant DB and reports the three things that decide whether
- * the multi-outlet migration (20260702000000_multi_outlet_fks_and_user_outlet)
+ * the multi-outlet migration (20260928120000_multi_outlet_fks_and_user_outlet)
  * is safe to deploy:
  *   1. Is there a resolvable primary outlet?  (@primary_outlet = MIN(ID) WHERE IS_DELETED=false)
+ *      A tenant with NO live outlet is NO-GO when it has any outlet-scoped rows
+ *      or any live users (the user_outlet seed would skip them → nobody has an outlet).
  *   2. Are there orphan OUTLET_ID rows the backfill must repoint before the RESTRICT FKs?
- *   3. Is BE-1 already applied (user_outlet present)?
+ *   3. Dangling menu_profile_outlet rows (menu profile gone) — the migration deletes
+ *      them before the MENU_PROFILE_ID FK; reported as "auto-cleaned".
+ *   4. More than one live outlet → NO-GO (the backfill + seed assume single-outlet).
+ *   5. Is BE-1 already applied? Decided from `_prisma_migrations` (finished, not
+ *      rolled back) — NOT from whether user_outlet exists, since a partial/failed
+ *      run can leave the table behind.
  *
  * Prints a per-tenant report and an overall GO / NO-GO verdict.
  *
@@ -64,6 +71,7 @@ function tryq(url, sql){ try { return q(url, sql); } catch(e){ return "ERR:"+Str
 
 // The 9 tables that receive a RESTRICT FK on OUTLET_ID.
 const FK_TABLES = ["sales","payment","session","invoice","delivery_order","quotation","purchase_order","register_log","menu_profile_outlet"];
+const MIGRATION = "20260928120000_multi_outlet_fks_and_user_outlet";
 
 console.log("=".repeat(60));
 console.log("BE-1 PRE-DEPLOY PROBE  (READ-ONLY)  target="+(LOCAL?"LOCAL":"PROD"));
@@ -81,9 +89,15 @@ for (const [id, name, db] of tenants){
   console.log(`#${id}  ${name}  /  ${db}`);
   if (!db){ console.log("  (no DATABASE_NAME) — SKIP"); verdicts.push({db:name, go:null, reason:"no db name"}); continue; }
 
-  const be1 = tryq(url, `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA="${db}" AND TABLE_NAME="user_outlet";`);
-  const alreadyApplied = be1 === "1";
-  console.log("  BE-1 already applied (user_outlet exists): "+(be1.startsWith("ERR")?be1:(alreadyApplied?"YES":"no")));
+  // Applied-ness comes from Prisma's own ledger. finished + not rolled back = applied;
+  // a row with finished_at NULL (and not rolled back) = a FAILED run that blocks
+  // `migrate deploy` until it is resolved.
+  const rec = tryq(url, `SELECT IF(finished_at IS NULL,'FAILED','ok') FROM _prisma_migrations WHERE migration_name='${MIGRATION}' AND rolled_back_at IS NULL ORDER BY started_at DESC LIMIT 1;`);
+  const alreadyApplied = rec === "ok";
+  const failedRun = rec === "FAILED";
+  console.log("  BE-1 in _prisma_migrations: "+(rec.startsWith("ERR")?rec:(rec||"not applied")));
+  const userOutletTable = tryq(url, `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA="${db}" AND TABLE_NAME="user_outlet";`);
+  if (!alreadyApplied && userOutletTable === "1") console.log("  note: user_outlet table exists without an applied migration record (partial/manual run) — migration is idempotent");
 
   const outlets = tryq(url, "SELECT ID, OUTLET_NAME, IS_DELETED FROM outlet ORDER BY ID;");
   const outletLines = (outlets && !outlets.startsWith("ERR")) ? outlets.split("\n").filter(Boolean) : [];
@@ -94,7 +108,10 @@ for (const [id, name, db] of tenants){
   const primaryOk = primary && !primary.startsWith("ERR");
   console.log("  @primary_outlet -> "+(primaryOk?primary:"NULL"));
 
-  let orphanTotal = 0, orphanErr = false, multiOutlet = outletLines.filter(l=>l.split("\t")[2]==="0").length > 1;
+  const liveOutlets = outletLines.filter(l=>l.split("\t")[2]==="0").length;
+  let orphanTotal = 0, orphanErr = false, scopedRows = 0, multiOutlet = liveOutlets > 1;
+  const liveUsers = parseInt(tryq(url, "SELECT COUNT(*) FROM user WHERE IS_DELETED=false;"),10) || 0;
+  console.log("  live outlets: "+liveOutlets+"   live users: "+liveUsers);
   console.log("  orphans (rows whose OUTLET_ID resolves to no outlet):");
   for (const t of FK_TABLES){
     const ex = tryq(url, `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA="${db}" AND TABLE_NAME="${t}";`);
@@ -107,19 +124,33 @@ for (const [id, name, db] of tenants){
     if (nul.startsWith("ERR")||bad.startsWith("ERR")) orphanErr = true;
     const n = (parseInt(nul,10)||0) + (parseInt(bad,10)||0);
     orphanTotal += n;
+    scopedRows += parseInt(total,10) || 0;
     console.log(`    ${t}: total=${total} null=${nul} unresolved=${bad}${n>0?"  <-- backfill target":""}`);
+  }
+
+  // menu_profile_outlet rows whose menu profile is gone — deleted by the migration.
+  let mpoDangling = 0;
+  const mpoEx = tryq(url, `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA="${db}" AND TABLE_NAME="menu_profile_outlet";`);
+  if (mpoEx === "1"){
+    const d = tryq(url, "SELECT COUNT(*) FROM menu_profile_outlet mpo LEFT JOIN menu_profile mp ON mp.ID=mpo.MENU_PROFILE_ID WHERE mp.ID IS NULL;");
+    if (d.startsWith("ERR")) orphanErr = true;
+    mpoDangling = parseInt(d,10) || 0;
+    console.log("  menu_profile_outlet rows with no menu_profile: "+d+(mpoDangling>0?"  <-- auto-cleaned (DELETE) by the migration":""));
   }
 
   // Verdict for this tenant.
   let go = true, reasons = [];
   if (alreadyApplied){ go = null; reasons.push("already applied — will be skipped by migrate deploy"); }
   else {
-    // A zero-outlet DB is only safe if it has NO scoped rows (nothing to FK).
-    if (!primaryOk && orphanTotal === 0) reasons.push("no outlet but no scoped rows — FK add on empty tables is safe; user_outlet seed skips");
-    if (!primaryOk && orphanTotal > 0){ go = false; reasons.push("NO primary outlet BUT scoped rows exist — backfill skips, RESTRICT FK WILL ABORT"); }
+    if (failedRun){ go = false; reasons.push(`FAILED run recorded — resolve first: npx prisma migrate resolve --rolled-back ${MIGRATION} --schema=prisma/client/schema.prisma`); }
+    // A zero-outlet DB is only safe if it is completely empty: no scoped rows (nothing
+    // to FK) AND no live users (the user_outlet seed skips → they would have no outlet).
+    if (!primaryOk && scopedRows === 0 && liveUsers === 0) reasons.push("no live outlet but no scoped rows and no live users — safe; user_outlet seed skips");
+    if (!primaryOk && (scopedRows > 0 || liveUsers > 0)){ go = false; reasons.push(`NO live outlet BUT ${scopedRows} scoped row(s) / ${liveUsers} live user(s) — backfill + user_outlet seed skip; create/restore an outlet first`); }
     if (orphanErr){ go = false; reasons.push("orphan probe errored — investigate before deploy"); }
-    if (multiOutlet) reasons.push("MULTI-OUTLET tenant — backfill repoints orphans to lowest outlet; confirm that's desired (see BE-2 caveat)");
+    if (multiOutlet){ go = false; reasons.push(`MULTI-OUTLET tenant (${liveOutlets} live outlets) — backfill repoints orphans to the lowest outlet and every user is seeded to it only; decide per tenant before deploying`); }
     if (go && orphanTotal > 0) reasons.push(`${orphanTotal} orphan row(s) will be repointed to outlet ${primary}`);
+    if (mpoDangling > 0) reasons.push(`${mpoDangling} dangling menu_profile_outlet row(s) will be auto-cleaned`);
   }
   const tag = go === null ? "SKIP" : (go ? "GO" : "NO-GO");
   console.log("  VERDICT: "+tag+(reasons.length?" — "+reasons.join("; "):""));

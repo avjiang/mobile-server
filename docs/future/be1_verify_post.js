@@ -3,7 +3,8 @@
  * BE-1 POST-DEPLOY VERIFY — READ-ONLY. Run AFTER upgrade_db_prod.
  *
  * For every tenant confirms the migration did what it should:
- *   - BE-1 recorded `ok` in _prisma_migrations (not FAILED / partial)
+ *   - BE-1 recorded `ok` in _prisma_migrations (not FAILED / partial / rolled back)
+ *   - document_sequence (server-assigned procurement numbers) exists
  *   - user_outlet seeded = exactly the count of non-deleted users, all IS_PRIMARY
  *   - all 9 RESTRICT FKs + sales_STOCK_SOURCE_OUTLET_ID (SET NULL) present
  *   - 0 null / 0 unresolved OUTLET_ID orphans remain
@@ -46,7 +47,7 @@ for (const [id, name, db] of tenants){
   const fails = [];
   console.log("-".repeat(56)+`\n#${id} ${name} / ${db}`);
 
-  const rec = tryq(url, "SELECT IF(finished_at IS NULL,'FAILED','ok') FROM _prisma_migrations WHERE migration_name='20260702000000_multi_outlet_fks_and_user_outlet';");
+  const rec = tryq(url, "SELECT IF(finished_at IS NULL,'FAILED','ok') FROM _prisma_migrations WHERE migration_name='20260928120000_multi_outlet_fks_and_user_outlet' AND rolled_back_at IS NULL ORDER BY started_at DESC LIMIT 1;");
   if (rec !== "ok") fails.push("migration not recorded ok (got: "+(rec||"missing")+")");
   console.log("  migration recorded: "+(rec||"MISSING"));
 
@@ -55,6 +56,10 @@ for (const [id, name, db] of tenants){
   const nonPrimary = tryq(url, "SELECT COUNT(*) FROM user_outlet WHERE IS_PRIMARY=false;");
   if (users !== seeded) fails.push(`user_outlet seeded ${seeded} != ${users} non-deleted users`);
   console.log(`  user_outlet: seeded_users=${seeded} vs non_deleted_users=${users}  (non-primary rows=${nonPrimary})`);
+
+  const seqTable = tryq(url, `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='${db}' AND TABLE_NAME='document_sequence';`);
+  if (seqTable !== "1") fails.push("document_sequence table missing");
+  console.log("  document_sequence table: "+(seqTable === "1" ? "present" : "MISSING"));
 
   let fkMissing = [];
   for (const t of FK_TABLES){

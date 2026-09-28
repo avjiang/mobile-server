@@ -26,6 +26,8 @@ export interface DeliveryOrderInput {
     deliveryState?: string;
     deliveryPostalCode?: string;
     deliveryCountry?: string;
+    // The DO number. Server-assigned on create ({DO}-OUT{outletId}-{yyyyMMdd}-{seq})
+    // and immutable; any client-sent value is ignored on create and update.
     trackingNumber?: string;
     status?: string;
     remark?: string;
@@ -42,4 +44,7 @@ export interface DeliveryOrderInput {
 
 export interface CreateDeliveryOrderRequestBody {
     deliveryOrders: DeliveryOrderInput[];
+    // Client's UTC offset in minutes for the yyyyMMdd part of the assigned numbers.
+    // Optional; defaults to 420 (WIB).
+    utcOffsetMinutes?: number;
 }

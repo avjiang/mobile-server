@@ -6,6 +6,7 @@ import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreatePurchaseOrderRequestBody, PurchaseOrderInput } from "./purchase-order.request";
+import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
 
 /**
  * What a PO update should write to `downPaymentPercentage` in the main update statement.
@@ -606,7 +607,6 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
         // Extract unique IDs for batch validation
         const outletIds = [...new Set(purchaseOrders.map(po => po.outletId).filter(Boolean))];
         const supplierIds = [...new Set(purchaseOrders.map(po => po.supplierId).filter(Boolean))];
-        const purchaseOrderNumbers = purchaseOrders.map(po => po.purchaseOrderNumber);
 
         // Batch validate all outlets exist
         if (outletIds.length > 0) {
@@ -650,31 +650,9 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
             }
         }
 
-        // Batch check for duplicate purchase order numbers
-        const existingPurchaseOrders = await tenantPrisma.purchaseOrder.findMany({
-            where: {
-                purchaseOrderNumber: { in: purchaseOrderNumbers },
-                deleted: false,
-                status: { not: 'CANCELLED' } // Exclude cancelled purchase orders
-            },
-            select: { purchaseOrderNumber: true }
-        });
-
-        if (existingPurchaseOrders.length > 0) {
-            const duplicateNumbers = existingPurchaseOrders.map(po => po.purchaseOrderNumber);
-            throw new RequestValidateError(
-                    `Purchase orders with numbers ${duplicateNumbers.join(', ')} already exist`,
-                    ErrorCode.DocumentNumberDuplicate,
-                    { entity: ErrorEntity.PurchaseOrder, numbers: duplicateNumbers.join(', ') }
-                );
-        }
-
-        // Validate required fields
-        for (const purchaseOrderData of purchaseOrders) {
-            if (!purchaseOrderData.purchaseOrderNumber) {
-                throw new RequestValidateError('purchaseOrderNumber is required');
-            }
-        }
+        // Purchase order numbers are assigned here, never taken from the client.
+        const localDate = localDocumentDate(parseUtcOffsetMinutes(requestBody.utcOffsetMinutes));
+        await ensureDocumentSequences(tenantPrisma, DOCUMENT_PREFIX.purchaseOrder, purchaseOrders.map(po => po.outletId), localDate);
 
         // Use single transaction for all creations
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -684,7 +662,7 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                 // Create purchase order
                 const newPurchaseOrder = await tx.purchaseOrder.create({
                     data: {
-                        purchaseOrderNumber: purchaseOrderData.purchaseOrderNumber,
+                        purchaseOrderNumber: await nextDocumentNumber(tx, purchaseOrderData.outletId, DOCUMENT_PREFIX.purchaseOrder, localDate),
                         quotationId: purchaseOrderData.quotationId || null,
                         outletId: purchaseOrderData.outletId,
                         supplierId: purchaseOrderData.supplierId,
@@ -895,25 +873,6 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string, out
             );
         }
 
-        // Validate purchase order number if being changed
-        if (updateData.purchaseOrderNumber &&
-            updateData.purchaseOrderNumber !== existingPurchaseOrder.purchaseOrderNumber) {
-            validationPromises.push(
-                tenantPrisma.purchaseOrder.findFirst({
-                    where: {
-                        purchaseOrderNumber: updateData.purchaseOrderNumber,
-                        deleted: false,
-                        id: { not: id }
-                    },
-                    select: { id: true }
-                }).then(duplicate => ({
-                    type: 'purchaseOrderNumber',
-                    exists: !!duplicate,
-                    value: updateData.purchaseOrderNumber
-                }))
-            );
-        }
-
         // Validate items if being updated
         if (updateData.purchaseOrderItems && Array.isArray(updateData.purchaseOrderItems)) {
             const itemIds = [...new Set(updateData.purchaseOrderItems.map(item => item.itemId).filter(Boolean))];
@@ -955,15 +914,6 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string, out
                     );
                     }
                     break;
-                case 'purchaseOrderNumber':
-                    if ('exists' in result && 'value' in result && result.exists) {
-                        throw new RequestValidateError(
-                        `Purchase order with number ${result.value} already exists`,
-                        ErrorCode.DocumentNumberDuplicate,
-                        { entity: ErrorEntity.PurchaseOrder, numbers: String(result.value) }
-                    );
-                    }
-                    break;
                 case 'items':
                     if ('existing' in result && 'requested' in result) {
                         const existingItemIds = new Set<number>(result.existing);
@@ -986,7 +936,7 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string, out
             const updatedPurchaseOrder = await tx.purchaseOrder.update({
                 where: { id: id },
                 data: {
-                    purchaseOrderNumber: updateData.purchaseOrderNumber,
+                    // purchaseOrderNumber is server-assigned at create and immutable — never written here.
                     quotationId: updateData.quotationId || null,
                     outletId: updateData.outletId,
                     supplierId: updateData.supplierId,

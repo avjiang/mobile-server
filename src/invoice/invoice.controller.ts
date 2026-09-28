@@ -3,13 +3,13 @@ import validator from "validator"
 import service from "./invoice.service"
 import { Invoice, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { RequestValidateError } from "../api-helpers/error"
 import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request"
-import { validateDocumentNumber } from "../helpers/documentHelper"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 
 const router = express.Router()
 
@@ -107,16 +107,12 @@ let createMany = (req: NetworkRequest<CreateInvoiceRequestBody>, res: Response, 
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    if (requestBody.invoices && requestBody.invoices.length > 0) {
-        const allowed = req.user?.allowedOutletIds ?? [];
-        requestBody.invoices.forEach((inv: InvoiceInput) => {
-            if (!allowed.includes(inv.outletId)) {
-                throw new ForbiddenError("Outlet access denied");
-            }
-            validateDocumentNumber(inv.invoiceNumber, inv.outletId);
-        });
-    }
-    service.createMany(req.user.databaseName, requestBody)
+    const user = req.user
+    // Same outlet rule as the outlet middleware (admin bypass; a token without
+    // allowedOutletIds resolves from user_outlet / the primary outlet). Document
+    // numbers are assigned by the service — any client-sent number is ignored.
+    assertOutletsAllowed(req, (requestBody.invoices ?? []).map((inv: InvoiceInput) => inv.outletId))
+        .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
             sendResponse(res, response)
         })
@@ -138,10 +134,6 @@ let update = (req: NetworkRequest<InvoiceInput>, res: Response, next: NextFuncti
         throw new RequestValidateError('Update failed: [id] not found')
     }
     const outletId = requireOutletHeader(req, invoice.outletId);
-
-    if (invoice.invoiceNumber) {
-        validateDocumentNumber(invoice.invoiceNumber, invoice.outletId);
-    }
 
     service.update(invoice, req.user.databaseName, outletId)
         .then((updatedInvoice: any) => sendResponse(res, updatedInvoice))

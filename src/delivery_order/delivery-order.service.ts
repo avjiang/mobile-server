@@ -6,6 +6,7 @@ import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request";
+import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
 import { warehouseRef, receiveLayers, consumeFIFO } from "../stock/location-stock-engine";
 
 /** Maps a batch-validation `result.type` onto a translatable entity key. */
@@ -642,6 +643,10 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
             }
         }
 
+        // Delivery order numbers (trackingNumber) are assigned here, never taken from the client.
+        const localDate = localDocumentDate(parseUtcOffsetMinutes(requestBody.utcOffsetMinutes));
+        await ensureDocumentSequences(tenantPrisma, DOCUMENT_PREFIX.deliveryOrder, deliveryOrders.map(do_ => do_.outletId), localDate);
+
         // Use single transaction for all creations
         const result = await tenantPrisma.$transaction(async (tx) => {
             const createdDeliveryOrders: any[] = [];
@@ -681,7 +686,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         deliveryState: deliveryOrderData.deliveryState,
                         deliveryPostalCode: deliveryOrderData.deliveryPostalCode,
                         deliveryCountry: deliveryOrderData.deliveryCountry,
-                        trackingNumber: deliveryOrderData.trackingNumber,
+                        trackingNumber: await nextDocumentNumber(tx, deliveryOrderData.outletId, DOCUMENT_PREFIX.deliveryOrder, localDate),
                         status: deliveryOrderData.status || 'Pending',
                         remark: deliveryOrderData.remark,
                         performedBy: deliveryOrderData.performedBy,
@@ -1195,7 +1200,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
             if (updateData.deliveryState !== undefined) updateFields.deliveryState = updateData.deliveryState;
             if (updateData.deliveryPostalCode !== undefined) updateFields.deliveryPostalCode = updateData.deliveryPostalCode;
             if (updateData.deliveryCountry !== undefined) updateFields.deliveryCountry = updateData.deliveryCountry;
-            if (updateData.trackingNumber !== undefined) updateFields.trackingNumber = updateData.trackingNumber;
+            // trackingNumber (the DO number) is server-assigned at create and immutable — never written here.
             if (updateData.status !== undefined) updateFields.status = updateData.status;
             if (updateData.remark !== undefined) updateFields.remark = updateData.remark;
             if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;

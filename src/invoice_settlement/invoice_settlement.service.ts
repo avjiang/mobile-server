@@ -7,6 +7,7 @@ import { create } from "domain";
 import { AddSettlementPaymentInput, CreateInvoiceSettlementRequestBody, InvoiceSettlementInput, SettlementSyncRequest } from "./invoice_settlement.request";
 import { Decimal } from 'decimal.js';
 import { evaluateMarkAsPaid, roundToCurrency } from '../api-helpers/money';
+import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
 
 // Payment-state fields exposed on every settlement DTO. Outstanding is computed
 // currency-rounded (kills sub-unit phantoms) and nets the audited write-off, so a
@@ -28,8 +29,8 @@ const settlementPaymentFields = (s: any) => {
 
 // Helper function to filter valid InvoiceSettlement fields
 const getValidSettlementFields = (data: any) => {
+    // settlementNumber is deliberately absent: server-assigned at create, immutable.
     const validFields = [
-        'settlementNumber',
         'settlementDate',
         'settlementType',
         'paymentMethod',
@@ -660,7 +661,12 @@ let getSettlementById = async (id: number, databaseName: string) => {
 }
 
 
-let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSettlementRequestBody) => {
+/**
+ * @param fallbackOutletId the request's resolved outlet — numbers a settlement that
+ *   carries no invoices. Otherwise a settlement is numbered under the outlet of its
+ *   lowest-id invoice (invoice_settlement has no OUTLET_ID column of its own).
+ */
+let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSettlementRequestBody, fallbackOutletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { settlements } = requestBody;
@@ -705,6 +711,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
             select: {
                 id: true,
                 invoiceNumber: true,
+                outletId: true,
                 totalAmount: true,
                 downPaymentApplied: true,
                 supplierId: true,
@@ -735,26 +742,18 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                 );
         }
 
-        // Check for duplicate settlement numbers
-        const settlementNumbers = settlements.map(s => s.settlementNumber).filter(Boolean);
-        if (settlementNumbers.length > 0) {
-            const existingSettlements = await tenantPrisma.invoiceSettlement.findMany({
-                where: {
-                    settlementNumber: { in: settlementNumbers },
-                    deleted: false
-                },
-                select: { settlementNumber: true }
-            });
-
-            if (existingSettlements.length > 0) {
-                const duplicateNumbers = existingSettlements.map(s => s.settlementNumber);
-                throw new RequestValidateError(
-                    `Settlement numbers already exist: ${duplicateNumbers.join(', ')}`,
-                    ErrorCode.DocumentNumberDuplicate,
-                    { entity: ErrorEntity.InvoiceSettlement, numbers: duplicateNumbers.join(', ') }
-                );
+        // Settlement numbers are assigned here, never taken from the client.
+        const outletIdByInvoice = new Map(existingInvoices.map(inv => [inv.id, inv.outletId]));
+        const settlementOutletId = (settlementData: InvoiceSettlementInput): number => {
+            const firstInvoiceId = [...(settlementData.invoiceIds || [])].sort((x, y) => x - y)[0];
+            const outletId = firstInvoiceId !== undefined ? outletIdByInvoice.get(firstInvoiceId) : fallbackOutletId;
+            if (outletId === undefined || outletId === null) {
+                throw new RequestValidateError('Outlet context is required to number the settlement');
             }
-        }
+            return outletId;
+        };
+        const localDate = localDocumentDate(parseUtcOffsetMinutes(requestBody.utcOffsetMinutes));
+        await ensureDocumentSequences(tenantPrisma, DOCUMENT_PREFIX.invoiceSettlement, settlements.map(settlementOutletId), localDate);
 
         // Use transaction for all settlements
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -821,7 +820,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                 // Create settlement
                 const newSettlement = await tx.invoiceSettlement.create({
                     data: {
-                        settlementNumber: settlementData.settlementNumber,
+                        settlementNumber: await nextDocumentNumber(tx, settlementOutletId(settlementData), DOCUMENT_PREFIX.invoiceSettlement, localDate),
                         settlementDate: settlementData.settlementDate,
                         settlementType: settlementData.settlementType,
                         paymentMethod: settlementData.paymentMethod || null,
@@ -1037,26 +1036,6 @@ let updateSettlement = async (settlement: InvoiceSettlementInput, databaseName: 
         // if (existingSettlement.status === 'COMPLETED' && updateData.status !== 'CANCELLED') {
         //     throw new RequestValidateError('Cannot modify completed settlement');
         // }
-
-        // Check for duplicate settlement number if being updated
-        if (updateData.settlementNumber && updateData.settlementNumber !== existingSettlement.settlementNumber) {
-            const duplicateSettlement = await tenantPrisma.invoiceSettlement.findFirst({
-                where: {
-                    settlementNumber: updateData.settlementNumber,
-                    deleted: false,
-                    id: { not: id }
-                },
-                select: { id: true }
-            });
-
-            if (duplicateSettlement) {
-                throw new RequestValidateError(
-                `Settlement number ${updateData.settlementNumber} already exists`,
-                ErrorCode.DocumentNumberDuplicate,
-                { entity: ErrorEntity.InvoiceSettlement, numbers: String(updateData.settlementNumber) }
-            );
-            }
-        }
 
         // Remove any fields that don't belong to the settlement table and filter valid fields only
         const cleanUpdateData = getValidSettlementFields(updateData);

@@ -144,10 +144,10 @@ After: `npx tsc --noEmit` + FE `flutter analyze` clean.
 
 Findings from the peer's multi-outlet merge that are **tracked but not blocking**. P0+P1 were all fixed; these remain:
 
-- **BE-2 (the big one) — primary-outlet default cutover.** The `requireOutletAccess` middleware defaults a header-less request to the caller's primary outlet, and allows any outlet when `allowedOutletIds` is empty (`outlet-authorization.middleware.ts:57,61-64`). **Safe only while every tenant is single-outlet.** Before any tenant goes multi-outlet: force the released app to always send `X-Outlet-ID` (hard update wall) and turn the fallback into a 400. This is the "out of scope" note in §2.
+- **BE-2 (the big one) — primary-outlet default cutover.** The `requireOutletAccess` middleware defaults a header-less request to the caller's primary outlet, and (since 2026-09-28) resolves a token without `allowedOutletIds` from `user_outlet` / the tenant's primary outlet (`api-helpers/outlet-access.ts`) instead of allowing any outlet. **Safe only while every tenant is single-outlet.** Before any tenant goes multi-outlet: force the released app to always send `X-Outlet-ID` (hard update wall) and turn the fallback into a 400. This is the "out of scope" note in §2.
 - **M2** — FE `_filterByAllowed` degrades open (empty allow-list → all cached outlets). Under the new model this is *desired for the Super Admin owner* but a *bug for staff*; scope it to non-super-admins.
 - **M3** — FE read-cache not outlet-keyed → stale rows on outlet switch; needs clear-on-switch or outlet-keyed cache.
-- **M4** — settlement `validateDocumentNumber` skips outlet cross-check (`invoice_settlement.controller.ts`).
+- ~~**M4** — settlement `validateDocumentNumber` skips outlet cross-check.~~ Resolved 2026-09-28: procurement numbers are server-assigned (`src/helpers/documentNumber.ts`, table `document_sequence`); `validateDocumentNumber` is gone.
 - **item.getAll** — nested `stockBalance` filter only applied when an outletId is present; item-sync without a header sums every outlet's stock. Match `getLowStockItems` rigor, or require the header.
 - **Stock-fallback (QA)** — his branch returns `stockRow?.availableQuantity ?? 0` (was `stockRow ?? itemRow.stockQuantity ?? 0`); a missing `StockBalances` row now reads 0 → POS may block a sale.
 - **FE Drift v17** — also backfills-to-1 (mis-attributes if real outlet id ≠ 1); `purchase_return` got app-layer outlet scoping but **no DB-level FK**.

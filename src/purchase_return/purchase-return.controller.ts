@@ -3,9 +3,9 @@ import validator from "validator"
 import service from "./purchase-return.service"
 import { PurchaseReturn } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { RequestValidateError } from "../api-helpers/error"
 import { requireOutletHeader } from "../api-helpers/outlet-helper"
-import { validateDocumentNumber } from "../helpers/documentHelper"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { CancelPurchaseReturnInput, CreatePurchaseReturnRequestBody, PurchaseReturnInput } from "./purchase-return.request"
@@ -119,16 +119,12 @@ let createMany = (req: NetworkRequest<CreatePurchaseReturnRequestBody>, res: Res
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    if (requestBody.purchaseReturns && requestBody.purchaseReturns.length > 0) {
-        const allowed = req.user?.allowedOutletIds ?? [];
-        requestBody.purchaseReturns.forEach((pr: PurchaseReturnInput) => {
-            if (!allowed.includes(pr.outletId)) {
-                throw new ForbiddenError("Outlet access denied");
-            }
-            validateDocumentNumber(pr.returnNumber, pr.outletId);
-        });
-    }
-    service.createMany(req.user.databaseName, requestBody)
+    const user = req.user
+    // Same outlet rule as the outlet middleware (admin bypass; a token without
+    // allowedOutletIds resolves from user_outlet / the primary outlet). Document
+    // numbers are assigned by the service — any client-sent number is ignored.
+    assertOutletsAllowed(req, (requestBody.purchaseReturns ?? []).map((pr: PurchaseReturnInput) => pr.outletId))
+        .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
             sendResponse(res, response)
         })
@@ -150,9 +146,6 @@ let update = (req: NetworkRequest<PurchaseReturnInput>, res: Response, next: Nex
         throw new RequestValidateError('Update failed: [id] not found')
     }
     const outletId = requireOutletHeader(req, purchaseReturn.outletId);
-    if (purchaseReturn.returnNumber) {
-        validateDocumentNumber(purchaseReturn.returnNumber, purchaseReturn.outletId);
-    }
     service.update(purchaseReturn, req.user.databaseName, outletId)
         .then((updatedPurchaseReturn: any) => sendResponse(res, updatedPurchaseReturn))
         .catch(next)

@@ -18,7 +18,9 @@ interface PurchaseOrderItemInput {
 
 export interface PurchaseOrderInput {
     id?: number; // Optional for creation, required for updates
-    purchaseOrderNumber: string;
+    // Server-assigned on create ({PO}-OUT{outletId}-{yyyyMMdd}-{seq}) and immutable;
+    // any client-sent value is ignored on create and update.
+    purchaseOrderNumber?: string;
     quotationId?: number; // Optional field
     outletId: number;
     supplierId: number;
@@ -63,4 +65,7 @@ export interface DownPaymentInput {
 
 export interface CreatePurchaseOrderRequestBody {
     purchaseOrders: PurchaseOrderInput[];
+    // Client's UTC offset in minutes for the yyyyMMdd part of the assigned numbers.
+    // Optional; defaults to 420 (WIB).
+    utcOffsetMinutes?: number;
 }

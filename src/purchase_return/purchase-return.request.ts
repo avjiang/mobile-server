@@ -14,7 +14,9 @@ interface PurchaseReturnItemInput {
 
 export interface PurchaseReturnInput {
     id?: number;
-    returnNumber: string;
+    // Server-assigned on create ({RTN}-OUT{outletId}-{yyyyMMdd}-{seq}) and immutable;
+    // any client-sent value is ignored.
+    returnNumber?: string;
     invoiceId: number;
     outletId: number;
     supplierId: number;
@@ -31,6 +33,9 @@ export interface PurchaseReturnInput {
 
 export interface CreatePurchaseReturnRequestBody {
     purchaseReturns: PurchaseReturnInput[];
+    // Client's UTC offset in minutes for the yyyyMMdd part of the assigned numbers.
+    // Optional; defaults to 420 (WIB).
+    utcOffsetMinutes?: number;
 }
 
 export interface CancelPurchaseReturnInput {

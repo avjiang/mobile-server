@@ -7,6 +7,7 @@ import { create } from "domain";
 import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request";
 import { Decimal } from 'decimal.js';
 import { restateSalesCostsForReceipts, ReceiptCostChange } from "../stock/sales-cost-restatement";
+import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
 
 /**
  * How much of a PO's down-payment balance this invoice draws:
@@ -942,27 +943,6 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
         const purchaseOrderIds = [...new Set(invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number'))];
         const deliveryOrderIds = [...new Set(invoices.flatMap(inv => inv.deliveryOrderIds || []).filter((id): id is number => typeof id === 'number'))];
 
-        // Check for duplicate invoice numbers
-        const invoiceNumbers = invoices.map(inv => inv.invoiceNumber).filter(Boolean);
-        if (invoiceNumbers.length > 0) {
-            const existingInvoices = await tenantPrisma.invoice.findMany({
-                where: {
-                    invoiceNumber: { in: invoiceNumbers },
-                    deleted: false
-                },
-                select: { invoiceNumber: true }
-            });
-
-            if (existingInvoices.length > 0) {
-                const duplicateNumbers = existingInvoices.map(inv => inv.invoiceNumber);
-                throw new RequestValidateError(
-                    `Invoice numbers already exist: ${duplicateNumbers.join(', ')}`,
-                    ErrorCode.DocumentNumberDuplicate,
-                    { entity: ErrorEntity.Invoice, numbers: duplicateNumbers.join(', ') }
-                );
-            }
-        }
-
         // Batch validate all outlets exist
         if (outletIds.length > 0) {
             const existingOutlets = await tenantPrisma.outlet.findMany({
@@ -1056,6 +1036,10 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
             }
         }
 
+        // Invoice numbers are assigned here, never taken from the client.
+        const localDate = localDocumentDate(parseUtcOffsetMinutes(requestBody.utcOffsetMinutes));
+        await ensureDocumentSequences(tenantPrisma, DOCUMENT_PREFIX.invoice, invoices.map(inv => inv.outletId), localDate);
+
         // Use single transaction for all creations
         const result = await tenantPrisma.$transaction(async (tx) => {
             const createdInvoices = [];
@@ -1082,7 +1066,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
 
                 const newInvoice = await tx.invoice.create({
                     data: {
-                        invoiceNumber: invoiceData.invoiceNumber,
+                        invoiceNumber: await nextDocumentNumber(tx, invoiceData.outletId, DOCUMENT_PREFIX.invoice, localDate),
                         taxInvoiceNumber: invoiceData.taxInvoiceNumber || "",
                         purchaseOrderId: invoiceData.purchaseOrderId,
                         supplierId: invoiceData.supplierId,
@@ -1225,26 +1209,6 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
             throw new NotFoundError("Invoice");
         }
 
-        // Check for duplicate invoice number if being updated
-        if (updateData.invoiceNumber && updateData.invoiceNumber !== existingInvoice.invoiceNumber) {
-            const duplicateInvoice = await tenantPrisma.invoice.findFirst({
-                where: {
-                    invoiceNumber: updateData.invoiceNumber,
-                    deleted: false,
-                    id: { not: id }
-                },
-                select: { id: true }
-            });
-
-            if (duplicateInvoice) {
-                throw new RequestValidateError(
-                `Invoice number ${updateData.invoiceNumber} already exists`,
-                ErrorCode.DocumentNumberDuplicate,
-                { entity: ErrorEntity.Invoice, numbers: String(updateData.invoiceNumber) }
-            );
-            }
-        }
-
         // Collect IDs for batch validation
         const validationIds = {
             outletIds: updateData.outletId && updateData.outletId !== existingInvoice.outletId ? [updateData.outletId] : [],
@@ -1333,7 +1297,7 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
             const updatedInvoice = await tx.invoice.update({
                 where: { id: id },
                 data: {
-                    invoiceNumber: updateData.invoiceNumber,
+                    // invoiceNumber is server-assigned at create and immutable — never written here.
                     taxInvoiceNumber: updateData.taxInvoiceNumber,
                     purchaseOrderId: updateData.purchaseOrderId,
                     supplierId: updateData.supplierId,

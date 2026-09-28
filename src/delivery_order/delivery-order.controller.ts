@@ -3,13 +3,13 @@ import validator from "validator"
 import service from "./delivery-order.service"
 import { DeliveryOrder, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { RequestValidateError } from "../api-helpers/error"
 import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request"
-import { validateDocumentNumber } from "../helpers/documentHelper"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 
 const router = express.Router()
 
@@ -107,16 +107,12 @@ let createMany = (req: NetworkRequest<CreateDeliveryOrderRequestBody>, res: Resp
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    if (requestBody.deliveryOrders && requestBody.deliveryOrders.length > 0) {
-        const allowed = req.user?.allowedOutletIds ?? [];
-        requestBody.deliveryOrders.forEach((doOrder: DeliveryOrderInput) => {
-            if (!allowed.includes(doOrder.outletId)) {
-                throw new ForbiddenError("Outlet access denied");
-            }
-            validateDocumentNumber(doOrder.trackingNumber, doOrder.outletId);
-        });
-    }
-    service.createMany(req.user.databaseName, requestBody)
+    const user = req.user
+    // Same outlet rule as the outlet middleware (admin bypass; a token without
+    // allowedOutletIds resolves from user_outlet / the primary outlet). Document
+    // numbers are assigned by the service — any client-sent number is ignored.
+    assertOutletsAllowed(req, (requestBody.deliveryOrders ?? []).map((doOrder: DeliveryOrderInput) => doOrder.outletId))
+        .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
             sendResponse(res, response)
         })
@@ -138,10 +134,6 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
         throw new RequestValidateError('Update failed: [id] not found')
     }
     const outletId = requireOutletHeader(req, deliveryOrder.outletId);
-
-    if (deliveryOrder.trackingNumber) {
-        validateDocumentNumber(deliveryOrder.trackingNumber, deliveryOrder.outletId);
-    }
 
     service.update(deliveryOrder, req.user.databaseName, outletId)
         .then((updatedDeliveryOrder: any) => sendResponse(res, updatedDeliveryOrder))

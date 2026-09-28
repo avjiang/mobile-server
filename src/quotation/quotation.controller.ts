@@ -3,9 +3,9 @@ import validator from "validator"
 import service from "./quotation.service"
 import { Quotation, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
-import { RequestValidateError, ForbiddenError } from "../api-helpers/error"
+import { RequestValidateError } from "../api-helpers/error"
 import { requireOutletHeader } from "../api-helpers/outlet-helper"
-import { validateDocumentNumber } from "../helpers/documentHelper"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
@@ -107,16 +107,12 @@ let createMany = (req: NetworkRequest<CreateQuotationRequestBody>, res: Response
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    if (requestBody.quotations && requestBody.quotations.length > 0) {
-        const allowed = req.user?.allowedOutletIds ?? [];
-        requestBody.quotations.forEach((q: QuotationInput) => {
-            if (!allowed.includes(q.outletId)) {
-                throw new ForbiddenError("Outlet access denied");
-            }
-            validateDocumentNumber(q.quotationNumber, q.outletId);
-        });
-    }
-    service.createMany(req.user.databaseName, requestBody)
+    const user = req.user
+    // Same outlet rule as the outlet middleware (admin bypass; a token without
+    // allowedOutletIds resolves from user_outlet / the primary outlet). Document
+    // numbers are assigned by the service — any client-sent number is ignored.
+    assertOutletsAllowed(req, (requestBody.quotations ?? []).map((q: QuotationInput) => q.outletId))
+        .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
             sendResponse(res, response)
         })
@@ -158,9 +154,6 @@ let update = (req: NetworkRequest<QuotationInput>, res: Response, next: NextFunc
         throw new RequestValidateError('Update failed: [id] not found')
     }
     const outletId = requireOutletHeader(req, quotation.outletId);
-    if (quotation.quotationNumber) {
-        validateDocumentNumber(quotation.quotationNumber, quotation.outletId);
-    }
     service.update(quotation, req.user.databaseName, outletId)
         .then((updatedQuotation: any) => sendResponse(res, updatedQuotation))
         .catch(next)

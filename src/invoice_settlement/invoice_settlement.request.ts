@@ -1,6 +1,9 @@
 export interface InvoiceSettlementInput {
     id?: number;
-    settlementNumber: string;
+    // Server-assigned on create ({SET}-OUT{outletId}-{yyyyMMdd}-{seq}, outlet = the
+    // outlet of the settlement's lowest-id invoice) and immutable; any client-sent
+    // value is ignored on create and update.
+    settlementNumber?: string;
     settlementDate: Date;
     settlementType: string; // e.g., "PARTIAL", "FULL", "BULK"
     paymentMethod?: string; // e.g., "CASH", "BANK_TRANSFER", "CHEQUE"
@@ -43,6 +46,9 @@ export interface AddSettlementPaymentInput {
 
 export interface CreateInvoiceSettlementRequestBody {
     settlements: InvoiceSettlementInput[];
+    // Client's UTC offset in minutes for the yyyyMMdd part of the assigned numbers.
+    // Optional; defaults to 420 (WIB).
+    utcOffsetMinutes?: number;
 }
 
 export interface SettlementSyncRequest {

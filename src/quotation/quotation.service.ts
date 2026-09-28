@@ -6,6 +6,7 @@ import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateQuotationRequestBody, QuotationInput } from "./quotation.request";
+import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
 
 let getAll = async (
     databaseName: string,
@@ -593,7 +594,6 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
         // Extract unique IDs for batch validation
         const outletIds = [...new Set(quotations.map(q => q.outletId).filter(Boolean))];
         const supplierIds = [...new Set(quotations.map(q => q.supplierId).filter(Boolean))];
-        const quotationNumbers = quotations.map(q => q.quotationNumber);
 
         // Batch validate all outlets exist
         if (outletIds.length > 0) {
@@ -637,30 +637,9 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
             }
         }
 
-        // Batch check for duplicate quotation numbers
-        const existingQuotations = await tenantPrisma.quotation.findMany({
-            where: {
-                quotationNumber: { in: quotationNumbers },
-                deleted: false
-            },
-            select: { quotationNumber: true }
-        });
-
-        if (existingQuotations.length > 0) {
-            const duplicateNumbers = existingQuotations.map(q => q.quotationNumber);
-            throw new RequestValidateError(
-                    `Quotations with numbers ${duplicateNumbers.join(', ')} already exist`,
-                    ErrorCode.DocumentNumberDuplicate,
-                    { entity: ErrorEntity.Quotation, numbers: duplicateNumbers.join(', ') }
-                );
-        }
-
-        // Validate required fields
-        for (const quotationData of quotations) {
-            if (!quotationData.quotationNumber) {
-                throw new RequestValidateError('quotationNumber is required');
-            }
-        }
+        // Quotation numbers are assigned here, never taken from the client.
+        const localDate = localDocumentDate(parseUtcOffsetMinutes(requestBody.utcOffsetMinutes));
+        await ensureDocumentSequences(tenantPrisma, DOCUMENT_PREFIX.quotation, quotations.map(q => q.outletId), localDate);
 
         // Use single transaction for all creations
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -670,7 +649,7 @@ let createMany = async (databaseName: string, requestBody: CreateQuotationReques
                 // Create quotation
                 const newQuotation = await tx.quotation.create({
                     data: {
-                        quotationNumber: quotationData.quotationNumber,
+                        quotationNumber: await nextDocumentNumber(tx, quotationData.outletId, DOCUMENT_PREFIX.quotation, localDate),
                         outletId: quotationData.outletId,
                         supplierId: quotationData.supplierId,
                         sessionId: quotationData.sessionId || null,
@@ -860,25 +839,6 @@ let update = async (quotation: QuotationInput, databaseName: string, outletId: n
             );
         }
 
-        // Validate quotation number if being changed
-        if (updateData.quotationNumber &&
-            updateData.quotationNumber !== existingQuotation.quotationNumber) {
-            validationPromises.push(
-                tenantPrisma.quotation.findFirst({
-                    where: {
-                        quotationNumber: updateData.quotationNumber,
-                        deleted: false,
-                        id: { not: id }
-                    },
-                    select: { id: true }
-                }).then(duplicate => ({
-                    type: 'quotationNumber',
-                    exists: !!duplicate,
-                    value: updateData.quotationNumber
-                }))
-            );
-        }
-
         // Validate items if being updated
         if (updateData.quotationItems && Array.isArray(updateData.quotationItems)) {
             const itemIds = [...new Set(updateData.quotationItems.map(item => item.itemId).filter(Boolean))];
@@ -920,15 +880,6 @@ let update = async (quotation: QuotationInput, databaseName: string, outletId: n
                     );
                     }
                     break;
-                case 'quotationNumber':
-                    if ('exists' in result && 'value' in result && result.exists) {
-                        throw new RequestValidateError(
-                        `Quotation with number ${result.value} already exists`,
-                        ErrorCode.DocumentNumberDuplicate,
-                        { entity: ErrorEntity.Quotation, numbers: String(result.value) }
-                    );
-                    }
-                    break;
                 case 'items':
                     if ('existing' in result && 'requested' in result) {
                         const existingItemIds = new Set<number>(result.existing);
@@ -951,7 +902,7 @@ let update = async (quotation: QuotationInput, databaseName: string, outletId: n
             const updatedQuotation = await tx.quotation.update({
                 where: { id: id },
                 data: {
-                    quotationNumber: updateData.quotationNumber,
+                    // quotationNumber is server-assigned at create and immutable — never written here.
                     outletId: updateData.outletId,
                     quotationDate: updateData.quotationDate,
                     validUntilDate: updateData.validUntilDate,

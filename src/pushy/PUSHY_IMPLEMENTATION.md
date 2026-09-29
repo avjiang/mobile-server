@@ -1,5 +1,7 @@
 # Pushy Push Notification Implementation
 
+> **Historical design notes.** Current behaviour lives in `flutter-front-end/docs/modules/PUSH_NOTIFICATIONS.md`. Two things below are out of date: push runs on **FCM** since 2026-09-28, and there is **no device quota or Extra Device add-on** since 2026-09-29 (the `addDeviceQuota` / `reduceDeviceQuota` endpoints and the IDR 20,000/device pricing were removed).
+
 ---
 
 ## 📋 CHANGELOG - 2025-01-05

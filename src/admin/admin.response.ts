@@ -32,6 +32,10 @@ export class TenantCreationDto {
     tenant: TenantDto;
     tenantUser: TenantUserResponse;
 
+    // Set only when the service generated the owner's initial password (the
+    // /admin/signup case). Returned once; it is stored hashed.
+    temporaryPassword?: string;
+
     warehouse?: {
         id: number;
         warehouseName: string;

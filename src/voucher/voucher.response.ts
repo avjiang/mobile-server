@@ -26,6 +26,8 @@ export interface VoucherResponse {
     status: string;
     milestoneSpendSnapshot: number | null;
     label: string;
+    /** Reward rule name for rule-issued vouchers; null for manual issues. Display this, not `label`. */
+    ruleName: string | null;
     expiresAt: string;
     redeemedAt: string | null;
     redeemedInSalesId: number | null;

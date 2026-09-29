@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express"
+import { rejectPlan } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./invoice_settlement.service"
 import { Invoice, StockBalance } from "../../prisma/client/generated/client"
@@ -11,6 +12,8 @@ import { AddSettlementPaymentInput, CreateInvoiceSettlementRequestBody, InvoiceS
 
 const router = express.Router()
 
+// Purchasing (and its suppliers' documents) is not part of Retail Lite.
+router.use(rejectPlan('Lite'))
 const createSettlement = (req: NetworkRequest<CreateInvoiceSettlementRequestBody>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');

@@ -34,6 +34,12 @@ export interface DemoItemDef {
     includesIroning?: boolean;
     /** Max units per line at sale time (default 3). */
     maxQty?: number;
+    /** Laundry: how PRICE becomes a line total — mirrors `item.pricingMode`. */
+    pricingMode?: 'per_kg' | 'per_piece' | 'flat_per_load';
+    /** Laundry `per_kg` services: the weighed kg range a sale draws from. */
+    kgRange?: [number, number];
+    /** Laundry services: supplies consumed per sale (`item_consumable`). */
+    recipe?: { supply: string; rate: number; basis: 'perKg' | 'perLoad' }[];
 }
 
 export const DEMO_SUPPLIER = {
@@ -94,38 +100,60 @@ export const RETAIL_ITEMS: DemoItemDef[] = [
 ];
 
 export const LAUNDRY_CATEGORIES: DemoCategory[] = [
-    { name: 'Cuci Kiloan', description: 'Layanan cuci per muatan mesin' },
-    { name: 'Cuci Satuan', description: 'Selimut, bed cover, dan barang besar' },
+    { name: 'Cuci Kiloan', description: 'Cuci dan setrika, dihitung per kilogram' },
+    { name: 'Cuci Satuan', description: 'Bed cover, selimut, dan sprei per buah' },
     { name: 'Jasa Lainnya', description: 'Setrika, cuci sepatu, dan cuci tas' },
-    { name: 'Layanan Ekspres', description: 'Selesai di hari yang sama' },
-    { name: 'Perlengkapan', description: 'Deterjen, pewangi, dan kemasan' },
+    { name: 'Layanan Ekspres', description: 'Selesai dalam 1 hari' },
+    { name: 'Perlengkapan', description: 'Deterjen, pewangi, pelicin, dan kemasan' },
 ];
 
 /**
- * Laundry. `defaultLoadWeightKg` is what separates a **wash** service (counts as a
+ * Laundry — a typical Indonesian *laundry kiloan*, priced the way the app's own
+ * starter pack prices it (FE `laundry_starter_pack_sheet.dart`): kiloan services are
+ * `per_kg` (rate × weighed kg), bed covers/selimut/sprei are `per_piece`, shoes/bags
+ * are flat Jasa. Keep the two in step, so the demo shop looks like the shop a new
+ * owner gets from the starter pack.
+ *
+ * `defaultLoadWeightKg` is what separates a **wash** service (counts as a
  * "muatan"/load and contributes kg to laundryOps) from **jasa** (ironing, shoes, bags)
- * — report.service keys off `defaultLoadWeightKg !== null` exactly. Supplies
- * (`itemType: 'supply'`) are stocked but never sold as lines; they exist so Stock
- * Management and the supply screens have something real in them.
+ * — report.service keys off `defaultLoadWeightKg !== null` exactly. A weighed or
+ * per-piece wash carries 0 (not null), exactly like the starter pack.
+ *
+ * `recipe` is the service's bill of materials (`item_consumable`): every sale draws
+ * those supplies down, so Stock Management, the low-supplies card and the report's
+ * supplies block all move. Supplies (`itemType: 'supply'`) are never sold as lines.
  */
 export const LAUNDRY_ITEMS: DemoItemDef[] = [
-    // Wash services — carry defaultLoadWeightKg.
-    { name: 'Cuci Kering Lipat', code: 'CKL-006', category: 0, cost: 14000, price: 42000, unitOfMeasure: 'Piece', weight: 26, itemType: 'service', defaultLoadWeightKg: 6, maxQty: 1 },
-    { name: 'Cuci Kering Setrika', code: 'CKS-006', category: 0, cost: 18000, price: 54000, unitOfMeasure: 'Piece', weight: 24, itemType: 'service', defaultLoadWeightKg: 6, includesIroning: true, maxQty: 1 },
-    { name: 'Cuci Ekspres 6 Jam', code: 'EXP-006', category: 3, cost: 22000, price: 72000, unitOfMeasure: 'Piece', weight: 8, itemType: 'service', defaultLoadWeightKg: 6, includesIroning: true, maxQty: 1 },
-    { name: 'Cuci Selimut', code: 'SAT-001', category: 1, cost: 15000, price: 45000, unitOfMeasure: 'Piece', weight: 7, itemType: 'service', defaultLoadWeightKg: 4, maxQty: 1 },
-    { name: 'Cuci Bed Cover', code: 'SAT-002', category: 1, cost: 19000, price: 55000, unitOfMeasure: 'Piece', weight: 6, itemType: 'service', defaultLoadWeightKg: 5, maxQty: 1 },
+    // Kiloan — weighed at the counter, rate per kg.
+    { name: 'Cuci Kering Lipat', code: 'CKL-001', category: 0, cost: 2000, price: 6000, unitOfMeasure: 'Piece', weight: 30, itemType: 'service', pricingMode: 'per_kg', defaultLoadWeightKg: 0, kgRange: [2.5, 8],
+      recipe: [{ supply: 'SUP-001', rate: 18, basis: 'perKg' }, { supply: 'SUP-002', rate: 6, basis: 'perKg' }, { supply: 'SUP-004', rate: 1, basis: 'perLoad' }] },
+    { name: 'Cuci Setrika', code: 'CKS-001', category: 0, cost: 2800, price: 8000, unitOfMeasure: 'Piece', weight: 34, itemType: 'service', pricingMode: 'per_kg', defaultLoadWeightKg: 0, includesIroning: true, kgRange: [2.5, 8],
+      recipe: [{ supply: 'SUP-001', rate: 18, basis: 'perKg' }, { supply: 'SUP-002', rate: 6, basis: 'perKg' }, { supply: 'SUP-003', rate: 4, basis: 'perKg' }, { supply: 'SUP-004', rate: 1, basis: 'perLoad' }] },
+    { name: 'Cuci Kilat 1 Hari', code: 'EXP-001', category: 3, cost: 3500, price: 12000, unitOfMeasure: 'Piece', weight: 8, itemType: 'service', pricingMode: 'per_kg', defaultLoadWeightKg: 0, includesIroning: true, kgRange: [2, 5],
+      recipe: [{ supply: 'SUP-001', rate: 18, basis: 'perKg' }, { supply: 'SUP-002', rate: 6, basis: 'perKg' }, { supply: 'SUP-003', rate: 4, basis: 'perKg' }, { supply: 'SUP-004', rate: 1, basis: 'perLoad' }] },
+    { name: 'Setrika Saja', code: 'STR-001', category: 2, cost: 1500, price: 5000, unitOfMeasure: 'Piece', weight: 10, itemType: 'service', pricingMode: 'per_kg', includesIroning: true, kgRange: [2, 6],
+      recipe: [{ supply: 'SUP-003', rate: 4, basis: 'perKg' }, { supply: 'SUP-004', rate: 1, basis: 'perLoad' }] },
 
-    // Jasa — no defaultLoadWeightKg, so they never inflate kg/loads.
-    { name: 'Setrika Saja (per kg)', code: 'JSA-001', category: 2, cost: 2500, price: 8000, unitOfMeasure: 'Kilogram', weight: 14, itemType: 'service', maxQty: 6 },
-    { name: 'Cuci Sepatu', code: 'JSA-002', category: 2, cost: 12000, price: 35000, unitOfMeasure: 'Piece', weight: 8, itemType: 'service', maxQty: 2 },
-    { name: 'Cuci Tas', code: 'JSA-003', category: 2, cost: 14000, price: 40000, unitOfMeasure: 'Piece', weight: 5, itemType: 'service', maxQty: 2 },
+    // Satuan — one price per piece washed.
+    { name: 'Bed Cover', code: 'SAT-001', category: 1, cost: 11000, price: 35000, unitOfMeasure: 'Piece', weight: 6, itemType: 'service', pricingMode: 'per_piece', defaultLoadWeightKg: 0,
+      recipe: [{ supply: 'SUP-001', rate: 60, basis: 'perLoad' }, { supply: 'SUP-002', rate: 20, basis: 'perLoad' }, { supply: 'SUP-004', rate: 1, basis: 'perLoad' }] },
+    { name: 'Selimut', code: 'SAT-002', category: 1, cost: 8000, price: 25000, unitOfMeasure: 'Piece', weight: 6, itemType: 'service', pricingMode: 'per_piece', defaultLoadWeightKg: 0,
+      recipe: [{ supply: 'SUP-001', rate: 45, basis: 'perLoad' }, { supply: 'SUP-002', rate: 15, basis: 'perLoad' }, { supply: 'SUP-004', rate: 1, basis: 'perLoad' }] },
+    { name: 'Sprei', code: 'SAT-003', category: 1, cost: 5000, price: 15000, unitOfMeasure: 'Piece', weight: 5, itemType: 'service', pricingMode: 'per_piece', defaultLoadWeightKg: 0,
+      recipe: [{ supply: 'SUP-001', rate: 30, basis: 'perLoad' }, { supply: 'SUP-002', rate: 10, basis: 'perLoad' }, { supply: 'SUP-004', rate: 1, basis: 'perLoad' }] },
 
-    // Supplies — stocked master data, never sold.
-    { name: 'Deterjen Cair', code: 'SUP-001', category: 4, cost: 45, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 20000, reorderThreshold: 5000, itemType: 'supply' },
-    { name: 'Pewangi Pakaian', code: 'SUP-002', category: 4, cost: 38, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 15000, reorderThreshold: 4000, itemType: 'supply' },
-    { name: 'Pemutih Pakaian', code: 'SUP-003', category: 4, cost: 30, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 8000, reorderThreshold: 2000, itemType: 'supply' },
-    { name: 'Plastik Kemasan', code: 'SUP-004', category: 4, cost: 900, price: 0, unitOfMeasure: 'Piece', weight: 0, opening: 500, reorderThreshold: 100, itemType: 'supply' },
+    // Jasa — flat price, no machine, so they never inflate kg/loads.
+    { name: 'Cuci Sepatu', code: 'JSA-001', category: 2, cost: 9000, price: 30000, unitOfMeasure: 'Piece', weight: 6, itemType: 'service', maxQty: 2 },
+    { name: 'Cuci Tas', code: 'JSA-002', category: 2, cost: 11000, price: 35000, unitOfMeasure: 'Piece', weight: 3, itemType: 'service', maxQty: 1 },
+
+    // Supplies — stocked master data, drawn down by the recipes above. Pewangi opens
+    // low on purpose: ten days of trading (~2.850 ml) push it under its reorder
+    // threshold, so the dashboard's low-supplies card (and the sales tour's
+    // "bahan-menipis" shot) has something to say. 6000 landed at ~3.155 — above 3000.
+    { name: 'Deterjen Cair', code: 'SUP-001', category: 4, cost: 25, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 25000, reorderThreshold: 5000, itemType: 'supply' },
+    { name: 'Pewangi Pakaian', code: 'SUP-002', category: 4, cost: 30, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 5000, reorderThreshold: 3000, itemType: 'supply' },
+    { name: 'Pelicin Setrika', code: 'SUP-003', category: 4, cost: 20, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 6000, reorderThreshold: 1500, itemType: 'supply' },
+    { name: 'Plastik Kemasan', code: 'SUP-004', category: 4, cost: 400, price: 0, unitOfMeasure: 'Piece', weight: 0, opening: 400, reorderThreshold: 100, itemType: 'supply' },
 ];
 
 /** Twelve regulars. Shared by both verticals — a laundry has repeat customers too. */
@@ -146,11 +174,85 @@ export const DEMO_CUSTOMERS = [
 
 /**
  * Payment mix. Cash still dominates in a UMKM, but the demo should show that the
- * payment breakdown chart has more than one slice in it.
+ * payment breakdown chart has more than one slice in it. Only the methods the app's
+ * payment screen can actually record (`payment_screen.dart`: Cash, Bank Transfer) —
+ * anything else has no localized label and shows up raw ("E-Wallet") in Indonesian.
  */
 export const PAYMENT_MIX: { method: string; weight: number }[] = [
-    { method: 'Cash', weight: 55 },
-    { method: 'E-Wallet', weight: 25 },
-    { method: 'Bank Transfer', weight: 14 },
-    { method: 'Card', weight: 6 },
+    { method: 'Cash', weight: 70 },
+    { method: 'Bank Transfer', weight: 30 },
+];
+
+/**
+ * The laundry demo's shop identity — what its receipts, nota PDFs and WhatsApp
+ * messages print. Upserted into `setting` (a preserved table), so a reseed keeps it
+ * current instead of leaving the English defaults ("My Company", "Thank you for your
+ * business!") that `setting_definition` falls back to.
+ */
+export const LAUNDRY_SHOP = {
+    ownerFirstName: 'Andi',
+    ownerLastName: 'Pratama',
+    outletName: 'Outlet Utama',
+    street: 'Jl. Merdeka No. 18',
+    city: 'Bandung',
+    warehouseName: 'Gudang Utama',
+    settings: {
+        company_name: 'Laundry Wangi Bersih',
+        receipt_address: 'Jl. Merdeka No. 18, Bandung',
+        receipt_phone: '0812-2000-1818',
+        receipt_footer: 'Terima kasih, cucian Anda kami rawat sepenuh hati.',
+        // USER scope — without it the app falls back to the definition default ('en')
+        // and flips to English right after login.
+        language: 'id',
+        receipt_terms: 'Cucian yang tidak diambil lebih dari 30 hari di luar tanggung jawab kami. Komplain maksimal 1x24 jam setelah pengambilan.',
+    } as Record<string, string>,
+};
+
+/** Laundry prepaid packages (`subscription_package`, USAGE) and who bought one. */
+export const LAUNDRY_PACKAGES = [
+    { name: 'Paket Hemat 10x Cuci', price: 90000, totalQuota: 10, quotaUnit: 'sesi', validityDays: 60, categories: [0] },
+    { name: 'Paket Keluarga 20x Cuci', price: 170000, totalQuota: 20, quotaUnit: 'sesi', validityDays: 90, categories: [0, 1] },
+];
+/** [customer index into DEMO_CUSTOMERS, package index, sessions already used]. */
+export const LAUNDRY_PACKAGE_BUYERS: [number, number, number][] = [
+    [1, 0, 3],
+    [5, 0, 7],
+    [3, 1, 4],
+];
+
+/**
+ * Loyalty baseline, both verticals: one points programme and a Rp 500rb reward rule.
+ * Tiers only for laundry — Pro Laundry bundles Advanced Loyalty; Pro Retail needs the
+ * add-on, which the demo tenant does not carry. All text Indonesian (the sales tour's
+ * English guard fails on anything else). Numbers match the loyalty Instagram carousel:
+ * Perak 5 %, Emas 10 % / 2× points, voucher 10 % at every Rp 500.000.
+ */
+export const DEMO_LOYALTY = {
+    program: { name: 'Poin Pelanggan Setia', pointsPerCurrency: 0.001, currencyPerPoint: 10, pointsExpiryDays: 365, minRedeemPoints: 50 },
+    tiers: [
+        { name: 'Perunggu', minSpend: 0, discountPercentage: 0, pointsMultiplier: 1, sortOrder: 0 },
+        { name: 'Perak', minSpend: 500000, discountPercentage: 5, pointsMultiplier: 1.5, sortOrder: 1 },
+        { name: 'Emas', minSpend: 1000000, discountPercentage: 10, pointsMultiplier: 2, sortOrder: 2 },
+    ],
+    rewardRule: {
+        name: 'Hadiah Belanja Rp 500rb', spendThreshold: 500000, isRepeatable: true,
+        discountType: 'PERCENTAGE', discountPercentage: 10, expiryDays: 30,
+        label: 'Hadiah Belanja Rp 500rb — Diskon 10%',
+    },
+    /** Description of the opening ADJUST row: balances carried over from the paper stamp card. */
+    openingDescription: 'Saldo awal dari kartu stempel',
+};
+
+/**
+ * Where three regulars END UP after the ten seeded days, so real-UI captures can cross a
+ * threshold with one live sale. [DEMO_CUSTOMERS index, lifetime spend, points balance].
+ * The part not explained by their seeded sales is an opening balance (see above).
+ *   Rina  — Rp 460.000: one Rp 64.000 sale crosses the Rp 500.000 voucher (and Perak).
+ *   Siti  — Rp 950.000: Perak, one sale from Emas.
+ *   Dewi  — Rp 1.250.000: already Emas, with a voucher waiting.
+ */
+export const LOYALTY_TARGETS: [number, number, number][] = [
+    [5, 460000, 240],
+    [1, 950000, 820],
+    [3, 1250000, 1400],
 ];

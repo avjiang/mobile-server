@@ -17,7 +17,7 @@ const {
     voucherDiscountFor,
     shouldRestoreVoucher,
     expectedRepeatableVoucherCount,
-    formatVoucherLabel,
+    toVoucherListItem,
     validateRuleDiscountFields,
     formatRule,
 } = (voucherService as any).__testables;
@@ -169,22 +169,23 @@ describe("expectedRepeatableVoucherCount", () => {
     });
 });
 
-// ── formatVoucherLabel (label shape on issued vouchers) ────────────────────
+// ── toVoucherListItem (list response shape) ────────────────────────────────
 
-describe("formatVoucherLabel", () => {
-    test("PERCENTAGE rule → 'Name — X% off'", () => {
-        const label = formatVoucherLabel("Spend RM 1,000 Reward", "PERCENTAGE", 10, 0);
-        assert.equal(label, "Spend RM 1,000 Reward — 10% off");
+describe("toVoucherListItem", () => {
+    test("rule-issued voucher → ruleName from the relation, relation stripped", () => {
+        const item = toVoucherListItem({
+            id: 1, rewardRuleId: 7, label: "Hadiah — RM 5000 off",
+            rewardRule: { name: "Hadiah Belanja" },
+        });
+        assert.equal(item.ruleName, "Hadiah Belanja");
+        assert.equal(item.label, "Hadiah — RM 5000 off");
+        assert.equal("rewardRule" in item, false);
     });
 
-    test("FIXED rule → 'Name — RM X off'", () => {
-        const label = formatVoucherLabel("Fixed RM 20 off", "FIXED", 0, 20_000);
-        assert.equal(label, "Fixed RM 20 off — RM 20000 off");
-    });
-
-    test("Decimal-as-string values coerce via toNum", () => {
-        const label = formatVoucherLabel("X", "PERCENTAGE", "15.00" as any, null);
-        assert.equal(label, "X — 15% off");
+    test("manual voucher (no rule) → ruleName null, typed label kept", () => {
+        const item = toVoucherListItem({ id: 2, rewardRuleId: null, label: "Maaf ya", rewardRule: null });
+        assert.equal(item.ruleName, null);
+        assert.equal(item.label, "Maaf ya");
     });
 });
 

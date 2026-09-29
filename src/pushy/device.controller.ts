@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express';
-import PushyService from './pushy.service';
+import PushyService, { PUSH_PROVIDER_FCM, PUSH_PROVIDER_PUSHY } from './pushy.service';
 import deviceLimitService from './device.service';
 import { PrismaClient as GlobalPrismaClient } from '../../prisma/global-client/generated/global';
 import { PrismaClient as TenantPrismaClient } from '../../prisma/client/generated/client';
@@ -19,11 +19,16 @@ interface RegisterDeviceRequest {
   deviceFingerprint: string;
   deviceName?: string;
   appVersion?: string;
+  /** 'fcm' from current app builds; absent from installs that predate FCM. */
+  provider?: string;
 }
 
 const registerDevice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userInfo = req.user as UserInfo;
   const { deviceToken, platform, deviceFingerprint } = req.body as RegisterDeviceRequest;
+  const provider = (req.body as RegisterDeviceRequest).provider === PUSH_PROVIDER_FCM
+    ? PUSH_PROVIDER_FCM
+    : PUSH_PROVIDER_PUSHY;
 
   if (!deviceToken || !platform) {
     return next(new RequestValidateError('Device token and platform are required'));
@@ -76,7 +81,8 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         },
         data: {
           tenantUserId: userInfo.tenantUserId,  // Transfer ownership to current user
-          deviceToken: deviceToken,  // Update to new Pushy token
+          deviceToken: deviceToken,  // Update to the new push token
+          provider: provider,
           platform: platform,
           deviceName: req.body.deviceName || existingDeviceByFingerprint.deviceName,
           appVersion: req.body.appVersion,
@@ -89,9 +95,18 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
       if (wasInactive) {
         await deviceLimitService.allocateDevice(
           userInfo.tenantId,
-          updatedDevice.id,
-          false
+          updatedDevice.id
         );
+      }
+
+      // The app moved this device from Pushy to FCM: drop the old Pushy token's
+      // topic subscriptions so Pushy stops fanning out to it. Fire and forget.
+      if (existingDeviceByFingerprint.provider !== PUSH_PROVIDER_FCM
+        && provider === PUSH_PROVIDER_FCM
+        && existingDeviceByFingerprint.deviceToken !== deviceToken) {
+        PushyService.unsubscribeDeviceFromAllTopics(existingDeviceByFingerprint.deviceToken).catch(error => {
+          console.error('Failed to drop legacy Pushy subscriptions:', error);
+        });
       }
 
       // Subscribe to topics based on permissions
@@ -156,6 +171,7 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         },
         data: {
           deviceFingerprint: deviceFingerprint,
+          provider: provider,
           platform: platform,
           deviceName: req.body.deviceName || existingDeviceByToken.deviceName,
           appVersion: req.body.appVersion,
@@ -168,8 +184,7 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
       if (wasInactive) {
         await deviceLimitService.allocateDevice(
           userInfo.tenantId,
-          updatedDevice.id,
-          false
+          updatedDevice.id
         );
       }
 
@@ -207,6 +222,7 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         tenantUserId: userInfo.tenantUserId,
         deviceToken: deviceToken,
         deviceFingerprint: deviceFingerprint,
+        provider: provider,
         platform: platform,
         deviceName: req.body.deviceName || 'Unnamed Device',
         appVersion: req.body.appVersion || '1.0.0',
@@ -219,8 +235,7 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
     // STEP 5: Allocate device
     await deviceLimitService.allocateDevice(
       userInfo.tenantId,
-      newDevice.id,
-      false // Not a paid device initially
+      newDevice.id
     );
 
     // Subscribe to topics based on permissions
@@ -404,8 +419,6 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
               current: limitCheck.currentCount,
               maximum: limitCheck.maxAllowed
             },
-            requiresPayment: limitCheck.requiresPayment || false,
-            additionalCost: limitCheck.additionalCost || 0
           });
         }
 
@@ -424,8 +437,6 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
             current: limitCheck.currentCount,
             maximum: limitCheck.maxAllowed
           },
-          requiresPayment: false,
-          additionalCost: 0
         });
       }
     }
@@ -443,8 +454,6 @@ const checkDeviceEligibility = async (req: AuthRequest, res: Response, next: Nex
         current: limitCheck.currentCount,
         maximum: limitCheck.maxAllowed
       },
-      requiresPayment: limitCheck.requiresPayment || false,
-      additionalCost: limitCheck.additionalCost || 0
     });
   } catch (error) {
     console.error('Error checking device eligibility:', error);
@@ -550,11 +559,14 @@ const deleteDeviceById = async (req: AuthRequest, res: Response, next: NextFunct
       return next(new BusinessLogicError('Unauthorized to delete this device'));
     }
 
-    // Unsubscribe device from all Pushy topics via API
-    const unsubscribeResult = await PushyService.unsubscribeDeviceFromAllTopics(device.deviceToken);
+    // Unsubscribe the device from every topic via its transport's API
+    const unsubscribeResult = await PushyService.unsubscribeDevice(
+      device,
+      await getAllPossibleTopics(device.tenantUser.tenantId, device.tenantUserId)
+    );
 
     if (!unsubscribeResult.success) {
-      console.error('Failed to unsubscribe device from Pushy topics:', unsubscribeResult.error);
+      console.error('Failed to unsubscribe device from push topics:', unsubscribeResult.error);
       // Continue with deletion even if unsubscribe fails
     } else {
       console.log('Device unsubscribed from topics:', unsubscribeResult.data?.unsubscribedTopics);
@@ -587,6 +599,33 @@ const deleteDeviceById = async (req: AuthRequest, res: Response, next: NextFunct
     console.error('Error deleting device:', error);
     next(error);
   }
+};
+
+/**
+ * Every topic a device of [tenantUserId] could be subscribed to, whatever its
+ * roles: FCM can't list a token's topics, so removal unsubscribes from all of
+ * them. Mirrors the topic names built in auth.service / role.service.
+ */
+const getAllPossibleTopics = async (tenantId: number, tenantUserId: number): Promise<string[]> => {
+  const permissions = await globalPrisma.permission.findMany({
+    where: {
+      category: 'Notifications',
+      name: { startsWith: 'Receive ' }
+    },
+    select: { name: true }
+  });
+
+  const topics = new Set<string>([`tenant_${tenantId}`, `tenant_${tenantId}_user_${tenantUserId}`]);
+  permissions.forEach(permission => {
+    const shortPermission = permission.name
+      .replace('Receive ', '')
+      .replace(' Notification', '')
+      .replace(' Alert', '')
+      .toLowerCase();
+    topics.add(`tenant_${tenantId}_${shortPermission}`);
+    topics.add(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+  });
+  return Array.from(topics);
 };
 
 const getUserTopics = async (userInfo: UserInfo): Promise<string[]> => {

@@ -137,7 +137,10 @@ const recordUsage = async (req: AuthRequest, res: Response, next: NextFunction) 
 };
 
 // ============================================
-// Routes — All gated on advanced loyalty (add-on required)
+// Routes — SELLING and managing packages need advanced loyalty. Reading a
+// customer's existing packages and USING them are open on every plan: a
+// package the customer already paid for stays redeemable after the shop
+// steps down from Pro or its Pro trial ends (step-down rule, 2026-09-28).
 // ============================================
 
 // Package CRUD
@@ -149,11 +152,11 @@ router.delete('/package/:id', requireLoyalty('advanced'), requirePermission(P.MA
 
 // Customer subscriptions
 router.post('/subscribe', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), subscribeCustomer);
-router.get('/customer/:id', requireLoyalty('advanced'), requirePermission(P.VIEW_SUBSCRIPTIONS), getCustomerSubscriptions);
-router.get('/subscription/:id', requireLoyalty('advanced'), requirePermission(P.VIEW_SUBSCRIPTIONS), getSubscriptionById);
+router.get('/customer/:id', requirePermission(P.VIEW_SUBSCRIPTIONS), getCustomerSubscriptions);
+router.get('/subscription/:id', requirePermission(P.VIEW_SUBSCRIPTIONS), getSubscriptionById);
 router.put('/cancel/:id', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), cancelSubscription);
 
 // Usage tracking
-router.post('/usage', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), recordUsage);
+router.post('/usage', requirePermission(P.MANAGE_SUBSCRIPTIONS), recordUsage);
 
 module.exports = router;

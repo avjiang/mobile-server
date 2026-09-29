@@ -38,6 +38,7 @@ export const PERMISSION = {
     VIEW_SALES_HISTORY: 'View Sales History',
     MODIFY_SALES_HISTORY: 'Modify Sales History',
     PRINT_BILL: 'Print Bill',
+    EDIT_SALE_PRICE: 'Edit Sale Price',
     // Function Management
     MANAGE_MASTER_DATA: 'Manage Master Data',
     MANAGE_PROCUREMENT: 'Manage Procurement',

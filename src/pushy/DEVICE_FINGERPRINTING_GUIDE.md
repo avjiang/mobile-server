@@ -1,5 +1,7 @@
 # Device Fingerprinting for Pushy Push Notifications
 
+> **Update 2026-09-29:** there is no device quota any more (push devices are unlimited on Pro; see `flutter-front-end/docs/modules/PUSH_NOTIFICATIONS.md`). Fingerprinting still matters: it keeps one row per physical phone, so reinstalls and shared phones never become duplicates.
+
 > **🆕 For Frontend Team**: Jump to [API Reference Summary](#summary-of-api-changes-for-frontend-team) for quick integration guide
 
 ## Table of Contents

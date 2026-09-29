@@ -1,7 +1,7 @@
 import { plainToInstance } from "class-transformer";
 import { PrismaClient, Tenant, TenantUser, SubscriptionPlan, Prisma } from "../../prisma/global-client/generated/global";
 import { PrismaClient as TenantPrismaClient } from "../../prisma/client/generated/client";
-import { NotFoundError, RequestValidateError } from "../api-helpers/error"
+import { NotFoundError, RequestValidateError, PlanLimitError, ErrorCode } from "../api-helpers/error"
 import { CreateTenantRequest } from "./admin.request";
 import bcrypt from "bcryptjs"
 import crypto from "crypto";
@@ -22,8 +22,12 @@ import {
     TenantOverviewResponse
 } from "./admin.response";
 import { AuthRequest } from "src/middleware/auth-request";
-import { ADD_ON_IDS, isLaundryBundledAddOn } from "../constants/add-on-ids";
+import { ADD_ON_IDS, isNonBillableAddOn } from "../constants/add-on-ids";
 import { drainAllWarehousesToOutlet } from "../stock/stock-transfer.service";
+
+/** The 30-day Pro trial bills Rp 0 for the plan itself (status 'trial'). */
+const isTrialStatus = (status: string | null | undefined): boolean =>
+    (status ?? '').toLowerCase() === 'trial';
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -70,6 +74,17 @@ const getPrimarySubscription = async (tenantId: number, tx: any = prisma) => {
     return { primarySubscription, tenantOutlets };
 }
 
+/**
+ * Readable temporary password for a new owner: 8 chars, lowercase + digits,
+ * without look-alikes (0/o, 1/l/i) so it can be read out or typed on a phone.
+ */
+const generateTempPassword = (): string => {
+    const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
+    let out = '';
+    for (let i = 0; i < 8; i++) out += alphabet[crypto.randomInt(alphabet.length)];
+    return out;
+};
+
 let createTenant = async (body: CreateTenantRequest) => {
     let createdTenantId: number | null = null;
     let tenantDatabaseName: string | null = null;
@@ -77,20 +92,40 @@ let createTenant = async (body: CreateTenantRequest) => {
     try {
         const tenant = body.tenant;
 
-        // Find the subscription plan by name and type
-        const planType = tenant.planType || 'Retail';
+        // Find the subscription plan by name and type. planType is required: it
+        // decides the vertical (retail vs laundry UI, seeds, pricing), and a silent
+        // "Retail" default turned forgotten laundry signups into retail tenants.
+        const planType = tenant.planType;
+        if (!planType) {
+            throw new Error('planType is required ("Retail" | "Laundry").');
+        }
+        // A "Trial" signup is the 30-day PRO trial (decided 2026-09-28): the
+        // tenant runs on the vertical's Pro plan with status 'trial', so every
+        // Pro gate just works, and billing counts a trial as Rp 0. The legacy
+        // "Trial" plan rows stay only for tenants already on them.
+        const isTrial = String(tenant.plan ?? '').toLowerCase() === 'trial';
+        const effectivePlanName = isTrial ? 'Pro' : tenant.plan;
         const subscriptionPlan = await prisma.subscriptionPlan.findFirst({
             where: {
-                planName: tenant.plan,
+                planName: effectivePlanName,
                 planType: planType
             }
         });
         if (!subscriptionPlan) {
-            throw new Error(`Subscription plan "${tenant.plan}" (${planType}) not found.`);
+            throw new Error(`Subscription plan "${effectivePlanName}" (${planType}) not found.`);
         }
         // Generate a unique database name 
         const databaseName = `${tenant.tenantName.toLowerCase().replace(/\s/g, '_')}_db`;
         const username = String(tenant.tenantName).toLowerCase().replace(/\s/g, '_');
+        // Never default the password to the username (anyone who knows the shop
+        // name could log in). A caller-supplied password wins; otherwise a random
+        // temporary one is generated and returned once in the response.
+        if (tenant.password !== undefined && String(tenant.password).length < 6) {
+            throw new Error('password must be at least 6 characters.');
+        }
+        const generatedPassword = tenant.password === undefined ? generateTempPassword() : undefined;
+        const initialPassword = tenant.password ?? generatedPassword!;
+        const initialPasswordHash = bcrypt.hashSync(initialPassword, 10);
 
         const result = await prisma.$transaction(async (tx) => {
             // Create new tenant
@@ -114,7 +149,7 @@ let createTenant = async (body: CreateTenantRequest) => {
                     tenantId: newTenant.id,
                     username: username,
                     role: "Owner",
-                    password: bcrypt.hashSync(username, 10),
+                    password: initialPasswordHash,
                 },
             })
             // Calculate subscription dates (e.g., valid for 30 days)
@@ -132,6 +167,7 @@ let createTenant = async (body: CreateTenantRequest) => {
                     subscriptionPlanId: subscriptionPlan!.id,
                     nextPaymentDate,
                     subscriptionValidUntil,
+                    status: isTrial ? 'trial' : 'Active',
                 },
                 include: {
                     subscriptionPlan: true
@@ -176,7 +212,7 @@ let createTenant = async (body: CreateTenantRequest) => {
             const newUser = await tenantPrisma.user.create({
                 data: {
                     username: username,
-                    password: bcrypt.hashSync(username, 10),
+                    password: initialPasswordHash,
                     firstName: firstName,
                     lastName: lastName,
                     roles: {
@@ -193,7 +229,7 @@ let createTenant = async (body: CreateTenantRequest) => {
 
             // Create warehouse for Pro plan users
             let createdWarehouse = null;
-            if (tenant.plan === 'Pro') {
+            if (subscriptionPlan.planName === 'Pro' && planType !== 'Laundry') {
                 // Create warehouse in global DB
                 const globalWarehouse = await prisma.tenantWarehouse.create({
                     data: {
@@ -232,6 +268,8 @@ let createTenant = async (body: CreateTenantRequest) => {
                 result.subscription,
                 createdWarehouse || undefined
             );
+            // Plaintext only when WE generated it — shown once to the operator.
+            if (generatedPassword) tenantCreationDto.temporaryPassword = generatedPassword;
             return tenantCreationDto;
         }
         catch (tenantDbError) {
@@ -310,7 +348,7 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
 
         // Build tenant-level add-ons
         const tenantAddOns = tenant.tenantAddOns
-            .filter(({ addOn }) => !isLaundryBundledAddOn(addOn.id, billingPlanType))
+            .filter(({ addOn }) => !isNonBillableAddOn(addOn.id, billingPlanType))
             .map(({ addOn, quantity }) => ({
                 name: addOn.name,
                 quantity,
@@ -357,7 +395,7 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
             };
             if (subscription) {
                 const standardPlanPrice = subscription.subscriptionPlan.price;
-                const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+                const basePlanCost = isTrialStatus(subscription.status) ? 0 : (subscription.customPrice ?? standardPlanPrice);
                 const isCustomPrice = subscription.customPrice != null;
                 const customPriceNote = subscription.customPriceNote ?? "";
 
@@ -484,12 +522,12 @@ const getAllTenantCost = async () => {
         -- totalMonthlyCost = plan costs - discounts + tenant add-on costs
         COALESCE(SUM(
           GREATEST(0,
-            COALESCE(ts.CUSTOM_PRICE, sp.PRICE)
+            (CASE WHEN LOWER(ts.STATUS) = 'trial' THEN 0 ELSE COALESCE(ts.CUSTOM_PRICE, sp.PRICE) END)
             - COALESCE(CASE
               WHEN d.DISCOUNT_TYPE = 'percentage'
               AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
               AND d.APPLIES_TO LIKE '%plan%'
-              THEN COALESCE(ts.CUSTOM_PRICE, sp.PRICE) * d.VALUE / 100
+              THEN (CASE WHEN LOWER(ts.STATUS) = 'trial' THEN 0 ELSE COALESCE(ts.CUSTOM_PRICE, sp.PRICE) END) * d.VALUE / 100
               ELSE 0
             END, 0)
             - COALESCE(CASE
@@ -501,7 +539,7 @@ const getAllTenantCost = async () => {
                 WHERE o2.TENANT_ID = t.ID AND o2.IS_ACTIVE = true
                 AND ts2.STATUS IN ('active', 'trial') AND ts2.DISCOUNT_ID = d.ID
               )
-              THEN LEAST(d.VALUE, COALESCE(ts.CUSTOM_PRICE, sp.PRICE))
+              THEN LEAST(d.VALUE, (CASE WHEN LOWER(ts.STATUS) = 'trial' THEN 0 ELSE COALESCE(ts.CUSTOM_PRICE, sp.PRICE) END))
               ELSE 0
             END, 0)
           )
@@ -525,7 +563,7 @@ const getAllTenantCost = async () => {
             )
         ), 0) AS totalMonthlyCost,
         -- totalCostBeforeDiscount = plan costs + tenant add-on costs
-        COALESCE(SUM(COALESCE(ts.CUSTOM_PRICE, sp.PRICE)), 0)
+        COALESCE(SUM((CASE WHEN LOWER(ts.STATUS) = 'trial' THEN 0 ELSE COALESCE(ts.CUSTOM_PRICE, sp.PRICE) END)), 0)
         + COALESCE((
           SELECT SUM(ta.QUANTITY * sa.PRICE_PER_UNIT)
           FROM tenant_add_on ta
@@ -550,7 +588,7 @@ const getAllTenantCost = async () => {
             WHEN d.DISCOUNT_TYPE = 'percentage'
             AND (d.END_DATE IS NULL OR d.END_DATE >= CURRENT_TIMESTAMP)
             AND d.APPLIES_TO LIKE '%plan%'
-            THEN COALESCE(ts.CUSTOM_PRICE, sp.PRICE) * d.VALUE / 100
+            THEN (CASE WHEN LOWER(ts.STATUS) = 'trial' THEN 0 ELSE COALESCE(ts.CUSTOM_PRICE, sp.PRICE) END) * d.VALUE / 100
             ELSE 0
           END, 0)
           + COALESCE(CASE
@@ -562,7 +600,7 @@ const getAllTenantCost = async () => {
               WHERE o2.TENANT_ID = t.ID AND o2.IS_ACTIVE = true
               AND ts2.STATUS IN ('active', 'trial') AND ts2.DISCOUNT_ID = d.ID
             )
-            THEN LEAST(d.VALUE, COALESCE(ts.CUSTOM_PRICE, sp.PRICE))
+            THEN LEAST(d.VALUE, (CASE WHEN LOWER(ts.STATUS) = 'trial' THEN 0 ELSE COALESCE(ts.CUSTOM_PRICE, sp.PRICE) END))
             ELSE 0
           END, 0)
         ), 0) AS totalDiscount
@@ -625,6 +663,25 @@ const createTenantUser = async (tenantId: number, body: { username: string; pass
     });
     if (existingGlobal) {
         throw new RequestValidateError('Username already exists');
+    }
+
+    // Retail Lite sells no extra seats: a second login means moving up to
+    // Basic, so refuse here instead of auto-billing an EXTRA_USER add-on below.
+    {
+        const { tenantOutlets: liteCheckOutlets } = await getPrimarySubscription(tenantId);
+        const liteSubs = liteCheckOutlets.flatMap((o: any) => o.subscriptions)
+            .filter((s: any) => (s.subscriptionPlan?.planName ?? '').toLowerCase() === 'lite');
+        if (liteSubs.length > 0) {
+            const liteSeats = liteSubs.reduce((n: number, s: any) => n + (s.subscriptionPlan?.maxUsers ?? 1), 0);
+            const users = await prisma.tenantUser.count({ where: { tenantId, isDeleted: false } });
+            if (users >= liteSeats) {
+                throw new PlanLimitError(
+                    `The Lite plan includes ${liteSeats} user(s). Move the tenant to Basic to add more.`,
+                    ErrorCode.PlanFeatureLocked,
+                    { plan: 'Lite' },
+                );
+            }
+        }
     }
 
     const hashed = bcrypt.hashSync(body.password, 10);
@@ -783,6 +840,10 @@ const deleteTenantUser = async (tenantId: number, userId: number) => {
             where: { id: userId },
             data: { isDeleted: true }
         });
+        // End the deleted login's sessions too: without this its refresh token
+        // kept it signed in (login and refresh now also refuse deleted users).
+        const TokenInvalidation = require('../pushy/token-invalidation.service').default;
+        await TokenInvalidation.invalidateSingleUserTokens(userId);
 
         // Step 2: Soft delete in tenant DB (if exists)
         if (tenantDbUserId) {
@@ -878,138 +939,6 @@ const deleteTenantUser = async (tenantId: number, userId: number) => {
         throw err;
     }
 }
-
-// Add device quota for a tenant (called by provider/owner)
-const addDeviceQuotaForTenant = async (tenantId: number, quantity: number) => {
-    if (!quantity || quantity <= 0) {
-        throw new RequestValidateError('Quantity must be a positive number');
-    }
-
-    // Validate tenant has Pro plan (devices only available on Pro)
-    await getPrimarySubscription(tenantId);
-
-    // Upsert tenant add-on
-    const addOn = await prisma.tenantAddOn.upsert({
-        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } },
-        update: { quantity: { increment: quantity } },
-        create: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE, quantity }
-    });
-
-    return {
-        success: true,
-        message: `Added ${quantity} device quota. Total add-on devices: ${addOn.quantity}`,
-        tenantId,
-        addOnQuantity: addOn.quantity,
-        monthlyCost: addOn.quantity * 20000
-    };
-};
-
-// Reduce device quota for a tenant (called by provider/owner)
-// This will automatically deactivate excess devices (oldest first)
-const reduceDeviceQuotaForTenant = async (tenantId: number, quantityToReduce: number) => {
-    if (!quantityToReduce || quantityToReduce <= 0) {
-        throw new RequestValidateError('Quantity must be a positive number');
-    }
-
-    const deviceLimitService = require('../pushy/device.service');
-
-    // Step 1: Find the device add-on
-    const deviceAddOn = await prisma.tenantAddOn.findUnique({
-        where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } }
-    });
-
-    if (!deviceAddOn) {
-        throw new NotFoundError('No device add-on found to reduce');
-    }
-
-    if (deviceAddOn.quantity < quantityToReduce) {
-        throw new RequestValidateError(
-            `Cannot reduce by ${quantityToReduce}. Current add-on quantity is ${deviceAddOn.quantity}`
-        );
-    }
-
-    // Step 2: Reduce the add-on quantity
-    const newQuantity = deviceAddOn.quantity - quantityToReduce;
-
-    if (newQuantity === 0) {
-        await prisma.tenantAddOn.delete({
-            where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } }
-        });
-    } else {
-        await prisma.tenantAddOn.update({
-            where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_DEVICE } },
-            data: { quantity: newQuantity }
-        });
-    }
-
-    // Step 4: Check if devices exceed new limit
-    const limitCheck = await deviceLimitService.checkDeviceLimit(tenantId);
-    const currentDeviceCount = limitCheck.currentCount;
-    const newMaxAllowed = limitCheck.maxAllowed;
-
-    const deactivatedDevices = [];
-
-    if (currentDeviceCount > newMaxAllowed) {
-        const excessCount = currentDeviceCount - newMaxAllowed;
-
-        // Step 5: Get devices to deactivate (oldest first - FIFO based on lastActiveAt)
-        const devicesToDeactivate = await prisma.pushyDevice.findMany({
-            where: {
-                tenantUser: { tenantId },
-                isActive: true
-            },
-            orderBy: {
-                lastActiveAt: 'asc' // Oldest devices first
-            },
-            take: excessCount,
-            include: {
-                tenantUser: {
-                    select: {
-                        username: true
-                    }
-                }
-            }
-        });
-
-        // Step 6: Deactivate excess devices
-        for (const device of devicesToDeactivate) {
-            await prisma.pushyDevice.update({
-                where: { id: device.id },
-                data: { isActive: false }
-            });
-
-            // Deallocate device
-            await deviceLimitService.deallocateDevice(device.id);
-
-            deactivatedDevices.push({
-                deviceToken: device.deviceToken,
-                platform: device.platform,
-                deviceName: device.deviceName,
-                username: device.tenantUser?.username || 'Unknown',
-                lastActiveAt: device.lastActiveAt
-            });
-        }
-    }
-
-    return {
-        success: true,
-        message: deactivatedDevices.length > 0
-            ? `Reduced ${quantityToReduce} device quota. Automatically deactivated ${deactivatedDevices.length} excess device(s).`
-            : `Reduced ${quantityToReduce} device quota.`,
-        tenantId,
-        addOnQuantity: newQuantity,
-        monthlyCost: newQuantity * 20000,
-        quota: {
-            previous: newMaxAllowed + quantityToReduce,
-            current: newMaxAllowed
-        },
-        devices: {
-            active: currentDeviceCount - deactivatedDevices.length,
-            deactivated: deactivatedDevices.length,
-            deactivatedList: deactivatedDevices
-        }
-    };
-};
 
 // Get all active devices for a tenant
 const getTenantDevices = async (tenantId: number) => {
@@ -1486,6 +1415,25 @@ const handleDowngradeToBasic = async (
  * Automatically invalidates tokens and clears plan cache
  * Handles downgrade logic: deactivates warehouses and removes add-ons
  */
+/**
+ * Set the EXTRA_USER add-on to (active users − included users), removing it
+ * when nothing is over. `subscriptions` must carry `subscriptionPlan`.
+ */
+const syncExtraUserAddOn = async (tenantId: number, subscriptions: any[]) => {
+    const included = subscriptions.reduce((n: number, s: any) => n + (s.subscriptionPlan?.maxUsers ?? 0), 0);
+    const users = await prisma.tenantUser.count({ where: { tenantId, isDeleted: false } });
+    const overage = Math.max(0, users - included);
+    if (overage > 0) {
+        await prisma.tenantAddOn.upsert({
+            where: { tenantId_addOnId: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER } },
+            update: { quantity: overage },
+            create: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER, quantity: overage },
+        });
+    } else {
+        await prisma.tenantAddOn.deleteMany({ where: { tenantId, addOnId: ADD_ON_IDS.EXTRA_USER } });
+    }
+};
+
 const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
     let tenantPrisma: TenantPrismaClient | null = null;
 
@@ -1519,15 +1467,30 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
             throw new RequestValidateError(`Tenant is already on "${newPlanName}" plan`);
         }
 
+        // Lite has no extra seats: the owner removes the other logins first
+        // (deletion is soft — their sales history stays, they just can't sign in).
+        if (newPlanName.toLowerCase() === 'lite') {
+            const activeUsers = await prisma.tenantUser.count({ where: { tenantId, isDeleted: false } });
+            const liteSeats = newPlan.maxUsers ?? 1;
+            if (activeUsers > liteSeats) {
+                throw new RequestValidateError(
+                    `The Lite plan includes ${liteSeats} login(s); this tenant has ${activeUsers}. Remove the extra logins first.`
+                );
+            }
+        }
+
         // Step 3: Initialize tenant database connection
         tenantPrisma = getTenantPrisma(tenant.databaseName);
 
-        // Step 4: Determine plan change direction
+        // Step 4: Determine plan change direction. Leaving Pro for ANY plan
+        // (Basic, Lite, or the end of a Pro trial) drains warehouses and drops the
+        // Pro add-ons; arriving on Pro from any plan restores the main warehouse
+        // (never for Laundry, which has no warehouses).
         const isDowngradingToBasic = (
-            currentPlanName === 'Pro' && newPlanName === 'Basic'
+            currentPlanName === 'Pro' && newPlanName !== 'Pro'
         );
         const isUpgradingToPro = (
-            currentPlanName === 'Basic' && newPlanName === 'Pro'
+            currentPlanName !== 'Pro' && newPlanName === 'Pro' && currentPlanType !== 'Laundry'
         );
 
         let downgradeResult = null;
@@ -1658,6 +1621,11 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
             }
         }
 
+        // Step 6b: Re-bill extra users against the new plan's allowance (Lite 1,
+        // Basic 2, Pro 3 per outlet) — the overage was only ever recomputed on
+        // user create/delete, so a plan change left it stale.
+        await syncExtraUserAddOn(tenantId, updatedSubscriptions);
+
         // Step 7: Invalidate tokens and clear cache
         const TokenInvalidationService = require('../pushy/token-invalidation.service').default;
         await TokenInvalidationService.onPlanChange(tenantId, currentPlanName, newPlanName);
@@ -1665,7 +1633,7 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
         // Construct response message
         let message = '';
         if (isDowngradingToBasic) {
-            message = `Successfully downgraded from "${currentPlanName}" to "${newPlanName}". All warehouses and push notification devices have been deactivated.`;
+            message = `Successfully changed from "${currentPlanName}" to "${newPlanName}". Warehouses and the Pro add-ons have been removed.`;
         } else if (isUpgradingToPro) {
             // Check if warehouse was reactivated or created
             if (upgradeResult?.warehouseReactivated) {
@@ -1725,7 +1693,7 @@ const getSubscriptionStatus = (subscriptionValidUntil: Date): 'Active' | 'Grace'
  */
 const buildCostSnapshot = (subscription: any, tenantAddOns: any[]): CostSnapshot => {
     const standardPlanPrice = subscription.subscriptionPlan?.price || 0;
-    const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+    const basePlanCost = isTrialStatus(subscription.status) ? 0 : (subscription.customPrice ?? standardPlanPrice);
     const isCustomPrice = subscription.customPrice != null;
 
     // Advanced Loyalty is bundled into Laundry Pro — never invoice it as an add-on.
@@ -1733,7 +1701,7 @@ const buildCostSnapshot = (subscription: any, tenantAddOns: any[]): CostSnapshot
 
     // Add-ons from tenant-level (not per-subscription)
     const addOns = tenantAddOns
-        .filter((ta: any) => !isLaundryBundledAddOn(ta.addOn?.id ?? ta.addOnId, snapshotPlanType))
+        .filter((ta: any) => !isNonBillableAddOn(ta.addOn?.id ?? ta.addOnId, snapshotPlanType))
         .map((ta: any) => ({
             addOnId: ta.addOn?.id || ta.addOnId,
             name: ta.addOn?.name || 'Unknown',
@@ -1826,7 +1794,7 @@ const recordPayment = async (
         recordedBy?: number;
     }
 ): Promise<RecordPaymentResponse> => {
-    const extensionMonths = paymentData.extensionMonths || 1;
+    const extensionMonths = paymentData.extensionMonths ?? 1;
 
     return await prisma.$transaction(async (tx) => {
         // Step 1: Get outlet's subscription and tenant add-ons
@@ -1862,7 +1830,10 @@ const recordPayment = async (
         const currentStatus = getSubscriptionStatus(currentValidUntil);
 
         let periodFrom: Date;
-        if (currentStatus === 'Expired') {
+        if (extensionMonths === 0) {
+            // A charge that doesn't buy time: leave the validity as it is
+            periodFrom = currentValidUntil;
+        } else if (currentStatus === 'Expired') {
             // Past grace period - start from today
             periodFrom = now;
         } else {
@@ -1898,15 +1869,17 @@ const recordPayment = async (
             }
         });
 
-        // Step 6: Update subscription
-        await tx.tenantSubscription.update({
-            where: { id: subscription.id },
-            data: {
-                subscriptionValidUntil: periodTo,
-                nextPaymentDate: periodTo,
-                status: 'Active'
-            }
-        });
+        // Step 6: Update subscription (a 0-month charge leaves it untouched)
+        if (extensionMonths > 0) {
+            await tx.tenantSubscription.update({
+                where: { id: subscription.id },
+                data: {
+                    subscriptionValidUntil: periodTo,
+                    nextPaymentDate: periodTo,
+                    status: 'Active'
+                }
+            });
+        }
 
         // Build response
         const paymentResponse: TenantPaymentResponse = {
@@ -1929,12 +1902,14 @@ const recordPayment = async (
 
         return {
             success: true,
-            message: `Payment recorded. Subscription extended to ${periodTo.toISOString().split('T')[0]}`,
+            message: extensionMonths > 0
+                ? `Payment recorded. Subscription extended to ${periodTo.toISOString().split('T')[0]}`
+                : 'Payment recorded. Subscription validity unchanged.',
             payment: paymentResponse,
             subscription: {
                 previousValidUntil: currentValidUntil.toISOString(),
                 newValidUntil: periodTo.toISOString(),
-                status: 'Active'
+                status: extensionMonths > 0 ? 'Active' : currentStatus
             }
         };
     });
@@ -2103,7 +2078,7 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
 
     // Build tenant-level add-ons
     const tenantAddOns = tenant.tenantAddOns
-        .filter(({ addOn }) => !isLaundryBundledAddOn(addOn.id, billingPlanType))
+        .filter(({ addOn }) => !isNonBillableAddOn(addOn.id, billingPlanType))
         .map(({ addOn, quantity }) => ({
             name: addOn.name,
             quantity,
@@ -2143,7 +2118,7 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
         const daysUntilExpiry = Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
         const standardPlanPrice = subscription.subscriptionPlan.price;
-        const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+        const basePlanCost = isTrialStatus(subscription.status) ? 0 : (subscription.customPrice ?? standardPlanPrice);
         const isCustomPrice = subscription.customPrice != null;
         const customPriceNote = subscription.customPriceNote ?? "";
 
@@ -2311,7 +2286,7 @@ const getUpcomingPayments = async (options: {
             t.ID as tenantId,
             t.TENANT_NAME as tenantName,
             COUNT(DISTINCT o.ID) as outletCount,
-            COALESCE(SUM(COALESCE(ts.CUSTOM_PRICE, sp.PRICE)), 0)
+            COALESCE(SUM((CASE WHEN LOWER(ts.STATUS) = 'trial' THEN 0 ELSE COALESCE(ts.CUSTOM_PRICE, sp.PRICE) END)), 0)
             + COALESCE((
                 SELECT SUM(ta.QUANTITY * sa.PRICE_PER_UNIT)
                 FROM tenant_add_on ta
@@ -2601,8 +2576,9 @@ const addAdvancedLoyalty = async (tenantId: number) => {
         throw new RequestValidateError('Tenant already has the Advanced Loyalty add-on');
     }
 
-    await prisma.tenantAddOn.create({
-        data: { tenantId, addOnId: ADD_ON_IDS.ADVANCED_LOYALTY, quantity: 1 }
+    const created = await prisma.tenantAddOn.create({
+        data: { tenantId, addOnId: ADD_ON_IDS.ADVANCED_LOYALTY, quantity: 1 },
+        include: { addOn: true }
     });
 
     return {
@@ -2610,7 +2586,7 @@ const addAdvancedLoyalty = async (tenantId: number) => {
         message: 'Advanced Loyalty add-on enabled',
         tenantId,
         addOnId: ADD_ON_IDS.ADVANCED_LOYALTY,
-        monthlyCost: 150000
+        monthlyCost: created.addOn.pricePerUnit
     };
 };
 
@@ -2640,8 +2616,6 @@ export = {
     deleteTenantUser,
     getTenantCost,
     getAllTenantCost,
-    addDeviceQuotaForTenant,
-    reduceDeviceQuotaForTenant,
     getTenantDevices,
     createWarehouseForTenant,
     deleteWarehouseForTenant,

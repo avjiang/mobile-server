@@ -40,7 +40,7 @@ When adding a new module:
 1. Create `controller.ts`, `service.ts`, `request.ts`, `response.ts` under `src/<module>/`
 2. Register routes in `src/index.ts`
 3. Follow the controller pattern: validate auth → validate params → call service → `sendResponse(res, result)` / `.catch(next)`
-4. For admin endpoints, follow the `addDeviceQuota`/`reduceDeviceQuota` pattern in `admin.service.ts`
+4. For admin endpoints, follow the `createWarehouse` / `addAdvancedLoyalty` pattern in `admin.controller.ts` + `admin.service.ts` (the device-quota endpoints were removed 2026-09-29)
 
 ### Authentication
 

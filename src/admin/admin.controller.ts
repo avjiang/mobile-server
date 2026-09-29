@@ -26,8 +26,8 @@ let createTenant = (req: NetworkRequest<CreateTenantRequest>, res: Response, nex
     if (Object.keys(req.body).length === 0) {
         throw new RequestValidateError('Request body is empty')
     }
-    if (!req.body || !req.body.tenant.tenantName || !req.body.tenant.plan) {
-        res.status(400).json({ error: 'Invalid request. Both tenantName and plan are required.' });
+    if (!req.body || !req.body.tenant.tenantName || !req.body.tenant.plan || !req.body.tenant.planType) {
+        res.status(400).json({ error: 'Invalid request. tenantName, plan and planType ("Retail" | "Laundry") are required.' });
         return;
     }
     const requestBody = req.body
@@ -124,50 +124,6 @@ let getTenantUsers = (req: AuthRequest, res: Response, next: NextFunction) => {
 
     service.getTenantUsers(tenantId, includeDeleted)
         .then((response: TenantUsersResponse) => {
-            sendResponse(res, response);
-        })
-        .catch(next);
-}
-
-// Provider/Owner: Add device quota for tenant
-let addDeviceQuotaForTenant = (req: NetworkRequest<{ quantity: number }>, res: Response, next: NextFunction) => {
-    if (!req.user) {
-        throw new RequestValidateError('User not authenticated');
-    }
-    if (!validator.isNumeric(req.params.tenantId)) {
-        throw new RequestValidateError('ID format incorrect');
-    }
-    if (!req.body || !req.body.quantity || req.body.quantity <= 0) {
-        res.status(400).json({ error: 'Invalid request. Quantity must be a positive number.' });
-        return;
-    }
-    const tenantId: number = parseInt(req.params.tenantId);
-    const { quantity } = req.body;
-
-    service.addDeviceQuotaForTenant(tenantId, quantity)
-        .then((response: any) => {
-            sendResponse(res, response);
-        })
-        .catch(next);
-}
-
-// Provider/Owner: Reduce device quota for tenant (auto-deactivates excess devices)
-let reduceDeviceQuotaForTenant = (req: NetworkRequest<{ quantity: number }>, res: Response, next: NextFunction) => {
-    if (!req.user) {
-        throw new RequestValidateError('User not authenticated');
-    }
-    if (!validator.isNumeric(req.params.tenantId)) {
-        throw new RequestValidateError('ID format incorrect');
-    }
-    if (!req.body || !req.body.quantity || req.body.quantity <= 0) {
-        res.status(400).json({ error: 'Invalid request. Quantity must be a positive number.' });
-        return;
-    }
-    const tenantId: number = parseInt(req.params.tenantId);
-    const { quantity } = req.body;
-
-    service.reduceDeviceQuotaForTenant(tenantId, quantity)
-        .then((response: any) => {
             sendResponse(res, response);
         })
         .catch(next);
@@ -360,6 +316,13 @@ let recordPayment = (req: NetworkRequest<{
         res.status(400).json({ error: 'Invalid request. Amount must be a positive number.' });
         return;
     }
+    // 0 = a charge that doesn't extend the subscription (a mid-year upgrade
+    // difference or an added user); 12 = a yearly payment.
+    const rawMonths = req.body.extensionMonths;
+    if (rawMonths !== undefined && (!Number.isInteger(rawMonths) || rawMonths < 0 || rawMonths > 24)) {
+        res.status(400).json({ error: 'Invalid request. extensionMonths must be a whole number from 0 to 24.' });
+        return;
+    }
 
     const tenantId: number = parseInt(req.params.tenantId);
     const outletId: number = parseInt(req.params.outletId);
@@ -370,7 +333,7 @@ let recordPayment = (req: NetworkRequest<{
         paymentMethod,
         paymentDate: new Date(paymentDate),
         referenceNumber,
-        extensionMonths: extensionMonths || 1,
+        extensionMonths: extensionMonths ?? 1,
         notes
     })
         .then((response: RecordPaymentResponse) => {
@@ -608,10 +571,6 @@ router.delete('/tenants/:tenantId/users/:userId', deleteTenantUser)
 router.get('/tenants/:tenantId/users', getTenantUsers)
 
 router.post('/tenants/:tenantId/users/:userId/forgot-password', forgotTenantUserPassword)
-
-// device quota routes
-router.post('/addDeviceQuota/:tenantId', addDeviceQuotaForTenant)
-router.post('/reduceDeviceQuota/:tenantId', reduceDeviceQuotaForTenant)
 
 // subscription plan routes
 router.put('/tenants/:tenantId/changePlan', changeTenantPlan)

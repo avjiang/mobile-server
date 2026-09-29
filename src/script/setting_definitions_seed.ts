@@ -69,6 +69,27 @@ const settingDefinitions = [
         })
     },
     {
+        // Bank accounts the business receives transfers into — the chips the
+        // cashier picks on a Transfer payment (checkout + Receive Payment).
+        // JSON array of {type:'BANK', bank, accountNumber?, holder?}; the
+        // chosen account's label ("BCA ***7890", or just "BCA") is saved as
+        // payment.reference. The default is the list the app hard-coded before
+        // this setting existed, so no tenant loses a bank until they edit it.
+        // `type` leaves room for QRIS later. TENANT scope.
+        key: 'payment_accounts',
+        category: 'Financial',
+        type: 'JSON',
+        defaultValue: JSON.stringify([
+            { type: 'BANK', bank: 'BCA' },
+            { type: 'BANK', bank: 'BCA Syariah' },
+            { type: 'BANK', bank: 'BSI' },
+            { type: 'BANK', bank: 'Bank Aceh' }
+        ]),
+        description: 'Bank accounts that receive transfer payments',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
         key: 'service_charge_rate',
         category: 'Financial',
         type: 'DOUBLE',
@@ -239,7 +260,7 @@ const settingDefinitions = [
         key: 'language',
         category: 'User Preference',
         type: 'STRING',
-        defaultValue: 'en',
+        defaultValue: 'id', // Indonesian-first market — new users start in Bahasa Indonesia
         description: 'Preferred language',
         scope: 'USER',
         isRequired: false,
@@ -274,6 +295,19 @@ const settingDefinitions = [
         type: 'BOOLEAN',
         defaultValue: 'false',
         description: 'Push notification registration status',
+        scope: 'USER',
+        isRequired: false,
+        isReadOnly: true,
+        validationRules: null
+    },
+    {
+        // Device-specific, read-only: the app shows whether Android exempts it
+        // from battery optimisation (read live from the OS, never stored).
+        key: 'is_pushy_battery_optimized',
+        category: 'User Preference',
+        type: 'BOOLEAN',
+        defaultValue: 'false',
+        description: 'Battery optimization mitigation status',
         scope: 'USER',
         isRequired: false,
         isReadOnly: true,

@@ -190,7 +190,7 @@ model Setting {
   tenantId            Int?      @map("TENANT_ID") // Nullable, references Tenant in global DB
   userId              Int?      @map("USER_ID") // Nullable for user-specific settings
   outletId            Int?      @map("OUTLET_ID") // Nullable for outlet-specific settings
-  value               String    @map("VALUE") // Stores value as string
+  value               String    @db.Text @map("VALUE") // Stores value as string (TEXT: JSON settings such as payment_accounts outgrow 191 chars)
   deleted             Boolean   @default(false) @map("IS_DELETED")
   deletedAt           DateTime? @map("DELETED_AT")
   createdAt           DateTime? @default(now()) @map("CREATED_AT")
@@ -680,6 +680,10 @@ model Sales {
   // orderRef = client-minted UUID, the durable scan/lookup key (@unique → index
   // used by GET /sales/ref/:orderRef). friendlyNumber = YYMMDD-<terminal>-<seq>,
   // human display/search only. collectedAt = set when the bag is collected.
+  // Offline-replay dedupe: the X-Idempotency-Key of the completeNewSales call
+  // that created this sale. Permanent (idempotency_record forgets after 24h), so
+  // a checkout replayed days later returns this row instead of a second sale.
+  clientRef               String?   @unique @map("CLIENT_REF") @db.VarChar(64)
   orderRef                String?   @unique @map("ORDER_REF")
   friendlyNumber          String?   @map("FRIENDLY_NUMBER")
   collectedAt             DateTime? @map("COLLECTED_AT")
@@ -1227,6 +1231,9 @@ model Payment {
   // Terminal attribution — which terminal took this payment (RegisteredDevice.siteId).
   // Client-supplied, nullable. See docs/modules/SALES.md.
   siteId         Int?        @map("SITE_ID")
+  // Offline-replay dedupe for addPayment: "<X-Idempotency-Key>:<n>" of the n-th
+  // payment in that call. See Sales.clientRef.
+  clientRef      String?     @unique @map("CLIENT_REF") @db.VarChar(80)
   deleted        Boolean     @default(false) @map("IS_DELETED")
   deletedAt      DateTime?   @map("DELETED_AT")
   createdAt      DateTime?   @default(now()) @map("CREATED_AT")

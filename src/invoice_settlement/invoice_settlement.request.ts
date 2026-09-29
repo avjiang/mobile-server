@@ -19,7 +19,9 @@ export interface InvoiceSettlementInput {
     totalInvoiceCount?: number;
     totalInvoiceAmount?: number;
     // Partial-payment support: amount being paid NOW (down payment). Defaults to
-    // settlementAmount (full payment). Must be > 0 and <= settlementAmount.
+    // settlementAmount (full payment). Must be > 0 and <= settlementAmount — except a
+    // settlement fully offset by rebate / PO down payment (settlementAmount 0), which
+    // settles with paidAmount 0 and no payment ledger row.
     paidAmount?: number;
     // Bank/transfer fee for the initial payment (bookkeeping only — not applied
     // against the invoice balance).

@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs"
 import { AuthRequest } from "src/middleware/auth-request";
 import { AccountRequest } from "./account.request";
 import { OutletDetailsResponse } from "./account.response";
-import { isLaundryBundledAddOn } from "../constants/add-on-ids";
+import { isNonBillableAddOn } from "../constants/add-on-ids";
 const { getGlobalPrisma, getTenantPrisma, initializeTenantDatabase } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -41,11 +41,11 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
 
         const subscription = outlet.subscriptions[0];
 
-        // Advanced Loyalty is bundled into Laundry Pro, so it is never billed as
-        // an add-on for Laundry tenants — drop it from the breakdown entirely.
+        // Never billed: Advanced Loyalty on Laundry (bundled into Laundry Pro) and
+        // retired add-ons (Extra Device) — drop them from the breakdown entirely.
         const planType = subscription?.subscriptionPlan?.planType ?? null;
         const billableAddOns = tenantAddOns.filter(
-            ta => !isLaundryBundledAddOn(ta.addOn.id, planType),
+            ta => !isNonBillableAddOn(ta.addOn.id, planType),
         );
 
         const totalAddOnCost = billableAddOns.reduce((sum, ta) => sum + ta.addOn.pricePerUnit * ta.quantity, 0);
@@ -70,7 +70,8 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
 
         if (subscription) {
             const standardPlanPrice = subscription.subscriptionPlan.price;
-            const basePlanCost = subscription.customPrice ?? standardPlanPrice;
+            // The 30-day Pro trial bills Rp 0 for the plan itself.
+            const basePlanCost = (subscription.status ?? '').toLowerCase() === 'trial' ? 0 : (subscription.customPrice ?? standardPlanPrice);
             const isCustomPrice = subscription.customPrice != null;
 
             // Calculate discounts (plan-level only; add-ons are tenant-level)

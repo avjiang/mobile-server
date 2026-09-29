@@ -53,8 +53,8 @@ body: username, password, lastName, firstName, mobile, email, role
 header: token
 body: id, lastName, firstName, mobile, email, role
 ```
-- (PUT) /user/change-password
+- (POST) /user/:id/change-password — `:id` is the tenant-DB user id
 ```sh
 header: token
-body: userId, currentPassword, newPassword 
+body: username, currentPassword, newPassword   # newPassword: at least 6 characters
 ```

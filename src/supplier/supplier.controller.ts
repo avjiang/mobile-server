@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express"
+import { rejectPlan } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./supplier.service"
 import { Supplier } from "../../prisma/client/generated/client"
@@ -101,7 +102,7 @@ let remove = (req: AuthRequest, res: Response, next: NextFunction) => {
 router.get("/", getAll)
 router.get('/sync', getAllSupplier)
 router.get('/:id', getById)
-router.post('/create', createMany)
+router.post('/create', rejectPlan('Lite'), createMany)
 router.put('/update', update)
 router.delete('/:id', remove)
 export = router

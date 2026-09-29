@@ -1,6 +1,8 @@
 import express, { NextFunction, Request, Response } from "express"
+import { clampHistoryStart } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./report.service"
+import monthlySummaryService from "./monthly-summary.service"
 import { Supplier } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
@@ -58,6 +60,9 @@ let generateOutletReport = (req: AuthRequest, res: Response, next: NextFunction)
         parsedEndDate = d;
     }
 
+    // Retail Lite reports cover the last 30 days only.
+    parsedStartDate = clampHistoryStart(req.user.planName, parsedStartDate);
+
     service.generateOutletReport(
         req.user.databaseName,
         parseInt(outletId.toString()),
@@ -85,6 +90,37 @@ let generateLaundryReport = (req: AuthRequest, res: Response, next: NextFunction
         .catch(next)
 }
 
+// Monthly value summary (dashboard card): outletId + ISO startDate/endDate,
+// the local month converted to UTC by the app, like generateOutletReport.
+let generateMonthlySummary = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+
+    const { outletId, startDate, endDate } = req.query;
+    if (!outletId || !validator.isNumeric(outletId.toString())) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+    const start = startDate ? new Date(startDate.toString()) : null;
+    const end = endDate ? new Date(endDate.toString()) : null;
+    if (!start || isNaN(start.getTime()) || !end || isNaN(end.getTime()) || start > end) {
+        throw new RequestValidateError('Valid startDate and endDate are required');
+    }
+
+    // Retail Lite keeps 30 days of history, the same as its reports.
+    const clampedStart = clampHistoryStart(req.user.planName, start) ?? start;
+
+    monthlySummaryService.generateMonthlySummary(
+        req.user.databaseName,
+        parseInt(outletId.toString()),
+        clampedStart,
+        end,
+        req.user.planType
+    )
+        .then((summary) => sendResponse(res, summary))
+        .catch(next)
+}
+
 // routes
 router.get('/generate', generateReport)
 // Mirrors the frontend gate on the Function screen's "Reports" section
@@ -93,4 +129,6 @@ router.get('/generate', generateReport)
 // read outlet financials directly.
 router.get('/generateOutletReport', requirePermission(PERMISSION.VIEW_FINANCIAL_REPORTS), generateOutletReport)
 router.get('/generateLaundryReport', generateLaundryReport)
+// Money figures → same permission as the outlet report.
+router.get('/monthlySummary', requirePermission(PERMISSION.VIEW_FINANCIAL_REPORTS), generateMonthlySummary)
 export = router

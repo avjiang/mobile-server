@@ -3,6 +3,38 @@ import { Decimal } from 'decimal.js';
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
+import { saleLevelDeductions } from '../sales/sale-profit';
+
+/** Sale statuses whose service lines count as laundry revenue: the order was
+ *  taken and not reversed. Supply cost uses every non-void status instead. */
+const LAUNDRY_REVENUE_STATUSES = ["Completed", "Partially Paid", "Delivered"];
+
+/** Σ of the sale-level deduction columns (cart discount + loyalty chain) — the
+ *  money taken off AFTER the service lines, so it never shows in their subtotal.
+ *  Feed it the same sale scope as the service-revenue groupBy. */
+const SALE_DEDUCTION_SUM = {
+    discountAmount: true,
+    loyaltyTierDiscountAmount: true,
+    voucherDiscountAmount: true,
+    subscriptionDiscountAmount: true,
+    loyaltyPointsRedemptionValue: true,
+} as const;
+
+/** Laundry profit headline: service lines are summed at list price, so the
+ *  prepaid-package / tier / voucher / points / cart discounts must come off
+ *  before supply cost — otherwise a package-covered wash counts as full revenue
+ *  and net profit can exceed what the customers actually paid (2026-09-28). */
+function laundryProfitTotals(serviceRevenue: Decimal, discounts: Decimal, supplyCost: Decimal) {
+    const netRevenue = serviceRevenue.minus(discounts);
+    const netProfit = netRevenue.minus(supplyCost);
+    return {
+        serviceRevenue: serviceRevenue.toNumber(),
+        discounts: discounts.toNumber(),
+        supplyCost: supplyCost.toNumber(),
+        netProfit: netProfit.toNumber(),
+        margin: netRevenue.gt(0) ? netProfit.dividedBy(netRevenue).times(100).toNumber() : 0,
+    };
+}
 
 let generateReport = async (databaseName: string, sessionId: number, planType?: string | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -1911,9 +1943,10 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             averageKgPerLoad: number;
             suppliesConsumed: { itemId: number; itemName: string; unitOfMeasure: string | null; totalConsumed: number; cost: number }[];
         } | null = null;
-        // Laundry profit breakdown: service revenue − supply cost = net profit.
+        // Laundry profit breakdown: service revenue − discounts − supply cost = net profit.
         let laundryProfit: {
             serviceRevenue: number;
+            discounts: number;
             supplyCost: number;
             netProfit: number;
             margin: number;
@@ -1930,7 +1963,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             });
             const washItemIds = serviceItems.filter(i => i.defaultLoadWeightKg !== null).map(i => i.id);
             const jasaItemIds = serviceItems.filter(i => i.defaultLoadWeightKg === null).map(i => i.id);
-            const [kgAgg, jasaAgg, consumableLines, serviceGroups] = await Promise.all([
+            const [kgAgg, jasaAgg, consumableLines, serviceGroups, deductionAgg] = await Promise.all([
                 tenantPrisma.salesItem.aggregate({
                     where: {
                         sales: { ...outletFilter, status: { in: nonVoidStatuses }, deleted: false },
@@ -1954,14 +1987,25 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     },
                     select: { itemId: true, itemName: true, unitOfMeasure: true, quantity: true, stockConsumptionQty: true, cost: true }
                 }),
+                // Revenue from the same orders the kg/loads and supply cost above
+                // come from. Laundry orders sit "Partially Paid" (DP / pay at pickup)
+                // until collection: counting only "Completed" here charged every
+                // load's detergent but credited almost none of its revenue, so the
+                // margin read as a loss. Returned/refunded orders earn nothing but
+                // their supplies were still used, so they stay in supplyCost only.
                 tenantPrisma.salesItem.groupBy({
                     by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
                     where: {
-                        sales: { ...outletFilter, status: "Completed", deleted: false },
+                        sales: { ...outletFilter, status: { in: LAUNDRY_REVENUE_STATUSES }, deleted: false },
                         loadWeightKg: { not: null }
                     },
                     _sum: { subtotalAmount: true, profit: true, quantity: true, loadWeightKg: true },
                     orderBy: { _sum: { subtotalAmount: 'desc' } }
+                }),
+                // Sale-level discounts on those same orders (package, tier, voucher, points, cart).
+                tenantPrisma.sales.aggregate({
+                    where: { ...outletFilter, status: { in: LAUNDRY_REVENUE_STATUSES }, deleted: false },
+                    _sum: SALE_DEDUCTION_SUM
                 })
             ]);
 
@@ -2030,12 +2074,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     profit: s.revenue.minus(cost).toNumber(),
                 };
             });
-            const netProfit = serviceRevenue.minus(supplyCost);
             laundryProfit = {
-                serviceRevenue: serviceRevenue.toNumber(),
-                supplyCost: supplyCost.toNumber(),
-                netProfit: netProfit.toNumber(),
-                margin: serviceRevenue.gt(0) ? netProfit.dividedBy(serviceRevenue).times(100).toNumber() : 0,
+                ...laundryProfitTotals(serviceRevenue, saleLevelDeductions(deductionAgg._sum), supplyCost),
                 services
             };
         }
@@ -2424,7 +2464,7 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
         const washItemIds = serviceItems.filter(i => i.defaultLoadWeightKg !== null).map(i => i.id);
         const jasaItemIds = serviceItems.filter(i => i.defaultLoadWeightKg === null).map(i => i.id);
 
-        const [completedSales, paymentBreakdown, allSales, kgAgg, jasaAgg, consumableLines, serviceGroups] = await Promise.all([
+        const [completedSales, paymentBreakdown, allSales, kgAgg, jasaAgg, consumableLines, serviceGroups, deductionAgg] = await Promise.all([
             // Completed sales from completedSessionId only — backs revenue / avg / paid / change
             tenantPrisma.sales.aggregate({
                 where: { ...completedSessionFilter, status: "Completed", deleted: false },
@@ -2527,14 +2567,22 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
             // Laundry profit: per-service revenue/profit. Service (wash/jasa) lines
             // carry loadWeightKg (non-null); their subtotal is the revenue and their
             // cost is 0 (the COGS lives on the consumable lines above).
+            // Same scope as the supply lines above (orders taken in this session) —
+            // see the outlet report's laundry profit for why not "Completed" only.
             tenantPrisma.salesItem.groupBy({
                 by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
                 where: {
-                    sales: { ...completedSessionFilter, status: "Completed", deleted: false },
+                    sales: { ...sessionFilter, status: { in: LAUNDRY_REVENUE_STATUSES }, deleted: false },
                     loadWeightKg: { not: null }
                 },
                 _sum: { subtotalAmount: true, profit: true, quantity: true, loadWeightKg: true },
                 orderBy: { _sum: { subtotalAmount: 'desc' } }
+            }),
+
+            // Sale-level discounts on those same orders (package, tier, voucher, points, cart).
+            tenantPrisma.sales.aggregate({
+                where: { ...sessionFilter, status: { in: LAUNDRY_REVENUE_STATUSES }, deleted: false },
+                _sum: SALE_DEDUCTION_SUM
             })
         ]);
 
@@ -2579,7 +2627,7 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
             .sort((a, b) => b.totalConsumed - a.totalConsumed);
 
         // ── Laundry profit breakdown: where the profit comes from ──
-        // Service revenue (wash/jasa lines) − supply cost (consumables) = net profit.
+        // Service revenue (wash/jasa lines) − discounts − supply cost (consumables) = net profit.
         // Supply cost is attributed back to each service via its recipe so a
         // per-service margin reflects the consumables that service actually used
         // (e.g. a wash with detergent is < 100%, an ironing service is 100%).
@@ -2617,12 +2665,8 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                 profit: s.revenue.minus(cost).toNumber(),
             };
         });
-        const netProfit = serviceRevenue.minus(supplyCost);
         const laundryProfit = {
-            serviceRevenue: serviceRevenue.toNumber(),
-            supplyCost: supplyCost.toNumber(),
-            netProfit: netProfit.toNumber(),
-            margin: serviceRevenue.gt(0) ? netProfit.dividedBy(serviceRevenue).times(100).toNumber() : 0,
+            ...laundryProfitTotals(serviceRevenue, saleLevelDeductions(deductionAgg._sum), supplyCost),
             services
         };
 

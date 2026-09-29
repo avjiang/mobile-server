@@ -110,10 +110,10 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 ## Environment
 
 - `.env` (local): `TENANT_DATABASE_URL`, `GLOBAL_DB_URL`, `PORT`, `PUSHY_SECRET_API_KEY`
-- `.env` (prod overrides): `PROD_GLOBAL_DB_URL`, `PROD_TENANT_DATABASE_URL` (consumed when `db_upgrade.ts` / `db_backup.ts` are invoked with the `prod` arg — they swap these into `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` at runtime)
+- `.env` (prod overrides): `PROD_GLOBAL_DB_URL`, `PROD_TENANT_DATABASE_URL` (consumed when `db_upgrade.ts` / `db_backup.ts` / `db_restore.ts` / `db_verify.ts` are invoked with the `prod` arg — they swap these into `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` at runtime). **Since 2026-09-26 these point at `bayaryuk-db-v2`**; `NEWPROD_*` = the same server (migration leftovers), `OLDPROD_*` = the frozen retired `bayaryuk-server` (delete with it).
 - `config.json`: `JWT_TOKEN_SECRET`
 - PM2 config in `ecosystem.config.js` (tsx interpreter, watch mode)
-- App Service env vars on Azure are managed separately — `az webapp config appsettings list --name BayarYuk --resource-group bayar-yuk`
+- App Service env vars on Azure are managed separately — `az webapp config appsettings list --name BayarYuk --resource-group bayar-yuk --subscription 82334397-af03-435f-a9cd-f12dab805852` (the `--subscription` is required: the `az` default is now the database account)
 
 ## Testing — LOCAL DB ONLY (hard rule)
 
@@ -135,7 +135,7 @@ Health check: `GET /health`.
 For a coordinated release that includes schema changes:
 
 1. **Audit pending migrations first** — `prisma migrate status` against prod (read-only). All Prisma migrations *should* be backward-compatible (additive cols nullable or with defaults, new tables only). Anything else (NOT NULL adds, drops, type changes) needs a multi-step rollout.
-2. `npm run backup_db_prod` — produces `backups/prod_<ts>/global.sql` + one `<tenant>.sql` per tenant. **Verify files exist and are non-empty before continuing.**
+2. `export PATH=/opt/homebrew/opt/mysql-client@8.4/bin:$PATH` then `npm run backup_db_prod` — produces `backups/prod_<ts>/global.sql` + one `<tenant>.sql` per tenant whose database exists + `manifest.json` (`--only=a,b` to scope). **Verify every file ends with `-- Dump completed on …` before continuing.** The 8.4 client is required since 2026-09-26 (the Mac's default `mysqldump` 9.2 cannot dump the 8.0 server). `global.tenant` lists 15 tenants but only 2 have databases on the new server; `db_backup.ts` and `updateAllTenantDatabases()` **skip absent databases and print the list** (expect 13) — a DB that exists but fails still aborts the backup.
 3. `npm run upgrade_db_prod` — applies migrations to global + every tenant DB. DB is now ahead of the still-running App Service code; safe if migrations are additive.
 4. `git push origin main` — CI/CD deploys the new server code that uses the new schema.
 5. Wait for green deploy + `curl https://bayaryuk-…/health`.
@@ -148,11 +148,13 @@ For a coordinated release that includes schema changes:
 ### Rollback gap (current state)
 
 - Server code rollback is easy: `git revert <commit> && git push origin main` → CI/CD redeploys, or use App Service Deployment Center to redeploy a previous build.
-- **DB rollback has no script yet.** Restoring a backup requires manually piping each `.sql` file with the `mysql` CLI (`mysql -h … <db> < backups/prod_<ts>/<db>.sql`). The planned `db_restore.ts` is drafted in [`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md) §0.3 but not yet implemented. For additive-only migrations, hand-written reverse SQL (`DROP TABLE`, `DROP COLUMN`) is also valid and was used historically.
+- **DB restore script exists (2026-09-21):** `node dist/script/db_restore.js <local|newprod|prod> <backup_dir>` (`npm run restore_db` / `restore_db_newprod`). It recreates each database with the charset/collation recorded in the backup's `manifest.json` (`global` is `utf8mb4_unicode_ci`, not the server default — getting this wrong breaks joins on tables added by later migrations), then loads the dump. **Restoring into `prod` overwrites live production and requires `--yes-i-am-sure`**; there is deliberately no npm script for it. Prove any restore with `db_verify.js` (exact per-table row counts + collation). For additive-only migrations, hand-written reverse SQL (`DROP TABLE`, `DROP COLUMN`) is still valid and was used historically.
 
-### Azure free-tier expiry
+### Where prod MySQL lives (since 2026-09-26)
 
-Current MySQL free tier on this subscription **expires Fri 4 Sep 2026**. Full migration runbook to a fresh subscription is in [`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md) (target cutover ~25 Aug 2026). Phase 0 tooling is partially built (`prod` target works; `newprod` target and `db_restore.ts` not yet).
+**`bayaryuk-db-v2.mysql.database.azure.com`** — RG `bayar-yuk-v2`, subscription `3bbc4892-5a45-4680-95b3-64bf43d35d4c` (account `alvinn.jiang.yt@gmail.com`), B1ms / 8.0 / 20 GB, admin `bayar_yuk_v2`. It is on a **different subscription from the App Service** (`82334397-…`), reached over the public endpoint via the "Allow Azure services" firewall rule. It holds **only `global`, `audio_technic_db`, `web_bytes_db`** — the other tenants in `global.tenant` are test accounts not migrated.
+
+The old server `bayaryuk-server` (sub `82334397-…`) was retired at the 2026-09-26 22:33 cutover: **frozen, no app traffic, delete on/after 2026-09-29**. Its free tier had expired 2026-09-04; the new account's 12-month free tier runs to ≈ **2027-09-26** — plan the next move ~11 months out. Full record: [`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md).
 
 ## Module Documentation
 

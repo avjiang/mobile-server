@@ -1,4 +1,8 @@
 import { PrismaClient as GlobalPrismaClient } from '../../prisma/global-client/generated/global';
+
+/** A subscription that is in force: paid ('Active', any case) or the Pro trial. */
+const isLiveStatus = (status: string | null | undefined): boolean =>
+  ['active', 'trial'].includes((status ?? '').toLowerCase());
 const { getGlobalPrisma } = require('../db');
 
 interface PlanCheckResult {
@@ -49,8 +53,9 @@ class PlanCheckService {
       });
 
       // Check if tenant has any active Pro subscription
-      const isProPlan = tenant?.subscription?.some(sub => 
-        sub.status === 'Active' &&
+      // 'trial' counts: the Pro trial runs on the Pro plan (status 'trial').
+      const isProPlan = tenant?.subscription?.some(sub =>
+        isLiveStatus(sub.status) &&
         sub.subscriptionPlan?.planName === this.PRO_PLAN_NAME
       ) || false;
 
@@ -97,7 +102,7 @@ class PlanCheckService {
       }
 
       // Find any active subscription
-      const activeSubscription = tenant.subscription.find(sub => sub.status === 'Active');
+      const activeSubscription = tenant.subscription.find(sub => isLiveStatus(sub.status));
       const planName = activeSubscription?.subscriptionPlan?.planName || null;
       const isProPlan = activeSubscription?.subscriptionPlan?.planName === this.PRO_PLAN_NAME || false;
 

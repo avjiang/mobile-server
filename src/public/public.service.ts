@@ -1,5 +1,14 @@
 import { getGlobalPrisma, getTenantPrisma } from "../db";
-import { NotFoundError } from "../api-helpers/error";
+import { BaseError, NotFoundError } from "../api-helpers/error";
+
+/** The shop exists but its plan no longer includes the online catalogue. */
+export class CataloguePausedError extends BaseError {
+  readonly shopName: string;
+  constructor(shopName: string) {
+    super(403, "Catalogue paused.");
+    this.shopName = shopName;
+  }
+}
 
 /**
  * Public (tokenless) online-catalogue read service.
@@ -92,6 +101,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
   const tenant = await getGlobalPrisma().tenant.findUnique({
     where: { slug },
     select: {
+      id: true,
       databaseName: true,
       tenantName: true,
       whatsappNumber: true,
@@ -103,6 +113,19 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
   });
   if (!tenant || tenant.catalogueEnabled !== true || !tenant.databaseName) {
     throw new NotFoundError("Catalogue");
+  }
+  // The catalogue is a Pro feature (the Pro trial counts). A shop that stepped
+  // down keeps its settings and link, but the store is shown as paused.
+  const onPro = await getGlobalPrisma().tenantSubscription.findFirst({
+    where: {
+      tenantId: tenant.id,
+      status: { in: ["Active", "active", "trial"] },
+      subscriptionPlan: { planName: "Pro" },
+    },
+    select: { id: true },
+  });
+  if (!onPro) {
+    throw new CataloguePausedError(tenant.tenantName);
   }
 
   const prisma = getTenantPrisma(tenant.databaseName);

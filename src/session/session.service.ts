@@ -161,7 +161,52 @@ let closeSession = async (closeSessionRequest: CloseSessionRequest, databaseName
     }
 }
 
+// Latest sessions a user opened (newest first) with their sales count and total — the
+// tablet User detail's "Recent sales sessions". Sale statuses counted as sales match
+// getTotalSalesData: Completed / Partially Paid / Delivered (voided, returned and
+// refunded sales are excluded).
+let getRecentSessionsByUser = async (openByUserID: number, limit: number, databaseName: string) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    try {
+        const sessions = await tenantPrisma.session.findMany({
+            where: { openByUserID, deleted: false },
+            orderBy: [{ openingDateTime: 'desc' }, { id: 'desc' }],
+            take: limit,
+        })
+        if (sessions.length === 0) return []
+
+        const totals = await tenantPrisma.sales.groupBy({
+            by: ['sessionId'],
+            where: {
+                sessionId: { in: sessions.map((s) => s.id) },
+                deleted: false,
+                status: { in: ['Completed', 'Partially Paid', 'Delivered'] },
+            },
+            _sum: { totalAmount: true },
+            _count: { _all: true },
+        })
+        const bySession = new Map(totals.map((t) => [t.sessionId, t]))
+
+        return sessions.map((s) => {
+            const t = bySession.get(s.id)
+            return {
+                id: s.id,
+                outletId: s.outletId,
+                businessDate: s.businessDate,
+                openingDateTime: s.openingDateTime,
+                closingDateTime: s.closingDateTime,
+                salesCount: t?._count._all ?? 0,
+                totalAmount: t?._sum.totalAmount ? Number(t._sum.totalAmount) : 0,
+            }
+        })
+    }
+    catch (error) {
+        throw error
+    }
+}
+
 export = {
+    getRecentSessionsByUser,
     getDeclarationsBySessionID,
     getSessionByID,
     getOpenSession,

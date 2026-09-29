@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from "express";
 import { randomBytes } from "crypto";
 import { sendResponse } from "../api-helpers/network";
-import { getPublicCatalogue } from "./public.service";
-import { renderCataloguePage, renderNotFoundPage } from "./catalogue-page";
+import { getPublicCatalogue, CataloguePausedError } from "./public.service";
+import { renderCataloguePage, renderNotFoundPage, renderPausedPage } from "./catalogue-page";
 
 /**
  * PUBLIC (tokenless) routes — MUST be mounted ABOVE authorizeMiddleware in index.ts.
@@ -96,6 +96,9 @@ const renderPage = (req: Request, res: Response) => {
       res.type("html").send(renderCataloguePage(catalogue, nonce));
     })
     .catch((err) => {
+      if (err instanceof CataloguePausedError) {
+        return res.status(403).type("html").send(renderPausedPage(err.shopName));
+      }
       // Any resolution failure (bad slug, disabled, missing) → friendly 404 HTML.
       const status = typeof err?.statusCode === "number" ? err.statusCode : 500;
       res.status(status === 404 ? 404 : 500).type("html").send(renderNotFoundPage());

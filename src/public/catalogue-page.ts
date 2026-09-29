@@ -153,10 +153,35 @@ const WA_ICON =
 const SEARCH_ICON =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/></svg>';
 
-// Neutral "no photo" glyph for products without an image (replaces the noisy
-// first-letter placeholder). Same icon on cards and in the detail sheet.
-const PLACEHOLDER_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.7"/><path d="M21 15l-4.5-4.5L5 21"/></svg>';
+// No-photo placeholder: the product's own pastel with its initials, the same
+// tile the app shows on sales cards and cart lines (2026-09-29). Keep the
+// palette, hash and initials in step with the Flutter side:
+// `ListLeading.tintFor` / `initialsOf` (lib/screens/widgets/entity_list_row.dart)
+// and `NetworkItemImage._inkFor`. Each row is [tint, lighter top-left, ink].
+const MONO_TINTS: ReadonlyArray<readonly [string, string, string]> = [
+  ["#E0E7FF", "#EBEFFF", "#273D86"],
+  ["#FDE2E4", "#FEECED", "#802D33"],
+  ["#FEF3C7", "#FEF7DB", "#857229"],
+  ["#DCFCE7", "#E8FDEF", "#2F7F4A"],
+  ["#DBEAFE", "#E8F1FE", "#2A5084"],
+  ["#FFEDD5", "#FFF3E4", "#865E27"],
+  ["#CCFBF1", "#DEFCF6", "#2E7F6E"],
+  ["#F3E8FF", "#F7F0FF", "#552786"],
+];
+
+function monogramFor(name: string): { i: string; bg: string; ink: string } {
+  let h = 0;
+  for (let k = 0; k < name.length; k++) h = (h * 31 + name.charCodeAt(k)) & 0x7fffffff;
+  const [tint, light, ink] = MONO_TINTS[h % MONO_TINTS.length];
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => Array.from(w)[0].toUpperCase())
+    .join("");
+  return { i: letters || "?", bg: `linear-gradient(135deg,${light},${tint})`, ink };
+}
 
 const SHARE_ICON =
   '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
@@ -210,8 +235,13 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
     const waName = sub ? `${p.name} (${sub})` : p.name;
     const waFor = (name: string, price: number) =>
       waLink(wa, showPrice ? t.waText(name, fmt(price)) : t.waTextNoPrice(name));
+    const mono = monogramFor(p.name);
     return {
       n: p.name,
+      // No-photo tile: initials, background, ink (see monogramFor).
+      mi: mono.i,
+      mb: mono.bg,
+      mk: mono.ink,
       sub,
       c: p.categoryName ?? "",
       d: p.description ?? "",
@@ -241,7 +271,7 @@ export function renderCataloguePage(catalogue: PublicCatalogue, nonce: string): 
       const d = data[i];
       const img = p.imageUrl
         ? `<img class="thumb" loading="lazy" decoding="async" src="${esc(p.imageUrl)}" alt="${esc(p.name)}">`
-        : `<div class="thumb thumb--empty"><span class="ph-disc">${PLACEHOLDER_ICON}</span></div>`;
+        : `<div class="thumb thumb--empty" style="background:${d.mb}"><span class="mono" style="color:${d.mk}">${esc(d.mi)}</span></div>`;
       const vcount =
         p.hasVariants && p.variants.length
           ? `<span class="vcount">${p.variants.length} ${esc(t.options)}</span>`
@@ -493,11 +523,11 @@ ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ""}
     padding:6px 8px; box-shadow:0 3px 8px rgba(0,0,0,.35); pointer-events:none;
     font-family:'Gilroy',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
   .thumb{ width:100%; aspect-ratio:1/1; object-fit:cover; background:#f0f1f5; display:block; }
-  /* No-photo placeholder — matches the in-app sales card: white field with a
-     centred circular disc holding a soft picture glyph. */
-  .thumb--empty{ display:grid; place-items:center; background:#fff; }
-  .ph-disc{ width:46%; max-width:92px; aspect-ratio:1/1; border-radius:50%; background:#e9ebf0; color:#aeb4bc; display:grid; place-items:center; }
-  .ph-disc svg{ width:50%; height:50%; }
+  /* No-photo placeholder — matches the in-app sales card: the product's own
+     pastel with its initials (inline background + colour from monogramFor). */
+  .thumb--empty{ display:grid; place-items:center; container-type:inline-size; }
+  .mono{ font-family:'Gilroy',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-weight:800; letter-spacing:.02em; line-height:1; font-size:clamp(22px, 30cqw, 56px); }
   .body{ padding:13px; display:flex; flex-direction:column; gap:5px; flex:1; }
   .cat{ font-size:10.5px; color:var(--red); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
   .name{ font-size:15px; margin:0; line-height:1.25; font-weight:700; }
@@ -627,7 +657,6 @@ ${products.length ? `<div class="lightbox" id="lightbox" hidden><img id="lb-img"
   var OOS = ${JSON.stringify(t.outOfStock)};
   var VLABEL = ${JSON.stringify(t.optionsLabel)};
   var SPECLABEL = ${JSON.stringify(t.specsLabel)};
-  var PH = ${JSON.stringify(PLACEHOLDER_ICON)};
   var SHARE_URL = ${JSON.stringify(canonicalUrl)};
   var SHARE_TITLE = ${JSON.stringify(`${business.name} — Katalog`)};
   var COPIED = ${JSON.stringify(t.linkCopied)};
@@ -688,8 +717,13 @@ ${products.length ? `<div class="lightbox" id="lightbox" hidden><img id="lb-img"
     lastFocused = document.activeElement; curIdx = idx;
     var imgWrap = document.getElementById('m-img');
     imgWrap.innerHTML = '';
+    imgWrap.style.background = '';
     if (d.img){ imgWrap.className = 'sheet-img'; var im = el('img'); im.src = d.img; im.alt = d.n; imgWrap.appendChild(im); }
-    else { imgWrap.className = 'sheet-img sheet-img--empty'; imgWrap.innerHTML = '<span class="ph-disc">' + PH + '</span>'; }
+    else {
+      imgWrap.className = 'sheet-img sheet-img--empty thumb--empty';
+      imgWrap.style.background = d.mb;
+      var mono = el('span', 'mono'); mono.style.color = d.mk; mono.textContent = d.mi; imgWrap.appendChild(mono);
+    }
     var cat = document.getElementById('m-cat'); cat.textContent = d.c || ''; cat.style.display = d.c ? '' : 'none';
     document.getElementById('m-name').textContent = d.n || '';
     var msub = document.getElementById('m-sub'); msub.textContent = d.sub || ''; msub.style.display = d.sub ? '' : 'none';
@@ -879,6 +913,18 @@ ${products.length ? `<div class="lightbox" id="lightbox" hidden><img id="lb-img"
 </script>
 </body>
 </html>`;
+}
+
+/**
+ * Shown when the shop's plan no longer includes the online catalogue (a step
+ * down from Pro or the end of a Pro trial). The link the shop already shared
+ * keeps working and says the store is closed for now — never a broken page.
+ */
+export function renderPausedPage(shopName: string): string {
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(shopName)} · Toko sedang tutup</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#F2F2F7;color:#302D3D;display:grid;place-items:center;height:100vh;margin:0;text-align:center;padding:24px}h1{font-size:20px;margin:0 0 6px}p{color:#7b8190;margin:0}</style>
+</head><body><div><h1>${esc(shopName)}</h1><p>Toko online ini sedang tutup untuk sementara. Silakan hubungi toko secara langsung.</p></div></body></html>`;
 }
 
 export function renderNotFoundPage(): string {

@@ -64,7 +64,7 @@ async function run() {
 
         console.log(`Creating tenant "${tenantName}" (${planType} / ${plan})...`);
         const result = await adminService.createTenant({
-            tenant: { tenantName, plan, planType },
+            tenant: { tenantName, plan, planType, password: String(tenantName).toLowerCase().replace(/\s/g, '_') }, // test accounts: password == username (debug auto-login)
         });
         console.log("Tenant created:");
         console.log(JSON.stringify(result, null, 2));

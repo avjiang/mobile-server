@@ -1,4 +1,5 @@
 import express, { NextFunction, Response } from "express"
+import { rejectPlan } from "../../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./stock-movement.service"
 import { RequestValidateError } from "../../api-helpers/error"
@@ -141,9 +142,9 @@ let getInsights = (req: AuthRequest, res: Response, next: NextFunction) => {
 
 //routes
 router.get('/find', getStockChecksByItemIdAndOutlet)
-router.get('/report/summary', getMovementSummary)
-router.get('/report/by-type', getMovementByType)
-router.get('/report/by-type-detail', getMovementByTypeDetail)
-router.get('/report/card', getStockCard)
-router.get('/report/insights', getInsights)
+router.get('/report/summary', rejectPlan('Lite'), getMovementSummary)
+router.get('/report/by-type', rejectPlan('Lite'), getMovementByType)
+router.get('/report/by-type-detail', rejectPlan('Lite'), getMovementByTypeDetail)
+router.get('/report/card', rejectPlan('Lite'), getStockCard)
+router.get('/report/insights', rejectPlan('Lite'), getInsights)
 export = router

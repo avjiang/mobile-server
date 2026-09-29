@@ -95,7 +95,7 @@ let createMany = (req: NetworkRequest<CreateItemsRequestBody>, res: Response, ne
     );
     // planName gates the SECOND supplier per item (multi-supplier is Pro-only); the
     // first is available on every plan. See syncItemSuppliers in item.service.ts.
-    service.createMany(req.user.databaseName, requestBody.items, req.user.planName)
+    service.createMany(req.user.databaseName, requestBody.items, req.user.planName, req.user.planType)
         .then((insertedItems: Item[]) => {
             // var message = `Successfully created ${insertedItems} items`
             // if (insertedRecordCount === 1) {

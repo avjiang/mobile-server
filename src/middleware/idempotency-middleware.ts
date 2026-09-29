@@ -28,7 +28,7 @@ export interface IdempotencyDeps {
  * route handler.
  *
  * Classic failure mode this protects against:
- *   1. Client POSTs `/sales/create`.
+ *   1. Client POSTs `/sales/completeNewSales`.
  *   2. Server accepts and writes the sale.
  *   3. Response times out on the way back to the client.
  *   4. Client's outbox retries the same request with the same key.
@@ -45,6 +45,9 @@ export interface IdempotencyDeps {
  *     as transient so the client's retry gets a fresh attempt.
  *   - Per-tenant: records live in the tenant's own DB, scoped by endpoint
  *     + key. Identical keys across tenants don't collide.
+ *   - The endpoint is the literal `METHOD baseUrl+path` as sent, so a retry
+ *     only dedupes if it hits the exact same path as the original — the FE
+ *     outbox (`SyncWorker.routeFor`) must replay to the live call's endpoint.
  *
  * Failure modes:
  *   - DB unreachable during lookup → log + pass through (let the request

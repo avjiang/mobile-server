@@ -190,9 +190,22 @@ export async function updateAllTenantDatabases(): Promise<void> {
     console.error(`Failed to update global database: ${(error as Error).message}`);
   }
 
+  // A tenant row can outlive its database (test tenants not carried over in the 2026-09-26 server
+  // move). Never point `prisma migrate deploy` at a database that isn't there — skip it, loudly.
+  const onServer = new Set(
+    (await globalPrisma.$queryRawUnsafe<{ name: string }[]>(
+      'SELECT SCHEMA_NAME AS name FROM information_schema.SCHEMATA',
+    )).map((r) => r.name),
+  );
+  const skippedAbsent: string[] = [];
+
   for (const customer of customers) {
     if (!customer.databaseName) {
       console.warn(`Skipping tenant with ID ${customer.id}: database name is missing or null`);
+      continue;
+    }
+    if (!onServer.has(customer.databaseName)) {
+      skippedAbsent.push(customer.databaseName);
       continue;
     }
     const tenantUrl = process.env.TENANT_DATABASE_URL!.replace('{tenant_db_name}', customer.databaseName);
@@ -206,6 +219,9 @@ export async function updateAllTenantDatabases(): Promise<void> {
     } catch (error) {
       console.error(`Failed to update ${customer.databaseName}: ${(error as Error).message}`);
     }
+  }
+  if (skippedAbsent.length) {
+    console.warn(`Skipped ${skippedAbsent.length} tenant(s) with no database on this server: ${skippedAbsent.join(', ')}`);
   }
   console.log('All tenant databases updated.');
 }

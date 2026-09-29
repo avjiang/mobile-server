@@ -165,18 +165,20 @@ This document provides documentation for internal User Module endpoints.
 |-------|------|----------|-------------|
 | `username` | string | Yes | Username of the user |
 | `currentPassword` | string | Yes | Current password for validation |
-| `newPassword` | string | Yes | New password to set |
+| `newPassword` | string | Yes | New password to set — at least 6 characters |
 
 **Response (Success - 200):**
 
 ```json
 {
   "success": true,
-  "message": "Password updated successfully"
+  "data": { "success": true, "message": "Password updated successfully" }
 }
 ```
 
-**Error Responses:**
-- `400 Bad Request`: "Invalid username or password"
-- `400 Bad Request`: "New password cannot be the same as the current password"
+**Error Responses** (the app translates the ones with an `errorCode`):
+- `400` "New password must be at least 6 characters" — `errorCode: PASSWORD_TOO_SHORT`, `params: { min: "6" }`
+- `400` "New password cannot be the same as the current password" — `errorCode: NEW_PASSWORD_SAME_AS_CURRENT`
+- `400` "Invalid password" (wrong current password) — `errorCode: CURRENT_PASSWORD_INCORRECT`
+- `400` "Invalid username" (username doesn't match the user id; a client bug, left untagged)
 - `404 Not Found`: "User not found"

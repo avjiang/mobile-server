@@ -15,10 +15,12 @@ const prisma: PrismaClient = getGlobalPrisma()
 
 let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
     try {
-        // Find user based on username
+        // Find user based on username. A deleted login can't sign in (it keeps
+        // its username and history — deletion is soft).
         const tenantUser = await prisma.tenantUser.findFirst({
             where: {
                 username: req.username,
+                isDeleted: false,
             },
             include: {
                 tenant: true,
@@ -97,6 +99,11 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
     try {
         const refreshToken = await getRefreshToken(req.refreshToken)
         const tenantUser = await getById(refreshToken.tenantUserId)
+        // A login deleted since this token was issued must not stay signed in
+        // through silent refreshes.
+        if (!tenantUser || tenantUser.isDeleted) {
+            throw new RequestValidateError('Invalid refresh token')
+        }
 
         // Replace current refresh token with a new one
         const newRefreshToken = await generateRefreshToken(tenantUser, ipAddress)

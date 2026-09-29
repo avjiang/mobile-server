@@ -27,7 +27,9 @@ import { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } from '../db'
 import {
     DemoVertical, DemoItemDef, DEMO_SUPPLIER, DEMO_CUSTOMERS, PAYMENT_MIX,
     RETAIL_CATEGORIES, RETAIL_ITEMS, LAUNDRY_CATEGORIES, LAUNDRY_ITEMS,
+    LAUNDRY_SHOP, LAUNDRY_PACKAGES, LAUNDRY_PACKAGE_BUYERS, DEMO_LOYALTY, LOYALTY_TARGETS,
 } from './demo-catalogue';
+import subscriptionPackageService from '../subscription-package/subscription-package.service';
 
 const adminService = require('../admin/admin.service');
 
@@ -168,7 +170,8 @@ export async function seedDemoTenant(
             throw new Error(`Subscription plan "${DEMO_PLAN}" (${planType}) not found in the global DB — seed plans first.`);
         }
         console.log(`[Demo] Creating tenant "${tenantName}" (${DEMO_PLAN} / ${planType})...`);
-        await adminService.createTenant({ tenant: { tenantName, plan: DEMO_PLAN, planType } });
+        // Demo login ("Coba Demo") signs in with password == username.
+        await adminService.createTenant({ tenant: { tenantName, plan: DEMO_PLAN, planType, password: String(tenantName).toLowerCase().replace(/\s/g, '_') } });
         tenant = await globalPrisma.tenant.findFirst({ where: { tenantName } });
         if (!tenant) throw new Error(`createTenant reported success but "${tenantName}" is not in the global DB.`);
         created = true;
@@ -177,8 +180,25 @@ export async function seedDemoTenant(
     const databaseName = tenant.databaseName!;
     const prisma = getTenantPrisma(databaseName);
 
+    // A demo must never lock its visitor out, so every reseed also rolls the
+    // subscription forward (createTenant only grants 30 days).
+    await globalPrisma.tenantSubscription.updateMany({
+        where: { tenantId: tenant.id },
+        data: {
+            status: 'Active',
+            subscriptionValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60_000),
+            nextPaymentDate: new Date(Date.now() + 365 * 24 * 60 * 60_000),
+        },
+    });
+
     await wipeOwnedTables(prisma);
+    // Identity first: sales record the owner's name as performedBy.
+    if (vertical === 'laundry') await applyLaundryIdentity(prisma, tenant.id);
     const result = await seedTenantData(prisma, vertical);
+    if (vertical === 'laundry') await seedLaundryPackages(prisma, databaseName);
+    // After the packages on purpose (see seedLaundryPackages): no account exists while
+    // they are bought, so no English "Earned from package purchase" row is written.
+    await seedLoyaltyBaseline(prisma, vertical);
 
     return { vertical, tenantName, databaseName, skipped: false, created, ...result };
 }
@@ -195,15 +215,21 @@ async function wipeOwnedTables(prisma: any): Promise<void> {
     const targets = rows.map(r => r.TABLE_NAME).filter(t => !PRESERVED_TABLES.has(t));
 
     // FK checks off for the duration — the wipe order would otherwise have to be a
-    // hand-maintained topological sort of the whole schema.
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
-    try {
-        for (const table of targets) {
-            await prisma.$executeRawUnsafe(`TRUNCATE TABLE \`${table}\``);
+    // hand-maintained topological sort of the whole schema. FOREIGN_KEY_CHECKS is
+    // per-connection, so everything runs inside one interactive transaction: that
+    // pins a single pooled connection. Issued as separate $executeRawUnsafe calls,
+    // a TRUNCATE could land on another connection with checks still on and fail
+    // with 1701 ("Cannot truncate a table referenced in a foreign key constraint").
+    await prisma.$transaction(async (tx: any) => {
+        await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+        try {
+            for (const table of targets) {
+                await tx.$executeRawUnsafe(`TRUNCATE TABLE \`${table}\``);
+            }
+        } finally {
+            await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
         }
-    } finally {
-        await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
-    }
+    }, { timeout: 120_000 });
 }
 
 interface SeededItem {
@@ -222,6 +248,9 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
 
     // Distinct seeds per vertical so the two demos don't share a basket rhythm.
     const rnd = makePrng(isLaundry ? 0x1A0D2E7 : 0x5E7A11);
+    // Pay-at-pickup decisions draw from their own stream so adding them left the
+    // basket/customer sequence above — and the loyalty targets built on it — unchanged.
+    const pickupRnd = makePrng(0x71C2A9);
 
     const now = new Date();
     const today = wibToday(now);
@@ -254,6 +283,7 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                 itemBrand: def.brand ?? '',
                 itemDescription: '',
                 categoryId: categoryIds[def.category],
+                pricingMode: def.pricingMode ?? null,
                 cost: tracksStock ? 0 : def.cost,   // FIFO owns cost for stocked items
                 price: def.price,
                 unitOfMeasure: def.unitOfMeasure,
@@ -293,6 +323,22 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
         items.push({ id: item.id, def, qty: def.opening ?? 0, receiptId });
     }
 
+    // Laundry recipes (item_consumable) — the prefill the FE reads when a service is
+    // added to the cart, so a new sale on the demo draws supplies exactly like ours do.
+    const byCode = new Map(items.map(i => [i.def.code, i]));
+    for (const it of items) {
+        for (const r of it.def.recipe ?? []) {
+            const supply = byCode.get(r.supply)!;
+            await prisma.itemConsumable.create({
+                data: {
+                    serviceItemId: it.id, consumableItemId: supply.id,
+                    ratePerKg: r.rate, unit: supply.def.unitOfMeasure, consumptionBasis: r.basis,
+                    createdAt: openingReceiptAt,
+                },
+            });
+        }
+    }
+
     const customerIds: number[] = [];
     for (const c of DEMO_CUSTOMERS) {
         const row = await prisma.customer.create({
@@ -312,6 +358,9 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
 
     let totalSales = 0;
     let totalRevenue = 0;
+    // Balances settled when the order was collected, written on the pickup day's
+    // session (which does not exist yet while the drop-off day is being played out).
+    const pickupPayments: { salesId: number; amount: number; method: string; at: Date; back: number }[] = [];
 
     for (let back = HISTORY_DAYS - 1; back >= 0; back--) {
         const day = shiftDays(today, -back);
@@ -340,6 +389,29 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
 
         let cashTaken = 0;
 
+        // Earlier orders collected today: the balance is paid at the counter now, the
+        // way the Pickup screen's add-payment writes it (this session, this moment).
+        for (const pp of pickupPayments.filter(p => p.back === back)) {
+            if (pp.method === 'Cash') cashTaken += pp.amount;
+            await prisma.payment.create({
+                data: {
+                    method: pp.method,
+                    tenderedAmount: pp.amount,
+                    paidAmount: pp.amount,
+                    currencySymbol: 'Rp',
+                    salesId: pp.salesId,
+                    businessDate: pp.at,
+                    status: 'PAID',
+                    outletId,
+                    sessionId: session.id,
+                    eodId: 0,
+                    performedBy,
+                    siteId: 1,
+                    createdAt: pp.at,
+                },
+            });
+        }
+
         for (let n = 0; n < dayCount; n++) {
             // Spread across trading hours; today stops at the current WIB hour.
             const openHour = 8;
@@ -361,12 +433,29 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
             let profit = 0;
             const lines: any[] = [];
 
+            // Supply draw-down for this basket: one consumption line per supply, exactly
+            // the shape POST /sales writes (quantity 1, price 0, stockConsumptionQty).
+            const consumed = new Map<number, number>();
+
             for (const it of chosen) {
-                const qty = randInt(rnd, 1, it.def.maxQty ?? 3);
-                const lineSubtotal = it.def.price * qty;
-                const lineCost = it.def.cost * qty;
+                // Laundry lines follow the item's pricing mode, like sales_screen.dart:
+                // per_kg = rate × weighed kg (rounded to Rp 100), per_piece/flat = as-is.
+                const mode = it.def.pricingMode;
+                const kg = mode === 'per_kg'
+                    ? Number((it.def.kgRange![0] + rnd() * (it.def.kgRange![1] - it.def.kgRange![0])).toFixed(1))
+                    : null;
+                const qty = mode ? 1 : randInt(rnd, 1, it.def.maxQty ?? 3);
+                const unitPrice = kg != null ? Math.round((it.def.price * kg) / 100) * 100 : it.def.price;
+                const lineSubtotal = unitPrice * qty;
+                const lineCost = Math.round(it.def.cost * (kg ?? qty));
                 subtotal += lineSubtotal;
                 profit += lineSubtotal - lineCost;
+
+                for (const r of it.def.recipe ?? []) {
+                    const supply = items.find(i => i.def.code === r.supply)!;
+                    const amount = r.basis === 'perKg' ? r.rate * (kg ?? 0) : r.rate * qty;
+                    consumed.set(supply.id, (consumed.get(supply.id) ?? 0) + amount);
+                }
 
                 const isWash = it.def.defaultLoadWeightKg != null;
                 lines.push({
@@ -375,9 +464,9 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                     itemCode: it.def.code,
                     itemBrand: it.def.brand ?? '',
                     quantity: qty,
-                    cost: it.def.cost * qty,
-                    price: it.def.price,
-                    priceBeforeTax: it.def.price,
+                    cost: lineCost,
+                    price: unitPrice,
+                    priceBeforeTax: unitPrice,
                     profit: lineSubtotal - lineCost,
                     subtotalAmount: lineSubtotal,
                     unitOfMeasure: it.def.unitOfMeasure,
@@ -386,12 +475,27 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                     // multiplied by qty: report.service counts one *line* as one load
                     // (`_count.id`), so wash services are capped at qty 1 in the
                     // catalogue and two loads means two lines.
-                    loadWeightKg: isWash
-                        ? Number((it.def.defaultLoadWeightKg! * (0.72 + rnd() * 0.33)).toFixed(2))
-                        : null,
+                    loadWeightKg: kg != null
+                        ? kg
+                        : isWash && it.def.defaultLoadWeightKg! > 0
+                            ? Number((it.def.defaultLoadWeightKg! * (0.72 + rnd() * 0.33)).toFixed(2))
+                            : null,
                     itemStatus: isLaundry ? laundryStatus(back, rnd) : null,
                     stockReceiptId: it.receiptId,
                     createdAt: at,
+                });
+            }
+
+            for (const [supplyId, amount] of consumed) {
+                const supply = items.find(i => i.id === supplyId)!;
+                const qtyUsed = Number(amount.toFixed(2));
+                const supplyCost = Math.round(qtyUsed * supply.def.cost);
+                profit -= supplyCost;
+                lines.push({
+                    itemId: supply.id, itemName: supply.def.name, itemCode: supply.def.code, itemBrand: '',
+                    quantity: 1, cost: supplyCost, price: 0, priceBeforeTax: 0, profit: -supplyCost,
+                    subtotalAmount: 0, unitOfMeasure: supply.def.unitOfMeasure,
+                    stockConsumptionQty: qtyUsed, stockReceiptId: supply.receiptId, createdAt: at,
                 });
             }
 
@@ -402,6 +506,31 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
             const customer = DEMO_CUSTOMERS[customerIdx];
 
             const collected = isLaundry && back >= 2;
+            const dp = () => Math.max(5000, Math.round(subtotal / 2 / 1000) * 1000);
+            // What the customer paid at drop-off. Work still on the shelf carries the
+            // money questions the Pickup screen answers: some paid in full, some left a
+            // DP, some pay on collection. Collected orders had the same mix at drop-off
+            // and settled the balance when they were picked up the next day.
+            let paid = subtotal;
+            if (isLaundry && !collected) {
+                const roll = rnd();
+                if (roll < 0.35) paid = dp();
+                else if (roll < 0.55) paid = 0;
+            } else if (collected) {
+                const roll = pickupRnd();
+                if (roll < 0.35) paid = dp();
+                else if (roll < 0.55) paid = 0;
+            }
+            paid = Math.min(paid, subtotal);
+            const fullyPaid = paid >= subtotal;
+            const collectedAt = collected
+                ? wibInstant(shiftDays(day, 1), randInt(pickupRnd, 9, 19), randInt(pickupRnd, 0, 59))
+                : null;
+            // A collected order always leaves the shop settled: its balance is paid at
+            // pickup, which is what completes it (addPaymentToPartiallyPaidSales leaves
+            // completedSessionId untouched, so only drop-off-paid orders carry one).
+            const settledAtPickup = collected && !fullyPaid;
+            const finalPaid = settledAtPickup ? subtotal : paid;
             const sale = await prisma.sales.create({
                 data: {
                     outletId,
@@ -412,11 +541,11 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                     phoneNumber: withCustomer ? customer.mobile : '',
                     subtotalAmount: subtotal,
                     totalAmount: subtotal,
-                    paidAmount: subtotal,
+                    paidAmount: finalPaid,
                     profitAmount: profit,
-                    status: 'Completed',
+                    status: finalPaid >= subtotal ? 'Completed' : 'Partially Paid',
                     sessionId: session.id,
-                    completedSessionId: session.id,
+                    completedSessionId: fullyPaid ? session.id : null,
                     eodId: 0,
                     performedBy,
                     siteId: 1,
@@ -425,7 +554,7 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                         ? {
                             orderRef: orderRef(rnd),
                             friendlyNumber: friendlyNumber(day, n + 1),
-                            collectedAt: collected ? wibInstant(shiftDays(day, 1), 11, 0) : null,
+                            collectedAt,
                         }
                         : {}),
                     salesItems: { create: lines },
@@ -433,12 +562,13 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
             });
 
             const method = weightedPick(rnd, PAYMENT_MIX).method;
-            if (method === 'Cash') cashTaken += subtotal;
+            if (paid > 0) {
+            if (method === 'Cash') cashTaken += paid;
             await prisma.payment.create({
                 data: {
                     method,
-                    tenderedAmount: subtotal,
-                    paidAmount: subtotal,
+                    tenderedAmount: paid,
+                    paidAmount: paid,
                     currencySymbol: 'Rp',
                     salesId: sale.id,
                     businessDate: at,
@@ -451,21 +581,32 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                     createdAt: at,
                 },
             });
+            }
+            if (settledAtPickup) {
+                pickupPayments.push({
+                    salesId: sale.id,
+                    amount: subtotal - paid,
+                    method: weightedPick(pickupRnd, PAYMENT_MIX).method,
+                    at: collectedAt!,
+                    back: back - 1,
+                });
+            }
 
-            // Stock only moves for goods. Laundry services consume nothing here — supply
-            // depletion is deliberately out of scope (see DEMO_STARTER_KIT.md §10).
+            // Stock moves for goods (retail lines) and for laundry supplies drawn by a
+            // service recipe (consumption lines, measured in stockConsumptionQty).
             for (const line of lines) {
                 const it = items.find(i => i.id === line.itemId)!;
                 if (!it.def.opening) continue;
                 const before = it.qty;
-                it.qty = Math.max(0, before - Number(line.quantity));
+                const used = line.stockConsumptionQty != null ? Number(line.stockConsumptionQty) : Number(line.quantity);
+                it.qty = Math.max(0, Number((before - used).toFixed(2)));
                 await prisma.stockMovement.create({
                     data: {
                         itemId: it.id, outletId,
                         previousAvailableQuantity: before, previousOnHandQuantity: before,
                         availableQuantityDelta: it.qty - before, onHandQuantityDelta: it.qty - before,
                         movementType: 'Sales', documentId: sale.id,
-                        reason: 'Sales transaction', remark: '', performedBy, siteId: 1,
+                        reason: 'Penjualan', remark: '', performedBy, siteId: 1,
                         createdAt: at,
                     },
                 });
@@ -506,6 +647,177 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
     }
 
     return { items: items.length, customers: customerIds.length, sales: totalSales, revenue: totalRevenue };
+}
+
+/**
+ * The laundry demo's shop identity, all in Indonesian. `user`, `outlet`, `warehouse`
+ * and `setting` survive the wipe (createTenant owns them), so these are updates and
+ * upserts, not creates — and they are re-applied on every reseed so a changed
+ * LAUNDRY_SHOP reaches an already-provisioned demo.
+ */
+async function applyLaundryIdentity(prisma: any, tenantId: number): Promise<void> {
+    const globalPrisma = getGlobalPrisma();
+    const owner = await prisma.user.findFirst({ orderBy: { id: 'asc' } });
+    if (owner) {
+        await prisma.user.update({
+            where: { id: owner.id },
+            data: { firstName: LAUNDRY_SHOP.ownerFirstName, lastName: LAUNDRY_SHOP.ownerLastName },
+        });
+    }
+    await prisma.outlet.updateMany({ where: { id: 1 }, data: { outletName: LAUNDRY_SHOP.outletName, street: LAUNDRY_SHOP.street, city: LAUNDRY_SHOP.city } });
+    await prisma.warehouse.updateMany({ data: { warehouseName: LAUNDRY_SHOP.warehouseName } });
+    await globalPrisma.tenantOutlet.updateMany({ where: { tenantId }, data: { outletName: LAUNDRY_SHOP.outletName } });
+
+    for (const [key, value] of Object.entries(LAUNDRY_SHOP.settings)) {
+        const def = await globalPrisma.settingDefinition.findFirst({ where: { key, deleted: false } });
+        if (!def) continue;   // an older global DB without this key — nothing to set
+        const scope = {
+            settingDefinitionId: def.id,
+            tenantId: def.scope === 'TENANT' ? tenantId : null,
+            userId: def.scope === 'USER' ? owner?.id ?? null : null,
+            outletId: def.scope === 'OUTLET' ? 1 : null,
+        };
+        const existing = await prisma.setting.findFirst({ where: { ...scope, deleted: false } });
+        if (existing) {
+            await prisma.setting.update({ where: { id: existing.id }, data: { value, version: { increment: 1 } } });
+        } else {
+            await prisma.setting.create({ data: { ...scope, value } });
+        }
+    }
+}
+
+/**
+ * Prepaid packages ("Paket Hemat 10x Cuci") and a few regulars who bought one, through
+ * the real service so the rows are exactly what the app's own package flow writes.
+ * Usage is applied as a quota adjustment rather than fabricated usage-sale links.
+ */
+async function seedLaundryPackages(prisma: any, databaseName: string): Promise<void> {
+    const categories = await prisma.category.findMany({ orderBy: { id: 'asc' } });
+    const customers = await prisma.customer.findMany({ orderBy: { id: 'asc' } });
+    const packageIds: number[] = [];
+    for (const p of LAUNDRY_PACKAGES) {
+        const pkg = await subscriptionPackageService.createPackage(databaseName, {
+            name: p.name, packageType: 'USAGE', price: p.price, totalQuota: p.totalQuota,
+            quotaUnit: p.quotaUnit, validityDays: p.validityDays,
+            categoryIds: p.categories.map(i => categories[i].id),
+        });
+        packageIds.push(pkg.id);
+    }
+    for (const [customerIdx, packageIdx, used] of LAUNDRY_PACKAGE_BUYERS) {
+        const p = LAUNDRY_PACKAGES[packageIdx];
+        const sub = await subscriptionPackageService.subscribeCustomer(databaseName, {
+            customerId: customers[customerIdx].id, subscriptionPackageId: packageIds[packageIdx], paidAmount: p.price,
+        });
+        await prisma.customerSubscription.update({
+            where: { id: sub.id },
+            data: { usedQuota: used, remainingQuota: p.totalQuota - used },
+        });
+    }
+
+    // The loyalty programme the package tab needs is created by seedLoyaltyBaseline,
+    // right after this — see there.
+}
+
+/**
+ * Loyalty baseline for both verticals: programme, reward rule, (laundry) tiers, and every
+ * customer's account replayed from their COMPLETED demo sales exactly as the sales
+ * service would have earned it — points on the paid total at the tier held before the
+ * sale, spend accumulating, tiers promoting, one voucher per Rp 500.000 crossed. The
+ * LOYALTY_TARGETS regulars get an opening "kartu stempel" balance on top, so they end
+ * on the numbers real-UI captures script against (docs/future/IG_MOTION_POSTS.md §7).
+ * Rows are written directly: the services' EARN/reversal descriptions are English audit
+ * text (the app renders those rows from type + salesId, but the tour's English guard reads
+ * the DB), and vouchers issued before 2026-09-28 carried an English "RM" label.
+ */
+async function seedLoyaltyBaseline(prisma: any, vertical: DemoVertical): Promise<void> {
+    const L = DEMO_LOYALTY;
+    const program = await prisma.loyaltyProgram.create({ data: L.program });
+    const tiers = vertical === 'laundry'
+        ? await Promise.all(L.tiers.map((t) => prisma.loyaltyTier.create({ data: { ...t, loyaltyProgramId: program.id } })))
+        : [];
+    const tierFor = (spend: number) =>
+        [...tiers].sort((a: any, b: any) => Number(b.minSpend) - Number(a.minSpend)).find((t: any) => spend >= Number(t.minSpend)) ?? null;
+    const R = L.rewardRule;
+    const rule = await prisma.rewardRule.create({
+        data: {
+            name: R.name, triggerType: 'SPEND_MILESTONE', spendThreshold: R.spendThreshold, isRepeatable: R.isRepeatable,
+            discountType: R.discountType, discountPercentage: R.discountPercentage, expiryDays: R.expiryDays,
+        },
+    });
+
+    const DAY = 24 * 60 * 60_000;
+    const now = Date.now();
+    const customers = await prisma.customer.findMany({ orderBy: { id: 'asc' } });
+    for (const [idx, c] of customers.entries()) {
+        const account = await prisma.loyaltyAccount.create({ data: { customerId: c.id, loyaltyProgramId: program.id } });
+        const sales = await prisma.sales.findMany({
+            where: { customerId: c.id, status: 'Completed' }, orderBy: { createdAt: 'asc' },
+            select: { id: true, totalAmount: true, createdAt: true, performedBy: true },
+        });
+        const windowSpend = sales.reduce((sum: number, x: any) => sum + Number(x.totalAmount), 0);
+        const target = LOYALTY_TARGETS.find(([i]) => i === idx);
+        const openingSpend = target ? Math.max(0, target[1] - windowSpend) : 0;
+
+        // Replay the window at the tier held before each sale (what the sales service does).
+        let spend = openingSpend;
+        const earns = sales.map((x: any) => {
+            const mult = Number(tierFor(spend)?.pointsMultiplier ?? 1);
+            const points = Math.floor(Number(x.totalAmount) * L.program.pointsPerCurrency * mult);
+            const before = spend;
+            spend += Number(x.totalAmount);
+            return { sale: x, points, before, after: spend };
+        });
+        const windowPoints = earns.reduce((sum: number, e: any) => sum + e.points, 0);
+        const openingPoints = target ? Math.max(0, target[2] - windowPoints) : 0;
+        if (target && (windowSpend > target[1] || windowPoints > target[2])) {
+            console.warn(`[Demo] ${c.firstName}: seeded sales alone exceed the loyalty target — ends at Rp ${spend} / ${windowPoints + openingPoints} poin`);
+        }
+
+        const openedAt = new Date((sales[0]?.createdAt?.getTime() ?? now - 10 * DAY) - DAY);
+        const expiry = (d: Date) => new Date(d.getTime() + L.program.pointsExpiryDays * DAY);
+        let balance = 0;
+        if (openingPoints > 0 || openingSpend > 0) {
+            balance += openingPoints;
+            if (openingPoints > 0) {
+                await prisma.loyaltyPointBatch.create({ data: { loyaltyAccountId: account.id, originalPoints: openingPoints, remainingPoints: openingPoints, expiresAt: expiry(openedAt), earnedAt: openedAt, createdAt: openedAt } });
+            }
+            await prisma.loyaltyTransaction.create({ data: { loyaltyAccountId: account.id, type: 'ADJUST', points: openingPoints, balanceAfter: balance, description: L.openingDescription, createdAt: openedAt } });
+        }
+        for (const e of earns) {
+            if (e.points <= 0) continue;
+            balance += e.points;
+            const at = e.sale.createdAt;
+            await prisma.loyaltyPointBatch.create({ data: { loyaltyAccountId: account.id, originalPoints: e.points, remainingPoints: e.points, expiresAt: expiry(at), earnedAt: at, salesId: e.sale.id, createdAt: at } });
+            await prisma.loyaltyTransaction.create({ data: { loyaltyAccountId: account.id, type: 'EARN', points: e.points, balanceAfter: balance, salesId: e.sale.id, performedBy: e.sale.performedBy, createdAt: at } });
+        }
+
+        // One voucher per threshold crossed, dated at the crossing — so checkMilestones
+        // finds every slot filled and the next real sale issues nothing unexpected.
+        const threshold = R.spendThreshold;
+        const slots = Math.floor(spend / threshold);
+        for (let k = 1; k <= slots; k++) {
+            const crossing = earns.find((e: any) => e.before < k * threshold && e.after >= k * threshold);
+            const issuedAt = crossing ? crossing.sale.createdAt : openedAt;
+            const expiresAt = new Date(issuedAt.getTime() + R.expiryDays * DAY);
+            await prisma.voucher.create({
+                data: {
+                    rewardRuleId: rule.id, customerId: c.id, loyaltyAccountId: account.id,
+                    discountType: R.discountType, discountPercentage: R.discountPercentage,
+                    status: expiresAt.getTime() < now ? 'EXPIRED' : 'ACTIVE',
+                    milestoneSpendSnapshot: crossing ? crossing.after : openingSpend,
+                    label: R.label, expiresAt, createdAt: issuedAt,
+                },
+            });
+        }
+
+        await prisma.loyaltyAccount.update({
+            where: { id: account.id },
+            data: {
+                currentPoints: balance, totalEarned: balance, totalSpend: spend,
+                loyaltyTierId: tierFor(spend)?.id ?? null, joinedAt: openedAt,
+            },
+        });
+    }
 }
 
 /**

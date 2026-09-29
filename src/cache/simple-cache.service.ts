@@ -32,10 +32,12 @@ class SimpleCacheService {
   private readonly MAX_CACHE_SIZE = 1000; // Auto-cleanup threshold
 
   private constructor() {
-    // Start periodic cleanup (every 10 minutes)
+    // Start periodic cleanup (every 10 minutes). unref so this timer never
+    // holds the process open on its own — without it `npm test` hung after
+    // every suite that imports a cached service (loyalty, sales, voucher…).
     setInterval(() => {
       this.cleanup();
-    }, 10 * 60 * 1000);
+    }, 10 * 60 * 1000).unref();
   }
 
   /**

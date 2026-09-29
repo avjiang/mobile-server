@@ -1,208 +1,72 @@
 # Perbandingan Paket Langganan
 
-## Pilihan Paket
+Harga **per cabang per bulan**. Bayar tahunan **hemat 2 bulan** (bayar 10 bulan, pakai 12).
+Setiap toko baru mulai dengan **coba gratis 30 hari dengan semua fitur Pro**, lalu memilih paket.
+Acuan untuk developer: `flutter-front-end/docs/modules/SUBSCRIPTION.md` (§2 dan §10).
 
-|               |    **Trial**     |    **Basic**     |      **Pro**      |
-| ------------- | :--------------: | :--------------: | :---------------: |
-| **Harga**     |    Rp 0/bulan    | Rp 275.000/bulan | Rp 400.000/bulan  |
-|               |    per outlet    |    per outlet    |    per outlet     |
-| **Pengguna**  |    2 termasuk    |    2 termasuk    |    3 termasuk     |
-| **Perangkat** |    0 termasuk    |    0 termasuk    |    3 termasuk     |
-| **Gudang**    |   -   |   -   |        -         | 1 gratis termasuk |
+## Retail
 
----
+|                                   |      **Lite**      |     **Basic**      |      **Pro**       |
+| --------------------------------- | :----------------: | :----------------: | :----------------: |
+| **Harga / bulan**                 |   Rp 100.000       |   Rp 250.000       |   Rp 375.000       |
+| **Harga / tahun**                 |   Rp 1.000.000     |   Rp 2.500.000     |   Rp 3.750.000     |
+| **Pengguna termasuk**             |   1 (tanpa tambahan) | 2                |   3                |
+| **Item**                          |   hingga 100       |   tak terbatas     |   tak terbatas     |
+| Penjualan, struk, banyak metode bayar | ✓              |   ✓                |   ✓                |
+| Stok, penyesuaian, peringatan stok menipis | ✓         |   ✓                |   ✓                |
+| Laporan tutup harian (sesi)       |   ✓                |   ✓                |   ✓                |
+| Tetap jalan tanpa internet        |   ✓                |   ✓                |   ✓                |
+| Batalkan (void) penjualan         | dalam 24 jam       |   ✓                |   ✓                |
+| Kasbon, pembayaran sebagian       |   -                |   ✓                |   ✓                |
+| Pengiriman                        |   -                |   ✓                |   ✓                |
+| Retur & refund                    |   -                |   ✓                |   ✓                |
+| Varian item                       |   -                |   ✓                |   ✓                |
+| Pembelian (penawaran, PO, DO, faktur, pelunasan, retur pembelian) | - | ✓ | ✓               |
+| Riwayat stok per item             |   ✓                |   ✓                |   ✓                |
+| Supplier, modal FIFO, laporan pergerakan stok | -      |   ✓                |   ✓                |
+| Daftar pelanggan                  |   -                |   ✓                |   ✓                |
+| Hak akses staf                    |   -                |   ✓                |   ✓                |
+| Laporan PDF                       |   -                |   ✓                |   ✓                |
+| Riwayat penjualan                 | 30 hari terakhir   |   semua            |   semua            |
+| Lebih dari satu supplier per item |   -                |   -                |   ✓                |
+| Katalog online dengan foto        |   -                |   -                |   ✓                |
+| Poin loyalitas                    |   -                |   -                |   ✓                |
+| Tingkatan member & paket prabayar |   -                |   -                |   add-on           |
+| Notifikasi langsung               |   -                |   -                |   Semua ponsel     |
 
-## Daftar Fitur Lengkap
+## Laundry
 
-### Manajemen Penjualan
+|                                   |     **Basic**      |      **Pro**       |
+| --------------------------------- | :----------------: | :----------------: |
+| **Harga / bulan**                 |   Rp 100.000       |   Rp 199.000       |
+| **Harga / tahun**                 |   Rp 1.000.000     |   Rp 1.990.000     |
+| **Pengguna termasuk**             |   1                |   3                |
+| Order per kg, per muatan atau per potong; klaim & pengambilan dengan QR | ✓ | ✓ |
+| Foto cucian, bayar saat ambil     |   ✓                |   ✓                |
+| Supplies terpotong otomatis per order | ✓              |   ✓                |
+| Laporan termasuk PDF              |   ✓                |   ✓                |
+| Hak akses staf                    |   ✓                |   ✓                |
+| Poin loyalitas                    |   -                |   ✓                |
+| Tingkatan member & paket prabayar ("10x cuci") | -     |   ✓ sudah termasuk |
+| Notifikasi langsung               |   -                |   Semua ponsel     |
 
-| Fitur                                 | Trial | Basic | Pro |
-| ------------------------------------- | :---: | :-: |
-| Transaksi tidak terbatas              |   ✓   |   ✓   |  ✓  |
-| Berbagai metode pembayaran            |   ✓   |   ✓   |  ✓  |
-| Pembayaran tunai                      |   ✓   |   ✓   |  ✓  |
-| Penjualan Panjar / sebagian (cicilan) |   ✓   |   ✓   |  ✓  |
-| Pembatalan penjualan                  |   ✓   |   ✓   |  ✓  |
-| Retur & pengembalian dana             |   ✓   |   ✓   |  ✓  |
-| Diskon (item & transaksi)             |   ✓   |   ✓   |  ✓  |
-| Manajemen pelanggan                   |   ✓   |   ✓   |  ✓  |
-| Pelacakan sesi penjualan              |   ✓   |   ✓   |  ✓  |
+## Tambahan (add-on)
 
-### Manajemen Pengiriman
+| Add-on                                   | Harga               | Tersedia di |
+| ---------------------------------------- | ------------------- | ----------- |
+| User tambahan                            | Rp 50.000 / bulan   | Basic, Pro (bukan Lite) |
+| Loyalitas Lanjutan (tingkatan + paket prabayar) | Rp 100.000 / bulan | Retail Pro (sudah termasuk di Laundry Pro) |
 
-| Fitur                 | Trial | Basic | Pro |
-| --------------------- | :---: | :-: |
-| Daftar pengiriman     |   ✓   |   ✓   |  ✓  |
-| Konfirmasi pengiriman |   ✓   |   ✓   |  ✓  |
+## Contoh (per bulan)
 
-### Inventori & Stok
+| Toko                                         | Paket             | Total        |
+| -------------------------------------------- | ----------------- | ------------ |
+| Kios kecil, 60 produk, pemilik saja          | Retail Lite       | Rp 100.000   |
+| Toko dengan kasbon, pemilik + 1 kasir        | Retail Basic      | Rp 250.000   |
+| Laundry, pemilik + 1 staf                    | Laundry Basic + 1 user | Rp 150.000 |
+| Laundry, 3 staf, jual paket prabayar         | Laundry Pro       | Rp 199.000   |
+| Toko dengan katalog online + 4 user          | Retail Pro + 1 user | Rp 425.000 |
 
-| Fitur                          | Trial | Basic | Pro |
-| ------------------------------ | :---: | :-: |
-| Produk tidak terbatas          |   ✓   |   ✓   |  ✓  |
-| Kategori produk                |   ✓   |   ✓   |  ✓  |
-| Stok per outlet                |   ✓   |   ✓   |  ✓  |
-| Pelacakan stok waktu nyata     |   ✓   |   ✓   |  ✓  |
-| Notifikasi stok menipis        |   ✓   |   ✓   |  ✓  |
-| Notifikasi stok habis          |   ✓   |   ✓   |  ✓  |
-| Penyesuaian stok               |   ✓   |   ✓   |  ✓  |
-| Kalkulasi FIFO                 |   ✓   |   ✓   |  ✓  |
-| **Gudang terpusat**            |   -   |   -   |  ✓  |
-| **Transfer stok antar outlet** |   -   |   -   |  ✓  |
-| **Dukungan multi-gudang**      |   -   |   -   |  ✓  |
-| **Transfer gudang ke outlet**  |   -   |   -   |  ✓  |
+## Kalau toko pindah ke paket yang lebih kecil
 
-### Pembelian
-
-| Fitur                  | Trial | Basic | Pro |
-| ---------------------- | :---: | :-: |
-| Manajemen pemasok      |   ✓   |   ✓   |  ✓  |
-| Penawaran harga        |   ✓   |   ✓   |  ✓  |
-| Pesanan Pembelian (PO) |   ✓   |   ✓   |  ✓  |
-| Surat Jalan (DO)       |   ✓   |   ✓   |  ✓  |
-| Faktur pembelian       |   ✓   |   ✓   |  ✓  |
-| Pelacakan pelunasan    |   ✓   |   ✓   |  ✓  |
-
-### Pengguna & Kontrol Akses
-
-| Fitur                        | Trial | Basic | Pro |
-| ---------------------------- | :---: | :-: |
-| Pengguna termasuk            |   2   |   2   |  3  |
-| Kontrol akses berbasis peran |   ✓   |   ✓   |  ✓  |
-| Peran kustom                 |   ✓   |   ✓   |  ✓  |
-| Manajemen izin akses         |   ✓   |   ✓   |  ✓  |
-
-### Notifikasi
-
-| Fitur                         | Trial | Basic | Pro |
-| ----------------------------- | :---: | :-: |
-| Dukungan notifikasi ke HP     |   -   |   -   |  ✓  |
-| Perangkat termasuk            |   0   |   0   |  3  |
-| Notifikasi penjualan          |   -   |   -   |  ✓  |
-| Notifikasi stok menipis ke HP |   -   |   -   |  ✓  |
-| Notifikasi stok habis ke HP   |   -   |   -   |  ✓  |
-| Notifikasi pengiriman         |   -   |   -   |  ✓  |
-| Notifikasi pembayaran         |   -   |   -   |  ✓  |
-
-### Laporan & Analitik
-
-| Fitur                      | Trial | Basic | Pro |
-| -------------------------- | :---: | :-: |
-| Laporan sesi harian        |   ✓   |   ✓   |  ✓  |
-| Ringkasan penjualan        |   ✓   |   ✓   |  ✓  |
-| Analisis kategori terlaris |   ✓   |   ✓   |  ✓  |
-| Analisis keuntungan        |   ✓   |   ✓   |  ✓  |
-| Rincian pendapatan         |   ✓   |   ✓   |  ✓  |
-| Rincian metode pembayaran  |   ✓   |   ✓   |  ✓  |
-| Ekspor PDF                 |   ✓   |   ✓   |  ✓  |
-
-### Dukungan Multi-Outlet
-
-| Fitur                        | Trial | Basic | Pro |
-| ---------------------------- | :----------: | :-----------: |
-| Beberapa outlet              | ✓ (terpisah) | ✓ (terpisah) | ✓ (terhubung) |
-| Inventori per outlet         |   ✓   |   ✓   |       ✓       |
-| **Gudang terpusat**          |   -   |   -   |       ✓       |
-| **Visibilitas antar outlet** |   -   |   -   |       ✓       |
-| **Berbagi inventori**        |   -   |   -   |       ✓       |
-
----
-
-## Tambahan Opsional
-
-| Tambahan             |           Harga           | Trial | Basic | Pro |
-| -------------------- | :-----------------------: | :---: | :-: |
-| Pengguna tambahan    | Rp 50.000/pengguna/bulan  |   ✓   |   ✓   |  ✓  |
-| Perangkat notifikasi | Rp 20.000/perangkat/bulan |   -   |   -   |  ✓  |
-| Gudang tambahan      |  Rp 150.000/gudang/bulan  |   -   |   -   |  ✓  |
-
----
-
-## Kapan Pilih Basic?
-
-**Cocok untuk:**
-
-- Bisnis dengan satu outlet
-- Beberapa outlet yang beroperasi **secara terpisah**
-- Tim kecil (hingga 2 pengguna)
-- Bisnis yang tidak butuh inventori terpusat
-- Tidak memerlukan notifikasi ke HP
-
-**Anda mendapatkan:**
-
-- Manajemen penjualan lengkap
-- Alur pembelian lengkap
-- Pelacakan inventori per outlet
-- Kontrol akses berbasis peran
-- Laporan harian dengan ekspor PDF
-
----
-
-## Kapan Pilih Pro?
-
-**Cocok untuk:**
-
-- Bisnis dengan **beberapa outlet** yang berbagi inventori
-- Butuh **gudang terpusat** untuk distribusi
-- Tim lebih besar (3+ pengguna per outlet)
-- Ingin **notifikasi waktu nyata ke HP**
-- Bisnis yang berkembang dan berencana ekspansi
-
-**Anda mendapat semua fitur Basic, ditambah:**
-
-- Sistem gudang terpusat
-- Transfer stok antar outlet
-- Notifikasi waktu nyata ke HP
-- 3 perangkat notifikasi termasuk
-- 1 gudang gratis termasuk
-
----
-
-## Contoh Perhitungan Harga
-
-### Contoh 1: Toko Kecil (1 Outlet)
-
-**Paket Basic:**
-
-```
-Langganan Basic:         Rp 275.000
-────────────────────────────────────
-Total/bulan:             Rp 275.000
-```
-
-### Contoh 2: Bisnis Berkembang (1 Outlet + Fitur Lengkap)
-
-**Paket Pro dengan tambahan:**
-
-```
-Langganan Pro:           Rp 400.000
-2 Pengguna tambahan:     Rp 100.000
-1 Gudang tambahan:       Rp 150.000
-────────────────────────────────────
-Total/bulan:             Rp 650.000
-```
-
-### Contoh 3: Bisnis Multi-Outlet (3 Outlet)
-
-**Paket Pro untuk 3 outlet:**
-
-```
-3x Langganan Pro:        Rp 1.200.000
-2 Gudang tambahan:       Rp   300.000
-5 Perangkat tambahan:    Rp   100.000
-────────────────────────────────────
-Total/bulan:             Rp 1.600.000
-```
-
----
-
-## Catatan Penting
-
-- **Pengguna** dihitung per tenant (bisa dipakai di outlet mana saja)
-- **Perangkat notifikasi** dihitung per tenant (bisa dipakai di outlet mana saja)
-- **1 gudang gratis** sudah termasuk di paket Pro
-- Upgrade/downgrade bisa dilakukan kapan saja
-
----
-
-_Untuk informasi lebih lanjut, hubungi tim support kami._
+Tidak ada yang dihapus. Paket yang lebih kecil hanya menahan penambahan baru, tidak pernah menghalangi pemakaian yang sudah ada: paket prabayar yang sudah dibayar pelanggan tetap bisa dipakai, penjualan lama tetap tersimpan, dan item di atas batas tetap bisa dijual.

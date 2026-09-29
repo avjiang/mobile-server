@@ -1,5 +1,5 @@
 import { PrismaClient } from "../../prisma/client/generated/client"
-import { NotFoundError, RequestValidateError } from "../api-helpers/error"
+import { ErrorCode, NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma, getGlobalPrisma } from '../db';
 import { invalidatePermissions } from '../auth/permission-cache';
 import { SyncRequest } from "src/item/item.request";
@@ -270,6 +270,9 @@ let update = async (databaseName: string, userId: number, updateData: UpdateUser
     }
 }
 
+// Same floor as the tenant-signup owner password (admin.service.ts).
+const MIN_PASSWORD_LENGTH = 6;
+
 let changePassword = async (databaseName: string, tenantId: number, userId: number, request: ChangePasswordRequest) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     const globalPrisma = getGlobalPrisma();
@@ -302,13 +305,23 @@ let changePassword = async (databaseName: string, tenantId: number, userId: numb
         }
 
         // Validate New Password
+        if (typeof request.newPassword !== 'string' || request.newPassword.length < MIN_PASSWORD_LENGTH) {
+            throw new RequestValidateError(
+                `New password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+                ErrorCode.PasswordTooShort,
+                { min: String(MIN_PASSWORD_LENGTH) }
+            );
+        }
         if (request.currentPassword === request.newPassword) {
-            throw new RequestValidateError('New password cannot be the same as the current password');
+            throw new RequestValidateError(
+                'New password cannot be the same as the current password',
+                ErrorCode.NewPasswordSameAsCurrent
+            );
         }
 
         // Validate Current Password against GLOBAL user (same as admin implementation)
         if (!globalUser.password || !bcrypt.compareSync(request.currentPassword, globalUser.password)) {
-            throw new RequestValidateError('Invalid password');
+            throw new RequestValidateError('Invalid password', ErrorCode.CurrentPasswordIncorrect);
         }
 
         const hashedPassword = bcrypt.hashSync(request.newPassword, 10);

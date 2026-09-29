@@ -5,6 +5,7 @@ import compression from 'compression'
 import errorMiddleware from './middleware/error-middleware'
 import authorizeMiddleware from './middleware/authorize-middleware'
 import idempotencyMiddleware from './middleware/idempotency-middleware'
+import { CLIENT_REF_CAPABILITY_HEADER } from './sales/client-ref'
 import 'reflect-metadata';
 import { disconnectAllPrismaClients, startTenantClientEviction, getTenantClientStats } from './db';
 import { initCronJobs } from './cron/cron-manager';
@@ -17,7 +18,9 @@ const port = process.env.PORT || 8080;
 // origin directly cannot spoof their source — closes the public-endpoint rate-limit
 // bypass (security review H-1). The POS API (direct to Azure) is unaffected: for
 // those, the peer isn't a trusted proxy so req.ip = the real socket address.
-app.set('trust proxy', CLOUDFLARE_IP_RANGES);
+// 'loopback' covers a Cloudflare Tunnel (cloudflared on the same host forwards from
+// 127.0.0.1); without it every tunnelled request would share req.ip = 127.0.0.1.
+app.set('trust proxy', ['loopback', ...CLOUDFLARE_IP_RANGES]);
 
 // Enable gzip compression for all responses
 app.use(compression({
@@ -56,6 +59,14 @@ app.get('/health', (req, res) => res.json({
   uptime: process.uptime(),
   tenants: getTenantClientStats().activeTenants,
 }))
+
+// Tells the app this server keeps checkout/payment idempotency keys on the rows
+// themselves (sales/client-ref.ts), so it may replay those writes past the 24h
+// idempotency_record window. Set on every response so the app sees it early.
+app.use((_req, res, next) => {
+    res.setHeader(CLIENT_REF_CAPABILITY_HEADER, '1')
+    next()
+})
 
 app.use('/auth', require('./auth/auth.controller'))
 app.use('/version', require('./version/version.controller'))
@@ -110,11 +121,23 @@ app.use('/costRate', require('./cost-rate/cost-rate.controller'))
 // error middleware
 app.use(errorMiddleware)
 
-const server = app.listen(port, () => {
-  console.log(`Server running on port ${process.env.PORT || 8080}`);
-  initCronJobs();
+const onListening = () => {
+  console.log(`Server running on ${process.env.HOST || '*'}:${port}`);
+  // A standby host (deploy/macmini) shares the prod DB with App Service — the nightly jobs
+  // must run on exactly one host, or point expiry etc. would run twice.
+  if (process.env.DISABLE_CRONS === 'true') {
+    console.log('[Cron] DISABLE_CRONS=true — scheduled jobs not started on this host');
+  } else {
+    initCronJobs();
+  }
   startTenantClientEviction();
-});
+};
+
+// HOST pins the bind address (127.0.0.1 behind a Cloudflare Tunnel, so the LAN cannot reach the
+// port directly). Unset = Node's default all-interfaces bind, as on App Service.
+const server = process.env.HOST
+  ? app.listen(Number(port), process.env.HOST, onListening)
+  : app.listen(port, onListening);
 
 server.on('error', (err) => {
   console.error('Server error:', err);

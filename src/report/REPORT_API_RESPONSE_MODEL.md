@@ -297,13 +297,15 @@ This document describes the complete JSON response models for both `generateRepo
 
   // ===================
   // LAUNDRY PROFIT BREAKDOWN (laundry accounts only; null otherwise)
-  // Where the profit comes from: serviceRevenue − supplyCost = netProfit
+  // Where the profit comes from: serviceRevenue − discounts − supplyCost = netProfit
   // ===================
   "laundryProfit": {
-    "serviceRevenue": number,            // Σ revenue of wash/jasa service lines
+    "serviceRevenue": number,            // Σ wash/jasa service-line subtotal (list price)
+    "discounts": number,                 // Σ sale-level deductions on the same orders: cart discount,
+                                         //   tier / voucher, prepaid-package, point redemption (since 2026-09-28)
     "supplyCost": number,                // Σ COGS of consumable lines
-    "netProfit": number,                 // serviceRevenue − supplyCost
-    "margin": number,                    // netProfit / serviceRevenue × 100 (0 if revenue 0)
+    "netProfit": number,                 // serviceRevenue − discounts − supplyCost
+    "margin": number,                    // netProfit / (serviceRevenue − discounts) × 100 (0 if that is 0)
     "services": [
       {
         "itemId": number,

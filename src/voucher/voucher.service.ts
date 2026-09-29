@@ -72,20 +72,15 @@ const expectedRepeatableVoucherCount = (
 };
 
 /**
- * Format the human-readable voucher label that appears at checkout.
- * Backs the "Spend RM 1,000 Reward — 10% off" formatting documented in
- * §2 Reward Rules.
+ * Shape a voucher row for the list response. `ruleName` (from the reward rule
+ * relation) is the structured name the app renders at checkout; the stored
+ * `label` stays for audit and for manually issued vouchers, whose label is
+ * typed by the cashier. Rule-issued rows written before 2026-09-28 carry an
+ * English "<rule> — RM X off" label, so clients must not display it.
  */
-const formatVoucherLabel = (
-    ruleName: string,
-    discountType: string,
-    discountPercentage?: any,
-    discountAmount?: any,
-): string => {
-    const discountLabel = discountType === 'PERCENTAGE'
-        ? `${toNum(discountPercentage)}% off`
-        : `RM ${toNum(discountAmount)} off`;
-    return `${ruleName} — ${discountLabel}`;
+const toVoucherListItem = (voucher: any) => {
+    const { rewardRule, ...rest } = voucher;
+    return { ...rest, ruleName: rewardRule?.name ?? null };
 };
 
 // ============================================
@@ -225,10 +220,11 @@ const getVouchersByCustomerId = async (db: string, customerId: number, status?: 
                 expiresAt: { gt: new Date() },
             } : {}),
         },
+        include: { rewardRule: { select: { name: true } } },
         orderBy: { createdAt: 'desc' },
     });
 
-    return vouchers;
+    return vouchers.map(toVoucherListItem);
 };
 
 // ============================================
@@ -471,13 +467,6 @@ const issueVoucherFromRule = async (
     totalSpend: Decimal,
 ) => {
     const expiresAt = new Date(Date.now() + rule.expiryDays * 24 * 60 * 60 * 1000);
-    const label = formatVoucherLabel(
-        rule.name,
-        rule.discountType,
-        rule.discountPercentage,
-        rule.discountAmount,
-    );
-
     await prisma.voucher.create({
         data: {
             rewardRuleId: rule.id,
@@ -489,7 +478,9 @@ const issueVoucherFromRule = async (
             minPurchaseAmount: rule.minPurchaseAmount,
             status: 'ACTIVE',
             milestoneSpendSnapshot: totalSpend.toNumber(),
-            label,
+            // Locale- and currency-neutral: the app builds the discount text
+            // from discountType/Percentage/Amount in the tenant's currency.
+            label: rule.name,
             expiresAt,
         },
     });
@@ -553,7 +544,7 @@ export default {
         voucherDiscountFor,
         shouldRestoreVoucher,
         expectedRepeatableVoucherCount,
-        formatVoucherLabel,
+        toVoucherListItem,
         validateRuleDiscountFields,
         formatRule,
     },

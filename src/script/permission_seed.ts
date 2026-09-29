@@ -91,6 +91,15 @@ export const permissions = [
         category: "Sales",
         description: "Print pre-payment bill from cart"
     },
+    // Cart unit-price override. Used to be ungated (any cashier could re-price a
+    // line); `grant_edit_sale_price.ts` backfills it onto every role that holds
+    // "Manage Inventory" so owners/managers keep it on upgrade. Name MUST match
+    // FE AppPermission.editSalePrice.
+    {
+        name: "Edit Sale Price",
+        category: "Sales",
+        description: "Change an item's unit price in the cart before checkout"
+    },
     {
         name: "Manage Master Data",
         category: "Function Management",

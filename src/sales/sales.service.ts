@@ -1,6 +1,14 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "../../prisma/client/generated/client"
+import {
+    findPaidSaleIdByClientRef,
+    findSaleIdByClientRef,
+    isClientRefConflict,
+    markAlreadyRecorded,
+    paymentClientRef,
+} from "./client-ref"
 import { Decimal } from 'decimal.js';
-import { BusinessLogicError, NotFoundError, InsufficientPointsError, TierMismatchError, SubscriptionExpiredError } from "../api-helpers/error"
+import { BusinessLogicError, NotFoundError, InsufficientPointsError, TierMismatchError, SubscriptionExpiredError, PlanLimitError, ErrorCode } from "../api-helpers/error"
+import { isLitePlan } from "../middleware/require-plan.middleware"
 import { SalesRequestBody, SalesCreationRequest, CreateSalesRequest, CalculateSalesObject, CalculateSalesItemObject, DiscountBy, DiscountType, CalculateSalesDto } from "./sales.request"
 import { getTenantPrisma } from '../db';
 import { getEffectivePermissions } from '../auth/permission-cache';
@@ -16,6 +24,7 @@ import {
 } from '../pushy/notification-messages';
 import loyaltyService from '../loyalty/loyalty.service';
 import voucherService from '../voucher/voucher.service';
+import { netSaleProfit } from './sale-profit';
 
 /**
  * Standard `include` for a sale's line items — excludes soft-deleted lines.
@@ -270,6 +279,8 @@ interface PerformedBy {
     userId: number;
     username: string;
     loyaltyTier?: 'none' | 'basic' | 'advanced';
+    // JWT planName. Only the checkout path sets it (Retail Lite rules below).
+    planName?: string | null;
     // Effective permission names from the JWT ('*' = super-admin wildcard). Used to gate
     // the manual stock-source override (AD6 / F3). Missing/empty → no override.
     permissions?: string[];
@@ -370,16 +381,6 @@ function isSupplyLine(
     );
 }
 
-/// Count of products/services actually sold, excluding supply lines. Allocation-
-/// free single pass. For retail there are no supply lines → full count unchanged.
-function countBillableSalesItems(
-    salesItems: Array<{ price: any; loadWeightKg: any; stockConsumptionQty: any }>,
-): number {
-    let n = 0;
-    for (const it of salesItems) if (!isSupplyLine(it)) n++;
-    return n;
-}
-
 /// Single in-memory pass over an order's lines producing every per-order field the
 /// sales-list payload needs: billable `totalItems` (supplies excluded), total
 /// processed `loadWeightKg` (sum of wash-service weights; null for retail), and the
@@ -402,6 +403,64 @@ function summarizeSalesLines(
     }
     const laundryServiceKind = hasWash && hasJasa ? 'mixed' : hasWash ? 'wash' : hasJasa ? 'jasa' : null;
     return { totalItems, loadWeightKg: weight > 0 ? weight : null, laundryServiceKind };
+}
+
+type SalesSyncRow = Prisma.SalesGetPayload<{ select: typeof salesSyncSelect }>;
+
+/// The client row for one sale — shared by EVERY sales-list read the app syncs
+/// (delta / cold start, date range, partially paid). The app upserts these rows
+/// whole into its local `sales_histories` table, so a read that omits a field
+/// doesn't just leave it out: it erases it on the device. That happened
+/// 2026-09-28 — the partially-paid read had its own trimmed copy without
+/// orderRef / friendlyNumber / collectedAt, and pay-at-pickup laundry orders
+/// vanished from the pickup queue. Add new fields HERE (and to
+/// salesSyncSelect), never to one query.
+function toSalesSyncRow(sale: SalesSyncRow, serviceKinds: Map<number, 'wash' | 'jasa'>) {
+    return {
+        id: sale.id,
+        businessDate: sale.businessDate,
+        salesType: sale.salesType,
+        customerId: sale.customerId,
+        customerName: sale.customerName,
+        phoneNumber: sale.phoneNumber,
+        totalAmount: sale.totalAmount,
+        paidAmount: sale.paidAmount,
+        status: sale.status,
+        shipStreet: sale.shipStreet,
+        isTaxInclusive: sale.isTaxInclusive,
+        taxAmount: sale.taxAmount,
+        serviceChargeAmount: sale.serviceChargeAmount,
+        subtotalAmount: sale.subtotalAmount,
+        discountAmount: sale.discountAmount,
+        totalItemDiscountAmount: sale.totalItemDiscountAmount,
+        remark: sale.remark,
+        // Laundry per-order rollups (billable item count with supplies
+        // excluded, total processed weight, and service kind) computed in a
+        // single in-memory pass over the already-loaded lines. null weight/kind
+        // for retail → payload unchanged.
+        ...summarizeSalesLines(sale.salesItems, serviceKinds),
+        deliveredAt: sale.deliveredAt,
+        deliveredBy: sale.deliveredBy,
+        // Terminal attribution
+        siteId: sale.siteId,
+        // Laundry intake→pickup identity
+        orderRef: sale.orderRef,
+        friendlyNumber: sale.friendlyNumber,
+        collectedAt: sale.collectedAt,
+        // Loyalty fields
+        loyaltyPointsEarned: sale.loyaltyPointsEarned,
+        loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
+        loyaltyPointsRedemptionValue: sale.loyaltyPointsRedemptionValue,
+        loyaltyTierDiscountPercent: sale.loyaltyTierDiscountPercent,
+        loyaltyTierDiscountAmount: sale.loyaltyTierDiscountAmount,
+        customerSubscriptionId: sale.customerSubscriptionId,
+        subscriptionDiscountAmount: sale.subscriptionDiscountAmount,
+        // Voucher fields
+        voucherId: sale.voucherId,
+        voucherDiscountPercentage: sale.voucherDiscountPercentage,
+        voucherDiscountAmount: sale.voucherDiscountAmount,
+        payments: sale.payments || [],
+    };
 }
 
 async function sendSalesNotification(
@@ -547,6 +606,199 @@ async function creditEarnedPoints(
 }
 
 /**
+ * Validate + execute one use of a customer's prepaid package (step 3 of
+ * processLoyaltyForSale). Not gated on the loyalty tier: a package the customer
+ * already paid for stays redeemable after the shop steps down from Pro or its
+ * Pro trial ends — only SELLING new packages needs advanced loyalty.
+ */
+async function redeemCustomerSubscription(
+    tx: any,
+    customerId: number,
+    salesId: number,
+    totalAmount: Decimal,
+    salesBody: CreateSalesRequest,
+    performedBy: PerformedBy,
+): Promise<{ customerSubscriptionId: number; subscriptionDiscountAmount: Decimal }> {
+    const toNum = loyaltyService.toDecimalNumber;
+    const subscription = await tx.customerSubscription.findUnique({
+        where: { id: salesBody.customerSubscriptionId },
+        include: {
+            subscriptionPackage: {
+                include: {
+                    categories: {
+                        where: { deleted: false },
+                        select: { categoryId: true },
+                    },
+                },
+            },
+        },
+    });
+
+    if (!subscription || subscription.deleted) {
+        throw new BusinessLogicError('Customer subscription not found');
+    }
+    if (subscription.status !== 'ACTIVE') {
+        throw new SubscriptionExpiredError();
+    }
+    // Audit r2-#2: status may still read ACTIVE if the daily expiry cron has not run yet.
+    // Also defend against device-clock skew that lets a stale FE submit a past-end-date sub.
+    if (subscription.endDate && new Date() > subscription.endDate) {
+        throw new SubscriptionExpiredError();
+    }
+    if (subscription.customerId !== customerId) {
+        throw new BusinessLogicError('Subscription does not belong to this customer');
+    }
+
+    // Server-authoritative quota: for USAGE packages, recompute the credits
+    // to deduct from the cart itself — one credit per unit of a matching-
+    // category item with subtotal > 0 (zero-priced bundled lines like free
+    // detergent get no benefit and must not burn quota). Coverage is capped
+    // at remainingQuota, most expensive units first (mirrors the FE
+    // `_usageCoverage`): a cart with more eligible units than credits gets
+    // only the covered units free and the rest stay payable. The client-sent
+    // subscriptionQuantityUsed is ignored; legacy clients hardcode 1, which
+    // under-deducts multi-item carts. TIME packages keep usedQuota as a
+    // plain per-sale counter (1).
+    let quantityUsed = 1;
+    // Upper bound for the USAGE discount: value of the covered units only.
+    let usageCoveredValue: Decimal | null = null;
+    if (subscription.subscriptionPackage.packageType === 'USAGE') {
+        const packageCategoryIds = new Set(
+            subscription.subscriptionPackage.categories.map((c: any) => c.categoryId),
+        );
+        const cartItemIds = (salesBody.salesItems ?? [])
+            .filter((it: any) => !it.deleted)
+            .map((it: any) => it.itemId);
+        const cartItems = await tx.item.findMany({
+            where: { id: { in: cartItemIds } },
+            select: { id: true, categoryId: true },
+        });
+        const itemCategoryById = new Map(cartItems.map((it: any) => [it.id, it.categoryId]));
+        const eligible: { unitPrice: Decimal; quantity: number }[] = [];
+        for (const it of salesBody.salesItems ?? []) {
+            if ((it as any).deleted) continue;
+            const categoryId = itemCategoryById.get(it.itemId);
+            const subtotal = new Decimal(it.subtotalAmount ?? 0);
+            const quantity = new Decimal(it.quantity ?? 0).toNumber();
+            if (categoryId != null && packageCategoryIds.has(categoryId) && subtotal.gt(0) && quantity > 0) {
+                eligible.push({ unitPrice: subtotal.dividedBy(quantity), quantity });
+            }
+        }
+        if (eligible.length === 0) {
+            throw new BusinessLogicError(
+                'Subscription cannot be used: no items in this sale match the package categories',
+            );
+        }
+        eligible.sort((a, b) => b.unitPrice.comparedTo(a.unitPrice));
+        let remaining = subscription.remainingQuota ?? Number.POSITIVE_INFINITY;
+        let unitsCovered = 0;
+        let coveredValue = new Decimal(0);
+        for (const line of eligible) {
+            if (remaining <= 0) break;
+            const take = Math.min(line.quantity, remaining);
+            coveredValue = coveredValue.plus(line.unitPrice.times(take));
+            unitsCovered += take;
+            remaining -= take;
+        }
+        quantityUsed = Math.ceil(unitsCovered);
+        usageCoveredValue = coveredValue;
+        if (quantityUsed <= 0) {
+            throw new BusinessLogicError(
+                'Subscription cannot be used: no remaining quota covers any item in this sale',
+            );
+        }
+    }
+
+    // For USAGE packages, check and deduct quota
+    if (subscription.subscriptionPackage.packageType === 'USAGE') {
+        if (subscription.remainingQuota === null || subscription.remainingQuota < quantityUsed) {
+            throw new BusinessLogicError(
+                `Insufficient subscription quota. Remaining: ${subscription.remainingQuota ?? 0}`
+            );
+        }
+
+        // Optimistic-lock with assertion: prisma.update silently no-ops on 0 matches
+        // when a composite where misses, so we use updateMany and check count.
+        // Race: two cashiers both reading version=N — the second update sees 0 rows.
+        const decrementResult = await tx.customerSubscription.updateMany({
+            where: { id: subscription.id, version: subscription.version },
+            data: {
+                remainingQuota: { decrement: quantityUsed },
+                usedQuota: { increment: quantityUsed },
+                version: { increment: 1 },
+            },
+        });
+        if (decrementResult.count !== 1) {
+            throw new BusinessLogicError(
+                'Subscription was modified concurrently. Please retry the sale.'
+            );
+        }
+
+        // Check if quota depleted
+        if ((subscription.remainingQuota - quantityUsed) <= 0) {
+            await tx.customerSubscription.update({
+                where: { id: subscription.id },
+                data: { status: 'EXPIRED' },
+            });
+        }
+    } else {
+        // TIME package — just track usage
+        await tx.customerSubscription.update({
+            where: { id: subscription.id },
+            data: {
+                usedQuota: { increment: quantityUsed },
+                version: { increment: 1 },
+            },
+        });
+    }
+
+    // Create usage record
+    await tx.subscriptionUsage.create({
+        data: {
+            customerSubscriptionId: subscription.id,
+            salesId,
+            quantityUsed,
+            remainingAfter: subscription.subscriptionPackage.packageType === 'USAGE'
+                ? (subscription.remainingQuota ?? 0) - quantityUsed
+                : -1,
+            performedBy: performedBy.username,
+        },
+    });
+
+    // Audit r1-#4: subscriptionDiscountAmount was previously stored as-sent. Bound it.
+    // The package category × item matching is item-level; doing a full recompute here
+    // would require per-item category lookups. Instead we apply a tight upper bound:
+    //   - TIME + fixed: discount ≤ package.discountAmount
+    //   - TIME + %: discount ≤ preDiscountTotal × pct / 100
+    //   - USAGE: discount ≤ preDiscountTotal (100% of matching items, max = full cart)
+    // preDiscountTotal = the cart total before THIS subscription discount was applied.
+    const sentSubDiscount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
+    const preDiscountTotal = totalAmount.plus(sentSubDiscount);
+    const pkg = subscription.subscriptionPackage;
+    let maxSubDiscount: Decimal;
+    if (pkg.packageType === 'TIME') {
+        if (pkg.discountPercentage && toNum(pkg.discountPercentage) > 0) {
+            maxSubDiscount = preDiscountTotal.times(toNum(pkg.discountPercentage)).dividedBy(100);
+        } else if (pkg.discountAmount && toNum(pkg.discountAmount) > 0) {
+            maxSubDiscount = new Decimal(toNum(pkg.discountAmount));
+        } else {
+            maxSubDiscount = new Decimal(0);
+        }
+    } else {
+        // USAGE — 100% off the quota-covered units only (computed above),
+        // never the whole matching subtotal: with 8 credits left and 11
+        // eligible washes, only 8 units' value is discountable.
+        maxSubDiscount = usageCoveredValue ?? preDiscountTotal;
+    }
+    if (sentSubDiscount.gt(maxSubDiscount.plus(0.01))) {
+        throw new BusinessLogicError(
+            `Subscription discount exceeds maximum allowed: sent ${sentSubDiscount}, max ${maxSubDiscount}`
+        );
+    }
+    return { customerSubscriptionId: subscription.id, subscriptionDiscountAmount: sentSubDiscount };
+}
+
+/**
  * Process loyalty earn/redeem/subscription within a sales transaction.
  * Called inside $transaction by completeNewSales for ANY sale with a customer
  * (Completed, Partially Paid, pay-on-collection): the discount legs (tier /
@@ -594,6 +846,18 @@ async function processLoyaltyForSale(
         voucherDiscountPercentage: zero,
         voucherDiscountAmount: zero,
     };
+
+    // Loyalty off (Basic/Lite, or after a step down from Pro): points are frozen
+    // and nothing is earned, but a prepaid package the customer already paid for
+    // must still be redeemable.
+    if (!performedBy.loyaltyTier || performedBy.loyaltyTier === 'none') {
+        if (salesBody.customerSubscriptionId) {
+            Object.assign(result, await redeemCustomerSubscription(
+                tx, customerId, salesId, totalAmount, salesBody, performedBy,
+            ));
+        }
+        return result;
+    }
 
     // Find loyalty account for this customer
     const account = await tx.loyaltyAccount.findFirst({
@@ -716,185 +980,11 @@ async function processLoyaltyForSale(
         result.loyaltyPointsRedemptionValue = new Decimal(pointsToRedeem).times(toNum(program.currencyPerPoint));
     }
 
-    // 3. VALIDATE + EXECUTE subscription usage (advanced only)
-    if (performedBy.loyaltyTier === 'advanced' && salesBody.customerSubscriptionId) {
-        const subscription = await tx.customerSubscription.findUnique({
-            where: { id: salesBody.customerSubscriptionId },
-            include: {
-                subscriptionPackage: {
-                    include: {
-                        categories: {
-                            where: { deleted: false },
-                            select: { categoryId: true },
-                        },
-                    },
-                },
-            },
-        });
-
-        if (!subscription || subscription.deleted) {
-            throw new BusinessLogicError('Customer subscription not found');
-        }
-        if (subscription.status !== 'ACTIVE') {
-            throw new SubscriptionExpiredError();
-        }
-        // Audit r2-#2: status may still read ACTIVE if the daily expiry cron has not run yet.
-        // Also defend against device-clock skew that lets a stale FE submit a past-end-date sub.
-        if (subscription.endDate && new Date() > subscription.endDate) {
-            throw new SubscriptionExpiredError();
-        }
-        if (subscription.customerId !== customerId) {
-            throw new BusinessLogicError('Subscription does not belong to this customer');
-        }
-
-        // Server-authoritative quota: for USAGE packages, recompute the credits
-        // to deduct from the cart itself — one credit per unit of a matching-
-        // category item with subtotal > 0 (zero-priced bundled lines like free
-        // detergent get no benefit and must not burn quota). Coverage is capped
-        // at remainingQuota, most expensive units first (mirrors the FE
-        // `_usageCoverage`): a cart with more eligible units than credits gets
-        // only the covered units free and the rest stay payable. The client-sent
-        // subscriptionQuantityUsed is ignored; legacy clients hardcode 1, which
-        // under-deducts multi-item carts. TIME packages keep usedQuota as a
-        // plain per-sale counter (1).
-        let quantityUsed = 1;
-        // Upper bound for the USAGE discount: value of the covered units only.
-        let usageCoveredValue: Decimal | null = null;
-        if (subscription.subscriptionPackage.packageType === 'USAGE') {
-            const packageCategoryIds = new Set(
-                subscription.subscriptionPackage.categories.map((c: any) => c.categoryId),
-            );
-            const cartItemIds = (salesBody.salesItems ?? [])
-                .filter((it: any) => !it.deleted)
-                .map((it: any) => it.itemId);
-            const cartItems = await tx.item.findMany({
-                where: { id: { in: cartItemIds } },
-                select: { id: true, categoryId: true },
-            });
-            const itemCategoryById = new Map(cartItems.map((it: any) => [it.id, it.categoryId]));
-            const eligible: { unitPrice: Decimal; quantity: number }[] = [];
-            for (const it of salesBody.salesItems ?? []) {
-                if ((it as any).deleted) continue;
-                const categoryId = itemCategoryById.get(it.itemId);
-                const subtotal = new Decimal(it.subtotalAmount ?? 0);
-                const quantity = new Decimal(it.quantity ?? 0).toNumber();
-                if (categoryId != null && packageCategoryIds.has(categoryId) && subtotal.gt(0) && quantity > 0) {
-                    eligible.push({ unitPrice: subtotal.dividedBy(quantity), quantity });
-                }
-            }
-            if (eligible.length === 0) {
-                throw new BusinessLogicError(
-                    'Subscription cannot be used: no items in this sale match the package categories',
-                );
-            }
-            eligible.sort((a, b) => b.unitPrice.comparedTo(a.unitPrice));
-            let remaining = subscription.remainingQuota ?? Number.POSITIVE_INFINITY;
-            let unitsCovered = 0;
-            let coveredValue = new Decimal(0);
-            for (const line of eligible) {
-                if (remaining <= 0) break;
-                const take = Math.min(line.quantity, remaining);
-                coveredValue = coveredValue.plus(line.unitPrice.times(take));
-                unitsCovered += take;
-                remaining -= take;
-            }
-            quantityUsed = Math.ceil(unitsCovered);
-            usageCoveredValue = coveredValue;
-            if (quantityUsed <= 0) {
-                throw new BusinessLogicError(
-                    'Subscription cannot be used: no remaining quota covers any item in this sale',
-                );
-            }
-        }
-
-        // For USAGE packages, check and deduct quota
-        if (subscription.subscriptionPackage.packageType === 'USAGE') {
-            if (subscription.remainingQuota === null || subscription.remainingQuota < quantityUsed) {
-                throw new BusinessLogicError(
-                    `Insufficient subscription quota. Remaining: ${subscription.remainingQuota ?? 0}`
-                );
-            }
-
-            // Optimistic-lock with assertion: prisma.update silently no-ops on 0 matches
-            // when a composite where misses, so we use updateMany and check count.
-            // Race: two cashiers both reading version=N — the second update sees 0 rows.
-            const decrementResult = await tx.customerSubscription.updateMany({
-                where: { id: subscription.id, version: subscription.version },
-                data: {
-                    remainingQuota: { decrement: quantityUsed },
-                    usedQuota: { increment: quantityUsed },
-                    version: { increment: 1 },
-                },
-            });
-            if (decrementResult.count !== 1) {
-                throw new BusinessLogicError(
-                    'Subscription was modified concurrently. Please retry the sale.'
-                );
-            }
-
-            // Check if quota depleted
-            if ((subscription.remainingQuota - quantityUsed) <= 0) {
-                await tx.customerSubscription.update({
-                    where: { id: subscription.id },
-                    data: { status: 'EXPIRED' },
-                });
-            }
-        } else {
-            // TIME package — just track usage
-            await tx.customerSubscription.update({
-                where: { id: subscription.id },
-                data: {
-                    usedQuota: { increment: quantityUsed },
-                    version: { increment: 1 },
-                },
-            });
-        }
-
-        // Create usage record
-        await tx.subscriptionUsage.create({
-            data: {
-                customerSubscriptionId: subscription.id,
-                salesId,
-                quantityUsed,
-                remainingAfter: subscription.subscriptionPackage.packageType === 'USAGE'
-                    ? (subscription.remainingQuota ?? 0) - quantityUsed
-                    : -1,
-                performedBy: performedBy.username,
-            },
-        });
-
-        result.customerSubscriptionId = subscription.id;
-        // Audit r1-#4: subscriptionDiscountAmount was previously stored as-sent. Bound it.
-        // The package category × item matching is item-level; doing a full recompute here
-        // would require per-item category lookups. Instead we apply a tight upper bound:
-        //   - TIME + fixed: discount ≤ package.discountAmount
-        //   - TIME + %: discount ≤ preDiscountTotal × pct / 100
-        //   - USAGE: discount ≤ preDiscountTotal (100% of matching items, max = full cart)
-        // preDiscountTotal = the cart total before THIS subscription discount was applied.
-        const sentSubDiscount = new Decimal(salesBody.subscriptionDiscountAmount || 0);
-        const preDiscountTotal = totalAmount.plus(sentSubDiscount);
-        const pkg = subscription.subscriptionPackage;
-        let maxSubDiscount: Decimal;
-        if (pkg.packageType === 'TIME') {
-            if (pkg.discountPercentage && toNum(pkg.discountPercentage) > 0) {
-                maxSubDiscount = preDiscountTotal.times(toNum(pkg.discountPercentage)).dividedBy(100);
-            } else if (pkg.discountAmount && toNum(pkg.discountAmount) > 0) {
-                maxSubDiscount = new Decimal(toNum(pkg.discountAmount));
-            } else {
-                maxSubDiscount = new Decimal(0);
-            }
-        } else {
-            // USAGE — 100% off the quota-covered units only (computed above),
-            // never the whole matching subtotal: with 8 credits left and 11
-            // eligible washes, only 8 units' value is discountable.
-            maxSubDiscount = usageCoveredValue ?? preDiscountTotal;
-        }
-        if (sentSubDiscount.gt(maxSubDiscount.plus(0.01))) {
-            throw new BusinessLogicError(
-                `Subscription discount exceeds maximum allowed: sent ${sentSubDiscount}, max ${maxSubDiscount}`
-            );
-        }
-        result.subscriptionDiscountAmount = sentSubDiscount;
+    // 3. VALIDATE + EXECUTE subscription usage (any tier, see redeemCustomerSubscription)
+    if (salesBody.customerSubscriptionId) {
+        Object.assign(result, await redeemCustomerSubscription(
+            tx, customerId, salesId, totalAmount, salesBody, performedBy,
+        ));
     }
 
     // 4. EARN points on finalTotalAmount (after ALL discounts) — only when the
@@ -911,6 +1001,51 @@ async function processLoyaltyForSale(
 }
 
 /**
+ * Give back the package quota a voided/returned/refunded sale used. Runs for
+ * every tier and without a loyalty account: a package use recorded while on
+ * Pro (or the Pro trial) is restored even after the shop stepped down.
+ */
+async function restoreCustomerSubscriptionForSale(tx: any, sale: any): Promise<void> {
+    if (sale.customerSubscriptionId) {
+        const subscription = await tx.customerSubscription.findUnique({
+            where: { id: sale.customerSubscriptionId },
+            include: { subscriptionPackage: true },
+        });
+
+        if (subscription && subscription.subscriptionPackage.packageType === 'USAGE') {
+            // Find original usage record to get quantity
+            const usageRecord = await tx.subscriptionUsage.findFirst({
+                where: { salesId: sale.id, customerSubscriptionId: subscription.id, deleted: false },
+            });
+            const quantityToRestore = usageRecord?.quantityUsed ?? 1;
+
+            await tx.customerSubscription.update({
+                where: { id: subscription.id },
+                data: {
+                    remainingQuota: { increment: quantityToRestore },
+                    usedQuota: { decrement: quantityToRestore },
+                    // Reactivate only if quota exhaustion was the reason it expired —
+                    // a subscription past its validity endDate stays EXPIRED even
+                    // though the quota is restored.
+                    ...(subscription.status === 'EXPIRED' &&
+                        (!subscription.endDate || subscription.endDate > new Date())
+                        ? { status: 'ACTIVE' }
+                        : {}),
+                },
+            });
+
+            // Create negative usage record for audit
+            if (usageRecord) {
+                await tx.subscriptionUsage.update({
+                    where: { id: usageRecord.id },
+                    data: { deleted: true, deletedAt: new Date() },
+                });
+            }
+        }
+    }
+}
+
+/**
  * Reverse loyalty operations when a sale is voided/returned/refunded.
  * Called inside $transaction for void/return/refund.
  */
@@ -922,6 +1057,9 @@ async function reverseLoyaltyForSale(
     if (!sale.customerId) return;
 
     const toNum = loyaltyService.toDecimalNumber;
+
+    // Package quota first — it doesn't depend on a loyalty account.
+    await restoreCustomerSubscriptionForSale(tx, sale);
 
     // Find loyalty account
     const account = await tx.loyaltyAccount.findFirst({
@@ -1030,44 +1168,6 @@ async function reverseLoyaltyForSale(
         await voucherService.restoreVoucherForSale(tx, sale.id);
     }
 
-    // 3. Restore subscription quota (advanced only)
-    if (sale.customerSubscriptionId) {
-        const subscription = await tx.customerSubscription.findUnique({
-            where: { id: sale.customerSubscriptionId },
-            include: { subscriptionPackage: true },
-        });
-
-        if (subscription && subscription.subscriptionPackage.packageType === 'USAGE') {
-            // Find original usage record to get quantity
-            const usageRecord = await tx.subscriptionUsage.findFirst({
-                where: { salesId: sale.id, customerSubscriptionId: subscription.id, deleted: false },
-            });
-            const quantityToRestore = usageRecord?.quantityUsed ?? 1;
-
-            await tx.customerSubscription.update({
-                where: { id: subscription.id },
-                data: {
-                    remainingQuota: { increment: quantityToRestore },
-                    usedQuota: { decrement: quantityToRestore },
-                    // Reactivate only if quota exhaustion was the reason it expired —
-                    // a subscription past its validity endDate stays EXPIRED even
-                    // though the quota is restored.
-                    ...(subscription.status === 'EXPIRED' &&
-                        (!subscription.endDate || subscription.endDate > new Date())
-                        ? { status: 'ACTIVE' }
-                        : {}),
-                },
-            });
-
-            // Create negative usage record for audit
-            if (usageRecord) {
-                await tx.subscriptionUsage.update({
-                    where: { id: usageRecord.id },
-                    data: { deleted: true, deletedAt: new Date() },
-                });
-            }
-        }
-    }
 }
 
 let getAll = async (databaseName: string, request: SyncRequest) => {
@@ -1192,51 +1292,7 @@ let getAll = async (databaseName: string, request: SyncRequest) => {
         const serviceKinds = await loadLaundryServiceKinds(tenantPrisma, salesArray);
 
         // Transform results to include customerName
-        const transformedSales = salesArray.map(sale => ({
-            id: sale.id,
-            businessDate: sale.businessDate,
-            salesType: sale.salesType,
-            customerId: sale.customerId,
-            customerName: sale.customerName,
-            phoneNumber: sale.phoneNumber,
-            totalAmount: sale.totalAmount,
-            paidAmount: sale.paidAmount,
-            status: sale.status,
-            shipStreet: sale.shipStreet,
-            isTaxInclusive: sale.isTaxInclusive,
-            taxAmount: sale.taxAmount,
-            serviceChargeAmount: sale.serviceChargeAmount,
-            subtotalAmount: sale.subtotalAmount,
-            discountAmount: sale.discountAmount,
-            totalItemDiscountAmount: sale.totalItemDiscountAmount,
-            remark: sale.remark,
-            // Laundry per-order rollups (billable item count with supplies
-            // excluded, total processed weight, and service kind) computed in a
-            // single in-memory pass over the already-loaded lines. null weight/kind
-            // for retail → payload unchanged.
-            ...summarizeSalesLines(sale.salesItems, serviceKinds),
-            deliveredAt: sale.deliveredAt,
-            deliveredBy: sale.deliveredBy,
-            // Terminal attribution
-            siteId: sale.siteId,
-            // Laundry intake→pickup identity
-            orderRef: sale.orderRef,
-            friendlyNumber: sale.friendlyNumber,
-            collectedAt: sale.collectedAt,
-            // Loyalty fields
-            loyaltyPointsEarned: sale.loyaltyPointsEarned,
-            loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
-            loyaltyPointsRedemptionValue: sale.loyaltyPointsRedemptionValue,
-            loyaltyTierDiscountPercent: sale.loyaltyTierDiscountPercent,
-            loyaltyTierDiscountAmount: sale.loyaltyTierDiscountAmount,
-            customerSubscriptionId: sale.customerSubscriptionId,
-            subscriptionDiscountAmount: sale.subscriptionDiscountAmount,
-            // Voucher fields
-            voucherId: sale.voucherId,
-            voucherDiscountPercentage: sale.voucherDiscountPercentage,
-            voucherDiscountAmount: sale.voucherDiscountAmount,
-            payments: sale.payments || [],
-        }));
+        const transformedSales = salesArray.map(sale => toSalesSyncRow(sale, serviceKinds));
 
         // Return with pagination metadata and server timestamp
         return {
@@ -1290,52 +1346,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
 
         const salesArray = await tenantPrisma.sales.findMany({
             where,
-            select: {
-                id: true,
-                businessDate: true,
-                salesType: true,
-                customerId: true,
-                customerName: true,
-                phoneNumber: true,
-                shipStreet: true,
-                isTaxInclusive: true,
-                taxAmount: true,
-                serviceChargeAmount: true,
-                subtotalAmount: true,
-                discountAmount: true,
-                totalItemDiscountAmount: true,
-                totalAmount: true,
-                paidAmount: true,
-                status: true,
-                remark: true,
-                deliveredAt: true,
-                deliveredBy: true,
-                // Terminal attribution (silent-drop fix: in BOTH select and transform)
-                siteId: true,
-                // Laundry intake→pickup identity (silent-drop fix per SALES.md §4.4:
-                // must be in BOTH select and transform or it never reaches the client)
-                orderRef: true,
-                friendlyNumber: true,
-                collectedAt: true,
-                // Loyalty fields
-                loyaltyPointsEarned: true,
-                loyaltyPointsRedeemed: true,
-                loyaltyPointsRedemptionValue: true,
-                loyaltyTierDiscountPercent: true,
-                loyaltyTierDiscountAmount: true,
-                customerSubscriptionId: true,
-                subscriptionDiscountAmount: true,
-                // Voucher fields
-                voucherId: true,
-                voucherDiscountPercentage: true,
-                voucherDiscountAmount: true,
-                payments: {
-                    select: {
-                        method: true
-                    }
-                },
-                salesItems: activeSalesItems
-            },
+            select: salesSyncSelect,
             skip,
             take,
         });
@@ -1345,51 +1356,7 @@ let getByDateRange = async (databaseName: string, request: SyncRequest & { start
         const serviceKinds = await loadLaundryServiceKinds(tenantPrisma, salesArray);
 
         // Transform results to include customerName
-        const transformedSales = salesArray.map(sale => ({
-            id: sale.id,
-            businessDate: sale.businessDate,
-            salesType: sale.salesType,
-            customerId: sale.customerId,
-            customerName: sale.customerName,
-            phoneNumber: sale.phoneNumber,
-            shipStreet: sale.shipStreet,
-            isTaxInclusive: sale.isTaxInclusive,
-            taxAmount: sale.taxAmount,
-            serviceChargeAmount: sale.serviceChargeAmount,
-            subtotalAmount: sale.subtotalAmount,
-            discountAmount: sale.discountAmount,
-            totalItemDiscountAmount: sale.totalItemDiscountAmount,
-            totalAmount: sale.totalAmount,
-            paidAmount: sale.paidAmount,
-            status: sale.status,
-            remark: sale.remark,
-            // Laundry per-order rollups (billable item count with supplies
-            // excluded, total processed weight, and service kind) computed in a
-            // single in-memory pass over the already-loaded lines. null weight/kind
-            // for retail → payload unchanged.
-            ...summarizeSalesLines(sale.salesItems, serviceKinds),
-            deliveredAt: sale.deliveredAt,
-            deliveredBy: sale.deliveredBy,
-            // Terminal attribution
-            siteId: sale.siteId,
-            // Laundry intake→pickup identity
-            orderRef: sale.orderRef,
-            friendlyNumber: sale.friendlyNumber,
-            collectedAt: sale.collectedAt,
-            // Loyalty fields
-            loyaltyPointsEarned: sale.loyaltyPointsEarned,
-            loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
-            loyaltyPointsRedemptionValue: sale.loyaltyPointsRedemptionValue,
-            loyaltyTierDiscountPercent: sale.loyaltyTierDiscountPercent,
-            loyaltyTierDiscountAmount: sale.loyaltyTierDiscountAmount,
-            customerSubscriptionId: sale.customerSubscriptionId,
-            subscriptionDiscountAmount: sale.subscriptionDiscountAmount,
-            // Voucher fields
-            voucherId: sale.voucherId,
-            voucherDiscountPercentage: sale.voucherDiscountPercentage,
-            voucherDiscountAmount: sale.voucherDiscountAmount,
-            payments: sale.payments || []
-        }));
+        const transformedSales = salesArray.map(sale => toSalesSyncRow(sale, serviceKinds));
 
         // Return with pagination metadata and server timestamp
         return {
@@ -1430,68 +1397,17 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
         const total = await tenantPrisma.sales.count({ where });
 
         // Fetch paginated items with explicit ordering - newest first
+        // Same projection + transform as every other sales-sync read — these rows
+        // are upserted whole on the device (see toSalesSyncRow).
         const partiallyPaidSales = await tenantPrisma.sales.findMany({
             where,
-            select: {
-                id: true,
-                businessDate: true,
-                salesType: true,
-                customerId: true,
-                customerName: true,
-                phoneNumber: true,
-                shipStreet: true,
-                isTaxInclusive: true,
-                taxAmount: true,
-                serviceChargeAmount: true,
-                subtotalAmount: true,
-                discountAmount: true,
-                totalItemDiscountAmount: true,
-                totalAmount: true,
-                paidAmount: true,
-                status: true,
-                remark: true,
-                // Terminal attribution (silent-drop fix: in BOTH select and transform)
-                siteId: true,
-                // customer: {
-                //     select: {
-                //         firstName: true,
-                //         lastName: true,
-                //     },
-                // },
-                payments: {
-                    select: {
-                        method: true
-                    }
-                },
-                salesItems: activeSalesItems
-            },
+            select: salesSyncSelect,
             skip,
             take,
         });
 
-        // Transform the results to include more readable data
-        const transformedSales = partiallyPaidSales.map(sale => ({
-            id: sale.id,
-            businessDate: sale.businessDate,
-            salesType: sale.salesType,
-            customerId: sale.customerId,
-            customerName: sale.customerName,
-            phoneNumber: sale.phoneNumber,
-            shipStreet: sale.shipStreet,
-            isTaxInclusive: sale.isTaxInclusive,
-            taxAmount: sale.taxAmount,
-            serviceChargeAmount: sale.serviceChargeAmount,
-            subtotalAmount: sale.subtotalAmount,
-            discountAmount: sale.discountAmount,
-            totalItemDiscountAmount: sale.totalItemDiscountAmount,
-            totalAmount: sale.totalAmount,
-            paidAmount: sale.paidAmount,
-            status: sale.status,
-            remark: sale.remark,
-            totalItems: countBillableSalesItems(sale.salesItems),
-            siteId: sale.siteId,
-            payments: sale.payments || []
-        }));
+        const serviceKinds = await loadLaundryServiceKinds(tenantPrisma, partiallyPaidSales);
+        const transformedSales = partiallyPaidSales.map(sale => toSalesSyncRow(sale, serviceKinds));
 
         // Return with pagination metadata and server timestamp
         return {
@@ -1574,14 +1490,57 @@ let collect = async (databaseName: string, orderRef: string) => {
     return getByRef(databaseName, orderRef)
 }
 
+/**
+ * Retail Lite takes full payment only (no kasbon, no partial payment) and has
+ * no delivery orders. Checked before any stock or payment work.
+ */
+/** Retail Lite may void a sale for this long after it was made. */
+const LITE_VOID_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function assertLiteSale(salesBody: CreateSalesRequest, payments: Payment[]): void {
+    const total = new Decimal(salesBody.totalAmount ?? 0);
+    const paid = (payments ?? []).reduce(
+        (sum, p) => sum.plus(new Decimal((p as any).tenderedAmount ?? 0)),
+        new Decimal(0),
+    );
+    if (paid.lt(total)) {
+        throw new PlanLimitError(
+            'Partial payment and kasbon are not part of the Lite plan',
+            ErrorCode.PlanFeatureLocked,
+            { plan: 'Lite' },
+        );
+    }
+    if ((salesBody.salesType ?? '').toLowerCase().replace(/[^a-z]/g, '') === 'delivery') {
+        throw new PlanLimitError(
+            'Delivery orders are not part of the Lite plan',
+            ErrorCode.PlanFeatureLocked,
+            { plan: 'Lite' },
+        );
+    }
+}
+
 async function completeNewSales(
     databaseName: string,
     tenantId: number,
     performedBy: PerformedBy,
     salesBody: CreateSalesRequest,
-    payments: Payment[]
+    payments: Payment[],
+    clientRef: string | null = null,
 ) {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    // A replay of a checkout we already recorded (see ./client-ref.ts): return
+    // that sale instead of creating a second one, however old the replay is.
+    if (clientRef) {
+        const existingId = await findSaleIdByClientRef(tenantPrisma, clientRef);
+        if (existingId !== null) {
+            return markAlreadyRecorded(await getById(databaseName, existingId));
+        }
+    }
+
+    if (isLitePlan(performedBy.planName)) {
+        assertLiteSale(salesBody, payments);
+    }
 
     validateSalesItemNumerics(salesBody.salesItems);
     validatePaymentNumerics(payments);
@@ -2113,10 +2072,14 @@ async function completeNewSales(
                     // Terminal attribution — which terminal rang this sale (client-supplied).
                     siteId: salesBody.siteId ?? null,
                     deleted: false,
-                    profitAmount: totalProfit,
+                    // Line profits minus the cart discount; the loyalty block below
+                    // also takes off tier/voucher/package/redemption (sale-profit.ts).
+                    profitAmount: netSaleProfit(totalProfit, { discountAmount: salesBody.discountAmount }),
                     // Laundry intake→pickup identity (null for retail / when not sent)
                     orderRef: salesBody.orderRef || null,
                     friendlyNumber: salesBody.friendlyNumber || null,
+                    // Offline-replay dedupe key (./client-ref.ts); null without a key.
+                    clientRef,
                     // Stock-source provenance — computed from actual per-line consumption
                     // (OUTLET / WAREHOUSE / MIXED), or null for non-warehouse tenants.
                     stockSourceType: saleStockSourceType,
@@ -2157,7 +2120,8 @@ async function completeNewSales(
             // so redemption / subscription quota / voucher must be deducted NOW;
             // only the earn leg waits for full payment (includeEarn).
             const isFullyPaid = salesStatus === 'Completed';
-            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && salesBody.customerId) {
+            const loyaltyOn = !!performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none';
+            if (salesBody.customerId && (loyaltyOn || salesBody.customerSubscriptionId)) {
                 const loyaltyResult = await processLoyaltyForSale(
                     tx, databaseName, createdSales.id, salesBody.customerId,
                     totalSalesAmount, salesBody, performedBy, isFullyPaid
@@ -2177,6 +2141,12 @@ async function completeNewSales(
                         voucherId: loyaltyResult.voucherId,
                         voucherDiscountPercentage: loyaltyResult.voucherDiscountPercentage,
                         voucherDiscountAmount: loyaltyResult.voucherDiscountAmount,
+                        // These discounts lowered totalAmount, so they lower profit
+                        // too — a package-covered wash is revenue 0, profit −cost.
+                        profitAmount: netSaleProfit(totalProfit, {
+                            discountAmount: salesBody.discountAmount,
+                            ...loyaltyResult,
+                        }),
                     },
                 });
 
@@ -2405,6 +2375,14 @@ async function completeNewSales(
 
         return getById(databaseName, result.id);
     } catch (error) {
+        // A concurrent replay with the same key committed first: the unique
+        // index rejected this insert, so answer with the sale it created.
+        if (clientRef && isClientRefConflict(error)) {
+            const existingId = await findSaleIdByClientRef(tenantPrisma, clientRef);
+            if (existingId !== null) {
+                return markAlreadyRecorded(await getById(databaseName, existingId));
+            }
+        }
         throw error;
     }
 }
@@ -2804,9 +2782,20 @@ let addPaymentToPartiallyPaidSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
-    payments: Payment[]
+    payments: Payment[],
+    clientRef: string | null = null,
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    // A replay of a payment we already recorded (see ./client-ref.ts). Checked
+    // before the status guard: if that payment completed the sale, the guard
+    // would reject the replay ("only partially paid…") instead of confirming it.
+    if (clientRef) {
+        const paidSaleId = await findPaidSaleIdByClientRef(tenantPrisma, clientRef);
+        if (paidSaleId !== null) {
+            return markAlreadyRecorded(await getById(databaseName, paidSaleId));
+        }
+    }
     // Loyalty follow-ups fire AFTER commit (see completeNewSales note).
     let postCommitTierAccountId: number | null = null;
     let postCommitMilestoneCustomerId: number | null = null;
@@ -2836,10 +2825,11 @@ let addPaymentToPartiallyPaidSales = async (
                 throw new BusinessLogicError("Total payment amount must be greater than zero");
             }
 
-            // Update payments with salesId
-            const paymentsWithSalesId = payments.map(payment => ({
+            // Update payments with salesId (+ the replay-dedupe ref, "<key>:<n>")
+            const paymentsWithSalesId = payments.map((payment, index) => ({
                 ...payment,
-                salesId: salesId
+                salesId: salesId,
+                clientRef: clientRef ? paymentClientRef(clientRef, index) : null,
             }));
             // Create the payment records
             await tx.payment.createMany({
@@ -2958,6 +2948,13 @@ let addPaymentToPartiallyPaidSales = async (
         return getById(databaseName, salesId);
     }
     catch (error) {
+        // A concurrent replay with the same key committed first.
+        if (clientRef && isClientRefConflict(error)) {
+            const paidSaleId = await findPaidSaleIdByClientRef(tenantPrisma, clientRef);
+            if (paidSaleId !== null) {
+                return markAlreadyRecorded(await getById(databaseName, paidSaleId));
+            }
+        }
         throw error;
     }
 }
@@ -3024,6 +3021,16 @@ let voidSales = async (
             }
             if (sales.status !== "Completed") {
                 throw new BusinessLogicError("Only completed sales can be voided");
+            }
+            // Retail Lite has no returns or refunds, so a void there is only for
+            // fixing a mistake: within 24 hours of the sale (timezone-proof).
+            if (isLitePlan(performedBy.planName) && sales.createdAt &&
+                Date.now() - sales.createdAt.getTime() > LITE_VOID_WINDOW_MS) {
+                throw new PlanLimitError(
+                    'On the Lite plan a sale can only be voided within 24 hours',
+                    ErrorCode.PlanFeatureLocked,
+                    { plan: 'Lite' },
+                );
             }
 
             // Atomically claim the transition — see claimSalesReversal. The
@@ -3110,7 +3117,8 @@ let voidSales = async (
             );
 
             // ── Loyalty Reversal ──
-            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
+            // Data-driven: reverse whatever the sale recorded, even after a step down.
+            if (sales.customerId) {
                 await reverseLoyaltyForSale(tx, sales, performedBy);
             }
             // ── End Loyalty Reversal ──
@@ -3263,7 +3271,8 @@ let returnSales = async (
             );
 
             // ── Loyalty Reversal ──
-            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
+            // Data-driven: reverse whatever the sale recorded, even after a step down.
+            if (sales.customerId) {
                 await reverseLoyaltyForSale(tx, sales, performedBy);
             }
             // ── End Loyalty Reversal ──
@@ -3415,7 +3424,8 @@ let refundSales = async (
             );
 
             // ── Loyalty Reversal ──
-            if (performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none' && sales.customerId) {
+            // Data-driven: reverse whatever the sale recorded, even after a step down.
+            if (sales.customerId) {
                 await reverseLoyaltyForSale(tx, sales, performedBy);
             }
             // ── End Loyalty Reversal ──
@@ -3818,5 +3828,8 @@ export = {
         validateTierMatch,
         // Concurrency guard shared by void/return/refund
         claimSalesReversal,
+        // Client row shared by every sales-sync read
+        salesSyncSelect,
+        toSalesSyncRow,
     },
 }

@@ -106,7 +106,7 @@ async function main() {
         check(`return of 2 decrements exactly (${START} → ${START - 2})`, afterReturn === START - 2, `(got ${afterReturn})`);
 
         // ── 2. Cancel → stock must come back to exactly START ─────────────
-        await prService.cancel(created[0].id, { performedBy: "smoke", cancelReason: "smoke" }, TENANT_DB);
+        await prService.cancel(created[0].id, { performedBy: "smoke", cancelReason: "smoke" }, TENANT_DB, outletId);
         const afterCancel = await onHand(prisma, itemId, outletId);
         check(`cancel restores exactly (${START - 2} → ${START})`, afterCancel === START, `(got ${afterCancel})`);
 
@@ -137,8 +137,8 @@ async function main() {
             const prId = r[0].id;
             const before = await onHand(prisma, itemId, outletId);
             const results = await Promise.allSettled([
-                prService.cancel(prId, { performedBy: "smoke", cancelReason: "a" }, TENANT_DB),
-                prService.cancel(prId, { performedBy: "smoke", cancelReason: "b" }, TENANT_DB),
+                prService.cancel(prId, { performedBy: "smoke", cancelReason: "a" }, TENANT_DB, outletId),
+                prService.cancel(prId, { performedBy: "smoke", cancelReason: "b" }, TENANT_DB, outletId),
             ]);
             const ok = results.filter((x) => x.status === "fulfilled").length;
             const after = await onHand(prisma, itemId, outletId);

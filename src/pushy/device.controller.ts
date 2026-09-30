@@ -580,7 +580,7 @@ const deleteDeviceById = async (req: AuthRequest, res: Response, next: NextFunct
     // Unsubscribe the device from every topic via its transport's API
     const unsubscribeResult = await PushyService.unsubscribeDevice(
       device,
-      await getAllPossibleTopics(device.tenantUser.tenantId, device.tenantUserId)
+      await getAllPossibleTopics(device.tenantUser.tenantId, device.tenantUserId, userInfo.databaseName)
     );
 
     if (!unsubscribeResult.success) {
@@ -622,9 +622,19 @@ const deleteDeviceById = async (req: AuthRequest, res: Response, next: NextFunct
 /**
  * Every topic a device of [tenantUserId] could be subscribed to, whatever its
  * roles: FCM can't list a token's topics, so removal unsubscribes from all of
- * them. Mirrors the topic names built in auth.service / role.service.
+ * them. Mirrors the topic names built in auth.service / role.service, whose
+ * outlet-scoped topics carry each outlet the user may work in — so every outlet
+ * of the tenant is covered (outlet 1 as well, for devices subscribed before
+ * multi-outlet, when the topic was always outlet_1).
  */
-const getAllPossibleTopics = async (tenantId: number, tenantUserId: number): Promise<string[]> => {
+const getAllPossibleTopics = async (tenantId: number, tenantUserId: number, databaseName: string): Promise<string[]> => {
+  const outletIds = new Set<number>([1]);
+  try {
+    const outlets = await getTenantPrisma(databaseName).outlet.findMany({ select: { id: true } });
+    outlets.forEach((o: { id: number }) => outletIds.add(o.id));
+  } catch (error) {
+    console.error('getAllPossibleTopics: outlet lookup failed, covering outlet 1 only:', error);
+  }
   const permissions = await globalPrisma.permission.findMany({
     where: {
       category: 'Notifications',
@@ -641,7 +651,7 @@ const getAllPossibleTopics = async (tenantId: number, tenantUserId: number): Pro
       .replace(' Alert', '')
       .toLowerCase();
     topics.add(`tenant_${tenantId}_${shortPermission}`);
-    topics.add(`tenant_${tenantId}_outlet_1_${shortPermission}`);
+    outletIds.forEach((outletId) => topics.add(`tenant_${tenantId}_outlet_${outletId}_${shortPermission}`));
   });
   return Array.from(topics);
 };

@@ -17,6 +17,7 @@ let getAccountDetails = (req: AuthRequest, res: Response, next: NextFunction) =>
     const accountRequest: AccountRequest = {
         outletId: req.query.outletId ? parseInt(req.query.outletId as string) : undefined,
         tenantId: req.query.tenantId ? parseInt(req.query.tenantId as string) : undefined,
+        databaseName: req.user.databaseName,
     };
     service.getAccountDetails(accountRequest)
         .then((response: OutletDetailsResponse) => {

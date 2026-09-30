@@ -17,7 +17,9 @@ interface InvoiceItemInput {
 
 export interface InvoiceInput {
     id?: number;
-    invoiceNumber: string;
+    // Server-assigned on create ({INV}-OUT{outletId}-{yyyyMMdd}-{seq}) and immutable;
+    // any client-sent value is ignored on create and update.
+    invoiceNumber?: string;
     taxInvoiceNumber?: string;
     purchaseOrderId?: number;
     supplierId?: number;
@@ -49,4 +51,7 @@ export interface InvoiceInput {
 
 export interface CreateInvoiceRequestBody {
     invoices: InvoiceInput[];
+    // Client's UTC offset in minutes, used for the yyyyMMdd part of the assigned
+    // numbers. Optional; defaults to 420 (WIB).
+    utcOffsetMinutes?: number;
 }

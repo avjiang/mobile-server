@@ -62,6 +62,7 @@ const PRESERVED_TABLES = new Set([
     '_user_roles', 'user', 'role', 'role_permission',   // login + RBAC
     'outlet', 'setting', 'company', 'warehouse',        // tenant setup created by createTenant
     'registered_device', 'notification_preference',
+    'user_outlet',                                       // user ↔ outlet access (multi-outlet)
 ]);
 
 export interface DemoSeedResult {
@@ -254,7 +255,11 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
 
     const now = new Date();
     const today = wibToday(now);
-    const outletId = 1;
+    // The tenant's primary outlet (lowest live id) — outlet.ID is auto-increment and
+    // not guaranteed to be 1 (the `outlet` table is preserved across re-seeds).
+    const primaryOutlet = await prisma.outlet.findFirst({ where: { deleted: false }, orderBy: { id: 'asc' }, select: { id: true } });
+    if (!primaryOutlet) throw new Error('Demo seed: tenant has no live outlet');
+    const outletId: number = primaryOutlet.id;
     const owner = await prisma.user.findFirst({ orderBy: { id: 'asc' } });
     const performedBy = owner ? [owner.firstName, owner.lastName].filter(Boolean).join(' ') || owner.username : 'Demo';
     const ownerId = owner?.id ?? 1;
@@ -668,18 +673,29 @@ async function applyLaundryIdentity(prisma: any, tenantId: number): Promise<void
             data: { firstName: LAUNDRY_SHOP.ownerFirstName, lastName: LAUNDRY_SHOP.ownerLastName },
         });
     }
-    await prisma.outlet.updateMany({ where: { id: 1 }, data: { outletName: LAUNDRY_SHOP.outletName, street: LAUNDRY_SHOP.street, city: LAUNDRY_SHOP.city } });
+    // The primary outlet (lowest live id) — outlet.ID is not guaranteed to be 1; see seedDemoData.
+    const primaryOutlet = await prisma.outlet.findFirst({ where: { deleted: false }, orderBy: { id: 'asc' }, select: { id: true } });
+    const outletId: number | null = primaryOutlet?.id ?? null;
+    if (outletId !== null) {
+        await prisma.outlet.update({ where: { id: outletId }, data: { outletName: LAUNDRY_SHOP.outletName, street: LAUNDRY_SHOP.street, city: LAUNDRY_SHOP.city } });
+    }
     await prisma.warehouse.updateMany({ data: { warehouseName: LAUNDRY_SHOP.warehouseName } });
-    await globalPrisma.tenantOutlet.updateMany({ where: { tenantId }, data: { outletName: LAUNDRY_SHOP.outletName } });
+    // tenant_outlet (global, billing) has no link to the tenant outlet id: rename only
+    // the tenant's first row, so a demo that gained extra outlets keeps their names.
+    const primaryTenantOutlet = await globalPrisma.tenantOutlet.findFirst({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true } });
+    if (primaryTenantOutlet) {
+        await globalPrisma.tenantOutlet.update({ where: { id: primaryTenantOutlet.id }, data: { outletName: LAUNDRY_SHOP.outletName } });
+    }
 
     for (const [key, value] of Object.entries(LAUNDRY_SHOP.settings)) {
         const def = await globalPrisma.settingDefinition.findFirst({ where: { key, deleted: false } });
         if (!def) continue;   // an older global DB without this key — nothing to set
+        if (def.scope === 'OUTLET' && outletId === null) continue;   // no live outlet to scope it to
         const scope = {
             settingDefinitionId: def.id,
             tenantId: def.scope === 'TENANT' ? tenantId : null,
             userId: def.scope === 'USER' ? owner?.id ?? null : null,
-            outletId: def.scope === 'OUTLET' ? 1 : null,
+            outletId: def.scope === 'OUTLET' ? outletId : null,
         };
         const existing = await prisma.setting.findFirst({ where: { ...scope, deleted: false } });
         if (existing) {

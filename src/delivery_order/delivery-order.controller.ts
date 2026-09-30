@@ -5,10 +5,12 @@ import service from "./delivery-order.service"
 import { DeliveryOrder, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 
 const router = express.Router()
 
@@ -48,7 +50,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const deliveryOrderId: number = parseInt(req.params.id)
-    service.getById(deliveryOrderId, req.user.databaseName,)
+    service.getById(deliveryOrderId, req.user.databaseName, req.outletId)
         .then((deliveryOrder: DeliveryOrder) => sendResponse(res, deliveryOrder))
         .catch(next)
 }
@@ -108,7 +110,12 @@ let createMany = (req: NetworkRequest<CreateDeliveryOrderRequestBody>, res: Resp
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createMany(req.user.databaseName, requestBody)
+    const user = req.user
+    // Same outlet rule as the outlet middleware (admin bypass; a token without
+    // allowedOutletIds resolves from user_outlet / the primary outlet). Document
+    // numbers are assigned by the service — any client-sent number is ignored.
+    assertOutletsAllowed(req, (requestBody.deliveryOrders ?? []).map((doOrder: DeliveryOrderInput) => doOrder.outletId))
+        .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
             sendResponse(res, response)
         })
@@ -129,7 +136,9 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
     if (!deliveryOrder.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    service.update(deliveryOrder, req.user.databaseName)
+    const outletId = requireOutletHeader(req, deliveryOrder.outletId);
+
+    service.update(deliveryOrder, req.user.databaseName, outletId)
         .then((updatedDeliveryOrder: any) => sendResponse(res, updatedDeliveryOrder))
         .catch(next)
 }
@@ -141,8 +150,9 @@ let deleteDeliveryOrder = (req: AuthRequest, res: Response, next: NextFunction) 
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
+    const outletId = requireOutletHeader(req);
     const deliveryOrderId: number = parseInt(req.params.id)
-    service.deleteDeliveryOrder(deliveryOrderId, req.user.databaseName)
+    service.deleteDeliveryOrder(deliveryOrderId, req.user.databaseName, outletId)
         .then((message: string) => sendResponse(res, { message }))
         .catch(next)
 }

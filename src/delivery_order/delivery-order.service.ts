@@ -6,6 +6,7 @@ import { } from '../db';
 import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request";
+import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
 import { warehouseRef, receiveLayers, consumeFIFO } from "../stock/location-stock-engine";
 
 /** Maps a batch-validation `result.type` onto a translatable entity key. */
@@ -232,13 +233,15 @@ let getAll = async (
     }
 };
 
-let getById = async (id: number, databaseName: string) => {
+let getById = async (id: number, databaseName: string, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const deliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) prevents cross-outlet IDOR (matches write-path scoping).
+        const deliveryOrder = await tenantPrisma.deliveryOrder.findFirst({
             where: {
                 id: id,
-                deleted: false
+                deleted: false,
+                outletId: outletId
             },
             include: {
                 deliveryOrderItems: {
@@ -640,6 +643,10 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
             }
         }
 
+        // Delivery order numbers (trackingNumber) are assigned here, never taken from the client.
+        const localDate = localDocumentDate(parseUtcOffsetMinutes(requestBody.utcOffsetMinutes));
+        await ensureDocumentSequences(tenantPrisma, DOCUMENT_PREFIX.deliveryOrder, deliveryOrders.map(do_ => do_.outletId), localDate);
+
         // Use single transaction for all creations
         const result = await tenantPrisma.$transaction(async (tx) => {
             const createdDeliveryOrders: any[] = [];
@@ -679,7 +686,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         deliveryState: deliveryOrderData.deliveryState,
                         deliveryPostalCode: deliveryOrderData.deliveryPostalCode,
                         deliveryCountry: deliveryOrderData.deliveryCountry,
-                        trackingNumber: deliveryOrderData.trackingNumber,
+                        trackingNumber: await nextDocumentNumber(tx, deliveryOrderData.outletId, DOCUMENT_PREFIX.deliveryOrder, localDate),
                         status: deliveryOrderData.status || 'Pending',
                         remark: deliveryOrderData.remark,
                         performedBy: deliveryOrderData.performedBy,
@@ -1012,7 +1019,7 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
     });
 };
 
-let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => {
+let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const { id, ...updateData } = deliveryOrder;
@@ -1021,9 +1028,9 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             throw new RequestValidateError('Delivery order ID is required');
         }
 
-        // Enhanced query to get existing delivery order with more data upfront
-        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
-            where: { id: id, deleted: false },
+        // Get existing delivery order, scoped to the requesting outlet.
+        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findFirst({
+            where: { id: id, outletId: outletId, deleted: false },
             select: {
                 id: true,
                 outletId: true,
@@ -1193,7 +1200,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string) => 
             if (updateData.deliveryState !== undefined) updateFields.deliveryState = updateData.deliveryState;
             if (updateData.deliveryPostalCode !== undefined) updateFields.deliveryPostalCode = updateData.deliveryPostalCode;
             if (updateData.deliveryCountry !== undefined) updateFields.deliveryCountry = updateData.deliveryCountry;
-            if (updateData.trackingNumber !== undefined) updateFields.trackingNumber = updateData.trackingNumber;
+            // trackingNumber (the DO number) is server-assigned at create and immutable — never written here.
             if (updateData.status !== undefined) updateFields.status = updateData.status;
             if (updateData.remark !== undefined) updateFields.remark = updateData.remark;
             if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;
@@ -1491,12 +1498,12 @@ const checkAndUpdatePurchaseOrderStatus = async (tx: Prisma.TransactionClient, p
     await checkAndUpdatePurchaseOrderStatusWithCancellation(tx, purchaseOrderId);
 };
 
-let deleteDeliveryOrder = async (id: number, databaseName: string): Promise<string> => {
+let deleteDeliveryOrder = async (id: number, databaseName: string, outletId: number): Promise<string> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        // Check if delivery order exists and is not already deleted
-        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findUnique({
-            where: { id: id, deleted: false }
+        // Scope by outletId so cross-outlet deletions surface as 404.
+        const existingDeliveryOrder = await tenantPrisma.deliveryOrder.findFirst({
+            where: { id: id, outletId: outletId, deleted: false }
         });
 
         if (!existingDeliveryOrder) {

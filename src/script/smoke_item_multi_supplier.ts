@@ -10,6 +10,8 @@ import supplierService from '../supplier/supplier.service';
 import { getTenantPrisma } from '../db';
 
 const DB = 'web_bytes_db';
+// Multi-outlet: createMany/update now take the acting outlet before planName.
+const OUTLET_ID = 1;
 let pass = 0, fail = 0;
 
 function check(name: string, cond: boolean, detail = '') {
@@ -35,7 +37,7 @@ function check(name: string, cond: boolean, detail = '') {
     const [basicItem] = await itemService.createMany(DB, [{
         itemName: 'TEST Socks Basic', itemCode: 'TST-BASIC-1', categoryId: cat!.id,
         supplierId: supA.id, price: 25000, cost: 0, trackStock: true, stockQuantity: 0,
-    } as any], 'Basic');
+    } as any], OUTLET_ID, 'Basic');
     let links = await p.itemSupplier.findMany({ where: { itemId: basicItem.id, deleted: false } });
     check('Basic create writes exactly 1 junction row', links.length === 1, `got ${links.length}`);
     check('that row is preferred', links[0]?.isPreferred === true);
@@ -51,7 +53,7 @@ function check(name: string, cond: boolean, detail = '') {
                 { supplierId: supA.id, isPreferred: true },
                 { supplierId: supB.id },
             ],
-        } as any], 'Basic');
+        } as any], OUTLET_ID, 'Basic');
     } catch (e: any) { rejected = /Pro feature/i.test(e.message); }
     check('Basic rejected for 2 suppliers', rejected);
 
@@ -63,7 +65,7 @@ function check(name: string, cond: boolean, detail = '') {
             { supplierId: supA.id, isPreferred: true, cost: 12000, supplierItemCode: 'TAJ-01' },
             { supplierId: supB.id, cost: 11500, supplierItemCode: 'SE-4471' },
         ],
-    } as any], 'Pro');
+    } as any], OUTLET_ID, 'Pro');
     links = await p.itemSupplier.findMany({ where: { itemId: proItem.id, deleted: false }, orderBy: { supplierId: 'asc' } });
     check('Pro create writes 2 junction rows', links.length === 2, `got ${links.length}`);
     check('exactly one preferred', links.filter(l => l.isPreferred).length === 1);
@@ -83,7 +85,7 @@ function check(name: string, cond: boolean, detail = '') {
     await itemService.update(DB, {
         id: proItem.id, itemName: 'TEST Socks Pro',
         suppliers: [{ supplierId: supB.id, isPreferred: true, cost: 11000 }],
-    } as any, 'Pro');
+    } as any, OUTLET_ID, 'Pro');
     const after = await p.item.findUnique({ where: { id: proItem.id } });
     links = await p.itemSupplier.findMany({ where: { itemId: proItem.id, deleted: false } });
     check('only B remains live', links.length === 1 && links[0].supplierId === supB.id, `got ${links.length}`);
@@ -94,14 +96,14 @@ function check(name: string, cond: boolean, detail = '') {
         after!.updatedAt!.getTime() > before!.updatedAt!.getTime());
 
     console.log('\n6. Update with NO suppliers key leaves the junction untouched (old binary / outbox replay)');
-    await itemService.update(DB, { id: proItem.id, itemName: 'TEST Socks Pro Renamed' } as any, 'Pro');
+    await itemService.update(DB, { id: proItem.id, itemName: 'TEST Socks Pro Renamed' } as any, OUTLET_ID, 'Pro');
     links = await p.itemSupplier.findMany({ where: { itemId: proItem.id, deleted: false } });
     check('junction preserved', links.length === 1 && links[0].supplierId === supB.id);
 
     console.log('\n6b. Legacy update (scalar supplierId, no suppliers[]) re-points the preferred row');
     // This is the BE-deployed / old-APK window. The old binary knows only item.supplierId.
     // Same supplier as today → no-op.
-    await itemService.update(DB, { id: proItem.id, supplierId: supB.id } as any, 'Pro');
+    await itemService.update(DB, { id: proItem.id, supplierId: supB.id } as any, OUTLET_ID, 'Pro');
     links = await p.itemSupplier.findMany({ where: { itemId: proItem.id, deleted: false } });
     check('unchanged supplier is a no-op', links.length === 1 && links[0].supplierId === supB.id);
 
@@ -109,8 +111,8 @@ function check(name: string, cond: boolean, detail = '') {
     await itemService.update(DB, {
         id: proItem.id,
         suppliers: [{ supplierId: supB.id, isPreferred: true }, { supplierId: supA.id }],
-    } as any, 'Pro');
-    await itemService.update(DB, { id: proItem.id, supplierId: supA.id } as any, 'Pro');
+    } as any, OUTLET_ID, 'Pro');
+    await itemService.update(DB, { id: proItem.id, supplierId: supA.id } as any, OUTLET_ID, 'Pro');
     let afterLegacy = await p.item.findUnique({ where: { id: proItem.id } });
     links = await p.itemSupplier.findMany({ where: { itemId: proItem.id, deleted: false } });
     check('junction preferred row follows the scalar', links.find(l => l.isPreferred)?.supplierId === supA.id);
@@ -121,7 +123,7 @@ function check(name: string, cond: boolean, detail = '') {
 
     // An item whose junction is empty (migration backfill skipped it) is healed on next save.
     await p.itemSupplier.deleteMany({ where: { itemId: basicItem.id } });
-    await itemService.update(DB, { id: basicItem.id, supplierId: supA.id } as any, 'Basic');
+    await itemService.update(DB, { id: basicItem.id, supplierId: supA.id } as any, OUTLET_ID, 'Basic');
     links = await p.itemSupplier.findMany({ where: { itemId: basicItem.id, deleted: false } });
     check('empty junction healed by a legacy save',
         links.length === 1 && links[0].supplierId === supA.id && links[0].isPreferred === true,
@@ -130,13 +132,13 @@ function check(name: string, cond: boolean, detail = '') {
     // Restore the state step 7 expects: only B live on proItem.
     await itemService.update(DB, {
         id: proItem.id, suppliers: [{ supplierId: supB.id, isPreferred: true }],
-    } as any, 'Pro');
+    } as any, OUTLET_ID, 'Pro');
 
     console.log('\n7. Re-adding a previously removed supplier revives the soft-deleted row');
     await itemService.update(DB, {
         id: proItem.id,
         suppliers: [{ supplierId: supB.id, isPreferred: true }, { supplierId: supA.id }],
-    } as any, 'Pro');
+    } as any, OUTLET_ID, 'Pro');
     links = await p.itemSupplier.findMany({ where: { itemId: proItem.id, deleted: false } });
     check('back to 2 live rows (no unique-index crash)', links.length === 2, `got ${links.length}`);
 

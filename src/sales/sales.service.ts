@@ -64,6 +64,7 @@ const COLD_START_SALES_CAP = 100;
 // select and the transform or it never reaches the app).
 const salesSyncSelect = {
     id: true,
+    outletId: true,
     businessDate: true,
     salesType: true,
     customerId: true,
@@ -447,6 +448,7 @@ type SalesSyncRow = Prisma.SalesGetPayload<{ select: typeof salesSyncSelect }>;
 function toSalesSyncRow(sale: SalesSyncRow, serviceKinds: Map<number, 'wash' | 'jasa'>) {
     return {
         id: sale.id,
+        outletId: sale.outletId,
         businessDate: sale.businessDate,
         salesType: sale.salesType,
         customerId: sale.customerId,
@@ -1476,12 +1478,15 @@ let getPartiallyPaidSales = async (databaseName: string, request: SyncRequest) =
     }
 }
 
-let getById = async (databaseName: string, id: number) => {
+let getById = async (databaseName: string, id: number, outletId?: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
-        const sales = await tenantPrisma.sales.findUnique({
+        // Outlet-scoped read: findFirst({ id, outletId }) so outlet A cannot read
+        // outlet B's sale by guessing the id (matches the write-path scoping).
+        const sales = await tenantPrisma.sales.findFirst({
             where: {
-                id: id
+                id: id,
+                outletId: outletId
             },
             include: {
                 salesItems: activeSalesItems,
@@ -1716,7 +1721,7 @@ async function completeNewSales(
 
             // Batch-load balances + receipts for every source (parallel), plus customer +
             // item flags. Typed loosely (delegates resolved dynamically per source).
-            const [perSourceResults, customer, itemTrackStockData]: [Array<[any[], any[]]>, any, any[]] = await Promise.all([
+            const [perSourceResults, customer, itemTrackStockData, outlet]: [Array<[any[], any[]]>, any, any[], any] = await Promise.all([
                 Promise.all(
                     sources.map((src) =>
                         Promise.all([
@@ -1758,8 +1763,30 @@ async function completeNewSales(
                 tx.item.findMany({
                     where: { id: { in: [...new Set(salesBody.salesItems.map(i => i.itemId))] } },
                     select: { id: true, trackStock: true, cost: true }
+                }),
+
+                // Validate outlet existence
+                tx.outlet.findUnique({
+                    where: { id: salesBody.outletId },
+                    select: { id: true, deleted: true }
                 })
             ]);
+
+            // Validate outlet
+            if (!outlet || outlet.deleted) {
+                throw new BusinessLogicError(`Invalid outletId: ${salesBody.outletId}. Outlet does not exist or has been deleted.`);
+            }
+
+            // Validate stockSourceOutletId if present
+            if (salesBody.stockSourceOutletId !== undefined && salesBody.stockSourceOutletId !== null) {
+                const sourceOutlet = await tx.outlet.findUnique({
+                    where: { id: salesBody.stockSourceOutletId },
+                    select: { id: true, deleted: true }
+                });
+                if (!sourceOutlet || sourceOutlet.deleted) {
+                    throw new BusinessLogicError(`Invalid stockSourceOutletId: ${salesBody.stockSourceOutletId}. Source outlet does not exist or has been deleted.`);
+                }
+            }
 
             // Validate customer
             if (salesBody.customerId && (!customer || customer.deleted)) {
@@ -2583,12 +2610,21 @@ let calculateSalesDiscount = (sales: CalculateSalesObject) => {
     return sales
 }
 
-let update = async (databaseName: string, salesRequest: SalesRequestBody) => {
+let update = async (databaseName: string, salesRequest: SalesRequestBody, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         await tenantPrisma.$transaction(async (tx) => {
             //separate sales & salesitem to perform update to different tables
             let { items, ...sales } = salesRequest.sales
+            // Scope by outletId so a user in outlet A cannot edit a sale belonging
+            // to outlet B by guessing its id.
+            const existing = await tx.sales.findFirst({
+                where: { id: sales.id, outletId, deleted: false },
+                select: { id: true }
+            })
+            if (!existing) {
+                throw new NotFoundError("Sales");
+            }
             items.forEach(async function (salesItem) {
                 await tx.salesItem.update({
                     where: {
@@ -2610,10 +2646,18 @@ let update = async (databaseName: string, salesRequest: SalesRequestBody) => {
     }
 }
 
-let remove = async (databaseName: string, id: number) => {
+let remove = async (databaseName: string, id: number, outletId: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         await tenantPrisma.$transaction(async (tx) => {
+            // Scope by outletId so cross-outlet deletions surface as 404.
+            const existing = await tx.sales.findFirst({
+                where: { id, outletId, deleted: false },
+                select: { id: true }
+            })
+            if (!existing) {
+                throw new NotFoundError("Sales");
+            }
             await tx.sales.update({
                 where: {
                     id: id
@@ -2875,6 +2919,7 @@ let addPaymentToPartiallyPaidSales = async (
     performedBy: PerformedBy,
     salesId: number,
     payments: Payment[],
+    outletId: number,
     clientRef: string | null = null,
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
@@ -2893,10 +2938,13 @@ let addPaymentToPartiallyPaidSales = async (
     let postCommitMilestoneCustomerId: number | null = null;
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Scope by outletId so the partially-paid sale must belong to the
+            // requesting outlet — otherwise cross-outlet payments slip through.
+            const sales = await tx.sales.findFirst({
                 where: {
-                    id: salesId
+                    id: salesId,
+                    outletId: outletId,
+                    deleted: false
                 }
             });
             if (!sales) {
@@ -3089,15 +3137,19 @@ let voidSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
+    outletId: number,
+    // Acting terminal performing the mutation (client-supplied, nullable).
     actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Get the sales record, scoped to the requesting outlet so a user in
+            // outlet A cannot void a sale belonging to outlet B by guessing its id.
+            const sales = await tx.sales.findFirst({
                 where: {
                     id: salesId,
+                    outletId: outletId,
                     deleted: false
                 },
                 include: {
@@ -3252,15 +3304,18 @@ let returnSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
+    outletId: number,
+    // Acting terminal performing the mutation (client-supplied, nullable).
     actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Get the sales record, scoped to the requesting outlet.
+            const sales = await tx.sales.findFirst({
                 where: {
                     id: salesId,
+                    outletId: outletId,
                     deleted: false
                 },
                 include: {
@@ -3406,15 +3461,18 @@ let refundSales = async (
     tenantId: number,
     performedBy: PerformedBy,
     salesId: number,
+    outletId: number,
+    // Acting terminal performing the mutation (client-supplied, nullable).
     actingSiteId?: number | null
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // Get the sales record
-            const sales = await tx.sales.findUnique({
+            // Get the sales record, scoped to the requesting outlet.
+            const sales = await tx.sales.findFirst({
                 where: {
                     id: salesId,
+                    outletId: outletId,
                     deleted: false
                 },
                 include: {
@@ -3724,23 +3782,28 @@ let confirmDeliveryBatch = async (
     tenantId: number,
     performedBy: { userId: number, username: string },
     salesIds: number[],
+    outletId: number,
     deliveryNotes?: string,
     deliveredAt?: Date
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
     try {
-        const result = await tenantPrisma.$transaction(async (tx) => {
-            // Validate all sales exist and are eligible for delivery
+        await tenantPrisma.$transaction(async (tx) => {
+            // Validate all sales exist in the requesting outlet. Any id that
+            // belongs to another outlet (or doesn't exist) drops out of the
+            // result and we surface a 404 — never letting a user confirm
+            // delivery of a sale that isn't theirs.
             const sales = await tx.sales.findMany({
                 where: {
                     id: { in: salesIds },
+                    outletId: outletId,
                     deleted: false
                 }
             });
 
             if (sales.length !== salesIds.length) {
-                throw new NotFoundError('One or more sales records not found');
+                throw new NotFoundError('One or more sales records not found in this outlet');
             }
 
             // Validate each sale
@@ -3796,8 +3859,8 @@ let confirmDeliveryBatch = async (
             return sales;
         });
 
-        // Send delivery notification (non-blocking)
-        const outletId = result[0]?.outletId;
+        // Send delivery notification (non-blocking). All sales were filtered
+        // by the requesting outlet, so we route the topic by that outlet.
         if (outletId) {
             PushyService.sendToTopic(
                 `tenant_${tenantId}_outlet_${outletId}_delivery`,
@@ -3850,7 +3913,10 @@ let updateSalesContact = async (
         customerName?: string; phoneNumber?: string; remark?: string;
         shipStreet?: string; shipCity?: string; shipState?: string;
         shipPostalCode?: string; shipCountry?: string;
-    }
+    },
+    // Scopes the lookup to the requesting outlet so a user in outlet A cannot
+    // edit a sale belonging to outlet B by guessing its id (MULTI_OUTLET_BE.md §5.2).
+    outletId?: number
 ) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
@@ -3865,9 +3931,14 @@ let updateSalesContact = async (
         if (details[field] !== undefined) data[field] = details[field];
     }
 
-    // Guard: the sale must exist and not be soft-deleted in this tenant.
-    const existing = await tenantPrisma.sales.findUnique({
-        where: { id: salesId, deleted: false },
+    // Guard: the sale must exist, not be soft-deleted, and belong to the
+    // requesting outlet.
+    const existing = await tenantPrisma.sales.findFirst({
+        where: {
+            id: salesId,
+            deleted: false,
+            ...(outletId !== undefined ? { outletId } : {}),
+        },
         select: { id: true },
     });
     if (!existing) {
@@ -3876,7 +3947,7 @@ let updateSalesContact = async (
 
     // No-op patch (neither field provided) — return current snapshot unchanged.
     if (Object.keys(data).length === 0) {
-        return getById(databaseName, salesId);
+        return getById(databaseName, salesId, outletId);
     }
 
     await tenantPrisma.sales.update({
@@ -3884,7 +3955,7 @@ let updateSalesContact = async (
         data, // @updatedAt bumps UPDATED_AT automatically
     });
 
-    return getById(databaseName, salesId);
+    return getById(databaseName, salesId, outletId);
 }
 
 export = {

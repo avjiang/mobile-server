@@ -20,7 +20,9 @@ interface QuotationItemInput {
 
 export interface QuotationInput {
     id?: number; // Optional for creation, required for updates
-    quotationNumber: string;
+    // Server-assigned on create ({QT}-OUT{outletId}-{yyyyMMdd}-{seq}) and immutable;
+    // any client-sent value is ignored on create and update.
+    quotationNumber?: string;
     outletId: number;
     supplierId: number;
     sessionId?: number; // Optional for backwards compatibility
@@ -48,4 +50,7 @@ export interface QuotationInput {
 
 export interface CreateQuotationRequestBody {
     quotations: QuotationInput[];
+    // Client's UTC offset in minutes for the yyyyMMdd part of the assigned numbers.
+    // Optional; defaults to 420 (WIB).
+    utcOffsetMinutes?: number;
 }

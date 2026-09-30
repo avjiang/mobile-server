@@ -4,7 +4,11 @@
  * before 2026-09-29 ("Payment amount must be greater than zero").
  *
  *   npx ts-node src/script/settle_invoice_fully_offset.ts <tenantDbName> <invoiceId> \
- *       <settlementNumber> <settlementDate YYYY-MM-DD, tenant local> <siteId> [remark] [prod] [--apply]
+ *       <settlementDate YYYY-MM-DD, tenant local> <siteId> [remark] [prod] [--apply]
+ *
+ * The settlement number is server-assigned (`SET-OUT{outlet}-{yyyyMMdd}-{seq}`, see
+ * src/helpers/documentNumber.ts) under the invoice's outlet — needs the multi-outlet
+ * migration (`document_sequence`) on the target DB.
  *
  * Without --apply it only prints the plan. With it, it calls the real
  * `invoiceSettlementService.createSettlement` (rebate = invoice net, settlementAmount 0,
@@ -21,7 +25,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const args = process.argv.slice(2);
 const apply = args.includes('--apply');
 const isProd = args.includes('prod');
-const [tenantDbName, invoiceIdArg, settlementNumber, dateArg, siteIdArg, remarkArg] =
+const [tenantDbName, invoiceIdArg, dateArg, siteIdArg, remarkArg] =
     args.filter(a => a !== '--apply' && a !== 'prod');
 
 if (isProd) {
@@ -46,8 +50,8 @@ const localMidnightUtc = (ymd: string) => {
 };
 
 async function main() {
-    if (!tenantDbName || !invoiceIdArg || !settlementNumber || !dateArg || !siteIdArg) {
-        throw new Error('Usage: <tenantDbName> <invoiceId> <settlementNumber> <YYYY-MM-DD> <siteId> [remark] [prod] [--apply]');
+    if (!tenantDbName || !invoiceIdArg || !dateArg || !siteIdArg) {
+        throw new Error('Usage: <tenantDbName> <invoiceId> <YYYY-MM-DD> <siteId> [remark] [prod] [--apply]');
     }
     const prisma = getTenantPrisma(tenantDbName);
     const invoiceId = Number(invoiceIdArg);
@@ -62,7 +66,6 @@ async function main() {
     if (!(net > 0)) throw new Error(`Refusing: invoice net is ${net}`);
 
     const settlement = {
-        settlementNumber,
         settlementDate: localMidnightUtc(dateArg),
         settlementType: 'PAYMENT',
         paymentMethod: undefined,
@@ -83,7 +86,7 @@ async function main() {
 
     console.log('--- INVOICE (before) ---');
     console.log({ id: inv.id, number: inv.invoiceNumber, status: inv.status, totalAmount: String(inv.totalAmount),
-        downPaymentApplied: String(inv.downPaymentApplied), supplierId: inv.supplierId });
+        downPaymentApplied: String(inv.downPaymentApplied), supplierId: inv.supplierId, outletId: inv.outletId });
     console.log('--- SETTLEMENT TO CREATE ---');
     console.log(settlement);
 

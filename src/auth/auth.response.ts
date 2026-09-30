@@ -10,7 +10,8 @@ export interface TokenResponseBody {
     planType?: string | null,
     databaseName?: string | null,
     globalOutletId?: number | null,
-    loyaltyTier?: 'none' | 'basic' | 'advanced'
+    loyaltyTier?: 'none' | 'basic' | 'advanced',
+    allowedOutletIds?: number[]
 }
 
 export interface ValidateTokenResponseBody {

@@ -4,6 +4,7 @@ import service from "./session.service"
 import { Declaration, Session } from "../../prisma/client/generated/client"
 import validator from "validator"
 import { RequestValidateError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { CloseSessionRequest, OpenSessionRequest } from "./session.request"
 import NetworkRequest from "../api-helpers/network-request"
 import { AuthRequest } from "src/middleware/auth-request"
@@ -19,7 +20,7 @@ let getDeclarationsBySessionID = (req: AuthRequest, res: Response, next: NextFun
     }
     const sessionID: number = parseInt(req.params.id)
 
-    service.getDeclarationsBySessionID(sessionID, req.user.databaseName)
+    service.getDeclarationsBySessionID(sessionID, req.user.databaseName, req.outletId)
         .then((declarations: Declaration[]) => sendResponse(res, declarations))
         .catch(next)
 }
@@ -33,7 +34,7 @@ let getSessionByID = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
     const sessionID: number = parseInt(req.params.id)
 
-    service.getSessionByID(sessionID, req.user.databaseName)
+    service.getSessionByID(sessionID, req.user.databaseName, req.outletId)
         .then((session: Session) => sendResponse(res, session))
         .catch(next)
 }
@@ -77,7 +78,7 @@ let getRecentSessionsByUser = (req: AuthRequest, res: Response, next: NextFuncti
     const userId: number = parseInt(userIdStr)
     const limit: number = Math.min(Math.max(parseInt(limitStr), 1), 20)
 
-    service.getRecentSessionsByUser(userId, limit, req.user.databaseName)
+    service.getRecentSessionsByUser(userId, limit, req.user.databaseName, req.outletId)
         .then((sessions) => sendResponse(res, sessions))
         .catch(next)
 }
@@ -90,7 +91,12 @@ let createSession = (req: NetworkRequest<OpenSessionRequest>, res: Response, nex
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createSession(requestBody, req.user.databaseName)
+    // Make the X-Outlet-ID header authoritative. The global outlet-authz
+    // middleware's fallback order (body→query→params→header) means a body
+    // outletId would otherwise silently satisfy a req.outletId check, masking
+    // a missing/disagreeing header.
+    const outletId = requireOutletHeader(req, requestBody.outletId);
+    service.createSession(requestBody, req.user.databaseName, outletId)
         .then((session: Session) => sendResponse(res, session))
         .catch(next)
 }
@@ -104,8 +110,9 @@ let createDeclarations = (req: NetworkRequest<Declaration[]>, res: Response, nex
     }
 
     const requestBody = req.body
+    const outletId = requireOutletHeader(req);
 
-    service.createDeclarations(requestBody, req.user.databaseName)
+    service.createDeclarations(requestBody, req.user.databaseName, outletId)
         .then((declarationsCount: number) => sendResponse(res, declarationsCount))
         .catch(next)
 }
@@ -120,8 +127,9 @@ let closeSession = (req: NetworkRequest<CloseSessionRequest>, res: Response, nex
     }
 
     const requestBody = req.body
+    const outletId = requireOutletHeader(req);
 
-    service.closeSession(requestBody, req.user.databaseName)
+    service.closeSession(requestBody, req.user.databaseName, outletId)
         .then((isSuccess: boolean) => sendResponse(res, isSuccess))
         .catch(next)
 }

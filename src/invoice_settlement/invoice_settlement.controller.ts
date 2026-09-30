@@ -22,7 +22,9 @@ const createSettlement = (req: NetworkRequest<CreateInvoiceSettlementRequestBody
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createSettlement(req.user.databaseName, requestBody)
+    // Settlement numbers are assigned by the service (any client-sent number is
+    // ignored); req.outletId numbers a settlement that carries no invoices.
+    service.createSettlement(req.user.databaseName, requestBody, req.outletId)
         .then((response) => {
             sendResponse(res, response)
         })

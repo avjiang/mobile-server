@@ -5,6 +5,8 @@ import service from "./purchase-return.service"
 import { PurchaseReturn } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { CancelPurchaseReturnInput, CreatePurchaseReturnRequestBody, PurchaseReturnInput } from "./purchase-return.request"
@@ -94,7 +96,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const purchaseReturnId: number = parseInt(req.params.id)
-    service.getById(purchaseReturnId, req.user.databaseName)
+    service.getById(purchaseReturnId, req.user.databaseName, req.outletId)
         .then((purchaseReturn: PurchaseReturn) => sendResponse(res, purchaseReturn))
         .catch(next)
 }
@@ -120,7 +122,12 @@ let createMany = (req: NetworkRequest<CreatePurchaseReturnRequestBody>, res: Res
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createMany(req.user.databaseName, requestBody)
+    const user = req.user
+    // Same outlet rule as the outlet middleware (admin bypass; a token without
+    // allowedOutletIds resolves from user_outlet / the primary outlet). Document
+    // numbers are assigned by the service — any client-sent number is ignored.
+    assertOutletsAllowed(req, (requestBody.purchaseReturns ?? []).map((pr: PurchaseReturnInput) => pr.outletId))
+        .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
             sendResponse(res, response)
         })
@@ -141,7 +148,8 @@ let update = (req: NetworkRequest<PurchaseReturnInput>, res: Response, next: Nex
     if (!purchaseReturn.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    service.update(purchaseReturn, req.user.databaseName)
+    const outletId = requireOutletHeader(req, purchaseReturn.outletId);
+    service.update(purchaseReturn, req.user.databaseName, outletId)
         .then((updatedPurchaseReturn: any) => sendResponse(res, updatedPurchaseReturn))
         .catch(next)
 }
@@ -153,6 +161,7 @@ let cancelPurchaseReturn = (req: NetworkRequest<CancelPurchaseReturnInput>, res:
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
+    const outletId = requireOutletHeader(req);
     const purchaseReturnId: number = parseInt(req.params.id)
     const cancelData: CancelPurchaseReturnInput = {
         cancelReason: req.body?.cancelReason,
@@ -163,7 +172,7 @@ let cancelPurchaseReturn = (req: NetworkRequest<CancelPurchaseReturnInput>, res:
         // field is silently dropped before reaching service.cancel().
         siteId: req.body?.siteId
     }
-    service.cancel(purchaseReturnId, cancelData, req.user.databaseName)
+    service.cancel(purchaseReturnId, cancelData, req.user.databaseName, outletId)
         .then((updatedPurchaseReturn: any) => sendResponse(res, updatedPurchaseReturn))
         .catch(next)
 }
@@ -175,9 +184,10 @@ let deletePurchaseReturn = (req: AuthRequest, res: Response, next: NextFunction)
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
+    const outletId = requireOutletHeader(req);
     const purchaseReturnId: number = parseInt(req.params.id)
     const performedBy = req.body?.performedBy || req.user.username || undefined
-    service.deletePurchaseReturn(purchaseReturnId, req.user.databaseName, performedBy)
+    service.deletePurchaseReturn(purchaseReturnId, req.user.databaseName, outletId, performedBy)
         .then((message: string) => sendResponse(res, { message }))
         .catch(next)
 }

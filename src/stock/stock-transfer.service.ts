@@ -1,8 +1,9 @@
 /**
  * Stock Transfer — generalized location ↔ location stock movement.
  *
- * Handles warehouse→outlet (replenishment), outlet→warehouse (centralizing), and
- * outlet→outlet (multi-outlet) in one primitive. Per AD2/AD5: it rides the shared
+ * Handles warehouse→outlet (replenishment) and outlet→warehouse (centralizing) in
+ * one primitive. Outlet→outlet is DEFERRED (MULTI_OUTLET_BE.md §10) and rejected
+ * at validation. Per AD2/AD5: it rides the shared
  * location-stock-engine, so it never duplicates FIFO logic.
  *
  * FIFO cost + receiptDate are preserved across the move: stock is consumed from the
@@ -70,6 +71,12 @@ async function transferStock(databaseName: string, body: TransferBody) {
     }
     if (body.sourceType === body.destType && body.sourceId === body.destId) {
         throw new RequestValidateError("Source and destination must be different locations");
+    }
+    // Inter-outlet transfer is deferred (MULTI_OUTLET_BE.md §10) — only
+    // warehouse↔outlet (and warehouse↔warehouse for the downgrade drain) is in
+    // scope until product formally scopes outlet→outlet movement + its authz.
+    if (body.sourceType === "OUTLET" && body.destType === "OUTLET") {
+        throw new RequestValidateError("Outlet-to-outlet transfer is not supported yet");
     }
     for (const it of body.items) {
         if (!(it.quantity > 0)) {

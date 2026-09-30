@@ -5,10 +5,12 @@ import service from "./invoice.service"
 import { Invoice, StockBalance } from "../../prisma/client/generated/client"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
+import { requireOutletHeader } from "../api-helpers/outlet-helper"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "src/middleware/auth-request"
 import { SyncRequest } from "src/item/item.request"
 import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request"
+import { assertOutletsAllowed } from "../api-helpers/outlet-access"
 
 const router = express.Router()
 
@@ -48,7 +50,7 @@ let getById = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError('ID format incorrect')
     }
     const invoiceId: number = parseInt(req.params.id)
-    service.getById(invoiceId, req.user.databaseName,)
+    service.getById(invoiceId, req.user.databaseName, req.outletId)
         .then((invoice: Invoice) => sendResponse(res, invoice))
         .catch(next)
 }
@@ -108,7 +110,12 @@ let createMany = (req: NetworkRequest<CreateInvoiceRequestBody>, res: Response, 
         throw new RequestValidateError('Request body is empty')
     }
     const requestBody = req.body
-    service.createMany(req.user.databaseName, requestBody)
+    const user = req.user
+    // Same outlet rule as the outlet middleware (admin bypass; a token without
+    // allowedOutletIds resolves from user_outlet / the primary outlet). Document
+    // numbers are assigned by the service — any client-sent number is ignored.
+    assertOutletsAllowed(req, (requestBody.invoices ?? []).map((inv: InvoiceInput) => inv.outletId))
+        .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
             sendResponse(res, response)
         })
@@ -129,7 +136,9 @@ let update = (req: NetworkRequest<InvoiceInput>, res: Response, next: NextFuncti
     if (!invoice.id) {
         throw new RequestValidateError('Update failed: [id] not found')
     }
-    service.update(invoice, req.user.databaseName)
+    const outletId = requireOutletHeader(req, invoice.outletId);
+
+    service.update(invoice, req.user.databaseName, outletId)
         .then((updatedInvoice: any) => sendResponse(res, updatedInvoice))
         .catch(next)
 }
@@ -158,8 +167,9 @@ let deleteInvoice = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!validator.isNumeric(req.params.id)) {
         throw new RequestValidateError('ID format incorrect')
     }
+    const outletId = requireOutletHeader(req);
     const invoiceId: number = parseInt(req.params.id)
-    service.deleteInvoice(invoiceId, req.user.databaseName)
+    service.deleteInvoice(invoiceId, req.user.databaseName, outletId)
         .then((message: string) => sendResponse(res, { message }))
         .catch(next)
 }

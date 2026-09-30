@@ -209,6 +209,58 @@ const revertStockReceiptCosts = async (
     }
 };
 
+/**
+ * The settlement nested in every invoice read — the detail (GET /invoice/:id)
+ * AND the list/sync reads (GET /invoice/sync, /dateRange, /getAllCompleted).
+ * It carries the partial-payment fields — `paidAmount`, `paymentStatus`,
+ * `writeOffAmount`, `transferFeeAmount` — because the app's
+ * `InvoiceSettlementDO.fromJson` defaults a missing `paidAmount` to the whole
+ * `settlementAmount`, which made a partially paid invoice read as fully paid
+ * wherever the settlement came from one of these reads.
+ */
+const invoiceSettlementDetailSelect = {
+    id: true,
+    settlementNumber: true,
+    settlementDate: true,
+    settlementType: true,
+    paymentMethod: true,
+    settlementAmount: true,
+    currency: true,
+    exchangeRate: true,
+    reference: true,
+    remark: true,
+    status: true,
+    performedBy: true,
+    totalRebateAmount: true,
+    rebateReason: true,
+    totalInvoiceCount: true,
+    totalInvoiceAmount: true,
+    paidAmount: true,
+    paymentStatus: true,
+    writeOffAmount: true,
+    transferFeeAmount: true,
+    deleted: true
+} satisfies Prisma.InvoiceSettlementSelect;
+
+/**
+ * Batch-fetch the (non-deleted) settlements of a page of invoices, keyed by id,
+ * with {@link invoiceSettlementDetailSelect}. Every invoice list / sync read
+ * nests its settlement through this, so none of them can drift back to a
+ * narrower projection that drops `paidAmount`.
+ */
+async function fetchSettlementsById(
+    tenantPrisma: Pick<PrismaClient, 'invoiceSettlement'>,
+    invoices: ReadonlyArray<{ invoiceSettlementId: number | null }>
+) {
+    const ids = [...new Set(invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number'))];
+    if (ids.length === 0) return new Map<number, never>();
+    const settlements = await tenantPrisma.invoiceSettlement.findMany({
+        where: { id: { in: ids }, deleted: false },
+        select: invoiceSettlementDetailSelect
+    });
+    return new Map(settlements.map(settlement => [settlement.id, settlement]));
+}
+
 let getAll = async (
     databaseName: string,
     syncRequest: SyncRequest
@@ -329,9 +381,8 @@ let getAll = async (
         // Batch fetch all related data in parallel for better performance
         const invoiceIds = invoices.map(inv => inv.id);
         const purchaseOrderIds = invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number');
-        const settlementIds = invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number');
 
-        const [purchaseOrders, deliveryOrders, invoiceSettlements, purchaseReturns] = await Promise.all([
+        const [purchaseOrders, deliveryOrders, invoiceSettlementMap, purchaseReturns] = await Promise.all([
             // Batch fetch purchase orders
             tenantPrisma.purchaseOrder.findMany({
                 where: { id: { in: purchaseOrderIds }, deleted: false },
@@ -342,15 +393,8 @@ let getAll = async (
                 where: { invoiceId: { in: invoiceIds }, deleted: false },
                 select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true }
             }),
-            // Batch fetch invoice settlements
-            tenantPrisma.invoiceSettlement.findMany({
-                where: { id: { in: settlementIds }, deleted: false },
-                select: {
-                    id: true, settlementNumber: true, settlementDate: true,
-                    settlementType: true, paymentMethod: true, settlementAmount: true,
-                    currency: true, status: true
-                }
-            }),
+            // Batch fetch invoice settlements (with the partial-payment fields)
+            fetchSettlementsById(tenantPrisma, invoices),
             // Batch fetch purchase returns (minimal fields for summary)
             tenantPrisma.purchaseReturn.findMany({
                 where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
@@ -370,9 +414,6 @@ let getAll = async (
             deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
-        const invoiceSettlementMap = new Map();
-        invoiceSettlements.forEach(settlement => invoiceSettlementMap.set(settlement.id, settlement));
-
         // Create lookup map for purchase returns grouped by invoice ID
         const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
         purchaseReturns.forEach(pr => {
@@ -387,7 +428,7 @@ let getAll = async (
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
             const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
-            const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
+            const invoiceSettlement = inv.invoiceSettlementId != null ? invoiceSettlementMap.get(inv.invoiceSettlementId) : undefined;
             const returnData = purchaseReturnMap.get(inv.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
@@ -401,16 +442,7 @@ let getAll = async (
                     deliveryDate: do_.deliveryDate,
                     trackingNumber: do_.trackingNumber
                 })),
-                invoiceSettlement: invoiceSettlement ? {
-                    id: invoiceSettlement.id,
-                    settlementNumber: invoiceSettlement.settlementNumber,
-                    settlementDate: invoiceSettlement.settlementDate,
-                    settlementType: invoiceSettlement.settlementType,
-                    paymentMethod: invoiceSettlement.paymentMethod,
-                    settlementAmount: invoiceSettlement.settlementAmount,
-                    currency: invoiceSettlement.currency,
-                    status: invoiceSettlement.status
-                } : null,
+                invoiceSettlement: invoiceSettlement ?? null,
                 // Purchase return summary (minimal for list view)
                 returnCount: returnData.count,
                 totalReturnAmount: returnData.totalAmount.toFixed(4),
@@ -488,25 +520,7 @@ let getById = async (id: number, databaseName: string) => {
                     }
                 },
                 invoiceSettlement: {
-                    select: {
-                        id: true,
-                        settlementNumber: true,
-                        settlementDate: true,
-                        settlementType: true,
-                        paymentMethod: true,
-                        settlementAmount: true,
-                        currency: true,
-                        exchangeRate: true,
-                        reference: true,
-                        remark: true,
-                        status: true,
-                        performedBy: true,
-                        totalRebateAmount: true,
-                        rebateReason: true,
-                        totalInvoiceCount: true,
-                        totalInvoiceAmount: true,
-                        deleted: true
-                    }
+                    select: invoiceSettlementDetailSelect
                 },
                 purchaseReturns: {
                     where: { deleted: false },
@@ -684,9 +698,8 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
         // Batch fetch all related data in parallel for better performance
         const invoiceIds = invoices.map(inv => inv.id);
         const purchaseOrderIds = invoices.map(inv => inv.purchaseOrderId).filter((id): id is number => typeof id === 'number');
-        const settlementIds = invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number');
 
-        const [purchaseOrders, deliveryOrders, invoiceSettlements, purchaseReturns] = await Promise.all([
+        const [purchaseOrders, deliveryOrders, invoiceSettlementMap, purchaseReturns] = await Promise.all([
             // Batch fetch purchase orders
             tenantPrisma.purchaseOrder.findMany({
                 where: { id: { in: purchaseOrderIds }, deleted: false },
@@ -697,15 +710,8 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                 where: { invoiceId: { in: invoiceIds }, deleted: false },
                 select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true }
             }),
-            // Batch fetch invoice settlements
-            tenantPrisma.invoiceSettlement.findMany({
-                where: { id: { in: settlementIds }, deleted: false },
-                select: {
-                    id: true, settlementNumber: true, settlementDate: true,
-                    settlementType: true, paymentMethod: true, settlementAmount: true,
-                    currency: true, status: true
-                }
-            }),
+            // Batch fetch invoice settlements (with the partial-payment fields)
+            fetchSettlementsById(tenantPrisma, invoices),
             // Batch fetch purchase returns (minimal fields for summary)
             tenantPrisma.purchaseReturn.findMany({
                 where: { invoiceId: { in: invoiceIds }, deleted: false, status: 'COMPLETED' },
@@ -725,9 +731,6 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
             deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
-        const invoiceSettlementMap = new Map();
-        invoiceSettlements.forEach(settlement => invoiceSettlementMap.set(settlement.id, settlement));
-
         // Create lookup map for purchase returns grouped by invoice ID
         const purchaseReturnMap = new Map<number, { count: number; totalAmount: Decimal }>();
         purchaseReturns.forEach(pr => {
@@ -742,7 +745,7 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
             const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
-            const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
+            const invoiceSettlement = inv.invoiceSettlementId != null ? invoiceSettlementMap.get(inv.invoiceSettlementId) : undefined;
             const returnData = purchaseReturnMap.get(inv.id) || { count: 0, totalAmount: new Decimal(0) };
 
             return {
@@ -756,16 +759,7 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                     deliveryDate: do_.deliveryDate,
                     trackingNumber: do_.trackingNumber
                 })),
-                invoiceSettlement: invoiceSettlement ? {
-                    id: invoiceSettlement.id,
-                    settlementNumber: invoiceSettlement.settlementNumber,
-                    settlementDate: invoiceSettlement.settlementDate,
-                    settlementType: invoiceSettlement.settlementType,
-                    paymentMethod: invoiceSettlement.paymentMethod,
-                    settlementAmount: invoiceSettlement.settlementAmount,
-                    currency: invoiceSettlement.currency,
-                    status: invoiceSettlement.status
-                } : null,
+                invoiceSettlement: invoiceSettlement ?? null,
                 // Purchase return summary (minimal for list view)
                 returnCount: returnData.count,
                 totalReturnAmount: returnData.totalAmount.toFixed(4),
@@ -846,23 +840,8 @@ let getCompleted = async (
             }
         });
 
-        // Batch fetch invoice settlements for each invoice
-        const invoiceSettlements = await tenantPrisma.invoiceSettlement.findMany({
-            where: {
-                id: { in: invoices.map(inv => inv.invoiceSettlementId).filter((id): id is number => typeof id === 'number') },
-                deleted: false
-            },
-            select: {
-                id: true,
-                settlementNumber: true,
-                settlementDate: true,
-                settlementType: true,
-                paymentMethod: true,
-                settlementAmount: true,
-                currency: true,
-                status: true
-            }
-        });
+        // Batch fetch invoice settlements (with the partial-payment fields)
+        const invoiceSettlementMap = await fetchSettlementsById(tenantPrisma, invoices);
 
         // Create lookup maps for O(1) access
         const purchaseOrderMap = new Map();
@@ -879,17 +858,11 @@ let getCompleted = async (
             deliveryOrderMap.get(do_.invoiceId!)!.push(do_);
         });
 
-        // Create lookup map for invoice settlements
-        const invoiceSettlementMap = new Map();
-        invoiceSettlements.forEach(settlement => {
-            invoiceSettlementMap.set(settlement.id, settlement);
-        });
-
         // Enrich invoices with purchase order and delivery order info
         const enrichedInvoices = invoices.map(inv => {
             const purchaseOrder = purchaseOrderMap.get(inv.purchaseOrderId);
             const relatedDeliveryOrders = deliveryOrderMap.get(inv.id) || [];
-            const invoiceSettlement = invoiceSettlementMap.get(inv.invoiceSettlementId);
+            const invoiceSettlement = inv.invoiceSettlementId != null ? invoiceSettlementMap.get(inv.invoiceSettlementId) : undefined;
 
             return {
                 ...inv,
@@ -902,16 +875,7 @@ let getCompleted = async (
                     deliveryDate: do_.deliveryDate,
                     trackingNumber: do_.trackingNumber
                 })),
-                invoiceSettlement: invoiceSettlement ? {
-                    id: invoiceSettlement.id,
-                    settlementNumber: invoiceSettlement.settlementNumber,
-                    settlementDate: invoiceSettlement.settlementDate,
-                    settlementType: invoiceSettlement.settlementType,
-                    paymentMethod: invoiceSettlement.paymentMethod,
-                    settlementAmount: invoiceSettlement.settlementAmount,
-                    currency: invoiceSettlement.currency,
-                    status: invoiceSettlement.status
-                } : null,
+                invoiceSettlement: invoiceSettlement ?? null,
                 _count: undefined // Remove the _count field from response
             };
         });
@@ -1648,5 +1612,5 @@ let deleteInvoice = async (id: number, databaseName: string): Promise<string> =>
 
 export = {
     getAll, getById, getByDateRange, getCompleted, createMany, update, deleteInvoice,
-    __testables: { calcDownPaymentDraw },
+    __testables: { calcDownPaymentDraw, invoiceSettlementDetailSelect, fetchSettlementsById },
 };

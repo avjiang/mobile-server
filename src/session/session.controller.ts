@@ -60,6 +60,28 @@ let getOpenSession = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+let getRecentSessionsByUser = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    const userIdRaw = req.query.userId
+    const limitRaw = req.query.limit
+    const userIdStr = typeof userIdRaw === 'string' ? userIdRaw : ''
+    const limitStr = typeof limitRaw === 'string' ? limitRaw : '5'
+    if (!validator.isNumeric(userIdStr)) {
+        throw new RequestValidateError('userId query param required and must be numeric')
+    }
+    if (!validator.isNumeric(limitStr)) {
+        throw new RequestValidateError('limit query param must be numeric')
+    }
+    const userId: number = parseInt(userIdStr)
+    const limit: number = Math.min(Math.max(parseInt(limitStr), 1), 20)
+
+    service.getRecentSessionsByUser(userId, limit, req.user.databaseName)
+        .then((sessions) => sendResponse(res, sessions))
+        .catch(next)
+}
+
 let createSession = (req: NetworkRequest<OpenSessionRequest>, res: Response, next: NextFunction) => {
     if (!req.user) {
         throw new RequestValidateError('User not authenticated');
@@ -110,6 +132,7 @@ let closeSession = (req: NetworkRequest<CloseSessionRequest>, res: Response, nex
 // or Express will route them to getSessionByID and fail numeric validation.
 router.get('/getDeclarations/:id', getDeclarationsBySessionID)
 router.get('/getOpenSession', getOpenSession)
+router.get('/getRecentSessionsByUser', getRecentSessionsByUser)
 router.get('/:id', getSessionByID)
 router.post('/openSession', createSession)
 router.post('/createDeclarations', createDeclarations)

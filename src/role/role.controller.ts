@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express"
+import { rejectPlan } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./role.service"
 import { Category, RolePermission, Role } from "../../prisma/client/generated/client"
@@ -187,7 +188,7 @@ let getAllUsersByRoleID = (req: NetworkRequest<any>, res: Response, next: NextFu
 router.get('/sync', getAllRole)
 router.get('/user/:userId', getRoleByUserId)
 router.get('/users/:roleId', getAllUsersByRoleID)
-router.post('/create', requirePermission(PERMISSION.MANAGE_ROLES), createRole)
+router.post('/create', rejectPlan('Lite'), requirePermission(PERMISSION.MANAGE_ROLES), createRole)
 router.put('/update', requirePermission(PERMISSION.MANAGE_ROLES), updateRole)
 router.post('/assign/:userId', requirePermission(PERMISSION.MANAGE_ROLES), assignRole)
 router.post('/remove/:userId', requirePermission(PERMISSION.MANAGE_ROLES), removeRole)

@@ -9,13 +9,17 @@ const subscriptionAddOns = [
         scope: "tenant",
         description: "Add extra user to tenant (tenant-wide pool)"
     },
+    // Retired 2026-09-29: push devices are unlimited on Pro (FCM has no
+    // per-device cost). Kept in place because a row's id is its position here
+    // (id 2), and old tenant_add_on rows still point at it; billing skips it
+    // via isNonBillableAddOn.
     {
-        name: "Additional Push Notification Device",
+        name: "Additional Push Notification Device (retired)",
         addOnType: "device",
-        pricePerUnit: 20000,
+        pricePerUnit: 0,
         maxQuantity: 1,
         scope: "tenant",
-        description: "Add extra push notification device for tenant"
+        description: "Retired 2026-09-29 — push devices are unlimited on Pro. Not sold, never billed."
     },
     {
         name: "Extra Warehouse",

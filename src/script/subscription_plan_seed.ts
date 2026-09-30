@@ -1,5 +1,7 @@
 import { getGlobalPrisma, disconnectAllPrismaClients } from '../db';
 
+// `maxDevices` is no longer enforced (2026-09-29): push devices are unlimited
+// on Pro, see pushy/device.service `checkDeviceLimit`. The column stays.
 const subscriptionPlans = [
     // Retail plans
     {
@@ -13,9 +15,19 @@ const subscriptionPlans = [
         description: null
     },
     {
+        planName: "Lite",
+        planType: "Retail",
+        price: 100000,
+        maxTransactions: null,
+        maxProducts: 100,
+        maxUsers: 1,
+        maxDevices: 0,
+        description: "Lite plan: a simple till for small shops (100 items, 1 user, no credit sales)"
+    },
+    {
         planName: "Basic",
         planType: "Retail",
-        price: 300000,
+        price: 250000,
         maxTransactions: null,
         maxProducts: null,
         maxUsers: 2,
@@ -25,7 +37,7 @@ const subscriptionPlans = [
     {
         planName: "Pro",
         planType: "Retail",
-        price: 450000,
+        price: 375000,
         maxTransactions: null,
         maxProducts: null,
         maxUsers: 3,
@@ -46,17 +58,17 @@ const subscriptionPlans = [
     {
         planName: "Basic",
         planType: "Laundry",
-        price: 300000,
+        price: 100000,
         maxTransactions: null,
         maxProducts: null,
-        maxUsers: 2,
+        maxUsers: 1,
         maxDevices: 0,
         description: "Basic plan for laundry businesses"
     },
     {
         planName: "Pro",
         planType: "Laundry",
-        price: 450000,
+        price: 199000,
         maxTransactions: null,
         maxProducts: null,
         maxUsers: 3,

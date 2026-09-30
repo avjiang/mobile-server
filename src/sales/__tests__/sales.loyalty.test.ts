@@ -17,6 +17,8 @@ const {
     pickBestDiscount,
     calcPointsEarned,
     validateTierMatch,
+    tierBaseAfterPackage,
+    preLoyaltyTotalOf,
 } = (salesService as any).__testables;
 
 // ── pickBestDiscount (tester §16 A–G, docs §2 "Discount Stacking Order") ───
@@ -266,5 +268,58 @@ describe("validateTierMatch", () => {
 
     test("both zero → no mismatch (no-op pass)", () => {
         assert.doesNotThrow(() => validateTierMatch(0, 0));
+    });
+});
+
+// ── Package-first stacking: tierBaseAfterPackage + preLoyaltyTotalOf ───────
+// Order is package → tier OR voucher → points (FE _applyLoyaltyDiscounts).
+// processLoyaltyForSale rebuilds each base from the FINAL total.
+
+describe("tierBaseAfterPackage", () => {
+    const D = (n: number) => new Decimal(n);
+
+    test("no package: 2% on a 30,000 cart with 5,000 redeemed → base 30,000 (stores 600)", () => {
+        // final = 30,000 × 0.98 − 5,000 = 24,400
+        const base = tierBaseAfterPackage(D(24_400), D(5_000), 2);
+        assert.equal(base.toNumber(), 30_000);
+        assert.equal(base.times(2).dividedBy(100).toNumber(), 600);
+    });
+
+    test("package is not added back: 300,000 cart, package 100,000, tier 5%, points 50,000", () => {
+        // 300,000 − 100,000 = 200,000; tier 10,000 → 190,000; points → 140,000 final.
+        const base = tierBaseAfterPackage(D(140_000), D(50_000), 5);
+        assert.equal(base.toNumber(), 200_000);
+        assert.equal(base.times(5).dividedBy(100).toNumber(), 10_000);
+    });
+
+    test("package covers the whole sale → base 0, tier discount 0", () => {
+        assert.equal(tierBaseAfterPackage(D(0), D(0), 5).toNumber(), 0);
+    });
+});
+
+describe("preLoyaltyTotalOf", () => {
+    const D = (n: number) => new Decimal(n);
+
+    test("adds every loyalty discount back onto the final total", () => {
+        const total = preLoyaltyTotalOf(D(140_000), {
+            subscriptionDiscount: D(100_000),
+            tierDiscount: D(10_000),
+            voucherDiscount: D(0),
+            redemptionValue: D(50_000),
+        });
+        assert.equal(total.toNumber(), 300_000);
+    });
+
+    test("TIME 10% package + 10% voucher: the package bound uses the full cart", () => {
+        // 100,000 cart all matching: package 10,000 → 90,000; voucher 9,000 →
+        // 81,000 final. The old bound (final + package) × 10% = 9,100 rejected
+        // the valid 10,000; the pre-loyalty total gives 100,000 × 10% = 10,000.
+        const total = preLoyaltyTotalOf(D(81_000), {
+            subscriptionDiscount: D(10_000),
+            tierDiscount: D(0),
+            voucherDiscount: D(9_000),
+            redemptionValue: D(0),
+        });
+        assert.equal(total.times(10).dividedBy(100).toNumber(), 10_000);
     });
 });

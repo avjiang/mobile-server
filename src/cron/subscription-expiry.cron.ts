@@ -1,35 +1,33 @@
 /**
  * Subscription Expiry Cron Job
  * Runs daily at 2:30 AM to expire time-based customer subscriptions.
- * Only processes tenant DBs with Advanced Loyalty add-on.
+ * Processes EVERY tenant DB: prepaid packages exist on Laundry Pro (advanced
+ * loyalty bundled, no add-on row) and on shops that stepped down from Pro or a
+ * Pro trial, whose existing packages stay redeemable until their end date.
  */
 
 const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
-import { ADD_ON_IDS } from '../constants/add-on-ids';
 
 async function processSubscriptionExpiry(): Promise<void> {
     console.log('[Cron] Starting subscription expiry check...');
     const globalPrisma = getGlobalPrisma();
 
     try {
-        // Get tenants with Advanced Loyalty add-on
-        const tenantAddOns = await globalPrisma.tenantAddOn.findMany({
-            where: { addOnId: ADD_ON_IDS.ADVANCED_LOYALTY },
-            include: {
-                tenant: { select: { databaseName: true, id: true } },
-            },
+        const tenants = await globalPrisma.tenant.findMany({
+            where: { databaseName: { not: null } },
+            select: { databaseName: true, id: true },
         });
 
         let totalExpired = 0;
 
-        for (const addOn of tenantAddOns) {
-            const dbName = addOn.tenant?.databaseName;
+        for (const tenant of tenants) {
+            const dbName = tenant.databaseName;
             if (!dbName) continue;
 
             try {
                 const expired = await expireSubscriptionsForTenant(dbName);
                 if (expired > 0) {
-                    console.log(`[Cron] Expired ${expired} subscriptions for tenant ${addOn.tenant.id} (${dbName})`);
+                    console.log(`[Cron] Expired ${expired} subscriptions for tenant ${tenant.id} (${dbName})`);
                     totalExpired += expired;
                 }
             } catch (error) {

@@ -83,6 +83,10 @@ export class CreateSalesRequest {
     @Expose() stockSourceType?: string;
     @Expose() stockSourceOutletId?: number;
     @Expose() stockSourceWarehouseId?: number;
+    // Optional client instant the sale was rung (ISO, stamped at checkout and
+    // never backdated). Not stored — only drives the manual-discount offline rule
+    // (./manual-discount.ts); without it the rule falls back to businessDate.
+    @Expose() clientCreatedAt?: string;
     @Expose()
     @Type(() => CreateSalesItemRequest)
     salesItems: CreateSalesItemRequest[] = [];

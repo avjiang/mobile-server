@@ -17,6 +17,24 @@ const toNum = (val: any): number => {
 // ============================================
 
 /**
+ * The total a voucher is taken on, rebuilt from the sale's FINAL total. The FE
+ * applies the prepaid package first, then the voucher (or tier) on what the
+ * package left, then points (`_applyLoyaltyDiscounts`), so adding back the
+ * points and the sent voucher amount gives that base again — the package is
+ * NOT added back. 0 means the package covered the whole sale: no voucher
+ * applies and none may be redeemed. Recomputing the voucher on this base only
+ * reproduces the sent amount when it is right, so an inflated amount is still
+ * rejected. (Dividing by (1 - pct/100), as the tier path does, can't serve
+ * FIXED vouchers or a 100% one.)
+ */
+const voucherBaseAfterPackage = (
+    finalTotal: Decimal,
+    redemptionValue: Decimal,
+    sentVoucherAmount: number | null | undefined,
+): Decimal =>
+    finalTotal.plus(redemptionValue).plus(new Decimal(sentVoucherAmount ?? 0));
+
+/**
  * Compute the voucher discount amount given its type, configured values,
  * and the running cart total. FIXED is capped at totalAmount; PERCENTAGE
  * caps the computed result at totalAmount. Matches the math in
@@ -72,20 +90,15 @@ const expectedRepeatableVoucherCount = (
 };
 
 /**
- * Format the human-readable voucher label that appears at checkout.
- * Backs the "Spend RM 1,000 Reward — 10% off" formatting documented in
- * §2 Reward Rules.
+ * Shape a voucher row for the list response. `ruleName` (from the reward rule
+ * relation) is the structured name the app renders at checkout; the stored
+ * `label` stays for audit and for manually issued vouchers, whose label is
+ * typed by the cashier. Rule-issued rows written before 2026-09-28 carry an
+ * English "<rule> — RM X off" label, so clients must not display it.
  */
-const formatVoucherLabel = (
-    ruleName: string,
-    discountType: string,
-    discountPercentage?: any,
-    discountAmount?: any,
-): string => {
-    const discountLabel = discountType === 'PERCENTAGE'
-        ? `${toNum(discountPercentage)}% off`
-        : `RM ${toNum(discountAmount)} off`;
-    return `${ruleName} — ${discountLabel}`;
+const toVoucherListItem = (voucher: any) => {
+    const { rewardRule, ...rest } = voucher;
+    return { ...rest, ruleName: rewardRule?.name ?? null };
 };
 
 // ============================================
@@ -225,10 +238,11 @@ const getVouchersByCustomerId = async (db: string, customerId: number, status?: 
                 expiresAt: { gt: new Date() },
             } : {}),
         },
+        include: { rewardRule: { select: { name: true } } },
         orderBy: { createdAt: 'desc' },
     });
 
-    return vouchers;
+    return vouchers.map(toVoucherListItem);
 };
 
 // ============================================
@@ -471,13 +485,6 @@ const issueVoucherFromRule = async (
     totalSpend: Decimal,
 ) => {
     const expiresAt = new Date(Date.now() + rule.expiryDays * 24 * 60 * 60 * 1000);
-    const label = formatVoucherLabel(
-        rule.name,
-        rule.discountType,
-        rule.discountPercentage,
-        rule.discountAmount,
-    );
-
     await prisma.voucher.create({
         data: {
             rewardRuleId: rule.id,
@@ -489,7 +496,9 @@ const issueVoucherFromRule = async (
             minPurchaseAmount: rule.minPurchaseAmount,
             status: 'ACTIVE',
             milestoneSpendSnapshot: totalSpend.toNumber(),
-            label,
+            // Locale- and currency-neutral: the app builds the discount text
+            // from discountType/Percentage/Amount in the tenant's currency.
+            label: rule.name,
             expiresAt,
         },
     });
@@ -541,6 +550,7 @@ export default {
     issueVoucher,
     // Sales integration
     validateAndRedeemVoucher,
+    voucherBaseAfterPackage,
     restoreVoucherForSale,
     // Milestone check
     checkMilestones,
@@ -551,9 +561,10 @@ export default {
     __testables: {
         toNum,
         voucherDiscountFor,
+        voucherBaseAfterPackage,
         shouldRestoreVoucher,
         expectedRepeatableVoucherCount,
-        formatVoucherLabel,
+        toVoucherListItem,
         validateRuleDiscountFields,
         formatRule,
     },

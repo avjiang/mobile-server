@@ -660,6 +660,34 @@ let getSettlementById = async (id: number, databaseName: string) => {
 }
 
 
+/**
+ * Validates the initial payment of a new settlement. `paidAmount` defaults to the full
+ * settlement amount; less than that is a down payment (PARTIAL). A settlement fully
+ * offset by a rebate (supplier cash back) and/or PO down-payment credit owes nothing
+ * (`settlementAmount` 0) and settles with no cash — the only case where paidAmount 0 is
+ * valid. Any settlement with a balance still needs a payment > 0.
+ */
+const resolveInitialPayment = (settlementAmountDec: Decimal, paidAmount: number | null | undefined) => {
+    const paidAmountDec = (paidAmount !== undefined && paidAmount !== null)
+        ? new Decimal(paidAmount)
+        : settlementAmountDec;
+    const isZeroSettlement = settlementAmountDec.isZero() && paidAmountDec.isZero();
+    if (paidAmountDec.lessThan(0) || (paidAmountDec.isZero() && !isZeroSettlement)) {
+        throw new RequestValidateError(
+            'Payment amount must be greater than zero',
+            ErrorCode.PaymentAmountNotPositive
+        );
+    }
+    if (paidAmountDec.greaterThan(settlementAmountDec)) {
+        throw new RequestValidateError(
+            'Payment amount cannot exceed settlement amount',
+            ErrorCode.PaymentExceedsOutstanding,
+            { outstanding: settlementAmountDec.toFixed(2) }
+        );
+    }
+    return { paidAmountDec, isZeroSettlement };
+};
+
 let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSettlementRequestBody) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -799,22 +827,8 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                 // Partial-payment support: paidAmount defaults to the full settlement
                 // amount; anything less is a down payment.
                 const settlementAmountDec = new Decimal(settlementData.settlementAmount || 0);
-                const paidAmountDec = (settlementData.paidAmount !== undefined && settlementData.paidAmount !== null)
-                    ? new Decimal(settlementData.paidAmount)
-                    : settlementAmountDec;
-                if (paidAmountDec.lessThanOrEqualTo(0)) {
-                    throw new RequestValidateError(
-                'Payment amount must be greater than zero',
-                ErrorCode.PaymentAmountNotPositive
-            );
-                }
-                if (paidAmountDec.greaterThan(settlementAmountDec)) {
-                    throw new RequestValidateError(
-                        'Payment amount cannot exceed settlement amount',
-                        ErrorCode.PaymentExceedsOutstanding,
-                        { outstanding: settlementAmountDec.toFixed(2) }
-                    );
-                }
+                const { paidAmountDec, isZeroSettlement } =
+                    resolveInitialPayment(settlementAmountDec, settlementData.paidAmount);
                 const transferFeeDec = new Decimal(settlementData.transferFeeAmount || 0);
                 const isFullyPaid = paidAmountDec.greaterThanOrEqualTo(settlementAmountDec);
 
@@ -843,8 +857,9 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                     }
                 });
 
-                // Initial payment ledger row (down payment or full payment)
-                await tx.invoiceSettlementPayment.create({
+                // Initial payment ledger row (down payment or full payment). A zero
+                // settlement moved no money, so it gets no ledger row.
+                if (!isZeroSettlement) await tx.invoiceSettlementPayment.create({
                     data: {
                         invoiceSettlementId: newSettlement.id,
                         paymentDate: settlementData.settlementDate,
@@ -1356,4 +1371,4 @@ let markSettlementAsPaid = async (
     }
 }
 
-export = { getByDateRange, createSettlement, getSettlements, getSettlementById, updateSettlement, addPayment, markSettlementAsPaid };
+export = { getByDateRange, createSettlement, getSettlements, getSettlementById, updateSettlement, addPayment, markSettlementAsPaid, __testables: { resolveInitialPayment } };

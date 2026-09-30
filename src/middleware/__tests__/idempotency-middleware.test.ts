@@ -332,6 +332,58 @@ describe("idempotency middleware", () => {
         );
     });
 
+    test("time-dependent 4xx (DISCOUNT_ABOVE_LIMIT) is NOT stored", async () => {
+        let createCalled = false;
+        const mw = createIdempotencyMiddleware({
+            prismaFactory: () =>
+                fakeDb({
+                    findUnique: async () => null,
+                    create: async () => {
+                        createCalled = true;
+                        return {};
+                    },
+                }),
+        });
+        const req = fakeReq({ headerKey: "discount-key", baseUrl: "/sales", path: "/completeNewSales" });
+        const { res } = fakeRes();
+        const n = fakeNext();
+
+        await mw(req, res, n.next);
+        res.statusCode = 400;
+        res.json({ success: false, error: { errorType: "RequestValidateError", errorCode: "DISCOUNT_ABOVE_LIMIT", params: { percent: "10" } } });
+        await flushMicrotasks();
+
+        assert.equal(
+            createCalled,
+            false,
+            "a fresh-sale-only rejection must not be replayed to the outbox's later retry"
+        );
+    });
+
+    test("other 4xx responses are still stored", async () => {
+        let createCalled = false;
+        const mw = createIdempotencyMiddleware({
+            prismaFactory: () =>
+                fakeDb({
+                    findUnique: async () => null,
+                    create: async () => {
+                        createCalled = true;
+                        return {};
+                    },
+                }),
+        });
+        const req = fakeReq({ headerKey: "other-4xx-key" });
+        const { res } = fakeRes();
+        const n = fakeNext();
+
+        await mw(req, res, n.next);
+        res.statusCode = 400;
+        res.json({ success: false, error: { errorType: "RequestValidateError", errorCode: "PASSWORD_TOO_SHORT" } });
+        await flushMicrotasks();
+
+        assert.equal(createCalled, true);
+    });
+
     test("P2002 unique-violation on concurrent insert is swallowed", async () => {
         const p2002 = new Prisma.PrismaClientKnownRequestError(
             "Unique constraint failed",

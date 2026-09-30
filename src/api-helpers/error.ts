@@ -84,6 +84,24 @@ export enum ErrorCode {
     // -- Delivery order / invoice -----------------------------------------
     /** DOs missing or already invoiced. params: ids */
     DeliveryOrdersNotEligible = 'DELIVERY_ORDERS_NOT_ELIGIBLE',
+
+    // -- Account / password -------------------------------------------------
+    /** Self-service change-password: current password is wrong. */
+    CurrentPasswordIncorrect = 'CURRENT_PASSWORD_INCORRECT',
+    /** Self-service change-password: new password equals the current one. */
+    NewPasswordSameAsCurrent = 'NEW_PASSWORD_SAME_AS_CURRENT',
+    /** New password shorter than the minimum. params: min */
+    PasswordTooShort = 'PASSWORD_TOO_SHORT',
+
+    // -- Sales -----------------------------------------------------------------
+    /** Manual discount above the cashier cap (user lacks "Give Discount"). params: percent */
+    DiscountAboveLimit = 'DISCOUNT_ABOVE_LIMIT',
+
+    // -- Plan limits (402) ----------------------------------------------------
+    /** The tenant's plan doesn't include this feature. params: plan */
+    PlanFeatureLocked = 'PLAN_FEATURE_LOCKED',
+    /** The plan's item cap is reached. params: limit */
+    ItemLimitReached = 'ITEM_LIMIT_REACHED',
 }
 
 /**
@@ -176,6 +194,17 @@ export class RequestValidateError extends BaseError {
     constructor(message: string, errorCode?: ErrorCode, params?: ErrorParams) {
         super(400, message)
         this.name = 'RequestValidateError'
+        this.errorCode = errorCode
+        this.params = params
+    }
+}
+
+// A plan limit (402 Payment Required — distinct from 403 per-user permission).
+// Carries a code so the client shows a translated upsell, not raw English.
+export class PlanLimitError extends BaseError {
+    constructor(message: string, errorCode: ErrorCode, params?: ErrorParams) {
+        super(402, message)
+        this.name = 'PlanLimitError'
         this.errorCode = errorCode
         this.params = params
     }

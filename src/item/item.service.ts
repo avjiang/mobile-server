@@ -1,10 +1,12 @@
 import { PrismaClient, Item, Prisma } from "../../prisma/client/generated/client"
 import { Decimal } from 'decimal.js';
-import { NotFoundError, BusinessLogicError } from "../api-helpers/error"
+import { NotFoundError, BusinessLogicError, PlanLimitError, ErrorCode } from "../api-helpers/error"
+import { isLitePlan } from "../middleware/require-plan.middleware"
 import salesService from "../sales/sales.service"
 import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.response"
+import { buildTopSoldItems } from "./top-sold"
 import { plainToInstance } from "class-transformer"
-import { getTenantPrisma } from '../db';
+import { getTenantPrisma, getGlobalPrisma } from '../db';
 import { SyncRequest } from "./item.request"
 import SimpleCacheService from '../cache/simple-cache.service';
 
@@ -60,9 +62,19 @@ async function syncItemSuppliers(
 
     const isPro = (planName ?? '').toLowerCase() === 'pro';
     if (rows.length > 1 && !isPro) {
-        throw new BusinessLogicError(
-            'Multiple suppliers per item is a Pro feature. Upgrade to add more than one supplier.'
-        );
+        // A step down blocks adding, never using: an item that already carries
+        // several suppliers (set up on Pro or during the Pro trial) stays
+        // editable. Only a supplier it doesn't have yet is refused.
+        const stored = await tx.itemSupplier.findMany({
+            where: { itemId, deleted: false },
+            select: { supplierId: true },
+        });
+        const storedIds = new Set(stored.map(s => s.supplierId));
+        if (rows.some(r => !storedIds.has(r.supplierId))) {
+            throw new BusinessLogicError(
+                'Multiple suppliers per item is a Pro feature. Upgrade to add more than one supplier.'
+            );
+        }
     }
 
     // Exactly one preferred: honour the client's flag, else keep the first row.
@@ -385,6 +397,7 @@ let getAll = async (
                     select: {
                         availableQuantity: true,
                         itemVariantId: true, // To match with variants
+                        reorderThreshold: true,
                     },
                 },
                 variants: {
@@ -438,6 +451,12 @@ let getAll = async (
                 .filter(sb => sb.itemVariantId === null)
                 .reduce((sum, sb) => sum + Number(sb.availableQuantity), 0);
 
+            // Reorder level of the base stock row — same value as getById. The FE
+            // reads the level off its synced stock balances; this keeps the item
+            // row from carrying an empty level (its edit form used to save 0).
+            const baseItemReorderThreshold = item.stockBalance
+                .find(sb => sb.itemVariantId === null)?.reorderThreshold ?? 0;
+
             const transformedVariants = item.variants?.map(variant => {
                 // Calculate stock quantity for this variant
                 const variantStockQuantity = variant.stockBalances
@@ -460,6 +479,7 @@ let getAll = async (
             return {
                 ...item,
                 stockQuantity: baseItemStock, // Add stock quantity for base item
+                reorderThreshold: Number(baseItemReorderThreshold),
                 stockBalance: undefined, // Remove raw field
                 variants: transformedVariants,
                 // Flatten recipe lines for the client (drops raw relation field).
@@ -722,10 +742,48 @@ let getById = async (databaseName: string, id: number) => {
     }
 }
 
-let createMany = async (databaseName: string, itemBodyArray: ItemDto[], planName?: string | null) => {
+// Plan item caps (subscription_plan.MAX_PRODUCTS, e.g. Retail Lite = 100),
+// cached per plan — the row changes only with a plan re-seed.
+const planItemLimitCache = new Map<string, number | null>();
+async function getPlanItemLimit(planName?: string | null, planType?: string | null): Promise<number | null> {
+    if (!planName || !planType) return null;
+    const key = `${planName.toLowerCase()}|${planType.toLowerCase()}`;
+    if (planItemLimitCache.has(key)) return planItemLimitCache.get(key)!;
+    const plan = await getGlobalPrisma().subscriptionPlan.findFirst({
+        where: { planName, planType },
+        select: { maxProducts: true },
+    });
+    const limit = plan?.maxProducts ?? null;
+    planItemLimitCache.set(key, limit);
+    return limit;
+}
+
+let createMany = async (databaseName: string, itemBodyArray: ItemDto[], planName?: string | null, planType?: string | null) => {
+    const itemLimit = await getPlanItemLimit(planName, planType);
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const createdItems = await tenantPrisma.$transaction(async (tx) => {
+            // A plan item cap blocks adding, never using: existing items keep
+            // selling, only a create past the cap is refused.
+            if (itemLimit !== null) {
+                const existing = await tx.item.count({ where: { deleted: false } });
+                if (existing + itemBodyArray.length > itemLimit) {
+                    throw new PlanLimitError(
+                        `The ${planName} plan includes up to ${itemLimit} items`,
+                        ErrorCode.ItemLimitReached,
+                        { limit: String(itemLimit) },
+                    );
+                }
+            }
+            if (isLitePlan(planName) &&
+                itemBodyArray.some((i: any) => Array.isArray(i.variants) && i.variants.length > 0)) {
+                throw new PlanLimitError(
+                    'Item variants are not part of the Lite plan',
+                    ErrorCode.PlanFeatureLocked,
+                    { plan: 'Lite' },
+                );
+            }
+
             // Batch check all alternateLookup values in a single query
             const alternateLookups = itemBodyArray
                 .map(item => item.alternateLookup)
@@ -821,18 +879,21 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[], planName
                 }
             }
 
-            // Resolve fallback supplier/category for accounts that don't track them (e.g. laundry).
-            // Item.supplierId and Item.categoryId are NOT NULL columns, so when the client omits
-            // them we attach a tenant-level "Laundry" default (find-or-create by unique name).
+            // Resolve fallback supplier/category for accounts that don't track them (laundry,
+            // and Retail Lite, which has no supplier management). Item.supplierId and
+            // Item.categoryId are NOT NULL columns, so when the client omits them we attach a
+            // tenant-level default (find-or-create by unique name): "Laundry" for laundry,
+            // "Umum" (general) otherwise.
+            const defaultName = (planType ?? '').toLowerCase() === 'laundry' ? "Laundry" : "Umum";
             const needsDefaultSupplier = itemBodyArray.some((i: any) => !i.supplierId);
             const needsDefaultCategory = itemBodyArray.some((i: any) => !i.categoryId);
 
             let defaultSupplierId: number | undefined;
             if (needsDefaultSupplier) {
                 const defaultSupplier = await tx.supplier.upsert({
-                    where: { companyName: "Laundry" },
+                    where: { companyName: defaultName },
                     update: { deleted: false },
-                    create: { companyName: "Laundry", hasTax: false, deleted: false },
+                    create: { companyName: defaultName, hasTax: false, deleted: false },
                     select: { id: true },
                 });
                 defaultSupplierId = defaultSupplier.id;
@@ -841,9 +902,9 @@ let createMany = async (databaseName: string, itemBodyArray: ItemDto[], planName
             let defaultCategoryId: number | undefined;
             if (needsDefaultCategory) {
                 const defaultCategory = await tx.category.upsert({
-                    where: { name: "Laundry" },
+                    where: { name: defaultName },
                     update: { deleted: false },
-                    create: { name: "Laundry", deleted: false },
+                    create: { name: defaultName, deleted: false },
                     select: { id: true },
                 });
                 defaultCategoryId = defaultCategory.id;
@@ -1370,6 +1431,15 @@ let update = async (
             // dialog, which round-trips the item with `variants: []`). Deletions
             // are sent as `[{id, deleted:true}]`, so a real change is length > 0.
             if (variants && Array.isArray(variants) && variants.length > 0) {
+                // Lite: variants carried over from a trial stay editable; a new
+                // variant (no id yet) is refused.
+                if (isLitePlan(planName) && variants.some((v: any) => v.id === undefined || v.id === null)) {
+                    throw new PlanLimitError(
+                        'Item variants are not part of the Lite plan',
+                        ErrorCode.PlanFeatureLocked,
+                        { plan: 'Lite' },
+                    );
+                }
                 // ===== Batch validate variant ownership (security) =====
                 // Performance: Single query validates ALL variant IDs at once
                 const variantIdsToValidate = variants
@@ -1918,6 +1988,8 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
             },
             _sum: {
                 quantity: true,
+                // Revenue after the line's manual discount — see top-sold.ts.
+                subtotalAmount: true,
             },
             where: {
                 salesId: {
@@ -1956,28 +2028,8 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number) =>
             }
         });
 
-        // Create a map for O(1) lookup
-        const itemMap = new Map(items.map(item => [item.id, item]));
-
-        // Build the result array
-        const topSoldItems = topSoldItemsData.map(soldItem => {
-            const item = itemMap.get(soldItem.itemId);
-            if (!item) return null;
-
-            const itemDetails = {
-                ...item,
-                stockQuantity: item.stockBalance[0]?.availableQuantity || 0
-            };
-
-            const quantitySold = soldItem._sum.quantity ? new Decimal(soldItem._sum.quantity) : new Decimal(0);
-            const itemPrice = itemDetails.price ? new Decimal(itemDetails.price) : new Decimal(0);
-
-            return {
-                item: itemDetails,
-                quantitySold: quantitySold.toNumber(),
-                totalRevenue: itemPrice.mul(quantitySold)
-            };
-        }).filter(item => item !== null);
+        // Rank by units, revenue = Σ line SUBTOTAL_AMOUNT (net of the line's manual discount).
+        const topSoldItems = buildTopSoldItems(topSoldItemsData, items);
 
         return {
             topSoldItems,

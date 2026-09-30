@@ -69,6 +69,27 @@ const settingDefinitions = [
         })
     },
     {
+        // Bank accounts the business receives transfers into — the chips the
+        // cashier picks on a Transfer payment (checkout + Receive Payment).
+        // JSON array of {type:'BANK', bank, accountNumber?, holder?}; the
+        // chosen account's label ("BCA ***7890", or just "BCA") is saved as
+        // payment.reference. The default is the list the app hard-coded before
+        // this setting existed, so no tenant loses a bank until they edit it.
+        // `type` leaves room for QRIS later. TENANT scope.
+        key: 'payment_accounts',
+        category: 'Financial',
+        type: 'JSON',
+        defaultValue: JSON.stringify([
+            { type: 'BANK', bank: 'BCA' },
+            { type: 'BANK', bank: 'BCA Syariah' },
+            { type: 'BANK', bank: 'BSI' },
+            { type: 'BANK', bank: 'Bank Aceh' }
+        ]),
+        description: 'Bank accounts that receive transfer payments',
+        scope: 'TENANT',
+        isRequired: false
+    },
+    {
         key: 'service_charge_rate',
         category: 'Financial',
         type: 'DOUBLE',
@@ -100,6 +121,26 @@ const settingDefinitions = [
         isRequired: false,
         isReadOnly: false,
         validationRules: '{"options": ["all", "walk_in", "delivery"]}',
+    },
+    {
+        // Manual-discount cap for users WITHOUT the "Give Discount" permission:
+        // their per-line + order discounts on one sale may total at most this % of
+        // the sale's gross (Σ price × qty, before any discount). 0 (default) = they
+        // cannot give a manual discount at all; users holding "Give Discount" (or
+        // super admin) are never capped. Enforced by the FE at checkout and by the
+        // BE on fresh sales (`src/sales/manual-discount.ts`, DISCOUNT_ABOVE_LIMIT).
+        // TENANT scope.
+        key: 'cashier_max_discount_percent',
+        category: 'Financial',
+        type: 'DOUBLE',
+        defaultValue: '0',
+        description: 'Maximum manual discount (% of the sale) a user without the Give Discount permission may give',
+        scope: 'TENANT',
+        isRequired: false,
+        validationRules: JSON.stringify({
+            min: 0,
+            max: 100
+        })
     },
     // {
     //     key: 'enable_discount',
@@ -200,19 +241,7 @@ const settingDefinitions = [
     // ============================================
     // INVENTORY SETTINGS (OUTLET scope)
     // ============================================
-    {
-        key: 'low_stock_threshold',
-        category: 'Inventory',
-        type: 'INT',
-        defaultValue: '10',
-        description: 'Alert when stock falls below this quantity',
-        scope: 'OUTLET',
-        isRequired: false,
-        validationRules: JSON.stringify({
-            min: 0,
-            max: 1000
-        })
-    },
+    // low_stock_threshold was retired 2026-09-30 (see RETIRED_SETTING_KEYS).
     // {
     //     key: 'enable_stock_alert',
     //     category: 'Inventory',
@@ -239,7 +268,7 @@ const settingDefinitions = [
         key: 'language',
         category: 'User Preference',
         type: 'STRING',
-        defaultValue: 'en',
+        defaultValue: 'id', // Indonesian-first market — new users start in Bahasa Indonesia
         description: 'Preferred language',
         scope: 'USER',
         isRequired: false,
@@ -274,6 +303,19 @@ const settingDefinitions = [
         type: 'BOOLEAN',
         defaultValue: 'false',
         description: 'Push notification registration status',
+        scope: 'USER',
+        isRequired: false,
+        isReadOnly: true,
+        validationRules: null
+    },
+    {
+        // Device-specific, read-only: the app shows whether Android exempts it
+        // from battery optimisation (read live from the OS, never stored).
+        key: 'is_pushy_battery_optimized',
+        category: 'User Preference',
+        type: 'BOOLEAN',
+        defaultValue: 'false',
+        description: 'Battery optimization mitigation status',
         scope: 'USER',
         isRequired: false,
         isReadOnly: true,
@@ -363,6 +405,14 @@ const settingDefinitions = [
     // }
 ];
 
+/**
+ * Definitions no longer used by any app version. The seed soft-deletes them so
+ * they stop being served (upsert alone would leave the old row live).
+ * - low_stock_threshold: nothing read it; low-stock alerts use each product's
+ *   own minimum (StockBalance.reorderThreshold). Retired 2026-09-30.
+ */
+export const RETIRED_SETTING_KEYS = ['low_stock_threshold'];
+
 export async function seedSettingDefinitions(): Promise<void> {
     const globalPrisma = getGlobalPrisma();
 
@@ -377,6 +427,12 @@ export async function seedSettingDefinitions(): Promise<void> {
     }
 
     console.log(`Successfully seeded ${settingDefinitions.length} setting definitions`);
+
+    const retired = await globalPrisma.settingDefinition.updateMany({
+        where: { key: { in: RETIRED_SETTING_KEYS }, deleted: false },
+        data: { deleted: true, deletedAt: new Date() },
+    });
+    if (retired.count > 0) console.log(`Retired ${retired.count} setting definition(s): ${RETIRED_SETTING_KEYS.join(', ')}`);
 
     // Display summary
     const byScope = settingDefinitions.reduce((acc, def) => {

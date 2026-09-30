@@ -10,8 +10,10 @@
  */
 import crypto from 'crypto';
 import { seedDemoTenant, resetDemoTenants, DEMO_TENANTS } from '../demo/demo-seed.service';
+import { LOYALTY_TARGETS } from '../demo/demo-catalogue';
 import { getTenantPrisma } from '../db';
 import reportService from '../report/report.service';
+import monthlySummaryService from '../report/monthly-summary.service';
 
 const authService = require('../auth/auth.service');
 
@@ -37,7 +39,7 @@ async function fingerprint(db: string) {
     const [sales, lines, pays, bal] = await Promise.all([
         p.sales.findMany({ orderBy: { id: 'asc' }, select: { id: true, businessDate: true, totalAmount: true, profitAmount: true, customerId: true, friendlyNumber: true, orderRef: true } }),
         p.salesItem.findMany({ orderBy: { id: 'asc' }, select: { salesId: true, itemId: true, quantity: true, loadWeightKg: true, itemStatus: true } }),
-        p.payment.findMany({ orderBy: { id: 'asc' }, select: { method: true, paidAmount: true } }),
+        p.payment.findMany({ orderBy: { id: 'asc' }, select: { salesId: true, method: true, paidAmount: true } }),
         p.stockBalance.findMany({ orderBy: { itemId: 'asc' }, select: { itemId: true, availableQuantity: true } }),
     ]);
     return {
@@ -72,8 +74,17 @@ const bad = (r: any) => Number(r[0].c);
             bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM stock_balance WHERE AVAILABLE_QUANTITY < 0')) === 0);
         check('sale total == sum of its lines',
             bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM sales s JOIN (SELECT SALES_ID, SUM(SUBTOTAL_AMOUNT) t FROM sales_item GROUP BY SALES_ID) x ON x.SALES_ID=s.ID WHERE ABS(s.TOTAL_AMOUNT - x.t) > 0.01')) === 0);
-        check('every sale has a payment',
-            bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM sales s LEFT JOIN payment pm ON pm.SALES_ID=s.ID WHERE pm.ID IS NULL')) === 0);
+        // PRICE is the LINE total (unit × qty), what POST /sales writes; with no
+        // discount on a demo line it equals the line's SUBTOTAL_AMOUNT.
+        check('line PRICE is the line total (== SUBTOTAL_AMOUNT)',
+            bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM sales_item WHERE STOCK_CONSUMPTION_QTY IS NULL AND ABS(PRICE - SUBTOTAL_AMOUNT) > 0.01')) === 0);
+        // Laundry orders can be unpaid until collection (paid = 0 → no payment row, by design).
+        check('every sale that took money has a payment',
+            bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM sales s LEFT JOIN payment pm ON pm.SALES_ID=s.ID WHERE pm.ID IS NULL AND s.PAID_AMOUNT > 0')) === 0);
+        check('sales.paidAmount == sum of its payments',
+            bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM sales s LEFT JOIN (SELECT SALES_ID, SUM(PAID_AMOUNT) t FROM payment GROUP BY SALES_ID) x ON x.SALES_ID=s.ID WHERE ABS(s.PAID_AMOUNT - COALESCE(x.t,0)) > 0.01')) === 0);
+        check('status matches paid (Completed ⇔ paid in full)',
+            bad(await p.$queryRawUnsafe("SELECT COUNT(*) c FROM sales WHERE (STATUS='Completed') <> (PAID_AMOUNT >= TOTAL_AMOUNT)")) === 0);
         check('orderRef unique',
             bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM (SELECT ORDER_REF FROM sales WHERE ORDER_REF IS NOT NULL GROUP BY ORDER_REF HAVING COUNT(*)>1) t')) === 0);
 
@@ -98,12 +109,45 @@ const bad = (r: any) => Number(r[0].c);
                 ops?.averageKgPerLoad > 2 && ops?.averageKgPerLoad <= 6, `got ${ops?.averageKgPerLoad}`);
             const wip = await p.salesItem.count({ where: { itemStatus: { in: ['INTAKE', 'PROCESSING', 'READY'] } } });
             check('pickup screen has work-in-progress orders', wip > 0, `got ${wip}`);
+            // Pay-at-pickup: a collected order that left a DP (or nothing) at drop-off paid
+            // the balance when it was picked up — dated at COLLECTED_AT, not at the sale.
+            const lateRows = bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM payment pm JOIN sales s ON s.ID=pm.SALES_ID WHERE pm.CREATED_AT > s.CREATED_AT + INTERVAL 1 MINUTE'));
+            const lateMisdated = bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM payment pm JOIN sales s ON s.ID=pm.SALES_ID WHERE pm.CREATED_AT > s.CREATED_AT + INTERVAL 1 MINUTE AND (s.COLLECTED_AT IS NULL OR pm.CREATED_AT <> s.COLLECTED_AT OR pm.BUSINESS_DATE <> s.COLLECTED_AT)'));
+            check('some balances were paid at pickup', lateRows > 0, `got ${lateRows}`);
+            check('every pickup payment is dated at COLLECTED_AT', lateMisdated === 0, `got ${lateMisdated}`);
+            const owing = await p.sales.count({ where: { status: 'Partially Paid', collectedAt: null } });
+            check('uncollected orders still owe (Partially Paid)', owing > 0, `got ${owing}`);
+            check('no collected order left unpaid',
+                (await p.sales.count({ where: { status: 'Partially Paid', collectedAt: { not: null } } })) === 0);
+            const summary = await monthlySummaryService.generateMonthlySummary(db, 1, start, end, 'Laundry');
+            check('monthly summary: collected at pickup > Rp 0', summary.collectedLater.amount > 0,
+                `got Rp ${summary.collectedLater.amount} (${summary.collectedLater.count} orders)`);
         } else {
             const low = bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM stock_balance WHERE REORDER_THRESHOLD IS NOT NULL AND AVAILABLE_QUANTITY <= REORDER_THRESHOLD'));
             check('dashboard low-stock list is not empty', low > 0, `got ${low}`);
             check('stock movements recorded for sales',
                 (await p.stockMovement.count({ where: { movementType: 'Sales' } })) > 0);
         }
+
+        console.log('\n3b. Loyalty baseline — what real-UI captures script against');
+        check('one loyalty programme', (await p.loyaltyProgram.count()) === 1);
+        check('one reward rule (Rp 500rb milestone)', (await p.rewardRule.count()) === 1);
+        const tierCount = await p.loyaltyTier.count();
+        check(vertical === 'laundry' ? 'three tiers (Perunggu/Perak/Emas)' : 'no tiers (retail plan lacks Advanced Loyalty)',
+            tierCount === (vertical === 'laundry' ? 3 : 0), `got ${tierCount}`);
+        const customers = await p.customer.findMany({ orderBy: { id: 'asc' } });
+        for (const [idx, spend, pts] of LOYALTY_TARGETS) {
+            const acc = await p.loyaltyAccount.findFirst({ where: { customerId: customers[idx].id } });
+            check(`${customers[idx].firstName} ends at Rp ${spend} / ${pts} poin`,
+                Number(acc?.totalSpend) === spend && Number(acc?.currentPoints) === pts,
+                `got Rp ${acc?.totalSpend} / ${acc?.currentPoints}`);
+        }
+        check('point batches reconcile with account balances (FIFO intact)',
+            bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM loyalty_account a LEFT JOIN (SELECT LOYALTY_ACCOUNT_ID id, SUM(REMAINING_POINTS) r FROM loyalty_point_batch GROUP BY LOYALTY_ACCOUNT_ID) b ON b.id=a.ID WHERE ABS(a.CURRENT_POINTS - COALESCE(b.r,0)) > 0.0001')) === 0);
+        check('vouchers == floor(spend / threshold) per customer (next sale issues no burst)',
+            bad(await p.$queryRawUnsafe('SELECT COUNT(*) c FROM loyalty_account a JOIN reward_rule r ON 1=1 LEFT JOIN (SELECT CUSTOMER_ID id, COUNT(*) n FROM voucher GROUP BY CUSTOMER_ID) v ON v.id=a.CUSTOMER_ID WHERE COALESCE(v.n,0) <> FLOOR(a.TOTAL_SPEND / r.SPEND_THRESHOLD)')) === 0);
+        check('no English / RM text in loyalty rows',
+            bad(await p.$queryRawUnsafe("SELECT (SELECT COUNT(*) FROM loyalty_transaction WHERE DESCRIPTION LIKE '%Earned%') + (SELECT COUNT(*) FROM voucher WHERE LABEL LIKE '% off%' OR LABEL LIKE '%RM %') c")) === 0);
 
         console.log('\n4. Login works with the credentials the FE hard-codes');
         const username = DEMO_TENANTS[vertical].tenantName;

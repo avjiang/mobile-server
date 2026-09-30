@@ -1,4 +1,5 @@
 import PushyService from './pushy.service';
+import deviceLimitService from './device.service';
 import { PrismaClient as GlobalPrismaClient, TenantUser } from '../../prisma/global-client/generated/global';
 import { PrismaClient as TenantPrismaClient, User } from '../../prisma/client/generated/client';
 import { randomUUID } from 'crypto';
@@ -118,7 +119,7 @@ class NotificationService {
         return;
       }
 
-      const deviceTokens = devices.map(d => d.deviceToken);
+      const targets = devices.map(d => ({ deviceToken: d.deviceToken, provider: d.provider }));
 
       const notificationData = {
         title: request.title,
@@ -134,11 +135,38 @@ class NotificationService {
       };
 
       // Fire and forget - don't wait for notification to complete
-      PushyService.sendToDevices(deviceTokens, notificationData, request.tenantId).catch(error => {
-        console.error('Failed to send user-specific notification:', error);
-      });
+      PushyService.sendToDevices(targets, notificationData, request.tenantId)
+        .then(result => this.deactivateDeadDevices(devices, result.deadTokens))
+        .catch(error => {
+          console.error('Failed to send user-specific notification:', error);
+        });
     } catch (error) {
       console.error('Error in sendToSpecificUsers:', error);
+    }
+  }
+
+  /**
+   * FCM says these tokens will never deliver again (app uninstalled or token
+   * deleted): release the devices like a logout does, freeing the quota slot.
+   * A reinstall registers again through the fingerprint path.
+   */
+  private async deactivateDeadDevices(
+    devices: { id: number; deviceToken: string }[],
+    deadTokens: string[] = []
+  ): Promise<void> {
+    if (deadTokens.length === 0) return;
+    const dead = devices.filter(d => deadTokens.includes(d.deviceToken));
+    for (const device of dead) {
+      try {
+        await deviceLimitService.deallocateDevice(device.id);
+        await this.globalPrisma.pushyDevice.update({
+          where: { id: device.id },
+          data: { isActive: false }
+        });
+        console.log(`Deactivated push device ${device.id}: FCM token no longer registered`);
+      } catch (error) {
+        console.error(`Failed to deactivate dead push device ${device.id}:`, error);
+      }
     }
   }
 

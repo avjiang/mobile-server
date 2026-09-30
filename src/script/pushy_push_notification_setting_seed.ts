@@ -50,22 +50,21 @@ const notificationPermissions = [
 ];
 
 /**
- * Push Notification Device Add-on
+ * Push Notification Device Add-on — RETIRED 2026-09-29.
  *
- * Each outlet subscription includes 3 devices by default.
- * Additional devices can be purchased at IDR 19,000/month per device.
- *
- * IMPORTANT: The system uses add-on ID (2) to identify device add-ons.
- * Do not change this ID as it's referenced in code.
+ * Push devices are unlimited on Pro (FCM has no per-device cost), so this
+ * add-on is not sold and never billed (`isNonBillableAddOn`). The row is kept
+ * at id 2 because old tenant_add_on rows still point at it. Keep these values
+ * in step with `subscription_add_on_seed.ts`.
  */
 const deviceAddOn = {
     id: 2,
-    name: 'Additional Push Notification Device',
+    name: 'Additional Push Notification Device (retired)',
     addOnType: 'device',
-    pricePerUnit: 19000.00,
-    maxQuantity: null, // No limit
+    pricePerUnit: 0,
+    maxQuantity: 1,
     scope: 'tenant',
-    description: 'Additional push notification device slot (IDR 19,000/month per device). Each outlet includes 3 devices by default.'
+    description: 'Retired 2026-09-29 — push devices are unlimited on Pro. Not sold, never billed.'
 };
 
 async function seedPermissions() {

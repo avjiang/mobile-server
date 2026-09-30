@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express"
+import { rejectPlan } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./customer.service"
 import { Customer } from "../../prisma/client/generated/client"
@@ -107,7 +108,7 @@ let remove = (req: AuthRequest, res: Response, next: NextFunction) => {
 router.get("/", getAll)
 router.get('/sync', getAllCustomer)
 router.get('/:id', getById)
-router.post('/create', requirePermission(PERMISSION.ADD_CLIENT), createMany)
+router.post('/create', rejectPlan('Lite'), requirePermission(PERMISSION.ADD_CLIENT), createMany)
 router.put('/update', requirePermission(PERMISSION.EDIT_CLIENT), update)
 router.delete('/:id', requirePermission(PERMISSION.DELETE_CLIENT), remove)
 export = router

@@ -1,7 +1,9 @@
 import express, { NextFunction, Request, Response } from "express"
+import { rejectPlan, clampHistoryStart } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./sales.service"
 import photoService from "./sales-photo.service"
+import { readClientRef } from "./client-ref"
 import { createReceiptUploadTicket } from "../catalogue/catalogue-storage.service"
 import NetworkRequest from "../api-helpers/network-request"
 import { RequestValidateError } from "../api-helpers/error"
@@ -104,7 +106,8 @@ const getAllByDateRange = (req: AuthRequest, res: Response, next: NextFunction) 
         skip: skipNum,
         take: takeNum,
         lastSyncTimestamp: lastSyncTimestamp as string,
-        startDate: startDate as string,
+        // Retail Lite sees the last 30 days only (older sales stay stored).
+        startDate: clampHistoryStart(req.user.planName, new Date(startDate as string))!.toISOString(),
         endDate: endDate as string
     };
     service.getByDateRange(req.user.databaseName, dateRangeRequest)
@@ -262,11 +265,12 @@ const completeNewSales = (req: NetworkRequest<CompleteNewSalesRequest>, res: Res
     service.completeNewSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier, permissions: req.user.permissions },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier, permissions: req.user.permissions, planName: req.user.planName },
         sales,
-        payments
+        payments,
+        readClientRef(req.header('x-idempotency-key')),
     )
-        .then((sales: Sales) => sendResponse(res, sales))
+        .then((sales) => sendResponse(res, sales))
         .catch(next)
 }
 
@@ -455,9 +459,10 @@ const addPaymentToPartiallyPaidSales = (req: NetworkRequest<AddPaymentRequest>, 
         req.user.tenantId,
         { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
         salesId,
-        payments
+        payments,
+        readClientRef(req.header('x-idempotency-key')),
     )
-        .then((sales: Sales) => sendResponse(res, sales))
+        .then((sales) => sendResponse(res, sales))
         .catch(next);
 }
 
@@ -472,7 +477,7 @@ const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
     service.voidSales(
         req.user.databaseName,
         req.user.tenantId,
-        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier },
+        { userId: req.user.userId, username: req.user.username, loyaltyTier: req.user.loyaltyTier, planName: req.user.planName },
         salesId,
         // Acting terminal performing the void (client-supplied, nullable).
         (req.body as any)?.siteId ?? null
@@ -689,8 +694,8 @@ router.post('/completeNewSales', completeNewSales)
 router.post('/addPayment', addPaymentToPartiallyPaidSales);
 router.put('/update', update)
 router.put('/void/:id', voidSales)
-router.put('/return/:id', returnSales)
-router.put('/refund/:id', refundSales)
+router.put('/return/:id', rejectPlan('Lite'), returnSales)
+router.put('/refund/:id', rejectPlan('Lite'), refundSales)
 // Safe-metadata edit of a sale (name/phone/remark/shipping address). Gated behind
 // "Modify Sales History" — the only permission-gated sales route. Static '/contact'
 // suffix (retained for backward-compat with older binaries) keeps it distinct from

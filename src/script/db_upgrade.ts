@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-type Target = "local" | "prod";
+type Target = "local" | "prod" | "newprod";
 
 const target: Target = (process.argv[2] as Target) || "local";
 
@@ -14,10 +14,18 @@ if (target === "prod") {
     process.env.GLOBAL_DB_URL = process.env.PROD_GLOBAL_DB_URL;
     process.env.TENANT_DATABASE_URL = process.env.PROD_TENANT_DATABASE_URL;
     console.log("Target: PROD");
+} else if (target === "newprod") {
+    if (!process.env.NEWPROD_GLOBAL_DB_URL || !process.env.NEWPROD_TENANT_DATABASE_URL) {
+        console.error("Missing NEWPROD_GLOBAL_DB_URL or NEWPROD_TENANT_DATABASE_URL in .env");
+        process.exit(1);
+    }
+    process.env.GLOBAL_DB_URL = process.env.NEWPROD_GLOBAL_DB_URL;
+    process.env.TENANT_DATABASE_URL = process.env.NEWPROD_TENANT_DATABASE_URL;
+    console.log("Target: NEWPROD");
 } else if (target === "local") {
     console.log("Target: LOCAL");
 } else {
-    console.error(`Unknown target "${target}". Use "local" or "prod".`);
+    console.error(`Unknown target "${target}". Use "local", "prod", or "newprod".`);
     process.exit(1);
 }
 

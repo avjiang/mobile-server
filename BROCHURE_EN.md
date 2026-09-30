@@ -1,4 +1,4 @@
-# BayarYuk!
+# Bayar Yuk!
 
 ### POS & Business Management App — Everything in One Hand
 
@@ -6,13 +6,13 @@
 
 Still recording sales in a notebook? Stock running out without warning? Supplier invoices scattered and payments forgotten?
 
-**BayarYuk! is here to solve all of that.**
+**Bayar Yuk! is here to solve all of that.**
 
 One app for point of sale, inventory, purchasing, customers, reports, and more — right from your phone.
 
-## What Is BayarYuk!?
+## What Is Bayar Yuk!?
 
-BayarYuk! is a point-of-sale (POS) app and complete business management system designed specifically for businesses in Indonesia. From retail shops, cafes, salons, to wholesalers — BayarYuk! helps you run your business more organized, faster, and more profitable.
+Bayar Yuk! is a point-of-sale (POS) app and complete business management system designed specifically for businesses in Indonesia. From retail shops, cafes, salons, to wholesalers — Bayar Yuk! helps you run your business more organized, faster, and more profitable.
 
 Available in **Bahasa Indonesia & English**, with a **complete in-app guide**.
 
@@ -95,31 +95,42 @@ Manage your entire supplier purchasing workflow in one place:
 
 ## Pricing Plans
 
-|                             | **Trial**  | **Basic**                     | **Pro**                       |
-| --------------------------- | ---------- | ----------------------------- | ----------------------------- |
-| **Price**                   | **FREE**   | **Rp 300,000** /month /outlet | **Rp 450,000** /month /outlet |
-| Users                       | 1 user     | 2 users                       | 3 users                       |
-| POS & Sales                 | Yes        | Yes                           | Yes                           |
-| Stock & Inventory           | Yes        | Yes                           | Yes                           |
-| Procurement (6 modules)     | Yes        | Yes                           | Yes                           |
-| Daily Sessions & PDF Reports | Yes       | Yes                           | Yes                           |
-| Access Control & Custom Roles | Yes      | Yes                           | Yes                           |
-| Delivery Management         | Yes        | Yes                           | Yes                           |
-| Bluetooth Receipt Printing  | Yes        | Yes                           | Yes                           |
-| Barcode Printing            | Yes        | Yes                           | Yes                           |
-| Loyalty Points              | -          | Yes                           | Yes                           |
-| Push Notifications          | -          | -                             | Yes (3 devices)               |
-| Connected Multi-Outlet      | -          | -                             | Yes                           |
+Every new shop starts with a **30-day free trial with all Pro features**. After that, pick the plan that fits. Prices are per outlet per month; pay yearly and get **2 months free** (pay 10, use 12).
+
+### Retail shops
+
+|                              | **Lite**                  | **Basic**                 | **Pro**                   |
+| ---------------------------- | ------------------------- | ------------------------- | ------------------------- |
+| **Price**                    | **Rp 100,000** /month     | **Rp 250,000** /month     | **Rp 375,000** /month     |
+| Yearly                       | Rp 1,000,000              | Rp 2,500,000              | Rp 3,750,000              |
+| Items                        | Up to 100                 | Unlimited (with variants) | Unlimited (with variants) |
+| Users included               | 1                         | 2                         | 3                         |
+| Sales, receipts, stock, daily report | Yes               | Yes                       | Yes                       |
+| Works offline                | Yes                       | Yes                       | Yes                       |
+| Credit sales (kasbon), delivery, returns & refunds | -   | Yes                       | Yes                       |
+| Purchasing & suppliers, FIFO cost, stock movement report | - | Yes                       | Yes                       |
+| Customer list, staff roles, PDF reports | -              | Yes                       | Yes                       |
+| Online catalogue, loyalty points, push notifications | - | -                         | Yes                       |
+
+### Laundry
+
+|                              | **Basic**                 | **Pro**                   |
+| ---------------------------- | ------------------------- | ------------------------- |
+| **Price**                    | **Rp 100,000** /month     | **Rp 199,000** /month     |
+| Yearly                       | Rp 1,000,000              | Rp 1,990,000              |
+| Users included               | 1                         | 3                         |
+| Orders, pickup with QR, drop-off photos, supplies, reports | Yes | Yes            |
+| Loyalty points, membership tiers, prepaid packages ("10x cuci") | - | Yes (included) |
+| Push notifications           | -                         | Yes (every phone)         |
 
 ### Add-Ons
 
 | Add-On                                              | Price                      | Available On |
 | --------------------------------------------------- | -------------------------- | ------------ |
 | Additional User                                     | Rp 50,000 /user /month     | Basic & Pro  |
-| Additional Notification Device                      | Rp 20,000 /device /month   | Pro          |
-| Advanced Loyalty (Tiered Membership + Subscription Packages) | Rp 150,000 /month | Pro          |
+| Advanced Loyalty (Tiered Membership + Prepaid Packages) | Rp 100,000 /month      | Retail Pro (included in Laundry Pro) |
 
-## Why Choose BayarYuk!?
+## Why Choose Bayar Yuk!?
 
 **Built Specifically for Indonesia**
 Pricing in Rupiah, suitable for small shops to large multi-outlet businesses.
@@ -142,16 +153,16 @@ From sales, inventory, purchasing, customers, to daily reports — everything in
 Yes. All data is stored on secure servers and also on your phone as a backup. Access is protected with login credentials and per-user permissions.
 
 **Can I try it before paying?**
-Yes. The Trial plan is available for free. You can try all basic features at no cost.
+Yes. Every new shop gets a 30-day free trial with all Pro features, then chooses a plan. Nothing you set up during the trial is lost.
 
 **What printers are supported?**
-BayarYuk! supports 80mm Bluetooth thermal printers commonly available in the market. Connect via Bluetooth and start printing receipts immediately.
+Bayar Yuk! supports 80mm Bluetooth thermal printers commonly available in the market. Connect via Bluetooth and start printing receipts immediately.
 
 **What if I have multiple outlets?**
-With the Pro plan, you can manage multiple outlets from one account, including a central warehouse and inter-outlet stock transfers.
+Each outlet has its own subscription, and you manage all of them from one account.
 
 **Can multiple employees use it at the same time?**
-Yes. Each plan includes 2-3 users, and you can add more at Rp 50,000 per user per month.
+Yes. Basic and Pro include 1–3 users depending on the plan, and you can add more at Rp 50,000 per user per month. Retail Lite is for one person.
 
 ## Get Started Now!
 
@@ -161,4 +172,4 @@ Contact our sales team for a demo or more information:
 
 ---
 
-_BayarYuk! — Organized Business, Growing Profits._
+_Bayar Yuk! — Organized Business, Growing Profits._

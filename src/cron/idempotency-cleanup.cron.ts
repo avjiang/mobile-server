@@ -1,11 +1,18 @@
 /**
  * Idempotency Record Cleanup Cron Job
  *
- * Runs daily to delete idempotency records older than 24 hours. The FE
- * outbox gives up on a queued write far earlier than 24h (max retry count
- * × max backoff ≈ 1.5h) so anything still sitting in the table past a day
- * is guaranteed dead weight from a successful request that's already been
- * replayed back to the client.
+ * Runs daily to delete idempotency records older than 24 hours.
+ *
+ * The FE outbox depends on this retention. It waits out a device outage of
+ * any length, so it does not give up after a fixed number of retries.
+ *   - Checkouts and payments don't need these records past 24h: the key is
+ *     also stored on the row (sales/payment.CLIENT_REF, see
+ *     sales/client-ref.ts), so a replay of any age is deduped there.
+ *   - Every other write is auto-replayed only within 20h of queueing
+ *     (`OutboxRepository.replayWindow`). Older entries are stopped for a
+ *     manager to check, because the record that would dedupe the replay may
+ *     be gone. Do not shorten RETENTION_HOURS without first shortening the FE
+ *     window, which keeps a 4h margin for clock skew.
  *
  * Runs across every tenant DB. Cheap on well-kept tables — an index on
  * CREATED_AT means the DELETE ... WHERE CREATED_AT < ? is a range scan.

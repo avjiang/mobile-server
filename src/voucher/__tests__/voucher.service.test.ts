@@ -15,9 +15,10 @@ import { RequestValidateError } from "../../api-helpers/error";
 const {
     toNum,
     voucherDiscountFor,
+    voucherBaseAfterPackage,
     shouldRestoreVoucher,
     expectedRepeatableVoucherCount,
-    formatVoucherLabel,
+    toVoucherListItem,
     validateRuleDiscountFields,
     formatRule,
 } = (voucherService as any).__testables;
@@ -169,22 +170,23 @@ describe("expectedRepeatableVoucherCount", () => {
     });
 });
 
-// ── formatVoucherLabel (label shape on issued vouchers) ────────────────────
+// ── toVoucherListItem (list response shape) ────────────────────────────────
 
-describe("formatVoucherLabel", () => {
-    test("PERCENTAGE rule → 'Name — X% off'", () => {
-        const label = formatVoucherLabel("Spend RM 1,000 Reward", "PERCENTAGE", 10, 0);
-        assert.equal(label, "Spend RM 1,000 Reward — 10% off");
+describe("toVoucherListItem", () => {
+    test("rule-issued voucher → ruleName from the relation, relation stripped", () => {
+        const item = toVoucherListItem({
+            id: 1, rewardRuleId: 7, label: "Hadiah — RM 5000 off",
+            rewardRule: { name: "Hadiah Belanja" },
+        });
+        assert.equal(item.ruleName, "Hadiah Belanja");
+        assert.equal(item.label, "Hadiah — RM 5000 off");
+        assert.equal("rewardRule" in item, false);
     });
 
-    test("FIXED rule → 'Name — RM X off'", () => {
-        const label = formatVoucherLabel("Fixed RM 20 off", "FIXED", 0, 20_000);
-        assert.equal(label, "Fixed RM 20 off — RM 20000 off");
-    });
-
-    test("Decimal-as-string values coerce via toNum", () => {
-        const label = formatVoucherLabel("X", "PERCENTAGE", "15.00" as any, null);
-        assert.equal(label, "X — 15% off");
+    test("manual voucher (no rule) → ruleName null, typed label kept", () => {
+        const item = toVoucherListItem({ id: 2, rewardRuleId: null, label: "Maaf ya", rewardRule: null });
+        assert.equal(item.ruleName, null);
+        assert.equal(item.label, "Maaf ya");
     });
 });
 
@@ -317,5 +319,60 @@ describe("formatRule", () => {
             updatedAt: new Date(),
         });
         assert.equal(out.isActive, false);
+    });
+});
+
+// ── voucherBaseAfterPackage ────────────────────────────────────────────────
+// The sale's totalAmount is FINAL (after package, voucher, points); the FE
+// takes the voucher on what the prepaid package left. Validation must rebuild
+// that base, or every voucher sale is rejected (found 2026-09-30 on
+// nanggroe_wash: "sent 6000, expected 5400" for 10% on a 60,000 cart) — and
+// must NOT add the package back, or a package-paid sale burns a voucher
+// (demo_laundry, Rina: 64,000 covered by her package, 10% voucher → 6,400).
+
+describe("voucherBaseAfterPackage", () => {
+    const D = (n: number) => new Decimal(n);
+    const expectedOnBase = (type: string, pct: number | null, amt: number | null, final: number, sent: number, redemption = 0) =>
+        voucherDiscountFor(type, pct, amt, voucherBaseAfterPackage(D(final), D(redemption), sent)).discountAmount.toNumber();
+
+    test("10% on a 60,000 cart: final 54,000 + sent 6,000 → base 60,000, expected 6,000", () => {
+        assert.equal(voucherBaseAfterPackage(D(54000), D(0), 6000).toNumber(), 60000);
+        assert.equal(expectedOnBase("PERCENTAGE", 10, null, 54000, 6000), 6000);
+    });
+
+    test("an inflated percentage amount is still rejected (expected ≠ sent)", () => {
+        // Cashier-side claims 9,000 off a 60,000 cart at 10%: final would be 51,000.
+        assert.notEqual(expectedOnBase("PERCENTAGE", 10, null, 51000, 9000), 9000);
+    });
+
+    test("points are added back, the package is not (it goes first)", () => {
+        // 100,000 cart: package 20,000 → 80,000; voucher 10% → 8,000 → 72,000;
+        // points 5,000 → 67,000 final. Base = 67,000 + 5,000 + 8,000 = 80,000.
+        assert.equal(voucherBaseAfterPackage(D(67000), D(5000), 8000).toNumber(), 80000);
+        assert.equal(expectedOnBase("PERCENTAGE", 10, null, 67000, 8000, 5000), 8000);
+    });
+
+    test("package covers the whole sale: base 0 → caller skips redemption", () => {
+        // Rina: 64,000 all covered by the package, FE sends no voucher amount.
+        assert.equal(voucherBaseAfterPackage(D(0), D(0), undefined).toNumber(), 0);
+        assert.equal(voucherBaseAfterPackage(D(0), D(0), 0).toNumber(), 0);
+    });
+
+    test("old stacking order is rejected: voucher 10% of the pre-package 64,000", () => {
+        // Pre-fix FE: voucher 6,400 on 64,000, package 57,600, final 0.
+        // Base = 0 + 0 + 6,400 → expected 640 ≠ sent 6,400.
+        assert.notEqual(expectedOnBase("PERCENTAGE", 10, null, 0, 6400), 6400);
+    });
+
+    test("FIXED voucher: full amount when the cart covers it", () => {
+        assert.equal(expectedOnBase("FIXED", null, 15000, 45000, 15000), 15000);
+    });
+
+    test("FIXED voucher capped at the cart: 15,000 voucher on a 10,000 cart → 10,000", () => {
+        assert.equal(expectedOnBase("FIXED", null, 15000, 0, 10000), 10000);
+    });
+
+    test("no sent amount → base is just final + points", () => {
+        assert.equal(voucherBaseAfterPackage(D(50000), D(0), undefined).toNumber(), 50000);
     });
 });

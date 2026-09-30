@@ -91,6 +91,25 @@ export const permissions = [
         category: "Sales",
         description: "Print pre-payment bill from cart"
     },
+    // Cart unit-price override. Used to be ungated (any cashier could re-price a
+    // line); `grant_edit_sale_price.ts` backfills it onto every role that holds
+    // "Manage Inventory" so owners/managers keep it on upgrade. Name MUST match
+    // FE AppPermission.editSalePrice.
+    {
+        name: "Edit Sale Price",
+        category: "Sales",
+        description: "Change an item's unit price in the cart before checkout"
+    },
+    // Manual discount (per line + whole order) at checkout. Without it a user may
+    // still discount up to the tenant setting `cashier_max_discount_percent` of the
+    // sale's gross (0 = no manual discount). `grant_give_discount.ts` backfills it
+    // onto every role that holds "Manage Inventory" so owners/managers keep an
+    // uncapped discount on upgrade. Name MUST match FE AppPermission.giveDiscount.
+    {
+        name: "Give Discount",
+        category: "Sales",
+        description: "Give any discount at checkout; without it, up to the cashier discount limit"
+    },
     {
         name: "Manage Master Data",
         category: "Function Management",

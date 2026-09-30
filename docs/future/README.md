@@ -14,7 +14,9 @@ When a plan is executed, either:
 
 | Doc | Trigger to execute | Status |
 |---|---|---|
-| [DB_MIGRATION_2026.md](DB_MIGRATION_2026.md) | New Azure account created; cutover window late August 2026 (must complete before Fri 4 Sep 2026 when current free tier expires) | Plan drafted 2026-05-25, awaiting Phase 0 (tooling) trigger |
+| [DB_MIGRATION_2026.md](DB_MIGRATION_2026.md) | Remaining: confirm `B1MS Compute - Free` on the new bill (2026-09-27/28); delete old `bayaryuk-server` + its alert + `migration_2026-09-26` firewall rule + `OLDPROD_*` on/after 2026-09-29; then retire this doc (fold as-built into a current-state doc). | ✅ **CUTOVER DONE 2026-09-26** 22:33–22:38 (≈5 min). Prod MySQL = `bayaryuk-db-v2` (sub `3bbc4892-…`, RG `bayar-yuk-v2`); scope `global` + `audio_technic_db` + `web_bytes_db`; `db_verify` IDENTICAL (194 tables / 99,637 rows). |
+| [APP_SERVER_MACMINI.md](APP_SERVER_MACMINI.md) | POC now: office Mac mini as a **standby** backend behind a Cloudflare Tunnel (`api-standby.bayaryuk.net`). Promote only after a clean standby week, the `api.bayaryuk.net` APK adoption, and IT permission for the office network. | 🟡 2026-09-28: code switches (`DISABLE_CRONS`, `HOST`) + `deploy/macmini/` scripts written; Mac mini not set up yet. |
+| [APP_SERVER_ORACLE.md](APP_SERVER_ORACLE.md) | Oracle pay-as-you-go upgrade finished **and** an A1 VM launches (`deploy/oracle/launch_vm_retry.sh`); cutover only after an FE release on `api.bayaryuk.net` is widely adopted. | 🟡 Started 2026-09-27: Oracle account + network + budget alert ready (all free); VM blocked by "Out of host capacity". |
 
 ---
 

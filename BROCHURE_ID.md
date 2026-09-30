@@ -1,4 +1,4 @@
-# BayarYuk!
+# Bayar Yuk!
 
 ### Aplikasi Kasir & Kelola Bisnis — Semua dalam Satu Genggaman
 
@@ -6,13 +6,13 @@
 
 Masih catat penjualan pakai buku tulis? Stok tiba-tiba habis tanpa tahu kapan? Faktur supplier berantakan dan sering lupa bayar?
 
-**BayarYuk! hadir untuk menyelesaikan semua itu.**
+**Bayar Yuk! hadir untuk menyelesaikan semua itu.**
 
 Satu aplikasi untuk kasir, stok, pembelian, pelanggan, laporan, dan lainnya — langsung dari HP Anda.
 
-## Apa Itu BayarYuk! ?
+## Apa Itu Bayar Yuk!?
 
-BayarYuk! adalah aplikasi kasir (POS) sekaligus sistem kelola bisnis lengkap yang dirancang khusus untuk usaha di Indonesia. Dari toko retail, kafe, salon, hingga grosir — BayarYuk! bantu Anda kelola bisnis lebih rapi, lebih cepat, dan lebih menguntungkan.
+Bayar Yuk! adalah aplikasi kasir (POS) sekaligus sistem kelola bisnis lengkap yang dirancang khusus untuk usaha di Indonesia. Dari toko retail, kafe, salon, hingga grosir — Bayar Yuk! bantu Anda kelola bisnis lebih rapi, lebih cepat, dan lebih menguntungkan.
 
 Tersedia dalam **Bahasa Indonesia & English**, dan dilengkapi **panduan langkap di dalam aplikasi**.
 
@@ -95,31 +95,42 @@ Kelola seluruh alur pembelian dari supplier dalam satu tempat:
 
 ## Paket Harga
 
-|                             | **Trial**  | **Basic**                     | **Pro**                       |
-| --------------------------- | ---------- | ----------------------------- | ----------------------------- |
-| **Harga**                   | **GRATIS** | **Rp 300.000** /bulan /cabang | **Rp 450.000** /bulan /cabang |
-| Pengguna                    | 1 user     | 2 user                        | 3 user                        |
-| Kasir & Penjualan           | Ya         | Ya                            | Ya                            |
-| Stok & Inventaris           | Ya         | Ya                            | Ya                            |
-| Pengadaan (6 modul)         | Ya         | Ya                            | Ya                            |
-| Sesi Harian & Laporan PDF   | Ya         | Ya                            | Ya                            |
-| Kontrol Akses & Role Custom | Ya         | Ya                            | Ya                            |
-| Pengiriman                  | Ya         | Ya                            | Ya                            |
-| Cetak Struk Bluetooth       | Ya         | Ya                            | Ya                            |
-| Cetak Barcode               | Ya         | Ya                            | Ya                            |
-| Loyalitas Poin              | -          | Ya                            | Ya                            |
-| Notifikasi Langsung         | -          | -                             | Ya (3 device)                 |
-| Multi-Cabang Terhubung      | -          | -                             | Ya                            |
+Setiap toko baru mulai dengan **coba gratis 30 hari dengan semua fitur Pro**. Setelah itu, pilih paket yang pas. Harga per cabang per bulan; bayar tahunan **hemat 2 bulan** (bayar 10, pakai 12).
+
+### Toko retail
+
+|                              | **Lite**                  | **Basic**                 | **Pro**                   |
+| ---------------------------- | ------------------------- | ------------------------- | ------------------------- |
+| **Harga**                    | **Rp 100.000** /bulan     | **Rp 250.000** /bulan     | **Rp 375.000** /bulan     |
+| Tahunan                      | Rp 1.000.000              | Rp 2.500.000              | Rp 3.750.000              |
+| Item                         | Hingga 100                | Tak terbatas (dengan varian) | Tak terbatas (dengan varian) |
+| Pengguna termasuk            | 1                         | 2                         | 3                         |
+| Penjualan, struk, stok, laporan harian | Ya              | Ya                        | Ya                        |
+| Tetap jalan tanpa internet   | Ya                        | Ya                        | Ya                        |
+| Kasbon, pengiriman, retur & refund | -                   | Ya                        | Ya                        |
+| Pembelian & supplier, modal FIFO, laporan pergerakan stok | - | Ya                        | Ya                        |
+| Daftar pelanggan, hak akses staf, laporan PDF | -        | Ya                        | Ya                        |
+| Katalog online, poin loyalitas, notifikasi | -           | -                         | Ya                        |
+
+### Laundry
+
+|                              | **Basic**                 | **Pro**                   |
+| ---------------------------- | ------------------------- | ------------------------- |
+| **Harga**                    | **Rp 100.000** /bulan     | **Rp 199.000** /bulan     |
+| Tahunan                      | Rp 1.000.000              | Rp 1.990.000              |
+| Pengguna termasuk            | 1                         | 3                         |
+| Order, pengambilan dengan QR, foto cucian, supplies, laporan | Ya | Ya             |
+| Poin loyalitas, tingkatan member, paket prabayar ("10x cuci") | - | Ya (sudah termasuk) |
+| Notifikasi langsung          | -                         | Ya (semua ponsel)         |
 
 ### Tambahan (Add-On)
 
 | Add-On                                            | Harga                    | Tersedia di |
 | ------------------------------------------------- | ------------------------ | ----------- |
 | User Tambahan                                     | Rp 50.000 /user /bulan   | Basic & Pro |
-| Device Notifikasi Tambahan                        | Rp 20.000 /device /bulan | Pro         |
-| Loyalitas Lanjutan (Membership + Paket Langganan) | Rp 150.000 /bulan        | Pro         |
+| Loyalitas Lanjutan (Membership + Paket Prabayar)  | Rp 100.000 /bulan        | Retail Pro (sudah termasuk di Laundry Pro) |
 
-## Kenapa Pilih BayarYuk! ?
+## Kenapa Pilih Bayar Yuk!?
 
 **Dibuat Khusus untuk Indonesia**
 Harga dalam Rupiah, cocok untuk warung kecil sampai toko besar dengan banyak cabang.
@@ -142,16 +153,16 @@ Dari penjualan, stok, pembelian, pelanggan, sampai laporan harian — semua ada 
 Ya. Semua data tersimpan di server yang aman dan juga di HP Anda sebagai cadangan. Akses dilindungi dengan login dan hak akses per pengguna.
 
 **Apakah bisa dicoba dulu sebelum bayar?**
-Bisa. Paket Trial tersedia gratis. Anda bisa langsung coba semua fitur dasar tanpa biaya.
+Bisa. Setiap toko baru dapat coba gratis 30 hari dengan semua fitur Pro, lalu memilih paket. Semua yang sudah disiapkan selama masa coba tetap ada.
 
 **Printer apa yang bisa dipakai?**
 Bayar Yuk mendukung printer thermal Bluetooth 80mm yang umum dijual di pasaran. Hubungkan lewat Bluetooth, langsung bisa cetak struk.
 
 **Bagaimana kalau saya punya banyak cabang?**
-Dengan paket Pro, Anda bisa kelola banyak cabang dari satu akun, termasuk gudang pusat dan transfer stok antar cabang.
+Setiap cabang punya langganan sendiri, dan semuanya bisa dikelola dari satu akun.
 
 **Apakah bisa dipakai oleh banyak karyawan sekaligus?**
-Bisa. Setiap paket sudah termasuk 2-3 user, dan bisa ditambah dengan biaya Rp 50.000 per user per bulan.
+Bisa. Paket Basic dan Pro sudah termasuk 1–3 user sesuai paketnya, dan bisa ditambah dengan biaya Rp 50.000 per user per bulan. Retail Lite untuk satu orang.
 
 ## Yuk, Mulai Sekarang!
 
@@ -161,4 +172,4 @@ Hubungi tim sales kami untuk demo atau informasi lebih lanjut:
 
 ---
 
-_BayarYuk! — Bisnis Rapi, Untung Naik._
+_Bayar Yuk! — Bisnis Rapi, Untung Naik._

@@ -113,7 +113,7 @@ Stores the **actual values** for settings, scoped to tenant/outlet/user.
 | `TENANT_ID`             | INT      | Tenant scope (nullable)                    |
 | `OUTLET_ID`             | INT      | Outlet scope (nullable)                    |
 | `USER_ID`               | INT      | User scope (nullable)                      |
-| `VALUE`                 | STRING   | The actual setting value                   |
+| `VALUE`                 | TEXT     | The actual setting value (VARCHAR(191) until migration `20260928120000_widen_setting_value_to_text`) |
 | `VERSION`               | INT      | For optimistic locking                     |
 | `CREATED_AT`            | DATETIME | Creation timestamp                         |
 | `UPDATED_AT`            | DATETIME | Last update timestamp                      |
@@ -276,6 +276,7 @@ These settings are seeded via [setting_definitions_seed.ts](../script/setting_de
 | `service_charge_applies_to` | STRING  | `all`   | OUTLET | No       | Options: `all`, `walk_in`, `delivery`                    | **Active** |
 | `enable_discount`           | BOOLEAN | `true`  | OUTLET | No       | -                                                        | Commented  |
 | `payment_terms`             | INT     | `30`    | TENANT | No       | Min: 0, Max: 365                                         | Commented  |
+| `payment_accounts`          | JSON    | 4 legacy banks | TENANT | No  | Valid JSON. `[{type:'BANK',bank,accountNumber?,holder?}]` — transfer receiving accounts (2026-09-28) | **Active** |
 
 ### POS Settings
 
@@ -291,7 +292,7 @@ These settings are seeded via [setting_definitions_seed.ts](../script/setting_de
 
 | Key                   | Type    | Default | Scope  | Required | Validation Rules  | Status     |
 | --------------------- | ------- | ------- | ------ | -------- | ----------------- | ---------- |
-| `low_stock_threshold` | INT     | `10`    | OUTLET | No       | Min: 0, Max: 1000 | **Active** |
+| `low_stock_threshold` | INT     | `10`    | OUTLET | No       | Min: 0, Max: 1000 | **Retired 2026-09-30** — nothing read it (low-stock alerts use each product's minimum); the seed soft-deletes it (`RETIRED_SETTING_KEYS`) |
 | `enable_stock_alert`  | BOOLEAN | `true`  | OUTLET | No       | -                 | Commented  |
 | `auto_reorder`        | BOOLEAN | `false` | OUTLET | No       | -                 | Commented  |
 

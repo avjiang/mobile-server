@@ -37,8 +37,8 @@ const adminService = require("../admin/admin.service");
 
 const laundryPlans = [
     { planName: "Trial", planType: "Laundry", price: 0, maxUsers: 2, maxDevices: 0, description: null },
-    { planName: "Basic", planType: "Laundry", price: 300000, maxUsers: 2, maxDevices: 0, description: "Basic plan for laundry businesses" },
-    { planName: "Pro", planType: "Laundry", price: 450000, maxUsers: 3, maxDevices: 3, description: "Pro plan for laundry businesses with push notification support" },
+    { planName: "Basic", planType: "Laundry", price: 100000, maxUsers: 1, maxDevices: 0, description: "Basic plan for laundry businesses" },
+    { planName: "Pro", planType: "Laundry", price: 199000, maxUsers: 3, maxDevices: 3, description: "Pro plan for laundry businesses with push notification support" },
 ];
 
 async function run() {
@@ -64,7 +64,7 @@ async function run() {
 
         console.log(`Creating tenant "${tenantName}" (Laundry / Pro)...`);
         const result = await adminService.createTenant({
-            tenant: { tenantName, plan: "Pro", planType: "Laundry" },
+            tenant: { tenantName, plan: "Pro", planType: "Laundry", password: String(tenantName).toLowerCase().replace(/\s/g, "_") }, // test account: password == username
         });
         console.log("Tenant created:");
         console.log(JSON.stringify(result, null, 2));

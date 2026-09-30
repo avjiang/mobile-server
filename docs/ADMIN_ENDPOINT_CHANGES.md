@@ -1,5 +1,7 @@
 # Admin Endpoint Changes — Add-On Architecture Refactor
 
+> **Historical.** The Extra Device add-on shown in the examples below was retired on 2026-09-29 (push devices are unlimited on Pro; add-on 2 is never billed and the device-quota endpoints were removed). Current state: `flutter-front-end/docs/modules/SUBSCRIPTION.md` §3.2 and `ADMIN.md` §6.
+
 This document summarizes all breaking changes to admin-facing API responses resulting from the Add-On Architecture Refactor (Phase 0) and the Loyalty feature addition.
 
 ---

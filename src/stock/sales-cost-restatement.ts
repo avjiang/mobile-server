@@ -1,5 +1,6 @@
 import { Prisma } from "../../prisma/client/generated/client";
 import { Decimal } from 'decimal.js';
+import { SALE_LEVEL_DEDUCTIONS_SQL } from '../sales/sale-profit';
 
 /**
  * Sales cost restatement — keeps the profit snapshots on sales lines truthful when a
@@ -10,7 +11,8 @@ import { Decimal } from 'decimal.js';
  * SalesItem.stockReceiptId / warehouseStockReceiptId, so when a receipt is re-priced
  * (supplier-invoice discount, invoice cancel/delete revert, manual capital edit) the
  * affected lines are found by an indexed lookup — no scanning — and their cost + profit
- * are rewritten, then the parent Sales.PROFIT_AMOUNT is re-summed.
+ * are rewritten, then the parent Sales.PROFIT_AMOUNT is re-summed (minus the sale-level
+ * deductions — see sales/sale-profit.ts).
  *
  * Not covered (links are NULL by design): consumption/weighted-average lines and
  * fallback-cost lines (sold when receipts were depleted), plus all sales that predate
@@ -62,8 +64,9 @@ export const restateSalesCostsForReceipts = async (
 
     if (affectedSalesIds.size === 0) return 0;
 
-    // Re-sum the parent sale headers (PROFIT_AMOUNT is exactly the sum of line profits
-    // at creation time, so this aggregate restatement is exact).
+    // Re-sum the parent sale headers. PROFIT_AMOUNT is the sum of line profits minus
+    // the sale-level deductions (cart discount + loyalty chain) at creation time, so
+    // this aggregate restatement is exact — and must keep subtracting them.
     const salesIds = [...affectedSalesIds];
     await tx.$executeRaw(Prisma.sql`
         UPDATE sales s
@@ -73,7 +76,7 @@ export const restateSalesCostsForReceipts = async (
             WHERE SALES_ID IN (${Prisma.join(salesIds)}) AND IS_DELETED = 0
             GROUP BY SALES_ID
         ) li ON li.SALES_ID = s.ID
-        SET s.PROFIT_AMOUNT = li.TOTAL_PROFIT,
+        SET s.PROFIT_AMOUNT = li.TOTAL_PROFIT - ${Prisma.raw(SALE_LEVEL_DEDUCTIONS_SQL)},
             s.UPDATED_AT = NOW(),
             s.VERSION = COALESCE(s.VERSION, 1) + 1`);
 

@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express';
-import PushyService, { PUSH_PROVIDER_FCM, PUSH_PROVIDER_PUSHY } from './pushy.service';
+import PushyService from './pushy.service';
 import deviceLimitService from './device.service';
 import { PrismaClient as GlobalPrismaClient } from '../../prisma/global-client/generated/global';
 import { PrismaClient as TenantPrismaClient } from '../../prisma/client/generated/client';
@@ -22,16 +22,11 @@ interface RegisterDeviceRequest {
   deviceFingerprint: string;
   deviceName?: string;
   appVersion?: string;
-  /** 'fcm' from current app builds; absent from installs that predate FCM. */
-  provider?: string;
 }
 
 const registerDevice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userInfo = req.user as UserInfo;
   const { deviceToken, platform, deviceFingerprint } = req.body as RegisterDeviceRequest;
-  const provider = (req.body as RegisterDeviceRequest).provider === PUSH_PROVIDER_FCM
-    ? PUSH_PROVIDER_FCM
-    : PUSH_PROVIDER_PUSHY;
 
   if (!deviceToken || !platform) {
     return next(new RequestValidateError('Device token and platform are required'));
@@ -85,7 +80,6 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         data: {
           tenantUserId: userInfo.tenantUserId,  // Transfer ownership to current user
           deviceToken: deviceToken,  // Update to the new push token
-          provider: provider,
           platform: platform,
           deviceName: req.body.deviceName || existingDeviceByFingerprint.deviceName,
           appVersion: req.body.appVersion,
@@ -100,16 +94,6 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
           userInfo.tenantId,
           updatedDevice.id
         );
-      }
-
-      // The app moved this device from Pushy to FCM: drop the old Pushy token's
-      // topic subscriptions so Pushy stops fanning out to it. Fire and forget.
-      if (existingDeviceByFingerprint.provider !== PUSH_PROVIDER_FCM
-        && provider === PUSH_PROVIDER_FCM
-        && existingDeviceByFingerprint.deviceToken !== deviceToken) {
-        PushyService.unsubscribeDeviceFromAllTopics(existingDeviceByFingerprint.deviceToken).catch(error => {
-          console.error('Failed to drop legacy Pushy subscriptions:', error);
-        });
       }
 
       // Subscribe to topics based on permissions
@@ -174,7 +158,6 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         },
         data: {
           deviceFingerprint: deviceFingerprint,
-          provider: provider,
           platform: platform,
           deviceName: req.body.deviceName || existingDeviceByToken.deviceName,
           appVersion: req.body.appVersion,
@@ -225,7 +208,6 @@ const registerDevice = async (req: AuthRequest, res: Response, next: NextFunctio
         tenantUserId: userInfo.tenantUserId,
         deviceToken: deviceToken,
         deviceFingerprint: deviceFingerprint,
-        provider: provider,
         platform: platform,
         deviceName: req.body.deviceName || 'Unnamed Device',
         appVersion: req.body.appVersion || '1.0.0',
@@ -577,7 +559,7 @@ const deleteDeviceById = async (req: AuthRequest, res: Response, next: NextFunct
       }
     }
 
-    // Unsubscribe the device from every topic via its transport's API
+    // Unsubscribe the device from every topic via FCM
     const unsubscribeResult = await PushyService.unsubscribeDevice(
       device,
       await getAllPossibleTopics(device.tenantUser.tenantId, device.tenantUserId, userInfo.databaseName)

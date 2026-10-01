@@ -219,8 +219,7 @@ model SettingDefinition {
 model PushyDevice {
   id                Int                    @id @default(autoincrement()) @map("ID")
   tenantUserId      Int                    @map("TENANT_USER_ID")
-  deviceToken       String                 @unique @map("DEVICE_TOKEN") // Push token (FCM or legacy Pushy; can change on reinstall/rotation)
-  provider          String                 @default("pushy") @map("PROVIDER") // "fcm" | "pushy" (installs from before the FCM move)
+  deviceToken       String                 @unique @map("DEVICE_TOKEN") // FCM registration token (can change on reinstall/rotation)
   deviceFingerprint String?                @map("DEVICE_FINGERPRINT") // Persistent device ID (survives reinstall)
   platform          String                 @map("PLATFORM") // "android", "ios", "web"
   deviceName        String?                @map("DEVICE_NAME") // Optional device identifier

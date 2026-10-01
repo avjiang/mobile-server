@@ -10,7 +10,7 @@ dotenv.config();
  * Credential: `FIREBASE_SERVICE_ACCOUNT` = the service-account JSON from the
  * Firebase console (Project settings → Service accounts), either raw or
  * base64-encoded. When it is missing FCM sending is skipped (logged once) so
- * local dev and the legacy Pushy path keep working.
+ * local dev keeps working.
  *
  * Payload shape: FCM data values must be strings, so the whole notification
  * object (typed ints, nested objects) goes JSON-encoded under `payload`. The

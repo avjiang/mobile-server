@@ -119,7 +119,7 @@ class NotificationService {
         return;
       }
 
-      const targets = devices.map(d => ({ deviceToken: d.deviceToken, provider: d.provider }));
+      const targets = devices.map(d => ({ deviceToken: d.deviceToken }));
 
       const notificationData = {
         title: request.title,

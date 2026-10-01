@@ -71,7 +71,6 @@
     "prisma": "^6.7.0",
     "process-nextick-args": "^2.0.1",
     "proxy-addr": "^2.0.7",
-    "pushy": "^4.0.3",
     "qs": "^6.11.0",
     "range-parser": "^1.2.1",
     "raw-body": "^2.5.2",

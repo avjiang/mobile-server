@@ -141,9 +141,11 @@ For a coordinated release that includes schema changes:
 5. Wait for green deploy + `curl https://bayaryuk-…/health`.
 6. Release the matching Flutter build.
 
-### Silent-failure caveat in `updateAllTenantDatabases()`
+### Failure reporting in `updateAllTenantDatabases()`
 
-[`src/db.ts:82`](../src/db.ts#L82) **catches per-tenant migration failures and logs them — it does NOT abort**. Always grep stdout of `upgrade_db_prod` for `Failed to update` after the run. A clean exit code does not mean every tenant migrated.
+[`src/db.ts`](../src/db.ts) catches a per-tenant migration failure, logs it and carries on with the other tenants — but since `e8e686e` (2026-09-28) it ends with `MIGRATION FAILED for N database(s): …` listing every failed database (global included) and throws, so `upgrade_db[_prod]` **exits 1**. Read that summary; databases absent from the server are skipped and listed separately (expected). _(Before `e8e686e` it always printed "All tenant databases updated." and exited 0, so you had to grep for `Failed to update`.)_
+
+Multi-outlet (sprint-008): the tenant migration `20260930120000_multi_outlet_fks_and_user_outlet` is gated by the read-only `docs/future/be1_prod_probe.js` (before) and `be1_verify_post.js` (after) — runbook `docs/future/MULTI_OUTLET.md` §3.
 
 ### Rollback gap (current state)
 

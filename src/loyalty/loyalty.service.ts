@@ -97,6 +97,68 @@ const selectHighestQualifyingTier = <T extends { id: number; minSpend: any }>(
     return null;
 };
 
+type AccountTierState = { id: number; loyaltyTierId: number | null; totalSpend: any; isManualTier: boolean };
+
+/**
+ * Which accounts move to which tier under the auto-tier rule (LOYALTY.md §2):
+ * the highest tier the total spend qualifies for, upward only. An account with
+ * no live tier (a new member, or one whose tier was deleted) takes whatever it
+ * qualifies for, so a min-spend-0 tier applies from the first sale instead of
+ * only after it. Manual tiers are left alone. Returns tierId → account ids;
+ * a `null` key clears the tier.
+ */
+const planTierAssignments = <T extends { id: number; minSpend: any }>(
+    accounts: AccountTierState[],
+    tiers: T[],
+): Map<number | null, number[]> => {
+    const plan = new Map<number | null, number[]>();
+    for (const account of accounts) {
+        if (account.isManualTier) continue;
+        const current = tiers.find((t) => t.id === account.loyaltyTierId);
+        const qualifying = selectHighestQualifyingTier(toDecimalNumber(account.totalSpend), tiers);
+        let target: number | null;
+        if (!current) {
+            target = qualifying?.id ?? null;
+            if (target === account.loyaltyTierId) continue;
+        } else if (qualifying && toDecimalNumber(qualifying.minSpend) > toDecimalNumber(current.minSpend)) {
+            target = qualifying.id;
+        } else {
+            continue;
+        }
+        plan.set(target, [...(plan.get(target) ?? []), account.id]);
+    }
+    return plan;
+};
+
+/**
+ * Applies {@link planTierAssignments} to every account of a program. Run after
+ * anything that can leave members on the wrong tier: a tier created, its
+ * minimum spend changed, or a tier deleted. `client` may be a transaction.
+ */
+const syncAccountTiers = async (
+    client: any,
+    programId: number,
+    options: { dryRun?: boolean } = {},
+): Promise<Map<number | null, number[]>> => {
+    const tiers = await client.loyaltyTier.findMany({
+        where: { loyaltyProgramId: programId, deleted: false },
+        select: { id: true, minSpend: true },
+    });
+    const accounts = await client.loyaltyAccount.findMany({
+        where: { loyaltyProgramId: programId, deleted: false },
+        select: { id: true, loyaltyTierId: true, totalSpend: true, isManualTier: true },
+    });
+    const plan = planTierAssignments(accounts, tiers);
+    if (options.dryRun) return plan;
+    for (const [loyaltyTierId, ids] of plan) {
+        await client.loyaltyAccount.updateMany({
+            where: { id: { in: ids } },
+            data: { loyaltyTierId },
+        });
+    }
+    return plan;
+};
+
 /**
  * FIFO point-batch consumption math: returns the per-batch deductions that
  * should be applied to drain `pointsToRedeem` from the given batches
@@ -150,6 +212,7 @@ const bulkEnrollCustomers = async (db: string, programId: number) => {
                 loyaltyProgramId: programId,
             })),
         });
+        await syncAccountTiers(prisma, programId);
     }
 };
 
@@ -349,11 +412,19 @@ const enrollCustomer = async (db: string, data: EnrollCustomerRequest): Promise<
         throw new NotFoundError('Loyalty program');
     }
 
+    // A new member starts on the tier a spend of 0 qualifies for (a min-spend-0
+    // tier), so its discount applies to their first sale, not only after it.
+    const tiers: any[] = await prisma.loyaltyTier.findMany({
+        where: { loyaltyProgramId: data.loyaltyProgramId, deleted: false },
+    });
+    const entryTier = selectHighestQualifyingTier(0, tiers);
+
     // Create account (unique constraint will prevent duplicates)
     const account = await prisma.loyaltyAccount.create({
         data: {
             customerId: data.customerId,
             loyaltyProgramId: data.loyaltyProgramId,
+            loyaltyTierId: entryTier?.id ?? null,
         },
     });
 
@@ -366,7 +437,14 @@ const enrollCustomer = async (db: string, data: EnrollCustomerRequest): Promise<
         totalEarned: 0,
         totalRedeemed: 0,
         totalSpend: 0,
-        loyaltyTier: null,
+        loyaltyTier: entryTier ? {
+            id: entryTier.id,
+            name: entryTier.name,
+            minSpend: toDecimalNumber(entryTier.minSpend),
+            discountPercentage: toDecimalNumber(entryTier.discountPercentage),
+            pointsMultiplier: toDecimalNumber(entryTier.pointsMultiplier),
+            sortOrder: entryTier.sortOrder,
+        } : null,
         isManualTier: false,
         joinedAt: account.joinedAt.toISOString(),
     };
@@ -752,6 +830,7 @@ const createTier = async (db: string, data: CreateTierRequest): Promise<LoyaltyT
         },
     });
 
+    await syncAccountTiers(prisma, tier.loyaltyProgramId);
     invalidateProgramCache(db);
 
     return {
@@ -778,6 +857,7 @@ const updateTier = async (db: string, tierId: number, data: UpdateTierRequest): 
         },
     });
 
+    if (data.minSpend !== undefined) await syncAccountTiers(prisma, tier.loyaltyProgramId);
     invalidateProgramCache(db);
 
     return {
@@ -801,10 +881,14 @@ const deleteTier = async (db: string, tierId: number): Promise<void> => {
         });
 
         // Soft-delete the tier
-        await tx.loyaltyTier.update({
+        const tier = await tx.loyaltyTier.update({
             where: { id: tierId },
             data: { deleted: true, deletedAt: new Date() },
         });
+
+        // Those members take the highest remaining tier they qualify for,
+        // instead of losing their discount until their next sale.
+        await syncAccountTiers(tx, tier.loyaltyProgramId);
     });
 
     invalidateProgramCache(db);
@@ -1019,6 +1103,7 @@ export default {
     assignTier,
     getTiersByProgramId,
     checkTierUpgrade,
+    syncAccountTiers,
     // Expiring points
     getExpiringPoints,
     // Cache helpers (for sales integration)
@@ -1030,6 +1115,7 @@ export default {
         toDecimalNumber,
         calculateInactiveDays,
         selectHighestQualifyingTier,
+        planTierAssignments,
         consumePointsFifo,
         formatTransaction,
     },

@@ -1,6 +1,7 @@
 import { PrismaClient, Customer } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
+import loyaltyService from '../loyalty/loyalty.service';
 import { SyncRequest } from "src/item/item.request";
 
 let getAll = async (databaseName: string) => {
@@ -142,15 +143,13 @@ let createMany = async (customers: Customer[], databaseName: string, loyaltyTier
             throw new RequestValidateError(conflict);
         }
 
-        await tenantPrisma.customer.createMany({
-            data: customers,
-        });
-        const createdCustomers = await tenantPrisma.customer.findMany({
-            where: {
-                firstName: { in: customers.map(c => c.firstName) },
-                lastName: { in: customers.map(c => c.lastName) },
-            },
-        });
+        // One create per customer, so we get back exactly the rows inserted. MySQL's
+        // createMany returns no ids, and looking them up by name also matched older
+        // (even deleted) customers with the same name: the app took the first, the
+        // old one, and the auto-enrol below hit the unique index and enrolled nobody.
+        const createdCustomers = await tenantPrisma.$transaction(
+            customers.map(c => tenantPrisma.customer.create({ data: c })),
+        );
 
         // Auto-enroll new customers into active loyalty program
         if (loyaltyTier && loyaltyTier !== 'none') {
@@ -166,6 +165,8 @@ let createMany = async (customers: Customer[], databaseName: string, loyaltyTier
                             loyaltyProgramId: program.id,
                         })),
                     });
+                    // Start them on the entry tier, so its discount applies to their first sale.
+                    await loyaltyService.syncAccountTiers(tenantPrisma, program.id);
                 }
             } catch (err) {
                 console.error('Auto-enroll failed:', err);

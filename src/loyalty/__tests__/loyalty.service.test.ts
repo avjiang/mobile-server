@@ -20,6 +20,7 @@ const {
     toDecimalNumber,
     calculateInactiveDays,
     selectHighestQualifyingTier,
+    planTierAssignments,
     consumePointsFifo,
     formatTransaction,
 } = (loyaltyService as any).__testables;
@@ -132,6 +133,56 @@ describe("selectHighestQualifyingTier", () => {
     test("accepts Decimal-as-string minSpend (Prisma payloads)", () => {
         const t = [{ id: 1, minSpend: "500000.00" }];
         assert.equal(selectHighestQualifyingTier(500_000, t)?.id, 1);
+    });
+});
+
+// ── planTierAssignments (auto-tier for new / tier-less members) ────────────
+
+describe("planTierAssignments", () => {
+    const basic = { id: 1, minSpend: 0 };
+    const silver = { id: 2, minSpend: 1_000_000 };
+    const gold = { id: 3, minSpend: 2_000_000 };
+    const tiers = [gold, basic, silver];
+    const account = (id: number, loyaltyTierId: number | null, totalSpend: number, isManualTier = false) =>
+        ({ id, loyaltyTierId, totalSpend, isManualTier });
+    const asObject = (plan: Map<number | null, number[]>) => Object.fromEntries(plan);
+
+    test("new member (no tier, spend 0) → the min-spend-0 tier", () => {
+        assert.deepEqual(asObject(planTierAssignments([account(10, null, 0)], tiers)), { 1: [10] });
+    });
+
+    test("no tier with spend → the highest tier that spend qualifies for", () => {
+        assert.deepEqual(asObject(planTierAssignments([account(10, null, 1_500_000)], tiers)), { 2: [10] });
+    });
+
+    test("tier of a deleted/unknown id is treated as no tier", () => {
+        assert.deepEqual(asObject(planTierAssignments([account(10, 99, 0)], tiers)), { 1: [10] });
+    });
+
+    test("upgrades only: a member above their tier moves up, never down", () => {
+        const plan = planTierAssignments([account(10, 1, 2_500_000), account(11, 3, 0)], tiers);
+        assert.deepEqual(asObject(plan), { 3: [10] });
+    });
+
+    test("already on the right tier → nothing to do", () => {
+        assert.equal(planTierAssignments([account(10, 2, 1_200_000)], tiers).size, 0);
+    });
+
+    test("manual tiers are never touched", () => {
+        assert.equal(planTierAssignments([account(10, null, 0, true), account(11, 1, 5_000_000, true)], tiers).size, 0);
+    });
+
+    test("no tier qualifies → no-tier members stay as they are", () => {
+        assert.equal(planTierAssignments([account(10, null, 0)], [silver, gold]).size, 0);
+    });
+
+    test("tier of a deleted id and nothing qualifies → cleared to null", () => {
+        assert.deepEqual(asObject(planTierAssignments([account(10, 99, 0)], [silver])), { null: [10] });
+    });
+
+    test("groups accounts by target tier", () => {
+        const plan = planTierAssignments([account(10, null, 0), account(11, null, 0), account(12, null, 1_000_000)], tiers);
+        assert.deepEqual(asObject(plan), { 1: [10, 11], 2: [12] });
     });
 });
 

@@ -147,7 +147,9 @@ All endpoints are prefixed with:
 }
 ```
 
-**Response (Success - 200):** Returns the array of created Customer objects.
+**Response (Success - 200):** Returns the array of created Customer objects: exactly the rows this call inserted, in request order (one `create` each inside a transaction; since 2026-10-02 — it used to look them up by name and could also return older same-named customers).
+
+**Side effect:** when the tenant has loyalty (`loyaltyTier` ≠ `none`) and an active program, the new customers are enrolled and put on the tier a spend of 0 qualifies for (e.g. a min-spend-0 "Basic"), via `loyaltyService.syncAccountTiers`.
 
 **Error Response (400 - Duplicate):**
 ```json

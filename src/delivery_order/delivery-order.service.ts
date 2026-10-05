@@ -8,6 +8,7 @@ import { create } from "domain";
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request";
 import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
 import { warehouseRef, receiveLayers, consumeFIFO } from "../stock/location-stock-engine";
+import { receiptQtyAfterDebt } from "../stock/supply-shortage";
 
 /** Maps a batch-validation `result.type` onto a translatable entity key. */
 const REFERENCE_ENTITY: Record<string, ErrorEntity> = {
@@ -744,10 +745,31 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
     }
 }
 
+// A delivery received into a warehouse that has since closed (a step down from
+// Pro drains warehouse stock into an outlet, then soft-deletes the warehouse)
+// can't be re-stocked or reversed there: editing it would put stock into a
+// closed warehouse, and cancelling it would silently leave the drained stock at
+// the outlet. Refuse instead, and say where the stock went.
+const assertDestinationWarehouseOpen = async (tx: Prisma.TransactionClient, deliveryOrder: any) => {
+    if (deliveryOrder.destinationLocationType !== 'WAREHOUSE' || !deliveryOrder.warehouseId) return;
+    const open = await tx.warehouse.findFirst({
+        where: { id: deliveryOrder.warehouseId, deleted: false },
+        select: { id: true },
+    });
+    if (!open) {
+        throw new RequestValidateError(
+            `Delivery order #${deliveryOrder.id} was received into a warehouse that has been closed ` +
+            `(its stock was moved to the outlet when the plan changed). Adjust the outlet's stock instead.`
+        );
+    }
+};
+
 // Optimized helper function for batch stock operations
 const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string, siteId: number | null = null) => {
     const movementOperations = [];
     const receiptOperations = [];
+
+    await assertDestinationWarehouseOpen(tx, deliveryOrder);
 
     // Fetch trackStock flags for all items (defensive guard for non-stock items)
     const itemTrackStockData = await tx.item.findMany({
@@ -870,13 +892,18 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
                 siteId: siteId
             });
 
-            // Prepare receipt operation with per-unit cost
-            receiptOperations.push({
+            // Prepare receipt operation with per-unit cost. Into a NEGATIVE balance
+            // (a laundry supply that ran short, see stock/supply-shortage.ts) the
+            // delivery first pays back the debt — that amount was already used — so
+            // the FIFO layer carries only the positive remainder (none if ≤ 0). The
+            // balance + movement above still record the full received quantity.
+            const receiptQty = receiptQtyAfterDebt(previousAvailableQuantity, quantityDelta);
+            if (receiptQty.greaterThan(0)) receiptOperations.push({
                 itemId: item.itemId,
                 outletId: deliveryOrder.outletId,
                 itemVariantId: item.itemVariantId || null,
                 deliveryOrderId: deliveryOrder.id,
-                quantity: quantityDelta,
+                quantity: receiptQty,
                 cost: perUnitCost,
                 receiptDate: new Date()
             });
@@ -893,6 +920,8 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
 // Helper function to reverse stock operations when delivery order is cancelled
 const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string, siteId: number | null = null) => {
     const movementOperations = [];
+
+    await assertDestinationWarehouseOpen(tx, deliveryOrder);
 
     // ── Warehouse destination → reverse from warehouse stock (FIFO), capped at what's
     // available (lenient, mirroring the outlet clamp-to-zero below), then return.
@@ -968,11 +997,16 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                 // clamp, so GREATEST(0, …) does both atomically in one
                 // statement. UPDATED_AT is set explicitly — raw SQL bypasses
                 // Prisma's @updatedAt, and delta sync depends on it.
+                //
+                // The floor is LEAST(current, 0), not 0: a laundry supply may already
+                // sit in the negative (it ran short, see stock/supply-shortage.ts), and
+                // GREATEST(0, …) would RAISE it to 0 — a cancellation inventing stock
+                // and erasing the shortage. A cancellation never adds stock.
                 const qty = quantityDelta.toNumber();
                 await tx.$executeRaw`
                     UPDATE stock_balance
-                       SET AVAILABLE_QUANTITY = GREATEST(0, AVAILABLE_QUANTITY - ${qty}),
-                           ON_HAND_QUANTITY   = GREATEST(0, ON_HAND_QUANTITY - ${qty}),
+                       SET AVAILABLE_QUANTITY = GREATEST(LEAST(AVAILABLE_QUANTITY, 0), AVAILABLE_QUANTITY - ${qty}),
+                           ON_HAND_QUANTITY   = GREATEST(LEAST(ON_HAND_QUANTITY, 0), ON_HAND_QUANTITY - ${qty}),
                            UPDATED_AT         = NOW(3)
                      WHERE ID = ${currentBalance.id}`;
 

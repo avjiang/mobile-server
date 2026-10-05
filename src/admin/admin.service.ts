@@ -1640,12 +1640,19 @@ const changeTenantPlan = async (tenantId: number, newPlanName: string) => {
                     });
                 }
 
+                // 'trial' means "the 30-day Pro trial". Choosing a plan below Pro
+                // ends it: the outlet becomes a normal paid subscription, valid
+                // until the trial's end date. Leaving it 'trial' billed the new
+                // plan at Rp 0 and kept the app on the Pro-trial sheet.
+                const endsTrial = isTrialStatus(subscription.status) && newPlanName !== 'Pro';
+
                 const updated = await prisma.tenantSubscription.update({
                     where: { id: subscription.id },
                     data: {
                         subscriptionPlanId: newPlan.id,
                         customPrice: null,
                         customPriceNote: null,
+                        ...(endsTrial ? { status: 'Active' } : {}),
                     },
                     include: {
                         subscriptionPlan: true
@@ -1878,8 +1885,13 @@ const recordPayment = async (
         const periodTo = new Date(periodFrom);
         periodTo.setMonth(periodTo.getMonth() + extensionMonths);
 
-        // Step 4: Build cost snapshot (includes tenant-level add-ons)
-        const costSnapshot = buildCostSnapshot(subscription, tenantAddOns);
+        // Step 4: Build cost snapshot (includes tenant-level add-ons). A payment
+        // that buys time ends a trial (Step 6 sets 'Active'), so price the plan
+        // as paid — snapshotting the 'trial' row recorded the plan at Rp 0.
+        const costSnapshot = buildCostSnapshot(
+            extensionMonths > 0 ? { ...subscription, status: 'Active' } : subscription,
+            tenantAddOns,
+        );
 
         // Step 5: Create payment record
         const payment = await tx.tenantPayment.create({
@@ -2714,6 +2726,9 @@ let createOutletForTenant = async (
     // 2. Get existing subscription to determine the plan
     const { primarySubscription } = await getPrimarySubscription(tenantId);
     const subscriptionPlanId = primarySubscription.subscriptionPlanId;
+    // An outlet opened during the Pro trial joins the trial (Rp 0, same end
+    // date) instead of starting a full-price Pro month.
+    const joinsTrial = isTrialStatus(primarySubscription.status);
 
     return await prisma.$transaction(async (globalTx) => {
         return await tenantPrisma.$transaction(async (tenantTx: any) => {
@@ -2729,8 +2744,10 @@ let createOutletForTenant = async (
 
             // 4. Create subscription for the new outlet
             const now = new Date();
-            const nextPaymentDate = new Date(now);
-            nextPaymentDate.setDate(now.getDate() + 30);
+            const nextPaymentDate = joinsTrial
+                ? new Date(primarySubscription.subscriptionValidUntil)
+                : new Date(now);
+            if (!joinsTrial) nextPaymentDate.setDate(now.getDate() + 30);
             const subscriptionValidUntil = new Date(nextPaymentDate);
 
             await globalTx.tenantSubscription.create({
@@ -2738,7 +2755,7 @@ let createOutletForTenant = async (
                     tenantId,
                     outletId: globalOutlet.id,
                     subscriptionPlanId,
-                    status: 'Active',
+                    status: joinsTrial ? 'trial' : 'Active',
                     nextPaymentDate,
                     subscriptionValidUntil,
                 }

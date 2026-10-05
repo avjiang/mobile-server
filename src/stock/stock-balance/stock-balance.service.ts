@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient, StockBalance, StockMovement } from "../../../prisma/client/generated/client"
 import { Decimal } from 'decimal.js';
+import { receiptQtyAfterDebt } from '../supply-shortage';
 import { ErrorCode, NotFoundError, VersionMismatchDetail, VersionMismatchError, RequestValidateError } from "../../api-helpers/error"
 import { StockAdjustment, StockAdjustmentRequestBody } from "./stock-balance.request"
 import { getTenantPrisma } from '../../db';
@@ -450,12 +451,17 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                         });
                     }
                 } else if (deltaQuantity.greaterThan(0)) {
-                    // Handle positive adjustments
-                    receiptCreates.push({
+                    // Handle positive adjustments. Into a NEGATIVE balance (a laundry
+                    // supply that ran short, see stock/supply-shortage.ts) the stock-in
+                    // first pays back the debt — that amount was already used — so the
+                    // FIFO layer carries only the positive remainder (none if ≤ 0).
+                    // Balance + movement above still record the full delta.
+                    const receiptQty = receiptQtyAfterDebt(previousAvailableQuantity, deltaQuantity);
+                    if (receiptQty.greaterThan(0)) receiptCreates.push({
                         itemId: adjustment.itemId,
                         itemVariantId: adjustment.itemVariantId || null,  // Variant support
                         outletId: adjustment.outletId,
-                        quantity: deltaQuantity,
+                        quantity: receiptQty,
                         cost: new Decimal(adjustment.cost || 0),
                         receiptDate: new Date(),
                         createdAt: new Date(),

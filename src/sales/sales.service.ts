@@ -27,6 +27,7 @@ import voucherService from '../voucher/voucher.service';
 import { netSaleProfit } from './sale-profit';
 import { CAP_SETTING_KEY, enforceManualDiscount } from './manual-discount';
 import { lineShareOf } from './line-share';
+import { latestReceiptCosts } from '../stock/supply-cost';
 
 /**
  * Standard `include` for a sale's line items — excludes soft-deleted lines.
@@ -882,9 +883,17 @@ async function processLoyaltyForSale(
     };
 
     // Loyalty off (Basic/Lite, or after a step down from Pro): points are frozen
-    // and nothing is earned, but a prepaid package the customer already paid for
-    // must still be redeemable.
-    if (!performedBy.loyaltyTier || performedBy.loyaltyTier === 'none') {
+    // and nothing is EARNED — but whatever the customer already holds is still
+    // USED ("a lower plan blocks adding, never using"): a prepaid package, a
+    // voucher issued on Pro, and — for a sale rung up on Pro and synced after
+    // the step down — the points and tier discount the till already gave.
+    // Ignoring those legs kept the discount in the total but left the voucher
+    // ACTIVE, the points undeducted and the sale's discount fields at 0.
+    const loyaltyOff = !performedBy.loyaltyTier || performedBy.loyaltyTier === 'none';
+    const carriesLoyaltyLegs = !!salesBody.voucherId
+        || (salesBody.loyaltyPointsToRedeem || 0) > 0
+        || (salesBody.loyaltyTierDiscountPercentage || 0) > 0;
+    if (loyaltyOff && !carriesLoyaltyLegs) {
         if (salesBody.customerSubscriptionId) {
             // Only the package applies here, so pre-loyalty = final + package.
             const preLoyaltyTotal = totalAmount.plus(new Decimal(salesBody.subscriptionDiscountAmount || 0));
@@ -894,18 +903,53 @@ async function processLoyaltyForSale(
         }
         return result;
     }
+    const tierDiscountAllowed = performedBy.loyaltyTier === 'advanced' || loyaltyOff;
 
     // Find loyalty account for this customer
     const account = await tx.loyaltyAccount.findFirst({
         where: { customerId, deleted: false },
-        include: performedBy.loyaltyTier === 'advanced' ? { loyaltyTier: true } : undefined,
+        include: tierDiscountAllowed ? { loyaltyTier: true } : undefined,
     });
 
-    if (!account) return result; // Customer not enrolled — skip loyalty entirely
+    // No points or tier can apply (customer not enrolled, or the program is
+    // switched off), but a voucher the customer holds and a prepaid package
+    // still do. Both exits used to return before them, so the till gave the
+    // discount while the voucher stayed ACTIVE (reusable) and the package
+    // quota was never taken.
+    const redeemHeldValueOnly = async () => {
+        if (salesBody.voucherId) {
+            const voucherBase = voucherService.voucherBaseAfterPackage(
+                totalAmount, new Decimal(0), salesBody.voucherDiscountAmount,
+            );
+            if (voucherBase.gt(0)) {
+                const voucherResult = await voucherService.validateAndRedeemVoucher(
+                    tx, salesBody.voucherId, customerId, salesId, voucherBase,
+                    salesBody.voucherDiscountPercentage, salesBody.voucherDiscountAmount,
+                );
+                result.voucherId = voucherResult.voucherId;
+                result.voucherDiscountPercentage = voucherResult.voucherDiscountPercentage;
+                result.voucherDiscountAmount = voucherResult.voucherDiscountAmount;
+            }
+        }
+        if (salesBody.customerSubscriptionId) {
+            const preLoyaltyTotal = preLoyaltyTotalOf(totalAmount, {
+                subscriptionDiscount: new Decimal(salesBody.subscriptionDiscountAmount || 0),
+                tierDiscount: zero,
+                voucherDiscount: result.voucherDiscountAmount,
+                redemptionValue: zero,
+            });
+            Object.assign(result, await redeemCustomerSubscription(
+                tx, customerId, salesId, preLoyaltyTotal, salesBody, performedBy,
+            ));
+        }
+        return result;
+    };
+
+    if (!account) return await redeemHeldValueOnly();
     result.loyaltyAccountId = account.id;
 
     const program = await loyaltyService.getCachedProgram(db);
-    if (!program || !program.isActive) return result;
+    if (!program || !program.isActive) return await redeemHeldValueOnly();
 
     const toNum = loyaltyService.toDecimalNumber;
 
@@ -941,8 +985,9 @@ async function processLoyaltyForSale(
         // Skip tier discount — voucher and tier are mutually exclusive
     }
 
-    // 1. VALIDATE tier discount (advanced only) — skipped if voucher was applied
-    else if (performedBy.loyaltyTier === 'advanced' && salesBody.loyaltyTierDiscountPercentage && salesBody.loyaltyTierDiscountPercentage > 0) {
+    // 1. VALIDATE tier discount (advanced, or a sale rung up on advanced and
+    // synced after a step down) — skipped if voucher was applied
+    else if (tierDiscountAllowed && salesBody.loyaltyTierDiscountPercentage && salesBody.loyaltyTierDiscountPercentage > 0) {
         const tier = (account as any).loyaltyTier;
         const actualPercentage = tier ? toNum(tier.discountPercentage) : 0;
         validateTierMatch(salesBody.loyaltyTierDiscountPercentage, actualPercentage);
@@ -1047,8 +1092,9 @@ async function processLoyaltyForSale(
 
     // 4. EARN points on finalTotalAmount (after ALL discounts) — only when the
     // sale is fully paid at creation. Deferred-payment sales earn later via
-    // addPaymentToPartiallyPaidSales once the balance clears.
-    if (includeEarn && totalAmount.gt(0)) {
+    // addPaymentToPartiallyPaidSales once the balance clears. Never with
+    // loyalty off: points are frozen below Pro.
+    if (includeEarn && !loyaltyOff && totalAmount.gt(0)) {
         const pointsEarned = await creditEarnedPoints(tx, account, program, salesId, totalAmount, performedBy);
         if (pointsEarned > 0) {
             result.loyaltyPointsEarned = new Decimal(pointsEarned);
@@ -1116,8 +1162,12 @@ async function reverseLoyaltyForSale(
 
     const toNum = loyaltyService.toDecimalNumber;
 
-    // Package quota first — it doesn't depend on a loyalty account.
+    // Package quota and voucher first — neither depends on a loyalty account
+    // (a voucher can be held, and redeemed, without one).
     await restoreCustomerSubscriptionForSale(tx, sale);
+    if (sale.voucherId) {
+        await voucherService.restoreVoucherForSale(tx, sale.id);
+    }
 
     // Find loyalty account
     const account = await tx.loyaltyAccount.findFirst({
@@ -1219,11 +1269,6 @@ async function reverseLoyaltyForSale(
                 },
             });
         }
-    }
-
-    // 2b. Restore voucher (if sale used one)
-    if (sale.voucherId) {
-        await voucherService.restoreVoucherForSale(tx, sale.id);
     }
 
 }
@@ -1762,7 +1807,7 @@ async function completeNewSales(
                 // Fetch trackStock flag and cost for all items in the sale
                 tx.item.findMany({
                     where: { id: { in: [...new Set(salesBody.salesItems.map(i => i.itemId))] } },
-                    select: { id: true, trackStock: true, cost: true }
+                    select: { id: true, trackStock: true, cost: true, itemType: true }
                 }),
 
                 // Validate outlet existence
@@ -1811,8 +1856,17 @@ async function completeNewSales(
 
             // Build trackStock lookup map
             const itemTrackStockMap = new Map(
-                itemTrackStockData.map((i: any) => [i.id, { trackStock: i.trackStock, cost: i.cost }])
+                itemTrackStockData.map((i: any) => [i.id, { trackStock: i.trackStock, cost: i.cost, itemType: i.itemType }])
             );
+
+            // Laundry SUPPLY lines (detergent, softener, plastic, LPG…) may run short:
+            // owner rule 2026-10-02 — running out of a supply never blocks a wash. The
+            // sale goes through and the supply's balance at the first source goes
+            // NEGATIVE (the app shows the shortage via GET stockMovement/supply-shortages).
+            // Retail / non-supply items keep the strict validation below.
+            const isShortAllowed = (lookupKey: string) =>
+                itemTrackStockMap.get(Number(lookupKey.split('-')[0]))?.itemType === 'supply';
+            const shortKeys = new Set<string>(); // short-allowed keys that are actually short
 
             // Split sales items into stock-tracked and non-stock-tracked groups
             const stockItems = salesBody.salesItems.filter(i => itemTrackStockMap.get(i.itemId)?.trackStock !== false);
@@ -1870,6 +1924,12 @@ async function completeNewSales(
                     src.remainingBalance.set(lookupKey, b ? new Decimal(b.availableQuantity) : new Decimal(0));
                 }
                 const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
+                if (isShortAllowed(lookupKey)) {
+                    // A negative existing balance is fine here: the split loop's
+                    // `take.lte(0)` skips it, and the shortfall lands on sources[0].
+                    if (!anyBalance || combinedAvail.lt(totalEffectiveQty)) shortKeys.add(lookupKey);
+                    continue;
+                }
                 if (!anyBalance) {
                     const variantInfo = item.variantName ? ` - ${item.variantName}` : '';
                     stockValidationErrors.push(`Stock balance not found for item ${item.itemName || item.itemId}${variantInfo}`);
@@ -1887,6 +1947,19 @@ async function completeNewSales(
             if (stockValidationErrors.length > 0) {
                 throw new BusinessLogicError(`Stock validation failed: ${stockValidationErrors.join('; ')}`);
             }
+
+            // Unit cost for a supply shortfall: the item row's cost is 0 by design for a
+            // stock-tracked supply, so price it at the latest purchase (receipt) cost —
+            // keeps "laba setelah bahan" as accurate as the data allows. One batched
+            // query, only when a supply is actually short.
+            const shortfallCostByItem = shortKeys.size > 0
+                ? await latestReceiptCosts(
+                    tx,
+                    [...shortKeys].map(k => Number(k.split('-')[0])),
+                    salesBody.outletId,
+                    new Map([...itemTrackStockMap].map(([id, v]: [any, any]) => [id, v.cost])),
+                )
+                : new Map<number, Decimal>();
 
             // Calculate FIFO costs for each sales line, splitting across sources in priority
             // order (outlet first, then warehouse). Each used-receipt is tagged with its
@@ -1938,8 +2011,21 @@ async function completeNewSales(
                 }
 
                 if (remaining.gt(0)) {
-                    // Unreachable after combined validation — defensive guard.
-                    throw new BusinessLogicError(`Insufficient combined stock for item ${item.itemName || item.itemId}`);
+                    if (!isShortAllowed(lookupKey)) {
+                        // Unreachable after combined validation — defensive guard.
+                        throw new BusinessLogicError(`Insufficient combined stock for item ${item.itemName || item.itemId}`);
+                    }
+                    // Supply shortfall → charge it to the first source (the outlet, or the
+                    // override source); its balance goes negative. No receipt (id -1).
+                    usedReceipts.push({
+                        srcIndex: 0,
+                        id: -1,
+                        quantityUsed: remaining,
+                        cost: shortfallCostByItem.get(item.itemId) ?? fallbackCost,
+                    });
+                    const src0 = sources[0];
+                    src0.remainingBalance.set(lookupKey, (src0.remainingBalance.get(lookupKey) || new Decimal(0)).minus(remaining));
+                    remaining = new Decimal(0);
                 }
 
                 salesItemsWithFIFOCost.push({ ...item, usedReceipts, __order: originalLineIndex.get(item) ?? 0 });
@@ -2240,7 +2326,14 @@ async function completeNewSales(
             // only the earn leg waits for full payment (includeEarn).
             const isFullyPaid = salesStatus === 'Completed';
             const loyaltyOn = !!performedBy.loyaltyTier && performedBy.loyaltyTier !== 'none';
-            if (salesBody.customerId && (loyaltyOn || salesBody.customerSubscriptionId)) {
+            // With loyalty off, the block still runs for value the customer
+            // holds from Pro: a package, a voucher, or (a sale rung up on Pro
+            // and synced after the step down) points / a tier discount.
+            const usesHeldValue = !!salesBody.customerSubscriptionId
+                || !!salesBody.voucherId
+                || (salesBody.loyaltyPointsToRedeem || 0) > 0
+                || (salesBody.loyaltyTierDiscountPercentage || 0) > 0;
+            if (salesBody.customerId && (loyaltyOn || usesHeldValue)) {
                 const loyaltyResult = await processLoyaltyForSale(
                     tx, databaseName, createdSales.id, salesBody.customerId,
                     totalSalesAmount, salesBody, performedBy, isFullyPaid
@@ -2274,7 +2367,10 @@ async function completeNewSales(
                 if (performedBy.loyaltyTier === 'advanced' && loyaltyResult.loyaltyAccountId) {
                     postCommitTierAccountId = loyaltyResult.loyaltyAccountId;
                 }
-                if (loyaltyResult.loyaltyAccountId && salesBody.customerId) {
+                // Milestone vouchers are issued only while loyalty is on — a
+                // loyalty-off sale can still return an account when it redeemed
+                // value held from Pro.
+                if (loyaltyOn && loyaltyResult.loyaltyAccountId && salesBody.customerId) {
                     postCommitMilestoneCustomerId = salesBody.customerId;
                 }
             }
@@ -2315,26 +2411,45 @@ async function completeNewSales(
                 const movementData: any[] = [];
                 for (const [lookupKey, consumedQty] of src.consumedByItem) {
                     if (consumedQty.lte(0)) continue;
-                    const balance = src.balanceMap.get(lookupKey)!;
+                    const balance = src.balanceMap.get(lookupKey);
                     const item = salesBody.salesItems.find(i => `${i.itemId}-${i.itemVariantId || 'null'}` === lookupKey)!;
-                    const prev = new Decimal(balance.availableQuantity);
+                    const prev = balance ? new Decimal(balance.availableQuantity) : new Decimal(0);
                     const newAvail = prev.minus(consumedQty);
-                    const reorderThreshold = balance.reorderThreshold ? new Decimal(balance.reorderThreshold) : null;
+                    const reorderThreshold = balance?.reorderThreshold ? new Decimal(balance.reorderThreshold) : null;
                     const needsReorder = reorderThreshold
                         ? newAvail.lte(reorderThreshold) && prev.gt(reorderThreshold)
                         : false;
 
-                    balanceOps.push(
-                        src.balanceDelegate.update({
-                            where: { id: balance.id },
-                            data: {
-                                availableQuantity: { decrement: consumedQty.toNumber() },
-                                onHandQuantity: { decrement: consumedQty.toNumber() },
-                                version: { increment: 1 },
-                                updatedAt: new Date(),
-                            },
-                        })
-                    );
+                    if (balance) {
+                        balanceOps.push(
+                            src.balanceDelegate.update({
+                                where: { id: balance.id },
+                                data: {
+                                    availableQuantity: { decrement: consumedQty.toNumber() },
+                                    onHandQuantity: { decrement: consumedQty.toNumber() },
+                                    version: { increment: 1 },
+                                    updatedAt: new Date(),
+                                },
+                            })
+                        );
+                    } else {
+                        // Only reachable for a supply short-fall at a location that never
+                        // stocked it: open its balance row already in the negative.
+                        balanceOps.push(
+                            src.balanceDelegate.create({
+                                data: {
+                                    itemId: item.itemId,
+                                    itemVariantId: item.itemVariantId || null,
+                                    ...src.locWhere,
+                                    availableQuantity: consumedQty.neg().toNumber(),
+                                    onHandQuantity: consumedQty.neg().toNumber(),
+                                    reorderThreshold: null,
+                                    deleted: false,
+                                    version: 1,
+                                },
+                            })
+                        );
+                    }
 
                     movementData.push({
                         itemId: item.itemId,
@@ -2359,14 +2474,16 @@ async function completeNewSales(
                         stockUpdatesForNotif.push({
                             itemId: item.itemId,
                             itemVariantId: item.itemVariantId || null,
-                            itemName: balance.item.itemName,
-                            itemCode: balance.item.itemCode,
+                            itemName: balance?.item?.itemName ?? item.itemName,
+                            itemCode: balance?.item?.itemCode ?? item.itemCode,
                             variantName: item.variantName || null,
                             quantity: consumedQty,
                             previousAvailable: prev,
                             newAvailableQuantity: newAvail,
                             reorderThreshold: reorderThreshold?.toNumber(),
-                            willBeOutOfStock: newAvail.lte(0),
+                            // Only when stock CROSSES to ≤ 0 — a supply already in the
+                            // negative must not push "out of stock" on every wash.
+                            willBeOutOfStock: prev.gt(0) && newAvail.lte(0),
                             needsReorder,
                         });
                     }

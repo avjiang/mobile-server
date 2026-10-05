@@ -9,11 +9,16 @@ Ampere A1 VM. **The database stays on Azure** (`bayaryuk-db-v2`, free until ~202
 |---|---|
 | Oracle account (`alvinn.jiang@gmail.com`, tenancy `avjiang`, home region **`ap-singapore-2` Singapore West**) | ✅ created 2026-09-27 |
 | OCI CLI on the Mac (`brew install oci-cli`, `oci setup bootstrap`, profile DEFAULT) | ✅ |
-| Pay-as-you-go upgrade | ⏳ user started it; console said "account provisioning in progress" (2026-09-27 evening) |
+| Pay-as-you-go upgrade | ✅ **`PAYG` / `UPGRADED` at 2026-10-01 14:18 UTC** (plan `OCS-10204310`). Check with `oci osp-gateway subscription-service subscription list -c <tenancy> --osp-home-region ap-singapore-2` (`plan-type`, `upgrade-state`); the compute limits look the same on either plan. Paid usage is now possible → the `bayaryuk-any-spend` alert is the guard. Audit 2026-10-02: 1 instance (A1 1/6), 50 GB boot volume, no block volumes, no reserved IPs, spend $0.00 / forecast $0.00 |
 | Budget alert `bayaryuk-any-spend` ($1/mo; ACTUAL ≥1% + FORECAST ≥100% → `alvinn.jiang@gmail.com`) | ✅ |
 | Compartment `bayaryuk` + VCN `bayaryuk-vcn` (10.0.0.0/16) + IGW + route table + subnet `bayaryuk-public` (10.0.1.0/24) + security list `bayaryuk-sl` | ✅ |
 | SSH key `~/.ssh/bayaryuk_oci` (ed25519, Mac-local) | ✅ |
-| **VM `bayaryuk-app`** | ❌ not yet — **"Out of host capacity"** for 164 attempts, 14:23–21:08 on 2026-09-27 |
+| **VM `bayaryuk-app`** | ✅ **launched 2026-10-01 22:13** (4th attempt that evening; 164 "Out of host capacity" failures on 2026-09-27) — **1 OCPU / 6 GB** A1, Ubuntu 24.04, public IP `140.245.56.85`, private `10.0.1.111`. SSH: `bayaryuk-sl` allows port 22 from `161.142.138.37/32` + `60.54.81.81/32` (add the Mac's IP again whenever it changes) |
+| `setup_vm.sh` | ✅ run 2026-10-02 — Node v22.23.3, cloudflared 2026.9.3, UTC, keys-only SSH, `bayaryuk.service` enabled (not started) |
+| `/etc/bayaryuk/env` | ✅ 2026-10-02 — the 8 App Service settings (copied Azure → VM over SSH, never printed) + `DISABLE_CRONS=true` + `HOST=127.0.0.1` |
+| Azure MySQL firewall rule `oracle-vm` (`140.245.56.85`) on `bayaryuk-db-v2` | ✅ 2026-10-02 |
+| **Backend running on the VM** | ✅ 2026-10-02 release `20261002031312-83d63b8` — `bayaryuk.service` active, bound to `127.0.0.1:8080` (unreachable from outside: iptables allows only SSH), log confirms `DISABLE_CRONS=true`. `/health` ok; a login probe reads the prod global DB in **~10 ms** warm (119 ms first call); node RSS 114 MB; disk 13% |
+| Code to run | Prod (`main`) has **no `DISABLE_CRONS`** → a second host on the prod DB would run the nightly jobs twice. Until sprint-008 is on `main`, deploy local branch **`oracle/standby-main`** (`cf67c45` + only the `index.ts` `DISABLE_CRONS`/`HOST`/loopback hunks + `deploy.sh`; head `eda10b7`; not pushed, not for merge; worktree was in a session scratchpad, so recreate it the same way if gone). After sprint-008 is on `main`, deploy `main` and delete this branch |
 | Scripts: `deploy/oracle/setup_vm.sh` (one-time VM setup), `deploy/oracle/deploy.sh` (build on VM, health-checked switch, auto-rollback) | ✅ written 2026-09-28, not yet run (no VM) |
 | `trust proxy` + `'loopback'` (`src/index.ts`) | ✅ code, not deployed |
 | `api.bayaryuk.net` → App Service (DNS-only CNAME + `TXT asuid.api`, custom domain, managed cert GeoTrust exp 2027-03-28) | ✅ 2026-09-28, verified live |

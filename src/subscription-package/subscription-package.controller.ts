@@ -154,7 +154,9 @@ router.delete('/package/:id', requireLoyalty('advanced'), requirePermission(P.MA
 router.post('/subscribe', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), subscribeCustomer);
 router.get('/customer/:id', requirePermission(P.VIEW_SUBSCRIPTIONS), getCustomerSubscriptions);
 router.get('/subscription/:id', requirePermission(P.VIEW_SUBSCRIPTIONS), getSubscriptionById);
-router.put('/cancel/:id', requireLoyalty('advanced'), requirePermission(P.MANAGE_SUBSCRIPTIONS), cancelSubscription);
+// Cancelling (e.g. refunding what's left) stays open on every plan: a package
+// sold on Pro / the Pro trial is the customer's, so a step down mustn't trap it.
+router.put('/cancel/:id', requirePermission(P.MANAGE_SUBSCRIPTIONS), cancelSubscription);
 
 // Usage tracking
 router.post('/usage', requirePermission(P.MANAGE_SUBSCRIPTIONS), recordUsage);

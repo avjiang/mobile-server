@@ -98,7 +98,9 @@ router.get('/rules', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS)
 router.post('/rule', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), createRewardRule);
 router.put('/rule/:id', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), updateRewardRule);
 router.delete('/rule/:id', requireLoyalty('basic'), requirePermission(P.MANAGE_PROGRAM), deleteRewardRule);
-router.get('/customer/:customerId', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getVouchersByCustomerId);
+// Open on every plan: a voucher issued on Pro (or the Pro trial) stays usable
+// after a step down — a lower plan blocks issuing, never using (SUBSCRIPTION §10.5).
+router.get('/customer/:customerId', requirePermission(P.VIEW_ACCOUNTS), getVouchersByCustomerId);
 router.post('/issue', requireLoyalty('basic'), requirePermission(P.ADJUST_POINTS), issueVoucher);
 
 module.exports = router;

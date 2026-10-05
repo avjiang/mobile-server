@@ -186,8 +186,8 @@ export const PAYMENT_MIX: { method: string; weight: number }[] = [
 /**
  * The laundry demo's shop identity — what its receipts, nota PDFs and WhatsApp
  * messages print. Upserted into `setting` (a preserved table), so a reseed keeps it
- * current instead of leaving the English defaults ("My Company", "Thank you for your
- * business!") that `setting_definition` falls back to.
+ * current instead of leaving the placeholder defaults ("Laundry Saya" and its generic
+ * footer) that the app falls back to.
  */
 export const LAUNDRY_SHOP = {
     ownerFirstName: 'Andi',

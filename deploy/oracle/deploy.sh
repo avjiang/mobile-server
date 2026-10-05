@@ -36,8 +36,8 @@ PREV=$("${SSH[@]}" "readlink /opt/bayaryuk/current || true")
 for i in {1..30}; do
   if "${SSH[@]}" "curl -sf http://127.0.0.1:8080/health >/dev/null"; then
     echo "healthy: $TS"
-    # keep the 3 newest releases
-    "${SSH[@]}" "cd /opt/bayaryuk/releases && ls -1t | tail -n +4 | xargs -r sudo rm -rf"
+    # keep the 3 newest releases (sudo: /opt/bayaryuk is the bayaryuk user's 0750 home)
+    "${SSH[@]}" "sudo bash -c 'cd /opt/bayaryuk/releases && ls -1t | tail -n +4 | xargs -r rm -rf'"
     exit 0
   fi
   sleep 2

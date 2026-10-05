@@ -129,15 +129,14 @@ class TokenInvalidationService {
   public async onPlanChange(tenantId: number, oldPlan: string | null, newPlan: string): Promise<void> {
     console.log(`Plan change detected for tenant ${tenantId}: ${oldPlan || 'None'} -> ${newPlan}`);
 
-    // Only invalidate tokens if the plan actually changed
+    // Refresh tokens are NOT revoked any more (2026-10-02). A refresh mints the
+    // plan claims from the database, and the app (Sprint 008+) refreshes as
+    // soon as /account/accountDetails reports a plan its token doesn't carry,
+    // then re-gates without a logout. Revoking forced every user back to the
+    // login screen whenever their 1-day JWT expired, possibly mid-sale.
     if (oldPlan !== newPlan) {
-      await this.invalidateTenantTokensOnPlanChange(tenantId);
-
-      // Optionally, send push notifications to inform users
-      // await this.notifyUsersOfPlanChange(tenantId, oldPlan, newPlan);
-
-      // Log the plan change event (optional - for audit trail)
-      console.log(`Plan change completed for tenant ${tenantId}. All users must re-login to continue.`);
+      PlanCheckService.clearTenantCache(tenantId);
+      console.log(`Plan change completed for tenant ${tenantId}; clients pick it up on their next token refresh.`);
     }
   }
 

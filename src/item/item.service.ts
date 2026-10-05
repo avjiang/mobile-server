@@ -640,8 +640,11 @@ let getSupplyCosts = async (databaseName: string) => {
         if (supplies.length === 0) return [] as { itemId: number; cost: number }[];
         const ids = supplies.map(s => s.id);
         // Ordered latest-first; the first receipt seen per item is its current cost.
+        // Layers a sale used up count too (FIFO depletion soft-deletes them at
+        // quantity 0) — for a supply that ran out they ARE the latest purchases;
+        // same rule as src/stock/supply-cost.ts latestReceiptCosts.
         const receipts = await tenantPrisma.stockReceipt.findMany({
-            where: { itemId: { in: ids }, deleted: false },
+            where: { itemId: { in: ids }, OR: [{ deleted: false }, { quantity: 0 }] },
             select: { itemId: true, cost: true },
             orderBy: [{ receiptDate: 'desc' }, { id: 'desc' }],
         });

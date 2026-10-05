@@ -1,5 +1,8 @@
 import { Prisma, PrismaClient } from "../../../prisma/client/generated/client"
 import { getTenantPrisma } from '../../db';
+import { Decimal } from 'decimal.js';
+import { latestReceiptCosts } from '../supply-cost';
+import { episodeSalesIds, shortageEpisode, ShortageMovement } from '../supply-shortage';
 
 let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: number, outletId: number, itemVariantId?: number | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName)
@@ -427,4 +430,96 @@ let getInsights = async (databaseName: string, outletId: number, gte: Date, lte:
     };
 };
 
-export = { getStockChecksByItemIdAndOutlet, getMovementSummary, getMovementByType, getMovementByTypeDetail, getStockCard, getInsights }
+// ── Laundry supply shortages ─────────────────────────────────────────────────
+// A laundry SUPPLY never blocks a wash (sales.service completeNewSales): when it
+// runs out, the outlet balance goes negative. This lists every supply currently
+// below zero at the outlet, with the washes that used stock the shop did not have.
+// The maths (episode walk + short portion) is pure: ../supply-shortage.ts.
+
+const SHORTAGE_MOVEMENT_SCAN = 1000;   // movements walked back per item (bounded)
+const SHORTAGE_SALES_LIMIT = 50;       // washes listed per item (salesCount has them all)
+const REVERSED_SALE_STATUSES = new Set(['Voided', 'Returned', 'Refunded']);
+
+let getSupplyShortages = async (databaseName: string, outletId: number) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+
+    const balances = await tenantPrisma.stockBalance.findMany({
+        where: {
+            outletId,
+            itemVariantId: null,
+            deleted: false,
+            availableQuantity: { lt: 0 },
+            item: { itemType: 'supply', deleted: false, trackStock: true },
+        },
+        select: {
+            itemId: true,
+            availableQuantity: true,
+            item: { select: { itemName: true, unitOfMeasure: true, cost: true } },
+        },
+    });
+    if (balances.length === 0) return [];
+
+    const itemIds = balances.map((b) => b.itemId);
+    const [unitCosts, movementsPerItem] = await Promise.all([
+        latestReceiptCosts(tenantPrisma, itemIds, outletId,
+            new Map(balances.map((b) => [b.itemId, b.item.cost]))),
+        Promise.all(balances.map((b) =>
+            tenantPrisma.stockMovement.findMany({
+                where: { itemId: b.itemId, outletId, itemVariantId: null, deleted: false },
+                select: {
+                    id: true,
+                    previousAvailableQuantity: true,
+                    availableQuantityDelta: true,
+                    movementType: true,
+                    documentId: true,
+                    createdAt: true,
+                },
+                orderBy: { id: 'desc' },
+                take: SHORTAGE_MOVEMENT_SCAN,
+            }) as Promise<ShortageMovement[]>
+        )),
+    ]);
+
+    // One lookup for every sale inside any item's episode (status → skip reversed).
+    const salesIds = [...new Set(movementsPerItem.flatMap((m) => episodeSalesIds(m)))];
+    const sales = salesIds.length === 0 ? [] : await tenantPrisma.sales.findMany({
+        where: { id: { in: salesIds } },
+        select: { id: true, status: true, deleted: true, friendlyNumber: true, customerName: true, createdAt: true },
+    });
+    const saleById = new Map(sales.map((s) => [s.id, s]));
+    const excluded = new Set(
+        sales.filter((s) => s.deleted || REVERSED_SALE_STATUSES.has(s.status)).map((s) => s.id)
+    );
+
+    const result = balances.map((b, i) => {
+        const availableQuantity = new Decimal(b.availableQuantity.toString());
+        const episode = shortageEpisode(movementsPerItem[i], excluded);
+        return {
+            itemId: b.itemId,
+            itemName: b.item.itemName,
+            unitOfMeasure: b.item.unitOfMeasure,
+            availableQuantity: availableQuantity.toNumber(),
+            shortQuantity: availableQuantity.neg().toNumber(),
+            unitCost: (unitCosts.get(b.itemId) ?? new Decimal(0)).toNumber(),
+            since: episode.since,
+            sales: episode.sales.slice(0, SHORTAGE_SALES_LIMIT).map((e) => {
+                const sale = saleById.get(e.salesId);
+                const customerName = sale?.customerName?.trim();
+                return {
+                    salesId: e.salesId,
+                    // The nota number the app shows (laundry YYMMDD-<terminal>-<seq>);
+                    // null for a sale without one → the app shows "#<salesId>".
+                    receiptNumber: sale?.friendlyNumber?.trim() || null,
+                    createdAt: sale?.createdAt ?? e.createdAt,
+                    customerName: customerName ? customerName : null,
+                    shortQuantity: e.shortQuantity.toNumber(),
+                };
+            }),
+            salesCount: episode.sales.length,
+        };
+    });
+    // Most short first.
+    return result.sort((a, b) => b.shortQuantity - a.shortQuantity);
+};
+
+export = { getStockChecksByItemIdAndOutlet, getMovementSummary, getMovementByType, getMovementByTypeDetail, getStockCard, getInsights, getSupplyShortages }

@@ -341,8 +341,10 @@ const settingDefinitions = [
         key: 'company_name',
         category: 'System',
         type: 'STRING',
-        defaultValue: 'My Company',
-        description: 'Company name for invoices and receipts',
+        // Generic fallback only: the app shows a business-type default instead
+        // (Toko Saya / Laundry Saya / Resto Saya — FE StoreProfileDefaults).
+        defaultValue: 'Toko Saya',
+        description: 'Store name printed on receipts and invoices',
         scope: 'TENANT',
         isRequired: true
     },
@@ -350,8 +352,9 @@ const settingDefinitions = [
         key: 'receipt_footer',
         category: 'System',
         type: 'STRING',
-        defaultValue: 'Thank you for your business!',
-        description: 'Footer text on receipts',
+        // Generic fallback only — the app picks a business-type footer (FE StoreProfileDefaults).
+        defaultValue: 'Terima kasih atas kunjungan Anda!',
+        description: 'Closing message printed at the bottom of receipts',
         scope: 'TENANT',
         isRequired: false
     },

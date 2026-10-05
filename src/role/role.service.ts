@@ -105,6 +105,10 @@ let getAll = async (
                 // (user lost their active device, or plan downgraded).
                 notificationTopics = [];
             }
+        } else if (skip === 0) {
+            // Below Pro (incl. after a step down from Pro / the Pro trial): push
+            // is off, so tell the app to drop every topic it still holds.
+            notificationTopics = [];
         }
 
         return {

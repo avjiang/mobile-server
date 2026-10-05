@@ -201,6 +201,7 @@ model StockSnapshot {
 | Method | Endpoint                | Description                  |
 | ------ | ----------------------- | ---------------------------- |
 | GET    | `/stockMovement/find`   | Get movements by item/outlet (latest 25) |
+| GET    | `/stockMovement/supply-shortages?outletId=` | Laundry supplies below zero at the outlet + the washes that ran short (see "Supply Shortfall" below) |
 
 ### Stock Receipt Endpoints
 
@@ -406,6 +407,7 @@ This ensures delta sync returns the parent with all variants.
 1. **Stock Increase** (positive adjustment)
    - Creates new `StockReceipt` with quantity and cost
    - Multiple receipts for same item = different cost batches
+   - Into a **negative** balance (a laundry supply that ran short) the receipt carries only the positive remainder: `min(delta, max(0, previous + delta))`, none when ≤ 0. Balance + movement record the full delta. Same rule in the outlet delivery-order receipt and in `receiveLayers` (warehouse / transfers). See "Supply Shortfall" below.
 
 2. **Stock Decrease** (negative adjustment)
    - Deducts from oldest receipts first (FIFO)
@@ -414,6 +416,14 @@ This ensures delta sync returns the parent with all variants.
 3. **Stock Override**
    - Marks all existing receipts as deleted
    - Creates single new receipt with override quantity
+
+### Supply Shortfall (2026-10-02)
+
+Owner rule: running out of a laundry **supply** (`item.itemType = 'supply'`) never blocks a wash. In `completeNewSales` a supply line skips the stock validation; the uncovered amount is charged to the first source (outlet / override source) so the balance goes negative (a balance row is created at `−consumed` if none exists), costed at the latest receipt cost (`supply-cost.ts → latestReceiptCosts`). Out-of-stock pushes fire only when the balance crosses to ≤ 0. Retail keeps strict validation.
+
+- `supply-shortage.ts` — pure maths: `receiptQtyAfterDebt` / `settleLayers` (stock-in settles the debt first), `shortPortion` / `shortageEpisode` / `episodeSalesIds` (the shortage report). Tests: `__tests__/supply-shortage.test.ts`.
+- `supply-cost.ts` — `latestReceiptCosts(db, itemIds, outletId, itemCostFallback)`: latest receipt cost at the outlet, else any outlet (depleted layers count), else `item.cost`, else 0.
+- `GET /stockMovement/supply-shortages` — one entry per supply whose outlet base balance is < 0: `itemId, itemName, unitOfMeasure, availableQuantity, shortQuantity, unitCost, since, sales[{salesId, receiptNumber (= sales.friendlyNumber or null), createdAt, customerName, shortQuantity}] (newest first, max 50), salesCount`. Unified doc: FE repo `docs/modules/STOCK_AND_COST.md` §8.
 
 ### FIFO Deduction Logic
 

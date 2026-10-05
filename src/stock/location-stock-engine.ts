@@ -19,6 +19,7 @@
  */
 import { Decimal } from "decimal.js";
 import { RequestValidateError } from "../api-helpers/error";
+import { settleLayers } from "./supply-shortage";
 
 type Tx = any; // Prisma interactive-transaction client (tenant)
 
@@ -116,12 +117,19 @@ export async function receiveLayers(
     const prevAvail = balance ? new Decimal(balance.availableQuantity) : new Decimal(0);
     const prevOnHand = balance ? new Decimal(balance.onHandQuantity) : new Decimal(0);
 
-    for (const layer of p.layers) {
+    // Into a NEGATIVE balance (a laundry supply that ran short, see
+    // ./supply-shortage.ts) the incoming layers first pay back the debt, oldest
+    // layer first — that amount was already used — so only the positive remainder
+    // becomes FIFO receipts. Balance + movement still record the full total.
+    const keptQty = settleLayers(prevAvail, p.layers.map((l) => l.quantity));
+
+    for (const [i, layer] of p.layers.entries()) {
+        if (keptQty[i].lessThanOrEqualTo(0)) continue;
         const receiptData: any = {
             itemId: p.itemId,
             [ref.locationField]: ref.locationId,
             itemVariantId: p.itemVariantId,
-            quantity: layer.quantity,
+            quantity: keptQty[i],
             cost: layer.cost,
             receiptDate: layer.receiptDate ?? now,
             deliveryOrderId: layer.deliveryOrderId ?? null,

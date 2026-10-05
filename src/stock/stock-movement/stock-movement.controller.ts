@@ -140,8 +140,23 @@ let getInsights = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next);
 }
 
+// Laundry supplies currently below zero at the outlet (a supply never blocks a
+// wash — see sales.service completeNewSales). No plan gate: any tenant with
+// supplies can run short. See docs/modules/STOCK_AND_COST.md.
+let getSupplyShortages = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError('User not authenticated');
+    const outletIdRaw = req.query.outletId as string;
+    if (!outletIdRaw || !validator.isNumeric(outletIdRaw)) {
+        throw new RequestValidateError('Valid outletId is required');
+    }
+    service.getSupplyShortages(req.user.databaseName, parseInt(outletIdRaw))
+        .then(data => sendResponse(res, data))
+        .catch(next);
+}
+
 //routes
 router.get('/find', getStockChecksByItemIdAndOutlet)
+router.get('/supply-shortages', getSupplyShortages)
 router.get('/report/summary', rejectPlan('Lite'), getMovementSummary)
 router.get('/report/by-type', rejectPlan('Lite'), getMovementByType)
 router.get('/report/by-type-detail', rejectPlan('Lite'), getMovementByTypeDetail)

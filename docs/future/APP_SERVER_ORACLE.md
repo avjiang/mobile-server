@@ -132,6 +132,17 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
 8. **Stop paying:** a *stopped* App Service on B1 **still bills** (the plan is what costs money) → delete the web
    app **and** the App Service plan (or scale the plan to F1 if a free warm rollback is wanted). Then remove the
    `api` custom domain/cert on Azure and the Azure-origin wildcard if nothing else uses it.
+9. **CI/CD (noted 2026-10-13, owner).** `.github/workflows/main_bayaryuk.yml` deploys every push to `main` to
+   **Azure only**; the VM is deployed by hand with `deploy/oracle/deploy.sh <VM_IP> origin/main`.
+   - **Tonight and during step 7: no change.** Azure must still receive the new code (it answers the old app with
+     the forced update, and it is the rollback), so the workflow stays. **Every push to `main` needs the VM deploy
+     right after it**, or the two servers run different code.
+   - **With step 8: the workflow must change in the same commit that removes App Service**, otherwise every push to
+     `main` fails at "Login to Azure". Replace the Azure steps with a VM deploy. GitHub's runners cannot SSH in (the
+     OCI SSH list is three fixed IPs), so the choices are: (a) a **self-hosted runner on the VM** (free, arm64, no
+     inbound port; the job runs the same build-then-switch steps as `deploy.sh`), (b) SSH through the Cloudflare
+     tunnel with an Access service token, or (c) keep `deploy.sh` manual and reduce the workflow to tests on `main`.
+     Not decided yet. Also drop the workflow's "delete `libquery_engine-linux-arm64*`" step then (§ gotchas).
 
 ## Rollback
 

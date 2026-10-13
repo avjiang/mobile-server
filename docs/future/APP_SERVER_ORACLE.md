@@ -5,6 +5,11 @@ Ampere A1 VM. **The database stays on Azure** (`bayaryuk-db-v2`, free until ~202
 
 ## Status
 
+> ✅ **CUTOVER DONE 2026-10-13 ~21:50 MYT.** The VM runs `95f7834` and serves `api.bayaryuk.net` through tunnel
+> `bayaryuk-oracle`; crons run on the VM; App Service stays up with `DISABLE_CRONS=true` for the old app's forced
+> update and as the rollback. Open: cutover checklist steps 7–9 below. The table and notes underneath are the
+> build-up history (the "standby" wording there is no longer current).
+
 | Step | State |
 |---|---|
 | Oracle account (`alvinn.jiang@gmail.com`, tenancy `avjiang`, home region **`ap-singapore-2` Singapore West**) | ✅ created 2026-09-27 |
@@ -132,6 +137,7 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
 8. **Stop paying:** a *stopped* App Service on B1 **still bills** (the plan is what costs money) → delete the web
    app **and** the App Service plan (or scale the plan to F1 if a free warm rollback is wanted). Then remove the
    `api` custom domain/cert on Azure and the Azure-origin wildcard if nothing else uses it.
+   ⚠️ **Before deleting, repoint the proxied wildcard `*.bayaryuk.net` CNAME** (record `5370df2c0d298c3227112921dd467ffe`, still → the Azure hostname) to the tunnel hostname: the catalogue Worker answers every shop subdomain, but the record must keep resolving for Cloudflare to route the request at all. Also remove `TXT asuid.api`.
 9. **CI/CD (noted 2026-10-13, owner).** `.github/workflows/main_bayaryuk.yml` deploys every push to `main` to
    **Azure only**; the VM is deployed by hand with `deploy/oracle/deploy.sh <VM_IP> origin/main`.
    - **Tonight and during step 7: no change.** Azure must still receive the new code (it answers the old app with

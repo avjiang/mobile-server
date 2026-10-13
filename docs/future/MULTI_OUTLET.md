@@ -2,7 +2,7 @@
 
 Everything for the multi-outlet feature in one place: terminology, what's done, the account-owner-as-super-admin change to build, the BE-1 migration prod deploy, and the remaining backlog. **Refer to only this file.**
 
-**Last updated:** 2026-10-01 · **Repo:** `bayaryuk-server` · **Branch:** merged into **`feature/sprint-008`** on 2026-09-30 (BE `d7c47f7`, FE `7ea8cc3`; built on `feature/outlet-sprint006-merge` → `feature/sprint-008-outlet`). Ships with the sprint-008 release — not on prod yet.
+**Last updated:** 2026-10-13 (§3 ran on prod with the Sprint 008 release — this doc is now due for retirement into FE `docs/modules/OUTLET.md`) · **Repo:** `bayaryuk-server` · **Branch:** merged into **`feature/sprint-008`** on 2026-09-30 (BE `d7c47f7`, FE `7ea8cc3`; built on `feature/outlet-sprint006-merge` → `feature/sprint-008-outlet`). Ships with the sprint-008 release — not on prod yet.
 **Helper scripts (this folder):** `be1_prod_probe.js`, `be1_verify_post.js` (both READ-ONLY). There is no 2-outlet fixture script (`create_multi_outlet_test_tenant.ts` was referenced here but never committed) — see §4.
 **Retire this doc** once §3 has run on prod and the release is verified: fold §1/§2/§5 into FE `docs/modules/OUTLET.md` (the as-built module doc) and keep only what is still unbuilt (Set A/B, BE-2) in a smaller future doc.
 
@@ -17,7 +17,7 @@ Everything for the multi-outlet feature in one place: terminology, what's done, 
 | One outlet-access rule (`src/api-helpers/outlet-access.ts`) | ✅ done 2026-09-28 (`1e087c3`) |
 | Merged into `feature/sprint-008` (BE `d7c47f7`, FE `7ea8cc3`) | ✅ 2026-09-30 |
 | BE-1 migration dry-run (local DBs, idempotent; `npm run upgrade_db` all tenants OK after the merge) | ✅ done |
-| BE-1 migration **prod deploy** (`audio_technic_db` + `web_bytes_db` — the only tenant DBs on `bayaryuk-db-v2`) | ☐ with the sprint-008 release (planned 2026-10-01) → §3 |
+| BE-1 migration **prod deploy** (`audio_technic_db` + `web_bytes_db` — the only tenant DBs on `bayaryuk-db-v2`) | ✅ **2026-10-13** — probe `OVERALL: GO`, `upgrade_db_prod`, verify PASS for both; backup `backups/prod_2026-10-13_12-44-27/` → §3 |
 | **Account owner = Super Admin, outlet-unrestricted** (Set A) | ☐ not coded → §2 |
 | **Account owner assigns staff to outlets** (Set B) | ☐ not coded → §2 |
 | E2E test on the 2-outlet fixture | ☐ pending → §4 |

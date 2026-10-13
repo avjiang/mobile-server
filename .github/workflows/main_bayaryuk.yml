@@ -6,7 +6,14 @@ name: Build and deploy Node.js app to Azure Web App - BayarYuk
 on:
   push:
     branches:
-      - main 
+      - main
+    # Docs / Worker-only pushes don't restart the App Service. Since 2026-10-13 production is the
+    # Oracle VM (deploy/oracle/deploy.sh); this workflow only keeps the App Service fallback in step
+    # and is deleted with it (docs/future/APP_SERVER_ORACLE.md § Cutover checklist step 9).
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'workers/**'
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest

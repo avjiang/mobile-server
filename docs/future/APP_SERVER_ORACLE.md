@@ -116,7 +116,7 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
 
 1. Sprint-008 on `main` (brings `DISABLE_CRONS`/`HOST`, the `'loopback'` trust-proxy fix) and **deployed to the VM**
    with `deploy/oracle/deploy.sh`; the DB migrations of the release run first as usual.
-2. Scope the R2 rate-limit rule to `images.bayaryuk.net` (above).
+2. ✅ **Done 2026-10-13** — the R2 rate-limit rule is scoped to `images.bayaryuk.net` (`http.host eq "images.bayaryuk.net" and (…)`, ruleset `653465c014e74795bfad9f67996e4e09` v2, same 300 req / 10 s limit).
 3. Release the sprint-008 APK (`_releaseBaseURL = api.bayaryuk.net`) and get **every `audio_technic` device**
    on it — old APKs call `…azurewebsites.net` directly and will break once App Service is gone. FE SPRINT_008 §3
    step 10 (`minVersion 1.3.0`) forces this with the non-dismissible update dialog; prod had no `app_version` rows

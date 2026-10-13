@@ -138,18 +138,11 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
    app **and** the App Service plan (or scale the plan to F1 if a free warm rollback is wanted). Then remove the
    `api` custom domain/cert on Azure and the Azure-origin wildcard if nothing else uses it.
    ⚠️ **Before deleting, repoint the proxied wildcard `*.bayaryuk.net` CNAME** (record `5370df2c0d298c3227112921dd467ffe`, still → the Azure hostname) to the tunnel hostname: the catalogue Worker answers every shop subdomain, but the record must keep resolving for Cloudflare to route the request at all. Also remove `TXT asuid.api`.
-9. **CI/CD (noted 2026-10-13, owner).** `.github/workflows/main_bayaryuk.yml` deploys every push to `main` to
-   **Azure only**; the VM is deployed by hand with `deploy/oracle/deploy.sh <VM_IP> origin/main`.
-   - **Tonight and during step 7: no change.** Azure must still receive the new code (it answers the old app with
-     the forced update, and it is the rollback), so the workflow stays. **Every push to `main` needs the VM deploy
-     right after it**, or the two servers run different code.
-   - **With step 8: the workflow must change in the same commit that removes App Service**, otherwise every push to
-     `main` fails at "Login to Azure". Replace the Azure steps with a VM deploy. GitHub's runners cannot SSH in (the
-     OCI SSH list is three fixed IPs), so the choices are: (a) a **self-hosted runner on the VM** (free, arm64, no
-     inbound port; the job runs the same build-then-switch steps as `deploy.sh`), (b) SSH through the Cloudflare
-     tunnel with an Access service token, or (c) keep `deploy.sh` manual and reduce the workflow to tests on `main`.
-     **Decided 2026-10-13 (owner): (c)** — one person deploys, so no automation: `deploy.sh` stays the deploy, and
-     the workflow becomes tests-only on `main`. It needs a network on the OCI SSH list. Also drop the workflow's "delete `libquery_engine-linux-arm64*`" step then (§ gotchas).
+9. ✅ **CI/CD removed 2026-10-13 (owner).** `.github/workflows/main_bayaryuk.yml` (push to `main` → Azure) is deleted,
+   and so is `test.yml`; the repo has no workflows. **A push to `main` deploys nothing.** The only deploy is
+   `deploy/oracle/deploy.sh 140.245.56.85 origin/main`, run by hand from a network on the OCI SSH list. The App
+   Service therefore stays frozen on `95f7834` until it is deleted (step 8) — enough for the old app's forced update
+   and as a short-term rollback, but it drifts from production with every later VM deploy. Tests: `npm test` locally.
 
 > **Cutover done 2026-10-13 ~21:50 MYT** — steps 1–6 complete: BE `95f7834` on the VM (release
 > `20261013132743-95f7834`) and on Azure; `api.bayaryuk.net` is a proxied CNAME to the tunnel (ingress + no-Worker

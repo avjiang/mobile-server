@@ -13,7 +13,7 @@ Ampere A1 VM. **The database stays on Azure** (`bayaryuk-db-v2`, free until ~202
 | Budget alert `bayaryuk-any-spend` ($1/mo; ACTUAL ≥1% + FORECAST ≥100% → `alvinn.jiang@gmail.com`) | ✅ |
 | Compartment `bayaryuk` + VCN `bayaryuk-vcn` (10.0.0.0/16) + IGW + route table + subnet `bayaryuk-public` (10.0.1.0/24) + security list `bayaryuk-sl` | ✅ |
 | SSH key `~/.ssh/bayaryuk_oci` (ed25519, Mac-local) | ✅ |
-| **VM `bayaryuk-app`** | ✅ **launched 2026-10-01 22:13** (4th attempt that evening; 164 "Out of host capacity" failures on 2026-09-27) — **1 OCPU / 6 GB** A1, Ubuntu 24.04, public IP `140.245.56.85`, private `10.0.1.111`. SSH: `bayaryuk-sl` allows port 22 from `161.142.138.37/32` + `60.54.81.81/32` (add the Mac's IP again whenever it changes) |
+| **VM `bayaryuk-app`** | ✅ **launched 2026-10-01 22:13** (4th attempt that evening; 164 "Out of host capacity" failures on 2026-09-27) — **1 OCPU / 6 GB** A1, Ubuntu 24.04, public IP `140.245.56.85`, private `10.0.1.111`. SSH: `bayaryuk-sl` allows port 22 from `161.142.138.37/32` + `60.54.81.81/32` + `161.142.156.6/32` (added 2026-10-12 for the perf test; keep) (a temporary `161.142.171.233/32` was added and removed again on 2026-10-12) (add the Mac's IP again whenever it changes) |
 | `setup_vm.sh` | ✅ run 2026-10-02 — Node v22.23.3, cloudflared 2026.9.3, UTC, keys-only SSH, `bayaryuk.service` enabled (not started) |
 | `/etc/bayaryuk/env` | ✅ 2026-10-02 — the 8 App Service settings (copied Azure → VM over SSH, never printed) + `DISABLE_CRONS=true` + `HOST=127.0.0.1` |
 | Azure MySQL firewall rule `oracle-vm` (`140.245.56.85`) on `bayaryuk-db-v2` | ✅ 2026-10-02 |
@@ -23,7 +23,11 @@ Ampere A1 VM. **The database stays on Azure** (`bayaryuk-db-v2`, free until ~202
 | `trust proxy` + `'loopback'` (`src/index.ts`) | ✅ code, not deployed |
 | `api.bayaryuk.net` → App Service (DNS-only CNAME + `TXT asuid.api`, custom domain, managed cert GeoTrust exp 2027-03-28) | ✅ 2026-09-28, verified live |
 | FE `_releaseBaseURL = "api.bayaryuk.net"` | ✅ code 2026-09-28 — ships with the next APK (SPRINT_008) |
-| APK adoption → VM live → tunnel → DNS flip → App Service plan to F1/deleted | not started |
+| **Perf test 2026-10-12** (reads only, `web_bytes` on the prod DB, VM via SSH tunnel vs Azure over HTTPS, both measured from the Mac) | ✅ **VM faster everywhere, no errors.** App launch on a headless emulator (FE `main` profile build through a timing proxy): fresh login + first sync network time **4.5 s vs 10–13 s**, warm relaunch **3.8 s vs 8–12 s**; login **0.55 s vs 2.7 s**, refresh-token **0.37 s vs 2.4 s** (CPU-bound → the A1 core is ~5× the B1). Simple DB reads one at a time are a tie (~same p50, same DB), but 6 parallel reads: **120 ms vs 346 ms** p50, and Azure tails hit 0.6–7 s plus one HTTP 500 (counted in Azure's own `Http5xx`). VM peak during the test: node ~166 MB RSS, ≤80 % of 1 OCPU. Not yet measured: real load, a checkout write |
+| **Perf test 2026-10-12 #2 — through Cloudflare** (quick tunnel `*.trycloudflare.com` from `cloudflared` on the VM, stopped afterwards; client in Malaysia enters at Cloudflare `KUL`, tunnel at `sin12`) | ✅ **VM still faster than Azure, but most of the lead goes.** App (same emulator method): fresh login + first sync **9.6 s vs Azure 11.2 s** (VM via SSH 4.6 s), warm relaunch **6.6–7.6 s vs 9.0 s** (SSH 4.0 s); login in the app ~1.0 s vs 2.3–3.6 s. API: login 0.45 s vs 1.9 s, 6 parallel reads 193 ms vs 418 ms, sequential reads ≈ Azure. **Cause of the loss:** through the quick tunnel the first request to a URL Cloudflare hasn't seen recently costs **~+190 ms** (`cf-cache-status: DYNAMIC`, 255–265 ms vs ~70 ms on repeat), and the app's delta-sync URLs carry a fresh `lastSyncTimestamp` every launch, run one after another → ~2–2.5 s per launch. **Before the move:** set up the named tunnel on our own hostname with a Cloudflare **Cache Rule "Bypass cache"** for it, then re-measure first-seen URLs (`curl …/health?x=$RANDOM`, twice) — if the ~190 ms is gone, expect close to the SSH numbers. Independent of hosting: FE creates a new `http.Client` per `API()` (43 call sites, still so on sprint-008), so every repository's first call opens a new TCP+TLS connection — a shared client would save a handshake per call on mobile networks |
+| **Named tunnel `bayaryuk-oracle`** (id `09c2860b-518f-4313-9654-e8f6e52d4859`, remote-managed) | ✅ 2026-10-12 — ingress **`oracle-test.bayaryuk.net` → `http://127.0.0.1:8080`** (catch-all 404), proxied CNAME `oracle-test` → `<id>.cfargotunnel.com`, **no-Worker route `oracle-test.bayaryuk.net/*`** (keeps `catalogue-subdomain` off it), `cloudflared` systemd service on the VM (enabled; 4 connections to SIN colos). Created with `CLOUDFLARE_TEMP_TOKEN` (`flutter-server/.env`: Tunnel + DNS + Workers Routes edit; no cache-rule/bot read). Left running as the cutover host — $0. Remove: delete the DNS record + route + tunnel, `sudo cloudflared service uninstall` |
+| **Perf test 2026-10-12 #3 — the production path** (real app, HTTPS, named tunnel; same app build with only the host changed, timed by the app itself on a headless emulator; client in Malaysia) | ✅ **VM ~2× faster than Azure, no errors.** Warm relaunch network time **4.2–4.5 s vs 8.6–16.6 s**; fresh login + first sync **5.0 s vs 10.1–12.9 s** (one Oracle outlier 15.4 s: two calls ~4.5 s, unexplained, 1 of 9 runs); launch→last response **~9.5 s vs 14–22 s**. The quick-tunnel first-URL penalty (#2) **does not exist on the named tunnel** (first-seen URL 60–75 ms = repeat) → no cache rule needed. Load, 5/10/20 simulated cashiers (reads, ~1 req/s each): **Oracle p50 41–44 ms, p95 ≤ 97 ms at every step; Azure p95 137 → 199 → 1,478 ms and only 8.9 of ~18 req/s served at 20**; 20 simultaneous logins 2.9 s vs 13.5 s. VM at 20 cashiers: CPU p90 40 % (peak 91 % during the login burst), node 197 MB. One test sale via Oracle (`web_bytes`, Coke Rp 2,000, cash) saved in **294 ms**; the Azure sale was not run (blocked as a prod write) |
+| APK adoption → VM live → tunnel → DNS flip → App Service plan to F1/deleted | not started — ordered checklist in **§ Cutover checklist** |
 
 **Everything created so far is free** (verified with a tenancy-wide `structured-search`): networking,
 compartment, budget, private DNS zones, and the IAM defaults created at sign-up. Nothing else exists.
@@ -94,6 +98,40 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
 - Token needed (one, scoped to account + zone `bayaryuk.net`): **Zone › DNS › Edit**, **Zone › Workers Routes › Edit**,
   **Account › Cloudflare Tunnel › Edit**.
 - Native module: `lzo` (via `parquetjs`) → the app **must be built on the VM**, never shipped from the Mac.
+
+### Found in the 2026-10-12 tests
+
+- **Bot Fight Mode is OFF** on the zone (`fight_mode: false`, read-only token) → the app's `Dart/3.13 (dart:io)`
+  client is not challenged behind Cloudflare. Keep it off for the API host.
+- ⚠️ **The R2 rate-limit rule is not host-scoped**: `/receipts/`, `/laundry/`, `/fonts/`, paths containing
+  `/items/`, `/variants/`, `/branding/` → 300 req / 10 s per IP+colo → block 10 s. Behind the tunnel it would also
+  count API calls (e.g. `/laundry/...`). Add `http.host eq "images.bayaryuk.net" and (…)` before the DNS flip
+  (dashboard: Security → WAF → Rate limiting rules; needs a token with zone rulesets edit for the API).
+- FE: every `API()` creates its own `http.Client` (43 call sites, still so on sprint-008) → each repository's first
+  call opens a new TCP+TLS connection. A shared client saves a handshake per call on mobile networks, on any host.
+- FE `main`: `/version/check` answers 400 and `_executeRequest` treats any 400 as "token expired" → every launch
+  does a token refresh + retry (~0.6 s on the VM, 2–5 s on Azure). Check whether sprint-008 still does this.
+
+## Cutover checklist (in order)
+
+1. Sprint-008 on `main` (brings `DISABLE_CRONS`/`HOST`, the `'loopback'` trust-proxy fix) and **deployed to the VM**
+   with `deploy/oracle/deploy.sh`; the DB migrations of the release run first as usual.
+2. Scope the R2 rate-limit rule to `images.bayaryuk.net` (above).
+3. Release the sprint-008 APK (`_releaseBaseURL = api.bayaryuk.net`) and get **every `audio_technic` device**
+   on it — old APKs call `…azurewebsites.net` directly and will break once App Service is gone. FE SPRINT_008 §3
+   step 10 (`minVersion 1.3.0`) forces this with the non-dismissible update dialog; prod had no `app_version` rows
+   before (checked 2026-10-12), so that step creates them.
+4. Add ingress `api.bayaryuk.net → http://127.0.0.1:8080` to tunnel `bayaryuk-oracle` + a no-Worker route
+   `api.bayaryuk.net/*`; then switch the `api` record from the DNS-only App Service CNAME to a **proxied** CNAME →
+   `09c2860b-518f-4313-9654-e8f6e52d4859.cfargotunnel.com` (remove `TXT asuid.api` later).
+5. **Crons hand-over, same minute:** VM `/etc/bayaryuk/env` drop `DISABLE_CRONS=true` + restart; set
+   `DISABLE_CRONS=true` on App Service (or stop it) — never both running crons on the prod DB.
+6. Repoint the catalogue Worker `ORIGIN` to `https://api.bayaryuk.net` and `npx wrangler deploy`.
+7. Watch a few days (VM `journalctl -u bayaryuk`, Azure `Requests` should fall to ~0), keep App Service as the
+   rollback.
+8. **Stop paying:** a *stopped* App Service on B1 **still bills** (the plan is what costs money) → delete the web
+   app **and** the App Service plan (or scale the plan to F1 if a free warm rollback is wanted). Then remove the
+   `api` custom domain/cert on Azure and the Azure-origin wildcard if nothing else uses it.
 
 ## Rollback
 

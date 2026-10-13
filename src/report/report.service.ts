@@ -37,6 +37,14 @@ function laundryProfitTotals(serviceRevenue: Decimal, discounts: Decimal, supply
     };
 }
 
+// Sales a session report covers: rung up in the session, or completed in it
+// (Receive Payment / laundry pickup sets completedSessionId to the session that
+// took the last payment). Revenue counts the completed-here ones, so profit and
+// the sales list must see them too.
+const sessionOrCompletedFilter = (sessionId: number) => ({
+    OR: [{ sessionId }, { completedSessionId: sessionId }],
+});
+
 let generateReport = async (databaseName: string, sessionId: number, planType?: string | null) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
@@ -380,14 +388,18 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 }
             }),
 
-            // All sales for the session
+            // All sales for the session: rung up here OR completed here. A sale
+            // settled later (Receive Payment / laundry pickup) belongs to the
+            // revenue of the session that completed it, so its profit and its row
+            // in the list must come from this set too.
             tenantPrisma.sales.findMany({
                 where: {
-                    ...sessionFilter,
+                    ...sessionOrCompletedFilter(sessionId),
                     deleted: false
                 },
                 select: {
                     id: true,
+                    sessionId: true,
                     businessDate: true,
                     salesType: true,
                     customerName: true,
@@ -582,8 +594,9 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 revenue: category.revenue
             }));
 
-        // Calculate session sales count (all non-voided) from allSales in memory
+        // Calculate session sales count (all non-voided, rung up in this session) from allSales in memory
         const sessionSalesCount = allSales.filter(sale =>
+            sale.sessionId === sessionId &&
             ["Completed", "Partially Paid", "Delivered", "Returned", "Refunded"].includes(sale.status)
         ).length;
 
@@ -659,7 +672,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
 
         // Split profit for partially paid sales (filter from allSales in memory)
         const partiallyPaidSalesWithProfit = allSales.filter(sale =>
-            sale.status === "Partially Paid"
+            sale.sessionId === sessionId && sale.status === "Partially Paid"
         );
 
         let partiallyPaidGains = new Decimal(0);
@@ -677,7 +690,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
 
         // Split profit for delivered sales (filter from allSales in memory)
         const deliveredSalesWithProfit = allSales.filter(sale =>
-            sale.status === "Delivered"
+            sale.sessionId === sessionId && sale.status === "Delivered"
         );
 
         let deliveredGains = new Decimal(0);
@@ -2504,11 +2517,14 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                 _sum: { paidAmount: true }
             }),
 
-            // All non-voided session sales — drives the per-order list, profit split, and shift count
+            // Session sales (rung up here OR completed here — an order paid at
+            // pickup belongs to the session that completed it) — drives the
+            // per-order list, profit split, and shift count
             tenantPrisma.sales.findMany({
-                where: { ...sessionFilter, deleted: false },
+                where: { ...sessionOrCompletedFilter(sessionId), deleted: false },
                 select: {
                     id: true,
+                    sessionId: true,
                     businessDate: true,
                     salesType: true,
                     customerName: true,
@@ -2623,7 +2639,7 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
             });
         const totalProfit = totalGains.plus(totalLosses);
 
-        const sessionSalesCount = allSales.filter(sale => nonVoidStatuses.includes(sale.status)).length;
+        const sessionSalesCount = allSales.filter(sale => sale.sessionId === sessionId && nonVoidStatuses.includes(sale.status)).length;
 
         // ── Laundry operations block ──
         const totalKg = (kgAgg._sum.loadWeightKg || new Decimal(0)).toNumber();

@@ -305,6 +305,32 @@ function validatePaymentNumerics(payments: Payment[]) {
     }
 }
 
+// Receive Payment: a payment row records what it actually settles. Cash handed
+// over above the balance is change (kept on sales.changeAmount), so each row's
+// paidAmount = min(tendered, balance still open), in order — the same rule
+// checkout applies. Older apps sent paidAmount = tendered, which overstated cash
+// in every report that sums payment rows.
+function applyPaymentsToBalance<T extends { tenderedAmount: any }>(payments: T[], remaining: Decimal): (T & { paidAmount: Decimal })[] {
+    let open = Decimal.max(remaining, 0);
+    return payments.map(payment => {
+        const applied = Decimal.min(new Decimal(payment.tenderedAmount), open);
+        open = open.minus(applied);
+        return { ...payment, paidAmount: applied };
+    });
+}
+
+// Session that completes a sale on Receive Payment: the last payment that
+// carries one (the app stamps the open session on each payment). null when none
+// does — e.g. a payment taken with no session open — so the sale keeps today's
+// behaviour rather than landing in a guessed session.
+function completingSessionOf(payments: { sessionId?: any }[]): number | null {
+    for (let i = payments.length - 1; i >= 0; i--) {
+        const id = Number(payments[i].sessionId);
+        if (Number.isInteger(id) && id > 0) return id;
+    }
+    return null;
+}
+
 // Extended performedBy with loyaltyTier for loyalty integration
 interface PerformedBy {
     userId: number;
@@ -3083,7 +3109,7 @@ let addPaymentToPartiallyPaidSales = async (
             }
 
             // Update payments with salesId (+ the replay-dedupe ref, "<key>:<n>")
-            const paymentsWithSalesId = payments.map((payment, index) => ({
+            const paymentsWithSalesId = applyPaymentsToBalance(payments, remainingAmount).map((payment, index) => ({
                 ...payment,
                 salesId: salesId,
                 clientRef: clientRef ? paymentClientRef(clientRef, index) : null,
@@ -3101,6 +3127,13 @@ let addPaymentToPartiallyPaidSales = async (
                 updatedPaidAmount.minus(new Decimal(sales.totalAmount)) :
                 new Decimal(0); // No change if still partially paid
 
+            // The session that takes the last payment is the one that completes the
+            // sale: session reports count revenue by completedSessionId, the same
+            // way a sale paid in full at checkout carries its session. Left unset,
+            // every order settled here (laundry paid at pickup, retail debts) was
+            // in no session's revenue at all.
+            const completingSessionId = isFullyPaid ? completingSessionOf(payments) : null;
+
             // Update sales status and payment details
             const updatedSales = await tx.sales.update({
                 where: {
@@ -3109,7 +3142,8 @@ let addPaymentToPartiallyPaidSales = async (
                 data: {
                     paidAmount: updatedPaidAmount,
                     changeAmount: changeAmount,
-                    status: isFullyPaid ? "Completed" : "Partially Paid"
+                    status: isFullyPaid ? "Completed" : "Partially Paid",
+                    ...(completingSessionId ? { completedSessionId: completingSessionId } : {}),
                 }
             });
 
@@ -4101,6 +4135,8 @@ export = {
         getEffectiveStockQty,
         validateSalesItemNumerics,
         validatePaymentNumerics,
+        applyPaymentsToBalance,
+        completingSessionOf,
         toDecimalOrThrow,
         // Loyalty helpers
         pickBestDiscount,

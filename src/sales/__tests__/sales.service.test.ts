@@ -12,7 +12,7 @@ import { Decimal } from "decimal.js";
 
 import salesService from "../sales.service";
 
-const { getEffectiveStockQty, validateSalesItemNumerics, validatePaymentNumerics, toDecimalOrThrow } =
+const { getEffectiveStockQty, validateSalesItemNumerics, validatePaymentNumerics, applyPaymentsToBalance, completingSessionOf, toDecimalOrThrow } =
     (salesService as any).__testables;
 
 // ── getEffectiveStockQty ───────────────────────────────────────────────────
@@ -204,6 +204,70 @@ describe("validatePaymentNumerics", () => {
             () => validatePaymentNumerics([{ tenderedAmount: "abc" }]),
             /Invalid tenderedAmount.*must be numeric/i
         );
+    });
+});
+
+// ── applyPaymentsToBalance (Receive Payment) ───────────────────────────────
+
+describe("applyPaymentsToBalance", () => {
+    const paid = (rows: any[]) => rows.map(r => r.paidAmount.toNumber());
+
+    test("cash above the balance records only the balance (rest is change)", () => {
+        // Pickup order Rp 27.000, customer hands over Rp 30.000.
+        assert.deepEqual(paid(applyPaymentsToBalance([{ tenderedAmount: 30000 }], new Decimal(27000))), [27000]);
+    });
+
+    test("a partial payment records the full tendered amount", () => {
+        assert.deepEqual(paid(applyPaymentsToBalance([{ tenderedAmount: 10000 }], new Decimal(27000))), [10000]);
+    });
+
+    test("exact payment is unchanged", () => {
+        assert.deepEqual(paid(applyPaymentsToBalance([{ tenderedAmount: 27000 }], new Decimal(27000))), [27000]);
+    });
+
+    test("several payments fill the balance in order", () => {
+        const rows = applyPaymentsToBalance([{ tenderedAmount: 20000 }, { tenderedAmount: 20000 }], new Decimal(27000));
+        assert.deepEqual(paid(rows), [20000, 7000]);
+    });
+
+    test("keeps tendered and every other field as sent", () => {
+        const [row] = applyPaymentsToBalance([{ tenderedAmount: 30000, method: "Cash", reference: null }], new Decimal(27000));
+        assert.equal(row.tenderedAmount, 30000);
+        assert.equal(row.method, "Cash");
+        assert.equal(row.reference, null);
+    });
+
+    test("ignores a client-sent paidAmount (old apps sent paidAmount = tendered)", () => {
+        const [row] = applyPaymentsToBalance([{ tenderedAmount: 30000, paidAmount: 30000 }], new Decimal(27000));
+        assert.equal(row.paidAmount.toNumber(), 27000);
+    });
+
+    test("decimal balances stay exact", () => {
+        assert.deepEqual(paid(applyPaymentsToBalance([{ tenderedAmount: 50000 }], new Decimal("26126.13"))), [26126.13]);
+    });
+});
+
+// ── completingSessionOf (Receive Payment) ──────────────────────────────────
+
+describe("completingSessionOf", () => {
+    test("the session of the payment that clears the balance", () => {
+        assert.equal(completingSessionOf([{ sessionId: 8 }]), 8);
+    });
+
+    test("with several payments, the last one that carries a session", () => {
+        assert.equal(completingSessionOf([{ sessionId: 6 }, { sessionId: 8 }]), 8);
+        assert.equal(completingSessionOf([{ sessionId: 6 }, { sessionId: 0 }]), 6);
+    });
+
+    test("no session on any payment → null (sale keeps no completion session)", () => {
+        assert.equal(completingSessionOf([{ sessionId: 0 }]), null);
+        assert.equal(completingSessionOf([{}]), null);
+        assert.equal(completingSessionOf([]), null);
+    });
+
+    test("numeric strings are accepted, junk is not", () => {
+        assert.equal(completingSessionOf([{ sessionId: "9" }]), 9);
+        assert.equal(completingSessionOf([{ sessionId: "abc" }]), null);
     });
 });
 

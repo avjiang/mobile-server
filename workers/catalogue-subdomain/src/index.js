@@ -14,9 +14,9 @@
  * both by RESERVED below and by a more-specific "no worker" route (see README).
  */
 
-// Azure App Service origin that serves GET /public/c/:slug (server-rendered HTML).
-const ORIGIN =
-  "https://bayaryuk-c2c8d5acg8chaqfm.southeastasia-01.azurewebsites.net";
+// Backend origin that serves GET /public/c/:slug (server-rendered HTML). Since 2026-10-13 this is
+// api.bayaryuk.net (the Oracle VM, through the Cloudflare tunnel); before that, Azure App Service.
+const ORIGIN = "https://api.bayaryuk.net";
 
 // Subdomains that must NEVER be treated as a tenant slug — passed straight
 // through to their normal origin. Keep in sync with the backend reserved-slug
@@ -48,7 +48,7 @@ export default {
 
     const headers = new Headers(request.headers);
     // CRITICAL: drop the inbound Host (<slug>.bayaryuk.net) so fetch() sets
-    // Host=<azure-origin>; otherwise Azure App Service 404s the request.
+    // Host=<origin>; otherwise the origin 404s the request.
     headers.delete("host");
 
     const originResponse = await fetch(

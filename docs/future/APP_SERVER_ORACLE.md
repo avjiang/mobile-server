@@ -145,6 +145,12 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
      **Decided 2026-10-13 (owner): (c)** — one person deploys, so no automation: `deploy.sh` stays the deploy, and
      the workflow becomes tests-only on `main`. It needs a network on the OCI SSH list. Also drop the workflow's "delete `libquery_engine-linux-arm64*`" step then (§ gotchas).
 
+> **Cutover done 2026-10-13 ~21:50 MYT** — steps 1–6 complete: BE `95f7834` on the VM (release
+> `20261013132743-95f7834`) and on Azure; `api.bayaryuk.net` is a proxied CNAME to the tunnel (ingress + no-Worker
+> route added); crons run on the VM, Azure has `DISABLE_CRONS=true`; Worker `ORIGIN` = `https://api.bayaryuk.net`;
+> `app_version` android min/latest = `1.3.0`. Remaining: step 7 (watch), step 8 (delete App Service + plan),
+> step 9 (workflow), delete `CLOUDFLARE_TEMP_TOKEN`. Record: FE `docs/sprints/SPRINT_008.md` §7.
+
 ## Rollback
 
 Until DNS moves, nothing to roll back — App Service serves all traffic. After the move: point

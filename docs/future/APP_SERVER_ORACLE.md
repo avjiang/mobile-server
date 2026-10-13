@@ -142,7 +142,8 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
      OCI SSH list is three fixed IPs), so the choices are: (a) a **self-hosted runner on the VM** (free, arm64, no
      inbound port; the job runs the same build-then-switch steps as `deploy.sh`), (b) SSH through the Cloudflare
      tunnel with an Access service token, or (c) keep `deploy.sh` manual and reduce the workflow to tests on `main`.
-     Not decided yet. Also drop the workflow's "delete `libquery_engine-linux-arm64*`" step then (§ gotchas).
+     **Decided 2026-10-13 (owner): (c)** — one person deploys, so no automation: `deploy.sh` stays the deploy, and
+     the workflow becomes tests-only on `main`. It needs a network on the OCI SSH list. Also drop the workflow's "delete `libquery_engine-linux-arm64*`" step then (§ gotchas).
 
 ## Rollback
 

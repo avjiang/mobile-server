@@ -49,7 +49,7 @@ if (target === "prod") {
 }
 
 // Load AFTER env override so the clients resolve to the chosen target.
-const { getGlobalPrisma, getTenantPrisma, disconnectAllPrismaClients } =
+const { getGlobalPrisma, getTenantPrisma, disconnectAllPrismaClients, databasesOnServer } =
     require("../db") as typeof import("../db");
 const { seedPermissions } = require("./permission_seed") as typeof import("./permission_seed");
 
@@ -102,9 +102,14 @@ async function main() {
 
     let totalGranted = 0;
     let totalSkipped = 0;
+    const onServer = await databasesOnServer();
 
     for (const tenant of tenants) {
         const dbName = tenant.databaseName!;
+        if (!onServer.has(dbName)) {
+            console.log(`· ${dbName}: no database on this server — skipped`);
+            continue;
+        }
         let prisma;
         try {
             prisma = getTenantPrisma(dbName);

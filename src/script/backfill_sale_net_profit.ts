@@ -46,7 +46,7 @@ if (target === "prod") {
 console.log(`Target: ${target.toUpperCase()} · mode: ${confirm ? "APPLY" : "DRY RUN"}\n`);
 
 // Load AFTER the env override so the clients resolve to the chosen target.
-const { getGlobalPrisma, getTenantPrisma, disconnectAllPrismaClients } =
+const { getGlobalPrisma, getTenantPrisma, disconnectAllPrismaClients, databasesOnServer } =
     require("../db") as typeof import("../db");
 const { Prisma } = require("../../prisma/client/generated/client") as typeof import("../../prisma/client/generated/client");
 const { SALE_LEVEL_DEDUCTIONS_SQL } = require("../sales/sale-profit") as typeof import("../sales/sale-profit");
@@ -107,7 +107,11 @@ async function main() {
             where: { databaseName: { not: null } },
             select: { databaseName: true },
         });
-        dbNames = tenants.map((t) => t.databaseName!);
+        const onServer = await databasesOnServer();
+        const all = tenants.map((t) => t.databaseName!);
+        dbNames = all.filter((n) => onServer.has(n));
+        const absent = all.filter((n) => !onServer.has(n));
+        if (absent.length) console.log(`Skipped ${absent.length} tenant(s) with no database on this server: ${absent.join(", ")}\n`);
     }
 
     let total = 0;

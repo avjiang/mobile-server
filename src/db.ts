@@ -177,6 +177,16 @@ export async function disconnectAllPrismaClients(): Promise<void> {
   }
 }
 
+// A tenant row can outlive its database (test tenants not carried over in the 2026-09-26 server
+// move). Scripts that walk every tenant filter on this, because connecting to a missing database
+// rejects outside the caller's try/catch and kills the process.
+export async function databasesOnServer(): Promise<Set<string>> {
+  const rows = await getGlobalPrisma().$queryRawUnsafe<{ name: string }[]>(
+    'SELECT SCHEMA_NAME AS name FROM information_schema.SCHEMATA',
+  );
+  return new Set(rows.map((r) => r.name));
+}
+
 export async function updateAllTenantDatabases(): Promise<void> {
   const globalPrisma = getGlobalPrisma();
   const customers = await globalPrisma.tenant.findMany();
@@ -196,11 +206,7 @@ export async function updateAllTenantDatabases(): Promise<void> {
 
   // A tenant row can outlive its database (test tenants not carried over in the 2026-09-26 server
   // move). Never point `prisma migrate deploy` at a database that isn't there — skip it, loudly.
-  const onServer = new Set(
-    (await globalPrisma.$queryRawUnsafe<{ name: string }[]>(
-      'SELECT SCHEMA_NAME AS name FROM information_schema.SCHEMATA',
-    )).map((r) => r.name),
-  );
+  const onServer = await databasesOnServer();
   const skippedAbsent: string[] = [];
 
   for (const customer of customers) {

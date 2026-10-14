@@ -406,6 +406,9 @@ model Item {
   supplierId              Int                      @map("SUPPLIER_ID")
   hasVariants             Boolean                  @default(false) @map("HAS_VARIANTS")
   trackStock              Boolean                  @default(true) @map("TRACK_STOCK")
+  // F&B "sold out today": false keeps the item in the sales grid greyed out with a
+  // "Habis" badge and hides it from the catalogue / QR menu. Independent of stock.
+  isAvailable             Boolean                  @default(true) @map("IS_AVAILABLE")
   // Laundry vertical: default machine-load weight (kg) for a "service" item, used to
   // prefill the consumption dialog at sale time. Null for non-laundry items.
   defaultLoadWeightKg     Decimal?                 @map("DEFAULT_LOAD_WEIGHT_KG") @db.Decimal(15, 4)
@@ -453,6 +456,10 @@ model Item {
   // Every supplier this item can be purchased from. `supplier`/`supplierId` above is the
   // preferred one and is always mirrored by the row here with isPreferred = true.
   itemSuppliers           ItemSupplier[]
+  // F&B: modifier groups offered when this menu item is sold (M:N junction), and the
+  // modifiers that are themselves this stocked good (extra egg → the "Telur" item).
+  itemModifierGroups      ItemModifierGroup[]
+  modifierStockOf         Modifier[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -537,6 +544,9 @@ model Category {
   description                   String?                       @default("") @map("DESCRIPTION")
   parentId                      Int?                          @map("PARENT_ID")
   image                         String?                       @default("") @map("IMAGE")
+  // F&B menu tiles: a food icon (a Flutter Icons name from the app's curated food set,
+  // e.g. "ramen_dining") shown on a dish that has no photo. Null = the vertical default.
+  icon                          String?                       @map("ICON") @db.VarChar(64)
   deleted                       Boolean                       @default(false) @map("IS_DELETED")
   deletedAt                     DateTime?                     @map("DELETED_AT")
   createdAt                     DateTime?                     @default(now()) @map("CREATED_AT")
@@ -723,6 +733,10 @@ model Sales {
   orderRef                String?   @unique @map("ORDER_REF")
   friendlyNumber          String?   @map("FRIENDLY_NUMBER")
   collectedAt             DateTime? @map("COLLECTED_AT")
+  // F&B counter: the short daily queue number (`A-023`), client-minted per terminal
+  // (letter = siteId) so it prints offline; and the "atas nama / no. meja" label.
+  queueNo                 String?   @map("QUEUE_NO") @db.VarChar(16)
+  customerLabel           String?   @map("CUSTOMER_LABEL") @db.VarChar(100)
 
   // Loyalty fields
   loyaltyPointsEarned          Decimal? @map("LOYALTY_POINTS_EARNED") @db.Decimal(15, 4)
@@ -822,6 +836,8 @@ model SalesItem {
   warehouseStockReceiptId Int?            @map("WAREHOUSE_STOCK_RECEIPT_ID")
   sales               Sales               @relation(fields: [salesId], references: [id])
   itemVariant         ItemVariant?        @relation(fields: [itemVariantId], references: [id])
+  // F&B: the modifiers chosen on this line, snapshotted at sale time.
+  selectedModifiers   SalesItemModifier[]
 
   @@index([itemStatus])
   @@index([itemId])
@@ -2257,4 +2273,91 @@ model IdempotencyRecord {
   @@unique([endpoint, key], name: "endpoint_key")
   @@index([createdAt])
   @@map("idempotency_record")
+}
+
+// ── F&B modifiers (docs/future/FNB_FEATURES.md D2) ──────────────────────────────
+// A tenant-level library ("Level pedas", "Gula", "Topping") assigned to menu items.
+model ModifierGroup {
+  id                 Int                 @id @default(autoincrement()) @map("ID")
+  name               String              @map("NAME") @db.VarChar(100)
+  minSelect          Int                 @default(0) @map("MIN_SELECT")
+  maxSelect          Int                 @default(1) @map("MAX_SELECT")
+  // The first N picks in the group are free (e.g. "2 toppings included").
+  freeLimit          Int?                @map("FREE_LIMIT")
+  sequence           Int                 @default(0) @map("SEQUENCE")
+  // null = every outlet (the only mode the app offers today); set = that outlet only.
+  outletId           Int?                @map("OUTLET_ID")
+  deleted            Boolean             @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?           @map("DELETED_AT")
+  createdAt          DateTime            @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime            @updatedAt @map("UPDATED_AT")
+  version            Int                 @default(1) @map("VERSION")
+  modifiers          Modifier[]
+  itemModifierGroups ItemModifierGroup[]
+
+  @@index([updatedAt])
+  @@map("modifier_group")
+}
+
+model Modifier {
+  id                 Int                 @id @default(autoincrement()) @map("ID")
+  groupId            Int                 @map("GROUP_ID")
+  name               String              @map("NAME") @db.VarChar(100)
+  price              Decimal             @default(0) @map("PRICE") @db.Decimal(15, 4)
+  // Optional stocked good this modifier IS (extra egg); deducted from stock at sale (P3).
+  itemId             Int?                @map("ITEM_ID")
+  isAvailable        Boolean             @default(true) @map("IS_AVAILABLE")
+  isDefault          Boolean             @default(false) @map("IS_DEFAULT")
+  sequence           Int                 @default(0) @map("SEQUENCE")
+  deleted            Boolean             @default(false) @map("IS_DELETED")
+  deletedAt          DateTime?           @map("DELETED_AT")
+  createdAt          DateTime            @default(now()) @map("CREATED_AT")
+  updatedAt          DateTime            @updatedAt @map("UPDATED_AT")
+  version            Int                 @default(1) @map("VERSION")
+  group              ModifierGroup       @relation(fields: [groupId], references: [id])
+  item               Item?               @relation(fields: [itemId], references: [id])
+  salesItemModifiers SalesItemModifier[]
+
+  @@index([groupId])
+  @@index([updatedAt])
+  @@map("modifier")
+}
+
+model ItemModifierGroup {
+  id        Int           @id @default(autoincrement()) @map("ID")
+  itemId    Int           @map("ITEM_ID")
+  groupId   Int           @map("GROUP_ID")
+  sequence  Int           @default(0) @map("SEQUENCE")
+  deleted   Boolean       @default(false) @map("IS_DELETED")
+  createdAt DateTime      @default(now()) @map("CREATED_AT")
+  updatedAt DateTime      @updatedAt @map("UPDATED_AT")
+  item      Item          @relation(fields: [itemId], references: [id])
+  group     ModifierGroup @relation(fields: [groupId], references: [id])
+
+  @@unique([itemId, groupId])
+  @@index([groupId])
+  @@index([updatedAt])
+  @@map("item_modifier_group")
+}
+
+// What was chosen on a sale line, frozen at sale time: names and price are a
+// snapshot, so renaming or deleting a modifier never rewrites history.
+model SalesItemModifier {
+  id           Int        @id @default(autoincrement()) @map("ID")
+  salesItemId  Int        @map("SALES_ITEM_ID")
+  modifierId   Int?       @map("MODIFIER_ID")
+  groupName    String     @map("GROUP_NAME") @db.VarChar(100)
+  modifierName String     @map("MODIFIER_NAME") @db.VarChar(100)
+  // Unit price charged for one pick (0 when it fell inside the group's free limit).
+  price        Decimal    @default(0) @map("PRICE") @db.Decimal(15, 4)
+  quantity     Int        @default(1) @map("QUANTITY")
+  deleted      Boolean    @default(false) @map("IS_DELETED")
+  createdAt    DateTime   @default(now()) @map("CREATED_AT")
+  updatedAt    DateTime   @updatedAt @map("UPDATED_AT")
+  salesItem    SalesItem  @relation(fields: [salesItemId], references: [id])
+  modifier     Modifier?  @relation(fields: [modifierId], references: [id])
+
+  @@index([salesItemId])
+  @@index([modifierId])
+  @@map("sales_item_modifier")
 }

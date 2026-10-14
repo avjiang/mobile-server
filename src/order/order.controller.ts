@@ -7,6 +7,9 @@ import { AuthRequest } from "../middleware/auth-request"
 import { requirePermission } from "../middleware/require-permission.middleware"
 import { PERMISSION } from "../permission/permission-names"
 import { readClientRef } from "../sales/client-ref"
+import { requirePlan } from "../middleware/require-plan.middleware"
+import { getGlobalPrisma, getTenantPrisma } from "../db"
+import * as qr from "../qr-order/qr-order.service"
 
 // F&B open bills (docs/modules/FNB.md, P4). Per outlet (X-Outlet-ID); taking
 // orders and settling them is "Process Sales", like the till.
@@ -74,6 +77,70 @@ router.post("/settle", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRe
     ) as Promise<{ id: number }>)
         .then((r) => sendResponse(res, r))
         .catch(next)
+})
+
+// ── QR self-order (P6, Pro) ────────────────────────────────────────────────
+
+/** The shop's subdomain, for the diner URLs (null = no catalogue slug yet). */
+const slugOf = async (req: AuthRequest): Promise<string | null> => {
+    if (!req.user?.tenantId) return null
+    const t = await getGlobalPrisma().tenant.findUnique({ where: { id: req.user.tenantId }, select: { slug: true } })
+    return t?.slug ?? null
+}
+
+const withUrls = async (req: AuthRequest, settings: qr.QrSettings) => {
+    const slug = await slugOf(req)
+    return { ...settings, slug, counterUrl: settings.counterToken ? qr.qrUrl(slug, settings.counterToken) : null }
+}
+
+/** GET /order/qr/settings — this outlet's QR ordering setup. */
+router.get("/qr/settings", requirePlan("Pro"), (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError("User not authenticated")
+    qr.getSettings(getTenantPrisma(req.user.databaseName), outletOf(req))
+        .then((st) => withUrls(req, st))
+        .then((d) => sendResponse(res, d))
+        .catch(next)
+})
+
+/** PUT /order/qr/settings {enabled?, tableMode?, requireConfirm?, counterEnabled?, resetCounter?} */
+router.put("/qr/settings", requirePlan("Pro"), requirePermission(PERMISSION.MANAGE_FLOOR_PLAN), (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError("User not authenticated")
+    qr.saveSettings(req.user.databaseName, outletOf(req), req.body ?? {})
+        .then((st) => withUrls(req, st))
+        .then((d) => sendResponse(res, d))
+        .catch(next)
+})
+
+/** POST /order/qr {orderRef} — the seating's dynamic QR (the same one on a reprint). Needs a connection. */
+router.post("/qr", requirePlan("Pro"), requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError("User not authenticated")
+    qr.issueOrderQr(req.user.databaseName, outletOf(req), refOf(req))
+        .then(async (t) => ({ ...t, url: qr.qrUrl(await slugOf(req), t.qrToken) }))
+        .then((d) => sendResponse(res, d))
+        .catch(next)
+})
+
+/** POST /order/qr/table {tableId} — issue / replace a table sticker's QR. */
+router.post("/qr/table", requirePlan("Pro"), requirePermission(PERMISSION.MANAGE_FLOOR_PLAN), (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError("User not authenticated")
+    const tableId = Number(req.body?.tableId)
+    if (!Number.isInteger(tableId)) throw new RequestValidateError("tableId is required")
+    qr.resetTableQr(req.user.databaseName, outletOf(req), tableId)
+        .then(async (t) => ({ ...t, url: qr.qrUrl(await slugOf(req), t.qrToken) }))
+        .then((d) => sendResponse(res, d))
+        .catch(next)
+})
+
+/** POST /order/accept {orderRef} — a QR order waiting for staff goes to the kitchen. */
+router.post("/accept", requirePlan("Pro"), requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError("User not authenticated")
+    qr.accept(req.user.databaseName, outletOf(req), refOf(req), performer(req)).then((d) => sendResponse(res, d)).catch(next)
+})
+
+/** POST /order/reject {orderRef, reason} */
+router.post("/reject", requirePlan("Pro"), requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) throw new RequestValidateError("User not authenticated")
+    qr.reject(req.user.databaseName, outletOf(req), refOf(req), String(req.body?.reason ?? "")).then((d) => sendResponse(res, d)).catch(next)
 })
 
 export = router

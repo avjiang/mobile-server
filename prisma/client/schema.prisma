@@ -1561,8 +1561,10 @@ model Table {
   y            Float         @default(0) @map("POS_Y")
   width        Float         @default(110) @map("WIDTH")
   height       Float         @default(110) @map("HEIGHT")
-  // 'square' | 'round' | 'rect'
+  // 'square' | 'round' | 'rect' | 'marker' | 'wall'
   shape        String        @default("square") @map("SHAPE") @db.VarChar(16)
+  // P6 static QR sticker token (10 chars base62). Null = no sticker issued.
+  qrToken      String?       @unique @map("QR_TOKEN") @db.VarChar(16)
   // 0 | 45 | 90
   rotation     Int           @default(0) @map("ROTATION")
   sequence     Int           @default(0) @map("SEQUENCE")
@@ -2490,8 +2492,16 @@ model Order {
   outletId       Int         @map("OUTLET_ID")
   orderRef       String      @unique @map("ORDER_REF") @db.VarChar(64)
   tableId        Int?        @map("TABLE_ID")
-  // OPEN | SETTLING | SETTLED | VOID
+  // OPEN | SETTLING | SETTLED | VOID; P6 QR: PENDING_ACCEPT | REJECTED
   status         String      @default("OPEN") @map("STATUS") @db.VarChar(16)
+  // 'pos' | 'qr' (a diner's QR order waiting for staff, P6)
+  source         String      @default("pos") @map("SOURCE") @db.VarChar(8)
+  // P6 dynamic QR: the seating's token; dies at settle / cancel / expiry.
+  qrToken        String?     @unique @map("QR_TOKEN") @db.VarChar(16)
+  qrExpiresAt    DateTime?   @map("QR_EXPIRES_AT")
+  // A pending QR order for a seated bill: accepting it adds a round there.
+  targetRef      String?     @map("TARGET_REF") @db.VarChar(64)
+  rejectReason   String?     @map("REJECT_REASON") @db.VarChar(200)
   salesType      String      @default("Dine-In") @map("SALES_TYPE") @db.VarChar(32)
   label          String?     @map("LABEL") @db.VarChar(100)
   queueNo        String?     @map("QUEUE_NO") @db.VarChar(16)
@@ -2531,6 +2541,8 @@ model OrderLine {
   // [{modifierId, groupName, modifierName, price, quantity}]
   modifiers     Json?     @map("MODIFIERS")
   note          String?   @map("NOTE") @db.VarChar(200)
+  // 'pos' | 'qr' — who sent this round (P6).
+  source        String    @default("pos") @map("SOURCE") @db.VarChar(8)
   voided        Boolean   @default(false) @map("IS_VOIDED")
   voidReason    String?   @map("VOID_REASON") @db.VarChar(200)
   createdBy     String?   @map("CREATED_BY") @db.VarChar(100)
@@ -2540,4 +2552,22 @@ model OrderLine {
 
   @@index([orderId])
   @@map("order_line")
+}
+
+// P6 QR self-order settings per outlet (docs/modules/FNB.md). Kept in the
+// tenant DB, not as global setting definitions.
+model QrOrderSetting {
+  id               Int       @id @default(autoincrement()) @map("ID")
+  outletId         Int       @unique @map("OUTLET_ID")
+  enabled          Boolean   @default(false) @map("IS_ENABLED")
+  // 'dynamic' (a slip per seating, default) | 'static' (stickers)
+  tableMode        String    @default("dynamic") @map("TABLE_MODE") @db.VarChar(16)
+  // Dynamic QR orders wait for staff too (static + counter always do).
+  requireConfirm   Boolean   @default(false) @map("REQUIRE_CONFIRM")
+  counterEnabled   Boolean   @default(false) @map("COUNTER_ENABLED")
+  counterToken     String?   @unique @map("COUNTER_TOKEN") @db.VarChar(16)
+  createdAt        DateTime  @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime  @updatedAt @map("UPDATED_AT")
+
+  @@map("qr_order_setting")
 }

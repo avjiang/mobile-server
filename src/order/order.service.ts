@@ -20,14 +20,18 @@ export interface OrderLineInput {
     hasTax?: boolean
     modifiers?: { modifierId?: number | null; groupName?: string; modifierName?: string; price?: number; quantity?: number }[]
     note?: string | null
+    // 'pos' (default) | 'qr' — a diner's QR round (P6).
+    source?: string
 }
 
 export interface Performer { username?: string; siteId?: number | null }
 
-const LIVE = ["OPEN", "SETTLING"]
-const withLines = { lines: { orderBy: [{ round: "asc" as const }, { id: "asc" as const }] } }
+export const LIVE = ["OPEN", "SETTLING"]
+// A device also syncs QR orders waiting for staff (P6).
+const SYNCED = [...LIVE, "PENDING_ACCEPT"]
+export const withLines = { lines: { orderBy: [{ round: "asc" as const }, { id: "asc" as const }] } }
 
-const serialize = (o: any) => o && ({
+export const serialize = (o: any) => o && ({
     ...o,
     lines: (o.lines ?? []).map((l: any) => ({
         ...l,
@@ -44,7 +48,7 @@ const sync = async (databaseName: string, outletId: number, lastSyncTimestamp?: 
     const serverTimestamp = new Date().toISOString()
     // Live bills always; closed ones only as a delta (so devices drop them).
     const orders = await prisma.order.findMany({
-        where: { outletId, OR: [{ status: { in: LIVE } }, ...(since ? [{ updatedAt: { gte: since } }] : [])] },
+        where: { outletId, OR: [{ status: { in: SYNCED } }, ...(since ? [{ updatedAt: { gte: since } }] : [])] },
         include: withLines,
         orderBy: { openedAt: "asc" },
     })
@@ -82,7 +86,7 @@ const tableName = async (tx: Prisma.TransactionClient, tableId: number | null) =
     tableId == null ? null : (await tx.table.findUnique({ where: { id: tableId }, select: { tableNumber: true } }))?.tableNumber ?? null
 
 /** Appends a round inside [tx]; lines already stored (by lineRef) are skipped. */
-const appendRound = async (tx: Prisma.TransactionClient, order: { id: number; outletId: number; orderRef: string; rounds: number; tableId: number | null; label: string | null; queueNo: string | null; salesType: string; siteId: number | null }, lines: OrderLineInput[], performer: Performer) => {
+export const appendRound = async (tx: Prisma.TransactionClient, order: { id: number; outletId: number; orderRef: string; rounds: number; tableId: number | null; label: string | null; queueNo: string | null; salesType: string; siteId: number | null }, lines: OrderLineInput[], performer: Performer) => {
     if (lines.length === 0) return 0
     const existing = new Set((await tx.orderLine.findMany({ where: { lineRef: { in: lines.map((l) => l.lineRef) } }, select: { lineRef: true } })).map((l) => l.lineRef))
     const fresh = lines.filter((l) => !existing.has(l.lineRef))
@@ -103,32 +107,46 @@ const appendRound = async (tx: Prisma.TransactionClient, order: { id: number; ou
             hasTax: l.hasTax ?? false,
             modifiers: (l.modifiers ?? []) as Prisma.InputJsonValue,
             note: l.note ?? null,
+            source: l.source === "qr" ? "qr" : "pos",
             createdBy: performer.username ?? null,
         })),
     })
     await tx.order.update({ where: { id: order.id }, data: { rounds: round, version: { increment: 1 } } })
+    await fireRoundTickets(tx, order, round, performer)
+    return round
+}
+
+/** Writes the kitchen tickets of [order]'s [round] from its stored lines. */
+export const fireRoundTickets = async (
+    tx: Prisma.TransactionClient,
+    order: { outletId: number; orderRef: string; tableId: number | null; label: string | null; queueNo: string | null; salesType: string; siteId: number | null; id: number },
+    round: number,
+    performer: Performer,
+) => {
+    const lines = await tx.orderLine.findMany({ where: { orderId: order.id, round, voided: false }, orderBy: { id: "asc" } })
+    if (lines.length === 0) return
     const table = await tableName(tx, order.tableId)
+    const fromQr = lines.some((l) => l.source === "qr")
     await writeKitchenTickets(tx, {
         outletId: order.outletId,
         source: "order",
         orderRef: order.orderRef,
         round,
         queueNo: order.queueNo,
-        label: [table ? `Meja ${table}` : null, order.label].filter(Boolean).join(" · ") || null,
+        label: [table ? `Meja ${table}` : null, order.label, fromQr ? "QR" : null].filter(Boolean).join(" · ") || null,
         salesType: order.salesType,
         siteId: performer.siteId ?? order.siteId,
-    }, fresh.map((l) => ({
+    }, lines.map((l) => ({
         itemId: l.itemId,
         itemName: l.itemName,
         variantName: l.variantName,
-        quantity: l.quantity,
+        quantity: Number(l.quantity),
         specialInstructions: l.note ?? undefined,
-        modifiers: (l.modifiers ?? []).map((m) => ({ groupName: m.groupName, modifierName: m.modifierName, quantity: m.quantity })),
+        modifiers: ((l.modifiers as any[]) ?? []).map((m) => ({ groupName: m.groupName, modifierName: m.modifierName, quantity: m.quantity })),
     })))
-    return round
 }
 
-const assertTableFree = async (tx: Prisma.TransactionClient, outletId: number, tableId: number, exceptOrderId?: number) => {
+export const assertTableFree = async (tx: Prisma.TransactionClient, outletId: number, tableId: number, exceptOrderId?: number) => {
     const table = await tx.table.findFirst({ where: { id: tableId, outletId, deleted: false } })
     if (!table || NON_SEATING.includes(table.shape)) throw new RequestValidateError("Table not found")
     const busy = await tx.order.findFirst({ where: { tableId, status: { in: LIVE }, ...(exceptOrderId ? { id: { not: exceptOrderId } } : {}) } })

@@ -4,6 +4,10 @@
 
 ## Changelog
 
+### v1.2.0 (2026-10-15) — wholesale pricing, Phase 1r
+- New `priceMix` block in the session + outlet reports (`price-mix-report.ts`): `{ totalRevenue, totalProfit, lineCount, grosir, ecer, manual, byLevel[] }`, each group `{ revenue, profit, lineCount }`. Grosir = `priceSource` UNIT/TIER/LEVEL, Ecer = BASE or null, manual (Harga diubah) = MANUAL. revenue = Σ line `subtotalAmount`, profit = Σ line `profit`, over the same sales filter as `totalRevenue`, so the groups sum to the line revenue. `byLevel` = Grosir lines carrying a `priceLevelId`, by level name. Laundry: always the empty block.
+- **All `quantitySold` / `quantity` fields in the item and category rankings, and the stock-balance sold quantities, are now in BASE units**: Σ quantity × coalesce(`unitFactor`, 1) (`base-qty.ts`), so "2 Dus isi 40" counts as 80. Lines without a sell unit are unchanged. Same for the Home top 5 (`item/top-sold.ts`).
+
 ### v1.1.0 (2025-12-15)
 **New Feature: Delivered Sales Support**
 

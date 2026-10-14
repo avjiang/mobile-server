@@ -2,7 +2,9 @@
  * Home "Top 5 items" (GET /item/getItemSoldRanking) — shaping the grouped
  * sales lines into the rows the dashboard card shows.
  *
- * Rank: units sold (Σ sales_item.QUANTITY), unchanged — the card's bars step
+ * Rank: units sold in the BASE unit — Σ QUANTITY × coalesce(UNIT_FACTOR, 1), so a
+ * "2 Dus" (isi 40) line counts as 80 pcs (wholesale Phase 1r). Lines without a sell
+ * unit (all lines before it, laundry) have factor 1: unchanged. The card's bars step
  * down with the rank, and a cashier without report access sees units alone.
  *
  * Revenue: Σ sales_item.SUBTOTAL_AMOUNT — the line's price × qty less its own
@@ -14,6 +16,7 @@
  * both the discount and any price the cashier changed at the till.
  */
 import { Decimal } from "decimal.js";
+import { mergeByBaseQty, rankBy } from "../report/base-qty";
 
 type Num = Decimal.Value | { toString(): string } | null | undefined;
 
@@ -48,3 +51,13 @@ export const buildTopSoldItems = <T extends TopSoldItemRecord>(
         })
         .filter((r): r is NonNullable<typeof r> => r !== null);
 };
+
+export interface TopSoldUnitRow {
+    itemId: number;
+    unitFactor?: Num;
+    _sum: { quantity?: Num; subtotalAmount?: Num };
+}
+
+/** Merge the per-unitFactor group rows per item, rank by base units, keep `take`. */
+export const rankTopSoldByBaseQty = (rows: readonly TopSoldUnitRow[], take: number): TopSoldGroupRow[] =>
+    rankBy(mergeByBaseQty(rows, ["itemId"]), "quantity", "desc", take);

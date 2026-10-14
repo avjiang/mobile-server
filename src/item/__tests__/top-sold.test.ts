@@ -7,7 +7,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { Decimal } from "decimal.js";
 
-import { buildTopSoldItems } from "../top-sold";
+import { buildTopSoldItems, rankTopSoldByBaseQty } from "../top-sold";
 
 const item = (id: number, price: number, stock = 10) => ({
     id, itemName: `Item ${id}`, price: new Decimal(price), stockBalance: [{ availableQuantity: new Decimal(stock) }],
@@ -50,5 +50,34 @@ describe("buildTopSoldItems — revenue net of the line discount", () => {
         assert.equal(r.totalRevenue, 0);
         assert.equal(r.quantitySold, 0);
         assert.equal(r.item.stockQuantity, 0);
+    });
+});
+
+describe("rankTopSoldByBaseQty — Home top 5 in base units", () => {
+    test('"2 Dus" (isi 40) counts as 80 pcs and outranks 50 single pcs', () => {
+        const rows = [
+            { itemId: 1, unitFactor: null, _sum: { quantity: 50, subtotalAmount: 175000 } },
+            { itemId: 2, unitFactor: new Decimal(40), _sum: { quantity: 2, subtotalAmount: 256000 } },
+        ];
+        const ranked = rankTopSoldByBaseQty(rows, 5);
+        assert.deepEqual(ranked.map(r => r.itemId), [2, 1]);
+        const out = buildTopSoldItems(ranked, [item(1, 3500), item(2, 3500)]);
+        assert.equal(out[0].quantitySold, 80);
+        assert.equal(out[0].totalRevenue, 256000);
+    });
+
+    test("an item sold by Dus and by Pcs is one row: 1 Dus + 5 Pcs = 45", () => {
+        const rows = [
+            { itemId: 3, unitFactor: new Decimal(40), _sum: { quantity: 1, subtotalAmount: 128000 } },
+            { itemId: 3, unitFactor: null, _sum: { quantity: 5, subtotalAmount: 17500 } },
+        ];
+        const [r] = rankTopSoldByBaseQty(rows, 5);
+        assert.equal(Number(r._sum.quantity!.toString()), 45);
+        assert.equal(Number(r._sum.subtotalAmount!.toString()), 145500);
+    });
+
+    test("no units (laundry / pre-feature): same order as Σ quantity, top 5 only", () => {
+        const rows = [3, 9, 1, 7, 5, 8].map((q, i) => ({ itemId: i + 1, unitFactor: null, _sum: { quantity: q, subtotalAmount: 0 } }));
+        assert.deepEqual(rankTopSoldByBaseQty(rows, 5).map(r => r.itemId), [2, 6, 4, 5, 1]);
     });
 });

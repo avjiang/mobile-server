@@ -5,6 +5,11 @@ import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
 import { saleLevelDeductions } from '../sales/sale-profit';
 import { loadManualDiscountReport } from './manual-discount-report';
+import { emptyPriceMix, loadPriceMixReport } from './price-mix-report';
+import { baseQty, mergeByBaseQty, rankBy } from './base-qty';
+
+/** Group-by fields of the item rankings, besides unitFactor. */
+const RANK_KEYS = ['itemId', 'itemName', 'itemCode', 'itemBrand'] as const;
 
 /** Sale statuses whose service lines count as laundry revenue: the order was
  *  taken and not reversed. Supply cost uses every non-void status instead. */
@@ -81,9 +86,9 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             partiallyPaidSales,
             completedSales,
             deliveredSales,
-            topSellingItems,
-            mostProfitableItems,
-            mostLossItems,
+            topSellingRows,
+            mostProfitableRows,
+            mostLossRows,
             salesSummary,
             paymentBreakdown,
             salesItems,
@@ -181,7 +186,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
 
             // Include all non-voided sales for top selling items (not just completed)
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand', 'unitFactor'],
                 where: {
                     sales: {
                         ...sessionFilter,
@@ -193,17 +198,11 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     quantity: true,
                     subtotalAmount: true
                 },
-                orderBy: {
-                    _sum: {
-                        quantity: 'desc'
-                    }
-                },
-                take: 10
             }),
 
             // Only include completed sales from completedSessionId for most profitable items
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand', 'unitFactor'],
                 where: {
                     sales: {
                         ...completedSessionFilter,
@@ -220,17 +219,11 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     cost: true,
                     quantity: true
                 },
-                orderBy: {
-                    _sum: {
-                        profit: 'desc'
-                    }
-                },
-                take: 10
             }),
 
             // Most loss-making items (items sold at a loss)
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand', 'unitFactor'],
                 where: {
                     sales: {
                         ...completedSessionFilter,
@@ -247,12 +240,6 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     cost: true,
                     quantity: true
                 },
-                orderBy: {
-                    _sum: {
-                        profit: 'asc'
-                    }
-                },
-                take: 10
             }),
 
             // Include only completed sales from completedSessionId for overall summary
@@ -301,6 +288,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 select: {
                     itemId: true,
                     quantity: true,
+                    unitFactor: true,
                     subtotalAmount: true
                 }
             }),
@@ -540,6 +528,12 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             })
         ]);
 
+        // Item rankings in base units: a "2 Dus" (isi 40) line counts as 80 pcs.
+        // The groupBys above split per unitFactor; merge per item, then rank.
+        const topSellingItems = rankBy(mergeByBaseQty(topSellingRows, RANK_KEYS), 'quantity', 'desc', 10);
+        const mostProfitableItems = rankBy(mergeByBaseQty(mostProfitableRows, RANK_KEYS), 'profit', 'desc', 10);
+        const mostLossItems = rankBy(mergeByBaseQty(mostLossRows, RANK_KEYS), 'profit', 'asc', 10);
+
         // Get the unique item IDs sold in this session
         const soldItemIds = [...new Set(salesItems.map(item => item.itemId))];
 
@@ -561,7 +555,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             if (!itemQuantitiesSold[item.itemId]) {
                 itemQuantitiesSold[item.itemId] = new Decimal(0);
             }
-            itemQuantitiesSold[item.itemId] = itemQuantitiesSold[item.itemId].plus(item.quantity);
+            itemQuantitiesSold[item.itemId] = itemQuantitiesSold[item.itemId].plus(baseQty(item.quantity, item.unitFactor));
         });
 
         // Calculate top-selling categories
@@ -585,7 +579,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     revenue: new Decimal(0)
                 };
             }
-            categorySales[categoryId].quantitySold = categorySales[categoryId].quantitySold.plus(salesItem.quantity);
+            categorySales[categoryId].quantitySold = categorySales[categoryId].quantitySold.plus(baseQty(salesItem.quantity, salesItem.unitFactor));
             categorySales[categoryId].revenue = categorySales[categoryId].revenue.plus(salesItem.subtotalAmount);
         });
 
@@ -803,10 +797,19 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             ...completedSessionFilter, status: "Completed", deleted: false,
         });
 
+        // Grosir / Ecer / Harga diubah split of the same sales' lines (wholesale
+        // pricing). Retail only: laundry lines are services, never grosir.
+        const priceMix = isLaundry ? emptyPriceMix() : await loadPriceMixReport(tenantPrisma, {
+            ...completedSessionFilter, status: "Completed", deleted: false,
+        });
+
         // Prepare response object
         return {
             // Manual line + order discounts: total, count, and who gave them
             manualDiscount,
+
+            // Line revenue / profit / count per Grosir, Ecer, Harga diubah (+ per price level)
+            priceMix,
 
             // Laundry operations block (null for non-laundry accounts)
             laundryOps,
@@ -1187,13 +1190,14 @@ const computeOutletReportFingerprint = async (
     // table in the fingerprint. See docs/future/EXPENSE_AND_CASH_RECONCILIATION.md §5.
     // v3: the payload gained `manualDiscount` (SPRINT_008) — entries cached before
     // it must not be served without the field.
+    // v4: the payload gained `priceMix` and base-unit item rankings (wholesale Phase 1r).
     const [s, p, e] = await Promise.all([
         tenantPrisma.sales.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
         tenantPrisma.payment.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
         tenantPrisma.expense.aggregate({ where: { outletId, businessDate: { gte: startDate, lte: endDate } }, _count: { id: true }, _max: { updatedAt: true } }),
     ]);
     return [
-        'v3',
+        'v4',
         s._count.id, s._max.updatedAt?.toISOString() ?? '',
         p._count.id, p._max.updatedAt?.toISOString() ?? '',
         e._count.id, e._max.updatedAt?.toISOString() ?? '',
@@ -1459,9 +1463,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             partiallyPaidSales,
             completedSales,
             deliveredSales,
-            topSellingItems,
-            mostProfitableItems,
-            mostLossItems,
+            topSellingRows,
+            mostProfitableRows,
+            mostLossRows,
             salesSummary,
             paymentBreakdown,
             salesItems,
@@ -1556,7 +1560,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
 
             // Include all non-voided sales for top selling items
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand', 'unitFactor'],
                 where: {
                     sales: {
                         ...outletFilter,
@@ -1568,17 +1572,11 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     quantity: true,
                     subtotalAmount: true
                 },
-                orderBy: {
-                    _sum: {
-                        quantity: 'desc'
-                    }
-                },
-                take: 10
             }),
 
             // Most profitable items from completed sales
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand', 'unitFactor'],
                 where: {
                     sales: {
                         ...outletFilter,
@@ -1595,17 +1593,11 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     cost: true,
                     quantity: true
                 },
-                orderBy: {
-                    _sum: {
-                        profit: 'desc'
-                    }
-                },
-                take: 10
             }),
 
             // Most loss-making items (items sold at a loss)
             tenantPrisma.salesItem.groupBy({
-                by: ['itemId', 'itemName', 'itemCode', 'itemBrand'],
+                by: ['itemId', 'itemName', 'itemCode', 'itemBrand', 'unitFactor'],
                 where: {
                     sales: {
                         ...outletFilter,
@@ -1622,12 +1614,6 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     cost: true,
                     quantity: true
                 },
-                orderBy: {
-                    _sum: {
-                        profit: 'asc'
-                    }
-                },
-                take: 10
             }),
 
             // Sales summary for completed sales
@@ -1676,6 +1662,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                 select: {
                     itemId: true,
                     quantity: true,
+                    unitFactor: true,
                     subtotalAmount: true
                 }
             }),
@@ -1824,6 +1811,12 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             })
         ]);
 
+        // Item rankings in base units: a "2 Dus" (isi 40) line counts as 80 pcs.
+        // The groupBys above split per unitFactor; merge per item, then rank.
+        const topSellingItems = rankBy(mergeByBaseQty(topSellingRows, RANK_KEYS), 'quantity', 'desc', 10);
+        const mostProfitableItems = rankBy(mergeByBaseQty(mostProfitableRows, RANK_KEYS), 'profit', 'desc', 10);
+        const mostLossItems = rankBy(mergeByBaseQty(mostLossRows, RANK_KEYS), 'profit', 'asc', 10);
+
         // Get the unique item IDs sold in this outlet
         const soldItemIds = [...new Set(salesItems.map(item => item.itemId))];
 
@@ -1845,7 +1838,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             if (!itemQuantitiesSold[item.itemId]) {
                 itemQuantitiesSold[item.itemId] = new Decimal(0);
             }
-            itemQuantitiesSold[item.itemId] = itemQuantitiesSold[item.itemId].plus(item.quantity);
+            itemQuantitiesSold[item.itemId] = itemQuantitiesSold[item.itemId].plus(baseQty(item.quantity, item.unitFactor));
         });
         // Plain-number copy: feeds the live stockBalance helper and is stored in
         // the cache entry so a hit can rebuild the stock section without rerunning
@@ -1874,7 +1867,7 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     revenue: new Decimal(0)
                 };
             }
-            categorySales[categoryId].quantitySold = categorySales[categoryId].quantitySold.plus(salesItem.quantity);
+            categorySales[categoryId].quantitySold = categorySales[categoryId].quantitySold.plus(baseQty(salesItem.quantity, salesItem.unitFactor));
             categorySales[categoryId].revenue = categorySales[categoryId].revenue.plus(salesItem.subtotalAmount);
         });
 
@@ -2152,10 +2145,19 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             ...outletFilter, status: "Completed", deleted: false,
         });
 
+        // Grosir / Ecer / Harga diubah split of the same sales' lines (wholesale
+        // pricing). Retail only: laundry lines are services, never grosir.
+        const priceMix = isLaundry ? emptyPriceMix() : await loadPriceMixReport(tenantPrisma, {
+            ...outletFilter, status: "Completed", deleted: false,
+        });
+
         // Prepare response object
         const payload = {
             // Manual line + order discounts: total, count, and who gave them
             manualDiscount,
+
+            // Line revenue / profit / count per Grosir, Ecer, Harga diubah (+ per price level)
+            priceMix,
 
             // Laundry operations block (null for non-laundry accounts)
             laundryOps,

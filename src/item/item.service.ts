@@ -4,7 +4,7 @@ import { NotFoundError, BusinessLogicError, PlanLimitError, ErrorCode } from "..
 import { isLitePlan } from "../middleware/require-plan.middleware"
 import salesService from "../sales/sales.service"
 import { ItemDto, ItemSoldObject, ItemSoldRankingResponseBody } from "./item.response"
-import { buildTopSoldItems } from "./top-sold"
+import { buildTopSoldItems, rankTopSoldByBaseQty } from "./top-sold"
 import { plainToInstance } from "class-transformer"
 import { getTenantPrisma, getGlobalPrisma } from '../db';
 import { SyncRequest } from "./item.request"
@@ -2062,8 +2062,10 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number, ou
         }
 
         // Get the top 5 sales items for these sales and group them by itemId
-        const topSoldItemsData = await tenantPrisma.salesItem.groupBy({
-            by: ['itemId'],
+        // Grouped per unitFactor too, then ranked in base units (top-sold.ts):
+        // a "2 Dus" (isi 40) line counts as 80 pcs.
+        const topSoldUnitRows = await tenantPrisma.salesItem.groupBy({
+            by: ['itemId', 'unitFactor'],
             _count: {
                 itemId: true,
             },
@@ -2078,13 +2080,8 @@ let getSoldItemsBySessionId = async (databaseName: string, sessionId: number, ou
                 },
                 deleted: false
             },
-            orderBy: {
-                _sum: {
-                    quantity: 'desc',
-                },
-            },
-            take: 5,
         });
+        const topSoldItemsData = rankTopSoldByBaseQty(topSoldUnitRows, 5);
 
         if (topSoldItemsData.length === 0) {
             return {

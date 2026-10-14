@@ -40,6 +40,7 @@ export const PERMISSION = {
     PRINT_BILL: 'Print Bill',
     EDIT_SALE_PRICE: 'Edit Sale Price',
     GIVE_DISCOUNT: 'Give Discount',
+    MARK_MENU_SOLD_OUT: 'Mark Menu Sold Out',
     // Function Management
     MANAGE_MASTER_DATA: 'Manage Master Data',
     MANAGE_PROCUREMENT: 'Manage Procurement',

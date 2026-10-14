@@ -116,11 +116,12 @@ const settingDefinitions = [
         category: 'Financial',
         type: 'STRING',
         defaultValue: 'all',
-        description: 'Sales types for service charge (all, walk_in, delivery)',
+        // dine_in / take_away are the F&B order types (docs/modules/FNB.md).
+        description: 'Sales types for service charge (all, walk_in, dine_in, take_away, delivery)',
         scope: 'OUTLET',
         isRequired: false,
         isReadOnly: false,
-        validationRules: '{"options": ["all", "walk_in", "delivery"]}',
+        validationRules: '{"options": ["all", "walk_in", "dine_in", "take_away", "delivery"]}',
     },
     {
         // Manual-discount cap for users WITHOUT the "Give Discount" permission:

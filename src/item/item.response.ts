@@ -131,6 +131,10 @@ export class ItemDto {
     @Expose()
     trackStock: boolean = true;
 
+    // F&B "Habis" (sold out today). Absent on retail/laundry payloads → stays available.
+    @Expose()
+    isAvailable: boolean | undefined = undefined;
+
     // Terminal attribution — the terminal that created this item (RegisteredDevice
     // siteId). Must be @Expose'd or class-transformer (excludeExtraneousValues)
     // drops it before createMany. Stamped on the item's stock movements.

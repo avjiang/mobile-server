@@ -1,4 +1,5 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "../../prisma/client/generated/client"
+import { attachSalesItemModifiers } from "./sales-item-modifiers";
 import {
     findPaidSaleIdByClientRef,
     findSaleIdByClientRef,
@@ -45,6 +46,18 @@ import { latestReceiptCosts } from '../stock/supply-cost';
  */
 const activeSalesItems = { where: { deleted: false } } as const;
 
+// Detail reads (getById / getByRef) also carry each line's F&B modifiers
+// (empty for retail / laundry). Not used by the list sync: it never reads lines.
+const activeSalesItemsWithModifiers = {
+    where: { deleted: false },
+    include: {
+        selectedModifiers: {
+            where: { deleted: false },
+            select: { modifierId: true, groupName: true, modifierName: true, price: true, quantity: true },
+        },
+    },
+} as const;
+
 // How many sales a device pulls on its FIRST sync (no cursor yet — fresh install
 // or reinstall). Bounded by COUNT, deliberately not by date: a date window's cost
 // depends on how busy the tenant is, so it is unbounded and unpredictable, while a
@@ -86,6 +99,9 @@ const salesSyncSelect = {
     orderRef: true,
     friendlyNumber: true,
     collectedAt: true,
+    // F&B counter queue number + "atas nama" label
+    queueNo: true,
+    customerLabel: true,
     // Loyalty fields
     loyaltyPointsEarned: true,
     loyaltyPointsRedeemed: true,
@@ -500,6 +516,9 @@ function toSalesSyncRow(sale: SalesSyncRow, serviceKinds: Map<number, 'wash' | '
         orderRef: sale.orderRef,
         friendlyNumber: sale.friendlyNumber,
         collectedAt: sale.collectedAt,
+        // F&B counter queue number + "atas nama" label
+        queueNo: sale.queueNo,
+        customerLabel: sale.customerLabel,
         // Loyalty fields
         loyaltyPointsEarned: sale.loyaltyPointsEarned,
         loyaltyPointsRedeemed: sale.loyaltyPointsRedeemed,
@@ -1524,7 +1543,7 @@ let getById = async (databaseName: string, id: number, outletId?: number) => {
                 outletId: outletId
             },
             include: {
-                salesItems: activeSalesItems,
+                salesItems: activeSalesItemsWithModifiers,
                 payments: true,
                 registerLogs: true
             }
@@ -1549,7 +1568,7 @@ let getByRef = async (databaseName: string, orderRef: string) => {
     const sales = await tenantPrisma.sales.findUnique({
         where: { orderRef },
         include: {
-            salesItems: activeSalesItems,
+            salesItems: activeSalesItemsWithModifiers,
             payments: true,
             registerLogs: true,
         },
@@ -2078,6 +2097,7 @@ async function completeNewSales(
                         stockConsumptionQty: item.stockConsumptionQty,
                         unitOfMeasure: item.unitOfMeasure || null,
                         loadWeightKg: item.loadWeightKg ?? null,
+                        specialInstructions: item.specialInstructions || '',
                         __order: item.__order,
                     });
                 } else {
@@ -2131,6 +2151,7 @@ async function completeNewSales(
                             stockConsumptionQty: null,
                             unitOfMeasure: item.unitOfMeasure || null,
                             loadWeightKg: item.loadWeightKg ?? null,
+                            specialInstructions: item.specialInstructions || '',
                             stockReceiptId: receiptSource?.kind === 'OUTLET' ? receipt.id : null,
                             warehouseStockReceiptId: receiptSource?.kind === 'WAREHOUSE' ? receipt.id : null,
                             __order: item.__order,
@@ -2189,6 +2210,7 @@ async function completeNewSales(
                     stockConsumptionQty: null,
                     unitOfMeasure: item.unitOfMeasure || null,
                     loadWeightKg: item.loadWeightKg ?? null,
+                    specialInstructions: item.specialInstructions || '',
                     __order: originalLineIndex.get(item) ?? 0,
                 });
             }
@@ -2273,6 +2295,9 @@ async function completeNewSales(
                     // Laundry intake→pickup identity (null for retail / when not sent)
                     orderRef: salesBody.orderRef || null,
                     friendlyNumber: salesBody.friendlyNumber || null,
+                    // F&B counter queue number + "atas nama" label, stored as sent.
+                    queueNo: salesBody.queueNo?.trim().slice(0, 16) || null,
+                    customerLabel: salesBody.customerLabel?.trim().slice(0, 100) || null,
                     // Offline-replay dedupe key (./client-ref.ts); null without a key.
                     clientRef,
                     // Stock-source provenance — computed from actual per-line consumption
@@ -2297,6 +2322,10 @@ async function completeNewSales(
                     salesId: createdSales.id,
                 }))
             });
+
+            // F&B: snapshot each line's modifiers onto every persisted row of that
+            // request line (a FIFO split yields several rows for one line).
+            await attachSalesItemModifiers(tx, createdSales.id, salesBody.salesItems, salesItemData);
 
             // Batch create payments
             await tx.payment.createMany({

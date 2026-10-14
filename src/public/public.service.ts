@@ -152,7 +152,9 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
   }
 
   const rows = await prisma.item.findMany({
-    where: { deleted: false },
+    // Never list stock-only goods (laundry supplies, F&B ingredients) or a dish
+    // marked "Habis" for today.
+    where: { deleted: false, isAvailable: true, itemType: { not: "supply" } },
     select: {
       id: true,
       itemName: true,

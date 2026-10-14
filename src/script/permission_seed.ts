@@ -110,6 +110,13 @@ export const permissions = [
         category: "Sales",
         description: "Give any discount at checkout; without it, up to the cashier discount limit"
     },
+    // F&B: flip a menu item or modifier to "Habis" (sold out today) from the sales grid.
+    // Name MUST match FE AppPermission.markMenuSoldOut.
+    {
+        name: "Mark Menu Sold Out",
+        category: "Sales",
+        description: "Mark a menu item or option as sold out for today, and back"
+    },
     {
         name: "Manage Master Data",
         category: "Function Management",

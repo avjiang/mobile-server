@@ -1895,6 +1895,12 @@ let remove = async (databaseName: string, id: number) => {
                     deletedAt: new Date(),
                 },
             }),
+            // F&B: the deleted dish stops offering its modifier groups (the groups
+            // themselves stay in the library for other dishes).
+            tenantPrisma.itemModifierGroup.updateMany({
+                where: { itemId: id, deleted: false },
+                data: { deleted: true },
+            }),
         ]);
 
         return updatedItem[0];
@@ -1902,6 +1908,24 @@ let remove = async (databaseName: string, id: number) => {
     catch (error) {
         throw error
     }
+}
+
+/**
+ * F&B "Habis" toggle: marks a menu item sold out for today (or back). A plain flag,
+ * independent of stock; bumps version/updatedAt so every terminal picks it up on
+ * the next item delta sync, and the public catalogue / QR menu hides it.
+ */
+let setAvailability = async (databaseName: string, id: number, isAvailable: boolean) => {
+    const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const found = await tenantPrisma.item.findFirst({ where: { id, deleted: false }, select: { id: true } });
+    if (!found) {
+        throw new NotFoundError("Item");
+    }
+    return tenantPrisma.item.update({
+        where: { id },
+        data: { isAvailable, version: { increment: 1 } },
+        select: { id: true, isAvailable: true, updatedAt: true },
+    });
 }
 
 let getLowStockItemCount = async (databaseName: string, lowStockQuantity: number, isIncludedZeroStock: boolean, outletId: number) => {
@@ -2170,6 +2194,7 @@ export = {
     createMany,
     update,
     remove,
+    setAvailability,
     getSoldItemsBySessionId,
     getLowStockItemCount,
     getLowStockItems,

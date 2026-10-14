@@ -27,7 +27,7 @@ let createTenant = (req: NetworkRequest<CreateTenantRequest>, res: Response, nex
         throw new RequestValidateError('Request body is empty')
     }
     if (!req.body || !req.body.tenant.tenantName || !req.body.tenant.plan || !req.body.tenant.planType) {
-        res.status(400).json({ error: 'Invalid request. tenantName, plan and planType ("Retail" | "Laundry") are required.' });
+        res.status(400).json({ error: 'Invalid request. tenantName, plan and planType ("Retail" | "Laundry" | "F&B") are required.' });
         return;
     }
     const requestBody = req.body

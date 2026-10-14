@@ -51,12 +51,12 @@ const { getGlobalPrisma, getTenantPrisma, disconnectAllPrismaClients } =
 // Transactional tables, grouped for readability. Master/setup tables are
 // deliberately ABSENT: role, role_permission, user, setting, supplier, company,
 // outlet, item, item_consumable, item_category, item_variant*, variant_attribute_value,
-// menu_*, table, recipe, station, order_routing, registered_device, warehouse,
+// table, station, registered_device, warehouse,
 // loyalty_program, loyalty_tier, subscription_package*, reward_rule,
 // promotion, promotion_item, notification_preference + lookup tables.
 const transactionalTables: string[] = [
     // sales + documents
-    "sales", "sales_photo", "sales_item", "sales_item_modifier",
+    "sales", "sales_photo", "sales_item",
     "invoice", "invoice_item", "invoice_settlement",
     "delivery_order", "delivery_order_item",
     "quotation", "quotation_item",
@@ -73,8 +73,6 @@ const transactionalTables: string[] = [
     // loyalty + packages (balances/ledgers — programs & tiers are kept)
     "loyalty_account", "loyalty_point_batch", "loyalty_transaction",
     "customer_subscription", "subscription_usage", "voucher",
-    // F&B flow
-    "reservation", "waitlist", "split_bill",
     // misc transaction history
     "promotion_usage", "override_log", "referral", "idempotency_record",
 ];

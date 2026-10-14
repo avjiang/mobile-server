@@ -97,7 +97,7 @@ let createTenant = async (body: CreateTenantRequest) => {
         // "Retail" default turned forgotten laundry signups into retail tenants.
         const planType = tenant.planType;
         if (!planType) {
-            throw new Error('planType is required ("Retail" | "Laundry").');
+            throw new Error('planType is required ("Retail" | "Laundry" | "F&B").');
         }
         // A "Trial" signup is the 30-day PRO trial (decided 2026-09-28): the
         // tenant runs on the vertical's Pro plan with status 'trial', so every
@@ -356,14 +356,15 @@ const getTenantCost = async (req: AuthRequest, tenantId: number) => {
         // Calculate outlet count
         const outletCount = tenant.tenantOutlets.length;
 
-        // Advanced Loyalty is bundled into Laundry Pro — exclude it from billing.
-        const billingPlanType = tenant.tenantOutlets
+        // Advanced Loyalty is bundled into Laundry and F&B Pro — exclude it from billing.
+        const billingPlan = tenant.tenantOutlets
             .flatMap(o => o.subscriptions)
-            .find(s => s.subscriptionPlan?.planType)?.subscriptionPlan?.planType ?? null;
+            .find(s => s.subscriptionPlan?.planType)?.subscriptionPlan;
+        const billingPlanType = billingPlan?.planType ?? null;
 
         // Build tenant-level add-ons
         const tenantAddOns = tenant.tenantAddOns
-            .filter(({ addOn }) => !isNonBillableAddOn(addOn.id, billingPlanType))
+            .filter(({ addOn }) => !isNonBillableAddOn(addOn.id, billingPlanType, billingPlan?.planName))
             .map(({ addOn, quantity }) => ({
                 name: addOn.name,
                 quantity,
@@ -573,7 +574,7 @@ const getAllTenantCost = async () => {
                 JOIN SUBSCRIPTION_PLAN sp3 ON ts3.SUBSCRIPTION_PLAN_ID = sp3.ID
                 WHERE o3.TENANT_ID = t.ID AND o3.IS_ACTIVE = true
                   AND ts3.STATUS IN ('active', 'trial')
-                  AND sp3.PLAN_TYPE = 'Laundry'
+                  AND (sp3.PLAN_TYPE = 'Laundry' OR (sp3.PLAN_TYPE = 'F&B' AND sp3.PLAN_NAME = 'Pro'))  -- keep in step with isPlanBundledAddOn
               )
             )
         ), 0) AS totalMonthlyCost,
@@ -593,7 +594,7 @@ const getAllTenantCost = async () => {
                 JOIN SUBSCRIPTION_PLAN sp3 ON ts3.SUBSCRIPTION_PLAN_ID = sp3.ID
                 WHERE o3.TENANT_ID = t.ID AND o3.IS_ACTIVE = true
                   AND ts3.STATUS IN ('active', 'trial')
-                  AND sp3.PLAN_TYPE = 'Laundry'
+                  AND (sp3.PLAN_TYPE = 'Laundry' OR (sp3.PLAN_TYPE = 'F&B' AND sp3.PLAN_NAME = 'Pro'))  -- keep in step with isPlanBundledAddOn
               )
             )
         ), 0) AS totalCostBeforeDiscount,
@@ -1737,12 +1738,13 @@ const buildCostSnapshot = (subscription: any, tenantAddOns: any[]): CostSnapshot
     const basePlanCost = isTrialStatus(subscription.status) ? 0 : (subscription.customPrice ?? standardPlanPrice);
     const isCustomPrice = subscription.customPrice != null;
 
-    // Advanced Loyalty is bundled into Laundry Pro — never invoice it as an add-on.
+    // Advanced Loyalty is bundled into Laundry and F&B Pro — never invoice it as an add-on.
     const snapshotPlanType = subscription.subscriptionPlan?.planType ?? null;
+    const snapshotPlanName = subscription.subscriptionPlan?.planName ?? null;
 
     // Add-ons from tenant-level (not per-subscription)
     const addOns = tenantAddOns
-        .filter((ta: any) => !isNonBillableAddOn(ta.addOn?.id ?? ta.addOnId, snapshotPlanType))
+        .filter((ta: any) => !isNonBillableAddOn(ta.addOn?.id ?? ta.addOnId, snapshotPlanType, snapshotPlanName))
         .map((ta: any) => ({
             addOnId: ta.addOn?.id || ta.addOnId,
             name: ta.addOn?.name || 'Unknown',
@@ -2117,14 +2119,15 @@ const getTenantBillingSummary = async (tenantId: number): Promise<TenantBillingS
         throw new NotFoundError('Tenant not found');
     }
 
-    // Advanced Loyalty is bundled into Laundry Pro — exclude it from billing.
-    const billingPlanType = tenant.tenantOutlets
+    // Advanced Loyalty is bundled into Laundry and F&B Pro — exclude it from billing.
+    const billingPlan = tenant.tenantOutlets
         .flatMap(o => o.subscriptions)
-        .find(s => s.subscriptionPlan?.planType)?.subscriptionPlan?.planType ?? null;
+        .find(s => s.subscriptionPlan?.planType)?.subscriptionPlan;
+    const billingPlanType = billingPlan?.planType ?? null;
 
     // Build tenant-level add-ons
     const tenantAddOns = tenant.tenantAddOns
-        .filter(({ addOn }) => !isNonBillableAddOn(addOn.id, billingPlanType))
+        .filter(({ addOn }) => !isNonBillableAddOn(addOn.id, billingPlanType, billingPlan?.planName))
         .map(({ addOn, quantity }) => ({
             name: addOn.name,
             quantity,
@@ -2347,7 +2350,7 @@ const getUpcomingPayments = async (options: {
                       JOIN subscription_plan sp3 ON ts3.SUBSCRIPTION_PLAN_ID = sp3.ID
                       WHERE o3.TENANT_ID = t.ID AND o3.IS_ACTIVE = true
                         AND ts3.STATUS IN ('Active', 'active', 'trial')
-                        AND sp3.PLAN_TYPE = 'Laundry'
+                        AND (sp3.PLAN_TYPE = 'Laundry' OR (sp3.PLAN_TYPE = 'F&B' AND sp3.PLAN_NAME = 'Pro'))  -- keep in step with isPlanBundledAddOn
                     )
                   )
             ), 0) as totalMonthlyCost,

@@ -312,9 +312,6 @@ model Customer {
   sales                 Sales[]
   promotions            PromotionCustomer[]
   promotionUsage        PromotionUsage[]
-  reservations          Reservation[]
-  waitlists             Waitlist[]
-  splitBills            SplitBill[]
   loyaltyAccounts       LoyaltyAccount[]
   customerSubscriptions CustomerSubscription[]
   vouchers              Voucher[]
@@ -369,8 +366,6 @@ model Outlet {
   settings           Setting[] // Outlet-specific settings
   tables             Table[]
   stations           Station[]
-  reservations       Reservation[]
-  waitlists          Waitlist[]
   purchaseReturns    PurchaseReturn[]
   sales              Sales[]             @relation("SalesOutlet")
   stockSourceSales   Sales[]             @relation("SalesStockSourceOutlet")
@@ -381,7 +376,6 @@ model Outlet {
   deliveryOrders     DeliveryOrder[]
   quotations         Quotation[]
   purchaseOrders     PurchaseOrder[]
-  menuProfileOutlets MenuProfileOutlet[]
   userOutlets        UserOutlet[]
 
   @@map("outlet")
@@ -442,7 +436,6 @@ model Item {
   stockMovements          StockMovement[]
   stockSnapshots          StockSnapshot[]
   stockReceipts           StockReceipt[]
-  recipes                 Recipe[]
   quotationItems          QuotationItem[]
   purchaseOrderItems      PurchaseOrderItem[]
   deliveryOrderItems      DeliveryOrderItem[]
@@ -451,7 +444,7 @@ model Item {
   warehouseStockMovements WarehouseStockMovement[]
   warehouseStockReceipts  WarehouseStockReceipt[]
   purchaseReturnItems     PurchaseReturnItem[]
-  // Laundry vertical recipe (separate from the F&B `Recipe`/`MenuItem` system):
+  // Laundry vertical recipe (separate from the F&B `Recipe` system):
   // when this item is a "service" (itemType='service'), serviceConsumables holds its
   // bill-of-materials lines; when it is a "supply" (itemType='supply'), consumableOf
   // holds the recipe lines that reference it.
@@ -829,8 +822,6 @@ model SalesItem {
   warehouseStockReceiptId Int?            @map("WAREHOUSE_STOCK_RECEIPT_ID")
   sales               Sales               @relation(fields: [salesId], references: [id])
   itemVariant         ItemVariant?        @relation(fields: [itemVariantId], references: [id])
-  selectedModifiers   SalesItemModifier[]
-  orderRouting        OrderRouting[]
 
   @@index([itemStatus])
   @@index([itemId])
@@ -840,29 +831,6 @@ model SalesItem {
   @@index([stockReceiptId])
   @@index([warehouseStockReceiptId])
   @@map("sales_item")
-}
-
-model SalesItemModifier {
-  id                 Int              @id @default(autoincrement()) @map("ID")
-  salesItemId        Int              @map("SALES_ITEM_ID")
-  menuItemModifierId Int              @map("MENU_ITEM_MODIFIER_ID")
-  itemId             Int?             @map("ITEM_ID") // For inventory tracking
-  modifierName       String           @map("MODIFIER_NAME")
-  modifierPrice      Decimal          @map("MODIFIER_PRICE") @db.Decimal(15, 4)
-  quantity           Int              @default(1) @map("QUANTITY")
-  status             OrderStatus?     @map("STATUS") // Optional, for preparation tracking
-  deleted            Boolean          @default(false) @map("IS_DELETED")
-  deletedAt          DateTime?        @map("DELETED_AT")
-  createdAt          DateTime?        @default(now()) @map("CREATED_AT")
-  updatedAt          DateTime?        @updatedAt @map("UPDATED_AT")
-  version            Int?             @default(1) @map("VERSION")
-  menuItemModifier   MenuItemModifier @relation(fields: [menuItemModifierId], references: [id])
-  salesItem          SalesItem        @relation(fields: [salesItemId], references: [id])
-
-  @@index([salesItemId])
-  @@index([menuItemModifierId])
-  @@index([itemId])
-  @@map("sales_item_modifier")
 }
 
 model Invoice {
@@ -1296,7 +1264,6 @@ model Payment {
   outlet         Outlet      @relation(fields: [outletId], references: [id])
   cardInfos      CardInfo[]
   sales          Sales       @relation(fields: [salesId], references: [id])
-  splitBills     SplitBill[]
 
   @@index([method])
   @@index([businessDate])
@@ -1548,126 +1515,6 @@ model StockSnapshot {
   @@map("stock_snapshot")
 }
 
-model MenuProfileOutlet {
-  id            Int       @id @default(autoincrement()) @map("ID")
-  outletId      Int       @map("OUTLET_ID")
-  menuProfileID Int       @map("MENU_PROFILE_ID")
-  deleted       Boolean   @default(false) @map("IS_DELETED")
-  deletedAt     DateTime? @map("DELETED_AT")
-  createdAt     DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt     DateTime? @updatedAt @map("UPDATED_AT")
-  version       Int?      @default(1) @map("VERSION")
-  outlet        Outlet      @relation(fields: [outletId], references: [id])
-  menuProfile   MenuProfile @relation(fields: [menuProfileID], references: [id])
-
-  @@index([outletId])
-  @@map("menu_profile_outlet")
-}
-
-model MenuProfile {
-  id             Int            @id @default(autoincrement()) @map("ID")
-  name           String         @map("NAME")
-  dateStart      String         @map("DATE_START")
-  dateEnd        String         @map("DATE_END")
-  timeStart      String         @map("TIME_START")
-  timeEnd        String         @map("TIME_END")
-  isMonday       Boolean        @map("IS_MONDAY")
-  isTuesday      Boolean        @map("IS_TUESDAY")
-  isWednesday    Boolean        @map("IS_WEDNESDAY")
-  isThursday     Boolean        @map("IS_THURSDAY")
-  isFriday       Boolean        @map("IS_FRIDAY")
-  isSaturday     Boolean        @map("IS_SATURDAY")
-  isSunday       Boolean        @map("IS_SUNDAY")
-  sequence       Int            @map("SEQUENCE")
-  deleted        Boolean        @default(false) @map("IS_DELETED")
-  deletedAt      DateTime?      @map("DELETED_AT")
-  createdAt      DateTime?      @default(now()) @map("CREATED_AT")
-  updatedAt      DateTime?      @updatedAt @map("UPDATED_AT")
-  version            Int?                @default(1) @map("VERSION")
-  menuCategories     MenuCategory[]
-  menuProfileOutlets MenuProfileOutlet[]
-
-  @@map("menu_profile")
-}
-
-model MenuCategory {
-  id            Int         @id @default(autoincrement()) @map("ID")
-  name          String      @map("NAME")
-  menuProfileID Int         @map("MENU_PROFILE_ID")
-  imageURL      String?     @map("IMAGE_URL") @db.Text
-  deleted       Boolean     @default(false) @map("IS_DELETED")
-  deletedAt     DateTime?   @map("DELETED_AT")
-  createdAt     DateTime?   @default(now()) @map("CREATED_AT")
-  updatedAt     DateTime?   @updatedAt @map("UPDATED_AT")
-  version       Int?        @default(1) @map("VERSION")
-  menuProfile   MenuProfile @relation(fields: [menuProfileID], references: [id])
-  menuItems     MenuItem[]
-
-  @@map("menu_category")
-}
-
-model MenuItem {
-  id                     Int                     @id @default(autoincrement()) @map("ID")
-  name                   String                  @map("NAME")
-  itemID                 Int                     @map("ITEM_ID")
-  itemCode               String                  @map("ITEM_CODE")
-  imageURL               String?                 @map("IMAGE_URL") @db.Text
-  price                  Decimal                 @map("PRICE") @db.Decimal(15, 4)
-  sequence               Int                     @map("SEQUENCE")
-  menuCategoryID         Int                     @map("MENU_CATEGORY_ID")
-  deleted                Boolean                 @default(false) @map("IS_DELETED")
-  deletedAt              DateTime?               @map("DELETED_AT")
-  createdAt              DateTime?               @default(now()) @map("CREATED_AT")
-  updatedAt              DateTime?               @updatedAt @map("UPDATED_AT")
-  version                Int?                    @default(1) @map("VERSION")
-  menuCategory           MenuCategory            @relation(fields: [menuCategoryID], references: [id])
-  menuItemModifierGroups MenuItemModifierGroup[]
-  recipes                Recipe[]
-
-  @@map("menu_item")
-}
-
-model MenuItemModifierGroup {
-  id                Int                @id @default(autoincrement()) @map("ID")
-  name              String             @map("NAME")
-  minSelection      Int                @map("MIN_SELECTION")
-  maxSelection      Int                @map("MAX_SELECTION")
-  sequence          Int                @map("SEQUENCE")
-  menuItemID        Int                @map("MENU_ITEM_ID")
-  deleted           Boolean            @default(false) @map("IS_DELETED")
-  deletedAt         DateTime?          @map("DELETED_AT")
-  createdAt         DateTime?          @default(now()) @map("CREATED_AT")
-  updatedAt         DateTime?          @map("UPDATED_AT")
-  version           Int?               @default(1) @map("VERSION")
-  menuItem          MenuItem           @relation(fields: [menuItemID], references: [id])
-  freeModifierLimit Int?               @map("FREE_MODIFIER_LIMIT") // e.g., first 2 modifiers free
-  menuItemModifiers MenuItemModifier[]
-
-  @@map("menu_item_modifier_group")
-}
-
-model MenuItemModifier {
-  id                      Int                   @id @default(autoincrement()) @map("ID")
-  name                    String                @map("NAME")
-  itemID                  Int                   @map("ITEM_ID")
-  itemCode                String                @map("ITEM_CODE")
-  imageURL                String?               @map("IMAGE_URL") @db.Text
-  price                   Decimal               @map("PRICE") @db.Decimal(15, 4)
-  defaultSelectionQty     Int                   @map("DEFAULT_SELECTION_QTY")
-  sequence                Int                   @map("SEQUENCE")
-  menuItemModifierGroupID Int                   @map("MENU_ITEM_MODIFIER_GROUP_ID")
-  deleted                 Boolean               @default(false) @map("IS_DELETED")
-  deletedAt               DateTime?             @map("DELETED_AT")
-  createdAt               DateTime?             @default(now()) @map("CREATED_AT")
-  updatedAt               DateTime?             @updatedAt @map("UPDATED_AT")
-  version                 Int?                  @default(1) @map("VERSION")
-  menuItemModifierGroup   MenuItemModifierGroup @relation(fields: [menuItemModifierGroupID], references: [id])
-  salesItemModifiers      SalesItemModifier[]
-  recipes                 Recipe[]
-
-  @@map("menu_item_modifier")
-}
-
 model Table {
   id           Int           @id @default(autoincrement()) @map("ID")
   outletId     Int           @map("OUTLET_ID")
@@ -1682,29 +1529,8 @@ model Table {
   version      Int?          @default(1) @map("VERSION")
   outlet       Outlet        @relation(fields: [outletId], references: [id])
   sales        Sales[]
-  reservations Reservation[]
 
   @@map("table")
-}
-
-model Recipe {
-  id                 Int               @id @default(autoincrement()) @map("ID")
-  menuItemId         Int               @map("MENU_ITEM_ID")
-  itemId             Int               @map("ITEM_ID") // Ingredient item
-  quantity           Float             @map("QUANTITY") // Amount of ingredient needed
-  unit               String            @map("UNIT") // e.g., "grams", "ml"
-  deleted            Boolean           @default(false) @map("IS_DELETED")
-  deletedAt          DateTime?         @map("DELETED_AT")
-  createdAt          DateTime?         @default(now()) @map("CREATED_AT")
-  updatedAt          DateTime?         @map("UPDATED_AT")
-  version            Int?              @default(1) @map("VERSION")
-  batchYield         Float?            @map("BATCH_YIELD") // Number of servings per batch
-  menuItemModifierId Int?              @map("MENU_ITEM_MODIFIER_ID")
-  menuItemModifier   MenuItemModifier? @relation(fields: [menuItemModifierId], references: [id])
-  menuItem           MenuItem          @relation(fields: [menuItemId], references: [id])
-  item               Item              @relation(fields: [itemId], references: [id])
-
-  @@map("recipe")
 }
 
 model Station {
@@ -1717,82 +1543,8 @@ model Station {
   updatedAt    DateTime?      @updatedAt @map("UPDATED_AT")
   version      Int?           @default(1) @map("VERSION")
   outlet       Outlet         @relation(fields: [outletId], references: [id])
-  orderRouting OrderRouting[]
 
   @@map("station")
-}
-
-model Reservation {
-  id         Int       @id @default(autoincrement()) @map("ID")
-  outletId   Int       @map("OUTLET_ID")
-  customerId Int?      @map("CUSTOMER_ID")
-  tableId    Int?      @map("TABLE_ID")
-  dateTime   DateTime  @map("DATE_TIME")
-  partySize  Int       @map("PARTY_SIZE")
-  status     String    @map("STATUS") // e.g., "CONFIRMED", "CANCELLED"
-  deleted    Boolean   @default(false) @map("IS_DELETED")
-  deletedAt  DateTime? @map("DELETED_AT")
-  createdAt  DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt  DateTime? @updatedAt @map("UPDATED_AT")
-  version    Int?      @default(1) @map("VERSION")
-  outlet     Outlet    @relation(fields: [outletId], references: [id])
-  customer   Customer? @relation(fields: [customerId], references: [id])
-  table      Table?    @relation(fields: [tableId], references: [id])
-
-  @@map("reservation")
-}
-
-model OrderRouting {
-  id          Int       @id @default(autoincrement()) @map("ID")
-  salesItemId Int       @map("SALES_ITEM_ID")
-  stationId   Int       @map("STATION_ID")
-  status      String    @map("STATUS") // e.g., "SENT", "PREPARED"
-  sentAt      DateTime? @map("SENT_AT")
-  completedAt DateTime? @map("COMPLETED_AT")
-  deleted     Boolean   @default(false) @map("IS_DELETED")
-  deletedAt   DateTime? @map("DELETED_AT")
-  createdAt   DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt   DateTime? @updatedAt @map("UPDATED_AT")
-  version     Int?      @default(1) @map("VERSION")
-  salesItem   SalesItem @relation(fields: [salesItemId], references: [id])
-  station     Station   @relation(fields: [stationId], references: [id])
-
-  @@map("order_routing")
-}
-
-model Waitlist {
-  id         Int       @id @default(autoincrement()) @map("ID")
-  outletId   Int       @map("OUTLET_ID")
-  customerId Int?      @map("CUSTOMER_ID")
-  partySize  Int       @map("PARTY_SIZE")
-  status     String    @map("STATUS") // e.g., "WAITING", "SEATED", "CANCELLED"
-  waitTime   Int?      @map("WAIT_TIME") // Estimated wait time in minutes
-  deleted    Boolean   @default(false) @map("IS_DELETED")
-  deletedAt  DateTime? @map("DELETED_AT")
-  createdAt  DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt  DateTime? @updatedAt @map("UPDATED_AT")
-  version    Int?      @default(1) @map("VERSION")
-  outlet     Outlet    @relation(fields: [outletId], references: [id])
-  customer   Customer? @relation(fields: [customerId], references: [id])
-
-  @@map("waitlist")
-}
-
-model SplitBill {
-  id         Int       @id @default(autoincrement()) @map("ID")
-  salesId    Int       @map("SALES_ID")
-  amount     Decimal   @map("AMOUNT") @db.Decimal(15, 4)
-  paymentId  Int?      @map("PAYMENT_ID")
-  customerId Int?      @map("CUSTOMER_ID")
-  deleted    Boolean   @default(false) @map("IS_DELETED")
-  deletedAt  DateTime? @map("DELETED_AT")
-  createdAt  DateTime? @default(now()) @map("CREATED_AT")
-  updatedAt  DateTime? @updatedAt @map("UPDATED_AT")
-  version    Int?      @default(1) @map("VERSION")
-  payment    Payment?  @relation(fields: [paymentId], references: [id])
-  customer   Customer? @relation(fields: [customerId], references: [id])
-
-  @@map("split_bill")
 }
 
 // Main Promotion Model (Simplified)

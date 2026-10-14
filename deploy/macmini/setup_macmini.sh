@@ -19,7 +19,7 @@ ME=$(id -un)
 ROOT=/opt/bayaryuk
 LABEL=net.bayaryuk.backend
 PLIST=/Library/LaunchDaemons/$LABEL.plist
-DB_HOST=bayaryuk-db-v2.mysql.database.azure.com
+DB_HOST=bayaryuk-db.mysql.database.azure.com
 
 echo "== 1. Network preflight (office firewalls often block 3306 / 7844)"
 for target in "$DB_HOST 3306" "region1.v2.argotunnel.com 7844" "github.com 443"; do

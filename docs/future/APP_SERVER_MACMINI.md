@@ -2,7 +2,7 @@
 
 Run the **Node backend** on the spare office **Mac mini (M1, 16 GB)** as a **standby** next to Azure App
 Service, reached through a Cloudflare Tunnel. It can be promoted to primary later, which saves the App
-Service bill ($13.14/mo). **The database stays on Azure** (`bayaryuk-db-v2`, sub `3bbc4892-…`).
+Service bill ($13.14/mo). **The database stays on Azure** (`bayaryuk-db`, MySQL 8.4 since 2026-10-14, sub `3bbc4892-…`).
 This is the fallback for [APP_SERVER_ORACLE.md](APP_SERVER_ORACLE.md): Oracle A1 is "Out of host capacity",
 and Azure free-VM quota was auto-rejected in Malaysia West and Indonesia Central.
 
@@ -35,7 +35,7 @@ waits at the unlock screen and the backend stays down until someone logs in. Dec
    preflight: the DB check only passes once the rule exists, because Azure silently drops unknown IPs.
    ```bash
    az mysql flexible-server firewall-rule create --subscription 3bbc4892-5a45-4680-95b3-64bf43d35d4c \
-     -g bayar-yuk-v2 -n bayaryuk-db-v2 --rule-name office-macmini --start-ip-address <IP> --end-ip-address <IP>
+     -g bayar-yuk-v2 -n bayaryuk-db --rule-name office-macmini --start-ip-address <IP> --end-ip-address <IP>
    ```
 5. **First deploy** from the dev Mac, while on the office network: `deploy/macmini/deploy.sh <user>@<macmini-ip>`.
 6. **Cloudflare:** first add a **no-Worker route `api-standby.bayaryuk.net/*`**. Otherwise the `*.bayaryuk.net/*`

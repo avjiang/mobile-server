@@ -6,6 +6,8 @@
 
 > **Budget constraint (2026-05-25):** Tight budget. Anything that increases the monthly bill is **deferred indefinitely** — including MySQL tier upgrades, Azure Cache for Redis, App Service tier upgrades, autoscale, geo-redundant backups, MySQL HA, and storage auto-IO-scaling. The tables below stay in this doc as the **plan for when budget loosens**, not the current roadmap.
 >
+> ✅ **Update 2026-10-14 — prod MySQL is now `bayaryuk-db` (MySQL 8.4)**, same subscription, SKU and free allowance as below; the 8.0 Extended Support charge (from 2027-02-01) no longer applies. **The free allowance ends 2027-10-26** (not ≈ 09-26, checked on the subscription) — **review by 2027-09-26**.
+>
 > ✅ **Update 2026-09-26 — free tier renewed by moving the server.** The original free tier below did expire (Sep 5–26 billed **$34.88/mo**). Prod MySQL now runs on **`bayaryuk-db-v2`** on a fresh account's 12-month free tier (B1MS only — `B1MS Compute - Free`), created **2026-09-26** → next expiry ≈ **2026-09-26 + 12 months**. Expected bill **~$13.14/mo** (App Service only) once the old server is deleted (on/after 2026-09-29). Config is identical to the old server, so every capacity number in this doc still applies. See `docs/future/DB_MIGRATION_2026.md`.
 >
 > ~~**Free-tier expiration warning:** Azure MySQL Flexible Server B1ms is currently on the **12-month free tier** (server created **2025-08-04**, expires approximately **2026-09-04**).~~ Until then, actual monthly bill is ~$14 (App Service B1 only). After the free tier expires, MySQL will start billing at standard rates and total bill jumps to **~$39/mo** with no infra change. Decide before September 2026 whether to budget for that, or to investigate alternatives (self-hosted MySQL on a B1s VM ~$10/mo, AWS free-tier RDS, etc.). Source: Azure Portal → Subscriptions → "Free services expire Friday 4 September 2026".
@@ -35,7 +37,7 @@
 | Component | Spec | Actual Cost (today) | Cost after free tier expires |
 |---|---|---|---|
 | **Azure Web App** | B1 (1 core, 1.75 GiB) | ~$14 | ~$14 |
-| **Azure MySQL Flexible Server** | B1ms (1 vCore, 2 GiB) — `bayaryuk-db-v2` since 2026-09-26 | **$0** (new account's free tier from 2026-09-26; the original expired 2026-09-04) | ~$22 |
+| **Azure MySQL Flexible Server** | B1ms (1 vCore, 2 GiB) — `bayaryuk-db` (MySQL 8.4) since 2026-10-14 | **$0** (new account's free tier, 2026-09-26 → 2027-10-26; the original expired 2026-09-04) | ~$22 |
 | **Storage** | ~20 GiB | $0 (within free tier) | ~$3 |
 | **Total** | | **~$14/mo** | **~$39/mo** |
 

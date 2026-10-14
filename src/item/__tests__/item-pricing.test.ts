@@ -227,6 +227,12 @@ describe("syncItemUnitsAndTiers", () => {
         await assert.rejects(syncItemUnitsAndTiers(f.tx, 1, [{ name: "Dus", factor: 40, price: 1, barcode: "222" }], undefined, "Basic"), /used by variant/);
         f = fakeTx({ items, units: [{ id: 7, itemId: 2, name: "Dus", barcode: "333" }] });
         await assert.rejects(syncItemUnitsAndTiers(f.tx, 1, [{ name: "Dus", factor: 40, price: 1, barcode: "333" }], undefined, "Basic"), /used by unit/);
+        // Tagged so the app can localize it (error_barcode_in_use).
+        f = fakeTx({ items });
+        await assert.rejects(
+            syncItemUnitsAndTiers(f.tx, 1, [{ name: "Dus", factor: 40, price: 1, barcode: "111" }], undefined, "Basic"),
+            (e: any) => e.errorCode === "BARCODE_IN_USE" && e.params.barcode === "111" && e.params.owner === "Indomie",
+        );
         // This item's own stored unit may keep (or hand over) its barcode.
         f = fakeTx({ items, units: [{ id: 7, itemId: 1, name: "Dus", barcode: "333" }] });
         await assert.doesNotReject(syncItemUnitsAndTiers(f.tx, 1, [{ id: 7, name: "Dus", factor: 40, price: 1, barcode: "333" }], undefined, "Basic"));

@@ -68,7 +68,7 @@ Kolom dengan **tanda panah kecil** di pojok kanan sel = **dipilih dari daftar (d
 Kolom yang **diketik sendiri**:
 
 - **`nama_produk`** (wajib) — nama lengkap produk.
-  💡 Kalau ukurannya beda-beda, tulis ukuran di nama (mis. *Tepung Terigu Segitiga Biru 1kg*, *Gula Pasir 1kg*). **Tiap ukuran = 1 baris produk sendiri.**
+  💡 Kalau ukurannya beda-beda, tulis ukuran di nama (mis. *Tepung Terigu Segitiga Biru 1kg*, *Gula Pasir 1kg*). **Tiap ukuran = 1 baris produk sendiri.** (Dus/bal berisi kemasan yang *sama* bukan produk baru — pakai kolom `satuan_besar`, lihat di bawah.)
 - **`kode_produk`** (wajib) — kode unik/SKU tiap produk (bebas, asal beda). Contoh: `TPG-SB-1KG`, `GLA-1KG`.
 - **`harga_beli`** (wajib) — harga modal/beli (angka saja)
 - **`harga_jual`** (wajib) — harga jual ke pembeli (angka saja)
@@ -76,6 +76,17 @@ Kolom yang **diketik sendiri**:
 - `barcode` — **kosongkan** kalau belum punya. (Bisa dibuat & dicetak dari aplikasi nanti.)
 - `lacak_stok` — **Ya** untuk barang biasa. **Tidak** hanya untuk jasa/layanan yang tidak punya stok.
 - `stok_minimum` — batas stok menipis buat pengingat (boleh kosong)
+
+**Jual per dus juga? (opsional)** — kalau produk ini juga dijual grosir per dus/bal/pak
+**dari stok yang sama**, isi 3 kolom ini di baris yang sama:
+
+- `satuan_besar` — nama kemasan besarnya, mis. **Dus**, **Bal**, **Pak**
+- `isi` — berapa `satuan` dalam 1 kemasan besar (harus lebih dari 1). Mis. Indomie: 1 Dus **isi 40** Pcs
+- `harga_satuan_besar` — harga jual per kemasan besar (angka saja), mis. `128000`
+- `barcode_satuan_besar` — barcode di kardusnya kalau ada (boleh kosong, tidak boleh sama dengan barcode lain)
+
+`stok_awal` tetap ditulis dalam **satuan kecil** (mis. 400 Pcs, bukan 10 Dus). Kalau tidak jual
+per dus, **kosongkan** keempat kolom ini. (Fitur ini ada di paket Basic dan Pro.)
 
 ---
 

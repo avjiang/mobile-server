@@ -101,6 +101,11 @@ export enum ErrorCode {
     /** Manual discount above the cashier cap (user lacks "Give Discount"). params: percent */
     DiscountAboveLimit = 'DISCOUNT_ABOVE_LIMIT',
 
+    // -- Item ----------------------------------------------------------------
+    /** A sell-unit barcode is already an item, variant or another unit's barcode
+     *  (wholesale multi-UOM; a scan must resolve to one thing). params: barcode, owner */
+    BarcodeInUse = 'BARCODE_IN_USE',
+
     // -- Plan limits (402) ----------------------------------------------------
     /** The tenant's plan doesn't include this feature. params: plan */
     PlanFeatureLocked = 'PLAN_FEATURE_LOCKED',
@@ -221,9 +226,11 @@ export class PlanLimitError extends BaseError {
 }
 
 export class BusinessLogicError extends BaseError {
-    constructor(message: string) {
+    constructor(message: string, errorCode?: ErrorCode, params?: ErrorParams) {
         super(400, message)
         this.name = 'BusinessLogicError'
+        this.errorCode = errorCode
+        this.params = params
     }
 }
 

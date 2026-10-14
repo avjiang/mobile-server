@@ -186,6 +186,9 @@ program
         if (results.itemSuppliers) {
           console.log(`   Extra suppliers: ${results.itemSuppliers.created} created, ${results.itemSuppliers.existing || 0} updated, ${results.itemSuppliers.skipped || 0} skipped`);
         }
+        if (results.sellUnits) {
+          console.log(`   Large sell units: ${results.sellUnits.created} created, ${results.sellUnits.skipped || 0} skipped`);
+        }
         if (results.customers) {
           console.log(`   Customers:  ${results.customers.created} created`);
         }

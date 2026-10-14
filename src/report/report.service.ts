@@ -436,6 +436,8 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                             discountAmount: true,
                             taxAmount: true,
                             subtotalAmount: true,
+                            // Wholesale sell unit snapshot ("2 Dus" in the sales ledger).
+                            unitName: true,
                         }
                     }
                 },
@@ -1108,7 +1110,8 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     quantity: item.quantity.toNumber(),
                     discountAmount: item.discountAmount.toNumber(),
                     taxAmount: item.taxAmount.toNumber(),
-                    subtotalAmount: item.subtotalAmount.toNumber()
+                    subtotalAmount: item.subtotalAmount.toNumber(),
+                    unitName: item.unitName ?? null,
                 }))
             }))
         };
@@ -1717,6 +1720,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                             discountAmount: true,
                             taxAmount: true,
                             subtotalAmount: true,
+                            // Wholesale sell unit snapshot ("2 Dus" in the sales ledger).
+                            unitName: true,
                         }
                     }
                 },
@@ -2379,7 +2384,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     quantity: item.quantity.toNumber(),
                     discountAmount: item.discountAmount.toNumber(),
                     taxAmount: item.taxAmount.toNumber(),
-                    subtotalAmount: item.subtotalAmount.toNumber()
+                    subtotalAmount: item.subtotalAmount.toNumber(),
+                    unitName: item.unitName ?? null,
                 }))
             }))
         };
@@ -2569,7 +2575,9 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                             cost: true,
                             discountAmount: true,
                             taxAmount: true,
-                            subtotalAmount: true
+                            subtotalAmount: true,
+                            // Wholesale sell unit snapshot ("2 Dus" in the sales ledger).
+                            unitName: true,
                         }
                     }
                 },
@@ -2841,7 +2849,8 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                     quantity: item.quantity.toNumber(),
                     discountAmount: item.discountAmount.toNumber(),
                     taxAmount: item.taxAmount.toNumber(),
-                    subtotalAmount: item.subtotalAmount.toNumber()
+                    subtotalAmount: item.subtotalAmount.toNumber(),
+                    unitName: item.unitName ?? null,
                 }))
             }))
         };

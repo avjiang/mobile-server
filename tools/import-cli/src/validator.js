@@ -396,6 +396,67 @@ function isValidEmail(email) {
 }
 
 /**
+ * Validate the optional larger sell unit on the Items sheet (satuan_besar / isi /
+ * harga_satuan_besar / barcode_satuan_besar) — wholesale multi-UOM: "Dus isi 40"
+ * sold from the item's ONE stock pool. Mirrors the server's rules
+ * (src/item/item-pricing.ts normalizeUnits): name <= 32 chars, factor > 1,
+ * price >= 0, and a unit barcode may not be any item / variant / other unit
+ * barcode in the file (the importer re-checks against the tenant DB).
+ */
+function validateSellUnits(items, variants, result) {
+  const UNIT_NAME_MAX = 32;
+  // barcode -> where it is used, for the cross-check
+  const used = new Map();
+  items.forEach((item, index) => {
+    if (!isEmpty(item.barcode)) used.set(item.barcode.toString().trim(), `item ${item.itemCode} (row ${item._rowNumber || index + 2})`);
+  });
+  (variants || []).forEach((v, index) => {
+    if (!isEmpty(v.barcode)) used.set(v.barcode.toString().trim(), `variant ${v.variantSku} (row ${v._rowNumber || index + 2})`);
+  });
+
+  items.forEach((item, index) => {
+    const row = item._rowNumber || index + 2;
+    const any = !isEmpty(item.sellUnitName) || !isEmpty(item.sellUnitFactor) ||
+      !isEmpty(item.sellUnitPrice) || !isEmpty(item.sellUnitBarcode);
+    if (!any) return;
+
+    if (isEmpty(item.sellUnitName)) {
+      result.addError('Items', row, 'satuan_besar', item.sellUnitName, 'Large-unit name is required when isi / harga_satuan_besar / barcode_satuan_besar is filled');
+    } else {
+      const name = item.sellUnitName.toString().trim();
+      if (name.length > UNIT_NAME_MAX) {
+        result.addError('Items', row, 'satuan_besar', name, `Large-unit name is longer than ${UNIT_NAME_MAX} characters`);
+      }
+      if (!isEmpty(item.unitOfMeasure) && name.toLowerCase() === item.unitOfMeasure.toString().trim().toLowerCase()) {
+        result.addWarning('Items', row, 'satuan_besar', name, `Large unit has the same name as the base unit "${item.unitOfMeasure}"`);
+      }
+    }
+
+    if (isEmpty(item.sellUnitFactor)) {
+      result.addError('Items', row, 'isi', item.sellUnitFactor, 'isi (base units per large unit) is required with satuan_besar');
+    } else if (!isValidNumber(item.sellUnitFactor) || Number(item.sellUnitFactor) <= 1) {
+      result.addError('Items', row, 'isi', item.sellUnitFactor, 'isi must be a number greater than 1 (e.g. 40 for "Dus isi 40")');
+    }
+
+    if (isEmpty(item.sellUnitPrice)) {
+      result.addError('Items', row, 'harga_satuan_besar', item.sellUnitPrice, 'harga_satuan_besar is required with satuan_besar');
+    } else if (!isValidPositiveNumber(item.sellUnitPrice)) {
+      result.addError('Items', row, 'harga_satuan_besar', item.sellUnitPrice, 'harga_satuan_besar must be a valid positive number');
+    }
+
+    if (!isEmpty(item.sellUnitBarcode)) {
+      const code = item.sellUnitBarcode.toString().trim();
+      const owner = used.get(code);
+      if (owner) {
+        result.addError('Items', row, 'barcode_satuan_besar', code, `Barcode is already used by ${owner}`);
+      } else {
+        used.set(code, `large unit of ${item.itemCode} (row ${row})`);
+      }
+    }
+  });
+}
+
+/**
  * Main validation function
  * @param {Object} data - Parsed data from parseExcel
  * @returns {ValidationResult} - Validation result with errors and warnings
@@ -408,6 +469,7 @@ export function validate(data) {
   const supplierNames = validateSuppliers(data.suppliers, result);
   const { itemCodes, itemsWithVariants, preferredSupplierByItem } = validateItems(data.items, categoryNames, supplierNames, result);
   validateVariants(data.variants, itemCodes, itemsWithVariants, result);
+  validateSellUnits(data.items, data.variants, result);
   validateItemSuppliers(data.itemSuppliers || [], itemCodes, supplierNames, preferredSupplierByItem, result);
   validateCustomers(data.customers, result);
 

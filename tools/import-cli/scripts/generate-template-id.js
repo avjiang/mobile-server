@@ -8,7 +8,12 @@
  *                             the tenant to fill. (No example rows = nothing to
  *                             forget to delete, so no junk gets imported.)
  *   - CONTOH_TERISI.xlsx     — the same template pre-filled with a bahan-kue
- *                             example (Model B: each pack size is its own item).
+ *                             example. Each pack SIZE is its own item (1kg vs
+ *                             25kg are different products); a CARTON of the same
+ *                             pack ("Bal isi 12") is the optional large sell unit
+ *                             on the same row (satuan_besar / isi /
+ *                             harga_satuan_besar / barcode_satuan_besar), sold
+ *                             from one stock pool counted in the base unit.
  *                             Reference only — do NOT import this one.
  *
  * Uses exceljs (not the `xlsx` community build) because only exceljs reliably
@@ -51,6 +56,9 @@ const SHEETS = {
     ['stok_awal', false, 12], ['satuan', false, 12], ['barcode', false, 18],
     ['merek', false, 16], ['kena_pajak', false, 11], ['punya_varian', false, 13],
     ['lacak_stok', false, 12], ['stok_minimum', false, 13],
+    // Optional larger sell unit (grosir): "Bal isi 12" sold from the same stock.
+    ['satuan_besar', false, 14], ['isi', false, 8], ['harga_satuan_besar', false, 18],
+    ['barcode_satuan_besar', false, 20],
   ],
   'Varian Produk': [
     ['kode_produk_induk', true, 18], ['kode_varian', true, 18], ['nama_varian', true, 18],
@@ -83,9 +91,9 @@ const EXAMPLES = {
     ['CV Sumber Rejeki', 'Bandung', 'Jawa Barat', 'Indonesia', 'Budi', '+628987654321', 'budi@sumberrejeki.co.id', 'Tidak', 'Pemasok cadangan'],
   ],
   Produk: [
-    ['Tepung Terigu Segitiga Biru 1kg', 'TPG-SB-1KG', 'Tepung & Gula', 'PT Bogasari Mitra', 12000, 14000, 50, 'Pack', '2000000000018', 'Segitiga Biru', 'Tidak', 'Tidak', 'Ya', 10],
-    ['Gula Pasir 1kg', 'GLA-1KG', 'Tepung & Gula', 'PT Bogasari Mitra', 13000, 15000, 40, 'Pack', '', 'Gulaku', 'Tidak', 'Tidak', 'Ya', 10],
-    ['Ragi Instan Fermipan 11g', 'RAG-11G', 'Bahan Tambahan', 'PT Bogasari Mitra', 4000, 6000, 100, 'Pcs', '', 'Fermipan', 'Tidak', 'Tidak', 'Ya', 20],
+    ['Tepung Terigu Segitiga Biru 1kg', 'TPG-SB-1KG', 'Tepung & Gula', 'PT Bogasari Mitra', 12000, 14000, 48, 'Pack', '2000000000018', 'Segitiga Biru', 'Tidak', 'Tidak', 'Ya', 10, 'Bal', 12, 160000, ''],
+    ['Gula Pasir 1kg', 'GLA-1KG', 'Tepung & Gula', 'PT Bogasari Mitra', 13000, 15000, 40, 'Pack', '', 'Gulaku', 'Tidak', 'Tidak', 'Ya', 10, '', '', '', ''],
+    ['Ragi Instan Fermipan 11g', 'RAG-11G', 'Bahan Tambahan', 'PT Bogasari Mitra', 4000, 6000, 100, 'Pcs', '', 'Fermipan', 'Tidak', 'Tidak', 'Ya', 20, 'Dus', 20, 110000, ''],
   ],
   'Varian Produk': [],
   'Pemasok Produk': [

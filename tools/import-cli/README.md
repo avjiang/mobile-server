@@ -91,16 +91,42 @@ it cannot know what already exists in the tenant, nor what plan the tenant is on
 > sends them as the item's `suppliers[]`). To add suppliers to an already-imported
 > catalogue, use `--direct`.
 
+### Large sell unit — carton + piece from one stock (`satuan_besar`, Basic+)
+
+Four optional columns on `Produk` (English template: `sellUnitName`, `sellUnitFactor`,
+`sellUnitPrice`, `sellUnitBarcode`) give a product ONE larger sell unit next to its base
+unit — "Indomie, `satuan` Pcs, Rp 3.500 · `satuan_besar` Dus, `isi` 40,
+`harga_satuan_besar` 128000". It becomes an `item_unit` row (wholesale multi-UOM,
+FE `docs/future/MULTI_TIER_PRICING.md` §2.4): the cashier picks Pcs or Dus at the till,
+both sell from the same stock pool, stock stays counted in the base unit (`stok_awal` =
+pieces). More units per item are added later in the app.
+
+| Column | Rule |
+|---|---|
+| `satuan_besar` | name, ≤ 32 chars (Dus, Bal, Pak, Karton) |
+| `isi` | base units per large unit, a number **> 1** |
+| `harga_satuan_besar` | price per large unit (number ≥ 0) |
+| `barcode_satuan_besar` | optional; must not be any item, variant or other unit barcode |
+
+- Name, `isi` and price go together: `validate` errors when one is filled without the others.
+- `validate` checks barcode clashes inside the file; `--direct` re-checks against the tenant
+  DB and **skips the unit** (warning, item still imported) on a clash. `--api` sends the
+  unit as the item's `units[]`, and `item.service.ts` validates it.
+- **Retail Lite: refused.** `--direct` aborts before any write (also on `--dry-run`,
+  `assertSellUnitsAllowed`); on `--api` the server refuses it.
+- Only for items **created** by the run: an item code that already exists is skipped as
+  a whole, so add units to an existing catalogue in the app.
+
 ### Barcode policy
 Leave `barcode` **blank** on import unless the tenant supplies real barcodes.
 Blank rows import with no barcode; the tenant generates + prints in-app later
 (in-store `200`-prefix EAN-13). The importer does not auto-generate barcodes.
 
 ### Modeling (bahan kue / variable pack sizes)
-Use **Model B**: each pack size is its own item ("Tepung Terigu 1kg", `satuan` =
-`Pack`, `stok_awal` = whole count of packs). Avoids decimal-at-cart and
-bulk-break conversion, which the platform doesn't support. See §2 of the bahan
-kue doc.
+Each pack **size** is its own item ("Tepung Terigu 1kg" vs "25kg", `satuan` = `Pack`,
+`stok_awal` = whole count of packs). A **carton of the same pack** ("Bal isi 12") is
+NOT a separate item any more: put it in `satuan_besar` / `isi` / `harga_satuan_besar`
+on the same row, so both sell from one stock pool. See §1–2 of the bahan kue doc.
 
 ## Quick Start
 
@@ -221,6 +247,7 @@ Each sheet has a `--- NOTES ---` section at the bottom. This is automatically ig
 | stockQuantity | No | Opening stock (non-variant items only) |
 | hasVariants | No | TRUE if has variants |
 | barcode, unitOfMeasure, hasTax | No | |
+| sellUnitName, sellUnitFactor, sellUnitPrice, sellUnitBarcode | No | One larger sell unit from the same stock (Basic+); see "Large sell unit" above |
 
 ### Item_Variants
 | Column | Required | Notes |

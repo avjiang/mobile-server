@@ -4,8 +4,9 @@
 // (an offline-outbox sale must always land). Anything malformed is stored as NULL,
 // which reads as "Ecer / base unit / sold before the feature".
 //
-// Phase 0 only persists `unitFactor`; the `quantity × unitFactor` stock maths is
-// Phase 1 (getEffectiveStockQty).
+// `unitFactor` is the one field that is NOT audit-only: it also moves stock
+// (`quantity × unitFactor` base units, sales.service.ts getEffectiveStockQty), so
+// the sale validates it (assertSingleStockFactor) before this stores it.
 
 import { Decimal } from "decimal.js";
 

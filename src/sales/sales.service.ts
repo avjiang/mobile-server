@@ -107,17 +107,77 @@ const salesSyncSelect = {
     salesItems: activeSalesItems
 } as const;
 
-// Helper: calculate effective stock quantity for deduction/restoration
-// For consumption items: quantity * stockConsumptionQty (e.g., 3 orders × 50ml = 150ml)
-// For piece-based items (null): quantity as-is (e.g., 3 pieces)
+// Helper: calculate effective stock quantity (in the item's BASE unit) for
+// deduction/restoration: quantity × (stockConsumptionQty ?? unitFactor ?? 1).
+//   - consumption items: quantity × stockConsumptionQty (3 orders × 50ml = 150ml)
+//   - sell-unit lines (wholesale multi-UOM, FE docs/future/MULTI_TIER_PRICING.md
+//     §2.4): quantity × unitFactor (2 Dus × isi 40 = 80 pcs)
+//   - piece-based items (both null): quantity as-is (3 pieces)
+// A line never sets both — assertSingleStockFactor rejects that on create.
+// Used by validation, FIFO and void/return/refund restore, so they always agree.
 function getEffectiveStockQty(
     quantity: Decimal,
-    stockConsumptionQty?: { toString(): string } | null
+    stockConsumptionQty?: { toString(): string } | null,
+    unitFactor?: { toString(): string } | null,
 ): Decimal {
     if (stockConsumptionQty != null) {
         return quantity.times(new Decimal(stockConsumptionQty.toString()));
     }
+    if (unitFactor != null) {
+        return quantity.times(new Decimal(unitFactor.toString()));
+    }
     return quantity;
+}
+
+/// A sales line takes its stock factor from EITHER `stockConsumptionQty` (a
+/// consumption / laundry-supply line) OR `unitFactor` (a carton line), never
+/// both: the two meanings would multiply, and the laundry heuristics read
+/// "stockConsumptionQty set ⇒ consumption line". A sent unitFactor must also be
+/// a positive number — it moves stock, so it is validated, not silently dropped.
+function assertSingleStockFactor(line: {
+    itemName?: string | null;
+    itemId?: number;
+    stockConsumptionQty?: unknown;
+    unitFactor?: unknown;
+}): void {
+    const label = line.itemName || line.itemId;
+    if (line.unitFactor == null) return;
+    if (line.stockConsumptionQty != null) {
+        throw new BusinessLogicError(
+            `Invalid sales line for item ${label}: stockConsumptionQty and unitFactor cannot both be set`
+        );
+    }
+    let factor: Decimal;
+    try {
+        factor = new Decimal(line.unitFactor as any);
+    } catch {
+        throw new BusinessLogicError(`Invalid unitFactor for item ${label}: must be a positive number`);
+    }
+    if (!factor.isFinite() || factor.lte(0)) {
+        throw new BusinessLogicError(`Invalid unitFactor for item ${label}: must be a positive number`);
+    }
+}
+
+/// The cost and profit of a line stored as ONE row with a weighted-average FIFO
+/// cost (consumption lines and sell-unit lines, plan §2.4): Σ receipt cost ×
+/// base units used — e.g. 2 Dus isi 40 = 80 pcs × the average cost of those 80.
+/// Revenue = price × quantity in the line's own unit (2 × Rp 128.000).
+function singleRowCostAndProfit(line: {
+    price: any;
+    quantity: any;
+    discountAmount?: any;
+    serviceChargeAmount?: any;
+    usedReceipts: { quantityUsed: Decimal; cost: Decimal }[];
+}): { totalRevenue: Decimal; totalCost: Decimal; profit: Decimal } {
+    const totalRevenue = new Decimal(line.price).times(new Decimal(line.quantity));
+    let totalCost = new Decimal(0);
+    for (const receipt of line.usedReceipts) {
+        totalCost = totalCost.plus(new Decimal(receipt.cost).times(receipt.quantityUsed));
+    }
+    const totalDiscount = line.discountAmount ? new Decimal(line.discountAmount) : new Decimal(0);
+    const totalServiceCharge = line.serviceChargeAmount ? new Decimal(line.serviceChargeAmount) : new Decimal(0);
+    const profit = totalRevenue.minus(totalCost).minus(totalDiscount).minus(totalServiceCharge);
+    return { totalRevenue, totalCost, profit };
 }
 
 // ============================================
@@ -424,9 +484,11 @@ async function loadLaundryServiceKinds(
 /// zero price, no processed weight, but a tracked consumption quantity (matches
 /// the FE `_isLaundrySupplyLine` / pickup-screen reconstruction). Retail has none.
 function isSupplyLine(
-    it: { price: any; loadWeightKg: any; stockConsumptionQty: any },
+    it: { price: any; loadWeightKg: any; stockConsumptionQty: any; itemUnitId?: number | null },
 ): boolean {
     return (
+        // A free carton line (wholesale sell unit, Rp 0) is never a supply.
+        it.itemUnitId == null &&
         Number(it.price ?? 0) === 0 &&
         (it.loadWeightKg == null || Number(it.loadWeightKg) === 0) &&
         it.stockConsumptionQty != null &&
@@ -440,7 +502,7 @@ function isSupplyLine(
 /// `laundryServiceKind` ('wash' | 'jasa' | 'mixed' | null). Replaces three separate
 /// scans (count + weight reduce + kind classify) with one loop.
 function summarizeSalesLines(
-    salesItems: Array<{ itemId: number; price: any; loadWeightKg: any; stockConsumptionQty: any }>,
+    salesItems: Array<{ itemId: number; price: any; loadWeightKg: any; stockConsumptionQty: any; itemUnitId?: number | null }>,
     serviceKinds: Map<number, 'wash' | 'jasa'>,
 ): { totalItems: number; loadWeightKg: number | null; laundryServiceKind: 'wash' | 'jasa' | 'mixed' | null } {
     let totalItems = 0;
@@ -1875,6 +1937,10 @@ async function completeNewSales(
             const originalLineIndex = new Map<any, number>();
             salesBody.salesItems.forEach((it, idx) => originalLineIndex.set(it, idx));
 
+            // A line's stock factor is stockConsumptionQty OR unitFactor, never both
+            // (all lines: a non-stock line's unitFactor still prices its cost).
+            for (const item of salesBody.salesItems) assertSingleStockFactor(item as any);
+
             // Validate stockConsumptionQty values (only for stock-tracked items)
             for (const item of stockItems) {
                 if (item.stockConsumptionQty != null) {
@@ -1893,7 +1959,7 @@ async function completeNewSales(
             const aggregatedEffectiveQtyMap = new Map<string, Decimal>();
             for (const item of stockItems) {
                 const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
-                const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
+                const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty, item.unitFactor);
                 const current = aggregatedEffectiveQtyMap.get(lookupKey) || new Decimal(0);
                 aggregatedEffectiveQtyMap.set(lookupKey, current.plus(effectiveQty));
             }
@@ -1963,7 +2029,7 @@ async function completeNewSales(
 
             for (const item of stockItems) {
                 const lookupKey = `${item.itemId}-${item.itemVariantId || 'null'}`;
-                const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty);
+                const effectiveQty = getEffectiveStockQty(new Decimal(item.quantity), item.stockConsumptionQty, item.unitFactor);
                 const fallbackCost = new Decimal(itemTrackStockMap.get(item.itemId)?.cost || 0);
                 let remaining = effectiveQty;
                 const usedReceipts: { srcIndex: number; id: number; quantityUsed: Decimal; cost: Decimal }[] = [];
@@ -2033,26 +2099,23 @@ async function completeNewSales(
             const salesItemData: any[] = [];
 
             salesItemsWithFIFOCost.forEach((item) => {
-                const isConsumptionItem = item.stockConsumptionQty != null;
+                // Consumption lines AND sell-unit (carton) lines are stored as ONE row:
+                // the piece branch below writes one row per receipt with `quantity` in
+                // base units, which would lose the carton price (plan §2.4).
+                const isSingleRowLine = item.stockConsumptionQty != null || item.unitFactor != null;
 
-                if (isConsumptionItem) {
-                    // ── Consumption items: single row with weighted-average cost ──
+                if (isSingleRowLine) {
+                    // ── Consumption / unit lines: single row with weighted-average cost ──
                     const totalQuantity = new Decimal(item.quantity);
                     const totalDiscount = item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0);
                     const totalServiceCharge = item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0);
                     const totalTax = item.taxAmount ? new Decimal(item.taxAmount) : new Decimal(0);
-                    const totalRevenue = new Decimal(item.price).times(totalQuantity);
                     // priceBeforeTax is already the LINE total (FE sends the line's taxable base) — never × qty.
                     const totalPriceBeforeTax = new Decimal(item.priceBeforeTax ?? 0);
                     const totalSubtotal = new Decimal(item.subtotalAmount);
 
                     // Weighted-average cost from FIFO receipts (in stock units)
-                    let totalCost = new Decimal(0);
-                    for (const receipt of item.usedReceipts) {
-                        totalCost = totalCost.plus(new Decimal(receipt.cost).times(receipt.quantityUsed));
-                    }
-
-                    const profit = totalRevenue.minus(totalCost).minus(totalDiscount).minus(totalServiceCharge);
+                    const { totalRevenue, totalCost, profit } = singleRowCostAndProfit(item);
                     totalProfit = totalProfit.plus(profit);
 
                     salesItemData.push({
@@ -2161,7 +2224,8 @@ async function completeNewSales(
                 const itemInfo = itemTrackStockMap.get(item.itemId);
                 const qty = new Decimal(item.quantity);
                 const unitCost = new Decimal(itemInfo?.cost || 0);
-                const totalCost = unitCost.times(qty);
+                // Item.cost is per BASE unit: a carton line costs cost × unitFactor each.
+                const totalCost = unitCost.times(qty).times(item.unitFactor != null ? new Decimal(item.unitFactor as any) : 1);
                 const totalRevenue = new Decimal(item.price).times(qty);
                 const totalDiscount = item.discountAmount ? new Decimal(item.discountAmount) : new Decimal(0);
                 const totalServiceCharge = item.serviceChargeAmount ? new Decimal(item.serviceChargeAmount) : new Decimal(0);
@@ -3277,7 +3341,8 @@ let voidSales = async (
                 sales.salesItems.map(async (salesItem) => {
                     const restoreQty = getEffectiveStockQty(
                         new Decimal(salesItem.quantity),
-                        salesItem.stockConsumptionQty
+                        salesItem.stockConsumptionQty,
+                        salesItem.unitFactor
                     );
 
                     // Update Stock Balance - add back the quantities
@@ -3433,7 +3498,8 @@ let returnSales = async (
                 sales.salesItems.map(async (salesItem) => {
                     const restoreQty = getEffectiveStockQty(
                         new Decimal(salesItem.quantity),
-                        salesItem.stockConsumptionQty
+                        salesItem.stockConsumptionQty,
+                        salesItem.unitFactor
                     );
 
                     // Update Stock Balance - add back the quantities
@@ -3590,7 +3656,8 @@ let refundSales = async (
                 sales.salesItems.map(async (salesItem) => {
                     const restoreQty = getEffectiveStockQty(
                         new Decimal(salesItem.quantity),
-                        salesItem.stockConsumptionQty
+                        salesItem.stockConsumptionQty,
+                        salesItem.unitFactor
                     );
 
                     // Update Stock Balance - add back the quantities
@@ -3737,6 +3804,8 @@ let getDeliveryList = async (
                         subtotalAmount: true,
                         stockConsumptionQty: true,
                         unitOfMeasure: true,
+                        unitName: true,
+                        unitFactor: true,
                     },
                     where: {
                         deleted: false
@@ -3825,6 +3894,8 @@ let getDeliveredList = async (
                             subtotalAmount: true,
                             stockConsumptionQty: true,
                             unitOfMeasure: true,
+                            unitName: true,
+                            unitFactor: true,
                         },
                         where: {
                             deleted: false
@@ -4051,6 +4122,9 @@ export = {
     // Pure helpers exposed for unit testing — no DB access.
     __testables: {
         getEffectiveStockQty,
+        assertSingleStockFactor,
+        singleRowCostAndProfit,
+        isSupplyLine,
         validateSalesItemNumerics,
         validatePaymentNumerics,
         applyPaymentsToBalance,

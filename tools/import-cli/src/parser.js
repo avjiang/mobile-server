@@ -43,6 +43,14 @@ const COLUMN_MAPPINGS = {
   trackStock: ['trackstock', 'track_stock', 'lacak_stok'],
   hasVariants: ['hasvariants', 'has_variants', 'with_variants', 'ada_varian', 'punya_varian'],
 
+  // Optional larger sell unit on the Items sheet (wholesale multi-UOM: "Dus isi 40"
+  // sold from the SAME stock pool as the piece; stock stays in the base unit).
+  // All four are optional; name + factor + price are required together.
+  sellUnitName: ['sellunitname', 'satuan_besar', 'sell_unit', 'sell_unit_name', 'large_unit'],
+  sellUnitFactor: ['sellunitfactor', 'isi', 'isi_satuan_besar', 'sell_unit_factor', 'unit_factor'],
+  sellUnitPrice: ['sellunitprice', 'harga_satuan_besar', 'sell_unit_price', 'large_unit_price'],
+  sellUnitBarcode: ['sellunitbarcode', 'barcode_satuan_besar', 'sell_unit_barcode', 'large_unit_barcode'],
+
   // Item-supplier junction columns (extra suppliers beyond the preferred one on
   // the Items sheet). `itemCode`, `supplierName` and `cost` reuse the mappings above.
   supplierItemCode: ['supplieritemcode', 'supplier_item_code', 'supplier_sku', 'kode_produk_pemasok', 'kode_pemasok'],
@@ -230,7 +238,8 @@ function parseItems(workbook) {
     'itemName', 'itemCode', 'itemType', 'itemModel', 'itemBrand',
     'itemDescription', 'categoryName', 'supplierName', 'cost', 'price',
     'currency', 'unitOfMeasure', 'barcode', 'stockQuantity', 'outletId',
-    'reorderThreshold', 'hasTax', 'hasVariants', 'trackStock'
+    'reorderThreshold', 'hasTax', 'hasVariants', 'trackStock',
+    'sellUnitName', 'sellUnitFactor', 'sellUnitPrice', 'sellUnitBarcode'
   ];
   return parseSheet(workbook, 'Items', targetFields);
 }

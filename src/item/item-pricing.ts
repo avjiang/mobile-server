@@ -203,6 +203,10 @@ export function assertWholesaleAllowed(
     }
 }
 
+/** The tagged error the app localizes (`error_barcode_in_use`): which code, used by what. */
+const barcodeInUse = (message: string, barcode: string | null, owner: string | null): BusinessLogicError =>
+    new BusinessLogicError(message, ErrorCode.BarcodeInUse, { barcode: barcode ?? '', owner: owner ?? '' });
+
 /**
  * A barcode a unit uses may not be used anywhere else: item `alternateLookUp`, a
  * variant barcode, or another item's unit. Checked against the database (after the
@@ -220,7 +224,7 @@ async function assertUnitBarcodesFree(
     });
     if (items.length > 0) {
         const dup = items.map(i => `"${i.alternateLookUp}" (Item ID: ${i.id}, Item Name: ${i.itemName})`).join(', ');
-        throw new BusinessLogicError(`Barcode already used by item: ${dup}`);
+        throw barcodeInUse(`Barcode already used by item: ${dup}`, items[0].alternateLookUp, items[0].itemName);
     }
     const variants = await tx.itemVariant.findMany({
         where: { barcode: { in: barcodes }, deleted: false },
@@ -228,7 +232,7 @@ async function assertUnitBarcodesFree(
     });
     if (variants.length > 0) {
         const dup = variants.map(v => `"${v.barcode}" (Item ID: ${v.item.id}, Item: ${v.item.itemName}, Variant: ${v.variantName})`).join(', ');
-        throw new BusinessLogicError(`Barcode already used by variant: ${dup}`);
+        throw barcodeInUse(`Barcode already used by variant: ${dup}`, variants[0].barcode, `${variants[0].item.itemName} - ${variants[0].variantName}`);
     }
     // This item's own units are excluded: the payload is their complete new set,
     // and uniqueness inside it was checked by normalizeUnits.
@@ -238,7 +242,7 @@ async function assertUnitBarcodesFree(
     });
     if (units.length > 0) {
         const dup = units.map(u => `"${u.barcode}" (Item ID: ${u.item.id}, Item: ${u.item.itemName}, Unit: ${u.name})`).join(', ');
-        throw new BusinessLogicError(`Barcode already used by unit: ${dup}`);
+        throw barcodeInUse(`Barcode already used by unit: ${dup}`, units[0].barcode, `${units[0].item.itemName} (${units[0].name})`);
     }
 }
 
@@ -259,7 +263,7 @@ export async function assertBarcodesNotUnitBarcodes(
     });
     if (units.length > 0) {
         const dup = units.map(u => `"${u.barcode}" (Item ID: ${u.item.id}, Item: ${u.item.itemName}, Unit: ${u.name})`).join(', ');
-        throw new BusinessLogicError(`Barcode already used by unit: ${dup}`);
+        throw barcodeInUse(`Barcode already used by unit: ${dup}`, units[0].barcode, `${units[0].item.itemName} (${units[0].name})`);
     }
 }
 

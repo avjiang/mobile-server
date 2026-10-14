@@ -73,25 +73,15 @@ async function getTenantDbName(tenantId, tenantName) {
 }
 
 /**
- * Resolve the tenant's plan name from the Global DB and refuse a multi-supplier import
- * on anything but Pro.
- *
- * Multiple suppliers per item is a Pro feature, gated in `syncItemSuppliers`
- * (src/item/item.service.ts) on the SECOND link — one supplier is available on every
- * plan. This importer writes raw Prisma and never goes through that service, so
- * without this check an operator-run import would silently hand a Basic/Trial tenant a
- * Pro feature. Mirrors `getTenantSubscriptionInfo` in src/auth/auth.service.ts:
- * active/trial subscriptions of active outlets, Pro wins over Basic.
- *
- * Called BEFORE the dry-run early-return so `--dry-run` catches the problem too.
+ * Resolve the tenant's plan name from the Global DB. Mirrors
+ * `getTenantSubscriptionInfo` in src/auth/auth.service.ts: active/trial
+ * subscriptions of active outlets, Pro wins over Basic.
  *
  * @param {number|null} tenantId
  * @param {string|null} tenantName
- * @param {number} extraLinkCount - number of rows on the Item_Suppliers sheet
+ * @returns {Promise<{ tenantName: string, planName: string|null }>}
  */
-async function assertProPlanForExtraSuppliers(tenantId, tenantName, extraLinkCount) {
-  if (extraLinkCount === 0) return;
-
+async function resolveTenantPlan(tenantId, tenantName) {
   const globalDbUrl = process.env.GLOBAL_DB_URL;
   if (!globalDbUrl) {
     throw new Error('GLOBAL_DB_URL not found in environment variables');
@@ -128,19 +118,100 @@ async function assertProPlanForExtraSuppliers(tenantId, tenantName, extraLinkCou
       }
       if (planName?.toLowerCase() === 'pro') break;
     }
-
-    if ((planName ?? '').toLowerCase() !== 'pro') {
-      throw new Error(
-        `Multiple suppliers per item is a Pro feature, but tenant "${tenant.tenantName}" is on ` +
-        `plan "${planName ?? 'none'}". The file has ${extraLinkCount} extra supplier link(s) on the ` +
-        `Item_Suppliers ("Pemasok Produk") sheet. Remove that sheet's rows, or upgrade the tenant to Pro.`
-      );
-    }
-
-    console.log(chalk.green(`✅ Plan check: ${tenant.tenantName} is on "${planName}" — extra suppliers allowed`));
+    return { tenantName: tenant.tenantName, planName };
   } finally {
     await globalPrisma.$disconnect();
   }
+}
+
+/**
+ * Refuse a multi-supplier import on anything but Pro.
+ *
+ * Multiple suppliers per item is a Pro feature, gated in `syncItemSuppliers`
+ * (src/item/item.service.ts) on the SECOND link — one supplier is available on every
+ * plan. This importer writes raw Prisma and never goes through that service, so
+ * without this check an operator-run import would silently hand a Basic/Trial tenant a
+ * Pro feature.
+ *
+ * Called BEFORE the dry-run early-return so `--dry-run` catches the problem too.
+ *
+ * @param {number|null} tenantId
+ * @param {string|null} tenantName
+ * @param {number} extraLinkCount - number of rows on the Item_Suppliers sheet
+ */
+async function assertProPlanForExtraSuppliers(tenantId, tenantName, extraLinkCount) {
+  if (extraLinkCount === 0) return;
+  const { tenantName: name, planName } = await resolveTenantPlan(tenantId, tenantName);
+
+  if ((planName ?? '').toLowerCase() !== 'pro') {
+    throw new Error(
+      `Multiple suppliers per item is a Pro feature, but tenant "${name}" is on ` +
+      `plan "${planName ?? 'none'}". The file has ${extraLinkCount} extra supplier link(s) on the ` +
+      `Item_Suppliers ("Pemasok Produk") sheet. Remove that sheet's rows, or upgrade the tenant to Pro.`
+    );
+  }
+
+  console.log(chalk.green(`✅ Plan check: ${name} is on "${planName}" — extra suppliers allowed`));
+}
+
+/**
+ * Refuse large sell units (satuan_besar …) for a Retail Lite tenant — wholesale
+ * pricing is Basic and above (server: `assertWholesaleAllowed` in
+ * src/item/item-pricing.ts, which this raw-Prisma importer bypasses).
+ * Called before the dry-run return, like the Pro check above.
+ *
+ * @param {number} unitCount - number of Items rows that carry a satuan_besar
+ */
+async function assertSellUnitsAllowed(tenantId, tenantName, unitCount) {
+  if (unitCount === 0) return;
+  const { tenantName: name, planName } = await resolveTenantPlan(tenantId, tenantName);
+  if ((planName ?? '').toLowerCase() === 'lite') {
+    throw new Error(
+      `Selling by a larger unit (satuan_besar) is not part of the Lite plan, but ${unitCount} ` +
+      `product row(s) of tenant "${name}" fill satuan_besar. Clear those four columns, or move the tenant to Basic.`
+    );
+  }
+  console.log(chalk.green(`✅ Plan check: ${name} is on "${planName ?? 'none'}" — large sell units allowed`));
+}
+
+/** True when an Items row asks for a large sell unit. */
+function hasSellUnit(item) {
+  return item.sellUnitName !== undefined && item.sellUnitName !== null && item.sellUnitName.toString().trim() !== '';
+}
+
+/**
+ * Create the item's large sell unit (`item_unit`), after checking that its barcode
+ * is not already an item, variant or unit barcode in the tenant DB (the validator
+ * only sees the file). Mirrors `assertUnitBarcodesFree` in src/item/item-pricing.ts.
+ * The item row was created in this same run, so no Item.updatedAt bump is needed.
+ */
+async function createSellUnit(prisma, itemId, item, results) {
+  const barcode = item.sellUnitBarcode ? item.sellUnitBarcode.toString().trim() : '';
+  if (barcode !== '') {
+    const [byItem, byVariant, byUnit] = await Promise.all([
+      prisma.item.findFirst({ where: { alternateLookUp: barcode, deleted: false, id: { not: itemId } }, select: { itemCode: true } }),
+      prisma.itemVariant.findFirst({ where: { barcode, deleted: false }, select: { variantSku: true } }),
+      prisma.itemUnit.findFirst({ where: { barcode, deleted: false }, select: { name: true, itemId: true } }),
+    ]);
+    const owner = byItem ? `item ${byItem.itemCode}` : byVariant ? `variant ${byVariant.variantSku}` : byUnit ? `unit ${byUnit.name} of item ID ${byUnit.itemId}` : null;
+    if (owner) {
+      console.log(chalk.yellow(`\n  Warning: barcode_satuan_besar "${barcode}" of "${item.itemCode}" is already used by ${owner} — unit skipped`));
+      results.sellUnits.skipped++;
+      return;
+    }
+  }
+  await prisma.itemUnit.create({
+    data: {
+      itemId,
+      itemVariantId: null, // v1: one unit shared by every variant
+      name: item.sellUnitName.toString().trim(),
+      factor: parseFloat(item.sellUnitFactor),
+      price: parseFloat(item.sellUnitPrice) || 0,
+      barcode: barcode === '' ? null : barcode,
+      sortOrder: 0,
+    },
+  });
+  results.sellUnits.created++;
 }
 
 /**
@@ -188,6 +259,7 @@ export async function importDirectToDB(data, options) {
 
   // Pro gate — before the dry-run return so --dry-run surfaces it too.
   await assertProPlanForExtraSuppliers(tenantId, tenantName, (data.itemSuppliers || []).length);
+  await assertSellUnitsAllowed(tenantId, tenantName, data.items.filter(hasSellUnit).length);
 
   if (dryRun) {
     console.log(chalk.yellow('\n🔍 DRY RUN - No data will be imported\n'));
@@ -206,6 +278,7 @@ export async function importDirectToDB(data, options) {
     items: { created: 0, existing: 0 },
     variants: { created: 0, existing: 0 },
     itemSuppliers: { created: 0, existing: 0, skipped: 0 },
+    sellUnits: { created: 0, skipped: 0 },
     customers: { created: 0, existing: 0 },
     stockBalances: { created: 0 },
     stockMovements: { created: 0 },
@@ -361,6 +434,13 @@ export async function importDirectToDB(data, options) {
 
           itemCodeMap.set(itemKey, created);
           results.items.created++;
+
+          // Optional large sell unit ("Dus isi 40"), same stock pool, stock stays in
+          // the base unit. Only for items created in this run: an existing item is
+          // skipped as a whole above, its units are edited in the app.
+          if (hasSellUnit(item)) {
+            await createSellUnit(prisma, created.id, item, results);
+          }
 
           const reorder = (item.reorderThreshold !== undefined && item.reorderThreshold !== '' && !isNaN(parseFloat(item.reorderThreshold)))
             ? parseFloat(item.reorderThreshold)

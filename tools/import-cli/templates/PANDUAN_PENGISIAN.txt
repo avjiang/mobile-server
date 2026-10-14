@@ -74,7 +74,8 @@ Kolom yang diketik sendiri:
   • nama_produk (wajib) : nama lengkap produk.
         TIPS: kalau ukurannya beda-beda, tulis ukuran di nama,
         misal "Tepung Terigu Segitiga Biru 1kg", "Gula Pasir 1kg".
-        Tiap ukuran dibuat 1 baris produk sendiri.
+        Tiap ukuran dibuat 1 baris produk sendiri. (Dus/bal berisi
+        kemasan yang SAMA bukan produk baru: pakai kolom satuan_besar.)
   • kode_produk (wajib) : kode unik/SKU tiap produk (bebas, asal beda).
         Contoh: TPG-SB-1KG, GLA-1KG.
   • harga_beli (wajib)  : harga modal/beli (angka saja).
@@ -85,6 +86,16 @@ Kolom yang diketik sendiri:
   • lacak_stok          : "Ya" untuk barang biasa. "Tidak" hanya untuk
                           jasa/layanan yang tidak punya stok.
   • stok_minimum        : batas stok menipis buat pengingat (boleh kosong).
+
+JUAL PER DUS JUGA? (OPSIONAL) — kalau produk ini juga dijual grosir
+per dus/bal/pak DARI STOK YANG SAMA, isi kolom ini di baris yang sama:
+  • satuan_besar         : nama kemasan besar, misal Dus, Bal, Pak.
+  • isi                  : berapa "satuan" dalam 1 kemasan besar (lebih
+                           dari 1). Misal Indomie: 1 Dus isi 40 Pcs.
+  • harga_satuan_besar   : harga jual per kemasan besar (angka saja).
+  • barcode_satuan_besar : barcode di kardusnya (boleh kosong).
+  stok_awal tetap ditulis dalam SATUAN KECIL (400 Pcs, bukan 10 Dus).
+  Tidak jual per dus? Kosongkan keempat kolom ini. (Paket Basic & Pro.)
 
 ----------------------------------------------------------------
 LANGKAH 4 — Sheet "Varian Produk" (OPSIONAL)

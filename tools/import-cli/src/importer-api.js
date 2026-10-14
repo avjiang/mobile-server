@@ -351,6 +351,19 @@ export async function importViaApi(data, options) {
               // Stock quantity for non-variant items
               stockQuantity: !hasVariants && item.stockQuantity ? parseFloat(item.stockQuantity) : 0,
               reorderThreshold: item.reorderThreshold ? parseFloat(item.reorderThreshold) : 0,
+              // Optional large sell unit ("Dus isi 40"). item.service.ts validates it
+              // (factor > 1, barcode unique) and refuses it on Retail Lite.
+              ...(item.sellUnitName !== undefined && item.sellUnitName !== null && item.sellUnitName.toString().trim() !== ''
+                ? {
+                    units: [{
+                      name: item.sellUnitName.toString().trim(),
+                      factor: parseFloat(item.sellUnitFactor),
+                      price: parseFloat(item.sellUnitPrice) || 0,
+                      barcode: item.sellUnitBarcode ? item.sellUnitBarcode.toString().trim() : null,
+                      sortOrder: 0,
+                    }],
+                  }
+                : {}),
             };
           }).filter(Boolean); // Remove null items
 

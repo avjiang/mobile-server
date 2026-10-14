@@ -3,7 +3,7 @@
 Run the **Node backend** on the spare office **Mac mini (M1, 16 GB)** as a **standby** next to Azure App
 Service, reached through a Cloudflare Tunnel. It can be promoted to primary later, which saves the App
 Service bill ($13.14/mo). **The database stays on Azure** (`bayaryuk-db`, MySQL 8.4 since 2026-10-14, sub `3bbc4892-…`).
-This is the fallback for [APP_SERVER_ORACLE.md](APP_SERVER_ORACLE.md): Oracle A1 is "Out of host capacity",
+This was the fallback for the Oracle VM move (done 2026-10-13; as built in FE `.claude/memory/reference_oracle_vm_prod_server.md`, plan doc retired 2026-10-14, see git history): Oracle A1 was "Out of host capacity",
 and Azure free-VM quota was auto-rejected in Malaysia West and Indonesia Central.
 
 ## Status

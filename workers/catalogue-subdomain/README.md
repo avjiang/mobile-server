@@ -2,9 +2,10 @@
 
 > **2026-10-13: the origin is now `https://api.bayaryuk.net`** (the Oracle VM through the Cloudflare tunnel), set in
 > `src/index.js` `ORIGIN` and deployed as version `a9f41d95`. Where this runbook says "Azure origin", read "the
-> backend origin". The wildcard `*` DNS record still points at the Azure hostname; that is only a placeholder (the
-> Worker answers every non-reserved subdomain) and must be repointed when the App Service is deleted — see
-> `docs/future/APP_SERVER_ORACLE.md` § Cutover checklist step 8. A no-Worker route `api.bayaryuk.net/*` keeps this
+> backend origin". The wildcard `*` DNS record points at the tunnel since 2026-10-14 (the App Service was deleted that
+> day); it is only a placeholder, the Worker answers every non-reserved subdomain. As built: FE
+> `.claude/memory/reference_cloudflare_infra.md` (Oracle plan doc `docs/future/APP_SERVER_ORACLE.md` retired 2026-10-14,
+> see git history). A no-Worker route `api.bayaryuk.net/*` keeps this
 > Worker off the API host.
 
 Routes `https://<slug>.bayaryuk.net` → `<azure-origin>/public/c/<slug>` so each Pro

@@ -110,10 +110,10 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 ## Environment
 
 - `.env` (local): `TENANT_DATABASE_URL`, `GLOBAL_DB_URL`, `PORT`, `PUSHY_SECRET_API_KEY`
-- `.env` (prod overrides): `PROD_GLOBAL_DB_URL`, `PROD_TENANT_DATABASE_URL` (consumed when `db_upgrade.ts` / `db_backup.ts` / `db_restore.ts` / `db_verify.ts` are invoked with the `prod` arg — they swap these into `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` at runtime). **Since 2026-09-26 these point at `bayaryuk-db-v2`**; `NEWPROD_*` = the same server (migration leftovers), `OLDPROD_*` = the frozen retired `bayaryuk-server` (delete with it).
-- `config.json`: `JWT_TOKEN_SECRET`
+- `.env` (prod overrides): `PROD_GLOBAL_DB_URL`, `PROD_TENANT_DATABASE_URL` (consumed when `db_upgrade.ts` / `db_backup.ts` / `db_restore.ts` / `db_verify.ts` are invoked with the `prod` arg — they swap these into `GLOBAL_DB_URL` / `TENANT_DATABASE_URL` at runtime). They point at the live server `bayaryuk-db` (§Where prod MySQL lives); `NEWPROD_*` = the same server (the target of `restore_db_newprod` / `verify_db_newprod` when prod moves to a new server); `OLDPROD_*` = the stopped `bayaryuk-db-v2` (rollback only, delete with it).
+- `config.json`: `JWT_TOKEN_SECRET` — committed to git; moving it to an env var is still open (rotating it logs every device out once)
 - PM2 config in `ecosystem.config.js` (tsx interpreter, watch mode)
-- App Service env vars on Azure are managed separately — `az webapp config appsettings list --name BayarYuk --resource-group bayar-yuk --subscription 82334397-af03-435f-a9cd-f12dab805852` (the `--subscription` is required: the `az` default is now the database account)
+- Production settings live on the Oracle VM in `/etc/bayaryuk/env` (mode 600, owner `bayaryuk`): `GLOBAL_DB_URL`, `TENANT_DATABASE_URL`, `PUSHY_SECRET_API_KEY`, `R2_*`, `FIREBASE_SERVICE_ACCOUNT`, `HOST=127.0.0.1`, `PORT`. Edit over SSH and `sudo systemctl restart bayaryuk`; never print the file. (The Azure App Service and its app settings were deleted 2026-10-14.)
 
 ## Testing — LOCAL DB ONLY (hard rule)
 
@@ -126,9 +126,20 @@ Many endpoints accept `SyncRequest` (`lastSyncTimestamp`, `lastVersion`, `skip`,
 
 ## Deployment
 
-Auto-deploys to Azure App Service `BayarYuk` (RG `bayar-yuk`, Southeast Asia) on `push` to `main` via [`.github/workflows/main_bayaryuk.yml`](../.github/workflows/main_bayaryuk.yml). Public host: `bayaryuk-c2c8d5acg8chaqfm.southeastasia-01.azurewebsites.net`. There is no manual deploy step.
+**Production is the Oracle Cloud VM `bayaryuk-app` (since 2026-10-13), deployed by hand.** There is no CI/CD: the repo has no GitHub workflows (removed 2026-10-13), so a push to `main` deploys nothing. Deploy from this repo, on a network that is on the OCI SSH list:
 
-Health check: `GET /health`.
+```bash
+deploy/oracle/deploy.sh 140.245.56.85 origin/main   # builds on the VM, switches only when /health passes, else keeps the old release
+```
+
+- **Host:** Oracle Always Free Ampere A1, **1 OCPU / 6 GB**, Ubuntu 24.04 arm64, region `ap-singapore-2`, compartment `bayaryuk`, public IP `140.245.56.85`, SSH user `ubuntu` with `~/.ssh/bayaryuk_oci`. Inbound is SSH only (security list `bayaryuk-sl`, per-IP rules; add the Mac's IP when it changes). The backend binds `127.0.0.1:8080`; the public path is `api.bayaryuk.net` → Cloudflare tunnel `bayaryuk-oracle` (`cloudflared` service on the VM). The `*.bayaryuk.net` wildcard and the catalogue Worker's `ORIGIN` (`https://api.bayaryuk.net`) go through the same tunnel.
+- **Services:** systemd `bayaryuk` (user `bayaryuk`, `/opt/bayaryuk/current` → `releases/<ts>-<sha>`, the 3 newest kept) and `cloudflared`. Logs: `sudo journalctl -u bayaryuk`. Nightly crons run on the VM only (no `DISABLE_CRONS` there); the VM clock stays UTC.
+- **Build on the VM, never ship a build from the Mac:** the Arm Prisma engine (`linux-arm64-openssl-3.0.x`, listed in both schemas) and the native `lzo` module (via `parquetjs`) must match the VM. `deploy/oracle/setup_vm.sh` rebuilds a VM from scratch (Node 22, cloudflared, fail2ban, unattended upgrades, 2 GB swap, keys-only SSH).
+- **`trust proxy`** (`src/index.ts`) lists Cloudflare ranges **and `'loopback'`** — behind the tunnel every request arrives from 127.0.0.1, so without it the public rate limits would see one client.
+- **Limits and cost:** Always Free allows **2 OCPU / 12 GB A1 in total** — never exceed it (Oracle disables over-limit free instances). The tenancy is Pay-As-You-Go (upgraded 2026-10-01, for A1 capacity and no idle reclamation); budget alert `bayaryuk-any-spend` ($1/mo) mails `alvinn.jiang@gmail.com` on any spend. OCI CLI (profile DEFAULT) rate-limits instance launches retried faster than every ~2 min; `~/.oci/config` holds the key passphrase in plain text, so keep it on this Mac only.
+- **Rollback:** `deploy/oracle/deploy.sh 140.245.56.85 <older sha>`. There is no second server: the Azure App Service was deleted 2026-10-14; an outage is fixed on the VM or by building a new one with `setup_vm.sh`.
+
+Health check: `GET /health` (`curl https://api.bayaryuk.net/health`; on the VM `curl 127.0.0.1:8080/health`). Measured 2026-10-12 against the old App Service: about twice as fast through the tunnel; 20 simulated cashiers held p95 ≤ 97 ms at ≤ 40 % CPU (p90).
 
 ## Production DB Upgrade Workflow
 
@@ -136,27 +147,27 @@ For a coordinated release that includes schema changes:
 
 1. **Audit pending migrations first** — `prisma migrate status` against prod (read-only). All Prisma migrations *should* be backward-compatible (additive cols nullable or with defaults, new tables only). Anything else (NOT NULL adds, drops, type changes) needs a multi-step rollout.
 2. `export PATH=/opt/homebrew/opt/mysql-client@8.4/bin:$PATH` then `npm run backup_db_prod` — produces `backups/prod_<ts>/global.sql` + one `<tenant>.sql` per tenant whose database exists + `manifest.json` (`--only=a,b` to scope). **Verify every file ends with `-- Dump completed on …` before continuing.** The 8.4 client is required since 2026-09-26 (the Mac's default `mysqldump` 9.2 cannot dump the 8.0 server). `global.tenant` lists 15 tenants but only 2 have databases on the new server; `db_backup.ts` and `updateAllTenantDatabases()` **skip absent databases and print the list** (expect 13) — a DB that exists but fails still aborts the backup.
-3. `npm run upgrade_db_prod` — applies migrations to global + every tenant DB. DB is now ahead of the still-running App Service code; safe if migrations are additive.
-4. `git push origin main` — CI/CD deploys the new server code that uses the new schema.
-5. Wait for green deploy + `curl https://bayaryuk-…/health`.
+3. `npm run upgrade_db_prod` — applies migrations to global + every tenant DB. DB is now ahead of the running VM code; safe if migrations are additive.
+4. `git push origin main` (owner's go), then `deploy/oracle/deploy.sh 140.245.56.85 origin/main` — the push alone deploys nothing.
+5. Wait for the script's `healthy: <release>` + `curl https://api.bayaryuk.net/health`.
 6. Release the matching Flutter build.
 
 ### Failure reporting in `updateAllTenantDatabases()`
 
 [`src/db.ts`](../src/db.ts) catches a per-tenant migration failure, logs it and carries on with the other tenants — but since `e8e686e` (2026-09-28) it ends with `MIGRATION FAILED for N database(s): …` listing every failed database (global included) and throws, so `upgrade_db[_prod]` **exits 1**. Read that summary; databases absent from the server are skipped and listed separately (expected). _(Before `e8e686e` it always printed "All tenant databases updated." and exited 0, so you had to grep for `Failed to update`.)_
 
-Multi-outlet (sprint-008): the tenant migration `20260930120000_multi_outlet_fks_and_user_outlet` is gated by the read-only `docs/future/be1_prod_probe.js` (before) and `be1_verify_post.js` (after) — runbook `docs/future/MULTI_OUTLET.md` §3.
+Multi-outlet (sprint-008): the tenant migration `20260930120000_multi_outlet_fks_and_user_outlet` was applied to prod on 2026-10-13 (`audio_technic_db`, `web_bytes_db`), gated by two one-off read-only probe scripts (removed 2026-10-14 with the runbook, see git history). It is idempotent: if Prisma ever records it FAILED on a tenant, `npx prisma migrate resolve --rolled-back 20260930120000_multi_outlet_fks_and_user_outlet --schema=prisma/client/schema.prisma` against that tenant's URL, fix the cause, rerun `upgrade_db_prod`. As built: FE `docs/modules/OUTLET.md`.
 
 ### Rollback gap (current state)
 
-- Server code rollback is easy: `git revert <commit> && git push origin main` → CI/CD redeploys, or use App Service Deployment Center to redeploy a previous build.
+- Server code rollback is easy: `deploy/oracle/deploy.sh 140.245.56.85 <older sha>` (the VM keeps the 3 newest releases), or `git revert` + push + deploy.
 - **DB restore script exists (2026-09-21):** `node dist/script/db_restore.js <local|newprod|prod> <backup_dir>` (`npm run restore_db` / `restore_db_newprod`). It recreates each database with the charset/collation recorded in the backup's `manifest.json` (`global` is `utf8mb4_unicode_ci`, not the server default — getting this wrong breaks joins on tables added by later migrations), then loads the dump. **Restoring into `prod` overwrites live production and requires `--yes-i-am-sure`**; there is deliberately no npm script for it. Prove any restore with `db_verify.js` (exact per-table row counts + collation). For additive-only migrations, hand-written reverse SQL (`DROP TABLE`, `DROP COLUMN`) is still valid and was used historically.
 
 ### Where prod MySQL lives (since 2026-10-14)
 
 **`bayaryuk-db.mysql.database.azure.com`** — **MySQL 8.4.9**, RG `bayar-yuk-v2`, subscription `3bbc4892-5a45-4680-95b3-64bf43d35d4c` (account `alvinn.jiang.yt@gmail.com`), B1ms / 20 GB, admin `bayaryuk_admin` (`caching_sha2_password`). The only client is the Oracle VM API (`/etc/bayaryuk/env`), plus the Mac for backups/migrations; the firewall lists the VM, the home IP and the office IP — **no** "Allow Azure services" rule. It holds **only `global`, `audio_technic_db`, `web_bytes_db`** — the other tenants in `global.tenant` are test accounts not migrated. `.env`: `PROD_*` = `NEWPROD_*` = this server.
 
-History: `bayaryuk-server` (8.0, old subscription) → `bayaryuk-db-v2` (8.0) on 2026-09-26 ([`docs/future/DB_MIGRATION_2026.md`](../docs/future/DB_MIGRATION_2026.md)) → `bayaryuk-db` (8.4) on 2026-10-14 (as built + rollback: FE `.claude/memory/reference_db_migration_workflow.md` §MySQL 8.4 move; follow-ups in FE `docs/sprints/SPRINT_010.md`). `bayaryuk-db-v2` is **stopped, kept as `.env` `OLDPROD_*` for rollback — delete by 2026-10-17, hard deadline 2026-11-12** (Azure restarts a stopped server after 30 days). **Free tier ends 2027-10-26 — review by 2027-09-26.**
+History: `bayaryuk-server` (8.0, old subscription) → `bayaryuk-db-v2` (8.0) on 2026-09-26 (same method as the 8.4 move; plan doc `docs/future/DB_MIGRATION_2026.md` retired 2026-10-14, see git history) → `bayaryuk-db` (8.4) on 2026-10-14 (as built + rollback: FE `.claude/memory/reference_db_migration_workflow.md` §MySQL 8.4 move; follow-ups in FE `docs/sprints/SPRINT_010.md`). `bayaryuk-db-v2` is **stopped, kept as `.env` `OLDPROD_*` for rollback — delete by 2026-10-17, hard deadline 2026-11-12** (Azure restarts a stopped server after 30 days). **Free tier ends 2027-10-26 — review by 2027-09-26.**
 
 ## Module Documentation
 

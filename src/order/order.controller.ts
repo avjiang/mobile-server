@@ -16,6 +16,13 @@ const outletOf = (req: AuthRequest): number => {
     if (!req.outletId) throw new RequestValidateError("Outlet is required")
     return req.outletId
 }
+// The bill's device-minted ref rides in the body, so a queued (offline) action
+// replays to the same path.
+const refOf = (req: AuthRequest): string => {
+    const ref = String(req.body?.orderRef ?? "").trim()
+    if (!ref) throw new RequestValidateError("orderRef is required")
+    return ref
+}
 const performer = (req: AuthRequest) => ({
     username: req.user?.username,
     siteId: req.body?.siteId == null ? null : Number(req.body.siteId),
@@ -31,32 +38,32 @@ router.post("/open", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequ
     if (!req.user) throw new RequestValidateError("User not authenticated")
     service.open(req.user.databaseName, outletOf(req), req.body, performer(req)).then((o) => sendResponse(res, o)).catch(next)
 })
-router.post("/:ref/round", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/round", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError("User not authenticated")
-    service.round(req.user.databaseName, outletOf(req), req.params.ref, req.body?.lines, performer(req)).then((o) => sendResponse(res, o)).catch(next)
+    service.round(req.user.databaseName, outletOf(req), refOf(req), req.body?.lines, performer(req)).then((o) => sendResponse(res, o)).catch(next)
 })
-router.post("/:ref/voidLine", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/voidLine", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError("User not authenticated")
-    service.voidLine(req.user.databaseName, outletOf(req), req.params.ref, String(req.body?.lineRef ?? ""), String(req.body?.reason ?? ""))
+    service.voidLine(req.user.databaseName, outletOf(req), refOf(req), String(req.body?.lineRef ?? ""), String(req.body?.reason ?? ""))
         .then((o) => sendResponse(res, o)).catch(next)
 })
-router.put("/:ref/table", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/move", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError("User not authenticated")
     const tableId = req.body?.tableId == null ? null : Number(req.body.tableId)
-    service.move(req.user.databaseName, outletOf(req), req.params.ref, tableId).then((o) => sendResponse(res, o)).catch(next)
+    service.move(req.user.databaseName, outletOf(req), refOf(req), tableId).then((o) => sendResponse(res, o)).catch(next)
 })
-router.post("/:ref/cancel", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/cancel", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError("User not authenticated")
-    service.cancel(req.user.databaseName, outletOf(req), req.params.ref).then((o) => sendResponse(res, o)).catch(next)
+    service.cancel(req.user.databaseName, outletOf(req), refOf(req)).then((o) => sendResponse(res, o)).catch(next)
 })
-/** Body = the completeNewSales body ({sales, payments}) built from the bill's lines. */
-router.post("/:ref/settle", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
+/** Body = {orderRef, sales, payments}: the completeNewSales body built from the bill's lines. */
+router.post("/settle", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError("User not authenticated")
     const user = req.user
     const sales = req.body?.sales
     if (!sales) throw new RequestValidateError("sales is required")
     const clientRef = readClientRef(req.header("x-idempotency-key"))
-    service.settle(user.databaseName, outletOf(req), req.params.ref, (tableId) => salesService.completeNewSales(
+    service.settle(user.databaseName, outletOf(req), refOf(req), (tableId) => salesService.completeNewSales(
         user.databaseName,
         user.tenantId,
         { userId: user.userId, username: user.username, loyaltyTier: user.loyaltyTier, permissions: user.permissions, planName: user.planName },

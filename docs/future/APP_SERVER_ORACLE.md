@@ -134,7 +134,7 @@ compartment, budget, private DNS zones, and the IAM defaults created at sign-up.
 6. Repoint the catalogue Worker `ORIGIN` to `https://api.bayaryuk.net` and `npx wrangler deploy`.
 7. Watch a few days (VM `journalctl -u bayaryuk`, Azure `Requests` should fall to ~0), keep App Service as the
    rollback.
-8. ✅ **App Service + plan deleted 2026-10-14** (and its identity, cert, alerts). ⏳ Wildcard DNS repoint and `TXT asuid.api` still to do (needs the owner's go). Original step: **Stop paying:** a *stopped* App Service on B1 **still bills** (the plan is what costs money) → delete the web
+8. ✅ **App Service + plan deleted 2026-10-14** (and its identity, cert, alerts). ✅ Wildcard DNS → tunnel and `TXT asuid.api` deleted the same day; `CLOUDFLARE_TEMP_TOKEN` removed from `.env` (owner revokes it in the dashboard). Original step: **Stop paying:** a *stopped* App Service on B1 **still bills** (the plan is what costs money) → delete the web
    app **and** the App Service plan (or scale the plan to F1 if a free warm rollback is wanted). Then remove the
    `api` custom domain/cert on Azure and the Azure-origin wildcard if nothing else uses it.
    ⚠️ **Before deleting, repoint the proxied wildcard `*.bayaryuk.net` CNAME** (record `5370df2c0d298c3227112921dd467ffe`, still → the Azure hostname) to the tunnel hostname: the catalogue Worker answers every shop subdomain, but the record must keep resolving for Cloudflare to route the request at all. Also remove `TXT asuid.api`.

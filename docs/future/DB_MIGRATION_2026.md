@@ -55,11 +55,11 @@ what caused this situation.
 - [x] Recreated `bayaryuk-alerts` + `byk-mysql-connections-high` on the new subscription (2026-09-26)
 - [ ] **Confirm the free meter** — new subscription must show `B1MS Compute - Free`, not `B1MS` (billing lags ~24h → check 2026-09-27/28) ← **NEXT**
 - [ ] User phone test on `audio_technic` (log in, items, sales history)
-- [ ] **Phase 4: 3-day soak (user decision) → delete old server `bayaryuk-server` on/after 2026-09-29.** Also remove its alert `byk-mysql-connections-high` (old sub) and the `migration_2026-09-26` firewall rule; drop `OLDPROD_*` from `.env`
+- [x] **Phase 4 done 2026-10-14: old server `bayaryuk-server` deleted** (with its alert). Original: **3-day soak (user decision) → delete old server `bayaryuk-server` on/after 2026-09-29.** Also remove its alert `byk-mysql-connections-high` (old sub) and the `migration_2026-09-26` firewall rule; drop `OLDPROD_*` from `.env`
 - [ ] Phase 1: new MySQL server provisioned + firewall rules
 - [ ] Phase 2: dry-run restore + smoke test
 - [ ] Phase 3: cutover executed (night window — see §3.0)
-- [ ] Phase 4: soak + old server deleted
+- [x] Phase 4: soak + old server deleted (2026-10-14)
 
 ---
 

@@ -1,5 +1,4 @@
-// Wholesale pricing — item units + price tiers (FE docs/future/MULTI_TIER_PRICING.md
-// §2.2 / §2.3): payload validation, Lite gating, soft-delete reconciliation, the
+// Wholesale pricing — item units + price tiers (FE docs/modules/ITEM.md § Wholesale pricing data model): payload validation, Lite gating, soft-delete reconciliation, the
 // unit-barcode uniqueness rule and the Item.updatedAt bump that delta sync needs.
 //
 // Run with:  npx tsx --test src/item/__tests__/item-pricing.test.ts

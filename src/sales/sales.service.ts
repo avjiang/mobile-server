@@ -23,6 +23,7 @@ import { netSaleProfit } from './sale-profit';
 import { CAP_SETTING_KEY, enforceManualDiscount } from './manual-discount';
 import { lineShareOf } from './line-share';
 import { pricingAuditOf } from './price-audit';
+import { checkSaleLinePrices, PriceBook } from './price-check';
 import { latestReceiptCosts } from '../stock/supply-cost';
 
 /**
@@ -110,8 +111,7 @@ const salesSyncSelect = {
 // Helper: calculate effective stock quantity (in the item's BASE unit) for
 // deduction/restoration: quantity × (stockConsumptionQty ?? unitFactor ?? 1).
 //   - consumption items: quantity × stockConsumptionQty (3 orders × 50ml = 150ml)
-//   - sell-unit lines (wholesale multi-UOM, FE docs/future/MULTI_TIER_PRICING.md
-//     §2.4): quantity × unitFactor (2 Dus × isi 40 = 80 pcs)
+//   - sell-unit lines (wholesale multi-UOM, FE docs/modules/SALES.md § Selling by carton and piece): quantity × unitFactor (2 Dus × isi 40 = 80 pcs)
 //   - piece-based items (both null): quantity as-is (3 pieces)
 // A line never sets both — assertSingleStockFactor rejects that on create.
 // Used by validation, FIFO and void/return/refund restore, so they always agree.
@@ -1697,6 +1697,38 @@ async function readTenantSettingValue(tenantPrisma: PrismaClient, key: string): 
     return setting?.value ?? def.defaultValue ?? null;
 }
 
+/** The server's units / breaks / level prices for a sale's lines (./price-check.ts). */
+async function loadWholesalePriceBook(
+    tenantPrisma: PrismaClient,
+    q: { itemIds: number[]; variantIds: number[]; unitIds: number[]; customerId: number | null },
+): Promise<PriceBook> {
+    const [items, variants, units, tiers, customer] = await Promise.all([
+        tenantPrisma.item.findMany({ where: { id: { in: q.itemIds } }, select: { id: true, price: true, isOpenPrice: true } }),
+        q.variantIds.length
+            ? tenantPrisma.itemVariant.findMany({ where: { id: { in: q.variantIds } }, select: { id: true, itemId: true, price: true } })
+            : Promise.resolve([]),
+        q.unitIds.length
+            ? tenantPrisma.itemUnit.findMany({ where: { id: { in: q.unitIds } }, select: { id: true, itemId: true, price: true } })
+            : Promise.resolve([]),
+        tenantPrisma.itemPriceTier.findMany({
+            where: { itemId: { in: q.itemIds }, deleted: false },
+            select: { id: true, itemId: true, itemVariantId: true, itemUnitId: true, priceLevelId: true, minQuantity: true, price: true },
+        }),
+        q.customerId != null
+            ? tenantPrisma.customer.findFirst({ where: { id: q.customerId }, select: { priceLevelId: true } })
+            : Promise.resolve(null),
+    ]);
+    const tiersByItem = new Map<number, typeof tiers>();
+    for (const t of tiers) tiersByItem.set(t.itemId, [...(tiersByItem.get(t.itemId) ?? []), t]);
+    return {
+        items: new Map(items.map((i) => [i.id, i])),
+        variants: new Map(variants.map((v) => [v.id, v])),
+        units: new Map(units.map((u) => [u.id, u])),
+        tiers: tiersByItem,
+        customerPriceLevelId: customer?.priceLevelId ?? null,
+    };
+}
+
 async function completeNewSales(
     databaseName: string,
     tenantId: number,
@@ -1753,6 +1785,22 @@ async function completeNewSales(
             saleRef: clientRef ?? salesBody.orderRef ?? null,
         },
         { readCapSetting: () => readTenantSettingValue(tenantPrisma, CAP_SETTING_KEY) },
+    );
+
+    // Wholesale price check (log-only, never rejects, skips late offline-outbox
+    // sales and Retail Lite): recompute each non-MANUAL line's price from the
+    // server's units / breaks / level prices and warn on a > Rp 1 mismatch.
+    // See ./price-check.ts.
+    await checkSaleLinePrices(
+        salesBody,
+        {
+            databaseName,
+            username: performedBy.username,
+            planName: performedBy.planName,
+            isLitePlan,
+            saleRef: clientRef ?? salesBody.orderRef ?? null,
+        },
+        { loadBook: (q) => loadWholesalePriceBook(tenantPrisma, q) },
     );
 
     // Store stock updates outside transaction for notification use

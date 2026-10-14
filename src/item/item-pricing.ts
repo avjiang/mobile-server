@@ -1,5 +1,5 @@
 // Wholesale pricing (grosir / ecer) — the item's sell units and price tiers.
-// Plan: FE docs/future/MULTI_TIER_PRICING.md §2.2 (schema) and §2.3 (sync).
+// Plan: FE docs/modules/ITEM.md § Wholesale pricing data model.
 //
 // Both lists ride INSIDE the item payload, the way `variants` and `suppliers` do:
 //   - read:  `units[]` / `priceTiers[]` (non-deleted rows) on every item sync/getById;

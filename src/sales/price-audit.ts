@@ -1,5 +1,4 @@
-// Wholesale pricing audit on a sales line (FE docs/future/MULTI_TIER_PRICING.md
-// §2.2 / §2.5 / §4). The FE price resolver sets six fields on every line; the
+// Wholesale pricing audit on a sales line (FE docs/modules/ITEM.md § Wholesale pricing data model). The FE price resolver sets six fields on every line; the
 // server stores them AS SENT — no derivation, and never a reason to reject a sale
 // (an offline-outbox sale must always land). Anything malformed is stored as NULL,
 // which reads as "Ecer / base unit / sold before the feature".

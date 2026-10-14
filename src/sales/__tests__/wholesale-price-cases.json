@@ -1,0 +1,42 @@
+{
+  "_about": "Wholesale price resolution — ONE table of cases shared by the Dart resolver (FE lib/screens/responsive/sales/cart/line_pricing.dart resolvePrice) and its TS port (BE src/sales/price-check.ts resolvePrice). Master copy: BE src/sales/__tests__/wholesale-price-cases.json. Mirror: FE test/screens/sales/wholesale_price_cases.json — keep the two files byte-identical (cp one over the other) and run both test suites after any change. Rule: start from basePrice; candidates = live tiers for the same variant (or all variants), the SAME unit (null = base unit), level null or the customer's level, minQuantity <= qty; the LOWEST price wins; at an equal price a level row beats an everyone row.",
+  "tiers": [
+    { "id": 1, "price": 3300, "minQuantity": 12, "priceLevelId": null, "itemUnitId": null, "itemVariantId": null, "deleted": false },
+    { "id": 2, "price": 3200, "minQuantity": 24, "priceLevelId": null, "itemUnitId": null, "itemVariantId": null, "deleted": false },
+    { "id": 3, "price": 3250, "minQuantity": 1, "priceLevelId": 5, "itemUnitId": null, "itemVariantId": null, "deleted": false },
+    { "id": 4, "price": 3100, "minQuantity": 48, "priceLevelId": 5, "itemUnitId": null, "itemVariantId": null, "deleted": false },
+    { "id": 5, "price": 120000, "minQuantity": 10, "priceLevelId": null, "itemUnitId": 9, "itemVariantId": null, "deleted": false },
+    { "id": 6, "price": 3000, "minQuantity": 1, "priceLevelId": null, "itemUnitId": null, "itemVariantId": 8, "deleted": false },
+    { "id": 7, "price": 1, "minQuantity": 1, "priceLevelId": null, "itemUnitId": null, "itemVariantId": null, "deleted": true }
+  ],
+  "cases": [
+    { "name": "no tiers apply -> base (Ecer)", "qty": 1, "priceLevelId": null, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3500, "source": "BASE", "tierId": null },
+    { "name": "just under the break", "qty": 11, "priceLevelId": null, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3500, "source": "BASE", "tierId": null },
+    { "name": "crossing the break at exactly 12", "qty": 12, "priceLevelId": null, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3300, "source": "TIER", "tierId": 1 },
+    { "name": "a fractional qty just over the break", "qty": 12.5, "priceLevelId": null, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3300, "source": "TIER", "tierId": 1 },
+    { "name": "the deeper break wins at 24", "qty": 30, "priceLevelId": null, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3200, "source": "TIER", "tierId": 2 },
+    { "name": "level price applies from 1 for a Grosir customer", "qty": 1, "priceLevelId": 5, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3250, "source": "LEVEL", "tierId": 3 },
+    { "name": "lowest wins: a break beats the level price", "qty": 24, "priceLevelId": 5, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3200, "source": "TIER", "tierId": 2 },
+    { "name": "lowest wins: the level break beats everything", "qty": 50, "priceLevelId": 5, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3100, "source": "LEVEL", "tierId": 4 },
+    { "name": "another level does not get Grosir prices", "qty": 1, "priceLevelId": 6, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3500, "source": "BASE", "tierId": null },
+    { "name": "carton line: unit price is the base (UNIT = grosir)", "qty": 2, "priceLevelId": null, "unitId": 9, "variantId": null, "basePrice": 128000, "price": 128000, "source": "UNIT", "tierId": null },
+    { "name": "carton break counts cartons, not pieces", "qty": 10, "priceLevelId": null, "unitId": 9, "variantId": null, "basePrice": 128000, "price": 120000, "source": "TIER", "tierId": 5 },
+    { "name": "base-unit and other-unit breaks never apply to a pack line", "qty": 400, "priceLevelId": null, "unitId": 10, "variantId": null, "basePrice": 36000, "price": 36000, "source": "UNIT", "tierId": null },
+    { "name": "a tier for another variant is ignored", "qty": 1, "priceLevelId": null, "unitId": null, "variantId": 7, "basePrice": 3500, "price": 3500, "source": "BASE", "tierId": null },
+    { "name": "a variant-specific tier applies to its variant", "qty": 1, "priceLevelId": null, "unitId": null, "variantId": 8, "basePrice": 3500, "price": 3000, "source": "TIER", "tierId": 6 },
+    { "name": "a tier dearer than the base never wins", "qty": 12, "priceLevelId": null, "unitId": null, "variantId": null, "basePrice": 3000, "price": 3000, "source": "BASE", "tierId": null },
+    {
+      "name": "equal price: the customer level row labels the line",
+      "tiers": [
+        { "id": 1, "price": 3300, "minQuantity": 12, "priceLevelId": null, "itemUnitId": null, "itemVariantId": null, "deleted": false },
+        { "id": 2, "price": 3300, "minQuantity": 1, "priceLevelId": 5, "itemUnitId": null, "itemVariantId": null, "deleted": false }
+      ],
+      "qty": 12, "priceLevelId": 5, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3300, "source": "LEVEL", "tierId": 2
+    },
+    {
+      "name": "no tiers at all -> base, for every tenant without wholesale",
+      "tiers": [],
+      "qty": 3, "priceLevelId": null, "unitId": null, "variantId": null, "basePrice": 3500, "price": 3500, "source": "BASE", "tierId": null
+    }
+  ]
+}

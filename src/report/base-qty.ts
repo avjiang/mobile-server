@@ -1,6 +1,6 @@
 /**
  * Item rankings in base units (wholesale pricing, Phase 1r —
- * docs/future/MULTI_TIER_PRICING.md §2.5).
+ * FE docs/modules/REPORT.md §4 priceMix).
  *
  * A carton line stores `quantity` in its sell unit ("2" Dus) and the unit's size in
  * `unitFactor` (40). Ranking on raw Σ quantity would count it as 2; stock is kept in

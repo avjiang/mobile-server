@@ -97,7 +97,7 @@ Four optional columns on `Produk` (English template: `sellUnitName`, `sellUnitFa
 `sellUnitPrice`, `sellUnitBarcode`) give a product ONE larger sell unit next to its base
 unit — "Indomie, `satuan` Pcs, Rp 3.500 · `satuan_besar` Dus, `isi` 40,
 `harga_satuan_besar` 128000". It becomes an `item_unit` row (wholesale multi-UOM,
-FE `docs/future/MULTI_TIER_PRICING.md` §2.4): the cashier picks Pcs or Dus at the till,
+FE `docs/modules/SALES.md` § Selling by carton and piece): the cashier picks Pcs or Dus at the till,
 both sell from the same stock pool, stock stays counted in the base unit (`stok_awal` =
 pieces). More units per item are added later in the app.
 

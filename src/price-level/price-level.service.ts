@@ -1,5 +1,5 @@
 // Wholesale pricing — customer price levels ("Grosir", "Reseller").
-// Plan: FE docs/future/MULTI_TIER_PRICING.md §2.2 / §2.3. A small delta-synced
+// Plan: FE docs/modules/ITEM.md § Wholesale pricing data model. A small delta-synced
 // master list (like categories); Customer.priceLevelId and ItemPriceTier.priceLevelId
 // point here. Rows are only ever soft-deleted.
 

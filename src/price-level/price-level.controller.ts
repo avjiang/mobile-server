@@ -1,6 +1,6 @@
 // Wholesale pricing — price level routes, mounted at /priceLevel.
 // Reads are open (every device syncs the list). Writes are refused on Retail Lite
-// (wholesale pricing is Basic and above, MULTI_TIER_PRICING.md §6) with the same
+// (wholesale pricing is Basic and above, FE docs/modules/SALES.md § Wholesale pricing decisions (D5)) with the same
 // rejectPlan('Lite') gate as customer create.
 import express, { NextFunction, Response } from "express";
 import validator from "validator";

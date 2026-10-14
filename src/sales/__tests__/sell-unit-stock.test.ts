@@ -1,4 +1,4 @@
-// Wholesale multi-UOM (FE docs/future/MULTI_TIER_PRICING.md §2.4): a sell-unit
+// Wholesale multi-UOM (FE docs/modules/SALES.md § Selling by carton and piece): a sell-unit
 // line ("2 Dus isi 40") moves `quantity × unitFactor` BASE units of stock, through
 // the same helper on sale, void, return and refund; it is stored as ONE row with a
 // weighted-average FIFO cost; it is never a laundry supply line.

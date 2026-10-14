@@ -126,7 +126,7 @@ export class CreateSalesItemRequest {
     // Laundry: actual processed weight (kg) on a wash-service line. The charged
     // price is fixed to the machine load; this is captured only for KG reporting.
     @Expose() loadWeightKg?: PrismaDecimal;
-    // Wholesale pricing audit (MULTI_TIER_PRICING.md §2.2), set by the FE resolver
+    // Wholesale pricing audit (FE docs/modules/ITEM.md § Wholesale pricing data model), set by the FE resolver
     // and stored as sent via ./price-audit.ts. All optional; null = ecer/base unit.
     @Expose() priceSource?: string | null;
     @Expose() listPrice?: PrismaDecimal | null;

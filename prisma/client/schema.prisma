@@ -304,7 +304,7 @@ model Customer {
   shipPostalCode        String?                @map("SHIP_POSTAL_CODE")
   shipCountry           String?                @map("SHIP_COUNTRY")
   shipRemark            String?                @map("SHIP_REMARK")
-  // Wholesale pricing (docs/future/MULTI_TIER_PRICING.md §2.2): the customer's
+  // Wholesale pricing (FE docs/modules/ITEM.md § Wholesale pricing data model): the customer's
   // price level ("Grosir", "Reseller"). Null = ecer (everyone's prices only).
   priceLevelId          Int?                   @map("PRICE_LEVEL_ID")
   deleted               Boolean                @default(false) @map("IS_DELETED")
@@ -551,7 +551,7 @@ model ItemSupplier {
 // Wholesale pricing — a sell unit of an item ("Dus isi 40", "Pak isi 10") drawn
 // from the item's ONE stock pool. The base unit is the Item itself (its
 // unitOfMeasure); a unit line deducts quantity × factor base units.
-// See docs/future/MULTI_TIER_PRICING.md §2.2 / §2.4.
+// See FE docs/modules/ITEM.md § Wholesale pricing data model.
 model ItemUnit {
   id            Int             @id @default(autoincrement()) @map("ID")
   itemId        Int             @map("ITEM_ID")
@@ -583,7 +583,7 @@ model ItemUnit {
 //   plain level price:           priceLevelId set,  minQuantity 1
 //   carton price for a level:    itemUnitId + priceLevelId
 // minQuantity counts in the row's own unit (no cross-unit totals). The FE
-// resolver takes the LOWEST applicable price (MULTI_TIER_PRICING.md §3).
+// resolver takes the LOWEST applicable price (FE docs/modules/SALES.md § Wholesale pricing).
 model ItemPriceTier {
   id            Int         @id @default(autoincrement()) @map("ID")
   itemId        Int         @map("ITEM_ID")
@@ -916,7 +916,7 @@ model SalesItem {
   // sales cost+profit restatement when invoice re-pricing changes a receipt's cost.
   stockReceiptId          Int?            @map("STOCK_RECEIPT_ID")
   warehouseStockReceiptId Int?            @map("WAREHOUSE_STOCK_RECEIPT_ID")
-  // Wholesale pricing audit (docs/future/MULTI_TIER_PRICING.md §2.2/§2.5), set by
+  // Wholesale pricing audit (FE docs/modules/SALES.md § Wholesale pricing + REPORT.md §4 priceMix), set by
   // the FE resolver and stored as sent. Snapshots, not foreign keys: a unit or
   // level deleted later must never break a sale's history.
   //   priceSource  BASE | UNIT | TIER | LEVEL | MANUAL (null = sold before the feature → Ecer)

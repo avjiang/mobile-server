@@ -1,6 +1,6 @@
 /**
  * `priceMix` block of the session / outlet reports (wholesale pricing, Phase 1r —
- * docs/future/MULTI_TIER_PRICING.md §2.5, owner decision D8).
+ * FE docs/modules/REPORT.md §4 priceMix, owner decision D8).
  *
  *   "priceMix": {
  *     "totalRevenue": 1530000, "totalProfit": 210000, "lineCount": 9,

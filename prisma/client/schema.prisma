@@ -1543,21 +1543,40 @@ model StockSnapshot {
   @@map("stock_snapshot")
 }
 
+// A dining table on the F&B floor map (docs/modules/FNB.md, P4). Position and
+// size are logical units on its area's canvas (1000 × 700), so one plan fits
+// phone and tablet. Busy/free is derived from its open Order, not stored.
 model Table {
   id           Int           @id @default(autoincrement()) @map("ID")
   outletId     Int           @map("OUTLET_ID")
+  // The name on the floor ("4", "T2", "Teras 1").
   tableNumber  String        @map("TABLE_NUMBER")
+  // Seats.
   capacity     Int           @map("CAPACITY")
-  status       String        @map("STATUS") // e.g., "occupied", "free", "reserved"
-  salesId      Int?          @map("SALES_ID") // Link to active sales order
+  // Legacy, unused since P4 (busy = an open order); kept so old rows stay valid.
+  status       String        @default("free") @map("STATUS")
+  salesId      Int?          @map("SALES_ID")
+  areaId       Int?          @map("AREA_ID")
+  x            Float         @default(0) @map("POS_X")
+  y            Float         @default(0) @map("POS_Y")
+  width        Float         @default(110) @map("WIDTH")
+  height       Float         @default(110) @map("HEIGHT")
+  // 'square' | 'round' | 'rect'
+  shape        String        @default("square") @map("SHAPE") @db.VarChar(16)
+  // 0 | 45 | 90
+  rotation     Int           @default(0) @map("ROTATION")
+  sequence     Int           @default(0) @map("SEQUENCE")
   deleted      Boolean       @default(false) @map("IS_DELETED")
   deletedAt    DateTime?     @map("DELETED_AT")
   createdAt    DateTime?     @default(now()) @map("CREATED_AT")
   updatedAt    DateTime?     @updatedAt @map("UPDATED_AT")
   version      Int?          @default(1) @map("VERSION")
   outlet       Outlet        @relation(fields: [outletId], references: [id])
+  area         FloorArea?    @relation(fields: [areaId], references: [id])
   sales        Sales[]
+  orders       Order[]
 
+  @@index([outletId, updatedAt])
   @@map("table")
 }
 
@@ -2444,4 +2463,81 @@ model Recipe {
   @@index([ingredientItemId])
   @@index([updatedAt])
   @@map("recipe")
+}
+
+// A room / zone of the floor map ("Dalam", "Teras", "Lantai 2").
+model FloorArea {
+  id         Int       @id @default(autoincrement()) @map("ID")
+  outletId   Int       @map("OUTLET_ID")
+  name       String    @map("NAME") @db.VarChar(50)
+  sequence   Int       @default(0) @map("SEQUENCE")
+  deleted    Boolean   @default(false) @map("IS_DELETED")
+  deletedAt  DateTime? @map("DELETED_AT")
+  createdAt  DateTime  @default(now()) @map("CREATED_AT")
+  updatedAt  DateTime  @updatedAt @map("UPDATED_AT")
+  version    Int       @default(1) @map("VERSION")
+  tables     Table[]
+
+  @@index([outletId, updatedAt])
+  @@map("floor_area")
+}
+
+// F&B open bill (docs/modules/FNB.md, D3/P4): everything ordered but not yet
+// paid — dine-in tables, pay-later counters. Append-only rounds; settling it
+// creates the Sale. orderRef is minted on the device (offline-safe identity).
+model Order {
+  id             Int         @id @default(autoincrement()) @map("ID")
+  outletId       Int         @map("OUTLET_ID")
+  orderRef       String      @unique @map("ORDER_REF") @db.VarChar(64)
+  tableId        Int?        @map("TABLE_ID")
+  // OPEN | SETTLING | SETTLED | VOID
+  status         String      @default("OPEN") @map("STATUS") @db.VarChar(16)
+  salesType      String      @default("Dine-In") @map("SALES_TYPE") @db.VarChar(32)
+  label          String?     @map("LABEL") @db.VarChar(100)
+  queueNo        String?     @map("QUEUE_NO") @db.VarChar(16)
+  guestCount     Int?        @map("GUEST_COUNT")
+  rounds         Int         @default(0) @map("ROUNDS")
+  openedBy       String?     @map("OPENED_BY") @db.VarChar(100)
+  siteId         Int?        @map("SITE_ID")
+  settledSalesId Int?        @map("SETTLED_SALES_ID")
+  openedAt       DateTime    @default(now()) @map("OPENED_AT")
+  closedAt       DateTime?   @map("CLOSED_AT")
+  createdAt      DateTime    @default(now()) @map("CREATED_AT")
+  updatedAt      DateTime    @updatedAt @map("UPDATED_AT")
+  version        Int         @default(1) @map("VERSION")
+  table          Table?      @relation(fields: [tableId], references: [id])
+  lines          OrderLine[]
+
+  @@index([outletId, status])
+  @@index([outletId, updatedAt])
+  @@map("order")
+}
+
+model OrderLine {
+  id            Int       @id @default(autoincrement()) @map("ID")
+  orderId       Int       @map("ORDER_ID")
+  // Minted on the device: replaying a queued round never duplicates a line.
+  lineRef       String    @unique @map("LINE_REF") @db.VarChar(64)
+  round         Int       @map("ROUND")
+  itemId        Int       @map("ITEM_ID")
+  itemVariantId Int?      @map("ITEM_VARIANT_ID")
+  itemName      String    @map("ITEM_NAME")
+  variantName   String?   @map("VARIANT_NAME")
+  quantity      Decimal   @map("QUANTITY") @db.Decimal(15, 4)
+  // Unit price incl. options (the cart line price).
+  unitPrice     Decimal   @map("UNIT_PRICE") @db.Decimal(15, 4)
+  basePrice     Decimal?  @map("BASE_PRICE") @db.Decimal(15, 4)
+  hasTax        Boolean   @default(false) @map("HAS_TAX")
+  // [{modifierId, groupName, modifierName, price, quantity}]
+  modifiers     Json?     @map("MODIFIERS")
+  note          String?   @map("NOTE") @db.VarChar(200)
+  voided        Boolean   @default(false) @map("IS_VOIDED")
+  voidReason    String?   @map("VOID_REASON") @db.VarChar(200)
+  createdBy     String?   @map("CREATED_BY") @db.VarChar(100)
+  createdAt     DateTime  @default(now()) @map("CREATED_AT")
+  updatedAt     DateTime  @updatedAt @map("UPDATED_AT")
+  order         Order     @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("order_line")
 }

@@ -56,9 +56,22 @@ export const groupByStation = (
     return groups
 }
 
-export const writeSaleKitchenTickets = async (
+export interface TicketSource {
+    outletId: number
+    source?: "sale" | "order"
+    salesId?: number | null
+    orderRef?: string | null
+    round?: number
+    queueNo?: string | null
+    label?: string | null
+    salesType?: string | null
+    siteId?: number | null
+}
+
+/** One KitchenTicket per station for [lines]; never throws (returns 0 on failure). */
+export const writeKitchenTickets = async (
     tx: Prisma.TransactionClient,
-    sale: { id: number; outletId: number; queueNo?: string | null; customerLabel?: string | null; salesType?: string | null; siteId?: number | null },
+    src: TicketSource,
     lines: TicketLineInput[],
 ): Promise<number> => {
     try {
@@ -72,7 +85,7 @@ export const writeSaleKitchenTickets = async (
         // A station deleted (or of another outlet) since routing was set → unrouted.
         const stationIds = [...new Set([...route.values()].filter((s): s is number => s !== null))]
         const live = stationIds.length === 0 ? new Set<number>() : new Set(
-            (await tx.station.findMany({ where: { id: { in: stationIds }, outletId: sale.outletId, deleted: false }, select: { id: true } }))
+            (await tx.station.findMany({ where: { id: { in: stationIds }, outletId: src.outletId, deleted: false }, select: { id: true } }))
                 .map((s) => s.id),
         )
         const groups = groupByStation(lines, (itemId) => {
@@ -80,20 +93,36 @@ export const writeSaleKitchenTickets = async (
             return s !== null && live.has(s) ? s : null
         })
         const data: Prisma.KitchenTicketCreateManyInput[] = [...groups.entries()].map(([stationId, ticketLines]) => ({
-            outletId: sale.outletId,
+            outletId: src.outletId,
             stationId,
-            source: "sale",
-            salesId: sale.id,
-            queueNo: sale.queueNo ?? null,
-            label: sale.customerLabel ?? null,
-            salesType: sale.salesType ?? null,
+            source: src.source ?? "sale",
+            salesId: src.salesId ?? null,
+            orderRef: src.orderRef ?? null,
+            round: src.round ?? 1,
+            queueNo: src.queueNo ?? null,
+            label: src.label ?? null,
+            salesType: src.salesType ?? null,
             lines: ticketLines as unknown as Prisma.InputJsonValue,
-            siteId: sale.siteId ?? null,
+            siteId: src.siteId ?? null,
         }))
         if (data.length > 0) await tx.kitchenTicket.createMany({ data })
         return data.length
     } catch (e) {
-        console.error("writeSaleKitchenTickets failed (sale kept):", e)
+        console.error("writeKitchenTickets failed (kept going):", e)
         return 0
     }
 }
+
+export const writeSaleKitchenTickets = (
+    tx: Prisma.TransactionClient,
+    sale: { id: number; outletId: number; queueNo?: string | null; customerLabel?: string | null; salesType?: string | null; siteId?: number | null },
+    lines: TicketLineInput[],
+): Promise<number> => writeKitchenTickets(tx, {
+    outletId: sale.outletId,
+    source: "sale",
+    salesId: sale.id,
+    queueNo: sale.queueNo,
+    label: sale.customerLabel,
+    salesType: sale.salesType,
+    siteId: sale.siteId,
+}, lines)

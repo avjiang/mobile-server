@@ -1662,6 +1662,9 @@ async function completeNewSales(
     salesBody: CreateSalesRequest,
     payments: Payment[],
     clientRef: string | null = null,
+    // F&B open-bill settle (src/order): its rounds already fired their kitchen
+    // tickets, and the sale records the order's table.
+    options: { skipKitchenTickets?: boolean; tableId?: number | null } = {},
 ) {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
@@ -2334,6 +2337,7 @@ async function completeNewSales(
                     // F&B counter queue number + "atas nama" label, stored as sent.
                     queueNo: salesBody.queueNo?.trim().slice(0, 16) || null,
                     customerLabel: salesBody.customerLabel?.trim().slice(0, 100) || null,
+                    tableId: options.tableId ?? null,
                     // Offline-replay dedupe key (./client-ref.ts); null without a key.
                     clientRef,
                     // Stock-source provenance — computed from actual per-line consumption
@@ -2364,7 +2368,7 @@ async function completeNewSales(
             await attachSalesItemModifiers(tx, createdSales.id, salesBody.salesItems, salesItemData);
 
             // F&B (a sale with a queue number): one kitchen ticket per station.
-            if (salesBody.queueNo) {
+            if (salesBody.queueNo && !options.skipKitchenTickets) {
                 await writeSaleKitchenTickets(tx, {
                     id: createdSales.id,
                     outletId: salesBody.outletId,

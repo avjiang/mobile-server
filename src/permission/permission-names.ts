@@ -41,6 +41,7 @@ export const PERMISSION = {
     EDIT_SALE_PRICE: 'Edit Sale Price',
     GIVE_DISCOUNT: 'Give Discount',
     MARK_MENU_SOLD_OUT: 'Mark Menu Sold Out',
+    MANAGE_FLOOR_PLAN: 'Manage Floor Plan',
     // Function Management
     MANAGE_MASTER_DATA: 'Manage Master Data',
     MANAGE_PROCUREMENT: 'Manage Procurement',

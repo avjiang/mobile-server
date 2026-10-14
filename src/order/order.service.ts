@@ -210,6 +210,11 @@ const cancel = async (databaseName: string, outletId: number, orderRef: string) 
         const live = await tx.orderLine.count({ where: { orderId: order.id, voided: false } })
         if (live > 0) throw new BusinessLogicError("Void the bill's items first")
         await tx.order.update({ where: { id: order.id }, data: { status: "VOID", closedAt: new Date(), version: { increment: 1 } } })
+        // The kitchen stops: tickets not served yet leave the KDS (a delta carries the delete).
+        await tx.kitchenTicket.updateMany({
+            where: { orderRef, deleted: false, status: { in: ["NEW", "PREPARING", "READY"] } },
+            data: { deleted: true, version: { increment: 1 } },
+        })
     })
     return serialize(await prisma.order.findUnique({ where: { orderRef }, include: withLines }))
 }

@@ -4,14 +4,16 @@ import { RequestValidateError, NotFoundError } from "../api-helpers/error"
 import { sendResponse } from "../api-helpers/network"
 import { AuthRequest } from "../middleware/auth-request"
 import { getTenantPrisma } from "../db"
+import { requirePlan } from "../middleware/require-plan.middleware"
 
-// F&B kitchen tickets for the KDS (docs/modules/FNB.md, P5): what each station
-// must make, and its status. Per outlet (X-Outlet-ID).
+// F&B kitchen tickets for the KDS (docs/modules/FNB.md, P5, Pro): what each
+// station must make, and its status. Per outlet (X-Outlet-ID). The list
+// includes deleted tickets (a cancelled bill's) so a delta can drop them.
 const router = express.Router()
 const STATUSES = ["NEW", "PREPARING", "READY", "SERVED"]
 
 /** GET /kitchen/tickets?since=ISO&stationId=n — tickets changed since, newest first (max 200). */
-router.get("/tickets", (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/tickets", requirePlan("Pro"), (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError("User not authenticated")
     if (!req.outletId) throw new RequestValidateError("Outlet is required")
     const since = typeof req.query.since === "string" && req.query.since ? new Date(req.query.since) : new Date(Date.now() - 12 * 3600_000)
@@ -23,14 +25,14 @@ router.get("/tickets", (req: AuthRequest, res: Response, next: NextFunction) => 
     const prisma = getTenantPrisma(req.user.databaseName)
     const serverTimestamp = new Date().toISOString()
     prisma.kitchenTicket.findMany({
-        where: { outletId: req.outletId, deleted: false, updatedAt: { gte: since }, ...stationFilter },
+        where: { outletId: req.outletId, updatedAt: { gte: since }, ...stationFilter },
         orderBy: { createdAt: "desc" },
         take: 200,
     }).then((tickets) => sendResponse(res, { data: tickets, total: tickets.length, serverTimestamp })).catch(next)
 })
 
 /** PUT /kitchen/tickets/:id/status {status} — the KDS moves a ticket along. */
-router.put("/tickets/:id/status", (req: AuthRequest, res: Response, next: NextFunction) => {
+router.put("/tickets/:id/status", requirePlan("Pro"), (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) throw new RequestValidateError("User not authenticated")
     if (!validator.isNumeric(req.params.id ?? "")) throw new RequestValidateError("ID format incorrect")
     const status = String(req.body?.status ?? "")

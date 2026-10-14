@@ -28,7 +28,10 @@ import {
     DemoVertical, DemoItemDef, DEMO_SUPPLIER, DEMO_CUSTOMERS, PAYMENT_MIX,
     RETAIL_CATEGORIES, RETAIL_ITEMS, LAUNDRY_CATEGORIES, LAUNDRY_ITEMS,
     LAUNDRY_SHOP, LAUNDRY_PACKAGES, LAUNDRY_PACKAGE_BUYERS, DEMO_LOYALTY, LOYALTY_TARGETS,
+    FNB_CATEGORIES, FNB_ITEMS, FNB_STATIONS, FNB_MODIFIER_GROUPS, FNB_ORDER_TYPES, FNB_FLOOR, FNB_SHOP,
 } from './demo-catalogue';
+import { Prisma } from '../../prisma/client/generated/client';
+import { appendRound } from '../order/order.service';
 import subscriptionPackageService from '../subscription-package/subscription-package.service';
 
 const adminService = require('../admin/admin.service');
@@ -39,6 +42,7 @@ const adminService = require('../admin/admin.service');
 export const DEMO_TENANTS: Record<DemoVertical, { tenantName: string; planType: string }> = {
     retail: { tenantName: 'demo_retail', planType: 'Retail' },
     laundry: { tenantName: 'demo_laundry', planType: 'Laundry' },
+    fnb: { tenantName: 'demo_fnb', planType: 'F&B' },
 };
 
 /** Pro on purpose — a demo should show the ceiling, not the floor. */
@@ -195,8 +199,10 @@ export async function seedDemoTenant(
     await wipeOwnedTables(prisma);
     // Identity first: sales record the owner's name as performedBy.
     if (vertical === 'laundry') await applyLaundryIdentity(prisma, tenant.id);
+    if (vertical === 'fnb') await prisma.company.updateMany({ data: { companyName: FNB_SHOP.companyName } });
     const result = await seedTenantData(prisma, vertical);
     if (vertical === 'laundry') await seedLaundryPackages(prisma, databaseName);
+    if (vertical === 'fnb') await seedFnbFloorAndBills(prisma);
     // After the packages on purpose (see seedLaundryPackages): no account exists while
     // they are bought, so no English "Earned from package purchase" row is written.
     await seedLoyaltyBaseline(prisma, vertical);
@@ -243,12 +249,13 @@ interface SeededItem {
 
 async function seedTenantData(prisma: any, vertical: DemoVertical) {
     const isLaundry = vertical === 'laundry';
-    const categories = isLaundry ? LAUNDRY_CATEGORIES : RETAIL_CATEGORIES;
-    const itemDefs = isLaundry ? LAUNDRY_ITEMS : RETAIL_ITEMS;
+    const isFnb = vertical === 'fnb';
+    const categories = isLaundry ? LAUNDRY_CATEGORIES : isFnb ? FNB_CATEGORIES : RETAIL_CATEGORIES;
+    const itemDefs = isLaundry ? LAUNDRY_ITEMS : isFnb ? FNB_ITEMS : RETAIL_ITEMS;
     const supplierDef = DEMO_SUPPLIER[vertical];
 
-    // Distinct seeds per vertical so the two demos don't share a basket rhythm.
-    const rnd = makePrng(isLaundry ? 0x1A0D2E7 : 0x5E7A11);
+    // Distinct seeds per vertical so the demos don't share a basket rhythm.
+    const rnd = makePrng(isLaundry ? 0x1A0D2E7 : isFnb ? 0xF00DCAFE : 0x5E7A11);
     // Pay-at-pickup decisions draw from their own stream so adding them left the
     // basket/customer sequence above — and the loyalty targets built on it — unchanged.
     const pickupRnd = makePrng(0x71C2A9);
@@ -269,9 +276,24 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
         data: { ...supplierDef, hasTax: false, companyCountry: 'Indonesia' },
     });
 
+    // F&B: kitchen stations first, so categories can route to them.
+    const stationIds: number[] = [];
+    if (isFnb) {
+        for (const [i, name] of FNB_STATIONS.entries()) {
+            stationIds.push((await prisma.station.create({ data: { outletId, name, sequence: i } })).id);
+        }
+    }
+
     const categoryIds: number[] = [];
     for (const c of categories) {
-        const row = await prisma.category.create({ data: { name: c.name, description: c.description } });
+        const row = await prisma.category.create({
+            data: {
+                name: c.name,
+                description: c.description,
+                ...(c.icon ? { icon: c.icon } : {}),
+                ...(c.station != null && stationIds[c.station] != null ? { stationId: stationIds[c.station] } : {}),
+            },
+        });
         categoryIds.push(row.id);
     }
 
@@ -334,6 +356,13 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
     for (const it of items) {
         for (const r of it.def.recipe ?? []) {
             const supply = byCode.get(r.supply)!;
+            if (isFnb) {
+                // F&B: a dish's recipe per portion (P3) — the server expands it at sale time.
+                await prisma.recipe.create({
+                    data: { itemId: it.id, ingredientItemId: supply.id, quantity: r.rate, createdAt: openingReceiptAt },
+                });
+                continue;
+            }
             await prisma.itemConsumable.create({
                 data: {
                     serviceItemId: it.id, consumableItemId: supply.id,
@@ -356,6 +385,45 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
         customerIds.push(row.id);
     }
 
+    // F&B: the option library and which dish offers which group.
+    const fnbGroups = new Map<string, { id: number; def: typeof FNB_MODIFIER_GROUPS[number]; options: { id: number; name: string; price: number; isDefault: boolean }[] }>();
+    if (isFnb) {
+        for (const [gi, g] of FNB_MODIFIER_GROUPS.entries()) {
+            const group = await prisma.modifierGroup.create({
+                data: { name: g.name, minSelect: g.min, maxSelect: g.max, freeLimit: g.free ?? null, sequence: gi },
+            });
+            const options = [];
+            for (const [oi, o] of g.options.entries()) {
+                const m = await prisma.modifier.create({
+                    data: { groupId: group.id, name: o.name, price: o.price ?? 0, isDefault: o.isDefault ?? false, sequence: oi },
+                });
+                options.push({ id: m.id, name: o.name, price: o.price ?? 0, isDefault: o.isDefault ?? false });
+            }
+            fnbGroups.set(g.name, { id: group.id, def: g, options });
+        }
+        for (const it of items) {
+            for (const [si, gName] of (it.def.groups ?? []).entries()) {
+                await prisma.itemModifierGroup.create({ data: { itemId: it.id, groupId: fnbGroups.get(gName)!.id, sequence: si } });
+            }
+        }
+    }
+    /** A plausible pick for a dish: defaults / one option per required group, sometimes a paid extra. */
+    const pickModifiers = (def: DemoItemDef) => {
+        const picks: { modifierId: number; groupName: string; modifierName: string; price: number; quantity: number }[] = [];
+        for (const gName of def.groups ?? []) {
+            const g = fnbGroups.get(gName)!;
+            if (g.def.min > 0) {
+                const o = rnd() < 0.6 ? (g.options.find(x => x.isDefault) ?? g.options[0]) : g.options[randInt(rnd, 0, g.options.length - 1)];
+                picks.push({ modifierId: o.id, groupName: g.def.name, modifierName: o.name, price: o.price, quantity: 1 });
+            } else if (rnd() < 0.35) {
+                const o = g.options[randInt(rnd, 0, g.options.length - 1)];
+                const free = (g.def.free ?? 0) > 0;
+                picks.push({ modifierId: o.id, groupName: g.def.name, modifierName: o.name, price: free ? 0 : o.price, quantity: 1 });
+            }
+        }
+        return picks;
+    };
+
     // ── Trading history ──────────────────────────────────────────────────────
     const sellable = itemDefs
         .map((def, idx) => ({ ...items[idx], weight: def.weight }))
@@ -374,7 +442,7 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
 
         // Today is still in progress — only part of the day's sales exist yet, which is
         // what makes the dashboard's "today" tile look live rather than suspiciously round.
-        const base = isLaundry ? randInt(rnd, 8, 12) : randInt(rnd, 13, 18);
+        const base = isLaundry ? randInt(rnd, 8, 12) : isFnb ? randInt(rnd, 22, 30) : randInt(rnd, 13, 18);
         const dayCount = Math.max(1, Math.round(base * (isWeekend ? 1.25 : 1) * (isToday ? 0.55 : 1)));
 
         const session = await prisma.session.create({
@@ -427,7 +495,7 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
             const minute = randInt(rnd, 0, 59);
             const at = wibInstant(day, hour, minute);
 
-            const lineCount = isLaundry ? randInt(rnd, 1, 2) : randInt(rnd, 1, 4);
+            const lineCount = isLaundry ? randInt(rnd, 1, 2) : isFnb ? randInt(rnd, 1, 3) : randInt(rnd, 1, 4);
             const chosen: SeededItem[] = [];
             for (let l = 0; l < lineCount; l++) {
                 const pick = weightedPick(rnd, sellable as any) as any;
@@ -441,6 +509,7 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
             // Supply draw-down for this basket: one consumption line per supply, exactly
             // the shape POST /sales writes (quantity 1, price 0, stockConsumptionQty).
             const consumed = new Map<number, number>();
+            const fnbIngredientLines: any[] = [];
 
             for (const it of chosen) {
                 // Laundry lines follow the item's pricing mode, like sales_screen.dart:
@@ -449,8 +518,10 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                 const kg = mode === 'per_kg'
                     ? Number((it.def.kgRange![0] + rnd() * (it.def.kgRange![1] - it.def.kgRange![0])).toFixed(1))
                     : null;
-                const qty = mode ? 1 : randInt(rnd, 1, it.def.maxQty ?? 3);
-                const unitPrice = kg != null ? Math.round((it.def.price * kg) / 100) * 100 : it.def.price;
+                const qty = mode ? 1 : randInt(rnd, 1, isFnb ? 2 : it.def.maxQty ?? 3);
+                const mods = isFnb ? pickModifiers(it.def) : [];
+                const unitPrice = (kg != null ? Math.round((it.def.price * kg) / 100) * 100 : it.def.price)
+                    + mods.reduce((a, m) => a + m.price, 0);
                 const lineSubtotal = unitPrice * qty;
                 const lineCost = Math.round(it.def.cost * (kg ?? qty));
                 subtotal += lineSubtotal;
@@ -459,6 +530,19 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                 for (const r of it.def.recipe ?? []) {
                     const supply = items.find(i => i.def.code === r.supply)!;
                     const amount = r.basis === 'perKg' ? r.rate * (kg ?? 0) : r.rate * qty;
+                    if (isFnb) {
+                        // F&B: one ingredient line per dish (recipeOfItemId), as the P3 expansion writes.
+                        const used = Number(amount.toFixed(2));
+                        const c = Math.round(used * supply.def.cost);
+                        profit -= c;
+                        fnbIngredientLines.push({
+                            itemId: supply.id, itemName: supply.def.name, itemCode: supply.def.code, itemBrand: '',
+                            quantity: 1, cost: c, price: 0, priceBeforeTax: 0, profit: -c, subtotalAmount: 0,
+                            unitOfMeasure: supply.def.unitOfMeasure, stockConsumptionQty: used, stockReceiptId: supply.receiptId,
+                            recipeOfItemId: it.id, createdAt: at,
+                        });
+                        continue;
+                    }
                     consumed.set(supply.id, (consumed.get(supply.id) ?? 0) + amount);
                 }
 
@@ -492,8 +576,10 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                     itemStatus: isLaundry ? laundryStatus(back, rnd) : null,
                     stockReceiptId: it.receiptId,
                     createdAt: at,
+                    ...(mods.length ? { selectedModifiers: { create: mods.map(m => ({ ...m, createdAt: at })) } } : {}),
                 });
             }
+            lines.push(...fnbIngredientLines);
 
             for (const [supplyId, amount] of consumed) {
                 const supply = items.find(i => i.id === supplyId)!;
@@ -544,7 +630,7 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                 data: {
                     outletId,
                     businessDate: at,
-                    salesType: 'Walk-In',
+                    salesType: isFnb ? weightedPick(rnd, FNB_ORDER_TYPES).type : 'Walk-In',
                     customerId: withCustomer ? customerIds[customerIdx] : null,
                     customerName: withCustomer ? `${customer.firstName} ${customer.lastName}` : '',
                     phoneNumber: withCustomer ? customer.mobile : '',
@@ -564,6 +650,12 @@ async function seedTenantData(prisma: any, vertical: DemoVertical) {
                             orderRef: orderRef(rnd),
                             friendlyNumber: friendlyNumber(day, n + 1),
                             collectedAt,
+                        }
+                        : {}),
+                    ...(isFnb
+                        ? {
+                            queueNo: `A-${String(n + 1).padStart(3, '0')}`,
+                            customerLabel: withCustomer ? customer.firstName : null,
                         }
                         : {}),
                     salesItems: { create: lines },
@@ -857,7 +949,7 @@ function laundryStatus(daysBack: number, rnd: () => number): string {
  */
 export async function resetDemoTenants(): Promise<DemoSeedResult[]> {
     const results: DemoSeedResult[] = [];
-    for (const vertical of ['retail', 'laundry'] as DemoVertical[]) {
+    for (const vertical of ['retail', 'laundry', 'fnb'] as DemoVertical[]) {
         try {
             const r = await seedDemoTenant(vertical, { createIfMissing: false });
             results.push(r);
@@ -872,3 +964,79 @@ export async function resetDemoTenants(): Promise<DemoSeedResult[]> {
     }
     return results;
 }
+
+/**
+ * F&B demo's dine-in room (P4–P6): the floor, QR ordering on (per seating), and
+ * three bills open right now — one fresh, one cooking for a while, one late —
+ * so Pesanan and the kitchen screen have something to show.
+ */
+async function seedFnbFloorAndBills(prisma: any): Promise<void> {
+    const outlet = await prisma.outlet.findFirst({ where: { deleted: false }, orderBy: { id: 'asc' }, select: { id: true } });
+    const outletId: number = outlet.id;
+    const areaIds: number[] = [];
+    for (const [i, name] of FNB_FLOOR.areas.entries()) {
+        areaIds.push((await prisma.floorArea.create({ data: { outletId, name, sequence: i } })).id);
+    }
+    const tableIds = new Map<string, number>();
+    for (const [i, t] of FNB_FLOOR.tables.entries()) {
+        const row = await prisma.table.create({
+            data: {
+                outletId, areaId: areaIds[t.area], tableNumber: t.name, capacity: t.seats,
+                x: t.x, y: t.y, width: t.w, height: t.h, shape: t.shape, rotation: 0, sequence: i,
+            },
+        });
+        tableIds.set(t.name, row.id);
+    }
+    await prisma.qrOrderSetting.upsert({
+        where: { outletId },
+        create: { outletId, enabled: true, tableMode: 'dynamic' },
+        update: { enabled: true, tableMode: 'dynamic' },
+    });
+
+    const items = await prisma.item.findMany({ where: { deleted: false, itemType: { not: 'supply' } }, select: { id: true, itemName: true, price: true } });
+    const byName = new Map(items.map((i: any) => [i.itemName, i]));
+    const line = (name: string, qty: number, mods: { groupName: string; modifierName: string; price?: number }[] = [], note?: string) => {
+        const it: any = byName.get(name);
+        const extra = mods.reduce((a, m) => a + (m.price ?? 0), 0);
+        return {
+            lineRef: `demo-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`,
+            itemId: it.id, itemName: name, quantity: qty,
+            unitPrice: Number(it.price) + extra, basePrice: Number(it.price),
+            modifiers: mods.map(m => ({ ...m, price: m.price ?? 0, quantity: 1 })), note: note ?? null,
+        };
+    };
+    const bills = [
+        { table: '2', queue: 'A-101', label: 'Rina', minutes: 9, rounds: [[line('Kopi Sanger', 2, [{ groupName: 'Es / Panas', modifierName: 'Es' }, { groupName: 'Gula', modifierName: 'Kurang manis' }])]] },
+        { table: '5', queue: 'A-102', label: null, minutes: 34, rounds: [
+            [line('Es Kopi Susu Aren', 1, [{ groupName: 'Gula', modifierName: 'Normal' }, { groupName: 'Topping', modifierName: 'Boba', price: 0 }]), line('Roti Canai', 1, [], 'Kuah kari')],
+            [line('Mie Aceh Goreng', 1, [{ groupName: 'Level pedas', modifierName: 'Level 3' }, { groupName: 'Tambahan', modifierName: 'Telur', price: 4000 }], 'Tanpa daun bawang')],
+        ] },
+        { table: '6', queue: 'A-099', label: 'Keluarga Hasan', minutes: 58, rounds: [[line('Ayam Penyet', 4, [{ groupName: 'Level pedas', modifierName: 'Sedang' }]), line('Teh Tarik', 4, [{ groupName: 'Es / Panas', modifierName: 'Es' }, { groupName: 'Gula', modifierName: 'Normal' }])]] },
+    ];
+    for (const b of bills) {
+        const openedAt = new Date(Date.now() - b.minutes * 60_000);
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            const order = await tx.order.create({
+                data: {
+                    outletId, orderRef: `demo-bill-${b.queue}`, tableId: tableIds.get(b.table)!, salesType: 'Dine-In',
+                    label: b.label, queueNo: b.queue, guestCount: b.table === '6' ? 5 : 2, openedBy: 'Demo', siteId: 1,
+                    openedAt, createdAt: openedAt,
+                },
+            });
+            let current: any = order;
+            for (const [ri, r] of b.rounds.entries()) {
+                const round = await appendRound(tx, current, r as any, { username: 'Demo', siteId: 1 });
+                // Rounds land through the meal, not all at once: the bill and the
+                // kitchen screen read their times.
+                const at = new Date(openedAt.getTime() + ri * Math.round(b.minutes * 0.75) * 60_000 + 60_000);
+                await tx.orderLine.updateMany({ where: { orderId: order.id, round }, data: { createdAt: at } });
+                await tx.kitchenTicket.updateMany({ where: { orderRef: order.orderRef, round }, data: { createdAt: at } });
+                current = await tx.order.findUnique({ where: { id: order.id } });
+            }
+        });
+    }
+    // The late bill's first round is already cooking; the older bill's food is ready.
+    await prisma.kitchenTicket.updateMany({ where: { orderRef: 'demo-bill-A-099' }, data: { status: 'PREPARING' } });
+    await prisma.kitchenTicket.updateMany({ where: { orderRef: 'demo-bill-A-102', round: 1 }, data: { status: 'READY' } });
+}
+

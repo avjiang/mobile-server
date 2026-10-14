@@ -1,6 +1,7 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "../../prisma/client/generated/client"
 import { attachSalesItemModifiers } from "./sales-item-modifiers";
 import { writeSaleKitchenTickets } from "../kitchen/kitchen-tickets";
+import { expandRecipeLines, loadRecipesFor } from "../recipe/recipe.service";
 import {
     findPaidSaleIdByClientRef,
     findSaleIdByClientRef,
@@ -1774,6 +1775,37 @@ async function completeNewSales(
                 createdAt: true,
             };
 
+            // F&B recipes (D4): each sold dish / picked option with a recipe adds its
+            // ingredients as supply-consumption lines (price 0, like laundry supplies),
+            // so validation, the FIFO split, stock writes, COGS and void-restore all
+            // run unchanged. Laundry has no recipe rows → nothing is added.
+            const recipeRows = await loadRecipesFor(tx, salesBody.salesItems as any);
+            if (recipeRows.length > 0) {
+                const ingredientInfo = new Map(recipeRows.map((r) => [r.ingredientItemId, r.ingredient]));
+                for (const add of expandRecipeLines(salesBody.salesItems as any, recipeRows)) {
+                    const info = ingredientInfo.get(add.ingredientItemId);
+                    const synthetic: any = {
+                        itemId: add.ingredientItemId,
+                        itemVariantId: null,
+                        itemCode: info?.itemCode ?? '',
+                        itemName: info?.itemName ?? '',
+                        itemBrand: '',
+                        itemModel: '',
+                        quantity: new Decimal(add.quantity),
+                        cost: new Decimal(0),
+                        price: new Decimal(0),
+                        priceBeforeTax: new Decimal(0),
+                        profit: new Decimal(0),
+                        subtotalAmount: new Decimal(0),
+                        stockConsumptionQty: add.stockConsumptionQty,
+                        unitOfMeasure: info?.unitOfMeasure ?? undefined,
+                        recipeOfItemId: salesBody.salesItems[add.sourceIndex]?.itemId ?? null,
+                        __recipe: true,
+                    };
+                    salesBody.salesItems.push(synthetic);
+                }
+            }
+
             // Batch-load balances + receipts for every source (parallel), plus customer +
             // item flags. Typed loosely (delegates resolved dynamically per source).
             const [perSourceResults, customer, itemTrackStockData, outlet]: [Array<[any[], any[]]>, any, any[], any] = await Promise.all([
@@ -2099,6 +2131,7 @@ async function completeNewSales(
                         unitOfMeasure: item.unitOfMeasure || null,
                         loadWeightKg: item.loadWeightKg ?? null,
                         specialInstructions: item.specialInstructions || '',
+                        recipeOfItemId: (item as any).recipeOfItemId ?? null,
                         __order: item.__order,
                     });
                 } else {
@@ -2153,6 +2186,7 @@ async function completeNewSales(
                             unitOfMeasure: item.unitOfMeasure || null,
                             loadWeightKg: item.loadWeightKg ?? null,
                             specialInstructions: item.specialInstructions || '',
+                            recipeOfItemId: (item as any).recipeOfItemId ?? null,
                             stockReceiptId: receiptSource?.kind === 'OUTLET' ? receipt.id : null,
                             warehouseStockReceiptId: receiptSource?.kind === 'WAREHOUSE' ? receipt.id : null,
                             __order: item.__order,
@@ -2212,6 +2246,7 @@ async function completeNewSales(
                     unitOfMeasure: item.unitOfMeasure || null,
                     loadWeightKg: item.loadWeightKg ?? null,
                     specialInstructions: item.specialInstructions || '',
+                    recipeOfItemId: (item as any).recipeOfItemId ?? null,
                     __order: originalLineIndex.get(item) ?? 0,
                 });
             }

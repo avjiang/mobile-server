@@ -463,6 +463,9 @@ model Item {
   // modifiers that are themselves this stocked good (extra egg → the "Telur" item).
   itemModifierGroups      ItemModifierGroup[]
   modifierStockOf         Modifier[]
+  // F&B recipes (D4): this dish's ingredient lines, and the recipes this supply is in.
+  recipeLines             Recipe[]                 @relation("RecipeDish")
+  ingredientOf            Recipe[]                 @relation("RecipeIngredient")
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -842,6 +845,9 @@ model SalesItem {
   warehouseStockReceiptId Int?            @map("WAREHOUSE_STOCK_RECEIPT_ID")
   sales               Sales               @relation(fields: [salesId], references: [id])
   itemVariant         ItemVariant?        @relation(fields: [itemVariantId], references: [id])
+  // F&B: on an ingredient line the server added from a recipe (D4), the dish
+  // it was cooked for — food cost per menu in the report. Null otherwise.
+  recipeOfItemId      Int?                @map("RECIPE_OF_ITEM_ID")
   // F&B: the modifiers chosen on this line, snapshotted at sale time.
   selectedModifiers   SalesItemModifier[]
 
@@ -2330,6 +2336,7 @@ model Modifier {
   group              ModifierGroup       @relation(fields: [groupId], references: [id])
   item               Item?               @relation(fields: [itemId], references: [id])
   salesItemModifiers SalesItemModifier[]
+  recipeLines        Recipe[]
 
   @@index([groupId])
   @@index([updatedAt])
@@ -2407,4 +2414,34 @@ model KitchenTicket {
   @@index([salesId])
   @@index([updatedAt])
   @@map("kitchen_ticket")
+}
+
+// F&B recipe line (docs/modules/FNB.md, D4): one ingredient of a dish — or of a
+// modifier option ("extra telur" → 1 egg) when modifierId is set. Expanded on the
+// server at sale time into stock-consumption lines (quantity / batchYield per
+// unit sold, in the ingredient's stock unit). Ingredients are supply items.
+model Recipe {
+  id               Int       @id @default(autoincrement()) @map("ID")
+  // Exactly one of itemId (a dish's recipe) / modifierId (an option's recipe).
+  itemId           Int?      @map("ITEM_ID")
+  modifierId       Int?      @map("MODIFIER_ID")
+  ingredientItemId Int       @map("INGREDIENT_ITEM_ID")
+  quantity         Decimal   @map("QUANTITY") @db.Decimal(15, 4)
+  // A batch recipe ("1 pot of 20 portions"): the quantities make this many units.
+  batchYield       Decimal?  @map("BATCH_YIELD") @db.Decimal(15, 4)
+  sequence         Int       @default(0) @map("SEQUENCE")
+  deleted          Boolean   @default(false) @map("IS_DELETED")
+  deletedAt        DateTime? @map("DELETED_AT")
+  createdAt        DateTime  @default(now()) @map("CREATED_AT")
+  updatedAt        DateTime  @updatedAt @map("UPDATED_AT")
+  version          Int       @default(1) @map("VERSION")
+  item             Item?     @relation("RecipeDish", fields: [itemId], references: [id])
+  modifier         Modifier? @relation(fields: [modifierId], references: [id])
+  ingredient       Item      @relation("RecipeIngredient", fields: [ingredientItemId], references: [id])
+
+  @@index([itemId])
+  @@index([modifierId])
+  @@index([ingredientItemId])
+  @@index([updatedAt])
+  @@map("recipe")
 }

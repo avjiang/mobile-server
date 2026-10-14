@@ -33,7 +33,8 @@ export const groupByStation = (
 ): Map<number | null, TicketLine[]> => {
     const groups = new Map<number | null, TicketLine[]>()
     for (const l of lines) {
-        if (l.isLaundryComponent) continue
+        // Laundry supplies and F&B recipe ingredients are stock, not kitchen work.
+        if (l.isLaundryComponent || (l as any).__recipe) continue
         const station = stationOf(l.itemId)
         const list = groups.get(station) ?? []
         list.push({

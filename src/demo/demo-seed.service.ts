@@ -32,6 +32,7 @@ import {
 } from './demo-catalogue';
 import { Prisma } from '../../prisma/client/generated/client';
 import { appendRound } from '../order/order.service';
+import { newToken } from '../qr-order/qr-order.service';
 import subscriptionPackageService from '../subscription-package/subscription-package.service';
 
 const adminService = require('../admin/admin.service');
@@ -199,7 +200,15 @@ export async function seedDemoTenant(
     await wipeOwnedTables(prisma);
     // Identity first: sales record the owner's name as performedBy.
     if (vertical === 'laundry') await applyLaundryIdentity(prisma, tenant.id);
-    if (vertical === 'fnb') await prisma.company.updateMany({ data: { companyName: FNB_SHOP.companyName } });
+    if (vertical === 'fnb') {
+        // The shop name receipts, the till header and the QR order page show.
+        const outlet = await prisma.outlet.findFirst({ where: { deleted: false }, orderBy: { id: 'asc' }, select: { id: true } });
+        await applyTenantSettings(prisma, tenant.id, { company_name: FNB_SHOP.companyName }, null, outlet?.id ?? null);
+    }
+    // QR ordering points at <slug>.bayaryuk.net: give the café an address (once; never steal a taken slug).
+    if (vertical === 'fnb' && !tenant.slug && !(await globalPrisma.tenant.findFirst({ where: { slug: FNB_SHOP.slug } }))) {
+        await globalPrisma.tenant.update({ where: { id: tenant.id }, data: { slug: FNB_SHOP.slug } });
+    }
     const result = await seedTenantData(prisma, vertical);
     if (vertical === 'laundry') await seedLaundryPackages(prisma, databaseName);
     if (vertical === 'fnb') await seedFnbFloorAndBills(prisma);
@@ -779,14 +788,20 @@ async function applyLaundryIdentity(prisma: any, tenantId: number): Promise<void
         await globalPrisma.tenantOutlet.update({ where: { id: primaryTenantOutlet.id }, data: { outletName: LAUNDRY_SHOP.outletName } });
     }
 
-    for (const [key, value] of Object.entries(LAUNDRY_SHOP.settings)) {
+    await applyTenantSettings(prisma, tenantId, LAUNDRY_SHOP.settings, owner?.id ?? null, outletId);
+}
+
+/** Writes demo settings (company name, receipt lines …) by their global definition key. */
+async function applyTenantSettings(prisma: any, tenantId: number, settings: Record<string, string>, ownerId: number | null, outletId: number | null): Promise<void> {
+    const globalPrisma = getGlobalPrisma();
+    for (const [key, value] of Object.entries(settings)) {
         const def = await globalPrisma.settingDefinition.findFirst({ where: { key, deleted: false } });
         if (!def) continue;   // an older global DB without this key — nothing to set
         if (def.scope === 'OUTLET' && outletId === null) continue;   // no live outlet to scope it to
         const scope = {
             settingDefinitionId: def.id,
             tenantId: def.scope === 'TENANT' ? tenantId : null,
-            userId: def.scope === 'USER' ? owner?.id ?? null : null,
+            userId: def.scope === 'USER' ? ownerId : null,
             outletId: def.scope === 'OUTLET' ? outletId : null,
         };
         const existing = await prisma.setting.findFirst({ where: { ...scope, deleted: false } });
@@ -989,8 +1004,9 @@ async function seedFnbFloorAndBills(prisma: any): Promise<void> {
     }
     await prisma.qrOrderSetting.upsert({
         where: { outletId },
-        create: { outletId, enabled: true, tableMode: 'dynamic' },
-        update: { enabled: true, tableMode: 'dynamic' },
+        // The counter QR too (take-away with the diner's name): the demo shows the "QR masuk" inbox.
+        create: { outletId, enabled: true, tableMode: 'dynamic', counterEnabled: true, counterToken: newToken() },
+        update: { enabled: true, tableMode: 'dynamic', counterEnabled: true, counterToken: newToken() },
     });
 
     const items = await prisma.item.findMany({ where: { deleted: false, itemType: { not: 'supply' } }, select: { id: true, itemName: true, price: true } });

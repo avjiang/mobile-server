@@ -277,6 +277,8 @@ export const LOYALTY_TARGETS: [number, number, number][] = [
 
 export const FNB_SHOP = {
     companyName: 'Kedai Kopi Nanggroe',
+    /** The online address QR ordering points at (kedainanggroe.bayaryuk.net). */
+    slug: 'kedainanggroe',
 };
 
 /** Kitchen stations; categories route to them. */

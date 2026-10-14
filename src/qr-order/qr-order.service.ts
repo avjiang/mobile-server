@@ -184,6 +184,22 @@ const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/
 
 export interface QrShop { tenantId: number; name: string; slug: string; logoUrl: string | null; databaseName: string }
 
+/** The shop's name as its receipts print it (the `company_name` setting, Pengaturan › Toko):
+ *  diners see "Kedai Kopi Nanggroe", not the login name. Null when it was never set. */
+const receiptName = async (tenantId: number, databaseName: string): Promise<string | null> => {
+    try {
+        const def = await getGlobalPrisma().settingDefinition.findFirst({ where: { key: "company_name", deleted: false }, select: { id: true } })
+        if (!def) return null
+        const row = await getTenantPrisma(databaseName).setting.findFirst({
+            where: { settingDefinitionId: def.id, tenantId, deleted: false },
+            select: { value: true },
+        })
+        return row?.value?.trim() || null
+    } catch {
+        return null
+    }
+}
+
 /** slug → the shop (Pro only; the trial counts). Cached ~60 s: status polling would hit the global DB otherwise. */
 const shopCache = new Map<string, { shop: QrShop | null; at: number }>()
 export const resolveShop = async (slugRaw: string): Promise<QrShop> => {
@@ -207,7 +223,7 @@ export const resolveShop = async (slugRaw: string): Promise<QrShop> => {
         if (onPro) {
             shop = {
                 tenantId: tenant.id,
-                name: tenant.tenantName,
+                name: (await receiptName(tenant.id, tenant.databaseName)) || tenant.tenantName,
                 slug,
                 logoUrl: tenant.logoUrl?.startsWith("https://") ? tenant.logoUrl : null,
                 databaseName: tenant.databaseName,

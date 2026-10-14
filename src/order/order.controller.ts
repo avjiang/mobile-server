@@ -65,8 +65,14 @@ router.post("/settle", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRe
     const user = req.user
     const sales = req.body?.sales
     if (!sales) throw new RequestValidateError("sales is required")
+    // Paying a bill must be idempotent: a retry after a lost response returns the same sale.
     const clientRef = readClientRef(req.header("x-idempotency-key"))
-    service.settle(user.databaseName, outletOf(req), refOf(req), (tableId) => salesService.completeNewSales(
+    if (!clientRef) throw new RequestValidateError("x-idempotency-key is required")
+    // The sale belongs to the bill's outlet, whatever the body says.
+    const outletId = outletOf(req)
+    sales.outletId = outletId
+    const rounds = Number.isInteger(req.body?.rounds) ? Number(req.body.rounds) : null
+    service.settle(user.databaseName, outletId, refOf(req), (tableId) => salesService.completeNewSales(
         user.databaseName,
         user.tenantId,
         { userId: user.userId, username: user.username, loyaltyTier: user.loyaltyTier, permissions: user.permissions, planName: user.planName },
@@ -74,7 +80,7 @@ router.post("/settle", requirePermission(PERMISSION.PROCESS_SALES), (req: AuthRe
         req.body?.payments ?? [],
         clientRef,
         { skipKitchenTickets: true, tableId },
-    ) as Promise<{ id: number }>)
+    ) as Promise<{ id: number }>, rounds)
         .then((r) => sendResponse(res, r))
         .catch(next)
 })

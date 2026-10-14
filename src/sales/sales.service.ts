@@ -1782,6 +1782,9 @@ async function completeNewSales(
             // ingredients as supply-consumption lines (price 0, like laundry supplies),
             // so validation, the FIFO split, stock writes, COGS and void-restore all
             // run unchanged. Laundry has no recipe rows → nothing is added.
+            // Idempotent if the same body is processed twice: drop lines a previous
+            // pass added before expanding again.
+            salesBody.salesItems = (salesBody.salesItems as any[]).filter((l: any) => !l?.__recipe) as any;
             const recipeRows = await loadRecipesFor(tx, salesBody.salesItems as any);
             if (recipeRows.length > 0) {
                 const ingredientInfo = new Map(recipeRows.map((r) => [r.ingredientItemId, r.ingredient]));

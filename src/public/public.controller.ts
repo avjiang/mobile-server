@@ -5,7 +5,7 @@ import { getPublicCatalogue, CataloguePausedError } from "./public.service";
 import { renderCataloguePage, renderNotFoundPage, renderPausedPage } from "./catalogue-page";
 import { renderQrInvalidPage, renderQrOrderPage } from "./qr-order-page";
 import { getTenantPrisma } from "../db";
-import { loadMenu, resolveShop, resolveToken, status as qrStatus, submit as qrSubmit } from "../qr-order/qr-order.service";
+import { loadMenu, resolveShop, resolveToken, status as qrStatus, submit as qrSubmit, TOKEN_RE } from "../qr-order/qr-order.service";
 
 /**
  * PUBLIC (tokenless) routes — MUST be mounted ABOVE authorizeMiddleware in index.ts.
@@ -175,6 +175,8 @@ const submitQrOrder = (req: Request, res: Response, next: NextFunction) => {
   noStore(res);
   const ip = req.ip || "unknown";
   const token = String(req.body?.token || "");
+  // Never key the limiter on arbitrary input.
+  if (!TOKEN_RE.test(token)) return res.status(404).json({ success: false, error: { errorMessage: "QR tidak berlaku" } });
   if (qrLimited(`submit:${token}`, 6) || qrLimited(`submit-ip:${ip}`, 40)) {
     return res.status(429).json({ success: false, error: { errorMessage: "Terlalu banyak pesanan — tunggu sebentar" } });
   }

@@ -25,6 +25,7 @@ export const DYNAMIC_TTL_MS = 6 * 3600_000
 const MAX_LINES = 30
 const MAX_QTY = 50
 const MAX_ORDER_VALUE = 10_000_000
+const MAX_PENDING = 40
 
 export const newToken = () => Array.from({ length: 10 }, () => ALPHA[randomInt(ALPHA.length)]).join("")
 
@@ -462,6 +463,9 @@ export const submit = async (shop: QrShop, token: string, body: any): Promise<Qr
         return { orderRef: ctx.order!.orderRef, round, status: "ACCEPTED" }
     }
 
+    // A flood guard: past this many orders waiting at one outlet, send diners to the counter.
+    const waiting = await prisma.order.count({ where: { outletId: ctx.outletId, status: "PENDING_ACCEPT" } })
+    if (waiting >= MAX_PENDING) throw new BusinessLogicError("Many orders are waiting — please order at the counter")
     const orderRef = randomUUID()
     await prisma.$transaction(async (tx) => {
         const order = await tx.order.create({
@@ -512,7 +516,8 @@ const RANK = ["NEW", "PREPARING", "READY", "SERVED"]
 export const status = async (shop: QrShop, orderRef: string, roundRaw: unknown) => {
     const prisma = getTenantPrisma(shop.databaseName)
     let order = await prisma.order.findUnique({ where: { orderRef }, include: withLines })
-    if (!order) throw new NotFoundError("Order")
+    // Only QR orders and bills a QR was issued for are readable here.
+    if (!order || (order.source !== "qr" && !order.qrToken)) throw new NotFoundError("Order")
     let round = Number(roundRaw) || 1
     if (order.status === "PENDING_ACCEPT" || order.status === "ACCEPTING") return { status: "PENDING" as DinerStatus, rounds: [], billTotal: 0 }
     if (order.status === "REJECTED") return { status: "REJECTED" as DinerStatus, reason: order.rejectReason, rounds: [], billTotal: 0 }

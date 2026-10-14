@@ -79,7 +79,11 @@ let stockAdjustment = (req: NetworkRequest<StockAdjustmentRequestBody>, res: Res
             throw new ForbiddenError("Stock adjustment outlet mismatch");
         }
     });
-    service.stockAdjustment(req.user.databaseName, requestBody.stockAdjustments)
+    service.stockAdjustment(req.user.databaseName, requestBody.stockAdjustments, {
+        tenantId: req.user.tenantId,
+        userId: req.user.userId,
+        username: req.user.username,
+    })
         .then((adjustedRecordCount: number) => {
             var message = `Successfully adjusted ${adjustedRecordCount} stocks`
             if (adjustedRecordCount === 1) {

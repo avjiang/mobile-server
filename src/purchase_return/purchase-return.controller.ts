@@ -127,7 +127,11 @@ let createMany = (req: NetworkRequest<CreatePurchaseReturnRequestBody>, res: Res
     // allowedOutletIds resolves from user_outlet / the primary outlet). Document
     // numbers are assigned by the service — any client-sent number is ignored.
     assertOutletsAllowed(req, (requestBody.purchaseReturns ?? []).map((pr: PurchaseReturnInput) => pr.outletId))
-        .then(() => service.createMany(user.databaseName, requestBody))
+        .then(() => service.createMany(user.databaseName, requestBody, {
+            tenantId: user.tenantId,
+            userId: user.userId,
+            username: user.username,
+        }))
         .then((response) => {
             sendResponse(res, response)
         })

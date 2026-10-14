@@ -138,7 +138,11 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
     }
     const outletId = requireOutletHeader(req, deliveryOrder.outletId);
 
-    service.update(deliveryOrder, req.user.databaseName, outletId)
+    service.update(deliveryOrder, req.user.databaseName, outletId, {
+        tenantId: req.user.tenantId,
+        userId: req.user.userId,
+        username: req.user.username,
+    })
         .then((updatedDeliveryOrder: any) => sendResponse(res, updatedDeliveryOrder))
         .catch(next)
 }

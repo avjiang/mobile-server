@@ -117,6 +117,7 @@ let getByDateRange = async (databaseName: string, request: { skip?: number, take
                     select: {
                         id: true,
                         purchaseOrderNumber: true,
+                        supplierReference: true,
                         purchaseOrderDate: true,
                         status: true,
                         totalAmount: true,
@@ -338,6 +339,7 @@ let getSettlements = async (databaseName: string, request: SettlementSyncRequest
                     select: {
                         id: true,
                         purchaseOrderNumber: true,
+                        supplierReference: true,
                         purchaseOrderDate: true,
                         status: true,
                         totalAmount: true,
@@ -491,6 +493,7 @@ let getSettlementById = async (id: number, databaseName: string) => {
                             select: {
                                 id: true,
                                 purchaseOrderNumber: true,
+                                supplierReference: true,
                                 purchaseOrderDate: true,
                                 status: true,
                                 totalAmount: true,
@@ -532,6 +535,7 @@ let getSettlementById = async (id: number, databaseName: string) => {
                             select: {
                                 id: true,
                                 trackingNumber: true,
+                                supplierReference: true,
                                 deliveryDate: true,
                                 status: true,
                                 supplierId: true,
@@ -739,6 +743,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
             select: {
                 id: true,
                 invoiceNumber: true,
+                supplierReference: true,
                 outletId: true,
                 totalAmount: true,
                 downPaymentApplied: true,
@@ -998,6 +1003,7 @@ let createSettlement = async (databaseName: string, requestBody: CreateInvoiceSe
                             select: {
                                 id: true,
                                 invoiceNumber: true,
+                                supplierReference: true,
                                 totalAmount: true,
                                 discountAmount: true,
                                 discountType: true,

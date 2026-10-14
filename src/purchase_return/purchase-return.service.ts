@@ -4,6 +4,8 @@ import { ErrorCode, ErrorEntity, NotFoundError, RequestValidateError } from "../
 import { getTenantPrisma } from '../db';
 import { CancelPurchaseReturnInput, CreatePurchaseReturnRequestBody, PurchaseReturnInput, PurchaseReturnSyncRequest } from "./purchase-return.request";
 import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
+import { pushAlertRow, sendStockAlertsByOutlet, StockAlertActor, StockAlertRow } from "../stock/stock-alerts";
+import { mergeReturnLines } from "./return-lines";
 
 const VALID_RETURN_REASONS = ['DEFECT', 'SPOILT', 'BROKEN', 'WRONG_ITEM', 'OTHER'];
 
@@ -109,6 +111,7 @@ let getAll = async (
                         select: {
                             id: true,
                             invoiceNumber: true,
+                            supplierReference: true,
                             totalAmount: true,
                             invoiceDate: true
                         }
@@ -187,13 +190,15 @@ let getById = async (id: number, databaseName: string, outletId?: number) => {
                     select: {
                         id: true,
                         invoiceNumber: true,
+                        supplierReference: true,
                         taxInvoiceNumber: true,
                         totalAmount: true,
                         invoiceDate: true,
                         purchaseOrder: {
                             select: {
                                 id: true,
-                                purchaseOrderNumber: true
+                                purchaseOrderNumber: true,
+                                supplierReference: true
                             }
                         }
                     }
@@ -301,6 +306,7 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                         select: {
                             id: true,
                             invoiceNumber: true,
+                            supplierReference: true,
                             totalAmount: true,
                             invoiceDate: true
                         }
@@ -376,8 +382,15 @@ let getByInvoiceId = async (invoiceId: number, databaseName: string) => {
     }
 }
 
-let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnRequestBody): Promise<PurchaseReturn[]> => {
+/**
+ * `actor` = the requesting user (JWT). Returned stock that takes an outlet across
+ * its reorder level or to zero sends the low / out-of-stock alert
+ * (stock-alerts.ts, source 'purchase_return') after commit; without `actor`
+ * none is sent.
+ */
+let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnRequestBody, actor?: StockAlertActor): Promise<PurchaseReturn[]> => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const alertRowsByOutlet = new Map<number, StockAlertRow[]>();
     try {
         const { purchaseReturns } = requestBody;
 
@@ -544,14 +557,17 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
                     });
 
                     // Handle stock operations - reduce stock and get receipt mappings
+                    const alertRows: StockAlertRow[] = [];
                     const stockReceiptIdMap = await reduceStockBalancesAndCreateMovements(
                         tx,
                         purchaseReturnData.purchaseReturnItems,
                         newPurchaseReturn,
                         purchaseReturnData.invoiceId,
                         purchaseReturnData.performedBy || "SYSTEM",
-                        purchaseReturnData.siteId ?? null
+                        purchaseReturnData.siteId ?? null,
+                        alertRows
                     );
+                    for (const row of alertRows) pushAlertRow(alertRowsByOutlet, newPurchaseReturn.outletId, row);
 
                     // Fetch created items and update them with stockReceiptId
                     purchaseReturnItems = await tx.purchaseReturnItem.findMany({
@@ -581,6 +597,9 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseReturnR
             return createdPurchaseReturns;
         });
 
+        // Low / out-of-stock alerts (fire-and-forget, after commit).
+        sendStockAlertsByOutlet(alertRowsByOutlet, actor, 'purchase_return');
+
         return result as PurchaseReturn[];
     }
     catch (error) {
@@ -608,6 +627,7 @@ const validateReturnQuantities = async (
         select: {
             id: true,
             invoiceNumber: true,
+            supplierReference: true,
             invoiceItems: {
                 where: { deleted: false },
                 select: {
@@ -642,17 +662,25 @@ const validateReturnQuantities = async (
     invoices.forEach(inv => invoiceMap.set(inv.id, inv));
 
     // For each invoice, build a map of (itemId-variantId) -> { invoiceQty, alreadyReturnedQty }
-    const invoiceItemQuantityMap = new Map<number, Map<string, { invoiceQty: Decimal; alreadyReturned: Decimal; invoiceNumber: string }>>();
+    type ReturnableQty = { invoiceQty: Decimal; alreadyReturned: Decimal; inThisRequest: Decimal; invoiceNumber: string };
+    const invoiceItemQuantityMap = new Map<number, Map<string, ReturnableQty>>();
 
     for (const invoice of invoices) {
-        const itemMap = new Map<string, { invoiceQty: Decimal; alreadyReturned: Decimal; invoiceNumber: string }>();
+        const itemMap = new Map<string, ReturnableQty>();
 
         // Initialize with invoice item quantities
         for (const item of invoice.invoiceItems) {
             const key = `${item.itemId}-${item.itemVariantId || 'null'}`;
+            // An item invoiced on two lines can be returned up to both together.
+            const invoiced = itemMap.get(key);
+            if (invoiced) {
+                invoiced.invoiceQty = invoiced.invoiceQty.plus(new Decimal(item.quantity));
+                continue;
+            }
             itemMap.set(key, {
                 invoiceQty: new Decimal(item.quantity),
                 alreadyReturned: new Decimal(0),
+                inThisRequest: new Decimal(0),
                 invoiceNumber: invoice.invoiceNumber
             });
         }
@@ -708,7 +736,10 @@ const validateReturnQuantities = async (
             }
 
             const requestedQty = new Decimal(item.quantity);
-            const availableQty = itemData.invoiceQty.minus(itemData.alreadyReturned);
+            const availableQty = itemData.invoiceQty.minus(itemData.alreadyReturned).minus(itemData.inThisRequest);
+            // Earlier lines of this request (the same item listed twice, or two
+            // returns against one invoice) count against what is left.
+            itemData.inThisRequest = itemData.inThisRequest.plus(requestedQty);
 
             if (requestedQty.gt(availableQty)) {
                 validationErrors.push({
@@ -743,14 +774,18 @@ const validateReturnQuantities = async (
 // Returns a map of item key -> stockReceiptId for tracking
 const reduceStockBalancesAndCreateMovements = async (
     tx: Prisma.TransactionClient,
-    items: any[],
+    lines: any[],
     purchaseReturn: any,
     invoiceId: number,
     performedBy: string,
-    siteId: number | null = null
+    siteId: number | null = null,
+    alertRows?: StockAlertRow[]
 ): Promise<Map<string, number>> => {
     const movementOperations = [];
     const stockReceiptIdMap = new Map<string, number>(); // itemId-itemVariantId -> stockReceiptId
+    // One line per item: two lines of the same item, each checked against the
+    // same balance read, could pass separately and take stock below zero.
+    const items = mergeReturnLines(lines);
 
     // Get delivery orders linked to this invoice
     const deliveryOrders = await tx.deliveryOrder.findMany({
@@ -876,6 +911,20 @@ const reduceStockBalancesAndCreateMovements = async (
                 }
             });
 
+            if (alertRows) {
+                const info: any = itemInfoMap.get(item.itemId);
+                alertRows.push({
+                    itemId: item.itemId,
+                    itemVariantId: item.itemVariantId || null,
+                    itemName: info?.itemName ?? '',
+                    itemCode: info?.itemCode ?? null,
+                    previousAvailable: previousAvailableQuantity,
+                    newAvailable: previousAvailableQuantity.sub(returnQuantity),
+                    reorderThreshold: currentBalance.reorderThreshold == null ? null : new Decimal(currentBalance.reorderThreshold),
+                    quantity: returnQuantity,
+                });
+            }
+
             // Prepare movement operation with negative delta
             movementOperations.push({
                 itemId: item.itemId,
@@ -947,12 +996,16 @@ const reduceStockBalancesAndCreateMovements = async (
 // Helper function to reverse stock operations when purchase return is cancelled
 const reverseStockOperationsForCancellation = async (
     tx: Prisma.TransactionClient,
-    items: any[],
+    lines: any[],
     purchaseReturn: any,
     performedBy: string,
     siteId: number | null = null
 ) => {
     const movementOperations = [];
+    // One line per item and receipt, as the return took it (see the return path):
+    // restoring a shared receipt line by line read its size once and lost all
+    // but the last line.
+    const items = mergeReturnLines(lines);
 
     // Get all current stock balances in one query (supports variants)
     const currentStockBalances = await tx.stockBalance.findMany({
@@ -1178,7 +1231,8 @@ let update = async (purchaseReturn: PurchaseReturnInput, databaseName: string, o
                     invoice: {
                         select: {
                             id: true,
-                            invoiceNumber: true
+                            invoiceNumber: true,
+                            supplierReference: true
                         }
                     },
                     supplier: {
@@ -1370,7 +1424,8 @@ let cancel = async (id: number, cancelData: CancelPurchaseReturnInput, databaseN
                     invoice: {
                         select: {
                             id: true,
-                            invoiceNumber: true
+                            invoiceNumber: true,
+                            supplierReference: true
                         }
                     },
                     supplier: {

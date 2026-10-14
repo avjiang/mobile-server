@@ -6,6 +6,7 @@ import { StockAdjustment, StockAdjustmentRequestBody } from "./stock-balance.req
 import { getTenantPrisma } from '../../db';
 import { } from '../../db';
 import { SyncRequest } from "src/item/item.request";
+import { pushAlertRow, sendStockAlertsByOutlet, StockAlertActor, StockAlertRow } from '../stock-alerts';
 
 // stock function
 let getAllStock = async (
@@ -162,9 +163,16 @@ let getStockByItemId = async (databaseName: string, itemId: number, outletId: nu
     }
 }
 
-async function stockAdjustment(databaseName: string, stockAdjustments: StockAdjustment[]): Promise<number> {
+/**
+ * `actor` = the requesting user (JWT, never the body's `performedBy`). An
+ * adjustment that LOWERS an outlet's stock across its reorder level or to zero
+ * sends the low / out-of-stock alert (stock-alerts.ts, source
+ * 'stock_adjustment') after commit; without `actor` (scripts) none is sent.
+ */
+async function stockAdjustment(databaseName: string, stockAdjustments: StockAdjustment[], actor?: StockAlertActor): Promise<number> {
     const tenantPrisma = getTenantPrisma(databaseName);
     let adjustedCount = 0;
+    const alertRowsByOutlet = new Map<number, StockAlertRow[]>();
     // Wastage auto-expense (Phase 5): negative adjustQuantity write-offs accrue
     // the FIFO cost removed here, then post a Class-C "Wastage" expense AFTER the
     // stock transaction commits. Override recounts are excluded (not waste). See
@@ -200,7 +208,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
             const itemIds = [...new Set(stockAdjustments.map(adj => adj.itemId))];
             const items = await tx.item.findMany({
                 where: { id: { in: itemIds }, deleted: false },
-                select: { id: true, hasVariants: true, itemName: true }
+                select: { id: true, hasVariants: true, itemName: true, itemCode: true }
             });
             const itemMap = new Map(items.map(item => [item.id, item]));
 
@@ -238,7 +246,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     })),
                     deleted: false
                 },
-                select: { id: true, itemId: true, outletId: true, itemVariantId: true, availableQuantity: true, onHandQuantity: true, version: true }
+                select: { id: true, itemId: true, outletId: true, itemVariantId: true, availableQuantity: true, onHandQuantity: true, version: true, reorderThreshold: true }
             });
 
             // Create a map for quick lookup using composite key (with variant support)
@@ -268,7 +276,7 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                         version: 1,
                         deleted: false,
                     },
-                    select: { id: true, itemId: true, outletId: true, itemVariantId: true, availableQuantity: true, onHandQuantity: true, version: true }
+                    select: { id: true, itemId: true, outletId: true, itemVariantId: true, availableQuantity: true, onHandQuantity: true, version: true, reorderThreshold: true }
                 });
                 stockBalanceMap.set(stockKey, created);
             }
@@ -356,6 +364,21 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     newAvailableQuantity = stock.availableQuantity.add(adjustValue);
                     newOnHandQuantity = stock.onHandQuantity.add(adjustValue);
                     deltaQuantity = adjustValue;
+                }
+
+                // Only a LOWER quantity can cross the reorder level / zero.
+                if (newAvailableQuantity.lessThan(previousAvailableQuantity)) {
+                    const info = itemMap.get(adjustment.itemId);
+                    pushAlertRow(alertRowsByOutlet, adjustment.outletId, {
+                        itemId: adjustment.itemId,
+                        itemVariantId: adjustment.itemVariantId || null,
+                        itemName: info?.itemName ?? '',
+                        itemCode: info?.itemCode ?? null,
+                        previousAvailable: new Decimal(previousAvailableQuantity),
+                        newAvailable: newAvailableQuantity,
+                        reorderThreshold: stock.reorderThreshold === null ? null : new Decimal(stock.reorderThreshold),
+                        quantity: new Decimal(previousAvailableQuantity).sub(newAvailableQuantity),
+                    });
                 }
 
                 // Prepare stock movement (with variant support)
@@ -536,6 +559,9 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
         // commits, so a failed adjustment never leaves an orphan expense).
         await postWastageExpenses(tenantPrisma, wastageEntries);
 
+        // Low / out-of-stock alerts (fire-and-forget, after commit).
+        sendStockAlertsByOutlet(alertRowsByOutlet, actor, 'stock_adjustment');
+
         return adjustedCount;
     } catch (error) {
         throw error;
@@ -587,6 +613,9 @@ async function postWastageExpenses(
     }
 }
 
+// Deliberately sends NO low / out-of-stock alert (stock-alerts.ts): a clearance
+// is the owner's explicit write-to-zero to retire an item's stock, not stock
+// running out, so pushing "out of stock" to the outlet would be noise.
 async function clearStock(databaseName: string, stockClearance: StockAdjustment): Promise<number> {
     const tenantPrisma = getTenantPrisma(databaseName);
 

@@ -15,13 +15,8 @@ import { getEffectivePermissions } from '../auth/permission-cache';
 import { SyncRequest } from "src/item/item.request";
 import PushyService from '../pushy/pushy.service';
 import { randomUUID } from 'crypto';
-import {
-    NotificationMessages,
-    formatOutOfStockMessage,
-    formatLowStockMessage,
-    getOutOfStockTitle,
-    getLowStockTitle
-} from '../pushy/notification-messages';
+import { NotificationMessages } from '../pushy/notification-messages';
+import { sendStockAlerts, StockAlertRow } from '../stock/stock-alerts';
 import loyaltyService from '../loyalty/loyalty.service';
 import voucherService from '../voucher/voucher.service';
 import { netSaleProfit } from './sale-profit';
@@ -548,37 +543,6 @@ async function sendSalesNotification(
     ).catch(error => {
         // Log error but don't fail the sale transaction
         console.error('Failed to send sales notification:', error);
-    });
-}
-
-// Helper function to send inventory notifications (non-blocking)
-async function sendInventoryNotification(
-    tenantId: number,
-    outletId: number,
-    title: string,
-    message: string,
-    data: any
-): Promise<void> {
-    const notificationPayload = {
-        title,
-        message,
-        data: {
-            notificationId: randomUUID(),
-            type: 'INVENTORY',
-            tenantId,
-            timestamp: new Date().toISOString(),
-            ...data
-        }
-    };
-
-    // Fire and forget - don't wait for notification to complete
-    PushyService.sendToTopic(
-        `tenant_${tenantId}_outlet_${outletId}_inventory`,
-        notificationPayload,
-        tenantId
-    ).catch(error => {
-        // Log error but don't fail the transaction
-        console.error('Failed to send inventory notification:', error);
     });
 }
 
@@ -1729,7 +1693,7 @@ async function completeNewSales(
     );
 
     // Store stock updates outside transaction for notification use
-    let stockUpdatesForNotification: any[] = [];
+    let stockUpdatesForNotification: StockAlertRow[] = [];
     // Loyalty follow-ups fire AFTER commit — scheduling them inside the tx
     // callback runs them pre-commit (stale totalSpend can miss a threshold
     // upgrade) and loses them if the process dies before commit.
@@ -2432,7 +2396,7 @@ async function completeNewSales(
             // candidates (outlet only drives low/out-of-stock alerts in v1).
             const balanceOps: Promise<any>[] = [];
             const movementOps: Promise<any>[] = [];
-            const stockUpdatesForNotif: any[] = [];
+            const stockUpdatesForNotif: StockAlertRow[] = [];
             for (const src of sources) {
                 const movementData: any[] = [];
                 for (const [lookupKey, consumedQty] of src.consumedByItem) {
@@ -2442,9 +2406,6 @@ async function completeNewSales(
                     const prev = balance ? new Decimal(balance.availableQuantity) : new Decimal(0);
                     const newAvail = prev.minus(consumedQty);
                     const reorderThreshold = balance?.reorderThreshold ? new Decimal(balance.reorderThreshold) : null;
-                    const needsReorder = reorderThreshold
-                        ? newAvail.lte(reorderThreshold) && prev.gt(reorderThreshold)
-                        : false;
 
                     if (balance) {
                         balanceOps.push(
@@ -2497,6 +2458,9 @@ async function completeNewSales(
                     });
 
                     if (src.kind === 'OUTLET') {
+                        // Low / out-of-stock alert candidate; the crossing rule
+                        // (stock/stock-alerts.ts) decides after commit — a supply
+                        // already in the negative never pushes again on every wash.
                         stockUpdatesForNotif.push({
                             itemId: item.itemId,
                             itemVariantId: item.itemVariantId || null,
@@ -2505,12 +2469,8 @@ async function completeNewSales(
                             variantName: item.variantName || null,
                             quantity: consumedQty,
                             previousAvailable: prev,
-                            newAvailableQuantity: newAvail,
-                            reorderThreshold: reorderThreshold?.toNumber(),
-                            // Only when stock CROSSES to ≤ 0 — a supply already in the
-                            // negative must not push "out of stock" on every wash.
-                            willBeOutOfStock: prev.gt(0) && newAvail.lte(0),
-                            needsReorder,
+                            newAvailable: newAvail,
+                            reorderThreshold,
                         });
                     }
                 }
@@ -2545,11 +2505,19 @@ async function completeNewSales(
             });
         }
 
-        // Prepare all notifications
-        const outOfStockItems = stockUpdatesForNotification.filter((u: any) => u.willBeOutOfStock);
-        const lowStockItems = stockUpdatesForNotification.filter((u: any) => u.needsReorder && !u.willBeOutOfStock);
+        // Low / out-of-stock alerts — the shared crossing rule and payloads
+        // (stock/stock-alerts.ts); fire-and-forget, never blocks the response.
+        sendStockAlerts({
+            tenantId,
+            outletId: salesBody.outletId,
+            rows: stockUpdatesForNotification,
+            triggeringUserId: performedBy.userId,
+            triggeringUsername: performedBy.username,
+            source: 'sale',
+            salesId: result.id,
+        });
 
-        // Send all notifications in parallel (fire-and-forget, don't block response)
+        // Send the sale notification (fire-and-forget, don't block response)
         Promise.all([
             // Sales notification
             sendSalesNotification(
@@ -2572,64 +2540,7 @@ async function completeNewSales(
                     triggeringUsername: performedBy.username,
                     timestamp: new Date().toISOString()
                 }
-            ),
-
-            // Out-of-stock notification (if needed)
-            ...(outOfStockItems.length > 0 ? [
-                sendInventoryNotification(
-                    tenantId,
-                    salesBody.outletId,
-                    getOutOfStockTitle(outOfStockItems.length),
-                    formatOutOfStockMessage(outOfStockItems),
-                    {
-                        type: 'out_of_stock',
-                        priority: 'high',
-                        count: outOfStockItems.length,
-                        items: outOfStockItems.map((item: any) => ({
-                            itemId: item.itemId,
-                            itemName: item.itemName,
-                            itemCode: item.itemCode,
-                            previousStock: item.previousAvailable.toNumber(),
-                            currentStock: 0,
-                            soldQuantity: item.quantity.toNumber()
-                        })),
-                        outletId: salesBody.outletId,
-                        salesId: result.id,
-                        triggeringUserId: performedBy.userId,
-                        triggeringUsername: performedBy.username,
-                        timestamp: new Date().toISOString()
-                    }
-                )
-            ] : []),
-
-            // Low-stock notification (if needed)
-            ...(lowStockItems.length > 0 ? [
-                sendInventoryNotification(
-                    tenantId,
-                    salesBody.outletId,
-                    getLowStockTitle(lowStockItems.length),
-                    formatLowStockMessage(lowStockItems),
-                    {
-                        type: 'low_stock',
-                        priority: 'normal',
-                        count: lowStockItems.length,
-                        items: lowStockItems.map((item: any) => ({
-                            itemId: item.itemId,
-                            itemName: item.itemName,
-                            itemCode: item.itemCode,
-                            previousStock: item.previousAvailable.toNumber(),
-                            currentStock: item.newAvailableQuantity.toNumber(),
-                            reorderThreshold: item.reorderThreshold,
-                            soldQuantity: item.quantity.toNumber()
-                        })),
-                        outletId: salesBody.outletId,
-                        salesId: result.id,
-                        triggeringUserId: performedBy.userId,
-                        triggeringUsername: performedBy.username,
-                        timestamp: new Date().toISOString()
-                    }
-                )
-            ] : [])
+            )
         ]).catch(error => {
             // Log notification errors but don't fail the response
             console.error('Failed to send notifications:', error);
@@ -3431,7 +3342,7 @@ let voidSales = async (
                 new Decimal(result.totalAmount).toFixed(0)
             ),
             {
-                type: 'sale_voided',
+                type: 'sales_voided', // the app's PushyTopicType name
                 salesId: result.id,
                 amount: new Decimal(result.totalAmount).toNumber(),
                 customerName: result.customerName || 'Walk-in Customer',
@@ -3588,7 +3499,7 @@ let returnSales = async (
                 new Decimal(result.totalAmount).toFixed(0)
             ),
             {
-                type: 'sale_returned',
+                type: 'sales_returned', // the app's PushyTopicType name
                 salesId: result.id,
                 amount: new Decimal(result.totalAmount).toNumber(),
                 customerName: result.customerName || 'Walk-in Customer',
@@ -3744,7 +3655,7 @@ let refundSales = async (
                 new Decimal(result.totalAmount).toFixed(0)
             ),
             {
-                type: 'sale_refunded',
+                type: 'sales_refunded', // the app's PushyTopicType name
                 salesId: result.id,
                 amount: new Decimal(result.totalAmount).toNumber(),
                 customerName: result.customerName || 'Walk-in Customer',
@@ -4011,10 +3922,12 @@ let confirmDeliveryBatch = async (
         });
 
         // Send delivery notification (non-blocking). All sales were filtered
-        // by the requesting outlet, so we route the topic by that outlet.
+        // by the requesting outlet, so we route the topic by that outlet. It goes
+        // to the outlet's SALES topic: no permission ever produced a `_delivery`
+        // topic, so nobody received it (fixed 2026-10-14).
         if (outletId) {
             PushyService.sendToTopic(
-                `tenant_${tenantId}_outlet_${outletId}_delivery`,
+                `tenant_${tenantId}_outlet_${outletId}_sales`,
                 {
                     title: NotificationMessages.delivery.deliveriesConfirmed.title,
                     message: NotificationMessages.delivery.deliveriesConfirmed.message(salesIds.length),

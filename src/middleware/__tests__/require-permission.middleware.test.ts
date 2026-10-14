@@ -12,7 +12,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { requirePermission } from "../require-permission.middleware";
+import { requirePermission, requireAnyPermission } from "../require-permission.middleware";
 import { AuthenticationError } from "../../api-helpers/error";
 
 // ── Fakes ────────────────────────────────────────────────────────────────
@@ -177,5 +177,68 @@ describe("requirePermission (live-resolve)", () => {
             assert.ok(calls[0] instanceof AuthenticationError);
             assert.equal(calls[0].statusCode, 403);
         });
+    });
+});
+
+// ── requireAnyPermission ───────────────────────────────────────────────────
+
+describe("requireAnyPermission", () => {
+    const ANY = ["View Loyalty Accounts", "Receive Loyalty Notification"];
+
+    test("passes with the first permission only", async () => {
+        const mw = requireAnyPermission(ANY, resolverReturning(["View Loyalty Accounts"]).resolve);
+        const { next, calls } = fakeNext();
+        await mw(fakeReq([]), {} as any, next);
+        assert.equal(calls[0], undefined);
+    });
+
+    test("passes with the second permission only", async () => {
+        const mw = requireAnyPermission(ANY, resolverReturning(["Receive Loyalty Notification"]).resolve);
+        const { next, calls } = fakeNext();
+        await mw(fakeReq([]), {} as any, next);
+        assert.equal(calls[0], undefined);
+    });
+
+    test("passes with the wildcard", async () => {
+        const mw = requireAnyPermission(ANY, resolverReturning(["*"]).resolve);
+        const { next, calls } = fakeNext();
+        await mw(fakeReq([]), {} as any, next);
+        assert.equal(calls[0], undefined);
+    });
+
+    test("403 naming every option when the user holds none of them", async () => {
+        const mw = requireAnyPermission(ANY, resolverReturning(["Receive Sales Notification"]).resolve);
+        const { next, calls } = fakeNext();
+        await mw(fakeReq([]), {} as any, next);
+        assert.ok(calls[0] instanceof AuthenticationError);
+        assert.equal(calls[0].statusCode, 403);
+        assert.match(calls[0].message, /View Loyalty Accounts or Receive Loyalty Notification/);
+    });
+
+    test("401 without a user — resolver not consulted", async () => {
+        const r = resolverReturning(["*"]);
+        const mw = requireAnyPermission(ANY, r.resolve);
+        const { next, calls } = fakeNext();
+        await mw(fakeReq(null), {} as any, next);
+        assert.equal(calls[0].statusCode, 401);
+        assert.equal(r.calls(), 0);
+    });
+
+    test("falls back to the token when the live resolve fails", async () => {
+        const mw = requireAnyPermission(ANY, resolverThrows);
+        const ok = fakeNext();
+        await mw(fakeReq(["Receive Loyalty Notification"]), {} as any, ok.next);
+        assert.equal(ok.calls[0], undefined);
+
+        const denied = fakeNext();
+        await mw(fakeReq(["Add Client"]), {} as any, denied.next);
+        assert.equal(denied.calls[0].statusCode, 403);
+    });
+
+    test("an empty list never passes without the wildcard", async () => {
+        const mw = requireAnyPermission([], resolverReturning(["Add Client"]).resolve);
+        const { next, calls } = fakeNext();
+        await mw(fakeReq([]), {} as any, next);
+        assert.equal(calls[0].statusCode, 403);
     });
 });

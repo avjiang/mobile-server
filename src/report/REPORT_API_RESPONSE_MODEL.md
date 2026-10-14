@@ -358,6 +358,7 @@ This document describes the complete JSON response models for both `generateRepo
       {
         "id": number,
         "purchaseOrderNumber": string,
+        "supplierReference": string | null,   // the supplier's own number (2026-10-14)
         "totalAmount": number,
         "status": string,
         "supplierName": string,
@@ -377,6 +378,7 @@ This document describes the complete JSON response models for both `generateRepo
       {
         "id": number,
         "trackingNumber": string | null,
+        "supplierReference": string | null,   // the supplier's own number (2026-10-14)
         "status": string,
         "deliveryDate": string | null,   // ISO datetime
         "createdAt": string,             // ISO datetime
@@ -397,6 +399,7 @@ This document describes the complete JSON response models for both `generateRepo
       {
         "id": number,
         "invoiceNumber": string,
+        "supplierReference": string | null,   // the supplier's own number (2026-10-14)
         "totalAmount": number,
         "status": string,
         "supplierName": string,

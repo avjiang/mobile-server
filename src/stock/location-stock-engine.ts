@@ -46,6 +46,11 @@ export interface FifoLayer {
 export interface ConsumeResult {
     layers: { quantityUsed: Decimal; cost: Decimal; receiptDate: Date; deliveryOrderId: number | null }[];
     totalCost: Decimal;
+    /** The balance before / after this consume, and its reorder level — feeds
+     *  the low / out-of-stock alerts (stock-alerts.ts) for outlet sources. */
+    previousAvailable: Decimal;
+    newAvailable: Decimal;
+    reorderThreshold: Decimal | null;
 }
 
 export function outletRef(tx: Tx, outletId: number): LocationRef {
@@ -217,7 +222,7 @@ export async function consumeFIFO(
 
     const balance = await ref.balance.findFirst({
         where,
-        select: { id: true, availableQuantity: true, onHandQuantity: true },
+        select: { id: true, availableQuantity: true, onHandQuantity: true, reorderThreshold: true },
     });
     if (!balance) {
         throw new RequestValidateError(`No stock for item ${p.itemId} in ${ref.label}`);
@@ -295,7 +300,16 @@ export async function consumeFIFO(
     });
 
     if (p.itemVariantId !== null) await touchParentBalance(ref, p.itemId);
-    return { layers, totalCost };
+    return {
+        layers,
+        totalCost,
+        previousAvailable: prevAvail,
+        newAvailable: prevAvail.sub(p.quantity),
+        reorderThreshold:
+            balance.reorderThreshold === null || balance.reorderThreshold === undefined
+                ? null
+                : new Decimal(balance.reorderThreshold),
+    };
 }
 
 /** Clear a single balance to zero (soft-delete its receipts), writing one movement. */

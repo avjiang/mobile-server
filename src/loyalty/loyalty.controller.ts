@@ -5,13 +5,15 @@ import { RequestValidateError } from '../api-helpers/error';
 import { AuthRequest } from '../middleware/auth-request';
 import { UserInfo } from '../middleware/authorize-middleware';
 import { requireLoyalty } from '../middleware/loyalty-gate.middleware';
-import { requirePermission } from '../middleware/require-permission.middleware';
+import { requirePermission, requireAnyPermission } from '../middleware/require-permission.middleware';
+import { getFollowUps, clampFollowUpDays } from './follow-up.service';
 
 // Permission names — match src/script/permission_seed.ts
 const P = {
     MANAGE_PROGRAM: 'Manage Loyalty Program',
     VIEW_ACCOUNTS: 'View Loyalty Accounts',
     ADJUST_POINTS: 'Adjust Loyalty Points',
+    RECEIVE_NOTIFICATION: 'Receive Loyalty Notification',
 };
 
 const router = express.Router();
@@ -238,6 +240,19 @@ const getExpiringPoints = async (req: AuthRequest, res: Response, next: NextFunc
 };
 
 // ============================================
+// Follow-ups (customers whose points, vouchers or packages are ending)
+// ============================================
+
+const getFollowUpList = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const user = req.user as UserInfo;
+        const days = clampFollowUpDays(req.query.days);
+        const result = await getFollowUps(user.databaseName, days);
+        sendResponse(res, result);
+    } catch (error) { next(error); }
+};
+
+// ============================================
 // Routes
 // ============================================
 
@@ -252,6 +267,8 @@ router.post('/account/:id/redeem', requireLoyalty('basic'), requirePermission(P.
 router.post('/account/:id/adjust', requireLoyalty('basic'), requirePermission(P.ADJUST_POINTS), adjustPoints);
 router.get('/account/:id/transactions', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getTransactions);
 router.get('/account/:id/expiring', requireLoyalty('basic'), requirePermission(P.VIEW_ACCOUNTS), getExpiringPoints);
+// The push recipient may open the list it was told about even without View Loyalty Accounts.
+router.get('/follow-ups', requireLoyalty('basic'), requireAnyPermission([P.VIEW_ACCOUNTS, P.RECEIVE_NOTIFICATION]), getFollowUpList);
 
 // Advanced loyalty routes (add-on required)
 router.get('/tier/program/:programId', requireLoyalty('advanced'), requirePermission(P.VIEW_ACCOUNTS), getTiersByProgramId);

@@ -110,8 +110,45 @@ export const NotificationMessages = {
       title: 'Pesan Penting',
       message: 'Silakan periksa persetujuan yang tertunda'
     }
+  },
+
+  // Bayar Yuk! plan reminders to the owner (src/cron/plan-reminder.cron.ts)
+  plan: {
+    trialEnding: {
+      title: (daysLeft: number) => daysLeft <= 0
+        ? 'Masa coba Pro berakhir hari ini'
+        : `Masa coba Pro berakhir ${daysLeft} hari lagi`,
+      message: (expiryDate: string, outletName?: string | null) => outletName
+        ? `Pilih paket untuk ${outletName} sebelum ${formatIndonesianDate(expiryDate)} agar toko tetap berjalan tanpa jeda.`
+        : `Pilih paket sebelum ${formatIndonesianDate(expiryDate)} agar toko tetap berjalan tanpa jeda.`
+    },
+    planExpiring: {
+      title: (daysLeft: number) => daysLeft <= 0
+        ? 'Paket Bayar Yuk! berakhir hari ini'
+        : `Paket Bayar Yuk! berakhir ${daysLeft} hari lagi`,
+      message: (expiryDate: string, outletName?: string | null) => outletName
+        ? `Paket ${outletName} perlu diperpanjang sebelum ${formatIndonesianDate(expiryDate)} agar kasir di sana tetap bisa dipakai.`
+        : `Perpanjang sebelum ${formatIndonesianDate(expiryDate)} agar kasir tetap bisa dipakai.`
+    }
+  },
+
+  // Loyalty follow-ups (src/cron/loyalty-follow-up.cron.ts)
+  loyalty: {
+    followUp: {
+      title: (customerCount: number) => `${customerCount} pelanggan perlu dihubungi`,
+      message: 'Poin, voucher, atau paket mereka segera berakhir. Ketuk untuk melihat daftarnya.'
+    }
   }
 };
+
+const ID_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+/** `2026-10-28` → `28 Okt 2026` (the date part only; no time-zone shift). */
+export function formatIndonesianDate(isoDate: string): string {
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return isoDate;
+  return `${d} ${ID_MONTHS[m - 1]} ${y}`;
+}
 
 /**
  * Helper function to format item names for out of stock notifications

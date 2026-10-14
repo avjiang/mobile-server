@@ -1,5 +1,6 @@
 import PlanCheckService from './plan-check.service';
 import FcmService from './fcm.service';
+import { liveNotifications } from '../live/live-notifications';
 
 /**
  * Push notification sender. The module keeps its historical "Pushy" name
@@ -72,6 +73,9 @@ class PushyService {
                     info: 'Notification skipped - not on Pro plan'
                 };
             }
+
+            // Desktop apps (no FCM) get the same payload over their live socket.
+            liveNotifications.publish(topic, this.buildPayload(notificationData));
 
             if (!FcmService.isConfigured()) {
                 return { success: false, error: 'No push transport is configured' };

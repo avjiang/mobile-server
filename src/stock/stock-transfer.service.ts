@@ -26,6 +26,7 @@ import {
     LocationRef,
 } from "./location-stock-engine";
 import { validateItemsAndVariants } from "../warehouse/warehouse-stock.service";
+import { sendStockAlerts, StockAlertActor, StockAlertRow } from "./stock-alerts";
 
 const MAX_QTY = 999999;
 
@@ -63,7 +64,12 @@ function refFor(tx: Tx, type: LocationType, id: number): LocationRef {
     return type === "WAREHOUSE" ? warehouseRef(tx, id) : outletRef(tx, id);
 }
 
-async function transferStock(databaseName: string, body: TransferBody) {
+/**
+ * `actor` = the requesting user (JWT). When stock leaves an OUTLET it drives the
+ * low / out-of-stock alerts (stock-alerts.ts, source 'stock_transfer'); without
+ * it (scripts) no alert is sent.
+ */
+async function transferStock(databaseName: string, body: TransferBody, actor?: StockAlertActor) {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
 
     if (!body.items || body.items.length === 0) {
@@ -90,6 +96,8 @@ async function transferStock(databaseName: string, body: TransferBody) {
     let itemsTransferred = 0;
     let totalQuantity = new Decimal(0);
     let totalValue = new Decimal(0);
+    // Alert candidates for an OUTLET source (warehouses have no notification topic).
+    const alertRows: StockAlertRow[] = [];
 
     await tenantPrisma.$transaction(async (tx) => {
         await requireLocation(tx, body.sourceType, body.sourceId);
@@ -111,6 +119,18 @@ async function transferStock(databaseName: string, body: TransferBody) {
                 reason: body.reason || `Transfer to ${dst.label}`,
                 performedBy: body.performedBy ?? null,
             });
+            if (body.sourceType === "OUTLET") {
+                alertRows.push({
+                    itemId: it.itemId,
+                    itemVariantId: variantId,
+                    itemName: item.itemName,
+                    itemCode: item.itemCode ?? null,
+                    previousAvailable: result.previousAvailable,
+                    newAvailable: result.newAvailable,
+                    reorderThreshold: result.reorderThreshold,
+                    quantity: new Decimal(it.quantity),
+                });
+            }
 
             await receiveLayers(dst, {
                 itemId: it.itemId,
@@ -133,6 +153,18 @@ async function transferStock(databaseName: string, body: TransferBody) {
             totalValue = totalValue.add(result.totalCost);
         }
     });
+
+    // After commit, fire-and-forget.
+    if (actor && body.sourceType === "OUTLET") {
+        sendStockAlerts({
+            tenantId: actor.tenantId,
+            outletId: body.sourceId,
+            rows: alertRows,
+            triggeringUserId: actor.userId,
+            triggeringUsername: actor.username,
+            source: "stock_transfer",
+        });
+    }
 
     return {
         itemsTransferred,

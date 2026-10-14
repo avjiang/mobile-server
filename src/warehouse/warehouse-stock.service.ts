@@ -42,16 +42,16 @@ type Tx = any;
 async function validateItemsAndVariants(
     tx: Tx,
     targets: { itemId: number; itemVariantId?: number | null }[]
-): Promise<Map<number, { hasVariants: boolean; itemName: string; cost: Decimal }>> {
+): Promise<Map<number, { hasVariants: boolean; itemName: string; itemCode: string | null; cost: Decimal }>> {
     const itemIds = [...new Set(targets.map((t) => t.itemId))];
     const items = await tx.item.findMany({
         where: { id: { in: itemIds }, deleted: false },
-        select: { id: true, hasVariants: true, itemName: true, cost: true },
+        select: { id: true, hasVariants: true, itemName: true, itemCode: true, cost: true },
     });
-    const itemMap = new Map<number, { hasVariants: boolean; itemName: string; cost: Decimal }>(
+    const itemMap = new Map<number, { hasVariants: boolean; itemName: string; itemCode: string | null; cost: Decimal }>(
         items.map((i: any) => [
             i.id,
-            { hasVariants: i.hasVariants, itemName: i.itemName, cost: new Decimal(i.cost || 0) },
+            { hasVariants: i.hasVariants, itemName: i.itemName, itemCode: i.itemCode ?? null, cost: new Decimal(i.cost || 0) },
         ])
     );
 

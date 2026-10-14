@@ -7,6 +7,7 @@ import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreatePurchaseOrderRequestBody, PurchaseOrderInput } from "./purchase-order.request";
 import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
+import { normaliseSupplierReference } from "../helpers/supplierReference";
 
 /**
  * What a PO update should write to `downPaymentPercentage` in the main update statement.
@@ -527,7 +528,7 @@ let getById = async (id: number, databaseName: string, outletId?: number) => {
                         // net payable (total − DP) and the "DP applied" breakdown line; without it
                         // the per-invoice figure renders as gross and no longer tallies with the
                         // (net) settlement amount.
-                        select: { id: true, invoiceNumber: true, subtotalAmount: true, totalAmount: true, downPaymentApplied: true, status: true, taxInvoiceNumber: true }
+                        select: { id: true, invoiceNumber: true, supplierReference: true, subtotalAmount: true, totalAmount: true, downPaymentApplied: true, status: true, taxInvoiceNumber: true }
                     });
                     // Surface a server-computed netAmount (total − DP) for parity with the
                     // settlement getById payload. Returns aren't joined in this lightweight
@@ -664,6 +665,7 @@ let createMany = async (databaseName: string, requestBody: CreatePurchaseOrderRe
                     data: {
                         purchaseOrderNumber: await nextDocumentNumber(tx, purchaseOrderData.outletId, DOCUMENT_PREFIX.purchaseOrder, localDate),
                         quotationId: purchaseOrderData.quotationId || null,
+                        supplierReference: normaliseSupplierReference(purchaseOrderData.supplierReference) ?? null,
                         outletId: purchaseOrderData.outletId,
                         supplierId: purchaseOrderData.supplierId,
                         sessionId: purchaseOrderData.sessionId || null,
@@ -937,6 +939,8 @@ let update = async (purchaseOrder: PurchaseOrderInput, databaseName: string, out
                 where: { id: id },
                 data: {
                     // purchaseOrderNumber is server-assigned at create and immutable — never written here.
+                    // Absent = keep: an older app never sends it, so it can't wipe a typed reference.
+                    supplierReference: normaliseSupplierReference(updateData.supplierReference),
                     quotationId: updateData.quotationId || null,
                     outletId: updateData.outletId,
                     supplierId: updateData.supplierId,

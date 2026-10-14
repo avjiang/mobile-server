@@ -40,7 +40,11 @@ let getStockChecksByItemIdAndOutlet = (req: AuthRequest, res: Response, next: Ne
 
 // ── Stock Movement Report ────────────────────────────────────────────────────
 
-const MAX_RANGE_MS = 366 * 24 * 60 * 60 * 1000; // ~12 months — the in-app picker cap
+// 31 days — the longest range the app can ask for (a calendar month, or the
+// Stock Card / by-type From–To picker, which caps at 31 days). The extra hour
+// absorbs a daylight-saving shift inside a 31-day local range.
+const MAX_RANGE_DAYS = 31;
+const MAX_RANGE_MS = (MAX_RANGE_DAYS * 24 + 1) * 60 * 60 * 1000;
 
 /** Validate + parse a bounded outlet + date-range request shared by all 3 report endpoints. */
 function parsePeriod(req: AuthRequest): { outletId: number; gte: Date; lte: Date } {
@@ -61,7 +65,7 @@ function parsePeriod(req: AuthRequest): { outletId: number; gte: Date; lte: Date
     // Reject ranges wider than the picker allows — keeps every query bounded (single
     // period) and the report against live data only (older data is backoffice).
     if (lte.getTime() - gte.getTime() > MAX_RANGE_MS) {
-        throw new RequestValidateError('Date range exceeds the 12-month maximum');
+        throw new RequestValidateError(`Date range exceeds the ${MAX_RANGE_DAYS}-day maximum`);
     }
     return { outletId: parseInt(outletIdRaw), gte, lte };
 }

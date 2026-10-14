@@ -21,6 +21,9 @@ export interface InvoiceInput {
     // any client-sent value is ignored on create and update.
     invoiceNumber?: string;
     taxInvoiceNumber?: string;
+    // The supplier's invoice number. Optional free text; on update a missing key
+    // keeps the stored value, null/"" clears it.
+    supplierReference?: string | null;
     purchaseOrderId?: number;
     supplierId?: number;
     sessionId?: number; // Optional for backwards compatibility

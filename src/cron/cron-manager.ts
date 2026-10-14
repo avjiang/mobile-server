@@ -9,6 +9,8 @@ import cron from 'node-cron';
 import { processPointExpiry } from './loyalty-expiry.cron';
 import { processSubscriptionExpiry } from './subscription-expiry.cron';
 import { processIdempotencyCleanup } from './idempotency-cleanup.cron';
+import { processPlanReminders } from './plan-reminder.cron';
+import { processLoyaltyFollowUps } from './loyalty-follow-up.cron';
 
 // Business timezone (WIB, as in helpers/documentNumber.ts). Without it node-cron uses the host clock, which is UTC on
 // both the Oracle VM and Azure, so "2:00 AM" ran at 09:00 WIB / 10:00 MYT, in opening hours (fixed 2026-10-14).
@@ -44,7 +46,22 @@ function initCronJobs(): void {
         }
     }, SCHEDULE);
 
-    console.log('[Cron] Cron jobs initialized: point-expiry 00:00, subscription-expiry 00:30, idempotency-cleanup 01:00 (Asia/Jakarta)');
+    // Owner pushes — daily at 09:00 WIB (shop hours): plan reminder, then loyalty
+    // follow-ups. Each in its own try/catch so one failing doesn't skip the other.
+    cron.schedule('0 9 * * *', async () => {
+        try {
+            await processPlanReminders();
+        } catch (error) {
+            console.error('[Cron] Unhandled error in plan reminders:', error);
+        }
+        try {
+            await processLoyaltyFollowUps();
+        } catch (error) {
+            console.error('[Cron] Unhandled error in loyalty follow-ups:', error);
+        }
+    }, SCHEDULE);
+
+    console.log('[Cron] Cron jobs initialized: point-expiry 00:00, subscription-expiry 00:30, idempotency-cleanup 01:00, plan-reminder + loyalty-follow-up 09:00 (Asia/Jakarta)');
 }
 
 export { initCronJobs };

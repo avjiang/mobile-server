@@ -84,6 +84,10 @@ export enum ErrorCode {
     // -- Delivery order / invoice -----------------------------------------
     /** DOs missing or already invoiced. params: ids */
     DeliveryOrdersNotEligible = 'DELIVERY_ORDERS_NOT_ELIGIBLE',
+    /** An edit tried to change a delivery order's received lines (fixed once booked). */
+    DeliveryOrderLinesLocked = 'DELIVERY_ORDER_LINES_LOCKED',
+    /** Supplier reference (their DO / invoice number) too long. params: max */
+    SupplierReferenceTooLong = 'SUPPLIER_REFERENCE_TOO_LONG',
 
     // -- Account / password -------------------------------------------------
     /** Self-service change-password: current password is wrong. */

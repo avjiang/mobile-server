@@ -2985,7 +2985,7 @@ The sales module is fully integrated with push notifications. All sales-related 
     "sound": "default"
   },
   "data": {
-    "type": "sale_voided",
+    "type": "sales_voided",
     "salesId": 1234,
     "amount": 150000,
     "customerName": "Walk-in Customer",
@@ -3017,7 +3017,7 @@ The sales module is fully integrated with push notifications. All sales-related 
     "sound": "default"
   },
   "data": {
-    "type": "sale_returned",
+    "type": "sales_returned",
     "salesId": 1234,
     "amount": 150000,
     "customerName": "Walk-in Customer",
@@ -3049,7 +3049,7 @@ The sales module is fully integrated with push notifications. All sales-related 
     "sound": "default"
   },
   "data": {
-    "type": "sale_refunded",
+    "type": "sales_refunded",
     "salesId": 1234,
     "amount": 150000,
     "customerName": "Walk-in Customer",

@@ -145,6 +145,14 @@ export const permissions = [
         category: "Notifications",
         description: "Receive inventory related notification"
     },
+    // Loyalty follow-ups (Pro): the daily 09:00 WIB push on the tenant-wide topic
+    // `tenant_{id}_loyalty`, and read access to the follow-up list even without
+    // View Loyalty Accounts. Name must match FE AppPermission.receiveLoyaltyNotification.
+    {
+        name: "Receive Loyalty Notification",
+        category: "Notifications",
+        description: "Receive loyalty follow-up reminders (customers whose points, vouchers or packages are ending)"
+    },
     // Loyalty permissions
     {
         name: "Manage Loyalty Program",

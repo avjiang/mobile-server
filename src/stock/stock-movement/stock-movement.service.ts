@@ -51,7 +51,10 @@ let getStockChecksByItemIdAndOutlet = async (databaseName: string, itemId: numbe
 // Three read surfaces over the immutable `stock_movement` audit table, all bounded
 // to a single outlet + period (rule: never sum all prior history; opening/closing
 // come from the first/last in-range row's PREVIOUS_AVAILABLE_QUANTITY). The
-// composite index (OUTLET_ID, CREATED_AT) added 2026-06-30 serves every scan here.
+// composite index (OUTLET_ID, CREATED_AT) serves the outlet-wide scans; the Stock
+// Card is served by (ITEM_ID, CREATED_AT) and the by-type drill-down by
+// (OUTLET_ID, MOVEMENT_TYPE, CREATED_AT), added 2026-10-14. Every endpoint is
+// capped at a 31-day range (controller).
 // See docs/modules/STOCK_AND_COST.md (Stock Movement Report) / REPORT.md.
 
 // Raw rows skip Prisma's Decimal/BigInt coercion: Decimal(15,4) comes back as a
@@ -164,7 +167,10 @@ let getMovementByTypeDetail = async (
         createdAt: { gte, lte },
     };
 
-    const [rows, total] = await Promise.all([
+    // Page + one aggregate (count AND net) — the net is for THIS range, which the
+    // app's own From–To filter can make differ from the report's period. Served
+    // by the composite index (OUTLET_ID, MOVEMENT_TYPE, CREATED_AT).
+    const [rows, agg] = await Promise.all([
         tenantPrisma.stockMovement.findMany({
             where,
             include: {
@@ -175,12 +181,17 @@ let getMovementByTypeDetail = async (
             skip,
             take,
         }),
-        tenantPrisma.stockMovement.count({ where }),
+        tenantPrisma.stockMovement.aggregate({
+            where,
+            _count: { _all: true },
+            _sum: { availableQuantityDelta: true },
+        }),
     ]);
 
     return {
         movementType,
-        total: num(total),
+        total: num(agg._count._all),
+        netDelta: num(agg._sum.availableQuantityDelta),
         skip,
         take,
         rows: rows.map(m => ({
@@ -227,7 +238,12 @@ let getStockCard = async (
         where.itemVariantId = itemVariantId;
     }
 
-    const [rows, total, firstRow, lastRow, sums] = await Promise.all([
+    // Two queries, in parallel: the page, and ONE aggregate pass for the header
+    // (count, in/out/net, opening/closing). Both are served by the index
+    // (ITEM_ID, CREATED_AT) — measured ~0.1 ms at 300k rows. Opening/closing use the same
+    // GROUP_CONCAT head-pick as getMovementSummary — the picked element is always
+    // first in the concat, so group_concat_max_len truncation can't touch it.
+    const [rows, agg] = await Promise.all([
         tenantPrisma.stockMovement.findMany({
             where,
             include: {
@@ -239,47 +255,37 @@ let getStockCard = async (
             skip,
             take,
         }),
-        tenantPrisma.stockMovement.count({ where }),
-        // Opening = earliest in-range row's PREVIOUS_AVAILABLE_QUANTITY (index-served LIMIT 1).
-        tenantPrisma.stockMovement.findFirst({
-            where,
-            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-            select: { previousAvailableQuantity: true },
-        }),
-        // Closing = latest in-range row's PREVIOUS_AVAILABLE_QUANTITY + delta.
-        tenantPrisma.stockMovement.findFirst({
-            where,
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-            select: { previousAvailableQuantity: true, availableQuantityDelta: true },
-        }),
-        tenantPrisma.stockMovement.aggregate({
-            where,
-            _sum: { availableQuantityDelta: true },
-        }),
+        tenantPrisma.$queryRaw<any[]>(Prisma.sql`
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN AVAILABLE_QUANTITY_DELTA > 0 THEN AVAILABLE_QUANTITY_DELTA ELSE 0 END) AS totalIn,
+                SUM(CASE WHEN AVAILABLE_QUANTITY_DELTA < 0 THEN AVAILABLE_QUANTITY_DELTA ELSE 0 END) AS totalOut,
+                SUM(AVAILABLE_QUANTITY_DELTA) AS netDelta,
+                CAST(SUBSTRING_INDEX(
+                    GROUP_CONCAT(PREVIOUS_AVAILABLE_QUANTITY ORDER BY CREATED_AT ASC, ID ASC), ',', 1
+                ) AS DECIMAL(15,4)) AS opening,
+                CAST(SUBSTRING_INDEX(
+                    GROUP_CONCAT((PREVIOUS_AVAILABLE_QUANTITY + AVAILABLE_QUANTITY_DELTA) ORDER BY CREATED_AT DESC, ID DESC), ',', 1
+                ) AS DECIMAL(15,4)) AS closing
+            FROM stock_movement
+            WHERE OUTLET_ID = ${outletId}
+                AND ITEM_ID = ${itemId}
+                ${itemVariantId === undefined
+                    ? Prisma.empty
+                    : itemVariantId === null
+                        ? Prisma.sql`AND ITEM_VARIANT_ID IS NULL`
+                        : Prisma.sql`AND ITEM_VARIANT_ID = ${itemVariantId}`}
+                AND IS_DELETED = 0
+                AND CREATED_AT >= ${gte}
+                AND CREATED_AT <= ${lte}
+        `),
     ]);
 
-    // In/out split needs the conditional sums; one extra bounded raw aggregate.
-    const split: any[] = await tenantPrisma.$queryRaw(Prisma.sql`
-        SELECT
-            SUM(CASE WHEN AVAILABLE_QUANTITY_DELTA > 0 THEN AVAILABLE_QUANTITY_DELTA ELSE 0 END) AS totalIn,
-            SUM(CASE WHEN AVAILABLE_QUANTITY_DELTA < 0 THEN AVAILABLE_QUANTITY_DELTA ELSE 0 END) AS totalOut
-        FROM stock_movement
-        WHERE OUTLET_ID = ${outletId}
-            AND ITEM_ID = ${itemId}
-            ${itemVariantId === undefined
-                ? Prisma.empty
-                : itemVariantId === null
-                    ? Prisma.sql`AND ITEM_VARIANT_ID IS NULL`
-                    : Prisma.sql`AND ITEM_VARIANT_ID = ${itemVariantId}`}
-            AND IS_DELETED = 0
-            AND CREATED_AT >= ${gte}
-            AND CREATED_AT <= ${lte}
-    `);
-
-    const opening = firstRow ? num(firstRow.previousAvailableQuantity) : 0;
-    const closing = lastRow
-        ? num(lastRow.previousAvailableQuantity) + num(lastRow.availableQuantityDelta)
-        : opening;
+    const head = agg[0] ?? {};
+    const total = num(head.total);
+    // No movement in range → opening/closing are NULL; both read as 0.
+    const opening = total > 0 ? num(head.opening) : 0;
+    const closing = total > 0 ? num(head.closing) : opening;
 
     const sample = rows[0];
     return {
@@ -288,10 +294,10 @@ let getStockCard = async (
         outletName: sample?.outlet?.outletName ?? null,
         opening,
         closing,
-        totalIn: num(split[0]?.totalIn),
-        totalOut: num(split[0]?.totalOut),
-        netDelta: num(sums._sum.availableQuantityDelta),
-        total: num(total),
+        totalIn: num(head.totalIn),
+        totalOut: num(head.totalOut),
+        netDelta: num(head.netDelta),
+        total,
         skip,
         take,
         rows: rows.map(m => ({

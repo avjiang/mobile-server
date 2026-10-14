@@ -10,6 +10,7 @@ import 'reflect-metadata';
 import { disconnectAllPrismaClients, startTenantClientEviction, getTenantClientStats } from './db';
 import { initCronJobs } from './cron/cron-manager';
 import { CLOUDFLARE_IP_RANGES } from './constants/cloudflare-ips';
+import { liveNotifications } from './live/live-notifications';
 const app = express()
 const port = process.env.PORT || 8080;
 
@@ -147,6 +148,9 @@ const server = process.env.HOST
   ? app.listen(Number(port), process.env.HOST, onListening)
   : app.listen(port, onListening);
 
+// Live notifications for desktop apps (WebSocket upgrades on /live/notifications).
+liveNotifications.attach(server);
+
 server.on('error', (err) => {
   console.error('Server error:', err);
   if (err.name === 'EADDRINUSE') {
@@ -166,6 +170,7 @@ async function gracefulShutdown(error?: Error) {
   }
 
   try {
+    liveNotifications.closeAll();
     await disconnectAllPrismaClients();
     console.log('Prisma clients disconnected');
 

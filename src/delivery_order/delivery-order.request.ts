@@ -29,6 +29,9 @@ export interface DeliveryOrderInput {
     // The DO number. Server-assigned on create ({DO}-OUT{outletId}-{yyyyMMdd}-{seq})
     // and immutable; any client-sent value is ignored on create and update.
     trackingNumber?: string;
+    // The supplier's delivery-note number. Optional free text; on update a missing
+    // key keeps the stored value, null/"" clears it.
+    supplierReference?: string | null;
     status?: string;
     remark?: string;
     performedBy?: string;

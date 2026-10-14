@@ -8,6 +8,7 @@ import { CreateInvoiceRequestBody, InvoiceInput } from "./invoice.request";
 import { Decimal } from 'decimal.js';
 import { restateSalesCostsForReceipts, ReceiptCostChange } from "../stock/sales-cost-restatement";
 import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
+import { normaliseSupplierReference } from "../helpers/supplierReference";
 
 /**
  * How much of a PO's down-payment balance this invoice draws:
@@ -387,12 +388,12 @@ let getAll = async (
             // Batch fetch purchase orders
             tenantPrisma.purchaseOrder.findMany({
                 where: { id: { in: purchaseOrderIds }, deleted: false },
-                select: { id: true, purchaseOrderNumber: true, purchaseOrderDate: true }
+                select: { id: true, purchaseOrderNumber: true, supplierReference: true, purchaseOrderDate: true }
             }),
             // Batch fetch delivery orders
             tenantPrisma.deliveryOrder.findMany({
                 where: { invoiceId: { in: invoiceIds }, deleted: false },
-                select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true }
+                select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true, supplierReference: true }
             }),
             // Batch fetch invoice settlements (with the partial-payment fields)
             fetchSettlementsById(tenantPrisma, invoices),
@@ -491,6 +492,7 @@ let getById = async (id: number, databaseName: string, outletId?: number) => {
                     select: {
                         id: true,
                         purchaseOrderNumber: true,
+                        supplierReference: true,
                         purchaseOrderDate: true,
                         supplierId: true,
                         outletId: true,
@@ -567,6 +569,7 @@ let getById = async (id: number, databaseName: string, outletId?: number) => {
                 select: {
                     id: true,
                     invoiceNumber: true,
+                    supplierReference: true,
                     subtotalAmount: true,
                     totalAmount: true,
                     status: true,
@@ -706,12 +709,12 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
             // Batch fetch purchase orders
             tenantPrisma.purchaseOrder.findMany({
                 where: { id: { in: purchaseOrderIds }, deleted: false },
-                select: { id: true, purchaseOrderNumber: true, purchaseOrderDate: true }
+                select: { id: true, purchaseOrderNumber: true, supplierReference: true, purchaseOrderDate: true }
             }),
             // Batch fetch delivery orders
             tenantPrisma.deliveryOrder.findMany({
                 where: { invoiceId: { in: invoiceIds }, deleted: false },
-                select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true }
+                select: { id: true, invoiceId: true, deliveryDate: true, trackingNumber: true, supplierReference: true }
             }),
             // Batch fetch invoice settlements (with the partial-payment fields)
             fetchSettlementsById(tenantPrisma, invoices),
@@ -825,6 +828,7 @@ let getCompleted = async (
             select: {
                 id: true,
                 purchaseOrderNumber: true,
+                supplierReference: true,
                 purchaseOrderDate: true
             }
         });
@@ -839,7 +843,8 @@ let getCompleted = async (
                 id: true,
                 invoiceId: true,
                 deliveryDate: true,
-                trackingNumber: true
+                trackingNumber: true,
+                supplierReference: true
             }
         });
 
@@ -1032,6 +1037,7 @@ let createMany = async (databaseName: string, requestBody: CreateInvoiceRequestB
                     data: {
                         invoiceNumber: await nextDocumentNumber(tx, invoiceData.outletId, DOCUMENT_PREFIX.invoice, localDate),
                         taxInvoiceNumber: invoiceData.taxInvoiceNumber || "",
+                        supplierReference: normaliseSupplierReference(invoiceData.supplierReference) ?? null,
                         purchaseOrderId: invoiceData.purchaseOrderId,
                         supplierId: invoiceData.supplierId,
                         sessionId: invoiceData.sessionId || null,
@@ -1165,6 +1171,7 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
                 supplierId: true,
                 purchaseOrderId: true,
                 invoiceNumber: true,
+                supplierReference: true,
                 invoiceSettlementId: true
             }
         });
@@ -1263,6 +1270,9 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
                 data: {
                     // invoiceNumber is server-assigned at create and immutable — never written here.
                     taxInvoiceNumber: updateData.taxInvoiceNumber,
+                    // Missing key → undefined → Prisma keeps the stored value (older apps
+                    // don't send it). Never `?? null` here: that would wipe it.
+                    supplierReference: normaliseSupplierReference(updateData.supplierReference),
                     purchaseOrderId: updateData.purchaseOrderId,
                     supplierId: updateData.supplierId,
                     outletId: updateData.outletId,
@@ -1279,7 +1289,10 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
                     remark: updateData.remark,
                     performedBy: updateData.performedBy,
                     siteId: updateData.siteId ?? null, // Terminal attribution (latest editor)
-                    isTaxInclusive: updateData.isTaxInclusive !== undefined ? updateData.isTaxInclusive : true,
+                    // Missing key = keep. Defaulting to `true` here flipped every partial
+                    // update (e.g. a supplier-reference-only edit) to tax-inclusive, which the
+                    // next re-pricing then applied to FIFO receipt costs.
+                    isTaxInclusive: updateData.isTaxInclusive,
                     version: { increment: 1 }
                 }
             });
@@ -1448,6 +1461,7 @@ let update = async (invoice: InvoiceInput, databaseName: string, outletId: numbe
                         select: {
                             id: true,
                             purchaseOrderNumber: true,
+                            supplierReference: true,
                             purchaseOrderDate: true,
                             supplierId: true,
                             outletId: true,

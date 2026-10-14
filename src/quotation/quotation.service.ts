@@ -156,21 +156,21 @@ let getAll = async (
             // Get purchase orders related to quotations
             tenantPrisma.purchaseOrder.findMany({
                 where: { quotationId: { in: quotationIds }, deleted: false },
-                select: { id: true, quotationId: true, purchaseOrderNumber: true, status: true, totalAmount: true },
+                select: { id: true, quotationId: true, purchaseOrderNumber: true, supplierReference: true, status: true, totalAmount: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get delivery orders related to purchase orders
             tenantPrisma.deliveryOrder.findMany({
                 where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
-                select: { id: true, purchaseOrderId: true, trackingNumber: true, status: true },
+                select: { id: true, purchaseOrderId: true, trackingNumber: true, supplierReference: true, status: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get invoices related to purchase orders
             tenantPrisma.invoice.findMany({
                 where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
-                select: { id: true, purchaseOrderId: true, invoiceNumber: true, status: true, totalAmount: true, invoiceSettlementId: true },
+                select: { id: true, purchaseOrderId: true, invoiceNumber: true, supplierReference: true, status: true, totalAmount: true, invoiceSettlementId: true },
                 orderBy: { id: 'asc' }
             })
         ]);
@@ -323,21 +323,21 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
             // Get purchase orders related to quotations
             tenantPrisma.purchaseOrder.findMany({
                 where: { quotationId: { in: quotationIds }, deleted: false },
-                select: { id: true, quotationId: true, purchaseOrderNumber: true, status: true, totalAmount: true },
+                select: { id: true, quotationId: true, purchaseOrderNumber: true, supplierReference: true, status: true, totalAmount: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get delivery orders related to purchase orders
             tenantPrisma.deliveryOrder.findMany({
                 where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
-                select: { id: true, purchaseOrderId: true, trackingNumber: true, status: true },
+                select: { id: true, purchaseOrderId: true, trackingNumber: true, supplierReference: true, status: true },
                 orderBy: { id: 'asc' }
             }),
 
             // Get invoices related to purchase orders
             tenantPrisma.invoice.findMany({
                 where: { purchaseOrder: { quotationId: { in: quotationIds }, deleted: false }, deleted: false },
-                select: { id: true, purchaseOrderId: true, invoiceNumber: true, status: true, totalAmount: true, invoiceSettlementId: true },
+                select: { id: true, purchaseOrderId: true, invoiceNumber: true, supplierReference: true, status: true, totalAmount: true, invoiceSettlementId: true },
                 orderBy: { id: 'asc' }
             })
         ]);

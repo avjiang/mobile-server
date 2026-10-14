@@ -35,6 +35,8 @@ export interface PurchaseOrderInput {
     subtotalAmount: PrismaDecimal;
     totalAmount: PrismaDecimal;
     status?: string;
+    /** The supplier's own order / confirmation number. Absent = keep (update); "" or null = clear. */
+    supplierReference?: string | null;
     remark?: string;
     currency?: string;
     performedBy?: string;

@@ -318,6 +318,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 select: {
                     id: true,
                     purchaseOrderNumber: true,
+                    supplierReference: true,
                     totalAmount: true,
                     status: true,
                     createdAt: true,
@@ -347,6 +348,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 select: {
                     id: true,
                     trackingNumber: true,
+                    supplierReference: true,
                     status: true,
                     createdAt: true,
                     deliveryDate: true,
@@ -372,6 +374,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 select: {
                     id: true,
                     invoiceNumber: true,
+                    supplierReference: true,
                     totalAmount: true,
                     status: true,
                     createdAt: true,
@@ -1023,6 +1026,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 orders: todayPurchaseOrders.map(po => ({
                     id: po.id,
                     purchaseOrderNumber: po.purchaseOrderNumber,
+                    supplierReference: po.supplierReference ?? null,
                     totalAmount: (po.totalAmount || new Decimal(0)).toNumber(),
                     status: po.status,
                     supplierName: po.supplier?.companyName || 'Unknown',
@@ -1039,6 +1043,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 orders: todayDeliveryOrders.map(order => ({
                     id: order.id,
                     trackingNumber: order.trackingNumber,
+                    supplierReference: order.supplierReference ?? null,
                     status: order.status,
                     deliveryDate: order.deliveryDate,
                     createdAt: order.createdAt,
@@ -1056,6 +1061,7 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                 invoices: todayInvoices.map(invoice => ({
                     id: invoice.id,
                     invoiceNumber: invoice.invoiceNumber,
+                    supplierReference: invoice.supplierReference ?? null,
                     totalAmount: (invoice.totalAmount || new Decimal(0)).toNumber(),
                     status: invoice.status,
                     supplierName: invoice.supplier?.companyName || 'Unknown',
@@ -1246,6 +1252,7 @@ const fetchTodayOps = async (tenantPrisma: PrismaClient, outletId: number) => {
             select: {
                 id: true,
                 purchaseOrderNumber: true,
+                supplierReference: true,
                 totalAmount: true,
                 status: true,
                 createdAt: true,
@@ -1258,6 +1265,7 @@ const fetchTodayOps = async (tenantPrisma: PrismaClient, outletId: number) => {
             select: {
                 id: true,
                 trackingNumber: true,
+                supplierReference: true,
                 status: true,
                 createdAt: true,
                 deliveryDate: true,
@@ -1270,6 +1278,7 @@ const fetchTodayOps = async (tenantPrisma: PrismaClient, outletId: number) => {
             select: {
                 id: true,
                 invoiceNumber: true,
+                supplierReference: true,
                 totalAmount: true,
                 status: true,
                 createdAt: true,
@@ -1288,6 +1297,7 @@ const fetchTodayOps = async (tenantPrisma: PrismaClient, outletId: number) => {
             orders: todayPurchaseOrders.map(po => ({
                 id: po.id,
                 purchaseOrderNumber: po.purchaseOrderNumber,
+                supplierReference: po.supplierReference ?? null,
                 totalAmount: (po.totalAmount || new Decimal(0)).toNumber(),
                 status: po.status,
                 supplierName: po.supplier?.companyName || 'Unknown',
@@ -1302,6 +1312,7 @@ const fetchTodayOps = async (tenantPrisma: PrismaClient, outletId: number) => {
             orders: todayDeliveryOrders.map(order => ({
                 id: order.id,
                 trackingNumber: order.trackingNumber,
+                supplierReference: order.supplierReference ?? null,
                 status: order.status,
                 deliveryDate: order.deliveryDate,
                 createdAt: order.createdAt,
@@ -1317,6 +1328,7 @@ const fetchTodayOps = async (tenantPrisma: PrismaClient, outletId: number) => {
             invoices: todayInvoices.map(invoice => ({
                 id: invoice.id,
                 invoiceNumber: invoice.invoiceNumber,
+                supplierReference: invoice.supplierReference ?? null,
                 totalAmount: (invoice.totalAmount || new Decimal(0)).toNumber(),
                 status: invoice.status,
                 supplierName: invoice.supplier?.companyName || 'Unknown',

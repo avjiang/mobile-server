@@ -91,7 +91,8 @@
     "util-deprecate": "^1.0.2",
     "utils-merge": "^1.0.1",
     "validator": "^13.11.0",
-    "vary": "^1.1.2"
+    "vary": "^1.1.2",
+    "ws": "^8.18.1"
   },
   "scripts": {
     "build": "tsc",
@@ -128,6 +129,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/mysql": "^2.15.27",
     "@types/node": "^20.17.50",
+    "@types/ws": "^8.18.2",
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "eslint": "^8.50.0",

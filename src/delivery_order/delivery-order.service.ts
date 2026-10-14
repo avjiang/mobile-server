@@ -7,8 +7,11 @@ import { SyncRequest } from "src/item/item.request";
 import { create } from "domain";
 import { CreateDeliveryOrderRequestBody, DeliveryOrderInput } from "./delivery-order.request";
 import { DOCUMENT_PREFIX, ensureDocumentSequences, localDocumentDate, nextDocumentNumber, parseUtcOffsetMinutes } from "../helpers/documentNumber";
+import { normaliseSupplierReference } from "../helpers/supplierReference";
 import { warehouseRef, receiveLayers, consumeFIFO } from "../stock/location-stock-engine";
 import { receiptQtyAfterDebt } from "../stock/supply-shortage";
+import { sendStockAlerts, StockAlertActor, StockAlertRow } from "../stock/stock-alerts";
+import { sameReceivedLines } from "./received-lines";
 
 /** Maps a batch-validation `result.type` onto a translatable entity key. */
 const REFERENCE_ENTITY: Record<string, ErrorEntity> = {
@@ -132,6 +135,7 @@ let getAll = async (
                     deliveryPostalCode: true,
                     deliveryCountry: true,
                     trackingNumber: true,
+                    supplierReference: true,
                     status: true,
                     remark: true,
                     performedBy: true,
@@ -152,6 +156,7 @@ let getAll = async (
                         select: {
                             id: true,
                             purchaseOrderNumber: true,
+                            supplierReference: true,
                             purchaseOrderDate: true
                         },
                         where: { deleted: false }
@@ -160,6 +165,7 @@ let getAll = async (
                         select: {
                             id: true,
                             invoiceNumber: true,
+                            supplierReference: true,
                             invoiceDate: true,
                             invoiceSettlement: {
                                 select: {
@@ -267,6 +273,7 @@ let getById = async (id: number, databaseName: string, outletId?: number) => {
                     select: {
                         id: true,
                         purchaseOrderNumber: true,
+                        supplierReference: true,
                         purchaseOrderDate: true,
                         quotationId: true,
                         discountType: true,
@@ -310,6 +317,7 @@ let getById = async (id: number, databaseName: string, outletId?: number) => {
                     select: {
                         id: true,
                         invoiceNumber: true,
+                        supplierReference: true,
                         invoiceDate: true,
                         taxInvoiceNumber: true,
                         purchaseOrderId: true,
@@ -403,7 +411,7 @@ let getById = async (id: number, databaseName: string, outletId?: number) => {
             if (invoiceWithSettlement?.invoiceSettlement) {
                 const invoices = await tenantPrisma.invoice.findMany({
                     where: { invoiceSettlementId: invoiceWithSettlement.invoiceSettlement.id, deleted: false },
-                    select: { id: true, invoiceNumber: true, subtotalAmount: true, totalAmount: true, status: true, taxInvoiceNumber: true }
+                    select: { id: true, invoiceNumber: true, supplierReference: true, subtotalAmount: true, totalAmount: true, status: true, taxInvoiceNumber: true }
                 });
 
                 invoiceSettlement = { ...invoiceWithSettlement.invoiceSettlement, invoices };
@@ -480,6 +488,7 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                 deliveryPostalCode: true,
                 deliveryCountry: true,
                 trackingNumber: true,
+                supplierReference: true,
                 status: true,
                 remark: true,
                 performedBy: true,
@@ -500,6 +509,7 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                     select: {
                         id: true,
                         purchaseOrderNumber: true,
+                        supplierReference: true,
                         purchaseOrderDate: true
                     },
                     where: { deleted: false }
@@ -508,6 +518,7 @@ let getByDateRange = async (databaseName: string, request: { outletId?: string, 
                     select: {
                         id: true,
                         invoiceNumber: true,
+                        supplierReference: true,
                         invoiceDate: true,
                         invoiceSettlement: {
                             select: {
@@ -688,6 +699,7 @@ let createMany = async (databaseName: string, requestBody: CreateDeliveryOrderRe
                         deliveryPostalCode: deliveryOrderData.deliveryPostalCode,
                         deliveryCountry: deliveryOrderData.deliveryCountry,
                         trackingNumber: await nextDocumentNumber(tx, deliveryOrderData.outletId, DOCUMENT_PREFIX.deliveryOrder, localDate),
+                        supplierReference: normaliseSupplierReference(deliveryOrderData.supplierReference) ?? null,
                         status: deliveryOrderData.status || 'Pending',
                         remark: deliveryOrderData.remark,
                         performedBy: deliveryOrderData.performedBy,
@@ -918,7 +930,9 @@ const updateStockBalancesAndMovements = async (tx: Prisma.TransactionClient, ite
 };
 
 // Helper function to reverse stock operations when delivery order is cancelled
-const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string, siteId: number | null = null) => {
+// `alertRows` (optional) collects outlet rows for the low / out-of-stock alerts
+// (stock-alerts.ts); the warehouse branch adds none (no notification topic).
+const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClient, items: any[], deliveryOrder: any, performedBy: string, siteId: number | null = null, alertRows?: StockAlertRow[]) => {
     const movementOperations = [];
 
     await assertDestinationWarehouseOpen(tx, deliveryOrder);
@@ -966,7 +980,8 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                 outletId: deliveryOrder.outletId,
             })),
             deleted: false
-        }
+        },
+        include: { item: { select: { itemName: true, itemCode: true } } }
     });
 
     // Use composite key for variant support: itemId-itemVariantId
@@ -1009,6 +1024,22 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
                            ON_HAND_QUANTITY   = GREATEST(LEAST(ON_HAND_QUANTITY, 0), ON_HAND_QUANTITY - ${qty}),
                            UPDATED_AT         = NOW(3)
                      WHERE ID = ${currentBalance.id}`;
+
+                if (alertRows) {
+                    // Mirror the SQL clamp: never below min(current, 0).
+                    const floor = Decimal.min(previousAvailableQuantity, new Decimal(0));
+                    const newAvailable = Decimal.max(floor, previousAvailableQuantity.sub(quantityDelta));
+                    alertRows.push({
+                        itemId: item.itemId,
+                        itemVariantId: item.itemVariantId || null,
+                        itemName: currentBalance.item?.itemName ?? '',
+                        itemCode: currentBalance.item?.itemCode ?? null,
+                        previousAvailable: previousAvailableQuantity,
+                        newAvailable,
+                        reorderThreshold: currentBalance.reorderThreshold == null ? null : new Decimal(currentBalance.reorderThreshold),
+                        quantity: previousAvailableQuantity.sub(newAvailable),
+                    });
+                }
 
                 // Create negative movement to reverse the original receipt
                 movementOperations.push({
@@ -1053,8 +1084,16 @@ const reverseStockOperationsForCancellation = async (tx: Prisma.TransactionClien
     });
 };
 
-let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, outletId: number) => {
+/**
+ * `actor` = the requesting user (JWT). A cancellation that takes received stock
+ * back out of an outlet across its reorder level or to zero sends the low /
+ * out-of-stock alert (stock-alerts.ts, source 'delivery_order_reversal') after
+ * commit; without `actor` none is sent.
+ */
+let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, outletId: number, actor?: StockAlertActor) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
+    const alertRows: StockAlertRow[] = [];
+    let alertOutletId: number | null = null;
     try {
         const { id, ...updateData } = deliveryOrder;
 
@@ -1077,6 +1116,9 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
                     select: {
                         id: true,
                         itemId: true,
+                        // A cancel reverses these lines: without the variant the
+                        // stock went back to the parent item's balance.
+                        itemVariantId: true,
                         receivedQuantity: true,
                         unitPrice: true,
                         deliveryFee: true,
@@ -1105,6 +1147,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
                         select: {
                             id: true,
                             purchaseOrderNumber: true,
+                            supplierReference: true,
                             outletId: true,
                             supplierId: true,
                             deleted: true,
@@ -1215,6 +1258,18 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
             }
         }
 
+        // Received lines are fixed once booked (the app shows them read-only and
+        // resends them unchanged). Changing them here used to add the new
+        // quantities on top of the old ones, counting the stock twice; a wrong
+        // receipt is corrected by cancelling it and receiving again.
+        if (Array.isArray(updateData.deliveryOrderItems)
+            && !sameReceivedLines(existingDeliveryOrder.deliveryOrderItems, updateData.deliveryOrderItems)) {
+            throw new RequestValidateError(
+                `Delivery order #${id}: received lines can't be changed. Cancel it and receive the goods again.`,
+                ErrorCode.DeliveryOrderLinesLocked
+            );
+        }
+
         // Use transaction for consistency
         const result = await tenantPrisma.$transaction(async (tx) => {
             const isBeingCancelled = updateData.status === 'CANCELLED';
@@ -1237,6 +1292,9 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
             // trackingNumber (the DO number) is server-assigned at create and immutable — never written here.
             if (updateData.status !== undefined) updateFields.status = updateData.status;
             if (updateData.remark !== undefined) updateFields.remark = updateData.remark;
+            // Missing key = keep (older apps don't send it); null/"" = clear.
+            const supplierReference = normaliseSupplierReference(updateData.supplierReference);
+            if (supplierReference !== undefined) updateFields.supplierReference = supplierReference;
             if (updateData.performedBy !== undefined) updateFields.performedBy = updateData.performedBy;
             if (updateData.siteId !== undefined) updateFields.siteId = updateData.siteId; // Terminal attribution (latest editor)
 
@@ -1277,49 +1335,10 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
                     existingDeliveryOrder.deliveryOrderItems,
                     updatedDeliveryOrder,
                     updateData.performedBy || "SYSTEM",
-                    updateData.siteId ?? null
+                    updateData.siteId ?? null,
+                    alertRows
                 );
-            }
-
-            // Handle delivery order items more efficiently
-            if (updateData.deliveryOrderItems && Array.isArray(updateData.deliveryOrderItems)) {
-                // Compare existing vs new items to minimize operations
-                const existingItemIds = new Set(existingDeliveryOrder.deliveryOrderItems.map(item => item.itemId));
-                const newItemIds = new Set(updateData.deliveryOrderItems.map(item => item.itemId));
-
-                const hasItemChanges = existingItemIds.size !== newItemIds.size ||
-                    [...existingItemIds].some(id => !newItemIds.has(id)) ||
-                    [...newItemIds].some(id => !existingItemIds.has(id));
-
-                if (hasItemChanges) {
-                    // Use deleteMany for better performance
-                    await tx.deliveryOrderItem.deleteMany({
-                        where: { deliveryOrderId: id, deleted: false }
-                    });
-
-                    if (updateData.deliveryOrderItems.length > 0) {
-                        await tx.deliveryOrderItem.createMany({
-                            data: updateData.deliveryOrderItems.map(item => ({
-                                deliveryOrderId: id,
-                                itemId: item.itemId,
-                                itemVariantId: item.itemVariantId || null,
-                                variantSku: item.variantSku || null,
-                                variantName: item.variantName || null,
-                                orderedQuantity: item.orderedQuantity,
-                                receivedQuantity: item.receivedQuantity,
-                                unitPrice: item.unitPrice,
-                                deliveryFee: item.deliveryFee || 0,
-                                remark: item.remark || null,
-                                updatedAt: new Date()
-                            }))
-                        });
-
-                        // Update stock balances for new items (only if not cancelled)
-                        if (!isBeingCancelled) {
-                            await updateStockBalancesAndMovements(tx, updateData.deliveryOrderItems, updatedDeliveryOrder, updateData.performedBy || "SYSTEM", updateData.siteId ?? null);
-                        }
-                    }
-                }
+                alertOutletId = updatedDeliveryOrder.outletId;
             }
 
             // Update purchase order status only if purchase order changed or status changed
@@ -1336,6 +1355,7 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
                         select: {
                             id: true,
                             purchaseOrderNumber: true,
+                            supplierReference: true,
                             outletId: true,
                             supplierId: true,
                             deleted: true,
@@ -1375,6 +1395,18 @@ let update = async (deliveryOrder: DeliveryOrderInput, databaseName: string, out
                 }
             });
         });
+
+        // Low / out-of-stock alerts (fire-and-forget, after commit).
+        if (actor && alertOutletId !== null) {
+            sendStockAlerts({
+                tenantId: actor.tenantId,
+                outletId: alertOutletId,
+                rows: alertRows,
+                triggeringUserId: actor.userId,
+                triggeringUsername: actor.username,
+                source: 'delivery_order_reversal',
+            });
+        }
 
         return result;
     }
@@ -1608,6 +1640,7 @@ let getUnInvoicedDeliveryOrders = async (
                     deliveryPostalCode: true,
                     deliveryCountry: true,
                     trackingNumber: true,
+                    supplierReference: true,
                     status: true,
                     remark: true,
                     performedBy: true,
@@ -1645,6 +1678,7 @@ let getUnInvoicedDeliveryOrders = async (
                         select: {
                             id: true,
                             purchaseOrderNumber: true,
+                            supplierReference: true,
                             outletId: true,
                             supplierId: true,
                             purchaseOrderDate: true,

@@ -47,6 +47,7 @@ export const PERMISSION = {
     RECEIVE_SALES_NOTIFICATION: 'Receive Sales Notification',
     RECEIVE_NOTIFICATION: 'Receive Notification',
     RECEIVE_INVENTORY_NOTIFICATION: 'Receive Inventory Notification',
+    RECEIVE_LOYALTY_NOTIFICATION: 'Receive Loyalty Notification',
     MANAGE_PUSH_DEVICES: 'Manage Push Notification Devices',
     // Loyalty
     MANAGE_LOYALTY_PROGRAM: 'Manage Loyalty Program',

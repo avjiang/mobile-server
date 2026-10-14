@@ -26,6 +26,16 @@ export const requirePermission = (
     // Injectable purely so unit tests can supply a fake; production uses the
     // DB-backed, cached resolver.
     resolve: PermissionResolver = getEffectivePermissions,
+) => requireAnyPermission([permission], resolve);
+
+/**
+ * Like `requirePermission`, but passes when the user holds ANY of [permissions]
+ * (or '*'). Same live resolve, same JWT fallback, same 401/403 errors.
+ * E.g. `GET /loyalty/follow-ups`: 'View Loyalty Accounts' OR 'Receive Loyalty Notification'.
+ */
+export const requireAnyPermission = (
+    permissions: string[],
+    resolve: PermissionResolver = getEffectivePermissions,
 ) =>
     async (req: AuthRequest, _res: Response, next: NextFunction) => {
         const user = req.user as UserInfo | undefined;
@@ -42,8 +52,8 @@ export const requirePermission = (
             granted = user.permissions ?? [];
         }
 
-        if (granted.includes('*') || granted.includes(permission)) {
+        if (granted.includes('*') || permissions.some(p => granted.includes(p))) {
             return next();
         }
-        return next(new AuthenticationError(403, `Missing permission: ${permission}`));
+        return next(new AuthenticationError(403, `Missing permission: ${permissions.join(' or ')}`));
     };

@@ -46,7 +46,6 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
                         username: tenantUser.username
                     }
                 })
-                await tenantPrisma.$disconnect();
 
                 // Check if user not found in tenant database
                 if (!customerUser) {
@@ -125,7 +124,6 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
                     username: tenantUser.username
                 }
             })
-            await tenantPrisma.$disconnect();
         }
 
         // Generate new jwt
@@ -321,7 +319,6 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string,
         });
 
         if (!user) {
-            await tenantPrisma.$disconnect();
             return [];
         }
 
@@ -331,7 +328,6 @@ let getNotificationTopics = async (tenantId: number, userId: number, db: string,
         // Check if user has super admin role (ID 1)
         const isSuperAdmin = roleIds.includes(1);
 
-        await tenantPrisma.$disconnect();
 
         // Extract notification permission names
         const notificationPermissions = new Set<string>();
@@ -515,7 +511,6 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
                 console.error(`generateJwtToken: primary outlet lookup failed for ${db}:`, error);
             }
         }
-        await tenantPrisma.$disconnect();
 
         if (planName === "Pro") {
             notificationTopics = await getNotificationTopics(tenantUser.tenantId, user.id, db, allowedOutletIds);

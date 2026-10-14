@@ -869,6 +869,8 @@ model Invoice {
   id                  Int                @id @default(autoincrement()) @map("ID")
   invoiceNumber       String             @unique @map("INVOICE_NUMBER")
   taxInvoiceNumber    String             @map("TAX_INVOICE_NUMBER")
+  // The supplier's own invoice number. Optional free text, not unique.
+  supplierReference   String?            @map("SUPPLIER_REFERENCE") @db.VarChar(100)
   purchaseOrderId     Int?               @map("PURCHASE_ORDER_ID")
   invoiceSettlementId Int?               @map("INVOICE_SETTLEMENT_ID")
   supplierId          Int?               @map("SUPPLIER_ID")
@@ -1017,6 +1019,8 @@ model InvoiceSettlementPayment {
 model DeliveryOrder {
   id                 Int                 @id @default(autoincrement()) @map("ID")
   trackingNumber     String?             @map("TRACKING_NUMBER")
+  // The supplier's own delivery-note (surat jalan) number. Optional free text, not unique.
+  supplierReference  String?             @map("SUPPLIER_REFERENCE") @db.VarChar(100)
   outletId           Int                 @map("OUTLET_ID")
   customerId         Int?                @map("CUSTOMER_ID")
   purchaseOrderId    Int?                @map("PURCHASE_ORDER_ID")
@@ -1163,6 +1167,7 @@ model QuotationItem {
 model PurchaseOrder {
   id                  Int                 @id @default(autoincrement()) @map("ID")
   purchaseOrderNumber String              @unique @map("PURCHASE_ORDER_NUMBER")
+  supplierReference   String?             @map("SUPPLIER_REFERENCE") @db.VarChar(100) // the supplier's own order / confirmation number (free text)
   outletId            Int                 @map("OUTLET_ID")
   supplierId          Int                 @map("SUPPLIER_ID")
   purchaseOrderDate   DateTime?           @map("PURCHASE_ORDER_DATE")
@@ -1486,6 +1491,7 @@ model StockMovement {
   @@index([itemId, createdAt])
   @@index([outletId])
   @@index([outletId, createdAt]) // Stock Movement Report — outlet + bounded-period scans
+  @@index([outletId, movementType, createdAt]) // by-type drill-down — one movement type at one outlet over a period
   @@index([itemVariantId])
   @@index([movementType])
   @@index([deleted])

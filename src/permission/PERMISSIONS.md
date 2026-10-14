@@ -126,6 +126,7 @@ Permissions for managing the loyalty program, customer loyalty accounts, point a
 | ID | Name | Description |
 |----|------|-------------|
 | 19 | Receive Notification | Master permission to enable push notifications |
+| 41 (local; prod ID assigned by the seed) | Receive Loyalty Notification | Receive loyalty follow-up reminders (customers whose points, vouchers or packages are ending). Topic `tenant_{id}_loyalty` (tenant-wide, daily 09:00 WIB push from `src/cron/loyalty-follow-up.cron.ts`); also opens `GET /loyalty/follow-ups` without View Loyalty Accounts. Super Admin gets it automatically |
 
 ### Device Management Permissions
 
@@ -278,3 +279,4 @@ WHERE PERMISSION_ID = 10 AND IS_DELETED = 0;
 | 2026-03-02 | 1.5 | Added Loyalty permissions (IDs 25-30): Manage Loyalty Program, View Loyalty Accounts, Adjust Loyalty Points, Manage Subscription Packages, View Customer Subscriptions, Manage Customer Subscriptions |
 | 2026-05-14 | 1.6 | Added Sales permission (ID 31): Print Bill — print pre-payment bill from cart, default unassigned (allowed_roles="") |
 | 2026-06-09 | 1.7 | Doc fix: IDs 22/23/24 are named **Add/Edit/Delete Client** (not "Customer") — the seed has always used "Client"; this doc was stale. Aligned the FE `AppPermission` enum `.value` strings (`lib/enum/app_permission_enum.dart`) to match, fixing permanently-hidden client CRUD buttons for non-super-admin users. Notification perm values (`Receive Sales Notification`, `Receive Inventory Notification`) also aligned. |
+| 2026-10-14 | 1.8 | Added Notifications permission **Receive Loyalty Notification** (loyalty follow-up push + read access to `GET /loyalty/follow-ups`). Additive seed row — re-run `seed_permissions` on deploy |

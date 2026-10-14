@@ -188,7 +188,11 @@ let transfer = (req: AuthRequest, res: Response, next: NextFunction) => {
         throw new RequestValidateError("Valid sourceId and destId are required");
     }
 
-    transferStock(req.user.databaseName, body)
+    transferStock(req.user.databaseName, body, {
+        tenantId: req.user.tenantId,
+        userId: req.user.userId,
+        username: req.user.username,
+    })
         .then((result) => sendResponse(res, { success: true, ...result }))
         .catch(next);
 };

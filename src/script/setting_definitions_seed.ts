@@ -238,6 +238,20 @@ const settingDefinitions = [
         isReadOnly: false,
         validationRules: null
     },
+    {
+        // F&B: print the kitchen ticket (queue no., order type, lines with
+        // options and notes, no prices) right after the receipt, on the same
+        // printer (docs/modules/FNB.md). On by default: an F&B order needs it.
+        key: 'auto_print_kitchen_ticket',
+        category: 'Printer',
+        type: 'BOOLEAN',
+        defaultValue: 'true',
+        description: 'Automatically print a kitchen ticket after each sale',
+        scope: 'USER',
+        isRequired: false,
+        isReadOnly: false,
+        validationRules: null
+    },
 
     // ============================================
     // INVENTORY SETTINGS (OUTLET scope)

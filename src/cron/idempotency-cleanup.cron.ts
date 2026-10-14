@@ -18,7 +18,7 @@
  * CREATED_AT means the DELETE ... WHERE CREATED_AT < ? is a range scan.
  */
 
-const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
+const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient, databasesOnServer } = require('../db');
 
 const RETENTION_HOURS = 24;
 
@@ -34,8 +34,9 @@ async function processIdempotencyCleanup(): Promise<void> {
         });
 
         let totalDeleted = 0;
+        const onServer: Set<string> = await databasesOnServer();
         for (const tenant of tenants) {
-            if (!tenant.databaseName) continue;
+            if (!tenant.databaseName || !onServer.has(tenant.databaseName)) continue;
             try {
                 const prisma = getTenantPrisma(tenant.databaseName);
                 const { count } = await prisma.idempotencyRecord.deleteMany({

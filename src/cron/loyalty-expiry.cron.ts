@@ -4,7 +4,7 @@
  * Only processes tenant DBs where planName = 'Pro' and subscription is active.
  */
 
-const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
+const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient, databasesOnServer } = require('../db');
 
 const BATCH_SIZE = 100;
 
@@ -38,8 +38,10 @@ async function processPointExpiry(): Promise<void> {
         }
 
         let totalExpired = 0;
+        const onServer: Set<string> = await databasesOnServer();
 
         for (const [dbName, tenantId] of tenantMap) {
+            if (!onServer.has(dbName)) continue;
             try {
                 const expired = await expirePointsForTenant(dbName);
                 if (expired > 0) {

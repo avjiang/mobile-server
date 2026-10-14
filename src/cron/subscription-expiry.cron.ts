@@ -6,7 +6,7 @@
  * Pro trial, whose existing packages stay redeemable until their end date.
  */
 
-const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient } = require('../db');
+const { getGlobalPrisma, getTenantPrisma, disconnectTenantClient, databasesOnServer } = require('../db');
 
 async function processSubscriptionExpiry(): Promise<void> {
     console.log('[Cron] Starting subscription expiry check...');
@@ -19,10 +19,11 @@ async function processSubscriptionExpiry(): Promise<void> {
         });
 
         let totalExpired = 0;
+        const onServer: Set<string> = await databasesOnServer();
 
         for (const tenant of tenants) {
             const dbName = tenant.databaseName;
-            if (!dbName) continue;
+            if (!dbName || !onServer.has(dbName)) continue;
 
             try {
                 const expired = await expireSubscriptionsForTenant(dbName);

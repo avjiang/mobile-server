@@ -71,9 +71,14 @@ export function getTenantPrisma(tenantDbName: string): TenantPrismaClient {
       },
     },
   });
+  // Eager connect is only a warm-up. Never rethrow here: nothing awaits this promise, so a rethrow is an
+  // unhandled rejection, and index.ts shuts the server down on those (a tenant row without a database took
+  // production down at every cron run until 2026-10-14). The caller's first query fails with the same error,
+  // inside its own try/catch. Drop the dead client so a later call builds a fresh one.
   versionExtension.$connect().catch((error) => {
     console.error(`Failed to connect to tenant database ${tenantDbName}:`, error);
-    throw error;
+    const cached = tenantPrismaInstances.get(tenantDbName);
+    if (cached && cached.client === client) tenantPrismaInstances.delete(tenantDbName);
   });
   const client = versionExtension as TenantPrismaClient;
   tenantPrismaInstances.set(tenantDbName, { client, lastAccessed: Date.now() });

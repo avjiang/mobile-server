@@ -2,6 +2,7 @@ import { PrismaClient, Customer } from "../../prisma/client/generated/client"
 import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from '../db';
 import loyaltyService from '../loyalty/loyalty.service';
+import priceLevelService from '../price-level/price-level.service';
 import { SyncRequest } from "src/item/item.request";
 
 let getAll = async (databaseName: string) => {
@@ -120,6 +121,12 @@ let getById = async (id: number, databaseName: string, loyaltyTier?: 'none' | 'b
 let createMany = async (customers: Customer[], databaseName: string, loyaltyTier?: 'none' | 'basic' | 'advanced') => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // Wholesale pricing: a sent priceLevelId must name a live level (a clear 400
+        // instead of a raw foreign-key error). Absent/null = ecer.
+        for (const c of customers) {
+            await priceLevelService.assertLevelExists(databaseName, (c as any).priceLevelId);
+        }
+
         // Collect non-empty emails and mobiles from incoming data
         const emails = customers.map(c => c.email).filter(e => e) as string[];
         const mobiles = customers.map(c => c.mobile).filter(m => m) as string[];
@@ -183,6 +190,8 @@ let createMany = async (customers: Customer[], databaseName: string, loyaltyTier
 let update = async (customer: Customer, databaseName: string) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
+        // A missing priceLevelId key leaves the level unchanged; null clears it.
+        await priceLevelService.assertLevelExists(databaseName, (customer as any).priceLevelId);
         const updatedCustomer = await tenantPrisma.customer.update({
             where: {
                 id: customer.id

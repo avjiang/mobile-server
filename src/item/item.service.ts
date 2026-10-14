@@ -9,6 +9,14 @@ import { plainToInstance } from "class-transformer"
 import { getTenantPrisma, getGlobalPrisma } from '../db';
 import { SyncRequest } from "./item.request"
 import SimpleCacheService from '../cache/simple-cache.service';
+import {
+    assertBarcodesNotUnitBarcodes,
+    itemPriceTiersInclude,
+    itemUnitsInclude,
+    syncItemUnitsAndTiers,
+    toTierPayload,
+    toUnitPayload,
+} from './item-pricing';
 
 // One entry of the client's `suppliers[]` payload on an item create/update.
 // Local (not exported) — this module uses `export =`, which forbids other exports.
@@ -452,6 +460,10 @@ let getAll = async (
                         leadTimeDays: true,
                     },
                 },
+                // Wholesale pricing: sell units + price tiers. Sent in full on every
+                // sync (like variants/suppliers) so the FE can soft-delete stale rows.
+                units: itemUnitsInclude,
+                priceTiers: itemPriceTiersInclude,
             },
         });
 
@@ -516,6 +528,8 @@ let getAll = async (
                     leadTimeDays: s.leadTimeDays,
                 })),
                 itemSuppliers: undefined,
+                units: toUnitPayload(item.units),
+                priceTiers: toTierPayload(item.priceTiers),
             };
         });
         // Return with server timestamp
@@ -711,6 +725,9 @@ let getById = async (databaseName: string, id: number, outletId?: number) => {
                         leadTimeDays: true,
                     },
                 },
+                // Wholesale pricing — same keys/shape as the list sync.
+                units: itemUnitsInclude,
+                priceTiers: itemPriceTiersInclude,
             }
         })
         if (!item) {
@@ -762,6 +779,8 @@ let getById = async (databaseName: string, id: number, outletId?: number) => {
                 leadTimeDays: s.leadTimeDays,
             })),
             itemSuppliers: undefined,
+            units: toUnitPayload(item.units),
+            priceTiers: toTierPayload(item.priceTiers),
         };
         return rawItemWithStock
     }
@@ -863,6 +882,9 @@ let createMany = async (
                     ).join(', ');
                     throw new BusinessLogicError(`Barcode already used by variant: ${duplicates}`);
                 }
+
+                // Cross-table check: alternateLookup must not be a sell unit's barcode
+                await assertBarcodesNotUnitBarcodes(tx, alternateLookups);
             }
 
             // Batch check all variant barcodes for uniqueness
@@ -911,6 +933,9 @@ let createMany = async (
                     ).join(', ');
                     throw new BusinessLogicError(`Barcode already used by item: ${duplicates}`);
                 }
+
+                // Cross-table check: variant barcode must not be a sell unit's barcode
+                await assertBarcodesNotUnitBarcodes(tx, allBarcodes);
             }
 
             // Resolve fallback supplier/category for accounts that don't track them (laundry,
@@ -952,7 +977,9 @@ let createMany = async (
                     // `suppliers` is the item_supplier junction payload — destructured OUT
                     // so it never spreads into tx.item.create (Item has no such column);
                     // it's written via syncItemSuppliers after the item exists.
-                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, suppliers, siteId, ...itemWithoutId } = itemBody as any;
+                    // `units` / `priceTiers` (wholesale pricing) are written by
+                    // syncItemUnitsAndTiers once the item exists — never spread.
+                    const { stockQuantity, id, categoryId, supplierId, reorderThreshold, cost, alternateLookup, variants, consumables, suppliers, siteId, units, priceTiers, ...itemWithoutId } = itemBody as any;
 
                     // Fall back to the tenant default when supplier/category were not provided.
                     // When a suppliers[] array is present, its preferred entry wins.
@@ -1036,6 +1063,10 @@ let createMany = async (
                         effectiveSupplierId,
                         planName,
                     );
+
+                    // Wholesale pricing: sell units + price tiers (validated, Lite-gated,
+                    // bumps updatedAt). No-op when the payload carries neither key.
+                    await syncItemUnitsAndTiers(tx, createdItem.id, units, priceTiers, planName);
 
                     // Create StockReceipt if cost is provided and stockQuantity > 0 (only for stock-tracked simple items)
                     if (shouldTrackStock && cost !== undefined && cost > 0 && baseStockQuantity > 0) {
@@ -1178,7 +1209,8 @@ let update = async (
         // siteId is destructured OUT so it never spreads into tx.item.update
         // (Item has no siteId column); it's stamped on the stock movements only.
         // suppliers is the item_supplier junction payload — written via syncItemSuppliers.
-        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, suppliers, siteId, ...updateData } = item as any;
+        // units / priceTiers (wholesale pricing) are written via syncItemUnitsAndTiers.
+        const { id, version, categoryId, supplierId, reorderThreshold, deleted, variants, stockQuantity, consumables, suppliers, siteId, units, priceTiers, ...updateData } = item as any;
 
         const updatedItem = await tenantPrisma.$transaction(async (tx) => {
             // Check if alternateLookUp is being updated and not empty
@@ -1212,6 +1244,9 @@ let update = async (
                 if (variantWithSameBarcode) {
                     throw new BusinessLogicError(`Barcode already used by variant: "${variantWithSameBarcode.barcode}" (Item ID: ${variantWithSameBarcode.item.id}, Item: ${variantWithSameBarcode.item.itemName}, Variant: ${variantWithSameBarcode.variantName})`);
                 }
+
+                // Cross-table check: alternateLookUp must not be a sell unit's barcode
+                await assertBarcodesNotUnitBarcodes(tx, [updateData.alternateLookUp]);
             }
 
             // Detect trackStock transition
@@ -1267,6 +1302,11 @@ let update = async (
                 },
                 data: itemUpdateData
             });
+
+            // Wholesale pricing: reconcile sell units + price tiers AFTER the item row
+            // (so its new alternateLookUp takes part in the unit-barcode check). A
+            // payload without the keys leaves them alone; bumps updatedAt when written.
+            await syncItemUnitsAndTiers(tx, id, units, priceTiers, planName);
 
             // Laundry: a supply's unit (Liquid/Weight/Tabung/Piece) is echoed onto
             // every recipe line that consumes it as a DISPLAY label — the consumption
@@ -1549,6 +1589,9 @@ let update = async (
                         ).join(', ');
                         throw new BusinessLogicError(`Barcode already used by item: ${duplicates}`);
                     }
+
+                    // Cross-table check: variant barcode must not be a sell unit's barcode
+                    await assertBarcodesNotUnitBarcodes(tx, barcodeValues);
                 }
                 // ===== END: Barcode uniqueness validation =====
 

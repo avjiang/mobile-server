@@ -22,6 +22,7 @@ import voucherService from '../voucher/voucher.service';
 import { netSaleProfit } from './sale-profit';
 import { CAP_SETTING_KEY, enforceManualDiscount } from './manual-discount';
 import { lineShareOf } from './line-share';
+import { pricingAuditOf } from './price-audit';
 import { latestReceiptCosts } from '../stock/supply-cost';
 
 /**
@@ -2078,6 +2079,7 @@ async function completeNewSales(
                         stockConsumptionQty: item.stockConsumptionQty,
                         unitOfMeasure: item.unitOfMeasure || null,
                         loadWeightKg: item.loadWeightKg ?? null,
+                        ...pricingAuditOf(item as any),
                         __order: item.__order,
                     });
                 } else {
@@ -2133,6 +2135,7 @@ async function completeNewSales(
                             loadWeightKg: item.loadWeightKg ?? null,
                             stockReceiptId: receiptSource?.kind === 'OUTLET' ? receipt.id : null,
                             warehouseStockReceiptId: receiptSource?.kind === 'WAREHOUSE' ? receipt.id : null,
+                            ...pricingAuditOf(item as any),
                             __order: item.__order,
                         });
                     });
@@ -2189,6 +2192,8 @@ async function completeNewSales(
                     stockConsumptionQty: null,
                     unitOfMeasure: item.unitOfMeasure || null,
                     loadWeightKg: item.loadWeightKg ?? null,
+                    // Wholesale pricing audit, stored as sent (./price-audit.ts).
+                    ...pricingAuditOf(item as any),
                     __order: originalLineIndex.get(item) ?? 0,
                 });
             }

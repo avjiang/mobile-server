@@ -304,11 +304,15 @@ model Customer {
   shipPostalCode        String?                @map("SHIP_POSTAL_CODE")
   shipCountry           String?                @map("SHIP_COUNTRY")
   shipRemark            String?                @map("SHIP_REMARK")
+  // Wholesale pricing (docs/future/MULTI_TIER_PRICING.md §2.2): the customer's
+  // price level ("Grosir", "Reseller"). Null = ecer (everyone's prices only).
+  priceLevelId          Int?                   @map("PRICE_LEVEL_ID")
   deleted               Boolean                @default(false) @map("IS_DELETED")
   deletedAt             DateTime?              @map("DELETED_AT")
   createdAt             DateTime?              @default(now()) @map("CREATED_AT")
   updatedAt             DateTime?              @updatedAt @map("UPDATED_AT")
   version               Int?                   @default(1) @map("VERSION")
+  priceLevel            PriceLevel?            @relation(fields: [priceLevelId], references: [id])
   sales                 Sales[]
   promotions            PromotionCustomer[]
   promotionUsage        PromotionUsage[]
@@ -323,6 +327,7 @@ model Customer {
   @@index([deleted, createdAt])
   @@index([deleted, updatedAt])
   @@index([deleted, deletedAt])
+  @@index([priceLevelId])
   @@map("customer")
 }
 
@@ -460,6 +465,11 @@ model Item {
   // Every supplier this item can be purchased from. `supplier`/`supplierId` above is the
   // preferred one and is always mirrored by the row here with isPreferred = true.
   itemSuppliers           ItemSupplier[]
+  // Wholesale pricing: sell units ("Dus isi 40") and price tiers (quantity
+  // breaks + price-level prices). Both travel inside the item delta-sync
+  // payload, so every write to them must bump Item.updatedAt.
+  units                   ItemUnit[]
+  priceTiers              ItemPriceTier[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -536,6 +546,85 @@ model ItemSupplier {
   @@index([supplierId])
   @@index([updatedAt])
   @@map("item_supplier")
+}
+
+// Wholesale pricing — a sell unit of an item ("Dus isi 40", "Pak isi 10") drawn
+// from the item's ONE stock pool. The base unit is the Item itself (its
+// unitOfMeasure); a unit line deducts quantity × factor base units.
+// See docs/future/MULTI_TIER_PRICING.md §2.2 / §2.4.
+model ItemUnit {
+  id            Int             @id @default(autoincrement()) @map("ID")
+  itemId        Int             @map("ITEM_ID")
+  // null = shared by all variants (v1 UI); set = a variant-specific unit (later).
+  itemVariantId Int?            @map("ITEM_VARIANT_ID")
+  name          String          @map("NAME") @db.VarChar(32)
+  // Base units per unit, always > 1 (validated on write).
+  factor        Decimal         @map("FACTOR") @db.Decimal(15, 4)
+  // Tax-inclusive display price per unit, like Item.price.
+  price         Decimal         @map("PRICE") @db.Decimal(15, 4)
+  // Unique against item alternateLookUp, variant barcodes and other units.
+  barcode       String?         @map("BARCODE")
+  sortOrder     Int             @default(0) @map("SORT_ORDER")
+  deleted       Boolean         @default(false) @map("IS_DELETED")
+  deletedAt     DateTime?       @map("DELETED_AT")
+  createdAt     DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt     DateTime?       @updatedAt @map("UPDATED_AT")
+  version       Int?            @default(1) @map("VERSION")
+  item          Item            @relation(fields: [itemId], references: [id])
+  priceTiers    ItemPriceTier[]
+
+  @@index([itemId])
+  @@index([barcode])
+  @@map("item_unit")
+}
+
+// Wholesale pricing — one table for quantity breaks AND price-level prices.
+//   quantity break for everyone: priceLevelId null, minQuantity N
+//   plain level price:           priceLevelId set,  minQuantity 1
+//   carton price for a level:    itemUnitId + priceLevelId
+// minQuantity counts in the row's own unit (no cross-unit totals). The FE
+// resolver takes the LOWEST applicable price (MULTI_TIER_PRICING.md §3).
+model ItemPriceTier {
+  id            Int         @id @default(autoincrement()) @map("ID")
+  itemId        Int         @map("ITEM_ID")
+  itemVariantId Int?        @map("ITEM_VARIANT_ID")
+  itemUnitId    Int?        @map("ITEM_UNIT_ID") // null = base unit
+  priceLevelId  Int?        @map("PRICE_LEVEL_ID") // null = everyone (quantity break)
+  minQuantity   Decimal     @default(1) @map("MIN_QUANTITY") @db.Decimal(15, 4)
+  price         Decimal     @map("PRICE") @db.Decimal(15, 4)
+  deleted       Boolean     @default(false) @map("IS_DELETED")
+  deletedAt     DateTime?   @map("DELETED_AT")
+  createdAt     DateTime?   @default(now()) @map("CREATED_AT")
+  updatedAt     DateTime?   @updatedAt @map("UPDATED_AT")
+  version       Int?        @default(1) @map("VERSION")
+  item          Item        @relation(fields: [itemId], references: [id])
+  // Restrict, not the optional-relation default SetNull: units and levels are only
+  // ever soft-deleted, and a hard delete must never silently turn a carton or
+  // level price into an everyone/base-unit price.
+  itemUnit      ItemUnit?   @relation(fields: [itemUnitId], references: [id], onDelete: Restrict)
+  priceLevel    PriceLevel? @relation(fields: [priceLevelId], references: [id], onDelete: Restrict)
+
+  @@index([itemId])
+  @@index([itemUnitId])
+  @@index([priceLevelId])
+  @@map("item_price_tier")
+}
+
+// Wholesale pricing — a named customer price level ("Grosir", "Reseller").
+// Delta-synced on its own (GET /priceLevel/sync); Customer.priceLevelId points here.
+model PriceLevel {
+  id         Int             @id @default(autoincrement()) @map("ID")
+  name       String          @map("NAME") @db.VarChar(32)
+  deleted    Boolean         @default(false) @map("IS_DELETED")
+  deletedAt  DateTime?       @map("DELETED_AT")
+  createdAt  DateTime?       @default(now()) @map("CREATED_AT")
+  updatedAt  DateTime?       @updatedAt @map("UPDATED_AT")
+  version    Int?            @default(1) @map("VERSION")
+  customers  Customer[]
+  priceTiers ItemPriceTier[]
+
+  @@index([updatedAt])
+  @@map("price_level")
 }
 
 model Category {
@@ -827,6 +916,19 @@ model SalesItem {
   // sales cost+profit restatement when invoice re-pricing changes a receipt's cost.
   stockReceiptId          Int?            @map("STOCK_RECEIPT_ID")
   warehouseStockReceiptId Int?            @map("WAREHOUSE_STOCK_RECEIPT_ID")
+  // Wholesale pricing audit (docs/future/MULTI_TIER_PRICING.md §2.2/§2.5), set by
+  // the FE resolver and stored as sent. Snapshots, not foreign keys: a unit or
+  // level deleted later must never break a sale's history.
+  //   priceSource  BASE | UNIT | TIER | LEVEL | MANUAL (null = sold before the feature → Ecer)
+  //   listPrice    unit price the resolver chose, before any manual edit
+  //   priceLevelId customer level applied (null = ecer)
+  //   itemUnitId / unitName / unitFactor  the sell unit ("Dus", 40); null = base unit
+  priceSource             String?         @map("PRICE_SOURCE") @db.VarChar(8)
+  listPrice               Decimal?        @map("LIST_PRICE") @db.Decimal(15, 4)
+  priceLevelId            Int?            @map("PRICE_LEVEL_ID")
+  itemUnitId              Int?            @map("ITEM_UNIT_ID")
+  unitName                String?         @map("UNIT_NAME") @db.VarChar(32)
+  unitFactor              Decimal?        @map("UNIT_FACTOR") @db.Decimal(15, 4)
   sales               Sales               @relation(fields: [salesId], references: [id])
   itemVariant         ItemVariant?        @relation(fields: [itemVariantId], references: [id])
   selectedModifiers   SalesItemModifier[]

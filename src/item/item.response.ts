@@ -135,6 +135,10 @@ export class ItemDto {
     @Expose()
     isAvailable: boolean | undefined = undefined;
 
+    // F&B kitchen station override (null = the category's station).
+    @Expose()
+    stationId: number | null | undefined = undefined;
+
     // Terminal attribution — the terminal that created this item (RegisteredDevice
     // siteId). Must be @Expose'd or class-transformer (excludeExtraneousValues)
     // drops it before createMany. Stamped on the item's stock movements.

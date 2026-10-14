@@ -409,6 +409,9 @@ model Item {
   // F&B "sold out today": false keeps the item in the sales grid greyed out with a
   // "Habis" badge and hides it from the catalogue / QR menu. Independent of stock.
   isAvailable             Boolean                  @default(true) @map("IS_AVAILABLE")
+  // F&B: overrides the category's kitchen station for this dish.
+  stationId               Int?                     @map("STATION_ID")
+  station                 Station?                 @relation(fields: [stationId], references: [id])
   // Laundry vertical: default machine-load weight (kg) for a "service" item, used to
   // prefill the consumption dialog at sale time. Null for non-laundry items.
   defaultLoadWeightKg     Decimal?                 @map("DEFAULT_LOAD_WEIGHT_KG") @db.Decimal(15, 4)
@@ -547,6 +550,9 @@ model Category {
   // F&B menu tiles: a food icon (a Flutter Icons name from the app's curated food set,
   // e.g. "ramen_dining") shown on a dish that has no photo. Null = the vertical default.
   icon                          String?                       @map("ICON") @db.VarChar(64)
+  // F&B: the kitchen station this category's dishes go to (null = no routing).
+  stationId                     Int?                          @map("STATION_ID")
+  station                       Station?                      @relation(fields: [stationId], references: [id])
   deleted                       Boolean                       @default(false) @map("IS_DELETED")
   deletedAt                     DateTime?                     @map("DELETED_AT")
   createdAt                     DateTime?                     @default(now()) @map("CREATED_AT")
@@ -1549,17 +1555,24 @@ model Table {
   @@map("table")
 }
 
+// F&B kitchen station ("Dapur", "Bar") — where a dish's kitchen ticket goes
+// (docs/modules/FNB.md, D5). Routing: Item.stationId ?? Category.stationId ?? none.
 model Station {
   id           Int            @id @default(autoincrement()) @map("ID")
   outletId     Int            @map("OUTLET_ID")
   name         String         @map("NAME") // e.g., "Kitchen", "Bar"
+  sequence     Int            @default(0) @map("SEQUENCE")
   deleted      Boolean        @default(false) @map("IS_DELETED")
   deletedAt    DateTime?      @map("DELETED_AT")
   createdAt    DateTime?      @default(now()) @map("CREATED_AT")
   updatedAt    DateTime?      @updatedAt @map("UPDATED_AT")
   version      Int?           @default(1) @map("VERSION")
   outlet       Outlet         @relation(fields: [outletId], references: [id])
+  categories   Category[]
+  items        Item[]
+  kitchenTickets KitchenTicket[]
 
+  @@index([updatedAt])
   @@map("station")
 }
 
@@ -2360,4 +2373,38 @@ model SalesItemModifier {
   @@index([salesItemId])
   @@index([modifierId])
   @@map("sales_item_modifier")
+}
+
+// A kitchen ticket as fired: a snapshot of what one station must make, like the
+// printed chit (docs/modules/FNB.md, D5). Written when a counter sale completes
+// (P2) or an order round is sent (P4); the KDS (P5) moves its status.
+model KitchenTicket {
+  id           Int       @id @default(autoincrement()) @map("ID")
+  outletId     Int       @map("OUTLET_ID")
+  // Null = unrouted (the "Default" station: printed on the receipt printer).
+  stationId    Int?      @map("STATION_ID")
+  // 'sale' (counter sale, P2) | 'order' (dine-in round, P4).
+  source       String    @default("sale") @map("SOURCE") @db.VarChar(16)
+  salesId      Int?      @map("SALES_ID")
+  orderRef     String?   @map("ORDER_REF") @db.VarChar(64)
+  round        Int       @default(1) @map("ROUND")
+  queueNo      String?   @map("QUEUE_NO") @db.VarChar(16)
+  label        String?   @map("LABEL") @db.VarChar(100)
+  salesType    String?   @map("SALES_TYPE") @db.VarChar(32)
+  // NEW | PREPARING | READY | SERVED
+  status       String    @default("NEW") @map("STATUS") @db.VarChar(16)
+  // [{itemId, name, variantName?, quantity, modifiers: [{groupName, modifierName, quantity}], note?}]
+  lines        Json      @map("LINES")
+  siteId       Int?      @map("SITE_ID")
+  deleted      Boolean   @default(false) @map("IS_DELETED")
+  createdAt    DateTime  @default(now()) @map("CREATED_AT")
+  updatedAt    DateTime  @updatedAt @map("UPDATED_AT")
+  version      Int       @default(1) @map("VERSION")
+  station      Station?  @relation(fields: [stationId], references: [id])
+
+  @@index([outletId, createdAt])
+  @@index([stationId, status])
+  @@index([salesId])
+  @@index([updatedAt])
+  @@map("kitchen_ticket")
 }

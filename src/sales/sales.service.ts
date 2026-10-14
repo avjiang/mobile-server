@@ -1,5 +1,6 @@
 import { Payment, Prisma, PrismaClient, Sales, SalesItem, StockBalance, StockMovement } from "../../prisma/client/generated/client"
 import { attachSalesItemModifiers } from "./sales-item-modifiers";
+import { writeSaleKitchenTickets } from "../kitchen/kitchen-tickets";
 import {
     findPaidSaleIdByClientRef,
     findSaleIdByClientRef,
@@ -2326,6 +2327,18 @@ async function completeNewSales(
             // F&B: snapshot each line's modifiers onto every persisted row of that
             // request line (a FIFO split yields several rows for one line).
             await attachSalesItemModifiers(tx, createdSales.id, salesBody.salesItems, salesItemData);
+
+            // F&B (a sale with a queue number): one kitchen ticket per station.
+            if (salesBody.queueNo) {
+                await writeSaleKitchenTickets(tx, {
+                    id: createdSales.id,
+                    outletId: salesBody.outletId,
+                    queueNo: createdSales.queueNo,
+                    customerLabel: createdSales.customerLabel,
+                    salesType: createdSales.salesType,
+                    siteId: createdSales.siteId,
+                }, salesBody.salesItems as any);
+            }
 
             // Batch create payments
             await tx.payment.createMany({

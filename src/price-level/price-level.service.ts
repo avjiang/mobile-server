@@ -4,7 +4,7 @@
 // point here. Rows are only ever soft-deleted.
 
 import { PrismaClient } from "../../prisma/client/generated/client";
-import { BusinessLogicError, NotFoundError, RequestValidateError } from "../api-helpers/error";
+import { BusinessLogicError, ErrorCode, NotFoundError, RequestValidateError } from "../api-helpers/error";
 import { getTenantPrisma } from "../db";
 import { SyncRequest } from "../item/item.request";
 
@@ -71,7 +71,7 @@ async function assertNameFree(tenantPrisma: PrismaClient, name: string, excludeI
         where: { name, deleted: false, ...(excludeId !== undefined ? { id: { not: excludeId } } : {}) },
         select: { id: true },
     });
-    if (clash) throw new BusinessLogicError(`Price level "${name}" already exists`);
+    if (clash) throw new BusinessLogicError(`Price level "${name}" already exists`, ErrorCode.PriceLevelNameTaken, { name });
 }
 
 let createMany = async (databaseName: string, levels: Array<{ name?: unknown }>) => {
@@ -82,7 +82,8 @@ let createMany = async (databaseName: string, levels: Array<{ name?: unknown }>)
     const names = levels.map(l => normalizePriceLevelName(l?.name));
     const lower = names.map(n => n.toLowerCase());
     if (new Set(lower).size !== lower.length) {
-        throw new BusinessLogicError('The same price level name is used twice');
+        const dup = names.find((n, i) => lower.indexOf(n.toLowerCase()) !== i) ?? names[0];
+        throw new BusinessLogicError('The same price level name is used twice', ErrorCode.PriceLevelNameTaken, { name: dup });
     }
     for (const n of names) await assertNameFree(tenantPrisma, n);
     const created = await tenantPrisma.$transaction(
@@ -104,15 +105,35 @@ let update = async (databaseName: string, body: { id?: unknown; name?: unknown }
 };
 
 /**
- * Soft-delete a level. Its price tiers go with it, and customers on it drop back to
- * ecer. Both are re-synced to devices: the tiers by bumping their items' updatedAt
- * (tiers travel inside the item delta), the customers by their own updatedAt.
+ * The delete rule (Phase 3, the safer of the two options): a level that live
+ * customers still carry is NOT deleted — silently dropping "Toko Budi" back to ecer
+ * would change what a shop charges a regular buyer without anyone deciding it. The
+ * owner moves those customers first (customer form → Level harga). Pure; tagged so
+ * the app says it in the user's language.
+ */
+export function assertLevelNotInUse(name: string, customerCount: number): void {
+    if (customerCount > 0) {
+        throw new BusinessLogicError(
+            `Price level "${name}" is still used by ${customerCount} customer(s)`,
+            ErrorCode.PriceLevelInUse,
+            { name, count: String(customerCount) },
+        );
+    }
+}
+
+/**
+ * Soft-delete a level that no live customer uses ([assertLevelNotInUse]). Its item
+ * level prices go with it (they could never apply again) and are re-synced by bumping
+ * their items' updatedAt (tiers travel inside the item delta). Soft-deleted customers
+ * still pointing at it are cleared, so a restore never resurrects a dead level.
  */
 let remove = async (databaseName: string, id: number) => {
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     return tenantPrisma.$transaction(async (tx) => {
         const existing = await tx.priceLevel.findFirst({ where: { id, deleted: false } });
         if (!existing) throw new NotFoundError("Price level");
+        const inUse = await tx.customer.count({ where: { priceLevelId: id, deleted: false } });
+        assertLevelNotInUse(existing.name, inUse);
         const now = new Date();
         const tiers = await tx.itemPriceTier.findMany({
             where: { priceLevelId: id, deleted: false },

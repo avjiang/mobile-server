@@ -182,6 +182,34 @@ export function assertNoDuplicateTiers(tiers: Array<NormalizedTier & { resolvedU
 }
 
 /**
+ * Quantity breaks must get cheaper as the quantity rises (Phase 2, D7): inside one
+ * (variant, unit, level) group, sorted by minQuantity, every next price is strictly
+ * lower than the one before. "12+ → 3.300, 40+ → 3.400" would make buying more cost
+ * more per piece, which is always a typing slip. Breaks of different units or levels
+ * are separate ladders (no cross-unit totals). The item form blocks the same thing
+ * before it is sent; this is the server's copy of the rule.
+ */
+export function assertDecreasingTiers(tiers: Array<NormalizedTier & { resolvedUnitId: number | null }>): void {
+    const groups = new Map<string, Array<NormalizedTier>>();
+    for (const t of tiers) {
+        const key = `${t.itemVariantId ?? '-'}|${t.resolvedUnitId ?? '-'}|${t.priceLevelId ?? '-'}`;
+        const list = groups.get(key) ?? [];
+        list.push(t);
+        groups.set(key, list);
+    }
+    for (const list of groups.values()) {
+        const sorted = [...list].sort((a, b) => a.minQuantity.comparedTo(b.minQuantity));
+        for (let i = 1; i < sorted.length; i++) {
+            if (!sorted[i].price.lt(sorted[i - 1].price)) {
+                throw new BusinessLogicError(
+                    `The price from ${sorted[i].minQuantity.toString()} must be lower than the price from ${sorted[i - 1].minQuantity.toString()}`,
+                );
+            }
+        }
+    }
+}
+
+/**
  * Retail Lite has no wholesale pricing (owner, 2026-10-14). Same rule as variants:
  * a step down blocks ADDING, never using — rows carried over from a higher plan
  * (they have ids) stay editable/removable; a new row is refused.
@@ -370,6 +398,7 @@ export async function syncItemUnitsAndTiers(
             return { ...t, resolvedUnitId };
         });
         assertNoDuplicateTiers(resolved);
+        assertDecreasingTiers(resolved);
         await assertVariantsBelong(tx, itemId, resolved.map(t => t.itemVariantId).filter((v): v is number => v !== null));
 
         const levelIds = [...new Set(resolved.map(t => t.priceLevelId).filter((v): v is number => v !== null))];

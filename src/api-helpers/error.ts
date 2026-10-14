@@ -106,6 +106,13 @@ export enum ErrorCode {
      *  (wholesale multi-UOM; a scan must resolve to one thing). params: barcode, owner */
     BarcodeInUse = 'BARCODE_IN_USE',
 
+    // -- Price levels (wholesale) ---------------------------------------------
+    /** A customer price level ("Grosir") is still set on customers, so it can't be
+     *  deleted (move them first). params: name, count */
+    PriceLevelInUse = 'PRICE_LEVEL_IN_USE',
+    /** Another live price level already has this name (case-insensitive). params: name */
+    PriceLevelNameTaken = 'PRICE_LEVEL_NAME_TAKEN',
+
     // -- Plan limits (402) ----------------------------------------------------
     /** The tenant's plan doesn't include this feature. params: plan */
     PlanFeatureLocked = 'PLAN_FEATURE_LOCKED',

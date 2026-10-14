@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { Decimal } from "decimal.js";
 
 import {
+    assertDecreasingTiers,
     assertNoDuplicateTiers,
     assertWholesaleAllowed,
     normalizeTiers,
@@ -84,6 +85,31 @@ describe("normalizeTiers / duplicates", () => {
             { ...base, priceLevelId: null, minQuantity: new Decimal(12), resolvedUnitId: null },
             { ...base, priceLevelId: 1, minQuantity: new Decimal(12), resolvedUnitId: null },
             { ...base, priceLevelId: null, minQuantity: new Decimal(12), resolvedUnitId: 7 },
+        ]));
+    });
+});
+
+describe("assertDecreasingTiers (Phase 2: breaks get cheaper as qty rises)", () => {
+    const t = (minQuantity: number, price: number, extra: Partial<{ priceLevelId: number | null; resolvedUnitId: number | null; itemVariantId: number | null }> = {}) => ({
+        id: null, itemVariantId: null, itemUnitId: null, unitName: null, priceLevelId: null,
+        minQuantity: new Decimal(minQuantity), price: new Decimal(price), resolvedUnitId: null, ...extra,
+    });
+
+    test("12+ 3.300 · 40+ 3.200 is fine, in any payload order", () => {
+        assert.doesNotThrow(() => assertDecreasingTiers([t(40, 3200), t(12, 3300)]));
+    });
+
+    test("a higher or equal price at a higher quantity is rejected", () => {
+        assert.throws(() => assertDecreasingTiers([t(12, 3300), t(40, 3400)]), /must be lower/);
+        assert.throws(() => assertDecreasingTiers([t(12, 3300), t(40, 3300)]), BusinessLogicError);
+    });
+
+    test("each unit and each level is its own ladder (no cross-unit totals)", () => {
+        assert.doesNotThrow(() => assertDecreasingTiers([
+            t(12, 3300),
+            t(10, 120000, { resolvedUnitId: 7 }), // Dus breaks are in Dus prices
+            t(1, 3400, { priceLevelId: 2 }),       // a level price stands alone
+            t(12, 3350, { itemVariantId: 4 }),
         ]));
     });
 });
@@ -236,6 +262,21 @@ describe("syncItemUnitsAndTiers", () => {
         // This item's own stored unit may keep (or hand over) its barcode.
         f = fakeTx({ items, units: [{ id: 7, itemId: 1, name: "Dus", barcode: "333" }] });
         await assert.doesNotReject(syncItemUnitsAndTiers(f.tx, 1, [{ id: 7, name: "Dus", factor: 40, price: 1, barcode: "333" }], undefined, "Basic"));
+    });
+
+    test("breaks that get dearer, or twice the same quantity, are rejected before anything is written", async () => {
+        let f = fakeTx();
+        await assert.rejects(
+            syncItemUnitsAndTiers(f.tx, 1, undefined, [{ minQuantity: 12, price: 3300 }, { minQuantity: 40, price: 3400 }], "Basic"),
+            /must be lower/,
+        );
+        assert.equal(f.db.tiers.length, 0);
+        f = fakeTx();
+        await assert.rejects(
+            syncItemUnitsAndTiers(f.tx, 1, undefined, [{ minQuantity: 12, price: 3300 }, { minQuantity: "12", price: 3200 }], "Basic"),
+            /same quantity/,
+        );
+        assert.equal(f.db.tiers.length, 0);
     });
 
     test("a tier on an unknown unit name or a deleted level is rejected", async () => {

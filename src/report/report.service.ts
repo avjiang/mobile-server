@@ -426,6 +426,9 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                             subtotalAmount: true,
                             // Wholesale sell unit snapshot ("2 Dus" in the sales ledger).
                             unitName: true,
+                            // Wholesale: a LEVEL-priced line shows its level ("Grosir").
+                            priceSource: true,
+                            priceLevelId: true,
                         }
                     }
                 },
@@ -1115,6 +1118,8 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
                     taxAmount: item.taxAmount.toNumber(),
                     subtotalAmount: item.subtotalAmount.toNumber(),
                     unitName: item.unitName ?? null,
+                    priceSource: item.priceSource ?? null,
+                    priceLevelId: item.priceLevelId ?? null,
                 }))
             }))
         };
@@ -1191,13 +1196,14 @@ const computeOutletReportFingerprint = async (
     // v3: the payload gained `manualDiscount` (SPRINT_008) — entries cached before
     // it must not be served without the field.
     // v4: the payload gained `priceMix` and base-unit item rankings (wholesale Phase 1r).
+    // v5: sales-ledger lines carry `priceSource` + `priceLevelId` (wholesale Phase 3).
     const [s, p, e] = await Promise.all([
         tenantPrisma.sales.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
         tenantPrisma.payment.aggregate({ where: range, _count: { id: true }, _max: { updatedAt: true } }),
         tenantPrisma.expense.aggregate({ where: { outletId, businessDate: { gte: startDate, lte: endDate } }, _count: { id: true }, _max: { updatedAt: true } }),
     ]);
     return [
-        'v4',
+        'v5',
         s._count.id, s._max.updatedAt?.toISOString() ?? '',
         p._count.id, p._max.updatedAt?.toISOString() ?? '',
         e._count.id, e._max.updatedAt?.toISOString() ?? '',
@@ -1709,6 +1715,9 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                             subtotalAmount: true,
                             // Wholesale sell unit snapshot ("2 Dus" in the sales ledger).
                             unitName: true,
+                            // Wholesale: a LEVEL-priced line shows its level ("Grosir").
+                            priceSource: true,
+                            priceLevelId: true,
                         }
                     }
                 },
@@ -2388,6 +2397,8 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
                     taxAmount: item.taxAmount.toNumber(),
                     subtotalAmount: item.subtotalAmount.toNumber(),
                     unitName: item.unitName ?? null,
+                    priceSource: item.priceSource ?? null,
+                    priceLevelId: item.priceLevelId ?? null,
                 }))
             }))
         };
@@ -2580,6 +2591,9 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                             subtotalAmount: true,
                             // Wholesale sell unit snapshot ("2 Dus" in the sales ledger).
                             unitName: true,
+                            // Wholesale: a LEVEL-priced line shows its level ("Grosir").
+                            priceSource: true,
+                            priceLevelId: true,
                         }
                     }
                 },
@@ -2853,6 +2867,8 @@ let generateLaundryReport = async (databaseName: string, sessionId: number) => {
                     taxAmount: item.taxAmount.toNumber(),
                     subtotalAmount: item.subtotalAmount.toNumber(),
                     unitName: item.unitName ?? null,
+                    priceSource: item.priceSource ?? null,
+                    priceLevelId: item.priceLevelId ?? null,
                 }))
             }))
         };

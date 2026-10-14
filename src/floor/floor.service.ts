@@ -5,7 +5,10 @@ import { getTenantPrisma } from "../db"
 // Logical canvas 1000 × 700 per area.
 
 export const CANVAS = { width: 1000, height: 700 }
-const SHAPES = ["square", "round", "rect"]
+// Tables are square / round / rect; "marker" (Kasir, Pintu masuk) and "wall"
+// are drawn on the map but never hold a bill.
+const SHAPES = ["square", "round", "rect", "marker", "wall"]
+export const NON_SEATING = ["marker", "wall"]
 const ROTATIONS = [0, 45, 90]
 
 export interface AreaInput { id?: number; key?: string; name: string; sequence?: number }
@@ -82,8 +85,8 @@ const save = async (databaseName: string, outletId: number, body: { areas?: Area
                 tableNumber: name,
                 capacity: Math.round(clamp(t.seats, 1, 50, 4)),
                 areaId,
-                width: clamp(t.width, 40, 400, 110),
-                height: clamp(t.height, 40, 400, 110),
+                width: clamp(t.width, 20, 600, 110), // 20 = a wall's thickness
+                height: clamp(t.height, 20, 600, 110),
                 x: 0, y: 0,
                 shape: SHAPES.includes(String(t.shape)) ? String(t.shape) : "square",
                 rotation: ROTATIONS.includes(Number(t.rotation)) ? Number(t.rotation) : 0,

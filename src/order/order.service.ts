@@ -2,6 +2,7 @@ import { Prisma } from "../../prisma/client/generated/client"
 import { BusinessLogicError, NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { getTenantPrisma } from "../db"
 import { writeKitchenTickets } from "../kitchen/kitchen-tickets"
+import { NON_SEATING } from "../floor/floor.service"
 
 // F&B open bills (docs/modules/FNB.md, D3/P4). The device mints `orderRef` and
 // every line's `lineRef`, so a queued (offline) open / round replays without
@@ -129,7 +130,7 @@ const appendRound = async (tx: Prisma.TransactionClient, order: { id: number; ou
 
 const assertTableFree = async (tx: Prisma.TransactionClient, outletId: number, tableId: number, exceptOrderId?: number) => {
     const table = await tx.table.findFirst({ where: { id: tableId, outletId, deleted: false } })
-    if (!table) throw new RequestValidateError("Table not found")
+    if (!table || NON_SEATING.includes(table.shape)) throw new RequestValidateError("Table not found")
     const busy = await tx.order.findFirst({ where: { tableId, status: { in: LIVE }, ...(exceptOrderId ? { id: { not: exceptOrderId } } : {}) } })
     if (busy) throw new BusinessLogicError(`Table ${table.tableNumber} already has an open bill`)
 }
@@ -216,14 +217,14 @@ const cancel = async (databaseName: string, outletId: number, orderRef: string) 
 /**
  * Claims the bill (OPEN → SETTLING, one device wins), runs [completeSale], then
  * closes it (SETTLED + the sale id) — or releases it back to OPEN if the sale
- * failed. A replay of a settled bill returns its sale id.
+ * failed. A replay of a settled bill returns only its sale id.
  */
 const settle = async (
     databaseName: string,
     outletId: number,
     orderRef: string,
     completeSale: (tableId: number | null) => Promise<{ id: number }>,
-): Promise<{ salesId: number; alreadySettled?: boolean }> => {
+): Promise<{ salesId: number; sale?: { id: number }; alreadySettled?: boolean }> => {
     const prisma = getTenantPrisma(databaseName)
     const claimed = await prisma.order.updateMany({ where: { orderRef, outletId, status: "OPEN" }, data: { status: "SETTLING" } })
     const order = await prisma.order.findFirst({ where: { orderRef, outletId } })
@@ -238,7 +239,8 @@ const settle = async (
             where: { id: order.id },
             data: { status: "SETTLED", settledSalesId: sale.id, closedAt: new Date(), version: { increment: 1 } },
         })
-        return { salesId: sale.id }
+        // The sale row, as /sales/completeNewSales returns it, so the till shows the receipt.
+        return { salesId: sale.id, sale }
     } catch (e) {
         await prisma.order.update({ where: { id: order.id }, data: { status: "OPEN" } })
         throw e

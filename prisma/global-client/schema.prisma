@@ -171,6 +171,8 @@ model RefreshToken {
   createdByIP  String?   @map("CREATED_BY")
   revoked      DateTime? @map("REVOKED_DATETIME")
   deleted      Boolean   @default(false) @map("IS_DELETED")
+  // Lite one-device rule: the device session this token belongs to (null = issued before the rule)
+  sessionId    String?   @map("SESSION_ID")
 
   @@index([expired])
   @@index([revoked])
@@ -378,4 +380,18 @@ model TenantAddOn {
   @@unique([tenantId, addOnId])
   @@index([tenantId])
   @@map("tenant_add_on")
+}
+
+// Lite one-device rule (src/auth/lite-session.ts): the one device a Lite login is
+// active on. A login on another device replaces SESSION_ID; tokens carrying the old
+// id are refused with SESSION_REPLACED. Only written for Lite tenants.
+model TenantUserSession {
+  tenantUserId   Int       @id @map("TENANT_USER_ID")
+  sessionId      String    @map("SESSION_ID")
+  clientDeviceId String?   @map("CLIENT_DEVICE_ID")
+  deviceName     String?   @map("DEVICE_NAME")
+  startedAt      DateTime  @default(now()) @map("STARTED_AT")
+  lastSeenAt     DateTime? @map("LAST_SEEN_AT")
+
+  @@map("tenant_user_session")
 }

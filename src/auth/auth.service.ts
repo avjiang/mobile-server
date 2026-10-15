@@ -9,6 +9,8 @@ import { NotFoundError, RequestValidateError } from "../api-helpers/error"
 import { UserInfo } from "../middleware/authorize-middleware"
 import { User } from "../../prisma/client/generated/client"
 import { resolvePermissions } from "./permission-cache"
+import { isLitePlan } from "../middleware/require-plan.middleware"
+import { liteSessions, SessionReplacedError } from "./lite-session"
 const { getGlobalPrisma, getTenantPrisma } = require('../db');
 
 const prisma: PrismaClient = getGlobalPrisma()
@@ -54,10 +56,16 @@ let authenticate = async (req: AuthenticateRequestBody, ipAddress: string) => {
             }
 
             // Authentication successful so generate jwt & refresh tokens
-            const { token: jwtToken, globalOutletId, loyaltyTier } = await generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '')
+            // Lite: one device at a time — throws LITE_DEVICE_IN_USE unless takeover.
+            const startSession = () => liteSessions.start(
+                tenantUser.id,
+                { clientDeviceId: req.clientDeviceId, deviceName: req.deviceName },
+                req.takeover === true,
+            )
+            const { token: jwtToken, globalOutletId, loyaltyTier, sid } = await generateJwtToken(tenantUser, customerUser, tenantUser?.tenant?.databaseName || '', startSession)
             const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
             const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
-            const refreshToken = await generateRefreshToken(tenantUser, ipAddress)
+            const refreshToken = await generateRefreshToken(tenantUser, ipAddress, sid)
             const response: TokenResponseBody = {
                 token: jwtToken,
                 tokenExpiryDate: tokenExpiryDate ?? "",
@@ -97,6 +105,9 @@ let validateToken = async (req: TokenRequestBody) => {
 
 let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
     try {
+        // Lite one-device rule: a token whose session moved to another device is
+        // answered with SESSION_REPLACED (where the account went), not a bare 400.
+        await assertSessionNotReplaced(req.refreshToken)
         const refreshToken = await getRefreshToken(req.refreshToken)
         const tenantUser = await getById(refreshToken.tenantUserId)
         // A login deleted since this token was issued must not stay signed in
@@ -104,10 +115,6 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
         if (!tenantUser || tenantUser.isDeleted) {
             throw new RequestValidateError('Invalid refresh token')
         }
-
-        // Replace current refresh token with a new one
-        const newRefreshToken = await generateRefreshToken(tenantUser, ipAddress)
-        await revokeToken(req)
 
         let customerUser;
         if (tenantUser.username === "avjiang") {
@@ -126,8 +133,15 @@ let refreshToken = async (req: RefreshTokenRequestBody, ipAddress: string) => {
             })
         }
 
-        // Generate new jwt
-        const { token: jwtToken, globalOutletId, loyaltyTier } = await generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '')
+        // Generate new jwt. Lite keeps the token's session; a token from before the
+        // rule (no session) claims one — last device wins.
+        const keepSession = async () => refreshToken.sessionId ?? liteSessions.start(tenantUser.id, {}, true)
+        const { token: jwtToken, globalOutletId, loyaltyTier, sid } = await generateJwtToken(tenantUser, customerUser, tenantUser.tenant?.databaseName ?? '', keepSession)
+        // Replace current refresh token with a new one (same session)
+        const newRefreshToken = await generateRefreshToken(tenantUser, ipAddress, sid)
+        // Direct update, not revokeToken(): a session claim above may already have
+        // revoked this row, and revokeToken() refuses an inactive token.
+        await prisma.refreshToken.update({ where: { token: refreshToken.token }, data: { revoked: new Date(), deleted: true } })
         const decodedToken = jwt.decode(jwtToken) as { exp?: number, user?: UserInfo };
         const tokenExpiryDate = decodedToken.exp ? new Date(decodedToken.exp * 1000).toISOString() : null;
         const response: TokenResponseBody = {
@@ -185,6 +199,19 @@ let getRefreshTokens = async (userId: number) => {
     }
     catch (error) {
         throw error
+    }
+}
+
+/**
+ * Lite one-device rule: when [token] belongs to a session that is no longer the
+ * user's current one, throw SESSION_REPLACED with where the account is now.
+ */
+let assertSessionNotReplaced = async (token: string) => {
+    const row = await prisma.refreshToken.findFirst({ where: { token }, select: { tenantUserId: true, sessionId: true } })
+    if (!row?.sessionId) return
+    const active = await liteSessions.current(row.tenantUserId)
+    if (active && active.sessionId !== row.sessionId) {
+        throw new SessionReplacedError(liteSessions.describe(active))
     }
 }
 
@@ -466,7 +493,11 @@ async function fetchUserPermissions(db: string, userId: number, username: string
     }
 }
 
-let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) => {
+/**
+ * [liteSession] runs only for a Lite plan and returns the device session the token
+ * belongs to (auth/lite-session.ts); other plans carry no `sid`.
+ */
+let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string, liteSession?: () => Promise<string>) => {
     // Get notification topics for the user (skip for avjiang)
     let notificationTopics: string[] = [];
     let planName: string | null = null;
@@ -534,11 +565,16 @@ let generateJwtToken = async (tenantUser: TenantUser, user: User, db: string) =>
         allowedOutletIds,
         permissions,
     }
+    let sid: string | null = null
+    if (liteSession && isLitePlan(planName)) {
+        sid = await liteSession()
+        userInfo.sid = sid
+    }
     const token = jwt.sign({ user: userInfo }, jwt_token_secret, { expiresIn: '1d' });
-    return { token, globalOutletId, loyaltyTier };
+    return { token, globalOutletId, loyaltyTier, sid };
 }
 
-let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {
+let generateRefreshToken = async (user: TenantUser, ipAddress: string, sessionId: string | null = null) => {
     //create a refresh token that expires in 1 day
     try {
         var tokenExpiredDate = new Date()
@@ -549,7 +585,8 @@ let generateRefreshToken = async (user: TenantUser, ipAddress: string) => {
                 tenantUserId: user.id,
                 token: randomTokenString(),
                 expired: tokenExpiredDate,
-                createdByIP: ipAddress
+                createdByIP: ipAddress,
+                sessionId,
             }
         })
         return refreshTokenObject

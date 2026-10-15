@@ -11,6 +11,8 @@ import { disconnectAllPrismaClients, startTenantClientEviction, getTenantClientS
 import { initCronJobs } from './cron/cron-manager';
 import { CLOUDFLARE_IP_RANGES } from './constants/cloudflare-ips';
 import { liveNotifications } from './live/live-notifications';
+import { syncSignals } from './live/sync-signals';
+import { liteSessionGuard } from './auth/lite-session';
 const app = express()
 const port = process.env.PORT || 8080;
 
@@ -76,6 +78,8 @@ app.use('/public', require('./public/public.controller'))
 
 //authentication middleware
 app.use(authorizeMiddleware)
+// Lite one-device rule: a token whose session moved to another device → 401 SESSION_REPLACED.
+app.use(liteSessionGuard())
 
 // Admin routes are mounted BEFORE requireOutletAccess so the outlet middleware
 // never inspects admin URLs. Admin endpoints carry a global tenant_outlet.id in
@@ -90,6 +94,10 @@ app.use(requireOutletAccess)
 // Dedupe retries of the same write (clientIdempotencyKey from Flutter outbox).
 // Must run after auth so we know which tenant DB to query.
 app.use(idempotencyMiddleware)
+
+// After a successful write, poke the outlet's other terminals over the live socket
+// so they pull the change now instead of on their next timer (live/sync-signals.ts).
+app.use(syncSignals())
 
 // all api routes that need authorize should place here
 app.use('/account', require('./account/account.controller'))

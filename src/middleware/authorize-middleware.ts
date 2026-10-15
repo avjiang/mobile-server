@@ -28,6 +28,9 @@ export interface UserInfo {
     // = no permissions. Tokens older than the rollout will lack this field — treat
     // missing as empty.
     permissions?: string[]
+    // Lite one-device rule (auth/lite-session.ts): the device session this token
+    // belongs to. Absent on non-Lite tokens and on tokens issued before the rule.
+    sid?: string
 }
 
 export default (req: AuthRequest, res: Response, next: NextFunction) => {

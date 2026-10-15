@@ -104,6 +104,10 @@ export enum ErrorCode {
     // -- Plan limits (402) ----------------------------------------------------
     /** The tenant's plan doesn't include this feature. params: plan */
     PlanFeatureLocked = 'PLAN_FEATURE_LOCKED',
+    /** Lite login while another device holds the session (409). params: deviceName, online, lastSeenAt, startedAt */
+    LiteDeviceInUse = 'LITE_DEVICE_IN_USE',
+    /** Lite token whose session moved to another device (401). params: deviceName, online, lastSeenAt, startedAt */
+    SessionReplaced = 'SESSION_REPLACED',
     /** The plan's item cap is reached. params: limit */
     ItemLimitReached = 'ITEM_LIMIT_REACHED',
 }

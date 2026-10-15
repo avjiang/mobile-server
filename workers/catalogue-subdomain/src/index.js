@@ -46,6 +46,7 @@ export default {
     // path and query (so /public/c/<slug>?x=1 etc. still work).
     const target = `${ORIGIN}/public/c/${encodeURIComponent(sub)}${url.pathname === "/" ? "" : url.pathname}${url.search}`;
 
+    const live = url.pathname.startsWith("/q/") || url.pathname.startsWith("/order");
     const headers = new Headers(request.headers);
     // CRITICAL: drop the inbound Host (<slug>.bayaryuk.net) so fetch() sets
     // Host=<origin>; otherwise the origin 404s the request.
@@ -68,7 +69,10 @@ export default {
       // hit per 5 min per edge location. Pages are identical for all visitors
       // (tokenless, no cookies), so edge caching is safe. Only GET/HEAD are ever
       // cached. Keep in sync with the origin s-maxage in public.controller.ts.
-      { cf: { cacheEverything: true, cacheTtl: 300 } },
+      // F&B QR self-order (P6): the menu page (/q/<token>) is per-table and the
+      // order + status calls (/order…) are live — never cache them. Only the
+      // store page keeps the edge cache.
+      live ? { cf: { cacheEverything: false, cacheTtl: 0 } } : { cf: { cacheEverything: true, cacheTtl: 300 } },
     );
 
     // Pass the origin response straight back (status, headers, body). The public

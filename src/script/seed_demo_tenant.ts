@@ -1,7 +1,7 @@
 /**
  * Provision / reseed the "Coba Demo" tenants.
  *
- *   node dist/script/seed_demo_tenant.js <local|prod> [retail|laundry|both]
+ *   node dist/script/seed_demo_tenant.js <local|prod> [retail|laundry|fnb|both]
  *
  * Examples:
  *   node dist/script/seed_demo_tenant.js local both
@@ -27,11 +27,11 @@ const target = (process.argv[2] as Target) || 'local';
 const which = (process.argv[3] || 'both').toLowerCase();
 
 if (!['local', 'prod'].includes(target)) {
-    console.error(`Unknown target "${target}". Usage: seed_demo_tenant.js <local|prod> [retail|laundry|both]`);
+    console.error(`Unknown target "${target}". Usage: seed_demo_tenant.js <local|prod> [retail|laundry|fnb|both]`);
     process.exit(1);
 }
-if (!['retail', 'laundry', 'both'].includes(which)) {
-    console.error(`Unknown vertical "${which}". Use retail, laundry, or both.`);
+if (!['retail', 'laundry', 'fnb', 'both'].includes(which)) {
+    console.error(`Unknown vertical "${which}". Use retail, laundry, fnb, or both.`);
     process.exit(1);
 }
 
@@ -52,8 +52,8 @@ const { seedDemoTenant } = require('../demo/demo-seed.service') as typeof import
 const { disconnectAllPrismaClients } = require('../db') as typeof import('../db');
 
 async function run() {
-    const verticals: Array<'retail' | 'laundry'> =
-        which === 'both' ? ['retail', 'laundry'] : [which as 'retail' | 'laundry'];
+    const verticals: Array<'retail' | 'laundry' | 'fnb'> =
+        which === 'both' ? ['retail', 'laundry'] : [which as 'retail' | 'laundry' | 'fnb'];
 
     for (const vertical of verticals) {
         const started = Date.now();

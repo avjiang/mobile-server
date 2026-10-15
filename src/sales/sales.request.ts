@@ -77,6 +77,10 @@ export class CreateSalesRequest {
     // or they silently never reach tx.sales.create.
     @Expose() orderRef?: string;
     @Expose() friendlyNumber?: string;
+    // F&B counter (docs/modules/FNB.md): the short daily queue number ("A-024"),
+    // minted on the terminal so it prints offline, and the "atas nama / no. meja" label.
+    @Expose() queueNo?: string;
+    @Expose() customerLabel?: string;
     // Stock source (optional — Pro tenants). When stockSourceType === 'WAREHOUSE',
     // stock is deducted from stockSourceWarehouseId instead of the outlet. Defaults
     // to outlet behaviour when omitted.
@@ -126,6 +130,25 @@ export class CreateSalesItemRequest {
     // Laundry: actual processed weight (kg) on a wash-service line. The charged
     // price is fixed to the machine load; this is captured only for KG reporting.
     @Expose() loadWeightKg?: PrismaDecimal;
+    // F&B: the cook's note for this line ("tanpa bawang").
+    @Expose() specialInstructions?: string;
+    // F&B: the options chosen on this line. The line's price already includes them;
+    // these rows are the snapshot for the receipt, kitchen ticket and reports.
+    @Expose()
+    @Type(() => CreateSalesItemModifierRequest)
+    modifiers?: CreateSalesItemModifierRequest[];
+}
+
+export class CreateSalesItemModifierRequest {
+    // Null when the option was deleted from the library before an offline sale synced.
+    @Expose() modifierId?: number | null;
+    // Snapshot names; the server fills a missing one from the library.
+    @Expose() groupName?: string;
+    @Expose() modifierName?: string;
+    // Unit price charged for one pick (0 inside the group's free limit).
+    @Expose() price?: number;
+    // Picks per unit of the line (2 = "extra keju ×2").
+    @Expose() quantity?: number;
 }
 
 export class CalculateSalesObject {

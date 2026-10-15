@@ -11,6 +11,8 @@ import { parseBoolean } from "../helpers/booleanHelper"
 import { validateDates } from "../helpers/dateHelper"
 import { plainToClass, plainToInstance } from "class-transformer";
 import { AuthRequest } from "../middleware/auth-request"
+import { requirePermission } from "../middleware/require-permission.middleware"
+import { PERMISSION } from "../permission/permission-names"
 
 const router = express.Router()
 
@@ -147,6 +149,22 @@ let remove = (req: AuthRequest, res: Response, next: NextFunction) => {
         .catch(next)
 }
 
+// F&B "Habis" toggle from the sales grid (docs/modules/FNB.md).
+let setAvailability = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        throw new RequestValidateError('User not authenticated');
+    }
+    if (!validator.isNumeric(req.params.id)) {
+        throw new RequestValidateError('ID format incorrect')
+    }
+    if (typeof req.body?.isAvailable !== 'boolean') {
+        throw new RequestValidateError('isAvailable must be true or false')
+    }
+    service.setAvailability(req.user.databaseName, parseInt(req.params.id), req.body.isAvailable)
+        .then((result) => sendResponse(res, result))
+        .catch(next)
+}
+
 let getSoldItemRanking = (req: AuthRequest, res: Response, next: NextFunction) => {
     const { startDate, endDate } = req.query
     if (!req.user) {
@@ -259,5 +277,6 @@ router.get("/variant/attributes/values", getVariantAttributeValues)
 router.get('/:id', getById)
 router.post('/create', createMany)
 router.put('/update', update)
+router.put('/:id/availability', requirePermission(PERMISSION.MARK_MENU_SOLD_OUT), setAvailability)
 router.delete('/:id', remove)
 export = router

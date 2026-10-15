@@ -4,7 +4,7 @@ export interface CreateTenantRequest {
     tenant: {
         tenantName: string;
         plan: string;
-        // REQUIRED — the business vertical ("Retail" | "Laundry", matched against
+        // REQUIRED — the business vertical ("Retail" | "Laundry" | "F&B", matched against
         // subscription_plan.PLAN_TYPE). It used to default to "Retail", so a laundry
         // signup that forgot it silently became a retail tenant.
         planType: string;

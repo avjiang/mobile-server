@@ -7,17 +7,19 @@ export const ADD_ON_IDS = {
 } as const;
 
 /**
- * Advanced Loyalty is bundled into the Laundry Pro plan (see
- * auth.service `getTenantSubscriptionInfo`), so it must never be billed as a
- * paid add-on for Laundry tenants. Use this to drop it from any cost/billing
- * breakdown when the tenant's plan type is Laundry — even if a stray
- * tenant_add_on record exists (e.g. a Retail→Laundry conversion).
+ * Advanced Loyalty is bundled into the plan (see auth.service
+ * `getTenantSubscriptionInfo`) for every **Laundry** plan and for **F&B Pro**,
+ * so it must never be billed as a paid add-on there — even if a stray
+ * tenant_add_on record exists (e.g. a Retail→Laundry conversion). F&B Basic
+ * buys it like Retail does (docs/future/FNB_FEATURES.md §4).
  */
-export const isLaundryBundledAddOn = (
+export const isPlanBundledAddOn = (
     addOnId: number,
     planType?: string | null,
+    planName?: string | null,
 ): boolean =>
-    addOnId === ADD_ON_IDS.ADVANCED_LOYALTY && planType === 'Laundry';
+    addOnId === ADD_ON_IDS.ADVANCED_LOYALTY &&
+    (planType === 'Laundry' || (planType === 'F&B' && planName === 'Pro'));
 
 /**
  * Add-ons that are no longer sold. Tenants who bought one before it was
@@ -31,5 +33,6 @@ export const isRetiredAddOn = (addOnId: number): boolean =>
 export const isNonBillableAddOn = (
     addOnId: number,
     planType?: string | null,
+    planName?: string | null,
 ): boolean =>
-    isRetiredAddOn(addOnId) || isLaundryBundledAddOn(addOnId, planType);
+    isRetiredAddOn(addOnId) || isPlanBundledAddOn(addOnId, planType, planName);

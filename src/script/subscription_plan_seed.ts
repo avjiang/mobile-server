@@ -75,9 +75,8 @@ const subscriptionPlans = [
         maxDevices: 3,
         description: "Pro plan for laundry businesses with push notification support"
     },
-    // F&B plans: PLACEHOLDER prices from tool/product_catalog/catalog.json `plans.fnb`
-    // (owner, 2026-09-28: pricing deferred). Local only until the final price is set;
-    // seeding prod is a Wave 1 launch gate (docs/future/FNB_FEATURES.md §7 #2).
+    // F&B plans: prices from tool/product_catalog/catalog.json `plans.fnb` (owner-approved
+    // 2026-10-15: Basic Rp 250.000 / 3 users, Pro Rp 450.000 / 5 users; FE docs/modules/SUBSCRIPTION.md).
     {
         planName: "Trial",
         planType: "F&B",
@@ -91,7 +90,7 @@ const subscriptionPlans = [
     {
         planName: "Basic",
         planType: "F&B",
-        price: 199000,
+        price: 250000,
         maxTransactions: null,
         maxProducts: null,
         maxUsers: 3,
@@ -101,7 +100,7 @@ const subscriptionPlans = [
     {
         planName: "Pro",
         planType: "F&B",
-        price: 399000,
+        price: 450000,
         maxTransactions: null,
         maxProducts: null,
         maxUsers: 5,

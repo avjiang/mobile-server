@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express"
+import { parseReversalReason } from './reversal-reason';
 import { rejectPlan, clampHistoryStart } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./sales.service"
@@ -497,7 +498,9 @@ const voidSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         salesId,
         req.outletId,
         // Acting terminal performing the void (client-supplied, nullable).
-        (req.body as any)?.siteId ?? null
+        (req.body as any)?.siteId ?? null,
+        // Why — the reason sheet (null from older apps; malformed → 400).
+        parseReversalReason(req.body)
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -521,7 +524,9 @@ const returnSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         salesId,
         req.outletId,
         // Acting terminal performing the return (client-supplied, nullable).
-        (req.body as any)?.siteId ?? null
+        (req.body as any)?.siteId ?? null,
+        // Why — the reason sheet (null from older apps; malformed → 400).
+        parseReversalReason(req.body)
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -545,7 +550,9 @@ const refundSales = (req: AuthRequest, res: Response, next: NextFunction) => {
         salesId,
         req.outletId,
         // Acting terminal performing the refund (client-supplied, nullable).
-        (req.body as any)?.siteId ?? null
+        (req.body as any)?.siteId ?? null,
+        // Why — the reason sheet (null from older apps; malformed → 400).
+        parseReversalReason(req.body)
     )
         .then((sales: Sales) => sendResponse(res, sales))
         .catch(next);
@@ -727,11 +734,13 @@ router.post('/calculate', calculateSales)
 router.post('/completeNewSales', completeNewSales)
 router.post('/addPayment', addPaymentToPartiallyPaidSales);
 router.put('/update', update)
-router.put('/void/:id', voidSales)
-router.put('/return/:id', rejectPlan('Lite'), returnSales)
-router.put('/refund/:id', rejectPlan('Lite'), refundSales)
+// Void / return / refund need "Void & Refund Sales" (backfilled onto every role with
+// View Sales History by grant_anomaly_permissions.ts, so nobody lost the action).
+router.put('/void/:id', requirePermission(PERMISSION.VOID_REFUND_SALES), voidSales)
+router.put('/return/:id', rejectPlan('Lite'), requirePermission(PERMISSION.VOID_REFUND_SALES), returnSales)
+router.put('/refund/:id', rejectPlan('Lite'), requirePermission(PERMISSION.VOID_REFUND_SALES), refundSales)
 // Safe-metadata edit of a sale (name/phone/remark/shipping address). Gated behind
-// "Modify Sales History" — the only permission-gated sales route. Static '/contact'
+// "Modify Sales History". Static '/contact'
 // suffix (retained for backward-compat with older binaries) keeps it distinct from
 // the catch-all '/:id' route. PUT matches the FE's initiatePUT path and the sibling
 // void/return/refund verbs above.

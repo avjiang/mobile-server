@@ -126,6 +126,7 @@ app.use('/expenseCategory', require('./expense-category/expense-category.control
 app.use('/expense', require('./expense/expense.controller'))
 app.use('/expenseRecurringTemplate', require('./expense-recurring-template/expense-recurring-template.controller'))
 app.use('/costRate', require('./cost-rate/cost-rate.controller'))
+app.use('/anomaly', require('./anomaly/anomaly.controller'))
 
 // error middleware
 app.use(errorMiddleware)

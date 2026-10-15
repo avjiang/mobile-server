@@ -113,6 +113,7 @@ Permissions for managing the loyalty program, customer loyalty accounts, point a
 | 14 | Modify Sales History | Modify existing sales histories |
 | 18 | Receive Sales Notification | Receive sales related notification |
 | 31 | Print Bill | Print pre-payment bill from cart |
+| (seed-assigned) | Void & Refund Sales | Void, return or refund a completed sale. Required by `PUT /sales/void|return|refund/:id`; the app asks for a reason (stored on the sale). Backfilled onto roles holding View Sales History by `grant_anomaly_permissions.ts` |
 
 ### Function Management Permissions
 
@@ -127,6 +128,8 @@ Permissions for managing the loyalty program, customer loyalty accounts, point a
 |----|------|-------------|
 | 19 | Receive Notification | Master permission to enable push notifications |
 | 41 (local; prod ID assigned by the seed) | Receive Loyalty Notification | Receive loyalty follow-up reminders (customers whose points, vouchers or packages are ending). Topic `tenant_{id}_loyalty` (tenant-wide, daily 09:00 WIB push from `src/cron/loyalty-follow-up.cron.ts`); also opens `GET /loyalty/follow-ups` without View Loyalty Accounts. Super Admin gets it automatically |
+| (seed-assigned) | Receive Security Alert Notification | Anomaly alerts (Pro): topic `tenant_{id}_security` (tenant-wide) and read access to `GET /anomaly/*`. Super Admin gets it automatically; backfilled onto roles holding View Financial Reports |
+| (seed-assigned) | Manage Security Alerts | Change the anomaly rules (`PUT /anomaly/rules`); also reads the alerts. Backfilled like the one above |
 
 ### Device Management Permissions
 
@@ -279,4 +282,5 @@ WHERE PERMISSION_ID = 10 AND IS_DELETED = 0;
 | 2026-03-02 | 1.5 | Added Loyalty permissions (IDs 25-30): Manage Loyalty Program, View Loyalty Accounts, Adjust Loyalty Points, Manage Subscription Packages, View Customer Subscriptions, Manage Customer Subscriptions |
 | 2026-05-14 | 1.6 | Added Sales permission (ID 31): Print Bill — print pre-payment bill from cart, default unassigned (allowed_roles="") |
 | 2026-06-09 | 1.7 | Doc fix: IDs 22/23/24 are named **Add/Edit/Delete Client** (not "Customer") — the seed has always used "Client"; this doc was stale. Aligned the FE `AppPermission` enum `.value` strings (`lib/enum/app_permission_enum.dart`) to match, fixing permanently-hidden client CRUD buttons for non-super-admin users. Notification perm values (`Receive Sales Notification`, `Receive Inventory Notification`) also aligned. |
+| 2026-10-14 | 1.9 | Added **Void & Refund Sales** (Sales; gates void/return/refund), **Receive Security Alert Notification** + **Manage Security Alerts** (Notifications; anomaly alerts, Pro). Run `seed_permissions`, then `grant_anomaly_permissions.ts` |
 | 2026-10-14 | 1.8 | Added Notifications permission **Receive Loyalty Notification** (loyalty follow-up push + read access to `GET /loyalty/follow-ups`). Additive seed row — re-run `seed_permissions` on deploy |

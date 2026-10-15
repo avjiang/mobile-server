@@ -256,3 +256,63 @@ export const LOYALTY_TARGETS: [number, number, number][] = [
     [1, 950000, 820],
     [3, 1250000, 1400],
 ];
+
+/**
+ * The retail demo's shop identity. createTenant names the first outlet "Main Outlet"
+ * (English), which the security alerts print in every title and detail ("… · Main
+ * Outlet"); the laundry demo already renames its own (LAUNDRY_SHOP).
+ */
+export const RETAIL_SHOP = {
+    outletName: 'Outlet Utama',
+};
+
+/**
+ * Security alerts (Peringatan Keamanan, Pro) — the retail demo's two cashiers and what
+ * they did today, replayed through the real anomaly engine by seedSecurityAlerts.
+ * `user` is a preserved table, so the cashiers are upserted by username (tenant-only
+ * rows: they cannot log in, and they stay within Pro's 3 free users with the owner).
+ */
+export const DEMO_CASHIERS = [
+    { username: 'Andi', firstName: 'Andi', lastName: 'Saputra' },
+    { username: 'Sari', firstName: 'Sari', lastName: 'Permata' },
+] as const;
+
+export type DemoReversalReason = 'WRONG_INPUT' | 'CUSTOMER_CANCELLED' | 'WRONG_PRICE' | 'DAMAGED';
+
+export interface SecurityStoryStep {
+    /** DEMO_CASHIERS username. */
+    cashier: string;
+    /** [RETAIL_ITEMS code, quantity]. */
+    lines: [string, number][];
+    method: 'Cash' | 'Bank Transfer';
+    /** Minutes before the story's anchor (see seedSecurityAlerts) the sale was rung. */
+    soldAt: number;
+    /** Manual order discount in %, if any. */
+    discountPercent?: number;
+    /** Voided this many minutes before the anchor, with this reason. */
+    voidAt?: number;
+    reason?: DemoReversalReason;
+}
+
+/**
+ * The owner allowed 2 voids per cashier a day (registry default: 1) — so the third
+ * void is the one that alerts, and its push reads "Andi membatalkan 3 transaksi hari
+ * ini". Written through the real save path (anomaly.queries saveRules).
+ */
+export const SECURITY_RULE_CONFIG = [{ ruleId: 'REVERSAL_BURST', params: { maxPerDay: 2 } }];
+
+/**
+ * Today, in order. What the engine makes of it (rules at their defaults otherwise):
+ *   1. Andi voids a CASH sale 6 min after payment          → QUICK_REVERSAL  "Batal cepat"
+ *   2. Sari gives 30 % off (limit 20 %), still above cost  → LARGE_DISCOUNT  "Diskon besar"
+ *   3. Andi voids a transfer sale (2nd today, limit 2)     → nothing
+ *   4. Andi voids a cash sale 22 min after payment (3rd)   → REVERSAL_BURST  "Pembatalan beruntun",
+ *      Rp 20.000 + Rp 73.000 + Rp 75.000 = Rp 168.000
+ * Sari's basket keeps a 40 % margin, so 30 % off never trips BELOW_COST.
+ */
+export const SECURITY_STORY: SecurityStoryStep[] = [
+    { cashier: 'Andi', lines: [['MIN-002', 2], ['SNK-002', 1]], method: 'Cash', soldAt: 112, voidAt: 106, reason: 'WRONG_INPUT' },
+    { cashier: 'Sari', lines: [['SNK-001', 4], ['MIN-001', 5]], method: 'Cash', soldAt: 80, discountPercent: 30 },
+    { cashier: 'Andi', lines: [['SMB-002', 1], ['SMB-003', 2]], method: 'Bank Transfer', soldAt: 52, voidAt: 40, reason: 'CUSTOMER_CANCELLED' },
+    { cashier: 'Andi', lines: [['SMB-001', 1]], method: 'Cash', soldAt: 31, voidAt: 9, reason: 'WRONG_PRICE' },
+];

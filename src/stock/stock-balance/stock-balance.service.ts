@@ -7,6 +7,7 @@ import { getTenantPrisma } from '../../db';
 import { } from '../../db';
 import { SyncRequest } from "src/item/item.request";
 import { pushAlertRow, sendStockAlertsByOutlet, StockAlertActor, StockAlertRow } from '../stock-alerts';
+import { onStockAdjusted } from '../../anomaly/anomaly.service';
 
 // stock function
 let getAllStock = async (
@@ -397,6 +398,8 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
                     deleted: false,
                     createdAt: new Date(),
                     performedBy: adjustment.performedBy ?? null,
+                    // The trusted actor (JWT) — anomaly alerts; the display name above is the phone's.
+                    performedByUserId: actor?.userId ?? null,
                     // Terminal attribution — the terminal performing this adjustment.
                     siteId: adjustment.siteId ?? null,
                 });
@@ -561,6 +564,19 @@ async function stockAdjustment(databaseName: string, stockAdjustments: StockAdju
 
         // Low / out-of-stock alerts (fire-and-forget, after commit).
         sendStockAlertsByOutlet(alertRowsByOutlet, actor, 'stock_adjustment');
+
+        // Anomaly alerts (Pro): a large write-off at FIFO cost, an adjustment
+        // after hours. Fire-and-forget.
+        if (actor) {
+            onStockAdjusted({
+                databaseName,
+                tenantId: actor.tenantId,
+                actor: { userId: actor.userId, username: actor.username },
+                siteId: stockAdjustments.find((a) => a.siteId != null)?.siteId ?? null,
+                adjusted: stockAdjustments.map((a) => ({ itemId: a.itemId, outletId: a.outletId })),
+                writeOffs: wastageEntries,
+            });
+        }
 
         return adjustedCount;
     } catch (error) {

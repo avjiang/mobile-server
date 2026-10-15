@@ -11,6 +11,7 @@ import { processSubscriptionExpiry } from './subscription-expiry.cron';
 import { processIdempotencyCleanup } from './idempotency-cleanup.cron';
 import { processPlanReminders } from './plan-reminder.cron';
 import { processLoyaltyFollowUps } from './loyalty-follow-up.cron';
+import { processAnomalyDaily } from './anomaly-daily.cron';
 
 // Business timezone (WIB, as in helpers/documentNumber.ts). Without it node-cron uses the host clock, which is UTC on
 // both the Oracle VM and Azure, so "2:00 AM" ran at 09:00 WIB / 10:00 MYT, in opening hours (fixed 2026-10-14).
@@ -61,7 +62,17 @@ function initCronJobs(): void {
         }
     }, SCHEDULE);
 
-    console.log('[Cron] Cron jobs initialized: point-expiry 00:00, subscription-expiry 00:30, idempotency-cleanup 01:00, plan-reminder + loyalty-follow-up 09:00 (Asia/Jakarta)');
+    // Security alerts nightly — every hour 17:05–23:05 WIB; each tenant is handled
+    // at its own closing-report hour (anomaly rule DAILY_REPORT, default 21).
+    cron.schedule('5 17-23 * * *', async () => {
+        try {
+            await processAnomalyDaily();
+        } catch (error) {
+            console.error('[Cron] Unhandled error in security nightly:', error);
+        }
+    }, SCHEDULE);
+
+    console.log('[Cron] Cron jobs initialized: point-expiry 00:00, subscription-expiry 00:30, idempotency-cleanup 01:00, plan-reminder + loyalty-follow-up 09:00, security-nightly 17:05–23:05 hourly (Asia/Jakarta)');
 }
 
 export { initCronJobs };

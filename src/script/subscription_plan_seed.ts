@@ -75,6 +75,38 @@ const subscriptionPlans = [
         maxDevices: 3,
         description: "Pro plan for laundry businesses with push notification support"
     },
+    // F&B plans: prices from tool/product_catalog/catalog.json `plans.fnb` (owner-approved
+    // 2026-10-15: Basic Rp 250.000 / 3 users, Pro Rp 450.000 / 5 users; FE docs/modules/SUBSCRIPTION.md).
+    {
+        planName: "Trial",
+        planType: "F&B",
+        price: 0,
+        maxTransactions: null,
+        maxProducts: null,
+        maxUsers: 2,
+        maxDevices: 0,
+        description: null
+    },
+    {
+        planName: "Basic",
+        planType: "F&B",
+        price: 250000,
+        maxTransactions: null,
+        maxProducts: null,
+        maxUsers: 3,
+        maxDevices: 0,
+        description: "Basic plan for food & beverage outlets"
+    },
+    {
+        planName: "Pro",
+        planType: "F&B",
+        price: 450000,
+        maxTransactions: null,
+        maxProducts: null,
+        maxUsers: 5,
+        maxDevices: 3,
+        description: "Pro plan for food & beverage outlets: recipes, kitchen display, QR self-order"
+    },
 ];
 
 export async function seedSubscriptionPlans(): Promise<void> {

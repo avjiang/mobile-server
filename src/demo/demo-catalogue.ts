@@ -7,11 +7,15 @@
  * Beras, and a flat distribution makes the demo's top-items chart look fake.
  */
 
-export type DemoVertical = 'retail' | 'laundry';
+export type DemoVertical = 'retail' | 'laundry' | 'fnb';
 
 export interface DemoCategory {
     name: string;
     description: string;
+    /** F&B: the menu tile's food icon (a name from the app's food icon set). */
+    icon?: string;
+    /** F&B: index into FNB_STATIONS (which kitchen station makes it). */
+    station?: number;
 }
 
 export interface DemoItemDef {
@@ -38,8 +42,11 @@ export interface DemoItemDef {
     pricingMode?: 'per_kg' | 'per_piece' | 'flat_per_load';
     /** Laundry `per_kg` services: the weighed kg range a sale draws from. */
     kgRange?: [number, number];
-    /** Laundry services: supplies consumed per sale (`item_consumable`). */
+    /** Laundry services: supplies consumed per sale (`item_consumable`). F&B dishes:
+     *  the recipe per portion (`recipe` rows; `rate` in the supply's unit, basis 'perLoad'). */
     recipe?: { supply: string; rate: number; basis: 'perKg' | 'perLoad' }[];
+    /** F&B: option groups (FNB_MODIFIER_GROUPS names) this dish offers. */
+    groups?: string[];
 }
 
 export const DEMO_SUPPLIER = {
@@ -51,6 +58,15 @@ export const DEMO_SUPPLIER = {
         email: 'sales@sumberrejeki.example.id',
         companyCity: 'Bandung',
         companyState: 'Jawa Barat',
+    },
+    fnb: {
+        companyName: 'UD Pangan Segar Aceh',
+        personInChargeFirstName: 'Teuku',
+        personInChargeLastName: 'Rizal',
+        mobile: '081265432198',
+        email: 'order@pangansegar.example.id',
+        companyCity: 'Banda Aceh',
+        companyState: 'Aceh',
     },
     laundry: {
         companyName: 'PT Kimia Bersih Nusantara',
@@ -316,3 +332,93 @@ export const SECURITY_STORY: SecurityStoryStep[] = [
     { cashier: 'Andi', lines: [['SMB-002', 1], ['SMB-003', 2]], method: 'Bank Transfer', soldAt: 52, voidAt: 40, reason: 'CUSTOMER_CANCELLED' },
     { cashier: 'Andi', lines: [['SMB-001', 1]], method: 'Cash', soldAt: 31, voidAt: 9, reason: 'WRONG_PRICE' },
 ];
+
+// ── F&B: a kedai kopi + makan (docs/modules/FNB.md, P7 demo) ───────────────
+
+export const FNB_SHOP = {
+    companyName: 'Kedai Kopi Nanggroe',
+    /** The online address QR ordering points at (kedainanggroe.bayaryuk.net). */
+    slug: 'kedainanggroe',
+};
+
+/** Kitchen stations; categories route to them. */
+export const FNB_STATIONS = ['Dapur', 'Bar'];
+
+export const FNB_CATEGORIES: DemoCategory[] = [
+    { name: 'Kopi', description: 'Kopi Aceh dan kopi susu kekinian', icon: 'coffee', station: 1 },
+    { name: 'Non-kopi', description: 'Teh, jus, dan minuman segar', icon: 'local_drink', station: 1 },
+    { name: 'Makanan', description: 'Nasi, mie, dan lauk', icon: 'ramen_dining', station: 0 },
+    { name: 'Camilan', description: 'Roti, gorengan, dan martabak', icon: 'bakery_dining', station: 0 },
+    { name: 'Bahan', description: 'Bahan baku dapur (tidak dijual)', icon: 'kitchen' },
+];
+
+/** Option groups (the modifier library). price in IDR. */
+export const FNB_MODIFIER_GROUPS: { name: string; min: number; max: number; free?: number; options: { name: string; price?: number; isDefault?: boolean }[] }[] = [
+    { name: 'Es / Panas', min: 1, max: 1, options: [{ name: 'Es', isDefault: true }, { name: 'Panas' }] },
+    { name: 'Gula', min: 1, max: 1, options: [{ name: 'Normal', isDefault: true }, { name: 'Kurang manis' }, { name: 'Tanpa gula' }] },
+    { name: 'Topping', min: 0, max: 2, free: 1, options: [{ name: 'Boba', price: 5000 }, { name: 'Cincau', price: 3000 }, { name: 'Keju', price: 5000 }] },
+    { name: 'Level pedas', min: 1, max: 1, options: [{ name: 'Tidak pedas' }, { name: 'Sedang', isDefault: true }, { name: 'Pedas' }, { name: 'Level 3' }] },
+    { name: 'Tambahan', min: 0, max: 3, options: [{ name: 'Telur', price: 4000 }, { name: 'Kerupuk', price: 2000 }, { name: 'Ayam suwir', price: 6000 }] },
+];
+
+export const FNB_ITEMS: DemoItemDef[] = [
+    // Kopi (Bar)
+    { name: 'Kopi Sanger', code: 'KOP-001', category: 0, cost: 0, price: 15000, unitOfMeasure: 'Piece', weight: 18, groups: ['Es / Panas', 'Gula'],
+      recipe: [{ supply: 'BHN-001', rate: 18, basis: 'perLoad' }, { supply: 'BHN-002', rate: 40, basis: 'perLoad' }] },
+    { name: 'Kopi Hitam Aceh', code: 'KOP-002', category: 0, cost: 0, price: 10000, unitOfMeasure: 'Piece', weight: 14, groups: ['Es / Panas', 'Gula'],
+      recipe: [{ supply: 'BHN-001', rate: 15, basis: 'perLoad' }] },
+    { name: 'Es Kopi Susu Aren', code: 'KOP-003', category: 0, cost: 0, price: 22000, unitOfMeasure: 'Piece', weight: 20, groups: ['Gula', 'Topping'],
+      recipe: [{ supply: 'BHN-001', rate: 18, basis: 'perLoad' }, { supply: 'BHN-003', rate: 150, basis: 'perLoad' }, { supply: 'BHN-004', rate: 25, basis: 'perLoad' }] },
+    // Non-kopi (Bar)
+    { name: 'Teh Tarik', code: 'NKP-001', category: 1, cost: 0, price: 12000, unitOfMeasure: 'Piece', weight: 12, groups: ['Es / Panas', 'Gula'],
+      recipe: [{ supply: 'BHN-002', rate: 40, basis: 'perLoad' }] },
+    { name: 'Jus Alpukat', code: 'NKP-002', category: 1, cost: 0, price: 18000, unitOfMeasure: 'Piece', weight: 7, groups: ['Gula'] },
+    // Makanan (Dapur)
+    { name: 'Mie Aceh Goreng', code: 'MKN-001', category: 2, cost: 0, price: 25000, unitOfMeasure: 'Piece', weight: 16, groups: ['Level pedas', 'Tambahan'],
+      recipe: [{ supply: 'BHN-005', rate: 150, basis: 'perLoad' }, { supply: 'BHN-006', rate: 1, basis: 'perLoad' }] },
+    { name: 'Nasi Goreng Kampung', code: 'MKN-002', category: 2, cost: 0, price: 23000, unitOfMeasure: 'Piece', weight: 15, groups: ['Level pedas', 'Tambahan'],
+      recipe: [{ supply: 'BHN-007', rate: 180, basis: 'perLoad' }, { supply: 'BHN-006', rate: 1, basis: 'perLoad' }] },
+    { name: 'Ayam Penyet', code: 'MKN-003', category: 2, cost: 0, price: 28000, unitOfMeasure: 'Piece', weight: 10, groups: ['Level pedas'],
+      recipe: [{ supply: 'BHN-007', rate: 150, basis: 'perLoad' }] },
+    // Camilan (Dapur)
+    { name: 'Roti Canai', code: 'CML-001', category: 3, cost: 0, price: 12000, unitOfMeasure: 'Piece', weight: 9 },
+    { name: 'Martabak Telur', code: 'CML-002', category: 3, cost: 0, price: 20000, unitOfMeasure: 'Piece', weight: 6,
+      recipe: [{ supply: 'BHN-006', rate: 2, basis: 'perLoad' }] },
+    // Bahan (supplies: stock-tracked, never sold on their own; cost per unit of measure)
+    { name: 'Biji Kopi Arabika Gayo', code: 'BHN-001', category: 4, cost: 260, price: 0, unitOfMeasure: 'Gram', weight: 0, opening: 9000, reorderThreshold: 2000, itemType: 'supply' },
+    { name: 'Susu Kental Manis', code: 'BHN-002', category: 4, cost: 32, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 12000, reorderThreshold: 3000, itemType: 'supply' },
+    { name: 'Susu Segar', code: 'BHN-003', category: 4, cost: 22, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 20000, reorderThreshold: 5000, itemType: 'supply' },
+    { name: 'Gula Aren Cair', code: 'BHN-004', category: 4, cost: 40, price: 0, unitOfMeasure: 'Milliliter', weight: 0, opening: 5000, reorderThreshold: 1000, itemType: 'supply' },
+    { name: 'Mie Kuning', code: 'BHN-005', category: 4, cost: 18, price: 0, unitOfMeasure: 'Gram', weight: 0, opening: 15000, reorderThreshold: 3000, itemType: 'supply' },
+    { name: 'Telur Ayam', code: 'BHN-006', category: 4, cost: 2200, price: 0, unitOfMeasure: 'Piece', weight: 0, opening: 300, reorderThreshold: 60, itemType: 'supply' },
+    { name: 'Beras', code: 'BHN-007', category: 4, cost: 14, price: 0, unitOfMeasure: 'Gram', weight: 0, opening: 25000, reorderThreshold: 5000, itemType: 'supply' },
+];
+
+/** Order types an F&B demo sale draws from. */
+export const FNB_ORDER_TYPES: { type: string; weight: number }[] = [
+    { type: 'Dine-In', weight: 60 },
+    { type: 'Take Away', weight: 30 },
+    { type: 'Delivery', weight: 10 },
+];
+
+/** The floor: areas + tables (logical 1000x700 canvas), markers included. */
+export const FNB_FLOOR = {
+    areas: ['Dalam', 'Teras'],
+    tables: [
+        { area: 0, name: '1', x: 80, y: 80, shape: 'round', seats: 2, w: 100, h: 100 },
+        { area: 0, name: '2', x: 260, y: 80, shape: 'square', seats: 4, w: 110, h: 110 },
+        { area: 0, name: '3', x: 440, y: 80, shape: 'square', seats: 4, w: 110, h: 110 },
+        { area: 0, name: '4', x: 80, y: 260, shape: 'round', seats: 2, w: 100, h: 100 },
+        { area: 0, name: '5', x: 260, y: 260, shape: 'square', seats: 4, w: 110, h: 110 },
+        { area: 0, name: '6', x: 440, y: 260, shape: 'rect', seats: 6, w: 200, h: 100 },
+        { area: 0, name: '7', x: 260, y: 440, shape: 'square', seats: 4, w: 110, h: 110 },
+        { area: 0, name: '8', x: 80, y: 440, shape: 'round', seats: 2, w: 100, h: 100 },
+        { area: 0, name: 'Kasir', x: 760, y: 60, shape: 'marker', seats: 1, w: 160, h: 60 },
+        { area: 0, name: 'Dapur', x: 760, y: 160, shape: 'marker', seats: 1, w: 160, h: 80 },
+        { area: 0, name: 'Pintu masuk', x: 440, y: 600, shape: 'marker', seats: 1, w: 180, h: 60 },
+        { area: 1, name: 'T1', x: 80, y: 80, shape: 'square', seats: 4, w: 110, h: 110 },
+        { area: 1, name: 'T2', x: 260, y: 80, shape: 'square', seats: 4, w: 110, h: 110 },
+        { area: 1, name: 'T3', x: 440, y: 80, shape: 'rect', seats: 6, w: 200, h: 100 },
+    ],
+};
+

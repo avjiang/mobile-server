@@ -116,11 +116,12 @@ const settingDefinitions = [
         category: 'Financial',
         type: 'STRING',
         defaultValue: 'all',
-        description: 'Sales types for service charge (all, walk_in, delivery)',
+        // dine_in / take_away are the F&B order types (docs/modules/FNB.md).
+        description: 'Sales types for service charge (all, walk_in, dine_in, take_away, delivery)',
         scope: 'OUTLET',
         isRequired: false,
         isReadOnly: false,
-        validationRules: '{"options": ["all", "walk_in", "delivery"]}',
+        validationRules: '{"options": ["all", "walk_in", "dine_in", "take_away", "delivery"]}',
     },
     {
         // Manual-discount cap for users WITHOUT the "Give Discount" permission:
@@ -232,6 +233,20 @@ const settingDefinitions = [
         type: 'BOOLEAN',
         defaultValue: 'false',
         description: 'Automatically print a job tag after each sale',
+        scope: 'USER',
+        isRequired: false,
+        isReadOnly: false,
+        validationRules: null
+    },
+    {
+        // F&B: print the kitchen ticket (queue no., order type, lines with
+        // options and notes, no prices) right after the receipt, on the same
+        // printer (docs/modules/FNB.md). On by default: an F&B order needs it.
+        key: 'auto_print_kitchen_ticket',
+        category: 'Printer',
+        type: 'BOOLEAN',
+        defaultValue: 'true',
+        description: 'Automatically print a kitchen ticket after each sale',
         scope: 'USER',
         isRequired: false,
         isReadOnly: false,

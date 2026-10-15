@@ -5,6 +5,7 @@ import { plainToInstance } from "class-transformer"
 import { getTenantPrisma } from '../db';
 import { saleLevelDeductions } from '../sales/sale-profit';
 import { loadManualDiscountReport } from './manual-discount-report';
+import { loadFnbOps } from './fnb-ops';
 
 /** Sale statuses whose service lines count as laundry revenue: the order was
  *  taken and not reversed. Supply cost uses every non-void status instead. */
@@ -801,10 +802,16 @@ let generateReport = async (databaseName: string, sessionId: number, planType?: 
             ...completedSessionFilter, status: "Completed", deleted: false,
         });
 
+        // F&B: order-type split + top modifiers (null for retail / laundry).
+        const fnbOps = planType === 'F&B' ? await loadFnbOps(tenantPrisma, completedSessionFilter) : null;
+
         // Prepare response object
         return {
             // Manual line + order discounts: total, count, and who gave them
             manualDiscount,
+
+            // F&B operations block (null for non-F&B accounts)
+            fnbOps,
 
             // Laundry operations block (null for non-laundry accounts)
             laundryOps,
@@ -2147,10 +2154,16 @@ let generateOutletReport = async (databaseName: string, outletId: number, startD
             ...outletFilter, status: "Completed", deleted: false,
         });
 
+        // F&B: order-type split + top modifiers (null for retail / laundry).
+        const fnbOps = planType === 'F&B' ? await loadFnbOps(tenantPrisma, outletFilter) : null;
+
         // Prepare response object
         const payload = {
             // Manual line + order discounts: total, count, and who gave them
             manualDiscount,
+
+            // F&B operations block (null for non-F&B accounts)
+            fnbOps,
 
             // Laundry operations block (null for non-laundry accounts)
             laundryOps,

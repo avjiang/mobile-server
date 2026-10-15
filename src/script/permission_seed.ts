@@ -119,6 +119,20 @@ export const permissions = [
         category: "Sales",
         description: "Void, return or refund a completed sale (a reason is recorded)"
     },
+    // F&B: flip a menu item or modifier to "Habis" (sold out today) from the sales grid.
+    // Name MUST match FE AppPermission.markMenuSoldOut.
+    {
+        name: "Mark Menu Sold Out",
+        category: "Sales",
+        description: "Mark a menu item or option as sold out for today, and back"
+    },
+    // F&B dine-in: edit the floor map (areas, tables, positions). Cashiers only
+    // use the map. Name MUST match FE AppPermission.manageFloorPlan.
+    {
+        name: "Manage Floor Plan",
+        category: "Sales",
+        description: "Edit the floor map: areas and where each table stands"
+    },
     {
         name: "Manage Master Data",
         category: "Function Management",

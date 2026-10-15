@@ -67,11 +67,12 @@ let getAccountDetails = async (syncRequest: AccountRequest) => {
 
         const subscription = outlet.subscriptions[0];
 
-        // Never billed: Advanced Loyalty on Laundry (bundled into Laundry Pro) and
-        // retired add-ons (Extra Device) — drop them from the breakdown entirely.
+        // Never billed: Advanced Loyalty on Laundry and F&B Pro (bundled into the plan)
+        // and retired add-ons (Extra Device) — drop them from the breakdown entirely.
         const planType = subscription?.subscriptionPlan?.planType ?? null;
+        const planName = subscription?.subscriptionPlan?.planName ?? null;
         const billableAddOns = tenantAddOns.filter(
-            ta => !isNonBillableAddOn(ta.addOn.id, planType),
+            ta => !isNonBillableAddOn(ta.addOn.id, planType, planName),
         );
 
         const totalAddOnCost = billableAddOns.reduce((sum, ta) => sum + ta.addOn.pricePerUnit * ta.quantity, 0);

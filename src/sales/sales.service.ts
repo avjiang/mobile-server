@@ -21,6 +21,8 @@ import loyaltyService from '../loyalty/loyalty.service';
 import voucherService from '../voucher/voucher.service';
 import { netSaleProfit } from './sale-profit';
 import { CAP_SETTING_KEY, enforceManualDiscount } from './manual-discount';
+import { ReversalAudit, ReversalReason, reversalAuditData } from './reversal-reason';
+import { onSaleCompleted, onSaleReversed } from '../anomaly/anomaly.service';
 import { lineShareOf } from './line-share';
 import { latestReceiptCosts } from '../stock/supply-cost';
 
@@ -1680,7 +1682,7 @@ async function completeNewSales(
     // Manual discount: sanity-check the per-line + order discount, and cap it for
     // users without "Give Discount" (fresh sales only — a late offline-outbox
     // arrival is accepted and logged). See ./manual-discount.ts.
-    await enforceManualDiscount(
+    const discountDecision = await enforceManualDiscount(
         salesBody,
         {
             databaseName,
@@ -2264,6 +2266,8 @@ async function completeNewSales(
                     eodId: salesBody.eodId,
                     salesQuotationId: salesBody.salesQuotationId,
                     performedBy: salesBody.performedBy,
+                    // The trusted actor (JWT); performedBy above is the phone's display name.
+                    performedByUserId: performedBy.userId,
                     // Terminal attribution — which terminal rang this sale (client-supplied).
                     siteId: salesBody.siteId ?? null,
                     deleted: false,
@@ -2515,6 +2519,18 @@ async function completeNewSales(
             triggeringUsername: performedBy.username,
             source: 'sale',
             salesId: result.id,
+        });
+
+        // Anomaly alerts (Pro): large manual discount / sold below cost.
+        // Fire-and-forget after commit — see anomaly/anomaly.service.ts.
+        onSaleCompleted({
+            databaseName,
+            tenantId,
+            actor: { userId: performedBy.userId, username: performedBy.username },
+            permissions: effectivePermissions,
+            saleId: result.id,
+            salesBody,
+            discountDecision,
         });
 
         // Send the sale notification (fire-and-forget, don't block response)
@@ -3181,11 +3197,14 @@ const claimSalesReversal = async (
     tx: Prisma.TransactionClient,
     salesId: number,
     toStatus: string,
-    conflictMessage: string
+    conflictMessage: string,
+    // Who reversed it, when and why — written in the same conditional update as
+    // the status, so the audit can never disagree with the transition.
+    audit?: ReversalAudit
 ) => {
     const claimed = await tx.sales.updateMany({
         where: { id: salesId, deleted: false, status: "Completed" },
-        data: { status: toStatus },
+        data: { status: toStatus, ...(audit ? reversalAuditData(audit) : {}) },
     });
     if (claimed.count === 0) {
         // Lost the race (or the status moved between the read and here).
@@ -3201,8 +3220,11 @@ let voidSales = async (
     salesId: number,
     outletId: number,
     // Acting terminal performing the mutation (client-supplied, nullable).
-    actingSiteId?: number | null
+    actingSiteId?: number | null,
+    // Why (reason sheet). Null from apps that predate it — accepted.
+    reason: ReversalReason | null = null
 ) => {
+    const reversedAt = new Date();
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -3246,7 +3268,8 @@ let voidSales = async (
                 tx,
                 salesId,
                 "Voided",
-                "Only completed sales can be voided"
+                "Only completed sales can be voided",
+                { userId: performedBy.userId, username: performedBy.username, reason, at: reversedAt }
             );
 
             // Update payment status to voided
@@ -3354,6 +3377,16 @@ let voidSales = async (
             }
         );
 
+        // Anomaly alerts (Pro): repeated / quick reversals. Fire-and-forget,
+        // never fails the void — see anomaly/anomaly.service.ts.
+        onSaleReversed({
+            databaseName,
+            tenantId,
+            actor: { userId: performedBy.userId, username: performedBy.username },
+            saleId: salesId,
+            kind: 'void',
+        });
+
         return getById(databaseName, salesId);
     }
     catch (error) {
@@ -3368,8 +3401,11 @@ let returnSales = async (
     salesId: number,
     outletId: number,
     // Acting terminal performing the mutation (client-supplied, nullable).
-    actingSiteId?: number | null
+    actingSiteId?: number | null,
+    // Why (reason sheet). Null from apps that predate it — accepted.
+    reason: ReversalReason | null = null
 ) => {
+    const reversedAt = new Date();
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -3402,7 +3438,8 @@ let returnSales = async (
                 tx,
                 salesId,
                 "Returned",
-                "Only completed sales can be returned"
+                "Only completed sales can be returned",
+                { userId: performedBy.userId, username: performedBy.username, reason, at: reversedAt }
             );
 
             // Update payment status to returned
@@ -3511,6 +3548,16 @@ let returnSales = async (
             }
         );
 
+        // Anomaly alerts (Pro): repeated / quick reversals. Fire-and-forget,
+        // never fails the return — see anomaly/anomaly.service.ts.
+        onSaleReversed({
+            databaseName,
+            tenantId,
+            actor: { userId: performedBy.userId, username: performedBy.username },
+            saleId: salesId,
+            kind: 'return',
+        });
+
         return getById(databaseName, salesId);
     }
     catch (error) {
@@ -3525,8 +3572,11 @@ let refundSales = async (
     salesId: number,
     outletId: number,
     // Acting terminal performing the mutation (client-supplied, nullable).
-    actingSiteId?: number | null
+    actingSiteId?: number | null,
+    // Why (reason sheet). Null from apps that predate it — accepted.
+    reason: ReversalReason | null = null
 ) => {
+    const reversedAt = new Date();
     const tenantPrisma: PrismaClient = getTenantPrisma(databaseName);
     try {
         const result = await tenantPrisma.$transaction(async (tx) => {
@@ -3559,7 +3609,8 @@ let refundSales = async (
                 tx,
                 salesId,
                 "Refunded",
-                "Only completed sales can be refunded"
+                "Only completed sales can be refunded",
+                { userId: performedBy.userId, username: performedBy.username, reason, at: reversedAt }
             );
 
             // Update payment status to refunded
@@ -3666,6 +3717,16 @@ let refundSales = async (
                 timestamp: new Date().toISOString()
             }
         );
+
+        // Anomaly alerts (Pro): repeated / quick reversals. Fire-and-forget,
+        // never fails the refund — see anomaly/anomaly.service.ts.
+        onSaleReversed({
+            databaseName,
+            tenantId,
+            actor: { userId: performedBy.userId, username: performedBy.username },
+            saleId: salesId,
+            kind: 'refund',
+        });
 
         return getById(databaseName, salesId);
     }

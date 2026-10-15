@@ -40,6 +40,7 @@ export const PERMISSION = {
     PRINT_BILL: 'Print Bill',
     EDIT_SALE_PRICE: 'Edit Sale Price',
     GIVE_DISCOUNT: 'Give Discount',
+    VOID_REFUND_SALES: 'Void & Refund Sales',
     // Function Management
     MANAGE_MASTER_DATA: 'Manage Master Data',
     MANAGE_PROCUREMENT: 'Manage Procurement',
@@ -48,6 +49,7 @@ export const PERMISSION = {
     RECEIVE_NOTIFICATION: 'Receive Notification',
     RECEIVE_INVENTORY_NOTIFICATION: 'Receive Inventory Notification',
     RECEIVE_LOYALTY_NOTIFICATION: 'Receive Loyalty Notification',
+    RECEIVE_SECURITY_ALERT_NOTIFICATION: 'Receive Security Alert Notification',
     MANAGE_PUSH_DEVICES: 'Manage Push Notification Devices',
     // Loyalty
     MANAGE_LOYALTY_PROGRAM: 'Manage Loyalty Program',
@@ -56,6 +58,8 @@ export const PERMISSION = {
     MANAGE_SUBSCRIPTION_PACKAGES: 'Manage Subscription Packages',
     VIEW_CUSTOMER_SUBSCRIPTIONS: 'View Customer Subscriptions',
     MANAGE_CUSTOMER_SUBSCRIPTIONS: 'Manage Customer Subscriptions',
+    // Anomaly alerts (Pro) — change the rules
+    MANAGE_SECURITY_ALERTS: 'Manage Security Alerts',
     // Online Catalogue
     MANAGE_ONLINE_CATALOGUE: 'Manage Online Catalogue',
     // Expenses (Pro feature)

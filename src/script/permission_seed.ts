@@ -110,6 +110,15 @@ export const permissions = [
         category: "Sales",
         description: "Give any discount at checkout; without it, up to the cashier discount limit"
     },
+    // Anomaly alerts, Phase 0: voids / returns / refunds need this (PUT /sales/void|return|refund).
+    // `grant_anomaly_permissions.ts` backfills it onto every role holding "View Sales
+    // History", so nobody loses the action on upgrade. Name MUST match FE
+    // AppPermission.voidRefundSales.
+    {
+        name: "Void & Refund Sales",
+        category: "Sales",
+        description: "Void, return or refund a completed sale (a reason is recorded)"
+    },
     {
         name: "Manage Master Data",
         category: "Function Management",
@@ -152,6 +161,21 @@ export const permissions = [
         name: "Receive Loyalty Notification",
         category: "Notifications",
         description: "Receive loyalty follow-up reminders (customers whose points, vouchers or packages are ending)"
+    },
+    // Anomaly alerts (Pro): the tenant-wide topic `tenant_{id}_security` ("Receive …
+    // Alert Notification" → "security") and read access to the alert list. Manage =
+    // change the rules. Both backfilled onto roles holding "View Financial Reports"
+    // by grant_anomaly_permissions.ts. Names must match FE AppPermission
+    // .receiveSecurityAlert / .manageSecurityAlerts.
+    {
+        name: "Receive Security Alert Notification",
+        category: "Notifications",
+        description: "Receive security alerts (repeated voids, large discounts, sales below cost, large stock write-offs) and see the alert list"
+    },
+    {
+        name: "Manage Security Alerts",
+        category: "Notifications",
+        description: "Turn security alert rules on or off and change their limits"
     },
     // Loyalty permissions
     {

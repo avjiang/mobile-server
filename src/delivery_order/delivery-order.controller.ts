@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express"
+import { onDeliveryReceived } from '../anomaly/anomaly.service';
 import { rejectPlan } from "../middleware/require-plan.middleware"
 import validator from "validator"
 import service from "./delivery-order.service"
@@ -117,6 +118,13 @@ let createMany = (req: NetworkRequest<CreateDeliveryOrderRequestBody>, res: Resp
     assertOutletsAllowed(req, (requestBody.deliveryOrders ?? []).map((doOrder: DeliveryOrderInput) => doOrder.outletId))
         .then(() => service.createMany(user.databaseName, requestBody))
         .then((response) => {
+            // Anomaly alerts (Pro): supplier price rise on received lines. Fire-and-forget.
+            onDeliveryReceived({
+                databaseName: user.databaseName,
+                tenantId: user.tenantId,
+                actor: { userId: user.userId, username: user.username },
+                deliveryOrderIds: (response ?? []).map((d: { id: number }) => d.id),
+            });
             sendResponse(res, response)
         })
         .catch(next)
@@ -143,7 +151,15 @@ let update = (req: NetworkRequest<DeliveryOrderInput>, res: Response, next: Next
         userId: req.user.userId,
         username: req.user.username,
     })
-        .then((updatedDeliveryOrder: any) => sendResponse(res, updatedDeliveryOrder))
+        .then((updatedDeliveryOrder: any) => {
+            onDeliveryReceived({
+                databaseName: req.user!.databaseName,
+                tenantId: req.user!.tenantId,
+                actor: { userId: req.user!.userId, username: req.user!.username },
+                deliveryOrderIds: [deliveryOrder.id!],
+            });
+            sendResponse(res, updatedDeliveryOrder)
+        })
         .catch(next)
 }
 

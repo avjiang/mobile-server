@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express"
+import { onCashDeclared } from '../anomaly/anomaly.service';
 import { sendResponse } from "../api-helpers/network"
 import service from "./session.service"
 import { Declaration, Session } from "../../prisma/client/generated/client"
@@ -112,8 +113,23 @@ let createDeclarations = (req: NetworkRequest<Declaration[]>, res: Response, nex
     const requestBody = req.body
     const outletId = requireOutletHeader(req);
 
-    service.createDeclarations(requestBody, req.user.databaseName, outletId)
-        .then((declarationsCount: number) => sendResponse(res, declarationsCount))
+    const user = req.user
+    service.createDeclarations(requestBody, user.databaseName, outletId)
+        .then((declarationsCount: number) => {
+            // Anomaly alerts (Pro): cash short against the server's expected
+            // cash. Fire-and-forget — see anomaly/anomaly.service.ts.
+            onCashDeclared({
+                databaseName: user.databaseName,
+                tenantId: user.tenantId,
+                actor: { userId: user.userId, username: user.username },
+                declarations: requestBody.map((d) => ({
+                    sessionID: d.sessionID,
+                    paymentType: d.paymentType,
+                    declarationAmount: d.declarationAmount.toString(),
+                })),
+            });
+            sendResponse(res, declarationsCount)
+        })
         .catch(next)
 }
 

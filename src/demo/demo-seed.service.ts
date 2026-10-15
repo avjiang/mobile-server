@@ -28,8 +28,13 @@ import {
     DemoVertical, DemoItemDef, DEMO_SUPPLIER, DEMO_CUSTOMERS, PAYMENT_MIX,
     RETAIL_CATEGORIES, RETAIL_ITEMS, LAUNDRY_CATEGORIES, LAUNDRY_ITEMS,
     LAUNDRY_SHOP, LAUNDRY_PACKAGES, LAUNDRY_PACKAGE_BUYERS, DEMO_LOYALTY, LOYALTY_TARGETS,
+    RETAIL_SHOP, DEMO_CASHIERS, SECURITY_RULE_CONFIG, SECURITY_STORY,
 } from './demo-catalogue';
 import subscriptionPackageService from '../subscription-package/subscription-package.service';
+import { AnomalyDeps, invalidateAnomalyConfig, onSaleCompleted, onSaleReversed } from '../anomaly/anomaly.service';
+import { saveRules } from '../anomaly/anomaly.queries';
+import { reversalAuditData } from '../sales/reversal-reason';
+import { PERMISSION } from '../permission/permission-names';
 
 const adminService = require('../admin/admin.service');
 
@@ -76,6 +81,8 @@ export interface DemoSeedResult {
     customers: number;
     sales: number;
     revenue: number;
+    /** Security alerts the anomaly engine recorded for today's story (retail only). */
+    alerts?: number;
 }
 
 // ── Deterministic randomness ─────────────────────────────────────────────────
@@ -195,13 +202,16 @@ export async function seedDemoTenant(
     await wipeOwnedTables(prisma);
     // Identity first: sales record the owner's name as performedBy.
     if (vertical === 'laundry') await applyLaundryIdentity(prisma, tenant.id);
+    else await applyRetailIdentity(prisma, tenant.id);
     const result = await seedTenantData(prisma, vertical);
     if (vertical === 'laundry') await seedLaundryPackages(prisma, databaseName);
     // After the packages on purpose (see seedLaundryPackages): no account exists while
     // they are bought, so no English "Earned from package purchase" row is written.
     await seedLoyaltyBaseline(prisma, vertical);
+    // Last: its sales carry no customer, so the loyalty replay above never sees them.
+    const alerts = vertical === 'retail' ? await seedSecurityAlerts(prisma, databaseName, tenant.id) : undefined;
 
-    return { vertical, tenantName, databaseName, skipped: false, created, ...result };
+    return { vertical, tenantName, databaseName, skipped: false, created, ...result, ...(alerts === undefined ? {} : { alerts }) };
 }
 
 /**
@@ -704,6 +714,205 @@ async function applyLaundryIdentity(prisma: any, tenantId: number): Promise<void
             await prisma.setting.create({ data: { ...scope, value } });
         }
     }
+}
+
+/**
+ * The retail demo's outlet name, in Indonesian (createTenant's default is "Main Outlet",
+ * which every security alert prints). Same pattern as applyLaundryIdentity: `outlet` is
+ * preserved, so this is an update, re-applied on every reseed.
+ */
+async function applyRetailIdentity(prisma: any, tenantId: number): Promise<void> {
+    const primaryOutlet = await prisma.outlet.findFirst({ where: { deleted: false }, orderBy: { id: 'asc' }, select: { id: true } });
+    if (primaryOutlet) {
+        await prisma.outlet.update({ where: { id: primaryOutlet.id }, data: { outletName: RETAIL_SHOP.outletName } });
+    }
+    const globalPrisma = getGlobalPrisma();
+    const primaryTenantOutlet = await globalPrisma.tenantOutlet.findFirst({ where: { tenantId }, orderBy: { id: 'asc' }, select: { id: true } });
+    if (primaryTenantOutlet) {
+        await globalPrisma.tenantOutlet.update({ where: { id: primaryTenantOutlet.id }, data: { outletName: RETAIL_SHOP.outletName } });
+    }
+}
+
+/**
+ * Security alerts (Peringatan Keamanan, Pro — docs/modules/ANOMALY.md) for the retail demo:
+ * two cashiers trade today, Andi voids three sales and Sari gives 30 % off (SECURITY_STORY).
+ *
+ * The alerts are NOT written by hand. Each action's rows are written the way the sales
+ * service writes them (sale + lines + payment + stock move; a void flips the sale and its
+ * payments, stamps the reversal audit and puts the stock back), then the REAL engine runs
+ * on them (onSaleReversed / onSaleCompleted) with injected deps: Pro, a cashier's
+ * permissions (never '*'), a push that goes nowhere, and `now` = the moment of the action.
+ * The resulting anomaly_event rows are what production would have recorded; only their
+ * CREATED_AT / UPDATED_AT are moved to that moment, because Prisma stamps the wall clock.
+ * The steps run in order on purpose: REVERSAL_BURST counts the voids that exist when it runs.
+ *
+ * Times: the story ends at an anchor = today, at the current WIB hour clamped to 10–20
+ * (the session opens at 08:00), and each step is SECURITY_STORY minutes before it. From
+ * 10.00 WIB on, every alert is therefore in the past; a reseed earlier than that dates
+ * them 08:08–09:51, ahead of the clock — like the rest of "today", which the seeder also
+ * places ahead of the clock in the early morning.
+ *
+ * `anomaly_event` and `anomaly_rule_config` are not preserved tables, so a reseed wipes and
+ * rebuilds them; `user` is preserved, so the cashiers are upserted.
+ */
+async function seedSecurityAlerts(prisma: any, databaseName: string, tenantId: number): Promise<number> {
+    const now = new Date();
+    const today = wibToday(now);
+    const nowHourWib = new Date(now.getTime() + WIB_OFFSET_MINUTES * 60_000).getUTCHours();
+    const anchor = wibInstant(today, Math.max(10, Math.min(20, nowHourWib)), 0);
+    const minutesBefore = (m: number) => new Date(anchor.getTime() - m * 60_000);
+
+    const owner = await prisma.user.findFirst({ orderBy: { id: 'asc' } });
+    const cashiers = new Map<string, { id: number; username: string; name: string }>();
+    for (const c of DEMO_CASHIERS) {
+        const row = await prisma.user.upsert({
+            where: { username: c.username },
+            update: { firstName: c.firstName, lastName: c.lastName, deleted: false, deletedAt: null },
+            // No global tenant_user row: a staff record for the demo, not a login.
+            create: { username: c.username, password: '!', firstName: c.firstName, lastName: c.lastName },
+        });
+        cashiers.set(c.username, { id: row.id, username: row.username, name: c.firstName });
+    }
+
+    // The owner's own limits, through the same validation + upsert the rules screen uses.
+    await saveRules(prisma, databaseName, SECURITY_RULE_CONFIG, owner?.id ?? 1);
+
+    const outlet = await prisma.outlet.findFirst({ where: { deleted: false }, orderBy: { id: 'asc' }, select: { id: true } });
+    const session = await prisma.session.findFirst({ where: { closingDateTime: null, deleted: false }, orderBy: { id: 'desc' } });
+    if (!outlet || !session) throw new Error('Demo seed: no outlet / open session for the security alerts');
+    const outletId: number = outlet.id;
+
+    const codes = [...new Set(SECURITY_STORY.flatMap((s) => s.lines.map(([code]) => code)))];
+    const itemRows = await prisma.item.findMany({ where: { itemCode: { in: codes } } });
+    const items = new Map<string, any>(itemRows.map((i: any) => [i.itemCode, i]));
+    const receipts = await prisma.stockReceipt.findMany({ where: { itemId: { in: itemRows.map((i: any) => i.id) } } });
+    const receiptOf = new Map<number, number>(receipts.map((r: any) => [r.itemId, r.id]));
+    const costOf = new Map<string, number>(RETAIL_ITEMS.map((d) => [d.code, d.cost]));
+
+    /** One stock move against the live balance (what the sales service does per line). */
+    const moveStock = async (itemId: number, delta: number, movementType: string, documentId: number, at: Date, extra: object) => {
+        const balance = await prisma.stockBalance.findFirst({ where: { itemId, outletId, deleted: false } });
+        if (!balance) return;
+        await prisma.stockBalance.update({
+            where: { id: balance.id },
+            data: { availableQuantity: { increment: delta }, onHandQuantity: { increment: delta } },
+        });
+        await prisma.stockMovement.create({
+            data: {
+                itemId, outletId, documentId, movementType,
+                previousAvailableQuantity: balance.availableQuantity, previousOnHandQuantity: balance.onHandQuantity,
+                availableQuantityDelta: delta, onHandQuantityDelta: delta,
+                siteId: 1, createdAt: at, ...extra,
+            },
+        });
+    };
+
+    const pushes: string[] = [];
+    const failures: string[] = [];
+    const depsAt = (at: Date): AnomalyDeps => ({
+        prisma: () => prisma,
+        isPro: async () => true,                 // the demo is Pro
+        permissions: async () => [],             // a cashier, never the owner's '*'
+        push: async (_topic, notification) => { pushes.push(notification.title); },
+        now: () => at,
+        log: (message, error) => { failures.push(`${message}: ${error instanceof Error ? error.message : String(error ?? '')}`); },
+    });
+    /** Run one engine call "at" `at`, then date the events it wrote at `at` too. */
+    const runEngine = async (at: Date, work: (deps: AnomalyDeps) => Promise<void>) => {
+        const stamp = async () => new Map<number, number>(
+            (await prisma.anomalyEvent.findMany({ select: { id: true, updatedAt: true } })).map((e: any) => [e.id, e.updatedAt.getTime()]),
+        );
+        const before = await stamp();
+        await work(depsAt(at));
+        for (const [id, updatedAt] of await stamp()) {
+            if (before.get(id) === updatedAt) continue;   // untouched by this step
+            await prisma.anomalyEvent.update({ where: { id }, data: { updatedAt: at, ...(before.has(id) ? {} : { createdAt: at }) } });
+        }
+    };
+
+    invalidateAnomalyConfig(databaseName);
+    for (const step of SECURITY_STORY) {
+        const cashier = cashiers.get(step.cashier)!;
+        const soldAt = minutesBefore(step.soldAt);
+        const lines = step.lines.map(([code, qty]) => {
+            const item = items.get(code)!;
+            const unitPrice = Number(item.price);
+            const lineTotal = unitPrice * qty;
+            const cost = costOf.get(code)! * qty;
+            return {
+                item, qty, unitPrice,
+                row: {
+                    itemId: item.id, itemName: item.itemName, itemCode: item.itemCode, itemBrand: item.itemBrand ?? '',
+                    quantity: qty, cost, price: lineTotal, priceBeforeTax: 0, profit: lineTotal - cost,
+                    subtotalAmount: lineTotal, unitOfMeasure: item.unitOfMeasure,
+                    stockReceiptId: receiptOf.get(item.id) ?? null, createdAt: soldAt,
+                },
+            };
+        });
+        const subtotal = lines.reduce((sum, l) => sum + l.row.subtotalAmount, 0);
+        const discount = step.discountPercent ? Math.round((subtotal * step.discountPercent) / 100) : 0;
+        const total = subtotal - discount;
+
+        const sale = await prisma.sales.create({
+            data: {
+                outletId, businessDate: soldAt, salesType: 'Walk-In', customerName: '', phoneNumber: '',
+                subtotalAmount: subtotal, totalAmount: total, paidAmount: total,
+                discountAmount: discount, discountPercentage: step.discountPercent ?? 0,
+                profitAmount: lines.reduce((sum, l) => sum + l.row.profit, 0) - discount,
+                status: 'Completed', sessionId: session.id, completedSessionId: session.id, eodId: 0,
+                performedBy: cashier.name, performedByUserId: cashier.id, siteId: 1, createdAt: soldAt,
+                salesItems: { create: lines.map((l) => l.row) },
+            },
+        });
+        await prisma.payment.create({
+            data: {
+                method: step.method, tenderedAmount: total, paidAmount: total, currencySymbol: 'Rp', salesId: sale.id,
+                businessDate: soldAt, status: 'PAID', outletId, sessionId: session.id, eodId: 0,
+                performedBy: cashier.name, siteId: 1, createdAt: soldAt,
+            },
+        });
+        for (const l of lines) {
+            await moveStock(l.item.id, -l.qty, 'Sales', sale.id, soldAt, { reason: 'Penjualan', remark: '', performedBy: cashier.name });
+        }
+
+        const actor = { userId: cashier.id, username: cashier.username };
+        if (step.voidAt === undefined) {
+            // A completed sale: the discount rules (sales.service completeNewSales hook).
+            await runEngine(soldAt, (deps) => onSaleCompleted({
+                databaseName, tenantId, actor,
+                // Her role may give any discount, so checkout allowed it; the alert still fires above the owner's 20 %.
+                permissions: [PERMISSION.GIVE_DISCOUNT],
+                saleId: sale.id,
+                salesBody: {
+                    discountAmount: discount, discountPercentage: step.discountPercent ?? 0, totalItemDiscountAmount: 0,
+                    businessDate: soldAt, clientCreatedAt: soldAt,
+                    salesItems: lines.map((l) => ({ price: l.unitPrice, quantity: l.qty, discountAmount: 0, discountPercentage: 0 })),
+                },
+                discountDecision: { action: 'allow' },
+            }, deps));
+            continue;
+        }
+
+        // The void, as sales.service voidSales writes it (claimSalesReversal + payments + stock back).
+        const reversedAt = minutesBefore(step.voidAt);
+        await prisma.sales.update({
+            where: { id: sale.id },
+            data: {
+                status: 'Voided',
+                ...reversalAuditData({ userId: cashier.id, username: cashier.username, reason: { code: step.reason!, note: null }, at: reversedAt }),
+            },
+        });
+        await prisma.payment.updateMany({ where: { salesId: sale.id }, data: { status: 'Voided' } });
+        for (const l of lines) {
+            await moveStock(l.item.id, l.qty, 'Sales Void', sale.id, reversedAt, { reason: '', remark: `Sales #${sale.id} voided` });
+        }
+        await runEngine(reversedAt, (deps) => onSaleReversed({ databaseName, tenantId, actor, saleId: sale.id, kind: 'void' }, deps));
+    }
+    // The engine's config cache was last filled "at" a story time; let the server reload it.
+    invalidateAnomalyConfig(databaseName);
+
+    if (failures.length > 0) throw new Error(`Demo seed: the anomaly engine failed — ${failures.join('; ')}`);
+    return prisma.anomalyEvent.count();
 }
 
 /**

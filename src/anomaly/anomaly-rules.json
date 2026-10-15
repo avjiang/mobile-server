@@ -1,0 +1,500 @@
+{
+  "_doc": "The anomaly rule registry (Peringatan Keamanan, Pro). One entry per rule; ids are stable and never renamed. status: live | beta | planned — only live rules run, show in the app and reach the landing page (tool/product_catalog/sync.py in the FE repo reads this file). Copy is Indonesian + English; {tokens} are filled per event. See docs/modules/ANOMALY.md (FE repo).",
+  "rules": [
+    {
+      "id": "REVERSAL_BURST",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 1,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "CRITICAL",
+      "name": {
+        "id": "Pembatalan beruntun",
+        "en": "Repeated voids"
+      },
+      "summary": {
+        "id": "Satu orang membatalkan, meretur atau me-refund terlalu banyak transaksi dalam sehari.",
+        "en": "One person voids, returns or refunds too many sales in a day."
+      },
+      "params": [
+        {
+          "key": "maxPerDay",
+          "default": 1,
+          "min": 1,
+          "max": 50,
+          "unit": "per_day",
+          "label": {
+            "id": "Batas per orang per hari",
+            "en": "Limit per person per day"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "{user} membatalkan {count} transaksi hari ini",
+          "en": "{user} reversed {count} sales today"
+        },
+        "body": {
+          "id": "Total {amount} · batas Anda {maxPerDay} per hari · {outlet}",
+          "en": "Total {amount} · your limit is {maxPerDay} a day · {outlet}"
+        }
+      },
+      "engineering": "voidSales/returnSales/refundSales, after the transaction commits. Count = sales with REVERSED_BY_USER_ID = actor and REVERSED_AT since WIB midnight. Push when the count first passes the limit and once more at twice that count. Dedupe per (rule, user, WIB day)."
+    },
+    {
+      "id": "QUICK_REVERSAL",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 1,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "WARNING",
+      "name": {
+        "id": "Batal cepat",
+        "en": "Quick void"
+      },
+      "summary": {
+        "id": "Penjualan tunai dibatalkan oleh kasir yang sama tak lama setelah dibayar.",
+        "en": "A cash sale is reversed by the same cashier soon after it was paid."
+      },
+      "params": [
+        {
+          "key": "withinMinutes",
+          "default": 15,
+          "min": 1,
+          "max": 240,
+          "unit": "minutes",
+          "label": {
+            "id": "Dalam berapa menit",
+            "en": "Within minutes"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "{user} membatalkan penjualan tunai {minutes} menit setelah dibayar",
+          "en": "{user} reversed a cash sale {minutes} min after payment"
+        },
+        "body": {
+          "id": "Penjualan #{sale} · {amount} · {outlet}",
+          "en": "Sale #{sale} · {amount} · {outlet}"
+        }
+      },
+      "engineering": "voidSales/returnSales/refundSales, after commit. Cash = any payment with method 'Cash'. Same user = Sales.PERFORMED_BY_USER_ID equals the reverser (sales rung before the column existed are skipped). Minutes since the latest payment's CREATED_AT. Dedupe per sale."
+    },
+    {
+      "id": "LARGE_DISCOUNT",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 1,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "WARNING",
+      "name": {
+        "id": "Diskon besar",
+        "en": "Large discount"
+      },
+      "summary": {
+        "id": "Diskon manual pada satu penjualan melebihi persentase yang Anda tetapkan.",
+        "en": "A manual discount on one sale is above the percentage you set."
+      },
+      "params": [
+        {
+          "key": "maxPercent",
+          "default": 20,
+          "min": 1,
+          "max": 100,
+          "unit": "percent",
+          "label": {
+            "id": "Diskon maksimal",
+            "en": "Highest discount"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "{user} memberi diskon {percent}% pada satu penjualan",
+          "en": "{user} gave a {percent}% discount on one sale"
+        },
+        "body": {
+          "id": "Penjualan #{sale} · diskon {amount} · batas Anda {maxPercent}% · {outlet}",
+          "en": "Sale #{sale} · {amount} off · your limit is {maxPercent}% · {outlet}"
+        }
+      },
+      "engineering": "completeNewSales, after commit. Manual discount only (line discounts + order discount, never loyalty/voucher/package) as a share of Σ price × qty (manual-discount.ts summary). Also fires when an offline sale over the cashier cap was accepted late. Dedupe per sale."
+    },
+    {
+      "id": "BELOW_COST",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 1,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "CRITICAL",
+      "name": {
+        "id": "Dijual di bawah modal",
+        "en": "Sold below cost"
+      },
+      "summary": {
+        "id": "Ada barang yang terjual lebih murah dari harga modalnya.",
+        "en": "An item was sold for less than it cost you."
+      },
+      "params": [],
+      "push": {
+        "title": {
+          "id": "{user} menjual {items} di bawah modal",
+          "en": "{user} sold {items} below cost"
+        },
+        "body": {
+          "id": "Penjualan #{sale} · rugi {amount} · {outlet}",
+          "en": "Sale #{sale} · {amount} loss · {outlet}"
+        }
+      },
+      "engineering": "completeNewSales, after commit. Per item (FIFO split lines summed): line price − line discount − its share of the order discount < line cost. Lines with cost 0 are skipped (no cost on record). Dedupe per sale."
+    },
+    {
+      "id": "LARGE_STOCK_WRITEOFF",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 1,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "WARNING",
+      "name": {
+        "id": "Stok dikurangi besar",
+        "en": "Large stock write-off"
+      },
+      "summary": {
+        "id": "Stok dikurangi lewat penyesuaian dengan nilai modal di atas batas Anda.",
+        "en": "Stock is written off through an adjustment worth more than your limit."
+      },
+      "params": [
+        {
+          "key": "maxAmount",
+          "default": 250000,
+          "min": 10000,
+          "max": 100000000,
+          "unit": "rupiah",
+          "label": {
+            "id": "Nilai maksimal",
+            "en": "Highest value"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "{user} mengurangi stok senilai {amount}",
+          "en": "{user} wrote off stock worth {amount}"
+        },
+        "body": {
+          "id": "{items} · batas Anda {maxAmount} · {outlet}",
+          "en": "{items} · your limit is {maxAmount} · {outlet}"
+        }
+      },
+      "engineering": "stockAdjustment, after commit, from the FIFO cost of the negative adjustQuantity lines (wastageEntries). Recount overrides are not write-offs. One event per adjustment request and outlet."
+    },
+    {
+      "id": "CASH_SHORTAGE",
+      "status": "beta",
+      "since": "2026-10",
+      "phase": 2,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "CRITICAL",
+      "name": {
+        "id": "Kas kurang",
+        "en": "Cash short"
+      },
+      "summary": {
+        "id": "Uang tunai yang dihitung saat tutup sesi kurang dari yang seharusnya.",
+        "en": "The cash counted at session close is less than it should be."
+      },
+      "params": [
+        {
+          "key": "minShortage",
+          "default": 50000,
+          "min": 1000,
+          "max": 10000000,
+          "unit": "rupiah",
+          "label": {
+            "id": "Selisih minimal",
+            "en": "Smallest shortage"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "Kas {user} kurang {amount}",
+          "en": "{user}'s cash is short by {amount}"
+        },
+        "body": {
+          "id": "Seharusnya {expected}, dihitung {declared} · {outlet}",
+          "en": "Expected {expected}, counted {declared} · {outlet}"
+        }
+      },
+      "engineering": "POST /session/createDeclarations, after it saves, for a Cash declaration. Expected = session opening float + Σ cash payments in the session (not voided/returned/refunded) − Σ cash expenses of the session — computed by the server, never the phone's figure. Dedupe per session. BETA: the app only sends a cash count when cash reconciliation is on (FeatureFlags.expensesEnabled) — flip to live with it."
+    },
+    {
+      "id": "AFTER_HOURS",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 2,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "WARNING",
+      "defaultEnabled": false,
+      "name": {
+        "id": "Transaksi di luar jam buka",
+        "en": "After-hours activity"
+      },
+      "summary": {
+        "id": "Penjualan atau penyesuaian stok di luar jam buka yang Anda tetapkan.",
+        "en": "A sale or stock adjustment outside the opening hours you set."
+      },
+      "params": [
+        {
+          "key": "openHour",
+          "default": 7,
+          "min": 0,
+          "max": 23,
+          "unit": "hour",
+          "label": {
+            "id": "Jam buka",
+            "en": "Opens at"
+          }
+        },
+        {
+          "key": "closeHour",
+          "default": 22,
+          "min": 0,
+          "max": 23,
+          "unit": "hour",
+          "label": {
+            "id": "Jam tutup",
+            "en": "Closes at"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "{user} bertransaksi di luar jam buka ({time})",
+          "en": "{user} worked outside opening hours ({time})"
+        },
+        "body": {
+          "id": "{what} · jam buka {openHour}.00–{closeHour}.00 · {outlet}",
+          "en": "{what} · open {openHour}:00–{closeHour}:00 · {outlet}"
+        }
+      },
+      "engineering": "completeNewSales (clientCreatedAt, else the server's time) and stockAdjustment (server time), after commit; hours in WIB, a window may wrap midnight. Off until the owner sets the hours and switches it on. One event per user per WIB day; later actions add to it without another push."
+    },
+    {
+      "id": "SUPPLIER_PRICE_RISE",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 2,
+      "verticals": [
+        "retail"
+      ],
+      "severity": "INFO",
+      "name": {
+        "id": "Harga pemasok naik",
+        "en": "Supplier price rise"
+      },
+      "summary": {
+        "id": "Harga beli dari pemasok naik dibanding harga biasanya.",
+        "en": "A supplier charges more than their usual price for an item."
+      },
+      "params": [
+        {
+          "key": "minPercent",
+          "default": 10,
+          "min": 1,
+          "max": 100,
+          "unit": "percent",
+          "label": {
+            "id": "Kenaikan minimal",
+            "en": "Smallest rise"
+          }
+        },
+        {
+          "key": "minRupiah",
+          "default": 500,
+          "min": 0,
+          "max": 10000000,
+          "unit": "rupiah",
+          "label": {
+            "id": "Kenaikan minimal per satuan",
+            "en": "Smallest rise per unit"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "Harga {supplier} naik untuk {items}",
+          "en": "{supplier} raised the price of {items}"
+        },
+        "body": {
+          "id": "Naik sampai {percent}% · tambahan {amount} di surat jalan {document} · {outlet}",
+          "en": "Up to {percent}% more · {amount} extra on delivery {document} · {outlet}"
+        }
+      },
+      "engineering": "Delivery order create/update, after commit, for received lines with a supplier. Baseline = ItemSupplier.cost (the agreed price), else that supplier's previous received unit price for the item/variant. A line counts when it is above the baseline by minPercent AND minRupiah per unit; WARNING when the rise is twice minPercent. Dedupe per delivery order."
+    },
+    {
+      "id": "VOID_RATE_OUTLIER",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 3,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "WARNING",
+      "name": {
+        "id": "Kasir paling sering membatalkan",
+        "en": "Most voids by one cashier"
+      },
+      "summary": {
+        "id": "Dalam 7 hari, satu kasir membatalkan jauh lebih sering dari kasir lain di outlet yang sama.",
+        "en": "Over 7 days, one cashier reverses far more often than the others at the same outlet."
+      },
+      "params": [
+        {
+          "key": "multiple",
+          "default": 3,
+          "min": 2,
+          "max": 10,
+          "unit": "times",
+          "label": {
+            "id": "Berapa kali lebih sering",
+            "en": "How many times more often"
+          }
+        },
+        {
+          "key": "minReversals",
+          "default": 3,
+          "min": 1,
+          "max": 50,
+          "unit": "count",
+          "label": {
+            "id": "Pembatalan minimal",
+            "en": "Fewest reversals"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "{user} paling sering membatalkan minggu ini",
+          "en": "{user} reversed the most sales this week"
+        },
+        "body": {
+          "id": "{count} dari {sales} transaksi ({rate}%) · kasir lain {othersRate}% · {outlet}",
+          "en": "{count} of {sales} sales ({rate}%) · other cashiers {othersRate}% · {outlet}"
+        }
+      },
+      "engineering": "Nightly (the closing-report hour), per outlet, last 7 WIB days: per cashier, reversals (REVERSED_BY_USER_ID) ÷ sales rung (PERFORMED_BY_USER_ID) vs the other cashiers together (they need ≥ 10 sales). Fires when the cashier has ≥ minReversals and a rate ≥ multiple × the others'. Dedupe per user, outlet and week."
+    },
+    {
+      "id": "REPEATED_SHORTAGE",
+      "status": "beta",
+      "since": "2026-10",
+      "phase": 3,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "CRITICAL",
+      "name": {
+        "id": "Kas sering kurang",
+        "en": "Cash often short"
+      },
+      "summary": {
+        "id": "Kas satu orang kurang beberapa kali dalam seminggu, walau tiap kali sedikit.",
+        "en": "One person's cash comes up short several times in a week, even if only a little each time."
+      },
+      "params": [
+        {
+          "key": "minCount",
+          "default": 3,
+          "min": 2,
+          "max": 10,
+          "unit": "count",
+          "label": {
+            "id": "Berapa kali dalam 7 hari",
+            "en": "How many times in 7 days"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "Kas {user} kurang {count}x dalam 7 hari",
+          "en": "{user}'s cash was short {count} times in 7 days"
+        },
+        "body": {
+          "id": "Total kurang {amount} · {outlet}",
+          "en": "{amount} short in total · {outlet}"
+        }
+      },
+      "engineering": "Nightly (the closing-report hour): cash declarations of the last 7 WIB days, each against the server-computed expected cash, grouped by who closed the session; any shortage counts. Dedupe per user and week. BETA with CASH_SHORTAGE (needs the app's cash count)."
+    },
+    {
+      "id": "DAILY_REPORT",
+      "kind": "report",
+      "status": "live",
+      "since": "2026-10",
+      "phase": 2,
+      "verticals": [
+        "retail",
+        "laundry"
+      ],
+      "severity": "INFO",
+      "name": {
+        "id": "Laporan Tutup Toko",
+        "en": "Closing report"
+      },
+      "summary": {
+        "id": "Setiap malam: penjualan, laba, dan peringatan hari ini — atau \"Hari ini aman\".",
+        "en": "Every night: today's sales, profit and alerts — or \"All quiet today\"."
+      },
+      "params": [
+        {
+          "key": "hour",
+          "default": 21,
+          "min": 17,
+          "max": 23,
+          "unit": "hour",
+          "label": {
+            "id": "Jam kirim",
+            "en": "Send at"
+          }
+        }
+      ],
+      "push": {
+        "title": {
+          "id": "Tutup toko: {amount} · {count} transaksi",
+          "en": "Closing: {amount} · {count} sales"
+        },
+        "body": {
+          "id": "Laba kotor {profit} · {alertsLine}",
+          "en": "Gross profit {profit} · {alertsLine}"
+        }
+      },
+      "engineering": "Not a rule: src/cron/anomaly-daily.cron.ts, every hour 17:05–23:05 WIB, sends to tenants whose hour matches (Pro, live databases only). Today's (WIB) sales across outlets: count, total, gross profit; today's alerts and how many are still open. Skipped on a day with no sales and no alerts. Push type daily_report on tenant_{id}_security, one per tenant per day."
+    }
+  ]
+}

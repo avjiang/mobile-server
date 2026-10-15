@@ -91,6 +91,26 @@ function normalizeSpecifications(raw: string | null | undefined): string | null 
   return str.length > 0 ? str : null;
 }
 
+/** The shop's name as its receipts print it (the `company_name` setting, Pengaturan › Toko),
+ *  so the catalogue says "Toko Berkah Jaya", not the account name. Null when it was never set. */
+async function receiptName(tenantId: number, databaseName: string): Promise<string | null> {
+  try {
+    const def = await getGlobalPrisma().settingDefinition.findUnique({
+      where: { key: "company_name" },
+      select: { id: true },
+    });
+    if (!def) return null;
+    const row = await getTenantPrisma(databaseName).setting.findFirst({
+      where: { settingDefinitionId: def.id, tenantId, deleted: false },
+      select: { value: true },
+      orderBy: { id: "asc" },
+    });
+    return row?.value?.trim() || null;
+  } catch {
+    return null; // the account name still names the shop
+  }
+}
+
 export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalogue> {
   const slug = (slugRaw || "").toLowerCase().trim();
   if (!SLUG_RE.test(slug)) {
@@ -124,8 +144,9 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
     },
     select: { id: true },
   });
+  const shopName = (await receiptName(tenant.id, tenant.databaseName)) || tenant.tenantName;
   if (!onPro) {
-    throw new CataloguePausedError(tenant.tenantName);
+    throw new CataloguePausedError(shopName);
   }
 
   const prisma = getTenantPrisma(tenant.databaseName);
@@ -234,7 +255,7 @@ export async function getPublicCatalogue(slugRaw: string): Promise<PublicCatalog
 
   return {
     business: {
-      name: tenant.tenantName,
+      name: shopName,
       slug,
       whatsappNumber: tenant.whatsappNumber ?? null,
       logoUrl: imageOrNull(tenant.logoUrl),

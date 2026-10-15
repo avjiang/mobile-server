@@ -1,0 +1,61 @@
+-- Anomaly alerts (Peringatan Keamanan, Pro) — docs/modules/ANOMALY.md.
+-- Additive only. The new columns are nullable with no default, so MySQL 8 adds
+-- them with ALGORITHM=INSTANT (no table copy, no lock); existing rows read NULL
+-- and code that doesn't know them is unaffected. The two tables are new.
+
+-- Who rang a sale and who reversed it, from the JWT (not the phone's display name).
+ALTER TABLE `sales`
+    ADD COLUMN `PERFORMED_BY_USER_ID` INTEGER NULL,
+    ADD COLUMN `REVERSED_BY_USER_ID` INTEGER NULL,
+    ADD COLUMN `REVERSED_BY` VARCHAR(191) NULL,
+    ADD COLUMN `REVERSED_AT` DATETIME(3) NULL,
+    ADD COLUMN `REVERSAL_REASON_CODE` VARCHAR(32) NULL,
+    ADD COLUMN `REVERSAL_REASON_NOTE` VARCHAR(255) NULL;
+
+-- "How many sales did this user reverse today?" — one range scan.
+CREATE INDEX `sales_REVERSED_BY_USER_ID_REVERSED_AT_idx` ON `sales`(`REVERSED_BY_USER_ID`, `REVERSED_AT`);
+
+ALTER TABLE `stock_movement` ADD COLUMN `PERFORMED_BY_USER_ID` INTEGER NULL;
+
+-- CreateTable
+CREATE TABLE `anomaly_event` (
+    `ID` INTEGER NOT NULL AUTO_INCREMENT,
+    `RULE_ID` VARCHAR(64) NOT NULL,
+    `SEVERITY` VARCHAR(16) NOT NULL,
+    `STATUS` VARCHAR(16) NOT NULL DEFAULT 'OPEN',
+    `OUTLET_ID` INTEGER NULL,
+    `SITE_ID` INTEGER NULL,
+    `USER_ID` INTEGER NULL,
+    `USERNAME` VARCHAR(191) NULL,
+    `DOCUMENT_TYPE` VARCHAR(32) NULL,
+    `DOCUMENT_IDS` JSON NOT NULL,
+    `AMOUNT` DECIMAL(15, 4) NULL,
+    `COUNT` INTEGER NOT NULL DEFAULT 1,
+    `DETAIL` JSON NOT NULL,
+    `DEDUP_KEY` VARCHAR(191) NOT NULL,
+    `ACKNOWLEDGED_BY_USER_ID` INTEGER NULL,
+    `ACKNOWLEDGED_BY` VARCHAR(191) NULL,
+    `ACKNOWLEDGED_AT` DATETIME(3) NULL,
+    `CREATED_AT` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `UPDATED_AT` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `anomaly_event_DEDUP_KEY_key`(`DEDUP_KEY`),
+    INDEX `anomaly_event_STATUS_CREATED_AT_idx`(`STATUS`, `CREATED_AT`),
+    INDEX `anomaly_event_OUTLET_ID_CREATED_AT_idx`(`OUTLET_ID`, `CREATED_AT`),
+    INDEX `anomaly_event_CREATED_AT_idx`(`CREATED_AT`),
+    PRIMARY KEY (`ID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `anomaly_rule_config` (
+    `ID` INTEGER NOT NULL AUTO_INCREMENT,
+    `RULE_ID` VARCHAR(64) NOT NULL,
+    `ENABLED` BOOLEAN NOT NULL DEFAULT true,
+    `PARAMS` JSON NOT NULL,
+    `UPDATED_BY_USER_ID` INTEGER NULL,
+    `CREATED_AT` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `UPDATED_AT` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `anomaly_rule_config_RULE_ID_key`(`RULE_ID`),
+    PRIMARY KEY (`ID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
